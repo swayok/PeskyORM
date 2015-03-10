@@ -9,7 +9,7 @@ ini_set('display_startup_errors', 1);
 spl_autoload_register(function ($class) {
 
     // project-specific namespace prefix
-    $prefix = 'ORM\\';
+    $prefix = 'PeskyORM\\';
 
     // base directory for the namespace prefix
     $base_dir = __DIR__ . '/src/';
@@ -43,4 +43,4 @@ $config = array(
     'password' => 'test',
 );
 
-$db = new \ORM\Db($config['driver'], $config['database'], $config['user'], $config['password'], $config['host']);
+$db = new \PeskyORM\Db($config['driver'], $config['database'], $config['user'], $config['password'], $config['host']);

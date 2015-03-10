@@ -1,9 +1,9 @@
 <?php
 
-namespace ORM;
+namespace PeskyORM;
 
-use ORM\Exception\DbException;
-use ORM\Lib\Utils;
+use PeskyORM\Exception\DbException;
+use PeskyORM\Lib\Utils;
 
 class Db {
 

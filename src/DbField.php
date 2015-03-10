@@ -1,10 +1,10 @@
 <?php
 
-namespace ORM;
+namespace PeskyORM;
 
-use ORM\Exception\DbFieldException;
-use ORM\Lib\ImageUtils;
-use ORM\Lib\Utils;
+use PeskyORM\Exception\DbFieldException;
+use PeskyORM\Lib\ImageUtils;
+use PeskyORM\Lib\Utils;
 
 /**
  * Class DbField
@@ -106,14 +106,14 @@ class DbField {
     const ON_CREATE = 2;
     const ON_UPDATE = 3;
 
-    const FORMAT_TIMESTAMP = 'Y-m-d H:i:s';
-    const FORMAT_DATE = 'Y-m-d';
-    const FORMAT_TIME = 'H:i:s';
+    const FPeskyORMAT_TIMESTAMP = 'Y-m-d H:i:s';
+    const FPeskyORMAT_DATE = 'Y-m-d';
+    const FPeskyORMAT_TIME = 'H:i:s';
 
     const ERROR_REQUIRED = '@!db.field_error.required@';
     const ERROR_NOT_NULL = '@!db.field_error.not_null@';
     const ERROR_TOO_LONG = '@!db.field_error.too_long@';
-    const ERROR_INVALID_DATA_FORMAT = '@!db.field_error.invalid_format@';
+    const ERROR_INVALID_DATA_FPeskyORMAT = '@!db.field_error.invalid_format@';
     const ERROR_INVALID_EMAIL = '@!db.field_error.invalid_email@';
     const ERROR_INVALID_DB_ENTITY_NAME = '@!db.field_error.invalid_db_entity_name@';
     const ERROR_INVALID_JSON = '@!db.field_error.invalid_json@';
@@ -445,19 +445,19 @@ class DbField {
                 case 'timestamp':
                 case 'datetime':
                 case self::TYPE_TIMESTAMP:
-                    $value = $this->formatDateTime($value, self::FORMAT_TIMESTAMP);
+                    $value = $this->formatDateTime($value, self::FPeskyORMAT_TIMESTAMP);
                     break;
                 case 'time':
                 case self::TYPE_TIME:
-                    $value = $this->formatDateTime($value, self::FORMAT_TIME);
+                    $value = $this->formatDateTime($value, self::FPeskyORMAT_TIME);
                     break;
                 case 'date':
                 case self::TYPE_DATE:
-                    $value = $this->formatDateTime($value, self::FORMAT_DATE);
+                    $value = $this->formatDateTime($value, self::FPeskyORMAT_DATE);
                     break;
                 case 'timezone':
                 case self::TYPE_TIMEZONE_OFFSET:
-                    $value = $this->formatDateTime($value, self::FORMAT_TIME, 0);
+                    $value = $this->formatDateTime($value, self::FPeskyORMAT_TIME, 0);
                     break;
                 case 'file':
                 case self::TYPE_FILE:
@@ -550,7 +550,7 @@ class DbField {
             $this->values['error'] = self::ERROR_TOO_LONG;
         } else if (!$this->_validDataFormat()) {
             if (empty($this->values['error'])) {
-                $this->values['error'] = self::ERROR_INVALID_DATA_FORMAT;
+                $this->values['error'] = self::ERROR_INVALID_DATA_FPeskyORMAT;
             }
         } else if ($forSave && !$this->_isUnique()) {
             $this->values['error'] = self::ERROR_DUPLICATE_VALUE_FOR_UNIQUE_FIELD;

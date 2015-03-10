@@ -18,7 +18,7 @@
  * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
-namespace ORM\Lib;
+namespace PeskyORM\Lib;
 
 /**
  * Class used for manipulation of arrays.

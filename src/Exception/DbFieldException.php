@@ -1,8 +1,8 @@
 <?php
 
-namespace ORM\Exception;
+namespace PeskyORM\Exception;
 
-use ORM\DbField;
+use PeskyORM\DbField;
 
 class DbFieldException extends DbObjectException {
 

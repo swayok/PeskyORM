@@ -1,8 +1,8 @@
 <?php
 
-namespace ORM\Object;
+namespace PeskyORM\Object;
 
-use ORM\DbObject;
+use PeskyORM\DbObject;
 
 class User extends DbObject {
 

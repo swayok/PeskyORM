@@ -1,8 +1,8 @@
 <?php
 
-namespace ORM\Model;
+namespace PeskyORM\Model;
 
-use ORM\DbModel;
+use PeskyORM\DbModel;
 
 class UserModel extends DbModel {
 

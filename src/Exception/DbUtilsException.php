@@ -6,7 +6,7 @@
  * Time: 18:24
  */
 
-namespace ORM\Exception;
+namespace PeskyORM\Exception;
 
 
 class DbUtilsException extends \Exception {

@@ -1,14 +1,14 @@
 <?php
 
-namespace ORM;
-use ORM\Exception\DbModelException;
-use ORM\Exception\DbQueryException;
-use ORM\Exception\DbUtilsException;
-use ORM\Lib\Folder;
-use ORM\Lib\File;
-use ORM\Lib\ImageUtils;
-use ORM\Lib\Set;
-use ORM\Lib\StringUtils;
+namespace PeskyORM;
+use PeskyORM\Exception\DbModelException;
+use PeskyORM\Exception\DbQueryException;
+use PeskyORM\Exception\DbUtilsException;
+use PeskyORM\Lib\Folder;
+use PeskyORM\Lib\File;
+use PeskyORM\Lib\ImageUtils;
+use PeskyORM\Lib\Set;
+use PeskyORM\Lib\StringUtils;
 
 /**
  * Class Model

@@ -1,9 +1,9 @@
 <?php
 
-namespace ORM;
-use ORM\Exception\DbObjectException;
-use ORM\Lib\File;
-use ORM\Lib\Folder;
+namespace PeskyORM;
+use PeskyORM\Exception\DbObjectException;
+use PeskyORM\Lib\File;
+use PeskyORM\Lib\Folder;
 
 /**
  * Class DbObject

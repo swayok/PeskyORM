@@ -1,5 +1,5 @@
 <?php
-namespace ORM;
+namespace PeskyORM;
 
 /**
  * Class Expr

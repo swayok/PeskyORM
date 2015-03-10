@@ -1,8 +1,8 @@
 <?php
 
-namespace ORM;
+namespace PeskyORM;
 
-use ORM\Exception\DbQueryException;
+use PeskyORM\Exception\DbQueryException;
 
 class DbQuery {
 

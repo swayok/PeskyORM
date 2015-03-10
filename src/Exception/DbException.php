@@ -1,8 +1,8 @@
 <?php
 
-namespace ORM\Exception;
+namespace PeskyORM\Exception;
 
-use ORM\Db;
+use PeskyORM\Db;
 
 class DbException extends \Exception {
 

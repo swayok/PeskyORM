@@ -1,6 +1,6 @@
 <?php
 
-namespace ORM\Lib;
+namespace PeskyORM\Lib;
 
 class Utils {
 
