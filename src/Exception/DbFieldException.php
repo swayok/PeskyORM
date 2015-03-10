@@ -2,19 +2,19 @@
 
 namespace PeskyORM\Exception;
 
-use PeskyORM\DbField;
+use PeskyORM\DbObjectField;
 
 class DbFieldException extends DbObjectException {
 
     protected $dbField;
 
-    public function __construct(DbField $dbField, $message) {
+    public function __construct(DbObjectField $dbField, $message) {
         $this->dbField = $dbField;
         parent::__construct($dbField->getDbObject(), $message);
     }
 
     /**
-     * @return DbField
+     * @return DbObjectField
      */
     public function getDbField() {
         return $this->dbField;

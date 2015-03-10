@@ -38,15 +38,15 @@ abstract class DbModel {
     /**
      * Fields description in format:
         'name' => array(
-            'type' => \Db\DbField::TYPE_*,
+            'type' => \Db\DbObjectField::TYPE_*,
             'default' => null,
             'null' => true,
-            'required' => \Db\DbField::ON_NONE,
+            'required' => \Db\DbObjectField::ON_NONE,
             'length' => 0,
             'validators' => array(
-                \Db\DbField::VALIDATOR_*,
-                \Db\DbField::VALIDATOR_* => array(),
-                \Db\DbField::VALIDATOR_* => 1,
+                \Db\DbObjectField::VALIDATOR_*,
+                \Db\DbObjectField::VALIDATOR_* => array(),
+                \Db\DbObjectField::VALIDATOR_* => 1,
             ),
             'view_settings' => array(
                 'index' => array(...)
@@ -406,7 +406,7 @@ abstract class DbModel {
     public function getDbFields() {
         $ret = array();
         foreach ($this->fields as $name => $info) {
-            if (!in_array($info['type'], DbField::$fileTypes) && empty($info['virtual'])) {
+            if (!in_array($info['type'], DbObjectField::$fileTypes) && empty($info['virtual'])) {
                 $ret[] = $name;
             }
         }
@@ -492,7 +492,7 @@ abstract class DbModel {
         return !empty($fileInfo)
             && $dbObject->exists(true)
             && isset($this->fields[$field])
-            && in_array($this->fields[$field]['type'], DbField::$fileTypes)
+            && in_array($this->fields[$field]['type'], DbObjectField::$fileTypes)
             && self::isUploadedFile($fileInfo);
     }
 
@@ -511,7 +511,7 @@ abstract class DbModel {
                 ini_set('memory_limit', '128M');
             }
             $baseFileName = $dbObject->getBaseFileName($field);
-            if (in_array($this->fields[$field]['type'], DbField::$imageFileTypes)) {
+            if (in_array($this->fields[$field]['type'], DbObjectField::$imageFileTypes)) {
                 $pathToFiles = $dbObject->buildPathToFiles($field);
                 // save image and crate resizes for it
                 $resizeSettings = empty($this->fields[$field]['resize_settings'])
@@ -608,7 +608,7 @@ abstract class DbModel {
     public function deleteFiles($field, DbObject $dbObject, $fileSuffix = '') {
         if (
             isset($this->fields[$field])
-            && in_array($this->fields[$field]['type'], DbField::$fileTypes)
+            && in_array($this->fields[$field]['type'], DbObjectField::$fileTypes)
             && $dbObject->exists(true)
         ) {
             $pathToFiles = $dbObject->buildPathToFiles($field);

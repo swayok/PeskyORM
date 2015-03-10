@@ -12,8 +12,8 @@ use PeskyORM\Lib\Folder;
 class DbObject {
 
     /**
-     * associative list of DbField
-     * @var DbField[]
+     * associative list of DbObjectField
+     * @var DbObjectField[]
      */
     public $_fields = array();
     /**
@@ -89,9 +89,9 @@ class DbObject {
      */
     public function __construct(DbModel $model, $data = null, $filter = false, $isDbValues = false) {
         $this->model = $model;
-        // initiate DbField for all fields
+        // initiate DbObjectField for all fields
         foreach ($this->model->fields as $name => $info) {
-            $this->_fields[$name] = new DbField($this, $name, $info);
+            $this->_fields[$name] = new DbObjectField($this, $name, $info);
             if ($this->_fields[$name]->isFile) {
                 $this->hasFiles = true;
                 $this->fileFields[] = $name;

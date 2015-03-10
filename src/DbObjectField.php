@@ -7,7 +7,7 @@ use PeskyORM\Lib\ImageUtils;
 use PeskyORM\Lib\Utils;
 
 /**
- * Class DbField
+ * Class DbObjectField
  * @property mixed $value - value after type conversion
  * @property mixed $isDbValue - true: field value differs from field value in DB | false: field value is DB field value
  * @property-read mixed $rawValue - value in format it was assigned (without type conversion)
@@ -19,14 +19,14 @@ use PeskyORM\Lib\Utils;
  * @property-read null|string $_file_path - full FS path to file
  * @property-read null|bool $_file_exists - test if file exists (only if file placed on current server, otherwise true will be returned)
  */
-class DbField {
+class DbObjectField {
     /**
      * @var DbObject
      */
     protected $dbObject;
     public $_info;              //< all information about field
     public $name;
-    public $type;               //< one of DbField::TYPE_*
+    public $type;               //< one of DbObjectField::TYPE_*
     public $isPk = false;       //< indicates that field is a primary key
     public $isFile = false;     //< indicates that field is file (virtual field)
     public $isImage = false;    //< indicates that field is file (virtual field)
@@ -69,51 +69,16 @@ class DbField {
 
     public $validators = array();
 
-    const TYPE_INT = 10;
-    const TYPE_FLOAT = 20;
-    const TYPE_BOOL = 30;
-    const TYPE_STRING = 40;
-    const TYPE_TEXT = 41;
-    const TYPE_JSON = 42;
-    const TYPE_DB_ENTITY_NAME = 43;
-    const TYPE_SHA1 = 44;
-    const TYPE_EMAIL = 45;
-    const TYPE_TIMESTAMP = 50;
-    const TYPE_DATE = 51;
-    const TYPE_TIME = 52;
-    const TYPE_TIMEZONE_OFFSET = 53;
-    const TYPE_ENUM = 60;
-    const TYPE_IP_ADDRESS = 70;
-    const TYPE_FILE = 80;
-    const TYPE_IMAGE = 90;
-
     const NULL_VALUE = 'NULL';
 
-    static public $fileTypes = array(
-        self::TYPE_FILE,
-        self::TYPE_IMAGE,
-        'file',
-        'image'
-    );
-
-    static public $imageFileTypes = array(
-        self::TYPE_IMAGE,
-        'image'
-    );
-
-    const ON_NONE = 0;
-    const ON_ALL = 1;
-    const ON_CREATE = 2;
-    const ON_UPDATE = 3;
-
-    const FPeskyORMAT_TIMESTAMP = 'Y-m-d H:i:s';
-    const FPeskyORMAT_DATE = 'Y-m-d';
-    const FPeskyORMAT_TIME = 'H:i:s';
+    const FORMAT_TIMESTAMP = 'Y-m-d H:i:s';
+    const FORMAT_DATE = 'Y-m-d';
+    const FORMAT_TIME = 'H:i:s';
 
     const ERROR_REQUIRED = '@!db.field_error.required@';
     const ERROR_NOT_NULL = '@!db.field_error.not_null@';
     const ERROR_TOO_LONG = '@!db.field_error.too_long@';
-    const ERROR_INVALID_DATA_FPeskyORMAT = '@!db.field_error.invalid_format@';
+    const ERROR_INVALID_DATA_FORMAT = '@!db.field_error.invalid_format@';
     const ERROR_INVALID_EMAIL = '@!db.field_error.invalid_email@';
     const ERROR_INVALID_DB_ENTITY_NAME = '@!db.field_error.invalid_db_entity_name@';
     const ERROR_INVALID_JSON = '@!db.field_error.invalid_json@';
@@ -445,19 +410,19 @@ class DbField {
                 case 'timestamp':
                 case 'datetime':
                 case self::TYPE_TIMESTAMP:
-                    $value = $this->formatDateTime($value, self::FPeskyORMAT_TIMESTAMP);
+                    $value = $this->formatDateTime($value, self::FORMAT_TIMESTAMP);
                     break;
                 case 'time':
                 case self::TYPE_TIME:
-                    $value = $this->formatDateTime($value, self::FPeskyORMAT_TIME);
+                    $value = $this->formatDateTime($value, self::FORMAT_TIME);
                     break;
                 case 'date':
                 case self::TYPE_DATE:
-                    $value = $this->formatDateTime($value, self::FPeskyORMAT_DATE);
+                    $value = $this->formatDateTime($value, self::FORMAT_DATE);
                     break;
                 case 'timezone':
                 case self::TYPE_TIMEZONE_OFFSET:
-                    $value = $this->formatDateTime($value, self::FPeskyORMAT_TIME, 0);
+                    $value = $this->formatDateTime($value, self::FORMAT_TIME, 0);
                     break;
                 case 'file':
                 case self::TYPE_FILE:
@@ -550,7 +515,7 @@ class DbField {
             $this->values['error'] = self::ERROR_TOO_LONG;
         } else if (!$this->_validDataFormat()) {
             if (empty($this->values['error'])) {
-                $this->values['error'] = self::ERROR_INVALID_DATA_FPeskyORMAT;
+                $this->values['error'] = self::ERROR_INVALID_DATA_FORMAT;
             }
         } else if ($forSave && !$this->_isUnique()) {
             $this->values['error'] = self::ERROR_DUPLICATE_VALUE_FOR_UNIQUE_FIELD;
