@@ -98,13 +98,13 @@ class DbObject {
             }
         }
         // test if primary key provided
-        if (empty($this->_fields[$this->model->primaryKey])) {
-            throw new DbObjectException($this, "Primary key field [{$this->model->primaryKey}] not found in Model->fields");
+        if (empty($this->_fields[$this->model->getPkColumn()])) {
+            throw new DbObjectException($this, "Primary key field [{$this->model->getPkColumn()}] not found in Model->fields");
         }
         // mark and modify pk field
-        $this->_fields[$this->model->primaryKey]->isPk = true;
-        $this->_fields[$this->model->primaryKey]->required = false;
-        $this->_fields[$this->model->primaryKey]->null = true;
+        $this->_fields[$this->model->getPkColumn()]->isPk = true;
+        $this->_fields[$this->model->getPkColumn()]->required = false;
+        $this->_fields[$this->model->getPkColumn()]->null = true;
         // initiate related objects
         foreach ($this->model->relations as $alias => $settings) {
             $this->_aliasToLocalField[$alias] = $settings['local_field'];
@@ -115,7 +115,7 @@ class DbObject {
             if (!empty($settings['many'])) {
                 $this->_aliasToRelationType[$alias] = 'many';
             } else {
-                $this->_aliasToRelationType[$alias] = $settings['local_field'] == $this->model->primaryKey ? 'one' : 'belong';
+                $this->_aliasToRelationType[$alias] = $settings['local_field'] == $this->model->getPkColumn() ? 'one' : 'belong';
             }
 
         }
@@ -224,7 +224,7 @@ class DbObject {
         $settings = $this->model->relations[$alias];
         $localField = $this->_aliasToLocalField[$alias];
         $relationField = $this->_aliasToRelationField[$alias];
-        $localFieldIsPrimaryKey = $this->$localField == $this->model->primaryKey;
+        $localFieldIsPrimaryKey = $this->$localField == $this->model->getPkColumn();
         if (empty($this->$localField)) {
             $relationFieldValue = false;
             if (is_array($object) && !empty($object[$relationField])) {
@@ -353,7 +353,7 @@ class DbObject {
      */
     public function updateData($data, $filter = false) {
         if ($this->exists()) {
-            $data[$this->model->primaryKey] = $this->pkValue();
+            $data[$this->model->getPkColumn()] = $this->pkValue();
         }
         $this->_fromData($data, $filter, false);
         return $this;
@@ -406,8 +406,8 @@ class DbObject {
         // otherwise $data treated as updates to existing db object
         if (
             !$this->exists()
-            || !isset($data[$this->model->primaryKey])
-            || $data[$this->model->primaryKey] != $this->pkValue()
+            || !isset($data[$this->model->getPkColumn()])
+            || $data[$this->model->getPkColumn()] != $this->pkValue()
         ) {
             $this->reset();
         }
@@ -423,12 +423,12 @@ class DbObject {
                 $filter = false;
             }
             // set primary key first
-            if (isset($data[$this->model->primaryKey])) {
-                $this->{$this->model->primaryKey} = $data[$this->model->primaryKey];
+            if (isset($data[$this->model->getPkColumn()])) {
+                $this->{$this->model->getPkColumn()} = $data[$this->model->getPkColumn()];
                 if ($isDbValue) {
-                    $this->_fields[$this->model->primaryKey]->isDbValue = true;
+                    $this->_fields[$this->model->getPkColumn()]->isDbValue = true;
                 } //< $isDbValue == false handled by value setter
-                unset($data[$this->model->primaryKey]);
+                unset($data[$this->model->getPkColumn()]);
             }
             foreach ($data as $fieldNameOrAlias => $value) {
                 if (array_key_exists($fieldNameOrAlias, $this->model->fields)) {
@@ -836,7 +836,7 @@ class DbObject {
                 if (is_array($this->_relatedObjects[$alias])) {
                     /** @var DbObject $object */
                     foreach ($this->_relatedObjects[$alias] as $object) {
-                        if ($isSaveAction && $relationField != $object->model->primaryKey) {
+                        if ($isSaveAction && $relationField != $object->model->getPkColumn()) {
                             $object->$relationField($this->$localField);
                         }
                         $ret = $object->$action();
@@ -940,7 +940,7 @@ class DbObject {
      * @return mixed|null
      */
     public function pkValue() {
-        return ($this->exists()) ? $this->_fields[$this->model->primaryKey]->value : null;
+        return ($this->exists()) ? $this->_fields[$this->model->getPkColumn()]->value : null;
     }
 
     /**
@@ -951,7 +951,7 @@ class DbObject {
      * @return $this
      */
     public function read($pkValue, $fields = '*', $relations = false) {
-        $this->{$this->model->primaryKey} = $pkValue;
+        $this->{$this->model->getPkColumn()} = $pkValue;
         return $this->find($this->getFindByPkConditions(), $fields, $relations);
     }
 
@@ -963,7 +963,7 @@ class DbObject {
      * @throws DbObjectException
      */
     public function reload($fields = '*', $relations = null) {
-        if (!empty($this->{$this->model->primaryKey})) {
+        if (!empty($this->{$this->model->getPkColumn()})) {
             if ($relations === null) {
                 $relations = array();
                 foreach ($this->_relatedObjects as $alias => $object) {
@@ -1043,7 +1043,7 @@ class DbObject {
         $localField = $this->_aliasToLocalField[$relationAlias];
         if (empty($this->$localField)) {
             // local field empty - bad situation but possible when creating new record together with all related
-            if (!$ignorePkNotSetError || ($localField != $this->model->primaryKey && $this->_fields[$localField]->required)) {
+            if (!$ignorePkNotSetError || ($localField != $this->model->getPkColumn() && $this->_fields[$localField]->required)) {
                 throw new DbObjectException($this, "Cannot validate relation between [{$this->model->alias}] and [{$relationAlias}]: [{$this->model->alias}->{$localField}] is empty");
             }
         } else {
@@ -1126,10 +1126,10 @@ class DbObject {
      * @return $this
      */
     public function find($conditions, $fields = '*', $relations = array()) {
-        if (is_array($fields) && !in_array($this->model->primaryKey, $fields)) {
-            $fields[] = $this->model->primaryKey;
+        if (is_array($fields) && !in_array($this->model->getPkColumn(), $fields)) {
+            $fields[] = $this->model->getPkColumn();
         } else if (!is_array($fields) && $fields !== '*') {
-            $fields = array($this->model->primaryKey, $fields);
+            $fields = array($this->model->getPkColumn(), $fields);
         }
         $data = $this->model->getOne($fields, $conditions, false, false);
         if (!empty($data)) {
@@ -1178,7 +1178,7 @@ class DbObject {
         }
         $exists = $this->exists($verifyDbExistance);
         if ($verifyDbExistance && !$exists && !$createIfNotExists) {
-            $this->customErrors[$this->model->primaryKey] = '@!db.error_edit_not_existing_record@';
+            $this->customErrors[$this->model->getPkColumn()] = '@!db.error_edit_not_existing_record@';
             if ($localTransaction) {
                 $this->model->rollback();
             }
@@ -1196,7 +1196,7 @@ class DbObject {
             $this->allowFieldsUpdatesTracking = true;
         } else {
             $dataToSave = $this->toStrictArray(null, true);
-            unset($dataToSave[$this->model->primaryKey]);
+            unset($dataToSave[$this->model->getPkColumn()]);
             if (!empty($dataToSave)) {
                 $this->allowFieldsUpdatesTracking = false;
                 $ret = $this->model->update($dataToSave, $this->getFindByPkConditions(), '*');
@@ -1313,7 +1313,7 @@ class DbObject {
                 $localTransaction = true;
             }
             $dataToSave = $this->toStrictArray($fields, true);
-            unset($dataToSave[$this->model->primaryKey]);
+            unset($dataToSave[$this->model->getPkColumn()]);
             if (!empty($dataToSave)) {
                 $ret = $this->model->update($dataToSave, $this->getFindByPkConditions());
             } else {
@@ -1370,7 +1370,7 @@ class DbObject {
         if ($resetFields) {
             $this->reset();
         } else {
-            $this->_fields[$this->model->primaryKey]->reset();
+            $this->_fields[$this->model->getPkColumn()]->reset();
         }
         return $this;
     }
@@ -1404,7 +1404,7 @@ class DbObject {
      * @return bool
      */
     public function exists($fromDb = false) {
-        $pkSet = !empty($this->_fields[$this->model->primaryKey]->value);
+        $pkSet = !empty($this->_fields[$this->model->getPkColumn()]->value);
         if ($fromDb) {
             return $pkSet && $this->model->exists($this->getFindByPkConditions());
         } else {
@@ -1417,7 +1417,7 @@ class DbObject {
      * @return array
      */
     protected function getFindByPkConditions() {
-        return array($this->model->primaryKey => $this->pkValue());
+        return array($this->model->getPkColumn() => $this->pkValue());
     }
 
     /**
@@ -1434,12 +1434,12 @@ class DbObject {
         if (empty($fields) || !is_array($fields)) {
             $fields = array_keys($this->_fields);
         }
-        if ($this->exists() && !in_array($this->model->primaryKey, $fields)) {
-            $fields[] = $this->model->primaryKey;
+        if ($this->exists() && !in_array($this->model->getPkColumn(), $fields)) {
+            $fields[] = $this->model->getPkColumn();
         }
         foreach ($fields as $name) {
             if (!isset($this->_fields[$name])) {
-                throw new DbObjectException($this, "Field [$name] not exists in table [{$this->model->table}]");
+                throw new DbObjectException($this, "Field [$name] not exists in table [{$this->model->getTableName()}]");
             } else if (!$this->_fields[$name]->skip($onlyUpdated)) {
                 $values[$name] = $this->_fields[$name]->value;
             }
@@ -1461,14 +1461,14 @@ class DbObject {
         if (empty($fields) || !is_array($fields)) {
             $fields = array_keys($this->_fields);
         }
-        if ($this->exists() && !in_array($this->model->primaryKey, $fields)) {
-            $fields[] = $this->model->primaryKey;
+        if ($this->exists() && !in_array($this->model->getPkColumn(), $fields)) {
+            $fields[] = $this->model->getPkColumn();
         }
         foreach ($fields as $name) {
             if (isset($this->_fields[$name]->value)) {
                 $values[$name] = $this->_fields[$name]->value;
             } else if ($this->exists() && $this->_fields[$name]->isFile) {
-                $this->_fields[$name]->value = $this->{$this->model->primaryKey}; //< this will trigger file path generation
+                $this->_fields[$name]->value = $this->{$this->model->getPkColumn()}; //< this will trigger file path generation
                 $values[$name] = $this->_fields[$name]->value;
                 /*$server = !empty($this->model->fields[$name]['server']) ? $this->model->fields[$name]['server'] : null;
                 if ($this->_fields[$name]->isImage && $server == \Server::alias()) {

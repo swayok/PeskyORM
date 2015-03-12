@@ -3,11 +3,15 @@
 namespace ORM;
 
 
+use ORM\Exception\DbColumnConfigException;
+use ORM\Exception\DbTableConfigException;
+
 abstract class DbTableConfig {
 
     protected $db = 'default';
     protected $schema = 'public';
     protected $name;
+    protected $pk;
 
     /** @var DbColumnConfig[] */
     protected $columns = array();
@@ -25,6 +29,21 @@ abstract class DbTableConfig {
             self::$instances[$className] = new $className();
         }
         return self::$instances[$className];
+    }
+
+    protected function addColumn(DbColumnConfig $config) {
+        if (!empty($this->columns[$config->getName()])) {
+            throw new DbTableConfigException($this, "Duplicate config received for column [{$config->getName()}]");
+        }
+        $config->setDbTableConfig($this);
+        $this->columns[$config->getName()] = $config;
+        if ($config->isPk()) {
+            if (!empty($this->pk)) {
+                throw new DbTableConfigException($this, "Table should not have 2 primary keys: [$this->pk] and [{$config->getName()}]");
+            }
+            $this->pk = $config->getName();
+        }
+        return $this;
     }
 
     /**
@@ -61,6 +80,14 @@ abstract class DbTableConfig {
     public function getRelations() {
         return $this->relations;
     }
+
+    /**
+     * @return mixed
+     */
+    public function getPk() {
+        return $this->pk;
+    }
+
 
 
 }

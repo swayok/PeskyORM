@@ -1,6 +1,7 @@
 <?php
 
 namespace PeskyORM;
+use ORM\DbTableConfig;
 use PeskyORM\Exception\DbModelException;
 use PeskyORM\Exception\DbQueryException;
 use PeskyORM\Exception\DbUtilsException;
@@ -16,25 +17,16 @@ use PeskyORM\Lib\StringUtils;
 abstract class DbModel {
 
     /** @var null|Db */
-    static protected $dataSource = null;
-    static protected $configs;
+    static protected $dataSource = array();
+    static protected $dbConfigs = array();
+    static public $loadedModels = array();    //< Model objects
 
-    public $schema = 'public';
-    public $table = '';
+    /** @var DbTableConfig */
+    protected $tableConfig;
     public $alias = null;
-    public $primaryKey = 'id';
-
     public $orderField = null;
     public $orderDirection = 'asc';
 
-    /**
-     * @var bool|string - true or string: fields and relations will be loaded from configs file.
-     * If there are any fields or relations in class - they will overwrite those from configs file
-     * If true - config file name is same as DbObject name + 'Config' suffix
-     * If string - 'Config' suffix is not required
-     */
-    public $configFileName = true;
-    public $configsDir = 'ModelConfig';
     /**
      * Fields description in format:
         'name' => array(
@@ -99,28 +91,47 @@ abstract class DbModel {
         'mov' => 'video/quicktime',
     );
 
-    /* loading models */
-
-    static public $loadedModels = array();    //< Model objects
-
     public function __construct() {
 //        $this->loadConfigFile();
-        if (empty($this->orderField)) {
-            $this->orderField = $this->primaryKey;
-        }
-        if (empty($this->table)) {
+        if (empty($this->tableConfig->getName())) {
             throw new DbModelException($this, 'Model ' . get_class($this) . ' has no table name');
         }
-        if (empty($this->primaryKey) || empty($this->fields[$this->primaryKey])) {
-            throw new DbModelException($this, 'Model ' . get_class($this) . ' has invalid primary key (not set or not listed in fields)');
+        if (empty($this->tableConfig->getPk())) {
+            throw new DbModelException($this, 'Model ' . get_class($this) . ' has no primary key');
+        }
+        if (empty($this->orderField)) {
+            $this->orderField = $this->tableConfig->getPk();
         }
         if (empty($this->alias)) {
-            $this->alias = StringUtils::modelize($this->table);
-        }
-        if (empty($this->schema)) {
-            $this->schema = 'public';
+            $this->alias = StringUtils::modelize($this->getTableName());
         }
     }
+
+    public function getTableName() {
+        return $this->tableConfig->getName();
+    }
+
+    public function getPkColumn() {
+        return $this->tableConfig->getPk();
+    }
+
+    /**
+     * @return DbTableConfig
+     */
+    public function getTableConfig() {
+        return $this->tableConfig;
+    }
+
+    /**
+     * @param DbTableConfig $tableConfig
+     * @return $this
+     */
+    public function setTableConfig($tableConfig) {
+        $this->tableConfig = $tableConfig;
+        return $this;
+    }
+
+
 
     /**
      * Load config file and update $this->fields and $this->relations
@@ -625,21 +636,24 @@ abstract class DbModel {
     }
 
     static public function setDbConfigs($configs) {
-        self::$configs = array_merge(array('host' => 'localhost'), $configs);
+        foreach ($configs as $alias => $config) {
+            self::$dbConfigs[$alias] = array_merge(array('host' => 'localhost'), $config);
+        }
     }
 
     /**
      * Get data source object
+     * @param string $alias
      * @return Db
      */
-    public function getDataSource() {
-        if (!self::$dataSource) {
-            self::$dataSource = new Db(
-                self::$configs['driver'],
-                self::$configs['database'],
-                self::$configs['user'],
-                self::$configs['password'],
-                self::$configs['host']
+    public function getDataSource($alias = 'default') {
+        if (empty(self::$dataSource[$alias])) {
+            self::$dataSource[$alias] = new Db(
+                self::$dbConfigs['driver'],
+                self::$dbConfigs['database'],
+                self::$dbConfigs['user'],
+                self::$dbConfigs['password'],
+                self::$dbConfigs['host']
             );
         }
         return self::$dataSource;
@@ -829,7 +843,7 @@ abstract class DbModel {
      */
     public function getOne($columns, $conditionsAndOptions = null, $asObject = true, $withRootAlias = false) {
         if (is_numeric($conditionsAndOptions) || is_int($conditionsAndOptions)) {
-            $conditionsAndOptions = array($this->primaryKey => $conditionsAndOptions);
+            $conditionsAndOptions = array($this->getPkColumn() => $conditionsAndOptions);
         }
         $record = $this->builder()
             ->fromOptions($this->prepareSelect($columns, $conditionsAndOptions))

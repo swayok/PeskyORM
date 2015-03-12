@@ -8,8 +8,8 @@ class DbQuery {
 
     /** @var Db */
     protected $db;
-    /** @var string */
-    protected $schema = 'public';
+    /** @var \ORM\DbTableConfig */
+    protected $tableConfig;
     /** @var string */
     protected $table = '__unknown__';
     /** @var string */
@@ -47,8 +47,8 @@ class DbQuery {
 
     public function __construct(DbModel $model, $alias = null) {
         $this->db = $model->getDataSource();
-        $this->schema = $model->schema;
-        $this->table = "{$model->schema}.{$model->table}";
+        $this->tableConfig = $model->getTableConfig();
+        $this->table = $this->getFullTableName($model);
         $this->models[$this->table] = $model;
         if (empty($alias)) {
             $this->alias = !empty($model->alias)
@@ -58,6 +58,10 @@ class DbQuery {
             $this->alias = $alias;
         }
         $this->aliasToTable[$this->alias] = $this->table;
+    }
+
+    protected function getFullTableName(DbModel $model) {
+        return "{$model->getTableConfig()->getSchema()}.{$model->getTableConfig()->getName()}";
     }
 
     public function getDb() {
@@ -149,11 +153,11 @@ class DbQuery {
         }
         $table = $this->aliasToTable[$tableAlias];
         if (
-            !in_array($this->models[$table]->primaryKey, $fields)
-            && !in_array($tableAlias . '.' . $this->models[$table]->primaryKey, $fields)
+            !in_array($this->models[$table]->getPkColumn(), $fields)
+            && !in_array($tableAlias . '.' . $this->models[$table]->getPkColumn(), $fields)
         ) {
-            $fieldAlias = $this->buildFieldAlias($tableAlias, $this->models[$table]->primaryKey, $fieldAlias);
-            $fields[$fieldAlias] = $this->models[$table]->primaryKey;
+            $fieldAlias = $this->buildFieldAlias($tableAlias, $this->models[$table]->getPkColumn(), $fieldAlias);
+            $fields[$fieldAlias] = $this->models[$table]->getPkColumn();
         }
         return $fields;
     }
@@ -200,23 +204,23 @@ class DbQuery {
         if (empty($knownTableAlias)) {
             $knownTableAlias = $this->alias;
             if (empty($knownTableColumn)) {
-                $knownTableColumn = $this->models[$this->table]->primaryKey;
+                $knownTableColumn = $this->models[$this->table]->getPkColumn();
             }
         } else if (empty($this->aliasToTable[$knownTableAlias])) {
             throw new DbQueryException($this, "DbQuery->join(): table with alias [$knownTableAlias] is not known");
         }
         if (empty($knownTableColumn)) {
-            $knownTableColumn = $this->models[$this->aliasToTable[$knownTableAlias]]->primaryKey;
+            $knownTableColumn = $this->models[$this->aliasToTable[$knownTableAlias]]->getPkColumn();
         }
-        $this->models[$relatedModel->table] = $relatedModel;
-        $this->aliasToTable[$relatedAlias] = $relatedModel->table;
+        $this->models[$relatedModel->getTableName()] = $relatedModel;
+        $this->aliasToTable[$relatedAlias] = $relatedModel->getTableName();
         $col1Info = $this->disassembleField($relatedColumn, $relatedAlias);
         $col2Info = $this->disassembleField($knownTableColumn, $knownTableAlias);
         $conditions = !empty($conditions) && is_array($conditions) ? $conditions : array();
         $conditions[] = $col1Info['assembled'] . '=' . $col2Info['assembled'];
         $this->joins[$relatedAlias] = array(
             'type' => in_array(strtolower(trim($type)), array('inner', 'left', 'right', 'full')) ? strtolower(trim($type)) : 'inner',
-            'table' => $this->quoteName($relatedModel->schema . '.' . $relatedModel->table) . ' AS ' . $this->quoteName($relatedAlias),
+            'table' => $this->quoteName($this->getFullTableName($relatedModel)) . ' AS ' . $this->quoteName($relatedAlias),
             'on' => '(' . $this->assembleConditions($conditions) . ')',
         );
         $this->fields($fields, $relatedAlias);
@@ -563,7 +567,7 @@ class DbQuery {
         }
         $model = $this->models[$this->table];
         if ($returning === null) {
-            $fields = $model->primaryKey;
+            $fields = $model->getPkColumn();
         } else if ($returning === true) {
             $fields = '*';
         } else if (is_string($returning) || is_array($returning)) {
@@ -598,7 +602,7 @@ class DbQuery {
         }
         if (!empty($this->orderBy) || !empty($this->limit)) {
             $model = $this->models[$this->table];
-            $subquery = 'SELECT ' . $this->quoteName($model->primaryKey)
+            $subquery = 'SELECT ' . $this->quoteName($model->getPkColumn())
                 . ' FROM ' . $this->quoteName($this->table)
                 . ' AS ' . $this->quoteName($this->alias)
                  . $where;
@@ -613,7 +617,7 @@ class DbQuery {
             if (!empty($this->limit)) {
                 $subquery .= " LIMIT {$this->limit} ";
             }
-            $this->query .= ' WHERE ' . $this->quoteName($model->primaryKey) . ' IN (' . $subquery . ')';
+            $this->query .= ' WHERE ' . $this->quoteName($model->getPkColumn()) . ' IN (' . $subquery . ')';
         } else {
             $this->query .= ' AS ' . $this->quoteName($this->alias) . $where;
         }
@@ -675,7 +679,7 @@ class DbQuery {
             if (empty($returning)) {
                 return $pkValue;
             } else {
-                $this->where(array($model->primaryKey => $pkValue));
+                $this->where(array($model->getPkColumn() => $pkValue));
                 $result = $this->findOne(false);
             }
         }
@@ -865,7 +869,7 @@ class DbQuery {
         }
         // order by
         if (empty($this->orderBy) && $autoAddPkFieldAndOrder) {
-            $this->orderBy($this->models[$this->table]->primaryKey . ' asc');
+            $this->orderBy($this->models[$this->table]->getPkColumn() . ' asc');
         }
         if (!empty($this->orderBy)) {
             $sorting = array();

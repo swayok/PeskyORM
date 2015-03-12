@@ -141,11 +141,7 @@ class UserTableConfig extends DbTableConfig {
             );
     }
 
-    protected function addColumn(DbColumnConfig $config) {
-        $config->setDbTableConfig($this);
-        $this->columns[$config->getName()] = $config;
-        return $this;
-    }
+
 
 
 }

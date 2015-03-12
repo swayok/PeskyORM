@@ -42,5 +42,4 @@ $config = array(
     'user' => 'test',
     'password' => 'test',
 );
-
-$db = new \PeskyORM\Db($config['driver'], $config['database'], $config['user'], $config['password'], $config['host']);
+\PeskyORM\DbModel::setDbConfigs(array('default' => $config));

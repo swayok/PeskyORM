@@ -4,7 +4,7 @@ namespace ORM\Exception;
 
 use ORM\DbColumnConfig;
 
-class DbConfigException extends \Exception {
+class DbColumnConfigException extends \Exception {
 
     protected $dbColumnConfig;
 

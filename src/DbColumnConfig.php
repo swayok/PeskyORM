@@ -2,7 +2,7 @@
 
 namespace ORM;
 
-use ORM\Exception\DbConfigException;
+use ORM\Exception\DbColumnConfigException;
 
 class DbColumnConfig {
 
@@ -216,11 +216,11 @@ class DbColumnConfig {
     /**
      * @param array $allowedValues
      * @return $this
-     * @throws DbConfigException
+     * @throws DbColumnConfigException
      */
     public function setAllowedValues($allowedValues) {
         if (!is_array($allowedValues) || empty($allowedValues)) {
-            throw new DbConfigException($this, 'Allowed values have to be not empty array');
+            throw new DbColumnConfigException($this, 'Allowed values have to be not empty array');
         }
         $this->allowedValues = $allowedValues;
         return $this;
@@ -236,7 +236,7 @@ class DbColumnConfig {
     /**
      * @param int|bool $isRequired
      * @return $this
-     * @throws DbConfigException
+     * @throws DbColumnConfigException
      */
     public function setIsRequired($isRequired) {
         if (is_bool($isRequired)) {
@@ -244,7 +244,7 @@ class DbColumnConfig {
         } else if ($isRequired >= self::ON_NONE && $isRequired <= self::ON_UPDATE) {
             $this->isRequired = $isRequired;
         } else {
-            throw new DbConfigException($this, "Invalid value [$isRequired] passed to [setIsRequired]");
+            throw new DbColumnConfigException($this, "Invalid value [$isRequired] passed to [setIsRequired]");
         }
         return $this;
     }
@@ -307,7 +307,7 @@ class DbColumnConfig {
     /**
      * @param int|bool $isExcluded
      * @return $this
-     * @throws DbConfigException
+     * @throws DbColumnConfigException
      */
     public function setIsExcluded($isExcluded) {
         if (is_bool($isExcluded)) {
@@ -315,7 +315,7 @@ class DbColumnConfig {
         } else if ($isExcluded >= self::ON_NONE && $isExcluded <= self::ON_UPDATE) {
             $this->isExcluded = $isExcluded;
         } else {
-            throw new DbConfigException($this, "Invalid value [$isExcluded] passed to [setIsExcluded]");
+            throw new DbColumnConfigException($this, "Invalid value [$isExcluded] passed to [setIsExcluded]");
         }
         return $this;
     }
@@ -330,11 +330,11 @@ class DbColumnConfig {
     /**
      * @param string $relationName
      * @return DbRelationConfig
-     * @throws DbConfigException
+     * @throws DbColumnConfigException
      */
     public function getRelation($relationName) {
         if (empty($this->relations[$relationName])) {
-            throw new DbConfigException($this, "Relation $relationName not exists");
+            throw new DbColumnConfigException($this, "Relation $relationName not exists");
         }
         return $this->relations[$relationName];
     }
@@ -343,15 +343,15 @@ class DbColumnConfig {
      * @param string $relationName
      * @param DbRelationConfig $relation
      * @return $this
-     * @throws DbConfigException
+     * @throws DbColumnConfigException
      */
     public function addRelation($relationName, DbRelationConfig $relation) {
         $relationInfo = $relation->getTable() . '.' . $relation->getColumn();
         if ($relation->getColumn() !== $this->name && $relation->getForeignColumn() !== $this->name) {
-            throw new DbConfigException($this, "Relation $relationName to $relationInfo is not connected to column {$this->name}");
+            throw new DbColumnConfigException($this, "Relation $relationName to $relationInfo is not connected to column {$this->name}");
         }
         if (!empty($this->relations[$relationName])) {
-            throw new DbConfigException($this, "Relation $relationName to $relationInfo already defined");
+            throw new DbColumnConfigException($this, "Relation $relationName to $relationInfo already defined");
         }
         $this->relations[$relationName] = $relation;
         if ($relation->getType() === DbRelationConfig::BELONGS_TO) {

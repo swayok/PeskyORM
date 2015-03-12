@@ -238,7 +238,7 @@ class DbObjectField {
                         return $this->dbObject->{$this->importValueFromDbObject};
                     }
                 }
-                if (empty($this->values['isset']) && $this->name !== $this->dbObject->model->primaryKey) {
+                if (empty($this->values['isset']) && $this->name !== $this->dbObject->model->getPkColumn()) {
                     // value not set and not a primary key
                     if ($this->dbObject->exists()) {
                         // on object update
@@ -589,7 +589,7 @@ class DbObjectField {
                 );
             }
             if ($this->dbObject->exists()) {
-                $conditions[$this->dbObject->model->primaryKey . '!='] = $this->dbObject->pkValue();
+                $conditions[$this->dbObject->model->getPkColumn() . '!='] = $this->dbObject->pkValue();
             }
             $valid = $this->dbObject->model->count($conditions) == 0;
         }
