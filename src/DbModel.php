@@ -1,13 +1,12 @@
 <?php
 
 namespace PeskyORM;
+use ORM\DbColumnConfig;
+use ORM\DbRelationConfig;
 use ORM\DbTableConfig;
 use PeskyORM\Exception\DbModelException;
 use PeskyORM\Exception\DbQueryException;
 use PeskyORM\Exception\DbUtilsException;
-use PeskyORM\Lib\Folder;
-use PeskyORM\Lib\File;
-use PeskyORM\Lib\ImageUtils;
 use PeskyORM\Lib\Set;
 use PeskyORM\Lib\StringUtils;
 
@@ -47,7 +46,7 @@ abstract class DbModel {
             )
         )
      * you can avoid info in order to use DbObject::$idFieldInfo or DbObject::$fkFieldInfo as field info - just write field name as array value
-     * @var array
+     * @var DbColumnConfig[]
      */
     public $fields = array();
     /**
@@ -70,21 +69,9 @@ abstract class DbModel {
      *          'action' => string
      *      )
      *
-     * @var array
+     * @var DbRelationConfig[]
      */
     public $relations = array();
-    public $validationErrors = array();
-
-    public $dontDeleteFiles = false; //< true: do not delete attached files in DbObject->delete()
-
-    const TYPE_STRING = 1;
-    const TYPE_TEXT = 2;
-    const TYPE_BOOL = 3;
-    const TYPE_INT = 4;
-    const TYPE_FLOAT = 5;
-
-    const ERROR_EMPTY = '@!data_error.field_is_empty@';
-    const ERROR_TYPE_MISSMATCH = '@!data_error.type_missmatch@';
 
     public function __construct() {
 //        $this->loadConfigFile();
@@ -412,7 +399,7 @@ abstract class DbModel {
     public function getDbFields() {
         $ret = array();
         foreach ($this->fields as $name => $info) {
-            if (!in_array($info['type'], DbObjectField::$fileTypes) && empty($info['virtual'])) {
+            if (!in_array($info['type'], DbColumnConfig::$fileTypes) && empty($info['virtual'])) {
                 $ret[] = $name;
             }
         }

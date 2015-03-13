@@ -7,8 +7,12 @@ class DbRelationConfig {
 
     const HAS_ONE = 'one';
     const HAS_MANY = 'many';
-    const BELONGS_TO = 'belongs';
+    const BELONGS_TO = 'belongs_to';
 
+    /** @var DbTableConfig */
+    protected $dbTableConfig;
+
+    protected $id;
     protected $type;
 
     protected $table;
@@ -20,12 +24,18 @@ class DbRelationConfig {
     /** @var array */
     protected $additionalJoinConditions = array();
 
-    public function __construct($table, $column, $type, $foreignTable, $foreignColumn) {
-        $this->type = $type;
-        $this->table = $table;
+    public function __construct(DbTableConfig $dbTableConfig, $column, $type, $foreignTable, $foreignColumn) {
+        $this->dbTableConfig = $dbTableConfig;
+        $this->table = $dbTableConfig->getName();
         $this->column = $column;
+        $this->type = $type;
         $this->foreignTable = $foreignTable;
         $this->foreignColumn = $foreignColumn;
+        $this->id = "{$this->table}.{$this->column} {$this->type} {$this->foreignTable}.{$this->foreignColumn}";
+    }
+
+    public function getId() {
+        return $this->id;
     }
 
     /**
@@ -124,6 +134,11 @@ class DbRelationConfig {
         return $this;
     }
 
-
+    /**
+     * @return DbTableConfig
+     */
+    public function getDbTableConfig() {
+        return $this->dbTableConfig;
+    }
 
 }

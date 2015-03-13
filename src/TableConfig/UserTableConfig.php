@@ -139,6 +139,14 @@ class UserTableConfig extends DbTableConfig {
                     ->setIsRequired(false)
                     ->setIsNullable(true)
             );
+
+        $this->addRelation(new DbRelationConfig(
+            $this->getName(),
+            'id',
+            DbRelationConfig::HAS_MANY,
+            'user_tokens',
+            'user_id'
+        ));
     }
 
 

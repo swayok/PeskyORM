@@ -3,6 +3,7 @@
 namespace ORM;
 
 use ORM\Exception\DbColumnConfigException;
+use PeskyORM\DbObject;
 
 class DbColumnConfig {
 
@@ -27,10 +28,10 @@ class DbColumnConfig {
 
     const DEFAULT_VALUE_NOT_SET = '___NOT_SET___';
 
-    const ON_NONE = 0;
-    const ON_ALL = 1;
-    const ON_CREATE = 2;
-    const ON_UPDATE = 3;
+    const ON_NONE = false;
+    const ON_ALL = true;
+    const ON_CREATE = 'create';
+    const ON_UPDATE = 'update';
 
     // params that can be set directly or calculated
     /** @var DbTableConfig */
@@ -154,7 +155,14 @@ class DbColumnConfig {
      */
     protected function setType($type) {
         $this->type = $type;
-        // todo: analyze type and setup computed fields
+        if (in_array($type, self::$fileTypes)) {
+            $this->setIsFile(true);
+            $this->setIsVirtual(true);
+            $this->setIsExcluded(true);
+            if (in_array($type, self::$imageFileTypes)) {
+                $this->setIsImage(true);
+            }
+        }
         return $this;
     }
 
@@ -340,22 +348,20 @@ class DbColumnConfig {
     }
 
     /**
-     * @param string $relationName
      * @param DbRelationConfig $relation
      * @return $this
      * @throws DbColumnConfigException
      */
-    public function addRelation($relationName, DbRelationConfig $relation) {
-        $relationInfo = $relation->getTable() . '.' . $relation->getColumn();
+    public function addRelation(DbRelationConfig $relation) {
         if ($relation->getColumn() !== $this->name && $relation->getForeignColumn() !== $this->name) {
-            throw new DbColumnConfigException($this, "Relation $relationName to $relationInfo is not connected to column {$this->name}");
+            throw new DbColumnConfigException($this, "Relation {$relation->getId()} is not connected to column {$this->name}");
         }
-        if (!empty($this->relations[$relationName])) {
-            throw new DbColumnConfigException($this, "Relation $relationName to $relationInfo already defined");
+        if (!empty($this->relations[$relation->getId()])) {
+            throw new DbColumnConfigException($this, "Relation {$relation->getId()} already defined");
         }
-        $this->relations[$relationName] = $relation;
+        $this->relations[$relation->getId()] = $relation;
         if ($relation->getType() === DbRelationConfig::BELONGS_TO) {
-            $this->isFk = true;
+            $this->setIsFk(true);
         }
         return $this;
     }
@@ -368,6 +374,13 @@ class DbColumnConfig {
     }
 
     /**
+     * @param boolean $isFile
+     */
+    protected function setIsFile($isFile) {
+        $this->isFile = $isFile;
+    }
+
+    /**
      * @return boolean
      */
     public function isImage() {
@@ -375,10 +388,32 @@ class DbColumnConfig {
     }
 
     /**
+     * @param boolean $isImage
+     */
+    protected function setIsImage($isImage) {
+        $this->isImage = $isImage;
+    }
+
+    /**
      * @return boolean
      */
     public function isFk() {
         return $this->isFk;
+    }
+
+    /**
+     * @param boolean $isFk
+     */
+    protected function setIsFk($isFk) {
+        $this->isFk = $isFk;
+    }
+
+    /**
+     * Is this column exists in DB?
+     * @return bool
+     */
+    public function isExistsInDb() {
+        return !$this->isVirtual();
     }
 
 }

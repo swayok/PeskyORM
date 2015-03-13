@@ -46,6 +46,25 @@ abstract class DbTableConfig {
         return $this;
     }
 
+    public function hasColumn($colName) {
+        return !empty($this->columns[$colName]);
+    }
+
+    protected function addRelation(DbRelationConfig $config) {
+        if ($config->getTable() !== $this->getName()) {
+            throw new DbTableConfigException($this, "Invalid source table of relation [{$config->getTable()}]. Source table should be [{$this->getName()}]");
+        }
+        if ($this->hasColumn($config->getColumn())) {
+            throw new DbTableConfigException($this, "Table has no column [{$config->getColumn()}] or column not defined yet");
+        }
+        if (!empty($this->relations[$config->getId()])) {
+            throw new DbTableConfigException($this, "Duplicate config received for relation [{$config->getId()}]");
+        }
+        $this->relations[$config->getId()] = $config;
+        $this->columns[$config->getColumn()]->addRelation($config);
+        return $this;
+    }
+
     /**
      * @return string
      */

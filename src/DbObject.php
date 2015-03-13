@@ -14,6 +14,12 @@ use PeskyORM\Lib\ImageUtils;
 class DbObject {
 
     /**
+     * @var bool
+     * true: do not delete attached files in DbObject->delete()
+     */
+    public $dontDeleteFiles = false;
+
+    /**
      * associative list of DbObjectField
      * @var DbObjectField[]
      */
