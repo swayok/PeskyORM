@@ -1,9 +1,11 @@
 <?php
 
 namespace PeskyORM;
+use ORM\DbColumnConfig;
 use PeskyORM\Exception\DbObjectException;
 use PeskyORM\Lib\File;
 use PeskyORM\Lib\Folder;
+use PeskyORM\Lib\ImageUtils;
 
 /**
  * Class DbObject
@@ -77,6 +79,11 @@ class DbObject {
      * @var string
      */
     public $originalDataKey = '_backup';
+
+    static public $extToConetntType = array(
+        'mp4' => 'video/mp4',
+        'mov' => 'video/quicktime',
+    );
 
     /**
      * @param DbModel $model
@@ -1265,7 +1272,7 @@ class DbObject {
         }
         foreach ($fields as $fieldName) {
             if ($this->_fields[$fieldName]->isFile && $this->_fields[$fieldName]->isUploadedFile()) {
-                $this->model->saveFile($fieldName, $this->_fields[$fieldName]->value, $this);
+                $this->saveFile($fieldName, $this->_fields[$fieldName]->value);
             }
         }
         return true;
@@ -1362,7 +1369,7 @@ class DbObject {
                 $this->model->commit();
             }
             if (empty($this->model->dontDeleteFiles) && $this->hasFiles) {
-                $this->deleteFiles();
+                $this->deleteFilesForAllFields();
             }
         }
         // note: related objects delete must be managed only by database relations (foreign keys), not here
@@ -1378,7 +1385,7 @@ class DbObject {
     /**
      * Delete all files attached to DbObject fields
      */
-    public function deleteFiles() {
+    public function deleteFilesForAllFields() {
         if (!$this->exists()) {
             return false;
         }
@@ -1537,6 +1544,10 @@ class DbObject {
         return $values;
     }
 
+    static public function isUploadedFile($fileInfo) {
+        return array_key_exists('tmp_name', $fileInfo) && empty($fileInfo['error']) && !empty($fileInfo['size']);
+    }
+
     /**
      * Collect values of all fields avoiding exceptions
      * Fields that were not set will be ignored
@@ -1646,4 +1657,204 @@ class DbObject {
         }
         return 'undefined.file';
     }
+
+    /**
+     * Build base url to files (url to folder with files)
+     * @param string $field
+     * @return string
+     */
+    public function buildBaseUrlToFiles($field) {
+        if (!empty($field) && $this->exists() && isset($this->model->fields[$field]) && isset($this->model->fields[$field]['base_url'])) {
+            return $this->getFilesAbsoluteUrl($field);
+        }
+        return 'undefined.file';
+    }
+
+    /**
+     * Get urls to images
+     * @param string $field
+     * @return array
+     */
+    public function getImagesUrl($field) {
+        $images = array();
+        if (!empty($field) && $this->exists() && isset($this->model->fields[$field])) {
+            $images = ImageUtils::getVersionsUrls(
+                $this->buildPathToFiles($field),
+                $this->buildBaseUrlToFiles($field),
+                $this->getBaseFileName($field),
+                isset($this->model->fields[$field]['resize_settings']) ? $this->model->fields[$field]['resize_settings'] : array()
+            );
+        }
+        return $images;
+    }
+
+    /**
+     * Get fs paths to images
+     * @param string $field
+     * @return array
+     */
+    public function getImagesPaths($field) {
+        $images = array();
+        if (!empty($field) && $this->exists() && isset($this->model->fields[$field])) {
+            $images = ImageUtils::getVersionsPaths(
+                $this->buildPathToFiles($field),
+                $this->getBaseFileName($field),
+                isset($this->model->fields[$field]['resize_settings']) ? $this->model->fields[$field]['resize_settings'] : array()
+            );
+        }
+        return $images;
+    }
+
+    /**
+     * Get fs path to file
+     * @param string $field
+     * @return string
+     */
+    public function getFilePath($field) {
+        return $this->buildPathToFiles($field) . $this->getFullFileName($field);
+    }
+
+    /**
+     * Get url to file
+     * @param string $field
+     * @return string
+     */
+    public function getFileUrl($field) {
+        $ret = $this->buildBaseUrlToFiles($field) . $this->getFullFileName($field);
+        return $ret;
+    }
+
+    protected function canSaveFile($field, $fileInfo) {
+        return !empty($fileInfo)
+            && $this->exists(true)
+            && isset($this->model->fields[$field])
+            && in_array($this->model->fields[$field]['type'], DbColumnConfig::$fileTypes)
+            && self::isUploadedFile($fileInfo);
+    }
+
+    /**
+     * Save file for field using field settings ($this->fields[$field])
+     * If field type is image - will create required image resizes
+     * @param string $field
+     * @param array $fileInfo - uploaded file info
+     * @return bool|string - string: path to uploaded file (not image)
+     */
+    public function saveFile($field, $fileInfo) {
+        if ($this->canSaveFile($field, $fileInfo)) {
+            if (!defined('UNLIMITED_EXECUTION') || !UNLIMITED_EXECUTION) {
+                set_time_limit(90);
+                ini_set('memory_limit', '128M');
+            }
+            $baseFileName = $this->getBaseFileName($field);
+            if (in_array($this->model->fields[$field]['type'], DbColumnConfig::$imageFileTypes)) {
+                $pathToFiles = $this->buildPathToFiles($field);
+                // save image and crate resizes for it
+                $resizeSettings = empty($this->model->fields[$field]['resize_settings'])
+                    ? array()
+                    : $this->model->fields[$field]['resize_settings'];
+                return ImageUtils::resize($fileInfo, $pathToFiles, $baseFileName, $resizeSettings);
+            } else {
+                // save file
+               return $this->saveFileWithCustomName($field, $fileInfo);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Save file for field using field settings ($this->fields[$field]) and provided file suffix
+     * Note: will not create image resizes
+     * @param string $field
+     * @param array $fileInfo - uploaded file info
+     * @param string $fileSuffix - custom file name
+     * @return bool|string - string: path to uploaded file
+     */
+    public function saveFileWithCustomName($field, $fileInfo, $fileSuffix = '') {
+        if ($this->canSaveFile($field, $fileInfo)) {
+            $pathToFiles = $this->buildPathToFiles($field);
+            if (!is_dir($pathToFiles)) {
+                Folder::add($pathToFiles, 0777);
+            }
+            $filePath = $pathToFiles . $this->getBaseFileName($field) . $fileSuffix;
+            $ext = $this->detectUploadedFileExtension($fileInfo, $this->model->fields[$field]);
+            if ($ext === false) {
+                return false;
+            } else if (!empty($ext)) {
+                $filePath .= '.' . $ext;
+            }
+            // if file $fileInfo['tmp_name'] differs from target file path
+            if ($fileInfo['tmp_name'] != $filePath) {
+                // move tmp file to target file path
+                if (!File::load($fileInfo['tmp_name'])->move($filePath, 0666)) {
+                    return false;
+                }
+            }
+            return $filePath;
+        }
+        return false;
+    }
+
+    /**
+     * Dettect Uploaded file extension by file name or content type
+     * @param array $fileInfo - uploaded file info
+     * @param array $fieldInfo - file field info (may contain 'extension' key to limit possible extensions)
+     * @param string|bool $saveExtToFile - string: file path to save extension to.
+     *      Extension saved to file only when empty($fieldInfo['extension']) and extesion detected
+     * @return string|bool -
+     *      string: file extension without leading point (ex: 'mp4', 'mov', '')
+     *      false: invalid file info or not supported extension
+     */
+    protected function detectUploadedFileExtension($fileInfo, $fieldInfo, $saveExtToFile = false) {
+        if (empty($fileInfo['type']) && empty($fileInfo['name'])) {
+            return false;
+        }
+        // test content type
+        $ext = false;
+        if (!empty($fileInfo['type'])) {
+            $ext = array_search($fileInfo['type'], self::$extToConetntType);
+        }
+        if (!empty($fileInfo['name']) && (empty($ext) || is_numeric($ext))) {
+            $ext = preg_match('%\.([a-zA-Z0-9]+)\s*$%is', $fileInfo['name'], $matches) ? $matches[1] : '';
+        }
+        if (!empty($fieldInfo['extension'])) {
+            if (empty($ext)) {
+                $ext = is_array($fieldInfo['extension'])
+                    ? array_shift($fieldInfo['extension'])
+                    : $fieldInfo['extension'];
+            } else if (
+                (is_array($fieldInfo['extension']) && !in_array($ext, $fieldInfo['extension']))
+                || (is_string($fieldInfo['extension']) && $ext != $fieldInfo['extension'])
+            ) {
+                return false;
+            }
+        } else if ($saveExtToFile && !empty($ext)) {
+            File::save($saveExtToFile, $ext, 0666);
+        }
+        return $ext;
+    }
+
+    /**
+     * Delete files attached to DbObject field
+     * @param string $field
+     * @param string $fileSuffix
+     */
+    public function deleteFilesForField($field, $fileSuffix = '') {
+        if (
+            isset($this->model->fields[$field])
+            && in_array($this->model->fields[$field]['type'], DbColumnConfig::$fileTypes)
+            && $this->exists(true)
+        ) {
+            $pathToFiles = $this->buildPathToFiles($field);
+            if (is_dir($pathToFiles)) {
+                $files = scandir($pathToFiles);
+                $baseFileName = $this->getBaseFileName($field);
+                foreach ($files as $fileName) {
+                    if (preg_match("%^{$baseFileName}{$fileSuffix}%is", $fileName)) {
+                        @File::remove(rtrim($pathToFiles, '/\\') . DIRECTORY_SEPARATOR . $fileName);
+                    }
+                }
+            }
+        }
+    }
+
 }

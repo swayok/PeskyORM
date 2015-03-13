@@ -467,9 +467,9 @@ class DbObjectField {
     protected function formatFile($value) {
         if (!is_array($value) || !isset($value['tmp_name'])) {
             if ($this->isImage) {
-                $value = $this->dbObject->model->getImagesUrl($this->name, $this->dbObject);
+                $value = $this->dbObject->getImagesUrl($this->name);
             } else {
-                $value = $this->dbObject->model->getFileUrl($this->name, $this->dbObject);
+                $value = $this->dbObject->getFileUrl($this->name);
             }
             $this->isDbValue = true;
         }
@@ -486,9 +486,9 @@ class DbObjectField {
         }
         if (!isset($this->values['file_path'])) {
             if ($this->isImage) {
-                $this->values['file_path'] = $this->dbObject->model->getImagesPaths($this->name, $this->dbObject);
+                $this->values['file_path'] = $this->dbObject->getImagesPaths($this->name);
             } else {
-                $this->values['file_path'] = $this->dbObject->model->getFilePath($this->name, $this->dbObject);
+                $this->values['file_path'] = $this->dbObject->getFilePath($this->name);
             }
         }
         return $this->values['file_path'];
@@ -729,7 +729,7 @@ class DbObjectField {
     }
 
     public function isUploadedFile() {
-        return (!$this->values['isDbValue'] && is_array($this->value) && $this->dbObject->model->isUploadedFile($this->value));
+        return (!$this->values['isDbValue'] && is_array($this->value) && self::isUploadedFile($this->value));
     }
 
     /**
