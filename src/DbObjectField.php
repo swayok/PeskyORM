@@ -2,6 +2,7 @@
 
 namespace PeskyORM;
 
+use ORM\DbColumnConfig;
 use PeskyORM\Exception\DbFieldException;
 use PeskyORM\Lib\ImageUtils;
 use PeskyORM\Lib\Utils;
@@ -107,11 +108,11 @@ class DbObjectField {
      *      'default': mixed (optional) - default field value
      *      'validators': array (optional, default: array()) - list of validators
      */
-    public function __construct(DbObject $dbObject, $name, $info) {
+    public function __construct(DbObject $dbObject, $name, DbColumnConfig $info) {
         $this->_info = $info;
         $this->dbObject = $dbObject;
         $this->name = $name;
-        $this->type = strtolower($info['type']);
+        $this->type = strtolower($info->getType());
         $this->isFile = in_array($this->type, self::$fileTypes);
         $this->isImage = in_array($this->type, self::$imageFileTypes);
         if (!empty($info['server'])) {
@@ -122,7 +123,7 @@ class DbObjectField {
             $this->isVirtual
             && !$this->isFile
             && (
-                is_string($info['virtual']) && !is_numeric($info['virtual'])
+                is_string($info['virtual']) && !is_numeric($info->isVirtual())
                 || $info['virtual'] === true
             )
         ) {
@@ -248,7 +249,7 @@ class DbObjectField {
                         } else {
                             // value is set in db but possibly was not fetched
                             // to avoid overwriting of correct value object must notify about this situation
-                            $error = "Field [{$this->dbObject->model->alias}->{$this->name}]: value is not set. Possibly value was not fetched from DB";
+                            $error = "Field [{$this->dbObject->model->getAlias()}->{$this->name}]: value is not set. Possibly value was not fetched from DB";
                             throw new DbFieldException($this, $error);
                         }
                     } else {

@@ -2,8 +2,8 @@
 
 namespace PeskyORM\Model;
 
-use PeskyORM\DbModel;
+use ORM\Model\AppModel;
 
-class UserModel extends DbModel {
+class UserModel extends AppModel {
 
 }

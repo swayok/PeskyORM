@@ -3,7 +3,6 @@
 namespace ORM;
 
 
-use ORM\Exception\DbColumnConfigException;
 use ORM\Exception\DbTableConfigException;
 
 abstract class DbTableConfig {
@@ -50,17 +49,20 @@ abstract class DbTableConfig {
         return !empty($this->columns[$colName]);
     }
 
-    protected function addRelation(DbRelationConfig $config) {
+    protected function addRelation(DbRelationConfig $config, $alias = null) {
         if ($config->getTable() !== $this->getName()) {
             throw new DbTableConfigException($this, "Invalid source table of relation [{$config->getTable()}]. Source table should be [{$this->getName()}]");
         }
         if ($this->hasColumn($config->getColumn())) {
             throw new DbTableConfigException($this, "Table has no column [{$config->getColumn()}] or column not defined yet");
         }
-        if (!empty($this->relations[$config->getId()])) {
-            throw new DbTableConfigException($this, "Duplicate config received for relation [{$config->getId()}]");
+        if (empty($alias)) {
+            $alias = $config->getId();
         }
-        $this->relations[$config->getId()] = $config;
+        if (!empty($this->relations[$alias])) {
+            throw new DbTableConfigException($this, "Duplicate config received for relation [{$alias} => {$config->getId()}]");
+        }
+        $this->relations[$alias] = $config;
         $this->columns[$config->getColumn()]->addRelation($config);
         return $this;
     }

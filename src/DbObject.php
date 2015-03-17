@@ -2,6 +2,7 @@
 
 namespace PeskyORM;
 use ORM\DbColumnConfig;
+use ORM\DbRelationConfig;
 use PeskyORM\Exception\DbObjectException;
 use PeskyORM\Lib\File;
 use PeskyORM\Lib\Folder;
@@ -119,18 +120,14 @@ class DbObject {
         $this->_fields[$this->model->getPkColumn()]->required = false;
         $this->_fields[$this->model->getPkColumn()]->null = true;
         // initiate related objects
+        /** @var DbRelationConfig $settings */
         foreach ($this->model->relations as $alias => $settings) {
-            $this->_aliasToLocalField[$alias] = $settings['local_field'];
+            $this->_aliasToLocalField[$alias] = $settings->getColumn();
             $this->_fields[$this->_aliasToLocalField[$alias]]->addRelation($alias);
             $this->_aliasToJoinConditions[$alias] = $this->buildRelationJoinConditions($alias, $settings);
-            $this->_aliasToRelationField[$alias] = $settings['foreign_field'];
-            $this->_aliasToClassName[$alias] = $this->model->getFullDbObjectClass($settings['model']);
-            if (!empty($settings['many'])) {
-                $this->_aliasToRelationType[$alias] = 'many';
-            } else {
-                $this->_aliasToRelationType[$alias] = $settings['local_field'] == $this->model->getPkColumn() ? 'one' : 'belong';
-            }
-
+            $this->_aliasToRelationField[$alias] = $settings->getForeignColumn();
+            $this->_aliasToClassName[$alias] = $this->model->getFullDbObjectClass($settings->getForeignTable());
+            $this->_aliasToRelationType[$alias] = $settings->getType();
         }
         $this->cleanRelatedObjects();
         // set values if possible
@@ -146,12 +143,12 @@ class DbObject {
     /**
      * Build conditions similar to JOIN ON conditions
      * @param string $relationAlias
-     * @param array $relationSettings - uses 'foreign_field', 'local_field' and 'conditions' keys
+     * @param DbRelationConfig $relationSettings
      * @return array
      */
-    protected function buildRelationJoinConditions($relationAlias, $relationSettings) {
-        $conditions = !empty($relationSettings['conditions']) && is_array($relationSettings['conditions']) ? $relationSettings['conditions'] : array();
-        $conditions[$relationAlias . '.' . $relationSettings['foreign_field']] = $this->model->alias . '.' . $relationSettings['local_field'];
+    protected function buildRelationJoinConditions($relationAlias, DbRelationConfig $relationSettings) {
+        $conditions = $this->model->getAdditionalConditionsForRelation($relationAlias);
+        $conditions[$relationAlias . '.' . $relationSettings->getForeignColumn()] = $this->model->getAlias() . '.' . $relationSettings->getColumn();
         return $conditions;
     }
 
@@ -171,9 +168,9 @@ class DbObject {
         };
         $newConditions = array();
         foreach ($conditions as $key => $value) {
-            $key = preg_replace_callback("%`?({$this->model->alias})`?\.`?([a-zA-Z0-9_]+)`?%is", $replacer, $key);
+            $key = preg_replace_callback("%`?({$this->model->getAlias()})`?\.`?([a-zA-Z0-9_]+)`?%is", $replacer, $key);
             $key = preg_replace_callback("%(?:^|\s)(`?)([a-zA-Z0-9_]+)`?%is", $replacer, $key);
-            $value = preg_replace_callback("%`?({$this->model->alias})`?\.`?([a-zA-Z0-9_]+)`?%is", $replacer, $value);
+            $value = preg_replace_callback("%`?({$this->model->getAlias()})`?\.`?([a-zA-Z0-9_]+)`?%is", $replacer, $value);
             $value = preg_replace_callback("%(?:^|\s)(`?)([a-zA-Z0-9_]+)`?%is", $replacer, $value);
             $newConditions[$key] = $value;
         }
@@ -216,10 +213,10 @@ class DbObject {
         $settings = $this->model->relations[$alias];
         $localField = $this->_aliasToLocalField[$alias];
         if (empty($this->_fields[$localField])) {
-            throw new DbObjectException($this, "Relation [$alias] points to unknown field [{$settings['local_field']}]");
+            throw new DbObjectException($this, "Relation [$alias] points to unknown field [{$settings->getColumn()}]");
         }
         // check if passed object is valid
-        if (!empty($settings['many'])) {
+        if (!empty($settings->getType() === DbRelationConfig::HAS_MANY)) {
             $this->initOneToManyRelation($alias, $object, $ignorePkNotSetError);
         } else {
             $this->initOneToOneRelation($alias, $object, $ignorePkNotSetError);
@@ -248,7 +245,7 @@ class DbObject {
             if ($localFieldIsPrimaryKey || empty($relationFieldValue)) {
                 if ($localFieldIsPrimaryKey || $this->_fields[$localField]->required) {
                     // local field is empty and is required or is primary key
-                    throw new DbObjectException($this, "Cannot link [{$this->model->alias}] with [{$alias}]: [{$this->model->alias}->{$localField}] and {$alias}->{$relationField} are empty");
+                    throw new DbObjectException($this, "Cannot link [{$this->model->getAlias()}] with [{$alias}]: [{$this->model->getAlias()}->{$localField}] and {$alias}->{$relationField} are empty");
                 }
             } else {
                 $this->$localField = $relationFieldValue;
@@ -256,7 +253,7 @@ class DbObject {
         }
         if (empty($object)) {
             // init empty object
-            $this->_relatedObjects[$alias] = $this->model->getDbObject($settings['model']);
+            $this->_relatedObjects[$alias] = $this->model->getDbObject($settings->getForeignTable());
             // and link it to current object
             if (!empty($this->$localField)) {
                 $this->_relatedObjects[$alias]->_fields[$relationField]->default = $this->$localField;
@@ -271,7 +268,7 @@ class DbObject {
                 $this->_relatedObjects[$alias] = $object;
             } else {
                 // data array or id
-                $this->_relatedObjects[$alias] = $this->model->getDbObject($settings['model'], $object);
+                $this->_relatedObjects[$alias] = $this->model->getDbObject($settings->getForeignTable(), $object);
             }
             // validate relation
             $valid = $this->validateRelationData($alias, $ignorePkNotSetError);
@@ -295,7 +292,7 @@ class DbObject {
         $localField = $this->_aliasToLocalField[$alias];
         $relationField = $this->_aliasToRelationField[$alias];
         if (empty($this->$localField)) {
-            throw new DbObjectException($this, "Cannot link [{$this->model->alias}] with [{$alias}]: [{$this->model->alias}->{$localField}] is empty");
+            throw new DbObjectException($this, "Cannot link [{$this->model->getAlias()}] with [{$alias}]: [{$this->model->getAlias()}->{$localField}] is empty");
         }
         if (!empty($object) && is_array($object) && isset($object[0])) {
             $this->_relatedObjects[$alias] = array();
@@ -310,7 +307,7 @@ class DbObject {
                     }
                 } else {
                     // array of item data arrays or item ids
-                    $this->_relatedObjects[$alias][] = $this->model->getDbObject($settings['model'], $item);
+                    $this->_relatedObjects[$alias][] = $this->model->getDbObject($settings->getForeignTable(), $item);
                 }
             }
             // validate relation
@@ -803,7 +800,7 @@ class DbObject {
             // collect relations
             if (is_string($relations)) {
                 if (!in_array($relations, array_keys($this->_aliasToClassName))) {
-                    throw new DbObjectException($this, "Unknown relation [{$relations}] in [{$this->model->alias}]");
+                    throw new DbObjectException($this, "Unknown relation [{$relations}] in [{$this->model->getAlias()}]");
                 }
                 $relations = array($relations);
             } else if (is_array($relations)) {
@@ -815,7 +812,7 @@ class DbObject {
                 }
                 if (!empty($diff)) {
                     $unknown = '[' . implode('], [', $diff) . ']';
-                    throw new DbObjectException($this, "Unknown relations $unknown in [{$this->model->alias}]");
+                    throw new DbObjectException($this, "Unknown relations $unknown in [{$this->model->getAlias()}]");
                 }
             } else if ($action == 'begin') {
                 $relations = array_keys($this->_aliasToClassName);
@@ -843,7 +840,7 @@ class DbObject {
                 if (!isset($localField)) {
                     throw new DbObjectException($this, "Unknown relation with alias [$alias]");
                 } else if (empty($this->$localField)) {
-                    throw new DbObjectException($this, "Cannot link [{$this->model->alias}] with [{$alias}]: [{$this->model->alias}->{$localField}] is empty");
+                    throw new DbObjectException($this, "Cannot link [{$this->model->getAlias()}] with [{$alias}]: [{$this->model->getAlias()}->{$localField}] is empty");
                 }
                 $relationField = $this->_aliasToRelationField[$alias];
                 if (is_array($this->_relatedObjects[$alias])) {
@@ -863,7 +860,7 @@ class DbObject {
                             !empty($this->_relatedObjects[$alias]->$relationField)
                             && $this->_relatedObjects[$alias]->$relationField !== $this->$localField
                         ) {
-                            throw new DbObjectException($this, "Trying to attach [$alias] that already attached to another [{$this->model->alias}]");
+                            throw new DbObjectException($this, "Trying to attach [$alias] that already attached to another [{$this->model->getAlias()}]");
                         }
                         $this->_relatedObjects[$alias]->$relationField($this->$localField);
                     }
@@ -894,7 +891,7 @@ class DbObject {
     protected function getRelationsToSave($relations) {
         if (is_string($relations)) {
             if (!in_array($relations, array_keys($this->_aliasToClassName))) {
-                throw new DbObjectException($this, "Unknown relation [{$relations}] in [{$this->model->alias}]");
+                throw new DbObjectException($this, "Unknown relation [{$relations}] in [{$this->model->getAlias()}]");
             }
             $relations = array($relations);
         } else if (is_array($relations)) {
@@ -906,7 +903,7 @@ class DbObject {
             }
             if (!empty($diff)) {
                 $unknown = '[' . implode('], [', $diff) . ']';
-                throw new DbObjectException($this, "Unknown relations $unknown in [{$this->model->alias}]");
+                throw new DbObjectException($this, "Unknown relations $unknown in [{$this->model->getAlias()}]");
             }
         }
         $relatedObjects = array();
@@ -1057,7 +1054,7 @@ class DbObject {
         if (empty($this->$localField)) {
             // local field empty - bad situation but possible when creating new record together with all related
             if (!$ignorePkNotSetError || ($localField != $this->model->getPkColumn() && $this->_fields[$localField]->required)) {
-                throw new DbObjectException($this, "Cannot validate relation between [{$this->model->alias}] and [{$relationAlias}]: [{$this->model->alias}->{$localField}] is empty");
+                throw new DbObjectException($this, "Cannot validate relation between [{$this->model->getAlias()}] and [{$relationAlias}]: [{$this->model->getAlias()}->{$localField}] is empty");
             }
         } else {
             $relationType = $this->_aliasToRelationType[$relationAlias];
@@ -1092,7 +1089,7 @@ class DbObject {
         $localField = $this->_aliasToLocalField[$relationAlias];
         if (empty($this->$localField) && !$this->_fields[$localField]->null) {
             // local field empty - bad situation
-            throw new DbObjectException($this, "Cannot find related object [{$relationAlias}] [{$this->model->alias}->{$localField}] is empty");
+            throw new DbObjectException($this, "Cannot find related object [{$relationAlias}] [{$this->model->getAlias()}->{$localField}] is empty");
         } else if (empty($this->$localField)) {
             return null;
         } else {
@@ -1102,17 +1099,17 @@ class DbObject {
                 /** @var DbObject $relatedObject */
                 $relatedObject = $this->initRelatedObject($relationAlias);
                 // change model alias for some time
-                $modelAliasBak = $relatedObject->model->alias;
-                $relatedObject->model->alias = $relationAlias;
+                $modelAliasBak = $relatedObject->model->getAlias();
+                $relatedObject->model->setAlias($relationAlias);
                 $relatedObject->find($conditions)->linkTo($this);
-                $relatedObject->model->alias = $modelAliasBak; //< restore model alias to default value
+                $relatedObject->model->setAlias($modelAliasBak); //< restore model alias to default value
             } else {
                 $model = $this->model->getRelatedModel($relationAlias);
                 // change model alias for some time
-                $modelAliasBak = $model->alias;
-                $model->alias = $relationAlias;
+                $modelAliasBak = $model->getAlias();
+                $model->setAlias($relationAlias);
                 $this->_relatedObjects[$relationAlias] = $model->select('*', $conditions, true);
-                $model->alias = $modelAliasBak; //< restore model alias to default value
+                $model->setAlias($modelAliasBak); //< restore model alias to default value
             }
             return $this->_relatedObjects[$relationAlias];
         }
@@ -1124,8 +1121,8 @@ class DbObject {
      * @return $this
      */
     public function linkTo(DbObject $dbObject) {
-        $alias = $dbObject->model->alias;
-        if (!empty($this->model->relations[$alias]) && empty($this->model->relations[$alias]['many'])) {
+        $alias = $dbObject->model->getAlias();
+        if (!empty($this->model->relations[$alias]) && $this->model->relations[$alias] !== DbRelationConfig::HAS_MANY) {
             $this->$alias = $dbObject;
         }
         return $this;

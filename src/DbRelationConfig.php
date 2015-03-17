@@ -3,6 +3,8 @@
 namespace ORM;
 
 
+use PeskyORM\Lib\StringUtils;
+
 class DbRelationConfig {
 
     const HAS_ONE = 'one';
