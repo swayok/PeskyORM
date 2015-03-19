@@ -2,11 +2,13 @@
 
 namespace PeskyORM;
 use ORM\DbColumnConfig;
+use ORM\DbObjectField\FileField;
 use ORM\DbRelationConfig;
 use PeskyORM\Exception\DbObjectException;
 use PeskyORM\Lib\File;
 use PeskyORM\Lib\Folder;
 use PeskyORM\Lib\ImageUtils;
+use PeskyORM\Lib\Utils;
 
 /**
  * Class DbObject
@@ -158,7 +160,7 @@ class DbObject {
         $dbObject = $this;
         $replacer = function ($matches) use ($dbObject) {
             if (isset($dbObject->_fields[$matches[2]])) {
-                return $dbObject->_fields[$matches[2]]->value;
+                return $dbObject->_fields[$matches[2]]->getValue();
             } else {
                 return $matches[0];
             }
@@ -373,8 +375,8 @@ class DbObject {
      */
     protected function updateWithDbData($data) {
         foreach ($data as $key => $value) {
-            $this->_fields[$key]->value = $value;
-            $this->_fields[$key]->isDbValue = true;
+            $this->_fields[$key]->setValue($value);
+            $this->_fields[$key]->setValueReceivedFromDb(true);
         }
         return $this;
     }
@@ -433,15 +435,15 @@ class DbObject {
             if (isset($data[$this->model->getPkColumn()])) {
                 $this->{$this->model->getPkColumn()} = $data[$this->model->getPkColumn()];
                 if ($isDbValue) {
-                    $this->_fields[$this->model->getPkColumn()]->isDbValue = true;
+                    $this->_fields[$this->model->getPkColumn()]->setValueReceivedFromDb(true);
                 } //< $isDbValue == false handled by value setter
                 unset($data[$this->model->getPkColumn()]);
             }
             foreach ($data as $fieldNameOrAlias => $value) {
                 if (array_key_exists($fieldNameOrAlias, $this->model->fields)) {
-                    $this->_fields[$fieldNameOrAlias]->value = $value;
+                    $this->_fields[$fieldNameOrAlias]->setValue($value);
                     if ($isDbValue) {
-                        $this->_fields[$fieldNameOrAlias]->isDbValue = true;
+                        $this->_fields[$fieldNameOrAlias]->setValueReceivedFromDb(true);
                     } //< $isDbValue == false handled by value setter
                 } else if (isset($this->_aliasToLocalField[$fieldNameOrAlias]) && is_array($value)) {
                     if (!empty($this->_relatedObjects[$fieldNameOrAlias])) {
@@ -472,7 +474,7 @@ class DbObject {
         $this->originalData = null;
         $this->storeFieldUpdates = false;
         foreach ($this->model->fields as $name => $null) {
-            $this->_fields[$name]->reset();
+            $this->_fields[$name]->resetValue();
         }
         $this->dataBackup = null;
         $this->updatedFields = array();
@@ -495,7 +497,7 @@ class DbObject {
         $errors = array();
         foreach ($fields as $name) {
             if (!$this->_fields[$name]->validate(true, $forSave)) {
-                $errors[$name] = $this->_fields[$name]->validationError;
+                $errors[$name] = $this->_fields[$name]->getValidationError();
             }
         }
         return $errors;
@@ -536,7 +538,7 @@ class DbObject {
      */
     public function __set($fieldNameOrAlias, $value) {
         if (array_key_exists($fieldNameOrAlias, $this->model->fields)) {
-            $this->_fields[$fieldNameOrAlias]->value = $value;
+            $this->_fields[$fieldNameOrAlias]->setValue($value);
         } else if (isset($this->_aliasToLocalField[$fieldNameOrAlias])) {
             $this->initRelatedObject($fieldNameOrAlias, $value);
         } else if ($this->hasRelationField($fieldNameOrAlias)) {
@@ -555,7 +557,7 @@ class DbObject {
      */
     public function __get($fieldNameOrAlias) {
         if (array_key_exists($fieldNameOrAlias, $this->model->fields)) {
-            return $this->_fields[$fieldNameOrAlias]->value;
+            return $this->_fields[$fieldNameOrAlias]->getValue();
         } else if (isset($this->_aliasToLocalField[$fieldNameOrAlias])) {
             // related object
             if ($this->_relatedObjects[$fieldNameOrAlias] === false) {
@@ -588,8 +590,8 @@ class DbObject {
     protected function collectValidationErrors() {
         $errors = array();
         foreach ($this->model->fields as $fieldNameOrAlias => $null) {
-            if (!empty($this->_fields[$fieldNameOrAlias]->validationError)) {
-                $errors[$fieldNameOrAlias] = $this->_fields[$fieldNameOrAlias]->validationError;
+            if (!$this->_fields[$fieldNameOrAlias]->isValid()) {
+                $errors[$fieldNameOrAlias] = $this->_fields[$fieldNameOrAlias]->getValidationError();
             }
         }
         // add custom errors
@@ -627,7 +629,7 @@ class DbObject {
      */
     public function __unset($fieldNameOrAlias) {
         if (array_key_exists($fieldNameOrAlias, $this->_fields)) {
-            unset($this->_fields[$fieldNameOrAlias]->value);
+            $this->_fields[$fieldNameOrAlias]->resetValue();
             // unset linked relations
             foreach ($this->_fields[$fieldNameOrAlias]->getRelations() as $relationAlias) {
                 $this->cleanRelatedObject($relationAlias);
@@ -645,7 +647,7 @@ class DbObject {
     public function __isset($fieldNameOrAlias) {
         if (array_key_exists($fieldNameOrAlias, $this->_fields)) {
             // field
-            return isset($this->_fields[$fieldNameOrAlias]->value);
+            return isset($this->_fields[$fieldNameOrAlias]->getValue());
         } else if (isset($this->_aliasToLocalField[$fieldNameOrAlias])) {
             // related object
             if (is_object($this->_relatedObjects[$fieldNameOrAlias])) {
@@ -766,9 +768,9 @@ class DbObject {
         foreach ($this->updatedFields as $fieldName) {
             if (isset($this->_fields[$fieldName])) {
                 if (array_key_exists($fieldName, $this->dataBackup)) {
-                    $this->_fields[$fieldName]->value = $this->dataBackup[$fieldName];
+                    $this->_fields[$fieldName]->setValue($this->dataBackup[$fieldName]);
                 } else {
-                    unset($this->_fields[$fieldName]->value);
+                    $this->_fields[$fieldName]->resetValue();
                 }
             }
         }
@@ -947,7 +949,7 @@ class DbObject {
      * @return mixed|null
      */
     public function pkValue() {
-        return ($this->exists()) ? $this->_fields[$this->model->getPkColumn()]->value : null;
+        return ($this->exists()) ? $this->_fields[$this->model->getPkColumn()]->getValue() : null;
     }
 
     /**
@@ -1156,8 +1158,8 @@ class DbObject {
      */
     protected function markAllSetFieldsAsDbFields() {
         foreach ($this->_fields as $object) {
-            if (isset($object->value)) {
-                $object->isDbValue = true;
+            if ($object->hasValue()) {
+                $object->setValueReceivedFromDb(true);
             }
         }
     }
@@ -1271,8 +1273,10 @@ class DbObject {
             $fields = array_intersect($this->fileFields, $fields);
         }
         foreach ($fields as $fieldName) {
-            if ($this->_fields[$fieldName]->isUploadedFile()) {
-                $this->saveFile($fieldName, $this->_fields[$fieldName]->value);
+            /** @var FileField $field */
+            $field = $this->_fields[$fieldName];
+            if ($field->isUploadedFile()) {
+                $this->saveFile($fieldName, $field->getValue());
             }
         }
         return true;
@@ -1377,7 +1381,7 @@ class DbObject {
         if ($resetFields) {
             $this->reset();
         } else {
-            $this->_fields[$this->model->getPkColumn()]->reset();
+            $this->_fields[$this->model->getPkColumn()]->resetValue();
         }
         return $this;
     }
@@ -1409,7 +1413,7 @@ class DbObject {
      * @return bool
      */
     public function exists($fromDb = false) {
-        $pkSet = !empty($this->_fields[$this->model->getPkColumn()]->value);
+        $pkSet = $this->_fields[$this->model->getPkColumn()]->hasNotEmptyValue();
         if ($fromDb) {
             return $pkSet && $this->model->exists($this->getFindByPkConditions());
         } else {
@@ -1445,8 +1449,8 @@ class DbObject {
         foreach ($fields as $name) {
             if (!isset($this->_fields[$name])) {
                 throw new DbObjectException($this, "Field [$name] not exists in table [{$this->model->getTableName()}]");
-            } else if (!$this->_fields[$name]->skip($onlyUpdated)) {
-                $values[$name] = $this->_fields[$name]->value;
+            } else if (!$this->_fields[$name]->canBeSkipped($onlyUpdated)) {
+                $values[$name] = $this->_fields[$name]->getValue();
             }
         }
         return $values;
@@ -1470,11 +1474,11 @@ class DbObject {
             $fields[] = $this->model->getPkColumn();
         }
         foreach ($fields as $name) {
-            if (isset($this->_fields[$name]->value)) {
-                $values[$name] = $this->_fields[$name]->value;
+            if ($this->_fields[$name]->hasValue()) {
+                $values[$name] = $this->_fields[$name]->getValue();
             } else if ($this->exists() && $this->_fields[$name]->isFile()) {
-                $this->_fields[$name]->value = $this->{$this->model->getPkColumn()}; //< this will trigger file path generation
-                $values[$name] = $this->_fields[$name]->value;
+                $this->_fields[$name]->setValue($this->{$this->model->getPkColumn()}); //< this will trigger file path generation
+                $values[$name] = $this->_fields[$name]->getValue();
                 /*$server = !empty($this->model->fields[$name]['server']) ? $this->model->fields[$name]['server'] : null;
                 if ($this->_fields[$name]->isImage && $server == \Server::alias()) {
                     $values[$name . '_path'] = $this->{$name . '_path'};
@@ -1550,8 +1554,8 @@ class DbObject {
     public function getFieldsValues() {
         $values = array();
         foreach ($this->_fields as $name => $fieldObject) {
-            if (isset($fieldObject->value)) {
-                $values[$name] = $fieldObject->value;
+            if ($fieldObject->hasValue()) {
+                $values[$name] = $fieldObject->getValue();
             }
         }
         return $values;
@@ -1723,7 +1727,7 @@ class DbObject {
             && $this->exists(true)
             && isset($this->model->fields[$field])
             && in_array($this->model->fields[$field]['type'], DbColumnConfig::$fileTypes)
-            && self::isUploadedFile($fileInfo);
+            && Utils::isUploadedFile($fileInfo);
     }
 
     /**

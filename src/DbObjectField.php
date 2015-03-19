@@ -4,22 +4,11 @@ namespace PeskyORM;
 
 use ORM\DbColumnConfig;
 use PeskyORM\Exception\DbFieldException;
-use PeskyORM\Exception\DbObjectException;
 use PeskyORM\Lib\ImageUtils;
 use PeskyORM\Lib\Utils;
 
 /**
  * Class DbObjectField
- * @property mixed $value - value after type conversion
- * @property mixed $isDbValue - true: field value differs from field value in DB | false: field value is DB field value
- * @property-read mixed $rawValue - value in format it was assigned (without type conversion)
- * @property-read array $options - list of allowed values
- * @property-read null|string $validationError - validation error message
- * @property-read null|string $_date - date part of datetime field
- * @property-read null|string $_time - time part of datetime field
- * @property-read null|int $_ts - timestamp (only for date/time fields)
- * @property-read null|string $_file_path - full FS path to file
- * @property-read null|bool $_file_exists - test if file exists (only if file placed on current server, otherwise true will be returned)
  */
 abstract class DbObjectField {
     /**
@@ -45,7 +34,7 @@ abstract class DbObjectField {
         //'rawDbValue' => mixed,    //< raw value from DB - assigned on $this->isDbValue = true
         //'error' => null|string,   //< validation error
         //'file_path' => null|string|array,   //< fs path to files
-        'isset' => false,           //< used to find out if value was ever set. When true: __isset() will return true
+        'isset' => false,           //< used to find out if value was ever set (to any value)
         'isDbValue' => false,       //< indicates that field value must be updated in db
     );
     /**
@@ -57,12 +46,6 @@ abstract class DbObjectField {
      * @var array
      */
     protected $validators = array();
-
-    const NULL_VALUE = 'NULL';
-
-    const FORMAT_TIMESTAMP = 'Y-m-d H:i:s';
-    const FORMAT_DATE = 'Y-m-d';
-    const FORMAT_TIME = 'H:i:s';
 
     const ERROR_REQUIRED = '@!db.field_error.required@';
     const ERROR_NOT_NULL = '@!db.field_error.not_null@';
@@ -250,107 +233,125 @@ abstract class DbObjectField {
     /**
      * Reset field value to default value or unset
      */
-    public function reset() {
-        unset($this->value);
+    public function resetValue() {
+        $this->values = array(
+            'isset' => false,
+            'isDbValue' => false
+        );
     }
 
     /**
-     * Set field value
-     * @param string $name = 'value'
      * @param mixed $value
      * @throws DbFieldException
-     * @throws DbObjectException
      */
-    public function __set($name, $value) {
-        switch (strtolower($name)) {
-            case 'value':
-                if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
-                    throw new DbFieldException(
-                        $this,
-                        "Virtual field value [{$this->getName()}] cannot be set directly. " .
-                            "Value is imported from field [{$this->dbColumnConfig->importVirtualColumnValueFrom()}]."
-                    );
-                }
-                $this->values['isset'] = true;
-                $this->values['rawValue'] = $value;
-                $this->values['value'] = $this->convert($this->values['rawValue']);
-                if ($this->isPk() && !isset($this->values['value'])) {
-                    // null pk value may cause non null violation in db - we don't need it to happen
-                    unset($this->value);
-                } else {
-                    $this->validate();
-                    if (!array_key_exists('dbValue', $this->values) || $this->values['dbValue'] !== $this->values['value']) {
-                        $this->values['isDbValue'] = false; //< value was updated
-                        $this->dbObject->fieldUpdated($this->getName());
-                    }
-                }
-                break;
-            case 'isdbvalue':
-                if (!empty($this->values['isset'])) {
-                    $this->values['isDbValue'] = !empty($value);
-                    if (isset($this->values['value'])) {
-                        $this->values['dbValue'] = $this->values['value'];
-                    }
-                }
-                break;
+    public function setValue($value) {
+        if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
+            throw new DbFieldException(
+                $this,
+                "Virtual field value [{$this->getName()}] cannot be set directly. " .
+                    "Value is imported from field [{$this->dbColumnConfig->importVirtualColumnValueFrom()}]."
+            );
+        }
+        $this->values['isset'] = true;
+        $this->values['rawValue'] = $value;
+        $this->values['value'] = $this->convert($this->values['rawValue']);
+        if ($this->isPk() && !isset($this->values['value'])) {
+            // null pk value may cause non null violation in db - we don't need it to happen
+            $this->resetValue();
+        } else {
+            $this->validate();
+            if (!array_key_exists('dbValue', $this->values) || $this->values['dbValue'] !== $this->values['value']) {
+                $this->values['isDbValue'] = false; //< value was updated
+                $this->dbObject->fieldUpdated($this->getName());
+            }
         }
     }
 
     /**
-     * Get field value
-     * @param string $name = 'value' | 'rawValue'
-     * @return mixed
-     * @throws DbFieldException if value is not set or invalid
+     * @return bool
      */
-    public function __get($name) {
-        switch (strtolower($name)) {
-            case 'value':
-                if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
-                    return $this->dbObject->{$this->dbColumnConfig->importVirtualColumnValueFrom()};
-                }
-                if (empty($this->values['isset']) && $this->getName() !== $this->dbObject->model->getPkColumn()) {
-                    // value not set and not a primary key
-                    if ($this->dbObject->exists()) {
-                        // on object update
-                        if (in_array($this->getType(), DbColumnConfig::$fileTypes)) {
-                            // import pk form object to create image urls and fill value
-                            $this->importPkValue();
-                        } else {
-                            // value is set in db but possibly was not fetched
-                            // to avoid overwriting of correct value object must notify about this situation
-                            $error = "Field [{$this->dbObject->model->getAlias()}->{$this->getName()}]: value is not set. Possibly value was not fetched from DB";
-                            throw new DbFieldException($this, $error);
-                        }
-                    } else {
-                        // on object create just set default value even it is not valid.
-                        // __set('value') will process exceptional situations
-                        $this->value = $this->getDefaultValueOr(null);
-                    }
-                }
-                return isset($this->values['value']) ? $this->values['value'] : null;
-            case 'rawvalue':
-                $this->value; //< do processing of [case 'value'] above
-                return $this->values['rawValue'];
-            case 'isdbvalue':
-                return !empty($this->values['isDbValue']);
-            case '_file_path':
-                return ($this->isFile()) ? $this->getFilePath() : null;
-            case '_file_exists':
-                if ($this->isFile()) {
-                    $path = $this->getFilePath();
-                    return file_exists($this->isImage() ? $path['original'] : $path);
-                }
-                return false;
-            case '_date':
-                return date('Y-m-d', $this->_ts);
-            case '_time':
-                return date('H:i:s', $this->_ts);
-            case '_ts':
-                return isset($this->values['value']) ? strtotime($this->values['value']) : 0;
-            case 'validationerror':
-                return (isset($this->values['error'])) ? $this->values['error'] : null;
+    public function hasValue() {
+        if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
+            return isset($this->dbObject->{$this->dbColumnConfig->importVirtualColumnValueFrom()});
+        } else {
+            return !empty($this->values['isset']);
         }
-        return null;
+    }
+
+    /**
+     * @return bool
+     * @throws DbFieldException
+     */
+    public function hasNotEmptyValue() {
+        return $this->hasValue() && !empty($this->getValue());
+    }
+
+    /**
+     * @return mixed|null
+     * @throws DbFieldException
+     */
+    public function getValue() {
+        if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
+            return $this->dbObject->{$this->dbColumnConfig->importVirtualColumnValueFrom()};
+        }
+        if (!$this->hasValue() && $this->getName() !== $this->dbObject->model->getPkColumn()) {
+            // value not set and not a primary key
+            if ($this->dbObject->exists()) {
+                // on object update
+                if ($this->isFile()) {
+                    // import pk form object to create image urls and fill value
+                    $this->importPkValue();
+                } else {
+                    // value is set in db but possibly was not fetched
+                    // to avoid overwriting of correct value object must notify about this situation
+                    $error = "Field [{$this->dbObject->model->getAlias()}->{$this->getName()}]: value is not set. Possibly value was not fetched from DB";
+                    throw new DbFieldException($this, $error);
+                }
+            } else {
+                // on object create just set default value or null
+                $this->setValue($this->getDefaultValueOr(null));
+            }
+        }
+        return $this->hasValue() ? $this->values['value'] : null;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getRawValue() {
+        $this->getValue();
+        return $this->values['rawValue'];
+    }
+
+    /**
+     * @return bool
+     */
+    public function isValueReceivedFromDb() {
+        return !empty($this->values['isDbValue']);
+    }
+
+    /**
+     * @param bool $fromDb
+     */
+    public function setValueReceivedFromDb($fromDb = true) {
+        if ($this->hasValue()) {
+            $this->values['isDbValue'] = !!$fromDb;
+            $this->values['dbValue'] = $this->values['value'];
+        }
+    }
+
+    /**
+     * @return bool
+     */
+    public function isValid() {
+        return isset($this->values['error']);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getValidationError() {
+        return (isset($this->values['error'])) ? $this->values['error'] : null;
     }
 
     /**
@@ -358,42 +359,7 @@ abstract class DbObjectField {
      * @return null|string|int - pk value
      */
     protected function importPkValue() {
-        $this->value = $this->dbObject->pkValue();
-    }
-
-    /**
-     * Unset field value
-     * @param string $varName = 'value'
-     */
-    public function __unset($varName) {
-        if (strtolower($varName) == 'value') {
-            $cleanValues = array(
-                'isset' => false,
-                'isDbValue' => false
-            );
-            $this->values = $cleanValues;
-        }
-    }
-
-    /**
-     * Check if field value isset
-     * @param string $varName = 'value'
-     * @return bool
-     * @throws DbFieldException if $varName !== 'value'
-     */
-    public function __isset($varName) {
-        switch (strtolower($varName)) {
-            case 'value':
-                if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
-                    return isset($this->dbObject->{$this->dbColumnConfig->importVirtualColumnValueFrom()});
-                } else {
-                    return !empty($this->values['isset']);
-                }
-            case 'validationerror':
-                return isset($this->values['error']);
-            default:
-            throw new DbFieldException($this, "Field [{$this->getName()}]: unknown property [$varName]");
-        }
+        $this->setValue($this->dbObject->pkValue());
     }
 
     /**
@@ -403,9 +369,6 @@ abstract class DbObjectField {
      * @throws DbFieldException
      */
     public function convert($value) {
-        if ($value === self::NULL_VALUE) {
-            $value = null;
-        }
         if ($value === null && !$this->canBeNull()) {
             if ($this->hasDefaultValue()) {
                 $value = $this->getDefaultValue();
@@ -497,60 +460,6 @@ abstract class DbObjectField {
             }
         }
         return $value;
-    }
-
-    /**
-     * Converts $value to required date-time format
-     * @param int|string $value - int: unix timestamp | string: valid date/time/date-time string
-     * @param string $format - resulting value format
-     * @param string|int|bool $now - current unix timestamp or any valid strtotime() string
-     * @return string
-     */
-    protected function formatDateTime($value, $format, $now = 'now') {
-        if (empty($value)) {
-            $value = null;
-        } else if (is_int($value) || is_numeric($value)) {
-            $value = date($format, $value);
-        } else if (strtotime($value) != 0) {
-            // convert string value to unix timestamp and then to required date format
-            $value = date($format, strtotime($value, is_string($now) && !is_numeric($now) ? strtotime($now) : 0));
-        }
-        return $value;
-    }
-
-    /**
-     * Format file info
-     * @param $value
-     * @return array - if image uploaded - image inf, else - urls to image versions
-     */
-    protected function formatFile($value) {
-        if (!is_array($value) || !isset($value['tmp_name'])) {
-            if ($this->isImage()) {
-                $value = $this->dbObject->getImagesUrl($this->getName());
-            } else {
-                $value = $this->dbObject->getFileUrl($this->getName());
-            }
-            $this->isDbValue = true;
-        }
-        return $value;
-    }
-
-    /**
-     * Get fs path to file
-     * @return mixed
-     */
-    protected function getFilePath() {
-        if (!$this->isFile()) {
-            return null;
-        }
-        if (!isset($this->values['file_path'])) {
-            if ($this->isImage()) {
-                $this->values['file_path'] = $this->dbObject->getImagesPaths($this->getName());
-            } else {
-                $this->values['file_path'] = $this->dbObject->getFilePath($this->getName());
-            }
-        }
-        return $this->values['file_path'];
     }
 
     /**
@@ -766,36 +675,20 @@ abstract class DbObjectField {
 
     /**
      * If this field can be skipped when value is not set and not requred
-     * @param bool $skipIfDbValue - true: if field value isDbValue == true - it will be skipped
+     * @param bool $skipIfDbValue - true: if $this->isValueReceivedFromDb() == true - it will be skipped
      * @return bool
      */
-    public function skip($skipIfDbValue = false) {
+    public function canBeSkipped($skipIfDbValue = false) {
         if (
-            $this->isExcludedOn($this->dbObject->exists() ? DbColumnConfig::ON_UPDATE : DbColumnConfig::ON_CREATE)
-            || $this->isFile()
-            || ($skipIfDbValue && !empty($this->values['isDbValue']))) {
+            ($skipIfDbValue && $this->isValueReceivedFromDb())
+            || $this->isVirtual()
+            || $this->isExcludedOn($this->dbObject->exists() ? DbColumnConfig::ON_UPDATE : DbColumnConfig::ON_CREATE)
+        ) {
             return true;
         } else {
             // skip on create/update when not set and not required
-            return empty($this->values['isset']) && $this->checkIfRequiredValueIsSet();
+            return !$this->hasValue() && $this->checkIfRequiredValueIsSet();
         }
     }
 
-    /**
-     * Restore image version by name
-     * @param string $fileName
-     * @return bool|string - false: fail | string: file path
-     */
-    public function restoreImageVersionByFileName($fileName) {
-        if ($this->isImage() && !empty($fileName)) {
-            // find resize profile
-            return ImageUtils::restoreVersion(
-                $fileName,
-                $this->dbObject->getBaseFileName($this->getName()),
-                $this->dbObject->buildPathToFiles($this->getName()),
-                $this->dbColumnConfig['resize_settings']
-            );
-        }
-        return false;
-    }
 }

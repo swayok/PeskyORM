@@ -3,8 +3,6 @@
 
 namespace ORM\DbObjectField;
 
-use PeskyORM\DbObjectField;
-
-class DateField extends DbObjectField {
+class DateField extends TimestampField {
 
 }
