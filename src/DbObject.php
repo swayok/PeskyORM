@@ -253,7 +253,7 @@ class DbObject {
             $this->_relatedObjects[$alias] = $this->model->getDbObject($settings->getForeignTable());
             // and link it to current object
             if (!empty($this->$localField)) {
-                $this->_relatedObjects[$alias]->_fields[$relationField]->default = $this->$localField;
+                $this->_relatedObjects[$alias]->_fields[$relationField]->setDefaultValue($this->$localField);
                 $this->_relatedObjects[$alias]->$relationField = $this->$localField;
             }
         } else {
@@ -273,7 +273,7 @@ class DbObject {
                 if ($valid === false && empty($this->_relatedObjects[$alias]->$relationField)) {
                     // and link to current object
                     if (!empty($this->$localField)) {
-                        $this->_relatedObjects[$alias]->_fields[$relationField]->default = $this->$localField;
+                        $this->_relatedObjects[$alias]->_fields[$relationField]->setDefaultValue($this->$localField);
                         $this->_relatedObjects[$alias]->$relationField = $this->$localField;
                     }
                 } else {
@@ -1537,7 +1537,7 @@ class DbObject {
             $fields = array_keys($this->_fields);
         }
         foreach ($fields as $name) {
-            $values[$name] = $this->_fields[$name]->default;
+            $values[$name] = $this->_fields[$name]->getDefaultValue();
         }
         return $values;
     }

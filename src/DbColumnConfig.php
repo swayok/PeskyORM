@@ -3,8 +3,7 @@
 namespace ORM;
 
 use ORM\Exception\DbColumnConfigException;
-use ORM\Exception\DbTableConfigException;
-use PeskyORM\DbObject;
+use PeskyORM\Lib\StringUtils;
 
 class DbColumnConfig {
 
@@ -14,7 +13,7 @@ class DbColumnConfig {
     const TYPE_STRING = 'string';
     const TYPE_TEXT = 'text';
     const TYPE_JSON = 'json';
-    const TYPE_DB_ENTITY_NAME = 'db_entity_name';
+//    const TYPE_DB_ENTITY_NAME = 'db_entity_name';
     const TYPE_SHA1 = 'sha1';
     const TYPE_MD5 = 'md5';
     const TYPE_EMAIL = 'email';
@@ -26,6 +25,55 @@ class DbColumnConfig {
     const TYPE_IPV4_ADDRESS = 'ip';
     const TYPE_FILE = 'file';
     const TYPE_IMAGE = 'image';
+
+    const DB_TYPE_VARCHAR = 'varchar';
+    const DB_TYPE_TEXT = 'text';
+    const DB_TYPE_INT = 'integer';
+    const DB_TYPE_FLOAT = 'numeric';
+    const DB_TYPE_BOOL = 'boolean';
+    const DB_TYPE_TIMESTAMP = 'timestamp';
+    const DB_TYPE_DATE = 'date';
+    const DB_TYPE_TIME = 'time';
+    const DB_TYPE_IP_ADDRESS = 'ip';
+
+    /**
+     * Contains map where keys are column types and values are real DB types
+     * If value is NULL then type is virtual and has no representation in DB
+     * @var array
+     */
+    static protected $typeToDbType = array(
+        self::TYPE_INT => self::DB_TYPE_INT,
+        self::TYPE_FLOAT => self::DB_TYPE_FLOAT,
+        self::TYPE_BOOL => self::DB_TYPE_BOOL,
+        self::TYPE_STRING => self::DB_TYPE_VARCHAR,
+        self::TYPE_TEXT => self::DB_TYPE_TEXT,
+        self::TYPE_JSON => self::DB_TYPE_TEXT,
+//        self::TYPE_DB_ENTITY_NAME => self::DB_TYPE_VARCHAR,
+        self::TYPE_SHA1 => self::DB_TYPE_VARCHAR,
+        self::TYPE_MD5 => self::DB_TYPE_VARCHAR,
+        self::TYPE_EMAIL => self::DB_TYPE_VARCHAR,
+        self::TYPE_TIMESTAMP => self::DB_TYPE_TIMESTAMP,
+        self::TYPE_DATE => self::DB_TYPE_DATE,
+        self::TYPE_TIME => self::DB_TYPE_TIME,
+        self::TYPE_TIMEZONE_OFFSET => self::DB_TYPE_INT,
+        self::TYPE_ENUM => self::DB_TYPE_VARCHAR,
+        self::TYPE_IPV4_ADDRESS => self::DB_TYPE_IP_ADDRESS,
+        self::TYPE_FILE => null,
+        self::TYPE_IMAGE => null,
+    );
+
+    /**
+     * Contains map where keys are column types and values are names of classes that extend DbObjectField class
+     * Class names provided here used only for cusom data types registered via DbColumnConfig::registerType() method
+     * Class names must be provided with namespace.
+     * For hardcoded data types class names generated automatically. For example:
+     * type = timezone_offset, class_name = TimezoneOffsetField
+     * Namespace for hardcoded types provided in argument of method DbColumnConfig->getClassName()
+     * @var array
+     */
+    static protected $typeToDbObjectFieldClass = array(
+
+    );
 
     const DEFAULT_VALUE_NOT_SET = '___NOT_SET___';
 
@@ -41,6 +89,8 @@ class DbColumnConfig {
     protected $name;
     /** @var string */
     protected $type;
+    /** @var string */
+    protected $dbType;
     /** @var int */
     protected $maxLength = 0;
     /** @var bool */
@@ -63,6 +113,11 @@ class DbColumnConfig {
     protected $isUnique = false;
     /** @var bool */
     protected $isVirtual = false;
+    /**
+     * Value for this virtual column must be imported from another column if this option is string and already defined column
+     * @var bool|string
+     */
+    protected $importVirtualColumnValueFrom = false;
     /**
      * self::ON_NONE - forced skip disabled
      * self::ON_ALL - forced skip enabled for any operation
@@ -93,16 +148,14 @@ class DbColumnConfig {
     );
 
     static protected $maxLengthAllowedFor = array(
-        self::TYPE_STRING,
-        self::TYPE_SHA1,
-        self::TYPE_MD5,
-        self::TYPE_EMAIL,
-        self::TYPE_ENUM,
+        self::DB_TYPE_VARCHAR,
+        self::DB_TYPE_IP_ADDRESS
     );
 
     static protected $maxLengthForcedValues = array(
         self::TYPE_SHA1 => 40,
         self::TYPE_MD5 => 32,
+        self::TYPE_IPV4_ADDRESS => 15,
     );
 
     /**
@@ -113,6 +166,18 @@ class DbColumnConfig {
     static public function create($name, $type) {
         $className = get_called_class();
         return new $className($name, $type);
+    }
+
+    /**
+     * Add custom column type
+     * @param string $type - name of type
+     * @param string $dbType - name of type in DB (usually one of DbColumnConfig::DB_TYPE_*)
+     * @param $dbObjectFieldClass - full name of class that extends DbObjectFieldClass
+     */
+    static public function registerType($type, $dbType, $dbObjectFieldClass) {
+        $type = strtolower($type);
+        self::$typeToDbType[$type] = strtolower($dbType);
+        self::$typeToDbObjectFieldClass[$type] = $dbObjectFieldClass;
     }
 
     /**
@@ -171,9 +236,15 @@ class DbColumnConfig {
     /**
      * @param string $type
      * @return $this
+     * @throws DbColumnConfigException
      */
     protected function setType($type) {
-        $this->type = strtolower($type);
+        $type = strtolower($type);
+        if (empty(self::$typeToDbType[$type])) {
+            throw new DbColumnConfigException($this, "Unknown column type [$type]");
+        }
+        $this->type = $type;
+        $this->dbType = self::$typeToDbType[$this->type];
         if (in_array($type, self::$fileTypes)) {
             $this->setIsFile(true);
             $this->setIsVirtual(true);
@@ -185,6 +256,26 @@ class DbColumnConfig {
             $this->maxLength = self::$maxLengthForcedValues[$type];
         }
         return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDbType() {
+        return $this->dbType;
+    }
+
+    /**
+     * Get full name of class that extends DbObjectField class
+     * @param string $defaultNamespace - namespace for hardcoded column types
+     * @return string
+     */
+    public function getClassName($defaultNamespace) {
+        if (isset(self::$typeToDbObjectFieldClass[$this->getType()])) {
+            return self::$typeToDbObjectFieldClass[$this->getType()];
+        } else {
+            return rtrim($defaultNamespace, '\\') . '\\' . StringUtils::classify($this->getType()) . 'Field';
+        }
     }
 
     /**
@@ -233,6 +324,13 @@ class DbColumnConfig {
      */
     public function getDefaultValue() {
         return $this->defaultValue;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasDefaultValue() {
+        return $this->defaultValue !== self::DEFAULT_VALUE_NOT_SET;
     }
 
     /**
@@ -345,6 +443,37 @@ class DbColumnConfig {
      */
     public function isVirtual() {
         return $this->isVirtual;
+    }
+
+    /**
+     * @return bool|string
+     */
+    public function importVirtualColumnValueFrom() {
+        return $this->importVirtualColumnValueFrom;
+    }
+
+    /**
+     * @param string $columnName
+     * @return $this
+     * @throws DbColumnConfigException
+     */
+    public function setImportVirtualColumnValueFrom($columnName) {
+        if (!is_string($columnName)) {
+            throw new DbColumnConfigException($this, "Argument \$columnName in setImportVirtualColumnValueFrom() must be a string. Passed value: [{$columnName}]");
+        }
+        if (!$this->dbTableConfig->hasColumn($columnName)) {
+            throw new DbColumnConfigException($this, "Column [{$columnName}] is not defined");
+        }
+        $this->importVirtualColumnValueFrom = $columnName;
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function dontImportVirtualColumnValue() {
+        $this->importVirtualColumnValueFrom = false;
+        return $this;
     }
 
     /**

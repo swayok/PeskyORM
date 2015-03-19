@@ -4,8 +4,8 @@ namespace PeskyORM;
 
 use ORM\DbColumnConfig;
 use PeskyORM\Exception\DbFieldException;
+use PeskyORM\Exception\DbObjectException;
 use PeskyORM\Lib\ImageUtils;
-use PeskyORM\Lib\StringUtils;
 use PeskyORM\Lib\Utils;
 
 /**
@@ -29,32 +29,34 @@ abstract class DbObjectField {
     /**
      * @var DbColumnConfig
      */
-    public $dbColumnConfig;
+    protected $dbColumnConfig;
 //    public $server = null;     //< server alies where file stored
-//    public $importValueFromDbObject = false;   //< for virtual fields only. string: field value should be imported from another field
-    public $default;            //< note: for $type == self::TYPE_TIMESTAMP can accept any value that can be passed to strtotime()
+    /**
+     * For $type == DbColumnConfig::TYPE_TIMESTAMP can accept any value that can be passed to strtotime()
+     * @var mixed
+     */
+    protected $defaultValue = DbColumnConfig::DEFAULT_VALUE_NOT_SET;
+    /**
+     * @var array
+     */
     protected $values = array(
         //'value' => mixed,         //< value after $this->convert()
         //'rawValue' => mixed,      //< value in format it was assigned (without type conversion)
         //'rawDbValue' => mixed,    //< raw value from DB - assigned on $this->isDbValue = true
-        //'options' => array,       //< List of allowed values for $type == self::TYPE_ENUM
         //'error' => null|string,   //< validation error
         //'file_path' => null|string|array,   //< fs path to files
         'isset' => false,           //< used to find out if value was ever set. When true: __isset() will return true
         'isDbValue' => false,       //< indicates that field value must be updated in db
     );
-    protected $relations = array(); //< list of related DbObjects aliases. DbObjects stored in model
-
     /**
-     * self::ON_NONE - forced skip disabled
-     * self::ON_ALL - forced skip enabled for any operation
-     * self::ON_CREATE - forced skip enabled for record creation only
-     * self::ON_UPDATE - forced skip enable for record update only
-     * @var int
+     * List of related DbObjects aliases. DbObjects stored in model
+     * @var array
      */
-    public $exclude = self::ON_NONE;
-
-    public $validators = array();
+    protected $relations = array();
+    /**
+     * @var array
+     */
+    protected $validators = array();
 
     const NULL_VALUE = 'NULL';
 
@@ -83,42 +85,65 @@ abstract class DbObjectField {
 
     /**
      * @param DbObject $dbObject
-     * @param string $name
-     * @param array $info - field settings:
-     * array(
-     *      'type': int|string (required)
-     *      'options': array (required only for 'type' == self::TYPE_ENUM)
-     *      'length': int (optional, default = 0) - max field length, 0 = not inportant
-     *      'null': bool (optional, default = true) - can this field be 'null'?
-     *      'required': bool (optional, default = false) - is this field required?
-     *      'default': mixed (optional) - default field value
-     *      'validators': array (optional, default: array()) - list of validators
+     * @param DbColumnConfig $dbColumnConfig
      */
-    public function __construct(DbObject $dbObject, DbColumnConfig $info) {
-        $this->dbColumnConfig = $info;
+    public function __construct(DbObject $dbObject, DbColumnConfig $dbColumnConfig) {
+        $this->dbColumnConfig = $dbColumnConfig;
         $this->dbObject = $dbObject;
-        if (!empty($info['server'])) {
-            $this->server = $info['server'];
+//        if (!empty($info['server'])) {
+//            $this->server = $info['server'];
+//        }
+//        if (!empty($info['validators']) && is_array($info['validators'])) {
+//            $this->validators = $info['validators'];
+//        }
+        if ($this->dbColumnConfig->hasDefaultValue()) {
+            $this->setDefaultValue($this->dbColumnConfig->getDefaultValue());
         }
-        if (
-            $this->isVirtual()
-            && !$this->isFile()
-            && (
-                is_string($info['virtual']) && !is_numeric($info->isVirtual())
-                || $info['virtual'] === true
-            )
-        ) {
-            $this->importValueFromDbObject = $info['virtual'];
+    }
+
+    /**
+     * @return mixed
+     * @throws DbFieldException
+     */
+    public function getDefaultValue() {
+        if (!$this->hasDefaultValue()) {
+            throw new DbFieldException($this, "Default value is not set");
         }
-        if (!empty($info['options']) && is_array($info['options'])) {
-            $this->values['options'] = array_values($info['options']);
+        return $this->defaultValue;
+    }
+
+    /**
+     * Returns default value if it is provided or $fallbackValue if not
+     * @param mixed $fallbackValue
+     * @return mixed
+     */
+    public function getDefaultValueOr($fallbackValue) {
+        return $this->hasDefaultValue() ? $this->defaultValue : $fallbackValue;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasDefaultValue() {
+        return $this->defaultValue !== DbColumnConfig::DEFAULT_VALUE_NOT_SET;
+    }
+
+    /**
+     * @param mixed $defaultValue
+     * @return $this
+     * @throws DbFieldException
+     */
+    public function setDefaultValue($defaultValue) {
+        $defaultValue = $this->convert($defaultValue);
+        if (!$this->isValidValueFormat($defaultValue)) {
+            throw new DbFieldException($this, "Invalid default value [{$defaultValue}] provided. Error: {$this->values['error']}");
         }
-        if (!empty($info['validators']) && is_array($info['validators'])) {
-            $this->validators = $info['validators'];
-        }
-        if (array_key_exists('default', $info)) {
-            $this->default = $this->convert($info['default']);
-        }
+        $this->defaultValue = $defaultValue;
+        return $this;
+    }
+
+    public function removeDefaultValue() {
+        $this->defaultValue = DbColumnConfig::DEFAULT_VALUE_NOT_SET;
     }
 
     public function getName() {
@@ -190,6 +215,13 @@ abstract class DbObjectField {
     }
 
     /**
+     * @return array
+     */
+    public function getAllowedValues() {
+        return $this->dbColumnConfig->getAllowedValues();
+    }
+
+    /**
      * @return DbObject
      */
     public function getDbObject() {
@@ -227,12 +259,17 @@ abstract class DbObjectField {
      * @param string $name = 'value'
      * @param mixed $value
      * @throws DbFieldException
+     * @throws DbObjectException
      */
     public function __set($name, $value) {
         switch (strtolower($name)) {
             case 'value':
-                if ($this->isVirtual() && $this->importValueFromDbObject) {
-                    break;
+                if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
+                    throw new DbFieldException(
+                        $this,
+                        "Virtual field value [{$this->getName()}] cannot be set directly. " .
+                            "Value is imported from field [{$this->dbColumnConfig->importVirtualColumnValueFrom()}]."
+                    );
                 }
                 $this->values['isset'] = true;
                 $this->values['rawValue'] = $value;
@@ -268,18 +305,14 @@ abstract class DbObjectField {
     public function __get($name) {
         switch (strtolower($name)) {
             case 'value':
-                if ($this->isVirtual() && $this->importValueFromDbObject) {
-                    if ($this->importValueFromDbObject === true) {
-                        return $this->dbObject->{'_' . $this->getName()}();
-                    } else {
-                        return $this->dbObject->{$this->importValueFromDbObject};
-                    }
+                if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
+                    return $this->dbObject->{$this->dbColumnConfig->importVirtualColumnValueFrom()};
                 }
                 if (empty($this->values['isset']) && $this->getName() !== $this->dbObject->model->getPkColumn()) {
                     // value not set and not a primary key
                     if ($this->dbObject->exists()) {
                         // on object update
-                        if (in_array($this->getType(), self::$fileTypes)) {
+                        if (in_array($this->getType(), DbColumnConfig::$fileTypes)) {
                             // import pk form object to create image urls and fill value
                             $this->importPkValue();
                         } else {
@@ -291,7 +324,7 @@ abstract class DbObjectField {
                     } else {
                         // on object create just set default value even it is not valid.
                         // __set('value') will process exceptional situations
-                        $this->value = $this->default;
+                        $this->value = $this->getDefaultValueOr(null);
                     }
                 }
                 return isset($this->values['value']) ? $this->values['value'] : null;
@@ -316,10 +349,6 @@ abstract class DbObjectField {
                 return isset($this->values['value']) ? strtotime($this->values['value']) : 0;
             case 'validationerror':
                 return (isset($this->values['error'])) ? $this->values['error'] : null;
-            case 'options':
-                return !isset($this->values['options']) || !is_array($this->values['options'])
-                    ? array()
-                    : $this->values['options'];
         }
         return null;
     }
@@ -342,9 +371,6 @@ abstract class DbObjectField {
                 'isset' => false,
                 'isDbValue' => false
             );
-            if (!empty($this->values['options'])) {
-                $cleanValues['options'] = $this->values['options'];
-            }
             $this->values = $cleanValues;
         }
     }
@@ -358,12 +384,8 @@ abstract class DbObjectField {
     public function __isset($varName) {
         switch (strtolower($varName)) {
             case 'value':
-                if ($this->isVirtual() && $this->importValueFromDbObject) {
-                    if ($this->importValueFromDbObject === true) {
-                        return $this->dbObject->{'_' . $this->getName()}() !== null;
-                    } else {
-                        return isset($this->dbObject->{$this->importValueFromDbObject});
-                    }
+                if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
+                    return isset($this->dbObject->{$this->dbColumnConfig->importVirtualColumnValueFrom()});
                 } else {
                     return !empty($this->values['isset']);
                 }
@@ -385,13 +407,13 @@ abstract class DbObjectField {
             $value = null;
         }
         if ($value === null && !$this->canBeNull()) {
-            if (isset($this->default)) {
-                $value = $this->default;
+            if ($this->hasDefaultValue()) {
+                $value = $this->getDefaultValue();
             } else {
                 switch ($this->getType()) {
                     case 'bool':
                     case 'boolean':
-                    case self::TYPE_BOOL:
+                    case DbColumnConfig::TYPE_BOOL:
                         $value = false;
                         break;
                 }
@@ -403,39 +425,39 @@ abstract class DbObjectField {
                 case 'text':
                 case 'varchar':
                 case 'db_name':
-                case self::TYPE_STRING:
-                case self::TYPE_DB_ENTITY_NAME:
-                case self::TYPE_TEXT:
+                case DbColumnConfig::TYPE_STRING:
+//                case DbColumnConfig::TYPE_DB_ENTITY_NAME:
+                case DbColumnConfig::TYPE_TEXT:
                 case 'email':
-                case self::TYPE_EMAIL:
+                case DbColumnConfig::TYPE_EMAIL:
                 case 'enum':
-                case self::TYPE_ENUM:
+                case DbColumnConfig::TYPE_ENUM:
                 case 'ip':
-                case self::TYPE_IP_ADDRESS:
-                case self::TYPE_SHA1:
+                case DbColumnConfig::TYPE_IPV4_ADDRESS:
+                case DbColumnConfig::TYPE_SHA1:
                 case 'sha1':
                     $value = '' . $value;
                     break;
                 case 'json':
-                case self::TYPE_JSON:
+                case DbColumnConfig::TYPE_JSON:
                     if (is_array($value)) {
                         $value = Utils::jsonEncodeCyrillic($value);
                     }
                     break;
                 case 'int':
                 case 'integer':
-                case self::TYPE_INT:
+                case DbColumnConfig::TYPE_INT:
                     $value = ($value === '') ? null : intval($value);
                     break;
                 case 'float':
                 case 'number':
                 case 'decimal':
-                case self::TYPE_FLOAT:
+                case DbColumnConfig::TYPE_FLOAT:
                     $value = floatval($value);
                     break;
                 case 'bool':
                 case 'boolean':
-                case self::TYPE_BOOL:
+                case DbColumnConfig::TYPE_BOOL:
                     if (is_string($value) && strtolower($value) === 'false') {
                         $value = false;
                     } else if ($value === '' || $value === null) {
@@ -446,25 +468,25 @@ abstract class DbObjectField {
                     break;
                 case 'timestamp':
                 case 'datetime':
-                case self::TYPE_TIMESTAMP:
+                case DbColumnConfig::TYPE_TIMESTAMP:
                     $value = $this->formatDateTime($value, self::FORMAT_TIMESTAMP);
                     break;
                 case 'time':
-                case self::TYPE_TIME:
+                case DbColumnConfig::TYPE_TIME:
                     $value = $this->formatDateTime($value, self::FORMAT_TIME);
                     break;
                 case 'date':
-                case self::TYPE_DATE:
+                case DbColumnConfig::TYPE_DATE:
                     $value = $this->formatDateTime($value, self::FORMAT_DATE);
                     break;
                 case 'timezone':
-                case self::TYPE_TIMEZONE_OFFSET:
+                case DbColumnConfig::TYPE_TIMEZONE_OFFSET:
                     $value = $this->formatDateTime($value, self::FORMAT_TIME, 0);
                     break;
                 case 'file':
-                case self::TYPE_FILE:
+                case DbColumnConfig::TYPE_FILE:
                 case 'image':
-                case self::TYPE_IMAGE:
+                case DbColumnConfig::TYPE_IMAGE:
                     $value = $this->formatFile($value);
                     break;
                 default:
@@ -544,20 +566,20 @@ abstract class DbObjectField {
         if (empty($this->values['isset']) || !empty($this->values['isDbValue'])) {
             return true;
         }
-        if (!$this->_validateIfRequired()) {
+        if (!$this->checkIfRequiredValueIsSet()) {
             $this->values['error'] = self::ERROR_REQUIRED;
         } else if (!$this->canBeNull() && !isset($this->values['value'])) {
             $this->values['error'] = self::ERROR_NOT_NULL;
-        } else if (!$this->_validMaxLength()) {
+        } else if (!$this->isValidMaxLength()) {
             $this->values['error'] = self::ERROR_TOO_LONG;
-        } else if (!$this->_validDataFormat()) {
+        } else if (!$this->isValidValueFormat($this->values['value'])) {
             if (empty($this->values['error'])) {
                 $this->values['error'] = self::ERROR_INVALID_DATA_FORMAT;
             }
-        } else if ($forSave && !$this->_isUnique()) {
+        } else if ($forSave && !$this->checkIfValueIsUnique()) {
             $this->values['error'] = self::ERROR_DUPLICATE_VALUE_FOR_UNIQUE_FIELD;
         } else {
-            $this->_validateCustom($silent, $forSave);
+            $this->runCustomValidators($silent, $forSave);
         }
         if (!empty($this->values['error']) && !$silent) {
             throw new DbFieldException($this, $this->values['error']);
@@ -569,7 +591,7 @@ abstract class DbObjectField {
      * Check if field length does not exceeds $this->length
      * @return bool
      */
-    protected function _validMaxLength() {
+    protected function isValidMaxLength() {
         if (
             $this->getMaxLength() > 0
             && !empty($this->values['isset'])
@@ -584,7 +606,7 @@ abstract class DbObjectField {
      * Returns true if field not required
      * @return bool
      */
-    protected function _validateIfRequired() {
+    protected function checkIfRequiredValueIsSet() {
         $valid = true;
         if ($this->isRequiredOnAnyAction()) {
             // test if there is any value
@@ -601,12 +623,12 @@ abstract class DbObjectField {
      * Test if value is unique
      * @return bool
      */
-    protected function _isUnique() {
+    protected function checkIfValueIsUnique() {
         $valid = true;
         if ($this->isUnique() && !empty($this->values['value'])) {
             if (
                 !is_numeric($this->values['value'])
-                && !in_array($this->getType(), array(self::TYPE_IP_ADDRESS, self::TYPE_DATE, self::TYPE_TIME, self::TYPE_TIMESTAMP))
+                && !in_array($this->getType(), array(DbColumnConfig::TYPE_IPV4_ADDRESS, DbColumnConfig::TYPE_DATE, DbColumnConfig::TYPE_TIME, DbColumnConfig::TYPE_TIMESTAMP))
             ) {
                 $conditions = array(
                     'OR' => array(
@@ -629,20 +651,21 @@ abstract class DbObjectField {
 
     /**
      * Check if value has valid format
+     * @param $value
      * @return bool
      * @throws DbFieldException
      */
-    protected function _validDataFormat() {
+    protected function isValidValueFormat($value) {
         $valid = true;
-        if (!empty($this->values['value'])) {
+        if (!empty($value)) {
             switch ($this->getType()) {
                 case 'string':
                 case 'text':
                 case 'varchar':
-                case self::TYPE_STRING:
-                case self::TYPE_TEXT:
+                case DbColumnConfig::TYPE_STRING:
+                case DbColumnConfig::TYPE_TEXT:
                     break;
-                case self::TYPE_SHA1:
+                case DbColumnConfig::TYPE_SHA1:
                 case 'sha1':
                     if (strlen($this->values['value']) !== 40 || !preg_match('%^[a-f0-9]+$%is', $this->values['value'])) {
                         $valid = false;
@@ -650,72 +673,72 @@ abstract class DbObjectField {
                     }
                     break;
                 case 'json':
-                case self::TYPE_JSON:
+                case DbColumnConfig::TYPE_JSON:
                     if (json_decode($this->values['value'], true) === false) {
                         $valid = false;
                         $this->values['error'] = self::ERROR_INVALID_JSON;
                     }
                     break;
                 case 'email':
-                case self::TYPE_EMAIL:
+                case DbColumnConfig::TYPE_EMAIL:
                     if (!preg_match(self::REGEXP_EMAIL, $this->values['value'])) {
                         $valid = false;
                         $this->values['error'] = self::ERROR_INVALID_EMAIL;
                     }
                     break;
                 case 'db_name':
-                case self::TYPE_DB_ENTITY_NAME:
+                /*case DbColumnConfig::TYPE_DB_ENTITY_NAME:
                     if (!preg_match(self::REGEXP_DB_ENTITY_NAME, $this->values['value'])) {
                         $valid = false;
                         $this->values['error'] = self::ERROR_INVALID_DB_ENTITY_NAME;
                     }
-                    break;
+                    break;*/
                 case 'int':
                 case 'integer':
-                case self::TYPE_INT:
+                case DbColumnConfig::TYPE_INT:
                     break;
                 case 'float':
                 case 'number':
                 case 'decimal':
-                case self::TYPE_FLOAT:
+                case DbColumnConfig::TYPE_FLOAT:
                     break;
                 case 'bool':
                 case 'boolean':
-                case self::TYPE_BOOL:
+                case DbColumnConfig::TYPE_BOOL:
                     break;
                 case 'timestamp':
                 case 'datetime':
-                case self::TYPE_TIMESTAMP:
+                case DbColumnConfig::TYPE_TIMESTAMP:
                 case 'date':
-                case self::TYPE_DATE:
+                case DbColumnConfig::TYPE_DATE:
                 case 'time':
-                case self::TYPE_TIME:
-                case self::TYPE_TIMEZONE_OFFSET:
+                case DbColumnConfig::TYPE_TIME:
+                case DbColumnConfig::TYPE_TIMEZONE_OFFSET:
                     if (strtotime($this->values['value']) == 0) {
                         $valid = false;
                         $this->values['error'] = self::ERROR_INVALID_DATETIME;
                     }
                     break;
                 case 'enum':
-                case self::TYPE_ENUM:
-                    if (empty($this->values['options']) || !in_array($this->values['value'], $this->values['options'])) {
+                case DbColumnConfig::TYPE_ENUM:
+                    if (empty($this->getAllowedValues()) || !in_array($this->values['value'], $this->getAllowedValues())) {
                         $valid = false;
                         $this->values['error'] = self::ERROR_VALUE_NOT_ALLOWED;
                     }
                     break;
                 case 'ip':
-                case self::TYPE_IP_ADDRESS:
+                case DbColumnConfig::TYPE_IPV4_ADDRESS:
                     if (!preg_match(self::REGEXP_IP_ADDRESS, $this->values['value'])) {
                         $valid = false;
                         $this->values['error'] = self::ERROR_INVALID_IP_ADDRESS;
                     }
                     break;
                 case 'file':
-                case self::TYPE_FILE:
+                case DbColumnConfig::TYPE_FILE:
                     // todo: maybe some file validation?
                     break;
                 case 'image':
-                case self::TYPE_IMAGE:
+                case DbColumnConfig::TYPE_IMAGE:
                     if (is_array($this->values['value']) && array_key_exists('tmp_file', $this->values['value'])) {
                         $valid = ImageUtils::isImage($this->values['value']);
                         if (!$valid) {
@@ -736,7 +759,7 @@ abstract class DbObjectField {
      * @param bool $forSave - true: allow additional validations (like isUnique)
      * @return bool
      */
-    protected function _validateCustom($silent = true, $forSave = false) {
+    protected function runCustomValidators($silent = true, $forSave = false) {
         //todo: implement custom validators
         return true;
     }
@@ -754,7 +777,7 @@ abstract class DbObjectField {
             return true;
         } else {
             // skip on create/update when not set and not required
-            return empty($this->values['isset']) && $this->_validateIfRequired();
+            return empty($this->values['isset']) && $this->checkIfRequiredValueIsSet();
         }
     }
 
