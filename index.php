@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 error_reporting(E_ALL);
 ini_set('track_errors', 1);

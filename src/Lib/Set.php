@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Library of array functions for Cake. Significantly shortened
  *
