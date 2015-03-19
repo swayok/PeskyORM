@@ -74,6 +74,7 @@ class Utils {
             return $ret;
         } else {
             echo $ret;
+            return '';
         }
     }
 
@@ -87,5 +88,9 @@ class Utils {
             }, $json);
         }
         return $json;
+    }
+
+    static public function isUploadedFile($fileInfo) {
+        return array_key_exists('tmp_name', $fileInfo) && empty($fileInfo['error']) && !empty($fileInfo['size']);
     }
 }

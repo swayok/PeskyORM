@@ -5,6 +5,7 @@ namespace PeskyORM;
 use ORM\DbColumnConfig;
 use PeskyORM\Exception\DbFieldException;
 use PeskyORM\Lib\ImageUtils;
+use PeskyORM\Lib\StringUtils;
 use PeskyORM\Lib\Utils;
 
 /**
@@ -20,24 +21,18 @@ use PeskyORM\Lib\Utils;
  * @property-read null|string $_file_path - full FS path to file
  * @property-read null|bool $_file_exists - test if file exists (only if file placed on current server, otherwise true will be returned)
  */
-class DbObjectField {
+abstract class DbObjectField {
     /**
      * @var DbObject
      */
     protected $dbObject;
-    public $_info;              //< all information about field
-    public $name;
-    public $type;               //< one of DbObjectField::TYPE_*
-    public $isPk = false;       //< indicates that field is a primary key
-    public $isFile = false;     //< indicates that field is file (virtual field)
-    public $isImage = false;    //< indicates that field is file (virtual field)
-    public $server = null;     //< server alies where file stored
-    public $isUnique = false;   //< indicates that field contains only unique values + casts empty values to null if possible
-    public $isVirtual = false;   //< indicates that field is virtual (does not exist in db)
-    public $importValueFromDbObject = false;   //< for virtual fields only. string: field value should be imported from another field
+    /**
+     * @var DbColumnConfig
+     */
+    public $dbColumnConfig;
+//    public $server = null;     //< server alies where file stored
+//    public $importValueFromDbObject = false;   //< for virtual fields only. string: field value should be imported from another field
     public $default;            //< note: for $type == self::TYPE_TIMESTAMP can accept any value that can be passed to strtotime()
-    public $length = 0;
-    public $null = true;        //< false means that in DB field is "NOT NULL"
     protected $values = array(
         //'value' => mixed,         //< value after $this->convert()
         //'rawValue' => mixed,      //< value in format it was assigned (without type conversion)
@@ -49,15 +44,6 @@ class DbObjectField {
         'isDbValue' => false,       //< indicates that field value must be updated in db
     );
     protected $relations = array(); //< list of related DbObjects aliases. DbObjects stored in model
-
-    /**
-     * self::ON_NONE - allows field to be 'null' (if $null == true), unset or empty string
-     * self::ON_ALL - field is required for both creation and update
-     * self::ON_CREATE - field is required only for creation
-     * self::ON_UPDATE - field is required only for update
-     * @var int
-     */
-    public $required = self::ON_NONE;
 
     /**
      * self::ON_NONE - forced skip disabled
@@ -108,20 +94,15 @@ class DbObjectField {
      *      'default': mixed (optional) - default field value
      *      'validators': array (optional, default: array()) - list of validators
      */
-    public function __construct(DbObject $dbObject, $name, DbColumnConfig $info) {
-        $this->_info = $info;
+    public function __construct(DbObject $dbObject, DbColumnConfig $info) {
+        $this->dbColumnConfig = $info;
         $this->dbObject = $dbObject;
-        $this->name = $name;
-        $this->type = strtolower($info->getType());
-        $this->isFile = in_array($this->type, self::$fileTypes);
-        $this->isImage = in_array($this->type, self::$imageFileTypes);
         if (!empty($info['server'])) {
             $this->server = $info['server'];
         }
-        $this->isVirtual = !empty($info['virtual']);
         if (
-            $this->isVirtual
-            && !$this->isFile
+            $this->isVirtual()
+            && !$this->isFile()
             && (
                 is_string($info['virtual']) && !is_numeric($info->isVirtual())
                 || $info['virtual'] === true
@@ -132,15 +113,6 @@ class DbObjectField {
         if (!empty($info['options']) && is_array($info['options'])) {
             $this->values['options'] = array_values($info['options']);
         }
-        $this->length = empty($info['length']) ? 0 : intval($info['length']);
-        $this->null = !empty($info['null']);
-        $this->isUnique = !empty($info['unique']);
-        if (array_key_exists('required', $info) && $info['required'] <= self::ON_UPDATE && $info['required'] >= self::ON_NONE) {
-            $this->required = intval($info['required']);
-        }
-        if (array_key_exists('exclude', $info) && $info['exclude'] <= self::ON_UPDATE && $info['exclude'] >= self::ON_NONE) {
-            $this->exclude = intval($info['exclude']);
-        }
         if (!empty($info['validators']) && is_array($info['validators'])) {
             $this->validators = $info['validators'];
         }
@@ -149,8 +121,72 @@ class DbObjectField {
         }
     }
 
-    public function getDataSource() {
-        return $this->dbObject->model->getDataSource();
+    public function getName() {
+        return $this->dbColumnConfig->getName();
+    }
+
+    public function getType() {
+        return $this->dbColumnConfig->getType();
+    }
+
+    public function isPk() {
+        return $this->dbColumnConfig->isPk();
+    }
+
+    public function isFile() {
+        return $this->dbColumnConfig->isFile();
+    }
+
+    public function isImage() {
+        return $this->dbColumnConfig->isImage();
+    }
+
+    public function isUnique() {
+        return $this->dbColumnConfig->isUnique();
+    }
+
+    public function isVirtual() {
+        return $this->dbColumnConfig->isVirtual();
+    }
+
+    public function canBeNull() {
+        return $this->dbColumnConfig->isNullable();
+    }
+
+    public function getMaxLength() {
+        return $this->dbColumnConfig->getMaxLength();
+    }
+
+    /**
+     * @param $action - self::ON_UPDATE or self::ON_CREATE
+     * @return bool
+     * @throws \ORM\Exception\DbColumnConfigException
+     */
+    public function isRequiredOn($action) {
+        return $this->dbColumnConfig->isRequiredOn($action);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isRequiredOnAnyAction() {
+        return $this->dbColumnConfig->isRequiredOnAnyAction();
+    }
+
+    /**
+     * @param $action - self::ON_UPDATE or self::ON_CREATE
+     * @return bool
+     * @throws \ORM\Exception\DbColumnConfigException
+     */
+    public function isExcludedOn($action) {
+        return $this->dbColumnConfig->isExcludedOn($action);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isExcludedOnAnyAction() {
+        return $this->dbColumnConfig->isExcludedOnAnyAction();
     }
 
     /**
@@ -195,20 +231,20 @@ class DbObjectField {
     public function __set($name, $value) {
         switch (strtolower($name)) {
             case 'value':
-                if ($this->isVirtual && $this->importValueFromDbObject) {
+                if ($this->isVirtual() && $this->importValueFromDbObject) {
                     break;
                 }
                 $this->values['isset'] = true;
                 $this->values['rawValue'] = $value;
                 $this->values['value'] = $this->convert($this->values['rawValue']);
-                if ($this->isPk && !isset($this->values['value'])) {
+                if ($this->isPk() && !isset($this->values['value'])) {
                     // null pk value may cause non null violation in db - we don't need it to happen
                     unset($this->value);
                 } else {
                     $this->validate();
                     if (!array_key_exists('dbValue', $this->values) || $this->values['dbValue'] !== $this->values['value']) {
                         $this->values['isDbValue'] = false; //< value was updated
-                        $this->dbObject->fieldUpdated($this->name);
+                        $this->dbObject->fieldUpdated($this->getName());
                     }
                 }
                 break;
@@ -232,24 +268,24 @@ class DbObjectField {
     public function __get($name) {
         switch (strtolower($name)) {
             case 'value':
-                if ($this->isVirtual && $this->importValueFromDbObject) {
+                if ($this->isVirtual() && $this->importValueFromDbObject) {
                     if ($this->importValueFromDbObject === true) {
-                        return $this->dbObject->{'_' . $this->name}();
+                        return $this->dbObject->{'_' . $this->getName()}();
                     } else {
                         return $this->dbObject->{$this->importValueFromDbObject};
                     }
                 }
-                if (empty($this->values['isset']) && $this->name !== $this->dbObject->model->getPkColumn()) {
+                if (empty($this->values['isset']) && $this->getName() !== $this->dbObject->model->getPkColumn()) {
                     // value not set and not a primary key
                     if ($this->dbObject->exists()) {
                         // on object update
-                        if (in_array($this->type, self::$fileTypes)) {
+                        if (in_array($this->getType(), self::$fileTypes)) {
                             // import pk form object to create image urls and fill value
                             $this->importPkValue();
                         } else {
                             // value is set in db but possibly was not fetched
                             // to avoid overwriting of correct value object must notify about this situation
-                            $error = "Field [{$this->dbObject->model->getAlias()}->{$this->name}]: value is not set. Possibly value was not fetched from DB";
+                            $error = "Field [{$this->dbObject->model->getAlias()}->{$this->getName()}]: value is not set. Possibly value was not fetched from DB";
                             throw new DbFieldException($this, $error);
                         }
                     } else {
@@ -265,11 +301,11 @@ class DbObjectField {
             case 'isdbvalue':
                 return !empty($this->values['isDbValue']);
             case '_file_path':
-                return ($this->isFile) ? $this->getFilePath() : null;
+                return ($this->isFile()) ? $this->getFilePath() : null;
             case '_file_exists':
-                if ($this->isFile) {
+                if ($this->isFile()) {
                     $path = $this->getFilePath();
-                    return file_exists($this->isImage ? $path['original'] : $path);
+                    return file_exists($this->isImage() ? $path['original'] : $path);
                 }
                 return false;
             case '_date':
@@ -322,9 +358,9 @@ class DbObjectField {
     public function __isset($varName) {
         switch (strtolower($varName)) {
             case 'value':
-                if ($this->isVirtual && $this->importValueFromDbObject) {
+                if ($this->isVirtual() && $this->importValueFromDbObject) {
                     if ($this->importValueFromDbObject === true) {
-                        return $this->dbObject->{'_' . $this->name}() !== null;
+                        return $this->dbObject->{'_' . $this->getName()}() !== null;
                     } else {
                         return isset($this->dbObject->{$this->importValueFromDbObject});
                     }
@@ -334,7 +370,7 @@ class DbObjectField {
             case 'validationerror':
                 return isset($this->values['error']);
             default:
-            throw new DbFieldException($this, "Field [{$this->name}]: unknown property [$varName]");
+            throw new DbFieldException($this, "Field [{$this->getName()}]: unknown property [$varName]");
         }
     }
 
@@ -348,11 +384,11 @@ class DbObjectField {
         if ($value === self::NULL_VALUE) {
             $value = null;
         }
-        if ($value === null && !$this->null) {
+        if ($value === null && !$this->canBeNull()) {
             if (isset($this->default)) {
                 $value = $this->default;
             } else {
-                switch ($this->type) {
+                switch ($this->getType()) {
                     case 'bool':
                     case 'boolean':
                     case self::TYPE_BOOL:
@@ -362,7 +398,7 @@ class DbObjectField {
             }
         }
         if ($value !== null) {
-            switch ($this->type) {
+            switch ($this->getType()) {
                 case 'string':
                 case 'text':
                 case 'varchar':
@@ -432,9 +468,9 @@ class DbObjectField {
                     $value = $this->formatFile($value);
                     break;
                 default:
-                    throw new DbFieldException($this, "Field [{$this->name}]: Unknown field type: [{$this->type}]");
+                    throw new DbFieldException($this, "Field [{$this->getName()}]: Unknown field type: [{$this->getType()}]");
             }
-            if ($this->isUnique && empty($value) && $this->null) {
+            if ($this->isUnique() && empty($value) && $this->canBeNull()) {
                 $value = null;
             }
         }
@@ -467,10 +503,10 @@ class DbObjectField {
      */
     protected function formatFile($value) {
         if (!is_array($value) || !isset($value['tmp_name'])) {
-            if ($this->isImage) {
-                $value = $this->dbObject->getImagesUrl($this->name);
+            if ($this->isImage()) {
+                $value = $this->dbObject->getImagesUrl($this->getName());
             } else {
-                $value = $this->dbObject->getFileUrl($this->name);
+                $value = $this->dbObject->getFileUrl($this->getName());
             }
             $this->isDbValue = true;
         }
@@ -482,21 +518,21 @@ class DbObjectField {
      * @return mixed
      */
     protected function getFilePath() {
-        if (!$this->isFile) {
+        if (!$this->isFile()) {
             return null;
         }
         if (!isset($this->values['file_path'])) {
-            if ($this->isImage) {
-                $this->values['file_path'] = $this->dbObject->getImagesPaths($this->name);
+            if ($this->isImage()) {
+                $this->values['file_path'] = $this->dbObject->getImagesPaths($this->getName());
             } else {
-                $this->values['file_path'] = $this->dbObject->getFilePath($this->name);
+                $this->values['file_path'] = $this->dbObject->getFilePath($this->getName());
             }
         }
         return $this->values['file_path'];
     }
 
     /**
-     * Validate field value using $this->null, $this->required, $this->type, $this->validators
+     * Validate field value using $this->canBeNull(), $this->required, $this->getType(), $this->validators
      * @param bool $silent - true: do not throw exception
      * @param bool $forSave - true: allow additional validations (like isUnique)
      * @return bool
@@ -508,9 +544,9 @@ class DbObjectField {
         if (empty($this->values['isset']) || !empty($this->values['isDbValue'])) {
             return true;
         }
-        if (!$this->_validRequired()) {
+        if (!$this->_validateIfRequired()) {
             $this->values['error'] = self::ERROR_REQUIRED;
-        } else if (!$this->null && !isset($this->values['value'])) {
+        } else if (!$this->canBeNull() && !isset($this->values['value'])) {
             $this->values['error'] = self::ERROR_NOT_NULL;
         } else if (!$this->_validMaxLength()) {
             $this->values['error'] = self::ERROR_TOO_LONG;
@@ -535,14 +571,10 @@ class DbObjectField {
      */
     protected function _validMaxLength() {
         if (
-            $this->length > 0
+            $this->getMaxLength() > 0
             && !empty($this->values['isset'])
         ) {
-            if (in_array($this->type, array(self::TYPE_STRING, self::TYPE_TEXT, 'string', 'text', 'varchar'))) {
-                return mb_strlen($this->values['value']) <= $this->length;
-            } else if (in_array($this->type, array(self::TYPE_INT, 'integer'))) {
-                return mb_strlen("{$this->values['value']}") <= $this->length;
-            }
+            return mb_strlen($this->values['value']) <= $this->getMaxLength();
         }
         return true;
     }
@@ -552,16 +584,14 @@ class DbObjectField {
      * Returns true if field not required
      * @return bool
      */
-    protected function _validRequired() {
+    protected function _validateIfRequired() {
         $valid = true;
-        if ($this->required) {
+        if ($this->isRequiredOnAnyAction()) {
+            // test if there is any value
             $valid = isset($this->values['value']) && (!empty($this->values['value']) || is_bool($this->values['value']) || is_numeric($this->values['value']));
-            if (!$valid && $this->required !== self::ON_ALL) {
-                if ($this->dbObject->exists(false)) {
-                    $valid = $this->required !== self::ON_UPDATE;
-                } else {
-                    $valid = $this->required !== self::ON_CREATE;
-                }
+            // test if value is required for current action
+            if (!$valid) {
+                $valid = !$this->isRequiredOn($this->dbObject->exists(false) ? DbColumnConfig::ON_UPDATE : DbColumnConfig::ON_CREATE);
             }
         }
         return $valid;
@@ -573,20 +603,20 @@ class DbObjectField {
      */
     protected function _isUnique() {
         $valid = true;
-        if ($this->isUnique && !empty($this->values['value'])) {
+        if ($this->isUnique() && !empty($this->values['value'])) {
             if (
                 !is_numeric($this->values['value'])
-                && !in_array($this->type, array(self::TYPE_IP_ADDRESS, self::TYPE_DATE, self::TYPE_TIME, self::TYPE_TIMESTAMP))
+                && !in_array($this->getType(), array(self::TYPE_IP_ADDRESS, self::TYPE_DATE, self::TYPE_TIME, self::TYPE_TIMESTAMP))
             ) {
                 $conditions = array(
                     'OR' => array(
-                        $this->name => $this->values['value'],
-                        DbExpr::create("lower(`{$this->name}`) = lower(``{$this->values['value']}``)")
+                        $this->getName() => $this->values['value'],
+                        DbExpr::create("lower(`{$this->getName()}`) = lower(``{$this->values['value']}``)")
                     )
                 );
             } else {
                 $conditions = array(
-                    $this->name => $this->values['value'],
+                    $this->getName() => $this->values['value'],
                 );
             }
             if ($this->dbObject->exists()) {
@@ -605,7 +635,7 @@ class DbObjectField {
     protected function _validDataFormat() {
         $valid = true;
         if (!empty($this->values['value'])) {
-            switch ($this->type) {
+            switch ($this->getType()) {
                 case 'string':
                 case 'text':
                 case 'varchar':
@@ -694,7 +724,7 @@ class DbObjectField {
                     }
                     break;
                 default:
-                    throw new DbFieldException($this, "Field [{$this->name}]: Unknown field type: [{$this->type}]");
+                    throw new DbFieldException($this, "Field [{$this->getName()}]: Unknown field type: [{$this->getType()}]");
             }
         }
         return $valid;
@@ -718,19 +748,14 @@ class DbObjectField {
      */
     public function skip($skipIfDbValue = false) {
         if (
-            $this->exclude == self::ON_ALL
-            || $this->exclude == ($this->dbObject->exists() ? self::ON_UPDATE : self::ON_CREATE)
-            || $this->isFile
+            $this->isExcludedOn($this->dbObject->exists() ? DbColumnConfig::ON_UPDATE : DbColumnConfig::ON_CREATE)
+            || $this->isFile()
             || ($skipIfDbValue && !empty($this->values['isDbValue']))) {
             return true;
         } else {
             // skip on create/update when not set and not required
-            return empty($this->values['isset']) && $this->_validRequired();
+            return empty($this->values['isset']) && $this->_validateIfRequired();
         }
-    }
-
-    public function isUploadedFile() {
-        return (!$this->values['isDbValue'] && is_array($this->value) && self::isUploadedFile($this->value));
     }
 
     /**
@@ -739,13 +764,13 @@ class DbObjectField {
      * @return bool|string - false: fail | string: file path
      */
     public function restoreImageVersionByFileName($fileName) {
-        if ($this->isImage && !empty($fileName)) {
+        if ($this->isImage() && !empty($fileName)) {
             // find resize profile
             return ImageUtils::restoreVersion(
                 $fileName,
-                $this->dbObject->getBaseFileName($this->name),
-                $this->dbObject->buildPathToFiles($this->name),
-                $this->_info['resize_settings']
+                $this->dbObject->getBaseFileName($this->getName()),
+                $this->dbObject->buildPathToFiles($this->getName()),
+                $this->dbColumnConfig['resize_settings']
             );
         }
         return false;

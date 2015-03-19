@@ -104,9 +104,10 @@ class DbObject {
     public function __construct(DbModel $model, $data = null, $filter = false, $isDbValues = false) {
         $this->model = $model;
         // initiate DbObjectField for all fields
-        foreach ($this->model->fields as $name => $info) {
-            $this->_fields[$name] = new DbObjectField($this, $name, $info);
-            if ($this->_fields[$name]->isFile) {
+        /** @var DbColumnConfig $dbColumnConfig */
+        foreach ($this->model->fields as $name => $dbColumnConfig) {
+            $this->_fields[$name] = new DbObjectField($this, $dbColumnConfig);
+            if ($dbColumnConfig->isFile()) {
                 $this->hasFiles = true;
                 $this->fileFields[] = $name;
             }
@@ -115,10 +116,6 @@ class DbObject {
         if (empty($this->_fields[$this->model->getPkColumn()])) {
             throw new DbObjectException($this, "Primary key field [{$this->model->getPkColumn()}] not found in Model->fields");
         }
-        // mark and modify pk field
-        $this->_fields[$this->model->getPkColumn()]->isPk = true;
-        $this->_fields[$this->model->getPkColumn()]->required = false;
-        $this->_fields[$this->model->getPkColumn()]->null = true;
         // initiate related objects
         /** @var DbRelationConfig $settings */
         foreach ($this->model->relations as $alias => $settings) {
@@ -243,7 +240,7 @@ class DbObject {
                 $relationFieldValue = $object->$relationField;
             }
             if ($localFieldIsPrimaryKey || empty($relationFieldValue)) {
-                if ($localFieldIsPrimaryKey || $this->_fields[$localField]->required) {
+                if ($localFieldIsPrimaryKey || $this->_fields[$localField]->isRequiredOnAnyAction()) {
                     // local field is empty and is required or is primary key
                     throw new DbObjectException($this, "Cannot link [{$this->model->getAlias()}] with [{$alias}]: [{$this->model->getAlias()}->{$localField}] and {$alias}->{$relationField} are empty");
                 }
@@ -1053,7 +1050,7 @@ class DbObject {
         $localField = $this->_aliasToLocalField[$relationAlias];
         if (empty($this->$localField)) {
             // local field empty - bad situation but possible when creating new record together with all related
-            if (!$ignorePkNotSetError || ($localField != $this->model->getPkColumn() && $this->_fields[$localField]->required)) {
+            if (!$ignorePkNotSetError || ($localField != $this->model->getPkColumn() && $this->_fields[$localField]->isRequiredOnAnyAction())) {
                 throw new DbObjectException($this, "Cannot validate relation between [{$this->model->getAlias()}] and [{$relationAlias}]: [{$this->model->getAlias()}->{$localField}] is empty");
             }
         } else {
@@ -1087,7 +1084,7 @@ class DbObject {
         $this->_relatedObjects[$relationAlias] = array();
         $relationType = $this->_aliasToRelationType[$relationAlias];
         $localField = $this->_aliasToLocalField[$relationAlias];
-        if (empty($this->$localField) && !$this->_fields[$localField]->null) {
+        if (empty($this->$localField) && !$this->_fields[$localField]->canBeNull()) {
             // local field empty - bad situation
             throw new DbObjectException($this, "Cannot find related object [{$relationAlias}] [{$this->model->getAlias()}->{$localField}] is empty");
         } else if (empty($this->$localField)) {
@@ -1274,7 +1271,7 @@ class DbObject {
             $fields = array_intersect($this->fileFields, $fields);
         }
         foreach ($fields as $fieldName) {
-            if ($this->_fields[$fieldName]->isFile && $this->_fields[$fieldName]->isUploadedFile()) {
+            if ($this->_fields[$fieldName]->isUploadedFile()) {
                 $this->saveFile($fieldName, $this->_fields[$fieldName]->value);
             }
         }
@@ -1393,9 +1390,7 @@ class DbObject {
             return false;
         }
         foreach ($this->fileFields as $fieldName) {
-            if ($this->_fields[$fieldName]->isFile) {
-                Folder::load($this->buildPathToFiles($fieldName))->delete();
-            }
+            Folder::load($this->buildPathToFiles($fieldName))->delete();
         }
         return true;
     }
@@ -1477,14 +1472,14 @@ class DbObject {
         foreach ($fields as $name) {
             if (isset($this->_fields[$name]->value)) {
                 $values[$name] = $this->_fields[$name]->value;
-            } else if ($this->exists() && $this->_fields[$name]->isFile) {
+            } else if ($this->exists() && $this->_fields[$name]->isFile()) {
                 $this->_fields[$name]->value = $this->{$this->model->getPkColumn()}; //< this will trigger file path generation
                 $values[$name] = $this->_fields[$name]->value;
                 /*$server = !empty($this->model->fields[$name]['server']) ? $this->model->fields[$name]['server'] : null;
                 if ($this->_fields[$name]->isImage && $server == \Server::alias()) {
                     $values[$name . '_path'] = $this->{$name . '_path'};
                 }*/
-                if ($this->_fields[$name]->isImage) {
+                if ($this->_fields[$name]->isImage()) {
                     $values[$name . '_path'] = $this->{$name . '_path'};
                 }
             }
@@ -1545,10 +1540,6 @@ class DbObject {
             $values[$name] = $this->_fields[$name]->default;
         }
         return $values;
-    }
-
-    static public function isUploadedFile($fileInfo) {
-        return array_key_exists('tmp_name', $fileInfo) && empty($fileInfo['error']) && !empty($fileInfo['size']);
     }
 
     /**

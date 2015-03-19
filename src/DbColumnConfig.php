@@ -3,6 +3,7 @@
 namespace ORM;
 
 use ORM\Exception\DbColumnConfigException;
+use ORM\Exception\DbTableConfigException;
 use PeskyORM\DbObject;
 
 class DbColumnConfig {
@@ -22,7 +23,7 @@ class DbColumnConfig {
     const TYPE_TIME = 'time';
     const TYPE_TIMEZONE_OFFSET = 'timezone_offset';
     const TYPE_ENUM = 'enum';
-    const TYPE_IP_ADDRESS = 'ip';
+    const TYPE_IPV4_ADDRESS = 'ip';
     const TYPE_FILE = 'file';
     const TYPE_IMAGE = 'image';
 
@@ -53,7 +54,7 @@ class DbColumnConfig {
      * self::ON_ALL - field is required for both creation and update
      * self::ON_CREATE - field is required only for creation
      * self::ON_UPDATE - field is required only for update
-     * @var int
+     * @var bool|string
      */
     protected $isRequired = self::ON_NONE;
     /** @var bool */
@@ -89,6 +90,19 @@ class DbColumnConfig {
 
     static public $imageFileTypes = array(
         self::TYPE_IMAGE,
+    );
+
+    static protected $maxLengthAllowedFor = array(
+        self::TYPE_STRING,
+        self::TYPE_SHA1,
+        self::TYPE_MD5,
+        self::TYPE_EMAIL,
+        self::TYPE_ENUM,
+    );
+
+    static protected $maxLengthForcedValues = array(
+        self::TYPE_SHA1 => 40,
+        self::TYPE_MD5 => 32,
     );
 
     /**
@@ -136,8 +150,13 @@ class DbColumnConfig {
     /**
      * @param string $name
      * @return $this
+     * @throws DbColumnConfigException
      */
     protected function setName($name) {
+        $pattern = '^[a-zA-Z][a-zA-Z0-9_]*$';
+        if (!preg_match("%^{$pattern}$%is", $name)) {
+            throw new DbColumnConfigException($this, "Invalid DB column name [$name]. Column name pattern: $pattern");
+        }
         $this->name = $name;
         return $this;
     }
@@ -154,7 +173,7 @@ class DbColumnConfig {
      * @return $this
      */
     protected function setType($type) {
-        $this->type = $type;
+        $this->type = strtolower($type);
         if (in_array($type, self::$fileTypes)) {
             $this->setIsFile(true);
             $this->setIsVirtual(true);
@@ -162,6 +181,8 @@ class DbColumnConfig {
             if (in_array($type, self::$imageFileTypes)) {
                 $this->setIsImage(true);
             }
+        } else if (in_array($type, self::$maxLengthForcedValues)) {
+            $this->maxLength = self::$maxLengthForcedValues[$type];
         }
         return $this;
     }
@@ -174,11 +195,20 @@ class DbColumnConfig {
     }
 
     /**
-     * @param int $maxLength
+     * @param int $maxLength - 0 = unlimited
      * @return $this
+     * @throws DbColumnConfigException
      */
     public function setMaxLength($maxLength) {
-        $this->maxLength = $maxLength;
+        if (!is_int($maxLength) && !preg_match('%^\d+$%', $maxLength) || intval($maxLength) < 0) {
+            throw new DbColumnConfigException($this, "Invalid value provided for max length: {$maxLength}");
+        }
+        if (!in_array($this->getType(), self::$maxLengthAllowedFor)) {
+            throw new DbColumnConfigException($this, "Max length option cannot be applied to column with type [{$this->getType()}]");
+        } else if (in_array($this->getType(), self::$maxLengthForcedValues)) {
+            throw new DbColumnConfigException($this, "Max length option value for column with type [{$this->getType()}] is fixed to [{$this->maxLength}]");
+        }
+        $this->maxLength = intval($maxLength);
         return $this;
     }
 
@@ -235,9 +265,28 @@ class DbColumnConfig {
     }
 
     /**
-     * @return int
+     * @param string $action - self::ON_UPDATE or self::ON_CREATE
+     * @return bool
+     * @throws DbColumnConfigException
      */
-    public function isRequired() {
+    public function isRequiredOn($action) {
+        if (!is_string($action) || !in_array(strtolower($action), array(self::ON_UPDATE, self::ON_CREATE))) {
+            throw new DbColumnConfigException($this, "Invalid argument \$forAction = [{$action}] passed to isRequired()");
+        }
+        return $this->isRequired === self::ON_ALL || $this->isRequired === strtolower($action);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isRequiredOnAnyAction() {
+        return $this->isRequired !== self::ON_NONE;
+    }
+
+    /**
+     * @return bool|string - one of self::ON_UPDATE, self::ON_CREATE, self::ON_ALL, self::ON_NONE
+     */
+    public function getIsRequired() {
         return $this->isRequired;
     }
 
@@ -248,9 +297,11 @@ class DbColumnConfig {
      */
     public function setIsRequired($isRequired) {
         if (is_bool($isRequired)) {
-            $this->isRequired = $isRequired ? 1 : 0;
-        } else if ($isRequired >= self::ON_NONE && $isRequired <= self::ON_UPDATE) {
             $this->isRequired = $isRequired;
+        } else if ($isRequired === 1 || $isRequired === '1' || $isRequired === 0 || $isRequired === '0') {
+            $this->isRequired = intval($isRequired) === 1;
+        } else if (in_array(strtolower($isRequired), array(self::ON_UPDATE, self::ON_CREATE))) {
+            $this->isRequired = strtolower($isRequired);
         } else {
             throw new DbColumnConfigException($this, "Invalid value [$isRequired] passed to [setIsRequired]");
         }
@@ -306,9 +357,28 @@ class DbColumnConfig {
     }
 
     /**
-     * @return int
+     * @param string $action - self::ON_UPDATE or self::ON_CREATE
+     * @return bool
+     * @throws DbColumnConfigException
      */
-    public function isExcluded() {
+    public function isExcludedOn($action) {
+        if (!is_string($action) || !in_array(strtolower($action), array(self::ON_UPDATE, self::ON_CREATE))) {
+            throw new DbColumnConfigException($this, "Invalid argument \$forAction = [{$action}] passed to isExcluded()");
+        }
+        return $this->isExcluded === self::ON_ALL || $this->isExcluded === strtolower($action);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isExcludedOnAnyAction() {
+        return $this->isExcluded !== self::ON_NONE;
+    }
+
+    /**
+     * @return bool|string - one of self::ON_UPDATE, self::ON_CREATE, self::ON_ALL, self::ON_NONE
+     */
+    public function getIsExcluded() {
         return $this->isExcluded;
     }
 
@@ -319,9 +389,11 @@ class DbColumnConfig {
      */
     public function setIsExcluded($isExcluded) {
         if (is_bool($isExcluded)) {
-            $this->isExcluded = $isExcluded ? 1 : 0;
-        } else if ($isExcluded >= self::ON_NONE && $isExcluded <= self::ON_UPDATE) {
             $this->isExcluded = $isExcluded;
+        } else if ($isExcluded === 1 || $isExcluded === '1' || $isExcluded === 0 || $isExcluded === '0') {
+            $this->isExcluded = intval($isExcluded) === 1;
+        } else if (in_array(strtolower($isExcluded), array(self::ON_UPDATE, self::ON_CREATE))) {
+            $this->isExcluded = strtolower($isExcluded);
         } else {
             throw new DbColumnConfigException($this, "Invalid value [$isExcluded] passed to [setIsExcluded]");
         }
