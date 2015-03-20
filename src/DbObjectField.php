@@ -4,8 +4,6 @@ namespace PeskyORM;
 
 use ORM\DbColumnConfig;
 use PeskyORM\Exception\DbFieldException;
-use PeskyORM\Lib\ImageUtils;
-use PeskyORM\Lib\Utils;
 
 /**
  * Class DbObjectField

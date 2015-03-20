@@ -3,6 +3,7 @@
 namespace PeskyORM;
 use ORM\DbColumnConfig;
 use ORM\DbObjectField\FileField;
+use ORM\DbObjectField\ImageField;
 use ORM\DbRelationConfig;
 use PeskyORM\Exception\DbObjectException;
 use PeskyORM\Lib\File;
@@ -106,9 +107,11 @@ class DbObject {
     public function __construct(DbModel $model, $data = null, $filter = false, $isDbValues = false) {
         $this->model = $model;
         // initiate DbObjectField for all fields
+        $nameSpace = __NAMESPACE__ . '\\DbObjectField';
         /** @var DbColumnConfig $dbColumnConfig */
         foreach ($this->model->fields as $name => $dbColumnConfig) {
-            $this->_fields[$name] = new DbObjectField($this, $dbColumnConfig);
+            $fieldClass = $dbColumnConfig->getClassName($nameSpace);
+            $this->_fields[$name] = new $fieldClass($this, $dbColumnConfig);
             if ($dbColumnConfig->isFile()) {
                 $this->hasFiles = true;
                 $this->fileFields[] = $name;
@@ -524,7 +527,9 @@ class DbObject {
             && in_array($fieldParts[1], $this->fileFields)
             && count($args) == 1
         ) {
-            return $this->exists() ? $this->_fields[$fieldParts[1]]->restoreImageVersionByFileName($args[0]) : false;
+            /** @var ImageField $field */
+            $field = $this->_fields[$fieldParts[1]];
+            return $this->exists() ? $field->restoreImageVersionByFileName($args[0]) : false;
         } else {
             throw new DbObjectException($this, "Unknown method: [$fieldNameOrAlias]");
         }
@@ -647,7 +652,7 @@ class DbObject {
     public function __isset($fieldNameOrAlias) {
         if (array_key_exists($fieldNameOrAlias, $this->_fields)) {
             // field
-            return isset($this->_fields[$fieldNameOrAlias]->getValue());
+            return $this->_fields[$fieldNameOrAlias]->hasValue();
         } else if (isset($this->_aliasToLocalField[$fieldNameOrAlias])) {
             // related object
             if (is_object($this->_relatedObjects[$fieldNameOrAlias])) {
