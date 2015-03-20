@@ -3,7 +3,10 @@
 
 namespace ORM\DbObjectField;
 
+use ORM\Lib\ValidateValue;
 use PeskyORM\DbObjectField;
+use PeskyORM\Exception\DbFieldException;
+use PeskyORM\Lib\Utils;
 
 class TimestampField extends DbObjectField {
 
@@ -11,23 +14,23 @@ class TimestampField extends DbObjectField {
     protected $dateFormat = 'Y-m-d';
     protected $timeFormat = 'H:i:s';
 
-    /**
-     * Converts $value to required date-time format
-     * @param int|string $value - int: unix timestamp | string: valid date/time/date-time string
-     * @param string $format - resulting value format
-     * @param string|int|bool $now - current unix timestamp or any valid strtotime() string
-     * @return string
-     */
-    protected function formatDateTime($value, $format, $now = 'now') {
+    protected function doBasicValueValidationAndConvertion($value) {
         if (empty($value)) {
-            $value = null;
-        } else if (is_int($value) || is_numeric($value)) {
-            $value = date($format, $value);
-        } else if (strtotime($value) != 0) {
-            // convert string value to unix timestamp and then to required date format
-            $value = date($format, strtotime($value, is_string($now) && !is_numeric($now) ? strtotime($now) : 0));
+            return null; //< also prevents situation when unixtimestamp = 0 is passed
         }
-        return $value;
+        if (!ValidateValue::isDateTime($value)) {
+            throw new DbFieldException($this, "Value [{$value}] is not date-time or has bad formatting");
+        }
+        return Utils::formatDateTime($value, $this->getTimestampFormat());
+    }
+
+    protected function isValidValueFormat($value) {
+        $isValid = true;
+        if (!empty($value) && !ValidateValue::isDateTime($value)) {
+            $isValid = false;
+            $this->setValidationError('Value [{$value}] is not date-time or has bad formatting');
+        }
+        return $isValid;
     }
 
     /**

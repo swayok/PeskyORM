@@ -3,6 +3,7 @@
 namespace ORM;
 
 use ORM\Exception\DbColumnConfigException;
+use ORM\Lib\ValidateValue;
 use PeskyORM\Lib\StringUtils;
 
 class DbColumnConfig {
@@ -92,6 +93,8 @@ class DbColumnConfig {
     /** @var string */
     protected $dbType;
     /** @var int */
+    protected $minLength = 0;
+    /** @var int */
     protected $maxLength = 0;
     /** @var bool */
     protected $isNullable = true;
@@ -147,15 +150,14 @@ class DbColumnConfig {
         self::TYPE_IMAGE,
     );
 
-    static protected $maxLengthAllowedFor = array(
-        self::DB_TYPE_VARCHAR,
-        self::DB_TYPE_IP_ADDRESS
+    static protected $valueLengthOptionsAllowedForDbTypes = array(
+        self::DB_TYPE_VARCHAR
     );
 
-    static protected $maxLengthForcedValues = array(
-        self::TYPE_SHA1 => 40,
-        self::TYPE_MD5 => 32,
-        self::TYPE_IPV4_ADDRESS => 15,
+    static protected $valueLengthOptionsNotAllowedForTypes = array(
+        self::TYPE_SHA1,
+        self::TYPE_MD5,
+        self::TYPE_IPV4_ADDRESS,
     );
 
     /**
@@ -252,8 +254,6 @@ class DbColumnConfig {
             if (in_array($type, self::$imageFileTypes)) {
                 $this->setIsImage(true);
             }
-        } else if (in_array($type, self::$maxLengthForcedValues)) {
-            $this->maxLength = self::$maxLengthForcedValues[$type];
         }
         return $this;
     }
@@ -291,15 +291,48 @@ class DbColumnConfig {
      * @throws DbColumnConfigException
      */
     public function setMaxLength($maxLength) {
-        if (!is_int($maxLength) && !preg_match('%^\d+$%', $maxLength) || intval($maxLength) < 0) {
-            throw new DbColumnConfigException($this, "Invalid value provided for max length: {$maxLength}");
-        }
-        if (!in_array($this->getType(), self::$maxLengthAllowedFor)) {
+        if (!in_array($this->getDbType(), self::$valueLengthOptionsAllowedForDbTypes)) {
             throw new DbColumnConfigException($this, "Max length option cannot be applied to column with type [{$this->getType()}]");
-        } else if (in_array($this->getType(), self::$maxLengthForcedValues)) {
+        }
+        if (in_array($this->getType(), self::$valueLengthOptionsNotAllowedForTypes)) {
             throw new DbColumnConfigException($this, "Max length option value for column with type [{$this->getType()}] is fixed to [{$this->maxLength}]");
         }
-        $this->maxLength = intval($maxLength);
+        if (!ValidateValue::isInteger($maxLength, true) && $maxLength < 0) {
+            throw new DbColumnConfigException($this, "Invalid value provided for max length: {$maxLength}");
+        }
+        if ($this->getMinLength() > 0 && $maxLength < $this->getMinLength()) {
+            throw new DbColumnConfigException($this, "Max length [{$maxLength}] cannot be lower then min length [{$this->getMinLength()}]");
+        }
+        $this->maxLength = $maxLength;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getMinLength() {
+        return $this->maxLength;
+    }
+
+    /**
+     * @param int $minLength - 0 = unlimited
+     * @return $this
+     * @throws DbColumnConfigException
+     */
+    public function setMinLength($minLength) {
+        if (!in_array($this->getDbType(), self::$valueLengthOptionsAllowedForDbTypes)) {
+            throw new DbColumnConfigException($this, "Min length option cannot be applied to column with type [{$this->getType()}]");
+        }
+        if (in_array($this->getType(), self::$valueLengthOptionsNotAllowedForTypes)) {
+            throw new DbColumnConfigException($this, "Min length option value for column with type [{$this->getType()}] is fixed to [{$this->maxLength}]");
+        }
+        if (!ValidateValue::isInteger($minLength, true) || $minLength < 0) {
+            throw new DbColumnConfigException($this, "Invalid value provided for min length: {$minLength}");
+        }
+        if ($this->getMaxLength() > 0 && $minLength > $this->getMaxLength()) {
+            throw new DbColumnConfigException($this, "Min length [{$minLength}] cannot be higher then max length [{$this->getMaxLength()}]");
+        }
+        $this->minLength = $minLength;
         return $this;
     }
 

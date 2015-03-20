@@ -6,6 +6,17 @@ namespace ORM\DbObjectField;
 use PeskyORM\Lib\ImageUtils;
 
 class ImageField extends FileField {
+    protected function isValidValueFormat($value) {
+        $isValid = true;
+        if (!empty($value) && is_array($value) && array_key_exists('tmp_file', $value)) {
+            $isValid = ImageUtils::isImage($value);
+            if (!$isValid) {
+                $this->setValidationError('Uploaded file is not image or image type is not supported');
+            }
+        }
+        return $isValid;
+    }
+
 
     /**
      * Get fs path to file

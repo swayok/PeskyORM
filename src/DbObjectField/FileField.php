@@ -8,6 +8,14 @@ use PeskyORM\Lib\Utils;
 
 class FileField extends DbObjectField {
 
+    protected function doBasicValueValidationAndConvertion($value) {
+        return $this->formatFile($value);
+    }
+
+    /**
+     * @return bool
+     * @throws \PeskyORM\Exception\DbFieldException
+     */
     public function isUploadedFile() {
         return (!$this->isValueReceivedFromDb() && is_array($this->getValue()) && Utils::isUploadedFile($this->getValue()));
     }

@@ -2,6 +2,8 @@
 
 namespace PeskyORM\Lib;
 
+use ORM\Lib\ValidateValue;
+
 class Utils {
 
     static public function printToStr() {
@@ -92,5 +94,29 @@ class Utils {
 
     static public function isUploadedFile($fileInfo) {
         return array_key_exists('tmp_name', $fileInfo) && empty($fileInfo['error']) && !empty($fileInfo['size']);
+    }
+
+    /**
+     * Converts $value to required date-time format
+     * @param int|string $value - int: unix timestamp | string: valid date/time/date-time string
+     * @param string $format - resulting value format
+     * @param string|int|bool $now - current unix timestamp or any valid strtotime() string
+     * @return string
+     */
+    static public function formatDateTime($value, $format, $now = 'now') {
+        if (is_string($value) && strtotime($value) != 0) {
+            // convert string value to unix timestamp and then to required date format
+            if (!is_string($now) && !is_int($now)) {
+                $now = 'now';
+            }
+            if (strtolower($now) === 'now' || empty($now)) {
+                $value = strtotime($value);
+            } else if (is_numeric($now)) {
+                $value = strtotime($value, $now);
+            } else {
+                $value = strtotime($value, strtotime($now));
+            }
+        }
+        return ValidateValue::isInteger($value, false) ? date($format, $value) : null;
     }
 }
