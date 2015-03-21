@@ -10,7 +10,9 @@ abstract class DbTableConfig {
     protected $db = 'default';
     protected $schema = 'public';
     protected $name;
-    protected $pk;
+    protected $pk = null;
+    protected $hasFileColumns = false;
+    protected $fileColumns = array();
 
     /** @var DbColumnConfig[] */
     protected $columns = array();
@@ -42,11 +44,31 @@ abstract class DbTableConfig {
             }
             $this->pk = $config->getName();
         }
+        if ($config->isFile()) {
+            $this->fileColumns[$config->getName()] = $config;
+            $this->hasFileColumns = true;
+        }
         return $this;
     }
 
+    /**
+     * @param $colName
+     * @return bool
+     */
     public function hasColumn($colName) {
-        return !empty($this->columns[$colName]);
+        return is_string($colName) && !empty($this->columns[$colName]);
+    }
+
+    /**
+     * @param $colName
+     * @return DbColumnConfig
+     * @throws DbTableConfigException
+     */
+    public function getColumn($colName) {
+        if (!$this->hasColumn($colName)) {
+            throw new DbTableConfigException($this, "Table does not contain column [{$colName}]");
+        }
+        return $this->columns[$colName];
     }
 
     protected function addRelation(DbRelationConfig $config, $alias = null) {
@@ -68,6 +90,26 @@ abstract class DbTableConfig {
     }
 
     /**
+     * @param $alias
+     * @return bool
+     */
+    protected function hasRelation($alias) {
+        return is_string($alias) && !empty($this->relations[$alias]);
+    }
+
+    /**
+     * @param $alias
+     * @return DbRelationConfig
+     * @throws DbTableConfigException
+     */
+    protected function getRelation($alias) {
+        if (!$this->hasRelation($alias)) {
+            throw new DbTableConfigException($this, "Table has no relation [{$alias}]");
+        }
+        return $this->relations[$alias];
+    }
+
+    /**
      * @return string
      */
     public function getDb() {
@@ -82,7 +124,7 @@ abstract class DbTableConfig {
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getName() {
         return $this->name;
@@ -103,12 +145,39 @@ abstract class DbTableConfig {
     }
 
     /**
-     * @return mixed
+     * @return string|null
      */
     public function getPk() {
         return $this->pk;
     }
 
+    /**
+     * @return bool
+     */
+    public function hasPk() {
+        return $this->pk !== null;
+    }
 
+    /**
+     * @return bool
+     */
+    public function hasFileColumns() {
+        return $this->hasFileColumns;
+    }
+
+    /**
+     * @param $colName
+     * @return bool
+     */
+    public function hasFileColumn($colName) {
+        return is_string($colName) && !empty($this->hasFileColumns[$colName]);
+    }
+
+    /**
+     * @return DbColumnConfig[] = array('column_name' => DbColumnConfig)
+     */
+    public function getFileColumns() {
+        return $this->fileColumns;
+    }
 
 }

@@ -83,6 +83,10 @@ abstract class DbModel {
         }
     }
 
+    /**
+     * @param $relationAlias
+     * @return array
+     */
     public function getAdditionalConditionsForRelation($relationAlias) {
         if (!empty($this->relationsConditions[$relationAlias])) {
             return $this->relationsConditions[$relationAlias];
@@ -90,16 +94,32 @@ abstract class DbModel {
         return array();
     }
 
+    /**
+     * @return string
+     */
     public function getNameSpace() {
         return $this->nameSpace;
     }
 
+    /**
+     * @return string
+     */
     public function getTableName() {
         return $this->tableConfig->getName();
     }
 
+    /**
+     * @return string|null
+     */
     public function getPkColumn() {
         return $this->tableConfig->getPk();
+    }
+
+    /**
+     * @return string|null
+     */
+    public function hasPkColumn() {
+        return $this->tableConfig->hasPk();
     }
 
     /**
@@ -107,6 +127,13 @@ abstract class DbModel {
      */
     public function getTableConfig() {
         return $this->tableConfig;
+    }
+
+    /**
+     * @return \ORM\DbColumnConfig[]
+     */
+    public function getTableColumnsConfigs() {
+        return $this->getTableConfig()->getColumns();
     }
 
     /**

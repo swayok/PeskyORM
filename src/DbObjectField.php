@@ -277,7 +277,7 @@ abstract class DbObjectField {
         if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
             return $this->dbObject->{$this->dbColumnConfig->importVirtualColumnValueFrom()};
         }
-        if (!$this->hasValue() && $this->getName() !== $this->dbObject->model->getPkColumn()) {
+        if (!$this->hasValue() && $this->getName() !== $this->dbObject->_model->getPkColumn()) {
             // value not set and not a primary key
             if ($this->dbObject->exists()) {
                 // on object update
@@ -287,7 +287,7 @@ abstract class DbObjectField {
                 } else {
                     // value is set in db but possibly was not fetched
                     // to avoid overwriting of correct value object must notify about this situation
-                    $error = "Field [{$this->dbObject->model->getAlias()}->{$this->getName()}]: value is not set. Possibly value was not fetched from DB";
+                    $error = "Field [{$this->dbObject->_model->getAlias()}->{$this->getName()}]: value is not set. Possibly value was not fetched from DB";
                     throw new DbFieldException($this, $error);
                 }
             } else {
@@ -490,9 +490,9 @@ abstract class DbObjectField {
                 );
             }
             if ($this->dbObject->exists()) {
-                $conditions[$this->dbObject->model->getPkColumn() . '!='] = $this->dbObject->pkValue();
+                $conditions[$this->dbObject->_model->getPkColumn() . '!='] = $this->dbObject->pkValue();
             }
-            $valid = $this->dbObject->model->count($conditions) == 0;
+            $valid = $this->dbObject->_model->count($conditions) == 0;
         }
         return $valid;
     }
