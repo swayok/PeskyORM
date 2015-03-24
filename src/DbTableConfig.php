@@ -20,10 +20,14 @@ abstract class DbTableConfig {
     /** @var DbRelationConfig[] */
     protected $relations = array();
 
+    /** @var DbTableConfig[]  */
     static private $instances = array();
 
     protected function __construct() {}
 
+    /**
+     * @return $this
+     */
     static public function get() {
         $className = get_called_class();
         if (empty(self::$instances[$className])) {
@@ -32,6 +36,11 @@ abstract class DbTableConfig {
         return self::$instances[$className];
     }
 
+    /**
+     * @param DbColumnConfig $config
+     * @return $this
+     * @throws DbTableConfigException
+     */
     protected function addColumn(DbColumnConfig $config) {
         if (!empty($this->columns[$config->getName()])) {
             throw new DbTableConfigException($this, "Duplicate config received for column [{$config->getName()}]");
@@ -52,7 +61,7 @@ abstract class DbTableConfig {
     }
 
     /**
-     * @param $colName
+     * @param string $colName
      * @return bool
      */
     public function hasColumn($colName) {
@@ -60,7 +69,7 @@ abstract class DbTableConfig {
     }
 
     /**
-     * @param $colName
+     * @param string $colName
      * @return DbColumnConfig
      * @throws DbTableConfigException
      */
@@ -71,6 +80,13 @@ abstract class DbTableConfig {
         return $this->columns[$colName];
     }
 
+    /**
+     * @param DbRelationConfig $config
+     * @param null $alias
+     * @return $this
+     * @throws DbTableConfigException
+     * @throws Exception\DbColumnConfigException
+     */
     protected function addRelation(DbRelationConfig $config, $alias = null) {
         if ($config->getTable() !== $this->getName()) {
             throw new DbTableConfigException($this, "Invalid source table of relation [{$config->getTable()}]. Source table should be [{$this->getName()}]");
@@ -90,19 +106,19 @@ abstract class DbTableConfig {
     }
 
     /**
-     * @param $alias
+     * @param string $alias
      * @return bool
      */
-    protected function hasRelation($alias) {
+    public function hasRelation($alias) {
         return is_string($alias) && !empty($this->relations[$alias]);
     }
 
     /**
-     * @param $alias
+     * @param string $alias
      * @return DbRelationConfig
      * @throws DbTableConfigException
      */
-    protected function getRelation($alias) {
+    public function getRelation($alias) {
         if (!$this->hasRelation($alias)) {
             throw new DbTableConfigException($this, "Table has no relation [{$alias}]");
         }

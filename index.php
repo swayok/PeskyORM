@@ -35,11 +35,5 @@ spl_autoload_register(function ($class) {
     }
 });
 
-$config = array(
-    'host' => 'localhost',
-    'driver' => 'pgsql',
-    'database' => 'cmroaddb',
-    'user' => 'test',
-    'password' => 'test',
-);
-\PeskyORM\DbModel::setDbConfigs(array('default' => $config));
+$config = new \PeskyORM\DbConnectionConfig('cmroaddb', 'test', 'test', \PeskyORM\DbConnectionConfig::POSTGRESQL);
+\PeskyORM\DbModel::setDbConnectionConfig($config, 'default');

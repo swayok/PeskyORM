@@ -5,7 +5,7 @@ namespace ORM\Exception;
 use ORM\DbColumnConfig;
 use ORM\DbTableConfig;
 
-class DbTableConfigException extends \Exception {
+class DbTableConfigException extends DbConfigException {
 
     protected $dbTableConfig;
 

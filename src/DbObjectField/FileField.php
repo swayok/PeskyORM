@@ -24,7 +24,7 @@ class FileField extends DbObjectField {
      * Get fs path to file
      * @return mixed
      */
-    protected function getFilePath() {
+    public function getFilePath() {
         if (!isset($this->values['file_path'])) {
             $this->values['file_path'] = $this->dbObject->getFilePath($this->getName());
         }
@@ -34,7 +34,7 @@ class FileField extends DbObjectField {
     /**
      * @return bool
      */
-    protected function isFileExists() {
+    public function isFileExists() {
         return file_exists($this->getFilePath());
     }
 
