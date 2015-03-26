@@ -35,5 +35,9 @@ spl_autoload_register(function ($class) {
     }
 });
 
-$config = new \PeskyORM\DbConnectionConfig('cmroaddb', 'test', 'test', \PeskyORM\DbConnectionConfig::POSTGRESQL);
+$config = \PeskyORM\DbConnectionConfig::create()
+    ->setDriver(\PeskyORM\DbConnectionConfig::POSTGRESQL)
+    ->setDbName('cmroaddb')
+    ->setUserName('test')
+    ->setPassword('test');
 \PeskyORM\DbModel::setDbConnectionConfig($config, 'default');

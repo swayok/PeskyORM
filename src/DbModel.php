@@ -373,7 +373,7 @@ abstract class DbModel {
      * @param DbConnectionConfig $dbConnectionConfig
      * @param $alias
      */
-    static public function setDbConnectionConfig(DbConnectionConfig $dbConnectionConfig, $alias) {
+    static public function setDbConnectionConfig(DbConnectionConfig $dbConnectionConfig, $alias = 'default') {
         self::$dbConnectionConfigs[$alias] = $dbConnectionConfig;
     }
 

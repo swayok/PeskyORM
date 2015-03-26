@@ -19,7 +19,7 @@ class DbConnectionConfig {
     /** @var string */
     private $host = 'localhost';
     /** @var string */
-    private $driver;
+    private $driver = self::POSTGRESQL;
     /** @var string */
     private $dbName;
     /** @var string */
@@ -27,36 +27,21 @@ class DbConnectionConfig {
     /** @var string */
     private $password;
 
-    /**
-     * @param string $dbName
-     * @param string $userName
-     * @param string $password
-     * @param string string $driver
-     * @param string string $host
-     * @throws DbConnectionConfigException
-     */
-    public function __construct($dbName, $userName, $password, $driver = self::POSTGRESQL, $host = 'localhost') {
-        if (empty($dbName)) {
-            throw new DbConnectionConfigException($this, "DB Name cannot be empty");
-        }
-        if (empty($userName)) {
-            throw new DbConnectionConfigException($this, "User Name for DB connection cannot be empty");
-        }
-        if (empty($password)) {
-            throw new DbConnectionConfigException($this, "User Password for DB connection cannot be empty");
-        }
-        if (empty($driver)) {
-            throw new DbConnectionConfigException($this, "DB Driver cannot be empty");
-        }
-        if (!in_array($driver, self::$drivers)) {
-            throw new DbConnectionConfigException($this, "DB Driver [{$driver}] is not supported");
-        }
+    static public function create() {
+        return new DbConnectionConfig();
+    }
 
-        $this->dbName = $dbName;
-        $this->userName = $userName;
-        $this->password = $password;
-        $this->driver = $driver;
+    public function __construct() {
+
+    }
+
+    /**
+     * @param string $host
+     * @return $this
+     */
+    public function setHost($host) {
         $this->host = empty($host) ? 'localhost' : $host;
+        return $this;
     }
 
     /**
@@ -67,31 +52,106 @@ class DbConnectionConfig {
     }
 
     /**
+     * @param string $driver
+     * @return $this
+     * @throws DbConnectionConfigException
+     */
+    public function setDriver($driver) {
+        if (empty($driver)) {
+            throw new DbConnectionConfigException($this, "DB Driver cannot be empty");
+        }
+        if (!in_array($driver, self::$drivers)) {
+            throw new DbConnectionConfigException($this, "DB Driver [{$driver}] is not supported");
+        }
+        $this->driver = $driver;
+        return $this;
+    }
+
+    /**
      * @return string
+     * @throws DbConnectionConfigException
      */
     public function getDriver() {
+        if (empty($driver)) {
+            throw new DbConnectionConfigException($this, "DB Driver cannot be empty");
+        }
+        if (!in_array($driver, self::$drivers)) {
+            throw new DbConnectionConfigException($this, "DB Driver [{$driver}] is not supported");
+        }
         return $this->driver;
     }
 
     /**
+     * @param string $dbName
+     * @return $this
+     * @throws DbConnectionConfigException
+     */
+    public function setDbName($dbName) {
+        if (empty($dbName)) {
+            throw new DbConnectionConfigException($this, "DB Name cannot be empty");
+        }
+        $this->dbName = $dbName;
+        return $this;
+    }
+
+    /**
      * @return string
+     * @throws DbConnectionConfigException
      */
     public function getDbName() {
+        if (empty($dbName)) {
+            throw new DbConnectionConfigException($this, "DB Name cannot be empty");
+        }
         return $this->dbName;
     }
 
     /**
-     * @return string
+     * @param string $userName
+     * @return $this
+     * @throws DbConnectionConfigException
      */
-    public function getUserName() {
-        return $this->userName;
+    public function setUserName($userName) {
+        if (empty($userName)) {
+            throw new DbConnectionConfigException($this, "User Name for DB connection cannot be empty");
+        }
+        $this->userName = $userName;
+        return $this;
     }
 
     /**
      * @return string
+     * @throws DbConnectionConfigException
+     */
+    public function getUserName() {
+        if (empty($userName)) {
+            throw new DbConnectionConfigException($this, "User Name for DB connection cannot be empty");
+        }
+        return $this->userName;
+    }
+
+    /**
+     * @param string $password
+     * @return $this
+     * @throws DbConnectionConfigException
+     */
+    public function setPassword($password) {
+        if (empty($password)) {
+            throw new DbConnectionConfigException($this, "User Password for DB connection cannot be empty");
+        }
+        $this->password = $password;
+        return $this;
+    }
+
+    /**
+     * @return string
+     * @throws DbConnectionConfigException
      */
     public function getPassword() {
+        if (empty($password)) {
+            throw new DbConnectionConfigException($this, "User Password for DB connection cannot be empty");
+        }
         return $this->password;
     }
+
 
 }
