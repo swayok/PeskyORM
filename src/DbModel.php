@@ -277,7 +277,7 @@ abstract class DbModel {
         if (!class_exists($relatedModelClass)) {
             throw new DbModelException($this, "Related model class [{$relatedModelClass}] not found for relation [{$alias}]");
         }
-        return $this->getModel(self::getModeNameByTableName($rforeignTable));
+        return $this->getModel(self::getModelNameByTableName($rforeignTable));
     }
 
     /**
@@ -312,7 +312,7 @@ abstract class DbModel {
         if (!class_exists($dbObjectClass)) {
             throw new DbUtilsException("Class $dbObjectClass was not found");
         }
-        return new $dbObjectClass($data, $filter);
+        return new $dbObjectClass(self::getModel(StringUtils::modelize($dbObjectNameOrTableName) . 'Model'), $data, $filter);
     }
 
     /**
@@ -333,10 +333,10 @@ abstract class DbModel {
     }
 
     static public function getFullModelClassByTableName($tableName) {
-        return self::getModelsNamespace() . self::getModeNameByTableName($tableName);
+        return self::getModelsNamespace() . self::getModelNameByTableName($tableName);
     }
 
-    static public function getModeNameByTableName($tableName) {
+    static public function getModelNameByTableName($tableName) {
         return StringUtils::modelize($tableName) . 'Model';
     }
 

@@ -1,9 +1,9 @@
 <?php
 
-namespace ORM\Model;
+namespace PeskyORM\Model;
 
 use PeskyORM\DbModel;
 
-class AppModel extends DbModel{
+class AppModel extends DbModel {
 
 }

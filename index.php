@@ -44,3 +44,5 @@ $config = \PeskyORM\DbConnectionConfig::create()
     ->setPassword('test');
 
 \PeskyORM\DbModel::setDbConnectionConfig($config, 'default');
+
+$user = \PeskyORM\Model\AppModel::getDbObject('User')->find(array('id' => 16));
