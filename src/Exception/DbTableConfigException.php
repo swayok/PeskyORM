@@ -7,17 +7,18 @@ use ORM\DbTableConfig;
 
 class DbTableConfigException extends DbConfigException {
 
+    /** @var DbTableConfig  */
     protected $dbTableConfig;
 
-    public function __construct(DbTableConfig $dbTableConfig, $message) {
+    public function __construct(DbTableConfig $dbTableConfig, $message, $errorCode = null) {
         $this->dbTableConfig = $dbTableConfig;
-        parent::__construct($message, 500);
+        parent::__construct($message, $errorCode);
     }
 
     /**
      * @return DbTableConfig
      */
-    public function getDbColumnConfig() {
+    public function getDbTableConfig() {
         return $this->dbTableConfig;
     }
 

@@ -8,9 +8,9 @@ class DbFieldException extends DbObjectException {
 
     protected $dbField;
 
-    public function __construct(DbObjectField $dbField, $message) {
+    public function __construct(DbObjectField $dbField, $message, $errorCode = null) {
         $this->dbField = $dbField;
-        parent::__construct($dbField->getDbObject(), $message);
+        parent::__construct($dbField->getDbObject(), $message, $errorCode);
     }
 
     /**

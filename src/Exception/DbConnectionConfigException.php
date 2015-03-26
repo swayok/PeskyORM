@@ -9,9 +9,9 @@ class DbConnectionConfigException extends DbConfigException {
     /** @var DbConnectionConfig */
     protected $dbConnectionConfig;
 
-    public function __construct(DbConnectionConfig $dbConnectionConfig, $message) {
+    public function __construct(DbConnectionConfig $dbConnectionConfig, $message, $errorCode = null) {
         $this->dbConnectionConfig = $dbConnectionConfig;
-        parent::__construct($message, 500);
+        parent::__construct($message, $errorCode);
     }
 
     /**

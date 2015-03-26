@@ -44,10 +44,6 @@ abstract class DbModel {
     protected $configClass = null;
     protected $configsNameSpace;
     /**
-     * @var DbColumnConfig[]
-     */
-    public $fields = array();
-    /**
      * @var array - additional conditions for relations to be used in JOINs = array('RelationAlias' => array(condition1, condition2))
      */
     public $relationsConditions = array();

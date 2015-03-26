@@ -215,19 +215,23 @@ abstract class DbObjectField {
 
     /**
      * Reset field value to default value or unset
+     * @return $this
      */
     public function resetValue() {
         $this->values = array(
             'isset' => false,
             'isDbValue' => false
         );
+        return $this;
     }
 
     /**
      * @param mixed $value
+     * @param bool $isDbValue
+     * @return $this
      * @throws DbFieldException
      */
-    public function setValue($value) {
+    public function setValue($value, $isDbValue = false) {
         if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
             throw new DbFieldException(
                 $this,
@@ -238,16 +242,18 @@ abstract class DbObjectField {
         $this->values['isset'] = true;
         $this->values['rawValue'] = $value;
         $this->values['value'] = $this->processNewValue($this->values['rawValue']);
+        $this->setValueReceivedFromDb($isDbValue);
         if ($this->isPk() && !isset($this->values['value'])) {
             // null pk value may cause non null violation in db - we don't need it to happen
             $this->resetValue();
         } else {
             $this->validate();
-            if (!array_key_exists('dbValue', $this->values) || $this->values['dbValue'] !== $this->values['value']) {
-                $this->values['isDbValue'] = false; //< value was updated
+            // value was updated?
+            if (!$this->isValueReceivedFromDb() || !$this->isDbValueEqualsTo($this->values['value'])) {
                 $this->dbObject->fieldUpdated($this->getName());
             }
         }
+        return $this;
     }
 
     /**
@@ -270,14 +276,16 @@ abstract class DbObjectField {
     }
 
     /**
+     * @param null|mixed $orIfNoValueReturn
      * @return mixed|null
      * @throws DbFieldException
+     * @throws Exception\DbObjectException
      */
-    public function getValue() {
+    public function getValue($orIfNoValueReturn = null) {
         if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
             return $this->dbObject->{$this->dbColumnConfig->importVirtualColumnValueFrom()};
         }
-        if (!$this->hasValue() && $this->getName() !== $this->dbObject->_model->getPkColumn()) {
+        if (!$this->hasValue() && $this->getName() !== $this->dbObject->_getPkField()) {
             // value not set and not a primary key
             if ($this->dbObject->exists()) {
                 // on object update
@@ -287,15 +295,14 @@ abstract class DbObjectField {
                 } else {
                     // value is set in db but possibly was not fetched
                     // to avoid overwriting of correct value object must notify about this situation
-                    $error = "Field [{$this->dbObject->_model->getAlias()}->{$this->getName()}]: value is not set. Possibly value was not fetched from DB";
-                    throw new DbFieldException($this, $error);
+                    throw new DbFieldException($this, "Field value is not set. Possibly value was not fetched from DB");
                 }
             } else {
                 // on object create just set default value or null
                 $this->setValue($this->getDefaultValueOr(null));
             }
         }
-        return $this->hasValue() ? $this->values['value'] : null;
+        return $this->hasValue() ? $this->values['value'] : $orIfNoValueReturn;
     }
 
     /**
@@ -315,12 +322,24 @@ abstract class DbObjectField {
 
     /**
      * @param bool $fromDb
+     * @return $this
      */
     public function setValueReceivedFromDb($fromDb = true) {
         if ($this->hasValue()) {
             $this->values['isDbValue'] = !!$fromDb;
-            $this->values['dbValue'] = $this->values['value'];
+            if ($this->values['isDbValue']) {
+                $this->values['dbValue'] = $this->values['value'];
+            }
         }
+        return $this;
+    }
+
+    /**
+     * @param mixed $value
+     * @return bool
+     */
+    protected function isDbValueEqualsTo($value) {
+        return $this->values['dbValue'] === $value;
     }
 
     /**
@@ -337,8 +356,13 @@ abstract class DbObjectField {
         return (isset($this->values['error'])) ? $this->values['error'] : null;
     }
 
+    /**
+     * @param string|array $error
+     * @return $this
+     */
     protected function setValidationError($error) {
         $this->values['error'] = $error;
+        return $this;
     }
 
     /**
@@ -346,7 +370,7 @@ abstract class DbObjectField {
      * @return null|string|int - pk value
      */
     protected function importPkValue() {
-        $this->setValue($this->dbObject->pkValue());
+        $this->setValue($this->dbObject->_getPkValue());
     }
 
     /**
@@ -490,7 +514,7 @@ abstract class DbObjectField {
                 );
             }
             if ($this->dbObject->exists()) {
-                $conditions[$this->dbObject->_model->getPkColumn() . '!='] = $this->dbObject->pkValue();
+                $conditions[$this->dbObject->_model->getPkColumn() . '!='] = $this->dbObject->_getPkValue();
             }
             $valid = $this->dbObject->_model->count($conditions) == 0;
         }

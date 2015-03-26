@@ -8,9 +8,9 @@ class DbObjectException extends DbModelException {
 
     protected $dbObject;
 
-    public function __construct(DbObject $dbObject, $message) {
+    public function __construct(DbObject $dbObject, $message, $errorCode = null) {
         $this->dbObject = $dbObject;
-        parent::__construct($dbObject->_model, $message);
+        parent::__construct($dbObject->_getModel(), $message, $errorCode);
     }
 
     /**

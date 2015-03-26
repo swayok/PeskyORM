@@ -8,9 +8,9 @@ class DbQueryException extends DbException {
 
     protected $dbQuery;
 
-    public function __construct(DbQuery $dbQuery, $message) {
+    public function __construct(DbQuery $dbQuery, $message, $errorCode = null) {
         $this->dbQuery = $dbQuery;
-        parent::__construct($dbQuery->getDb(), $message);
+        parent::__construct($dbQuery->getDb(), $message, $errorCode);
     }
 
     /**

@@ -8,9 +8,9 @@ class DbColumnConfigException extends DbConfigException {
 
     protected $dbColumnConfig;
 
-    public function __construct(DbColumnConfig $dbColumnConfig, $message) {
+    public function __construct(DbColumnConfig $dbColumnConfig, $message, $errorCode = null) {
         $this->dbColumnConfig = $dbColumnConfig;
-        parent::__construct($message, 500);
+        parent::__construct($message, $errorCode);
     }
 
     /**

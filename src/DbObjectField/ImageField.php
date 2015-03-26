@@ -3,6 +3,7 @@
 
 namespace ORM\DbObjectField;
 
+use PeskyORM\Exception\DbFieldException;
 use PeskyORM\Lib\ImageUtils;
 
 class ImageField extends FileField {
@@ -66,5 +67,16 @@ class ImageField extends FileField {
             );
         }
         return false;
+    }
+
+    /**
+     * @return array
+     * @throws DbFieldException
+     */
+    public function getImageVersions() {
+        // todo: implement getFilesExtension
+        throw new DbFieldException($this, "getImageVersions() not implemented yet");
+        return array();
+//        return isset($this->_model->fields[$field]['resize_settings']) ? $this->_model->fields[$field]['resize_settings'] : array()
     }
 }

@@ -51,8 +51,8 @@ class DbQuery {
         $this->table = $this->getFullTableName($model);
         $this->models[$this->table] = $model;
         if (empty($alias)) {
-            $this->alias = !empty($model->alias)
-                ? $model->alias
+            $this->alias = !empty($model->getAlias())
+                ? $model->getAlias()
                 : $this->table;
         } else {
             $this->alias = $alias;
@@ -98,8 +98,8 @@ class DbQuery {
             if ($fields == '*') {
                 $fields = array();
                 // get only non-virtual fields
-                foreach ($model->fields as $fieldName => $settings) {
-                    if (empty($settings['virtual'])) {
+                foreach ($model->getTableColumns() as $fieldName => $settings) {
+                    if ($settings->isExistsInDb()) {
                         $fields[] = $fieldName;
                     }
                 }
@@ -194,7 +194,7 @@ class DbQuery {
             throw new DbQueryException($this, 'DbQuery->join(): $relatedColumn is empty');
         }
         if (empty($relatedAlias)) {
-            $relatedAlias = $relatedModel->alias;
+            $relatedAlias = $relatedModel->getAlias();
         }
         if (isset($this->aliasToTable[$relatedAlias])) {
             throw new DbQueryException($this, "DbQuery->join(): table alias [$relatedAlias] already used");
@@ -653,10 +653,9 @@ class DbQuery {
         $values = array();
         $model = $this->models[$this->table];
         foreach ($data as $key => $value) {
-            if (isset($model->fields[$key]) && empty($model->fields[$key]['virtual'])) {
+            if ($model->getTableColumn($key)->isExistsInDb()) {
                 $values[$this->quoteName($key)] = $this->quoteValue($value);
             }
-            // todo: maybe throw exception when unknown field detected?
         }
         $this->query .= ' (' . implode(',', array_keys($values)) . ') VALUES (' . implode(',', $values) . ')';
         if (empty($returning)) {
@@ -1015,7 +1014,7 @@ class DbQuery {
             $colName = $matches[1];
             $alterDataType = $matches[2];
         }
-        if (!isset($model->fields[$colName]) && empty($model->fields[$colName]['virtual'])) {
+        if (!$model->hasTableColumn($colName) || !$model->getTableColumn($colName)->isExistsInDb()) {
             throw new DbQueryException($this, "DbQuery->disassembleField(): unknown column [$colName] in table [$table]");
         }
         return array(
