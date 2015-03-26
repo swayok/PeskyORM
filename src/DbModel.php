@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace PeskyORM;
 use ORM\DbColumnConfig;
@@ -20,7 +20,7 @@ abstract class DbModel {
     /** @var DbConnectionConfig */
     static protected $dbConnectionConfigs = array();
     /** @var DbModel[] */
-    static public $loadedModels = array();    //< Model objects
+    static protected $loadedModels = array();    //< Model objects
 
     const ORDER_ASCENDING = 'ASC';
     const ORDER_DESCENDING = 'DESC';
@@ -664,7 +664,7 @@ abstract class DbModel {
     public function exists($conditionsAndOptions) {
         return $this->expression('1', $conditionsAndOptions) == 1;
     }
-    
+
     public function count($conditionsAndOptions = null) {
         if (is_array($conditionsAndOptions)) {
             unset($conditionsAndOptions['ORDER'], $conditionsAndOptions['LIMIT'], $conditionsAndOptions['OFFSET']);
@@ -675,19 +675,19 @@ abstract class DbModel {
     public function sum($column, $conditionsAndOptions = null) {
         return 0 + $this->expression("SUM(`$column`)", $conditionsAndOptions);
     }
-    
+
     public function max($column, $conditionsAndOptions = null) {
         return 0 + $this->expression("MAX(`$column`)`", $conditionsAndOptions);
     }
-    
+
     public function min($column, $conditionsAndOptions = null) {
         return 0 + $this->expression("MIN(`$column`)", $conditionsAndOptions);
     }
-    
+
     public function avg($column, $conditionsAndOptions = null) {
         return 0 + $this->expression("AVG(`$column`)", $conditionsAndOptions);
     }
-    
+
     public function lastQuery() {
         return $this->getDataSource()->lastQuery();
     }

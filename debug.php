@@ -1,8 +1,8 @@
-﻿<?php
+<?php
 
 // debug
 /// Debug print
-/*function dpr() {
+function dpr() {
     if (isDebugAllowed()) {
         echo '<DIV style="position:relative; z-index:200; padding-left:10px; background-color:#CCCCCC; color:#000000; text-align:left;">';
         echo "\n<BR/>";
@@ -177,7 +177,7 @@ function dbt($returnString = false, $printObjects = false, $htmlFormat = true) {
 // for log files
 
 if (!defined('LOGS')) {
-    define('LOGS', __DIR__ .DS);
+    define('LOGS', __DIR__ . DIRECTORY_SEPARATOR);
 }
 
 

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Convenience class for reading, writing and appending to files.
  *
