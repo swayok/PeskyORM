@@ -1,7 +1,7 @@
 <?php
 
 
-namespace ORM\DbObjectField;
+namespace PeskyORM\DbObjectField;
 
 use PeskyORM\Exception\DbFieldException;
 

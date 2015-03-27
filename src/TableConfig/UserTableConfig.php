@@ -1,12 +1,12 @@
 <?php
 
-namespace ORM\TableConfig;
+namespace PeskyORM\TableConfig;
 
-use ORM\DbColumnConfig;
-use ORM\DbColumnConfig\EnumColumnConfig;
-use ORM\DbColumnConfig\IdColumnConfig;
-use ORM\DbRelationConfig;
-use ORM\DbTableConfig;
+use PeskyORM\DbColumnConfig;
+use PeskyORM\DbColumnConfig\EnumColumnConfig;
+use PeskyORM\DbColumnConfig\IdColumnConfig;
+use PeskyORM\DbRelationConfig;
+use PeskyORM\DbTableConfig;
 
 class UserTableConfig extends DbTableConfig {
 
@@ -72,11 +72,7 @@ class UserTableConfig extends DbTableConfig {
                     ->setIsRequired(false)
                     ->setIsNullable(false)
             )->addColumn(
-                EnumColumnConfig::create('created', array(
-                        'not_set',
-                        'male',
-                        'female'
-                    ))
+                EnumColumnConfig::create('gender', array('not_set', 'male', 'female'))
                     ->setIsRequired(false)
                     ->setIsNullable(false)
                     ->setDefaultValue('not_set')
@@ -135,14 +131,13 @@ class UserTableConfig extends DbTableConfig {
                     ->setIsNullable(false)
                     ->setDefaultValue('')
             )->addColumn(
-                DbColumnConfig::create('insurance_contract_surname', DbColumnConfig::TYPE_TIMESTAMP)
+                DbColumnConfig::create('insurance_contract_activated', DbColumnConfig::TYPE_TIMESTAMP)
                     ->setIsRequired(false)
                     ->setIsNullable(true)
             );
-
         $this->addRelation(
             new DbRelationConfig(
-                $this->getName(),
+                $this,
                 $this->getPk(),
                 DbRelationConfig::HAS_MANY,
                 'user_tokens',

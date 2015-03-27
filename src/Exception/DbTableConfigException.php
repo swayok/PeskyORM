@@ -1,9 +1,9 @@
 <?php
 
-namespace ORM\Exception;
+namespace PeskyORM\Exception;
 
-use ORM\DbColumnConfig;
-use ORM\DbTableConfig;
+use PeskyORM\DbColumnConfig;
+use PeskyORM\DbTableConfig;
 
 class DbTableConfigException extends DbConfigException {
 

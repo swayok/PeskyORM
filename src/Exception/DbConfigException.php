@@ -1,6 +1,6 @@
 <?php
 
-namespace ORM\Exception;
+namespace PeskyORM\Exception;
 
 class DbConfigException extends \Exception {
 

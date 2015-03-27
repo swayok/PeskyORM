@@ -2,7 +2,7 @@
 
 namespace PeskyORM;
 
-use ORM\Exception\DbConnectionConfigException;
+use PeskyORM\Exception\DbConnectionConfigException;
 
 class DbConnectionConfig {
 
@@ -72,11 +72,11 @@ class DbConnectionConfig {
      * @throws DbConnectionConfigException
      */
     public function getDriver() {
-        if (empty($driver)) {
+        if (empty($this->driver)) {
             throw new DbConnectionConfigException($this, "DB Driver cannot be empty");
         }
-        if (!in_array($driver, self::$drivers)) {
-            throw new DbConnectionConfigException($this, "DB Driver [{$driver}] is not supported");
+        if (!in_array($this->driver, self::$drivers)) {
+            throw new DbConnectionConfigException($this, "DB Driver [{$this->driver}] is not supported");
         }
         return $this->driver;
     }
@@ -99,7 +99,7 @@ class DbConnectionConfig {
      * @throws DbConnectionConfigException
      */
     public function getDbName() {
-        if (empty($dbName)) {
+        if (empty($this->dbName)) {
             throw new DbConnectionConfigException($this, "DB Name cannot be empty");
         }
         return $this->dbName;
@@ -123,7 +123,7 @@ class DbConnectionConfig {
      * @throws DbConnectionConfigException
      */
     public function getUserName() {
-        if (empty($userName)) {
+        if (empty($this->userName)) {
             throw new DbConnectionConfigException($this, "User Name for DB connection cannot be empty");
         }
         return $this->userName;
@@ -147,7 +147,7 @@ class DbConnectionConfig {
      * @throws DbConnectionConfigException
      */
     public function getPassword() {
-        if (empty($password)) {
+        if (empty($this->password)) {
             throw new DbConnectionConfigException($this, "User Password for DB connection cannot be empty");
         }
         return $this->password;

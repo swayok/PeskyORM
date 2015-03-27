@@ -1,9 +1,9 @@
 <?php
 
-namespace ORM;
+namespace PeskyORM;
 
-use ORM\Exception\DbColumnConfigException;
-use ORM\Lib\ValidateValue;
+use PeskyORM\Exception\DbColumnConfigException;
+use PeskyORM\Lib\ValidateValue;
 use PeskyORM\Lib\StringUtils;
 
 class DbColumnConfig {
@@ -188,7 +188,7 @@ class DbColumnConfig {
      */
     public function __construct($name, $type) {
         $this->setName($name);
-        $this->setType($name);
+        $this->setType($type);
     }
 
     /**

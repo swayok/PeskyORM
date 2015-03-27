@@ -1,9 +1,7 @@
 <?php
 
 namespace PeskyORM;
-use ORM\DbColumnConfig;
-use ORM\DbRelationConfig;
-use ORM\DbTableConfig;
+use PeskyORM\DbColumnConfig;
 use PeskyORM\Exception\DbModelException;
 use PeskyORM\Exception\DbQueryException;
 use PeskyORM\Exception\DbUtilsException;
@@ -17,7 +15,7 @@ abstract class DbModel {
 
     /** @var Db[] */
     static protected $dataSources = array();
-    /** @var DbConnectionConfig */
+    /** @var DbConnectionConfig[] */
     static protected $dbConnectionConfigs = array();
     /** @var DbModel[] */
     static protected $loadedModels = array();    //< Model objects
@@ -55,8 +53,8 @@ abstract class DbModel {
 
     public function __construct() {
         $className = get_class($this);
-        if (!preg_match('%^(.*?\?)([a-zA-Z0-9]+)Model$%is', $className, $classNameParts)) {
-            throw new DbModelException($this, "Invalid Model class name [{$className}]. Required name is \\Name\\Space\\SomeModel.");
+        if (!preg_match('%^(.*?\\\?)([a-zA-Z0-9]+)Model$%is', $className, $classNameParts)) {
+            throw new DbModelException($this, "Invalid Model class name [{$className}]. Required name is like NameSpace\\SomeModel.");
         }
         $this->nameSpace = $classNameParts[1];
         $this->loadTableConfig($classNameParts[2]);
@@ -138,7 +136,7 @@ abstract class DbModel {
      * @param string $alias
      * @return DbRelationConfig
      * @throws DbModelException
-     * @throws \ORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbTableConfigException
      */
     public function getTableRealtaion($alias) {
         return $this->getTableConfig()->getRelation($alias);
@@ -164,7 +162,7 @@ abstract class DbModel {
      * @param string $colName
      * @return DbColumnConfig
      * @throws DbModelException
-     * @throws \ORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbTableConfigException
      */
     public function getTableColumn($colName) {
         return $this->getTableConfig()->getColumn($colName);
@@ -211,7 +209,7 @@ abstract class DbModel {
      */
     public function loadTableConfig($modelName) {
         if (empty($this->configsNameSpace)) {
-            $this->configsNameSpace = $this->nameSpace . 'Config\\';
+            $this->configsNameSpace = preg_replace('%\\\.*?$%s', '', $this->nameSpace) . '\\TableConfig\\';
         }
         if (empty($this->configClass)) {
             $this->configClass = $this->configsNameSpace . $modelName . 'TableConfig';
@@ -219,7 +217,7 @@ abstract class DbModel {
         if (!class_exists($this->configClass)) {
             throw new DbModelException($this, "Db table config class [{$this->configClass}] not found");
         }
-        $this->setTableConfig(new $this->configClass());
+        $this->setTableConfig(call_user_func(array($this->configClass, 'get')));
     }
 
     /**
@@ -381,18 +379,23 @@ abstract class DbModel {
      * Get data source object
      * @param string $alias
      * @return Db
+     * @throws DbModelException
+     * @throws \PeskyORM\Exception\DbConnectionConfigException
      */
     public function getDataSource($alias = 'default') {
         if (empty(self::$dataSources[$alias])) {
+            if (empty(self::$dbConnectionConfigs[$alias])) {
+                throw new DbModelException($this, "Unknown data source with alias [$alias]");
+            }
             self::$dataSources[$alias] = new Db(
-                self::$dbConnectionConfigs['driver'],
-                self::$dbConnectionConfigs['database'],
-                self::$dbConnectionConfigs['user'],
-                self::$dbConnectionConfigs['password'],
-                self::$dbConnectionConfigs['host']
+                self::$dbConnectionConfigs[$alias]->getDriver(),
+                self::$dbConnectionConfigs[$alias]->getDbName(),
+                self::$dbConnectionConfigs[$alias]->getUserName(),
+                self::$dbConnectionConfigs[$alias]->getPassword(),
+                self::$dbConnectionConfigs[$alias]->getHost()
             );
         }
-        return self::$dataSources;
+        return self::$dataSources[$alias];
     }
 
     /**

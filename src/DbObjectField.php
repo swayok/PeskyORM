@@ -2,7 +2,7 @@
 
 namespace PeskyORM;
 
-use ORM\DbColumnConfig;
+use PeskyORM\DbColumnConfig;
 use PeskyORM\Exception\DbFieldException;
 
 /**
@@ -151,7 +151,7 @@ abstract class DbObjectField {
     /**
      * @param $action - self::ON_UPDATE or self::ON_CREATE
      * @return bool
-     * @throws \ORM\Exception\DbColumnConfigException
+     * @throws \PeskyORM\Exception\DbColumnConfigException
      */
     public function isRequiredOn($action) {
         return $this->dbColumnConfig->isRequiredOn($action);
@@ -167,7 +167,7 @@ abstract class DbObjectField {
     /**
      * @param $action - self::ON_UPDATE or self::ON_CREATE
      * @return bool
-     * @throws \ORM\Exception\DbColumnConfigException
+     * @throws \PeskyORM\Exception\DbColumnConfigException
      */
     public function isExcludedOn($action) {
         return $this->dbColumnConfig->isExcludedOn($action);

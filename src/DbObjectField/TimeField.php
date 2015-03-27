@@ -1,9 +1,9 @@
 <?php
 
 
-namespace ORM\DbObjectField;
+namespace PeskyORM\DbObjectField;
 
-use ORM\Lib\ValidateValue;
+use PeskyORM\Lib\ValidateValue;
 use PeskyORM\DbObjectField;
 use PeskyORM\Exception\DbFieldException;
 use PeskyORM\Lib\Utils;

@@ -1,6 +1,6 @@
 <?php
 
-namespace ORM;
+namespace PeskyORM;
 
 
 use PeskyORM\Lib\StringUtils;

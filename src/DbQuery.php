@@ -8,7 +8,7 @@ class DbQuery {
 
     /** @var Db */
     protected $db;
-    /** @var \ORM\DbTableConfig */
+    /** @var \PeskyORM\DbTableConfig */
     protected $tableConfig;
     /** @var string */
     protected $table = '__unknown__';

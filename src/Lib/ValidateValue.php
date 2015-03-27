@@ -1,7 +1,7 @@
 <?php
 
 
-namespace ORM\Lib;
+namespace PeskyORM\Lib;
 
 
 abstract class ValidateValue {

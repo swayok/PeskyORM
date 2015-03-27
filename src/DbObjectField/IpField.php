@@ -1,9 +1,9 @@
 <?php
 
 
-namespace ORM\DbObjectField;
+namespace PeskyORM\DbObjectField;
 
-use ORM\Lib\ValidateValue;
+use PeskyORM\Lib\ValidateValue;
 
 class IpField extends StringField {
 

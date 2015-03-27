@@ -1,9 +1,9 @@
 <?php
 
-namespace ORM;
+namespace PeskyORM;
 
 
-use ORM\Exception\DbTableConfigException;
+use PeskyORM\Exception\DbTableConfigException;
 
 abstract class DbTableConfig {
 
@@ -91,7 +91,7 @@ abstract class DbTableConfig {
         if ($config->getTable() !== $this->getName()) {
             throw new DbTableConfigException($this, "Invalid source table of relation [{$config->getTable()}]. Source table should be [{$this->getName()}]");
         }
-        if ($this->hasColumn($config->getColumn())) {
+        if (!$this->hasColumn($config->getColumn())) {
             throw new DbTableConfigException($this, "Table has no column [{$config->getColumn()}] or column not defined yet");
         }
         if (empty($alias)) {

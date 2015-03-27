@@ -2,7 +2,7 @@
 
 namespace PeskyORM\Lib;
 
-use ORM\Lib\ValidateValue;
+use PeskyORM\Lib\ValidateValue;
 
 class Utils {
 

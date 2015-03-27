@@ -1,11 +1,6 @@
 <?php
 
-error_reporting(E_ALL);
-ini_set('track_errors', 1);
-ini_set('html_errors', 1);
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-
+require_once 'error_handling.php';
 require_once 'debug.php';
 
 spl_autoload_register(function ($class) {
@@ -46,3 +41,5 @@ $config = \PeskyORM\DbConnectionConfig::create()
 \PeskyORM\DbModel::setDbConnectionConfig($config, 'default');
 
 $user = \PeskyORM\Model\AppModel::getDbObject('User')->find(array('id' => 16));
+
+dpr($user->toPublicArray());

@@ -1,17 +1,10 @@
 <?php
 
-namespace ORM\DbColumnConfig;
+namespace PeskyORM\DbColumnConfig;
 
-use ORM\DbColumnConfig;
+use PeskyORM\DbColumnConfig;
 
 class IdColumnConfig extends DbColumnConfig {
-
-    protected $name = 'id';
-    protected $type = self::TYPE_INT;
-    protected $isPk = true;
-    protected $isNullable = true;
-    protected $isRequired = self::ON_UPDATE;
-    protected $isExcluded = self::ON_CREATE;
 
     static public function create($name = 'id', $type = self::TYPE_INT) {
         return new IdColumnConfig($name, $type);
@@ -19,6 +12,10 @@ class IdColumnConfig extends DbColumnConfig {
 
     public function __construct($name = 'id', $type = self::TYPE_INT) {
         parent::__construct($name, $type);
+        $this->setIsRequired(self::ON_UPDATE);
+        $this->setIsExcluded(self::ON_CREATE);
+        $this->setIsNullable(true);
+        $this->setIsPk(true);
     }
 
 

@@ -1,7 +1,7 @@
 <?php
 
 
-namespace ORM\DbObjectField;
+namespace PeskyORM\DbObjectField;
 
 class TextField extends StringField {
 

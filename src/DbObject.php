@@ -1,14 +1,12 @@
 <?php
 
 namespace PeskyORM;
-use ORM\DbColumnConfig;
-use ORM\DbObjectField\DateField;
-use ORM\DbObjectField\FileField;
-use ORM\DbObjectField\ImageField;
-use ORM\DbObjectField\TimeField;
-use ORM\DbObjectField\TimestampField;
-use ORM\DbRelationConfig;
-use ORM\Exception\DbExceptionCode;
+use PeskyORM\DbColumnConfig;
+use PeskyORM\DbObjectField\FileField;
+use PeskyORM\DbObjectField\ImageField;
+use PeskyORM\DbObjectField\TimestampField;
+use PeskyORM\DbRelationConfig;
+use PeskyORM\Exception\DbExceptionCode;
 use PeskyORM\Exception\DbFieldException;
 use PeskyORM\Exception\DbObjectException;
 use PeskyORM\Lib\File;
@@ -161,7 +159,7 @@ class DbObject {
     }
 
     /**
-     * @return \ORM\DbTableConfig
+     * @return \PeskyORM\DbTableConfig
      */
     public function _getTableConfig() {
         return $this->_model->getTableConfig();
@@ -230,7 +228,7 @@ class DbObject {
     /**
      * @param $alias
      * @return DbRelationConfig
-     * @throws \ORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbTableConfigException
      */
     public function _getRelationConfig($alias) {
         return $this->_getTableConfig()->getRelation($alias);
@@ -264,7 +262,7 @@ class DbObject {
     }
 
     /**
-     * @return \ORM\DbColumnConfig[]
+     * @return \PeskyORM\DbColumnConfig[]
      */
     public function _getFileFields() {
         return $this->_getTableConfig()->getFileColumns();

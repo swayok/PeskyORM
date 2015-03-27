@@ -1,13 +1,13 @@
 <?php
 
-namespace ORM\DbColumnConfig;
+namespace PeskyORM\DbColumnConfig;
 
-use ORM\DbColumnConfig;
+use PeskyORM\DbColumnConfig;
 
 class EnumColumnConfig extends DbColumnConfig {
 
     static public function create($name, $allowedValues) {
-        return new IdColumnConfig($name, $allowedValues);
+        return new EnumColumnConfig($name, $allowedValues);
     }
 
     public function __construct($name, $allowedValues) {
