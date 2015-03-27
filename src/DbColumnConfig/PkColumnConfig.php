@@ -4,10 +4,10 @@ namespace PeskyORM\DbColumnConfig;
 
 use PeskyORM\DbColumnConfig;
 
-class IdColumnConfig extends DbColumnConfig {
+class PkColumnConfig extends DbColumnConfig {
 
     static public function create($name = 'id', $type = self::TYPE_INT) {
-        return new IdColumnConfig($name, $type);
+        return new PkColumnConfig($name, $type);
     }
 
     public function __construct($name = 'id', $type = self::TYPE_INT) {

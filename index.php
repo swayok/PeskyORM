@@ -39,7 +39,16 @@ $config = \PeskyORM\DbConnectionConfig::create()
     ->setPassword('test');
 
 \PeskyORM\DbModel::setDbConnectionConfig($config, 'default');
+\PeskyORM\Db::$collectAllQueries = true;
 
-$user = \PeskyORM\Model\AppModel::getDbObject('User')->find(array('id' => 16));
+$user = \PeskyORM\Model\AppModel::getDbObject('User')->find(array('id' => 2241));
+
+
 
 dpr($user->toPublicArray());
+foreach ($user->UserToken as $token) {
+    dpr($token->toPublicArray());
+}
+
+
+dpr(\PeskyORM\Db::getAllQueries());

@@ -4,7 +4,7 @@ namespace PeskyORM\TableConfig;
 
 use PeskyORM\DbColumnConfig;
 use PeskyORM\DbColumnConfig\EnumColumnConfig;
-use PeskyORM\DbColumnConfig\IdColumnConfig;
+use PeskyORM\DbColumnConfig\PkColumnConfig;
 use PeskyORM\DbRelationConfig;
 use PeskyORM\DbTableConfig;
 
@@ -20,7 +20,7 @@ class UserTableConfig extends DbTableConfig {
 
     protected function __construct() {
         $this
-            ->addColumn(IdColumnConfig::create())
+            ->addColumn(PkColumnConfig::create())
             ->addColumn(
                 DbColumnConfig::create('email', DbColumnConfig::TYPE_EMAIL)
                     ->setIsNullable(false)
