@@ -24,7 +24,7 @@ class TimestampField extends DbObjectField {
         return Utils::formatDateTime($value, $this->getTimestampFormat());
     }
 
-    protected function isValidValueFormat($value) {
+    public function isValidValueFormat($value) {
         $isValid = true;
         if (!empty($value) && !ValidateValue::isDateTime($value)) {
             $isValid = false;

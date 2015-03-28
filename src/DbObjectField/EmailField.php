@@ -7,7 +7,7 @@ use PeskyORM\Lib\ValidateValue;
 
 class EmailField extends StringField {
 
-    protected function isValidValueFormat($value) {
+    public function isValidValueFormat($value) {
         $isValid = true;
         if (!empty($value) && ValidateValue::isEmail($value)) {
             $isValid = false;

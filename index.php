@@ -41,14 +41,14 @@ $config = \PeskyORM\DbConnectionConfig::create()
 \PeskyORM\DbModel::setDbConnectionConfig($config, 'default');
 \PeskyORM\Db::$collectAllQueries = true;
 
-$user = \PeskyORM\Model\AppModel::getDbObject('User')->find(array('id' => 2241));
+$user = \PeskyORM\Model\AppModel::getDbObject('User')->find(array('id' => 1));
 
 
 
-dpr($user->toPublicArray());
-foreach ($user->UserToken as $token) {
+dpr($user->toPublicArray(null, array('UserToken'), true));
+/*foreach ($user->UserToken as $token) {
     dpr($token->toPublicArray());
-}
+}*/
 
 
 dpr(\PeskyORM\Db::getAllQueries());

@@ -22,7 +22,7 @@ class TimeField extends DbObjectField {
         return Utils::formatDateTime($value, $this->getTimeFormat());
     }
 
-    protected function isValidValueFormat($value) {
+    public function isValidValueFormat($value) {
         $isValid = true;
         if (!empty($value) && !ValidateValue::isDateTime($value)) {
             $isValid = false;

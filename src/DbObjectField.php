@@ -29,15 +29,13 @@ abstract class DbObjectField {
     protected $values = array(
         //'value' => mixed,         //< value after $this->convert()
         //'rawValue' => mixed,      //< value in format it was assigned (without type conversion)
-        //'rawDbValue' => mixed,    //< raw value from DB - assigned on $this->isDbValue = true
+        //'rawDbValue' => mixed,    //< raw value from DB - assigned when isDbValue == true
         //'error' => null|string,   //< validation error
-        //'file_path' => null|string|array,   //< fs path to files
-        'isset' => false,           //< used to find out if value was ever set (to any value)
         'isDbValue' => false,       //< indicates that field value must be updated in db
     );
     /**
      * List of related DbObjects aliases. DbObjects stored in model
-     * @var array
+     * @var DbRelationConfig[]
      */
     protected $relations = array();
     /**
@@ -52,12 +50,12 @@ abstract class DbObjectField {
     public function __construct(DbObject $dbObject, DbColumnConfig $dbColumnConfig) {
         $this->dbColumnConfig = $dbColumnConfig;
         $this->dbObject = $dbObject;
-//        if (!empty($info['server'])) {
-//            $this->server = $info['server'];
-//        }
 //        if (!empty($info['validators']) && is_array($info['validators'])) {
 //            $this->validators = $info['validators'];
 //        }
+        foreach ($this->dbColumnConfig->getRelations() as $alias => $relationConfig) {
+            $this->addRelation($alias, $relationConfig);
+        }
         if ($this->dbColumnConfig->hasDefaultValue()) {
             $this->setDefaultValue($this->dbColumnConfig->getDefaultValue());
         }
@@ -198,16 +196,17 @@ abstract class DbObjectField {
      * Add alias of related object
      * Object itself stored in model
      * @param string $alias
+     * @param DbRelationConfig $relationConfig
      */
-    public function addRelation($alias) {
-        if (!in_array($alias, $this->relations)) {
-            $this->relations[] = $alias;
+    protected function addRelation($alias, $relationConfig) {
+        if (!isset($alias, $this->relations)) {
+            $this->relations[$alias] = $relationConfig;
         }
     }
 
     /**
      * Get aliases of all relations
-     * @return array
+     * @return DbRelationConfig[]
      */
     public function getRelations() {
         return $this->relations;
@@ -219,7 +218,6 @@ abstract class DbObjectField {
      */
     public function resetValue() {
         $this->values = array(
-            'isset' => false,
             'isDbValue' => false
         );
         return $this;
@@ -232,6 +230,7 @@ abstract class DbObjectField {
      * @throws DbFieldException
      */
     public function setValue($value, $isDbValue = false) {
+        dpr($this->getName(), $value);
         if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
             throw new DbFieldException(
                 $this,
@@ -239,11 +238,10 @@ abstract class DbObjectField {
                     "Value is imported from field [{$this->dbColumnConfig->importVirtualColumnValueFrom()}]."
             );
         }
-        $this->values['isset'] = true;
         $this->values['rawValue'] = $value;
         $this->values['value'] = $this->processNewValue($this->values['rawValue']);
         $this->setValueReceivedFromDb($isDbValue);
-        if ($this->isPk() && !isset($this->values['value'])) {
+        if ($this->isPk() && $this->values['value'] === null) {
             // null pk value may cause non null violation in db - we don't need it to happen
             $this->resetValue();
         } else {
@@ -261,9 +259,10 @@ abstract class DbObjectField {
      */
     public function hasValue() {
         if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
-            return isset($this->dbObject->{$this->dbColumnConfig->importVirtualColumnValueFrom()});
+            return $this->dbObject->_getField($this->dbColumnConfig->importVirtualColumnValueFrom())->hasValue();
         } else {
-            return !empty($this->values['isset']);
+//            dpr($this->getName(), $this->values);
+            return array_key_exists('value', $this->values);
         }
     }
 
@@ -272,7 +271,7 @@ abstract class DbObjectField {
      * @throws DbFieldException
      */
     public function hasNotEmptyValue() {
-        return $this->hasValue() && !empty($this->getValue());
+        return $this->hasValue() && (!empty($this->values['value']) || is_bool($this->values['value']) || is_numeric($this->values['value']));
     }
 
     /**
@@ -317,7 +316,7 @@ abstract class DbObjectField {
      * @return bool
      */
     public function isValueReceivedFromDb() {
-        return !empty($this->values['isDbValue']);
+        return $this->values['isDbValue'];
     }
 
     /**
@@ -346,14 +345,14 @@ abstract class DbObjectField {
      * @return bool
      */
     public function isValid() {
-        return isset($this->values['error']);
+        return empty($this->values['error']);
     }
 
     /**
      * @return string|null
      */
     public function getValidationError() {
-        return (isset($this->values['error'])) ? $this->values['error'] : null;
+        return $this->isValid() ? null : $this->values['error'];
     }
 
     /**
@@ -379,7 +378,7 @@ abstract class DbObjectField {
      * @return mixed
      * @throws DbFieldException
      */
-    public function processNewValue($value) {
+    protected function processNewValue($value) {
         if ($value === null && !$this->canBeNull()) {
             if ($this->hasDefaultValue()) {
                 $value = $this->getDefaultValue();
@@ -432,12 +431,12 @@ abstract class DbObjectField {
     public function validate($silent = true, $forSave = false) {
         unset($this->values['error']);
         // skip validation if value is not set or it is a db value (isDbValue is reliable enough to be used)
-        if (empty($this->values['isset']) || !empty($this->values['isDbValue'])) {
+        if (!$this->hasValue() || $this->isValueReceivedFromDb()) {
             return true;
         }
         if (!$this->checkIfRequiredValueIsSet()) {
             $this->setValidationError('Field value is required');
-        } else if (!$this->canBeNull() && !isset($this->values['value'])) {
+        } else if (!$this->canBeNull() && $this->values['value'] === null) {
             $this->setValidationError('Field value cannot be NULL');
         } else if (!$this->isValidValueLength()) {
             $this->setValidationError("Value [{$this->values['value']}] does not match required min-max length");
@@ -453,7 +452,7 @@ abstract class DbObjectField {
         if (!empty($this->values['error']) && !$silent) {
             throw new DbFieldException($this, $this->values['error']);
         }
-        return empty($this->values['error']);
+        return $this->isValid();
     }
 
     /**
@@ -462,7 +461,7 @@ abstract class DbObjectField {
      */
     protected function isValidValueLength() {
         $isValid = true;
-        if (!empty($this->values['isset'])) {
+        if ($this->hasValue()) {
             if ($this->getMinLength() > 0) {
                 $isValid = mb_strlen($this->values['value']) >= $this->getMinLength();
             }
@@ -482,7 +481,7 @@ abstract class DbObjectField {
         $valid = true;
         if ($this->isRequiredOnAnyAction()) {
             // test if there is any value
-            $valid = isset($this->values['value']) && (!empty($this->values['value']) || is_bool($this->values['value']) || is_numeric($this->values['value']));
+            $valid = $this->hasNotEmptyValue();
             // test if value is required for current action
             if (!$valid) {
                 $valid = !$this->isRequiredOn($this->dbObject->exists(false) ? DbColumnConfig::ON_UPDATE : DbColumnConfig::ON_CREATE);
@@ -497,7 +496,7 @@ abstract class DbObjectField {
      */
     protected function checkIfValueIsUnique() {
         $valid = true;
-        if ($this->isUnique() && !empty($this->values['value'])) {
+        if ($this->isUnique() && $this->hasNotEmptyValue()) {
             if (
                 !is_numeric($this->values['value'])
                 && !in_array($this->getType(), array(DbColumnConfig::TYPE_IPV4_ADDRESS, DbColumnConfig::TYPE_DATE, DbColumnConfig::TYPE_TIME, DbColumnConfig::TYPE_TIMESTAMP))
@@ -514,9 +513,9 @@ abstract class DbObjectField {
                 );
             }
             if ($this->dbObject->exists()) {
-                $conditions[$this->dbObject->_model->getPkColumn() . '!='] = $this->dbObject->_getPkValue();
+                $conditions[$this->dbObject->_getPkFieldName() . '!='] = $this->dbObject->_getPkValue();
             }
-            $valid = $this->dbObject->_model->count($conditions) == 0;
+            $valid = $this->dbObject->_getModel()->exists($conditions);
         }
         return $valid;
     }
@@ -527,7 +526,7 @@ abstract class DbObjectField {
      * @return bool
      * @throws DbFieldException
      */
-    protected function isValidValueFormat($value) {
+    public function isValidValueFormat($value) {
         return true;
     }
 

@@ -7,7 +7,7 @@ use PeskyORM\Exception\DbFieldException;
 use PeskyORM\Lib\ImageUtils;
 
 class ImageField extends FileField {
-    protected function isValidValueFormat($value) {
+    public function isValidValueFormat($value) {
         $isValid = true;
         if (!empty($value) && is_array($value) && array_key_exists('tmp_file', $value)) {
             $isValid = ImageUtils::isImage($value);
@@ -23,7 +23,7 @@ class ImageField extends FileField {
      * Get fs path to file
      * @return mixed
      */
-    protected function getFilePath() {
+    public function getFilePath() {
         if (!isset($this->values['file_path'])) {
             $this->values['file_path'] = $this->dbObject->getImagesPaths($this->getName());
         }
@@ -33,7 +33,7 @@ class ImageField extends FileField {
     /**
      * @return bool
      */
-    protected function isFileExists() {
+    public function isFileExists() {
         $path = $this->getFilePath();
         return file_exists($path['original']);
     }

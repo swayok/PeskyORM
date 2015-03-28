@@ -663,6 +663,7 @@ abstract class DbModel {
     }
 
     public function exists($conditionsAndOptions) {
+        $conditionsAndOptions['LIMIT'] = 1;
         return $this->expression('1', $conditionsAndOptions) == 1;
     }
 

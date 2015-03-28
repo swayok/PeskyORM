@@ -18,7 +18,7 @@ class IpField extends StringField {
         return self::IPV4_MAX_LENGTH;
     }
 
-    protected function isValidValueFormat($value) {
+    public function isValidValueFormat($value) {
         $isValid = true;
         if (!empty($value) && !ValidateValue::isIpAddress($value)) {
             $isValid = false;

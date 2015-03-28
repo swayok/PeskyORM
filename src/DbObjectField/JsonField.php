@@ -14,7 +14,7 @@ class JsonField extends TextField {
         return parent::doBasicValueValidationAndConvertion($value);
     }
 
-    protected function isValidValueFormat($value) {
+    public function isValidValueFormat($value) {
         $isValid = true;
         if (!empty($value) && json_decode($value, true) === false) {
             $isValid = false;
