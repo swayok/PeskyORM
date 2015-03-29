@@ -1214,8 +1214,8 @@ class DbObject {
             } else if (is_string($relations)) {
                 $relations = array($relations);
             }
-            foreach ($relations as $alias) {
-                $this->_getRelatedObject($alias);
+            foreach ($relations as $relationAlias) {
+                $this->_findRelatedObject($relationAlias);
             }
         }
     }
@@ -1698,30 +1698,30 @@ class DbObject {
         } else if (is_string($relations)) {
             $relations = array($relations);
         } else if (!is_array($relations)) {
-            throw new DbObjectException($this, 'DbObject->relationsToPublicArray: Invalid $relations (not a string/bool/array)');
+            throw new DbObjectException($this, 'DbObject->relationsToPublicArray: $relations arg should contain string, bool or array)');
         }
         $return = array();
-        foreach ($relations as $alias => $fieldNames) {
-            if (is_numeric($alias)) {
-                $alias = $fieldNames;
+        foreach ($relations as $relationAlias => $fieldNames) {
+            if (is_numeric($relationAlias)) {
+                $relationAlias = $fieldNames;
                 $fieldNames = null;
             }
-            if (!$this->_hasRelation($alias)) {
-                throw new DbObjectException($this, "Unknown relation with alias [$alias]");
+            if (!$this->_hasRelation($relationAlias)) {
+                throw new DbObjectException($this, "Unknown relation with alias [$relationAlias]");
             }
-            $return[$alias] = array();
+            $return[$relationAlias] = array();
             if ($forceRelationsRead) {
-                $this->$alias; //< read relation data
+                $this->_findRelatedObject($relationAlias); //< read relation data
             }
             // show related object if it is set or
-            if (!empty($this->_relatedObjects[$alias])) {
-                if (is_array($this->_relatedObjects[$alias])) {
+            if (!empty($this->_relatedObjects[$relationAlias])) {
+                if (is_array($this->_relatedObjects[$relationAlias])) {
                     /** @var DbObject $object */
-                    foreach ($this->_relatedObjects[$alias] as $object) {
-                        $return[$alias][] = $object->toPublicArray($fieldNames);
+                    foreach ($this->_relatedObjects[$relationAlias] as $object) {
+                        $return[$relationAlias][] = $object->toPublicArray($fieldNames);
                     }
                 } else {
-                    $return[$alias] = $this->_relatedObjects[$alias]->toPublicArray($fieldNames);
+                    $return[$relationAlias] = $this->_relatedObjects[$relationAlias]->toPublicArray($fieldNames);
                 }
             }
         }

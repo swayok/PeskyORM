@@ -348,7 +348,7 @@ abstract class DbModel {
      * @throws DbModelException
      */
     static public function getOwnDbObject($data = null, $filter = false) {
-        return self::getDbObject(self::dbObjectNameByModelClassName(get_called_class()));
+        return self::getDbObject(self::dbObjectNameByModelClassName(get_called_class()), $data, $filter);
     }
 
     /**

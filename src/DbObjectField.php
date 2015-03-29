@@ -230,7 +230,6 @@ abstract class DbObjectField {
      * @throws DbFieldException
      */
     public function setValue($value, $isDbValue = false) {
-        dpr($this->getName(), $value);
         if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
             throw new DbFieldException(
                 $this,
@@ -261,7 +260,6 @@ abstract class DbObjectField {
         if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
             return $this->dbObject->_getField($this->dbColumnConfig->importVirtualColumnValueFrom())->hasValue();
         } else {
-//            dpr($this->getName(), $this->values);
             return array_key_exists('value', $this->values);
         }
     }
