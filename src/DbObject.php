@@ -31,6 +31,10 @@ class DbObject {
      */
     protected $_fields = array();
     /**
+     * @var array
+     */
+    protected $_allFieldNames = array();
+    /**
      * Associative list that maps related object alias to its class name
      * @var string[]
      */
@@ -114,6 +118,7 @@ class DbObject {
         $nameSpace = __NAMESPACE__ . '\\DbObjectField';
         foreach ($this->_model->getTableColumns() as $name => $dbColumnConfig) {
             $fieldClass = $dbColumnConfig->getClassName($nameSpace);
+            $this->_allFieldNames[] = $name;
             $this->_fields[$name] = new $fieldClass($this, $dbColumnConfig);
         }
         // test if primary key field provided
@@ -676,7 +681,7 @@ class DbObject {
      */
     public function validate($fieldNames = null, $forSave = false) {
         if (empty($fieldNames) || (!is_array($fieldNames) && !is_string($fieldNames))) {
-            $fieldNames = array_keys($this->_fields);
+            $fieldNames = $this->_allFieldNames;
         } else if (is_string($fieldNames)) {
             $fieldNames = array($fieldNames);
         }
@@ -1627,7 +1632,7 @@ class DbObject {
     public function toStrictArray($fieldNames = null, $onlyUpdatedFields = false) {
         $values = array();
         if (empty($fieldNames) || !is_array($fieldNames)) {
-            $fieldNames = array_keys($this->_fields);
+            $fieldNames = $this->_allFieldNames;
         }
         if ($this->exists() && !in_array($this->_getPkFieldName(), $fieldNames)) {
             $fieldNames[] = $this->_getPkFieldName();
@@ -1653,7 +1658,7 @@ class DbObject {
     public function toPublicArray($fieldNames = null, $relations = false, $forceRelationsRead = true) {
         $values = array();
         if (empty($fieldNames) || !is_array($fieldNames)) {
-            $fieldNames = array_keys($this->_fields);
+            $fieldNames = $this->_allFieldNames;
         }
         if ($this->exists() && !in_array($this->_getPkFieldName(), $fieldNames)) {
             $fieldNames[] = $this->_getPkFieldName();
@@ -1735,7 +1740,7 @@ class DbObject {
         if (is_string($fieldNames)) {
             $fieldNames = array($fieldNames);
         } else if (empty($fieldNames)) {
-            $fieldNames = array_keys($this->_fields);
+            $fieldNames = $this->_allFieldNames;
         } else if (!is_array($fieldNames)) {
             throw new DbObjectException($this, "getDefaultsArray: \$fieldNames argument must be empty, string or array");
         }
