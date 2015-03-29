@@ -542,14 +542,12 @@ abstract class DbObjectField {
     }
 
     /**
-     * If this field can be skipped when value is not set and not requred
-     * @param bool $skipIfDbValue - true: if $this->isValueReceivedFromDb() == true - it will be skipped
+     * If this field can be skipped when value (is not set and not requred) or is virtual or excluded
      * @return bool
      */
-    public function canBeSkipped($skipIfDbValue = false) {
+    public function canBeSkipped() {
         if (
-            ($skipIfDbValue && $this->isValueReceivedFromDb())
-            || $this->isVirtual()
+            $this->isVirtual()
             || $this->isExcludedOn($this->dbObject->exists() ? DbColumnConfig::ON_UPDATE : DbColumnConfig::ON_CREATE)
         ) {
             return true;

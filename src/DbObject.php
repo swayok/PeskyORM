@@ -141,7 +141,7 @@ class DbObject {
      * @return \PeskyORM\DbTableConfig
      */
     public function _getTableConfig() {
-        return $this->_model->getTableConfig();
+        return $this->_getModel()->getTableConfig();
     }
 
     /**
@@ -168,7 +168,7 @@ class DbObject {
      * @return bool
      */
     public function _hasPkField() {
-        return $this->_model->hasPkColumn() && $this->_hasField($this->_getPkFieldName());
+        return $this->_getModel()->hasPkColumn() && $this->_hasField($this->_getPkFieldName());
     }
 
     /**
@@ -186,7 +186,7 @@ class DbObject {
      * @return mixed
      */
     public function _getPkFieldName() {
-        return $this->_model->getPkColumn();
+        return $this->_getModel()->getPkColumn();
     }
 
     /**
@@ -272,7 +272,7 @@ class DbObject {
      * @return string
      */
     public function _getModelAlias() {
-        return $this->_model->getAlias();
+        return $this->_getModel()->getAlias();
     }
 
     /**
@@ -335,9 +335,9 @@ class DbObject {
         };
         $newConditions = array();
         foreach ($conditions as $key => $value) {
-            $key = preg_replace_callback("%`?({$this->_model->getAlias()})`?\.`?([a-zA-Z0-9_]+)`?%is", $replacer, $key);
+            $key = preg_replace_callback("%`?({$this->_getModelAlias()})`?\.`?([a-zA-Z0-9_]+)`?%is", $replacer, $key);
             $key = preg_replace_callback("%(?:^|\s)(`?)([a-zA-Z0-9_]+)`?%is", $replacer, $key);
-            $value = preg_replace_callback("%`?({$this->_model->getAlias()})`?\.`?([a-zA-Z0-9_]+)`?%is", $replacer, $value);
+            $value = preg_replace_callback("%`?({$this->_getModelAlias()})`?\.`?([a-zA-Z0-9_]+)`?%is", $replacer, $value);
             $value = preg_replace_callback("%(?:^|\s)(`?)([a-zA-Z0-9_]+)`?%is", $replacer, $value);
             $newConditions[$key] = $value;
         }
@@ -360,7 +360,7 @@ class DbObject {
      * Clean all related objects
      */
     protected function _cleanRelatedObjects() {
-        foreach ($this->_model->getTableRealtaions() as $alias => $settings) {
+        foreach ($this->_getModel()->getTableRealtaions() as $alias => $settings) {
             $this->_relatedObjects[$alias] = false;
         }
     }
@@ -380,38 +380,38 @@ class DbObject {
 
     /**
      * Init related object by $alias
-     * @param string $alias
-     * @param null|DbObject|DbObject[] $object
+     * @param string $relationAlias
+     * @param null|DbObject|DbObject[] $objectOrDataOrPkValue
      * @param bool $ignorePkNotSetError - true: exception '[local_field] is empty' when local_field is primary key will be ignored
      * @return bool|$this[]|$this - false: for hasMany relation
      * @throws DbObjectException
      */
-    protected function _initRelatedObject($alias, $object = null, $ignorePkNotSetError = false) {
-        if (!$this->_hasRelation($alias)) {
-            throw new DbObjectException($this, "Unknown relation with alias [$alias]");
+    protected function _initRelatedObject($relationAlias, $objectOrDataOrPkValue = null, $ignorePkNotSetError = false) {
+        if (!$this->_hasRelation($relationAlias)) {
+            throw new DbObjectException($this, "Unknown relation with alias [$relationAlias]");
         }
-        $localField = $this->_getLocalFieldNameForRelation($alias);
+        $localField = $this->_getLocalFieldNameForRelation($relationAlias);
         if (!$this->_hasField($localField)) {
-            throw new DbObjectException($this, "Relation [$alias] points to unknown field [{$localField}]");
+            throw new DbObjectException($this, "Relation [$relationAlias] points to unknown field [{$localField}]");
         }
         // check if passed object is valid
-        if ($this->_getTypeOfRealation($alias) === DbRelationConfig::HAS_MANY) {
-            $this->_initOneToManyRelation($alias, $object, $ignorePkNotSetError);
+        if ($this->_getTypeOfRealation($relationAlias) === DbRelationConfig::HAS_MANY) {
+            $this->_initOneToManyRelation($relationAlias, $objectOrDataOrPkValue, $ignorePkNotSetError);
         } else {
-            $this->_initOneToOneRelation($alias, $object, $ignorePkNotSetError);
+            $this->_initOneToOneRelation($relationAlias, $objectOrDataOrPkValue, $ignorePkNotSetError);
         }
-        return $this->_relatedObjects[$alias];
+        return $this->_relatedObjects[$relationAlias];
     }
 
     /**
-     * @param string $alias
+     * @param string $relationAlias
      * @param array|DbObject|null $objectOrDataOrPkValue
      * @param bool $ignorePkNotSetError
      * @throws DbObjectException
      */
-    protected function _initOneToOneRelation($alias, $objectOrDataOrPkValue = null, $ignorePkNotSetError = false) {
-        $localFieldName = $this->_getLocalFieldNameForRelation($alias);
-        $relationFieldName = $this->_getForeignFieldNameForRelation($alias);
+    protected function _initOneToOneRelation($relationAlias, $objectOrDataOrPkValue = null, $ignorePkNotSetError = false) {
+        $localFieldName = $this->_getLocalFieldNameForRelation($relationAlias);
+        $relationFieldName = $this->_getForeignFieldNameForRelation($relationAlias);
         $localFieldIsPrimaryKey = $localFieldName === $this->_getPkFieldName();
         if ($this->_isFieldHasEmptyValue($localFieldName)) {
             $relationFieldValue = false;
@@ -424,53 +424,53 @@ class DbObject {
                 $this->_setFieldValue($localFieldName, $relationFieldValue);
             } else if ($localFieldIsPrimaryKey || $this->_getField($localFieldName)->isRequiredOnAnyAction()) {
                 // both fields are empty and is required or is primary key
-                throw new DbObjectException($this, "Cannot link [{$this->_model->getAlias()}] with [{$alias}]: [{$this->_model->getAlias()}->{$localFieldName}] and {$alias}->{$relationFieldName} are empty");
+                throw new DbObjectException($this, "Cannot link [{$this->_getModelAlias()}] with [{$relationAlias}]: [{$this->_getModelAlias()}->{$localFieldName}] and {$relationAlias}->{$relationFieldName} are empty");
             }
         }
         if (is_object($objectOrDataOrPkValue)) {
             $objectClass = get_class($objectOrDataOrPkValue);
-            if ($objectClass !== $this->_relationAliasToClassName[$alias]) {
-                throw new DbObjectException($this, "Trying to assign object of class [$objectClass] as object of class [{$this->_relationAliasToClassName[$alias]}]");
+            if ($objectClass !== $this->_relationAliasToClassName[$relationAlias]) {
+                throw new DbObjectException($this, "Trying to assign object of class [$objectClass] as object of class [{$this->_relationAliasToClassName[$relationAlias]}]");
             }
             $relatedObject = $objectOrDataOrPkValue;
         } else {
-            $relatedObject = $this->_getModel()->getDbObject($this->_getForeignTableForRelation($alias));
+            $relatedObject = $this->_getModel()->getDbObject($this->_getForeignTableForRelation($relationAlias));
             if (empty($objectOrDataOrPkValue)) {
-                $this->linkRelatedObjectToThis($alias, $relatedObject);
+                $this->linkRelatedObjectToThis($relationAlias, $relatedObject);
             } else {
                 if (is_array($objectOrDataOrPkValue)) {
                     $relatedObject->_fromData($objectOrDataOrPkValue);
                 } else if ($relatedObject->_getPkField()->isValidValueFormat($objectOrDataOrPkValue)) {
                     $relatedObject->read($objectOrDataOrPkValue);
                 } else {
-                    throw new DbObjectException($this, "Cannot set values of related object [$alias]. Values must be array or pk value.");
+                    throw new DbObjectException($this, "Cannot set values of related object [$relationAlias]. Values must be array or pk value.");
                 }
-                $valid = $this->validateRelationData($alias, $ignorePkNotSetError);
+                $valid = $this->validateRelationData($relationAlias, $ignorePkNotSetError);
                 if ($valid === false) {
-                    throw new DbObjectException($this, "Related object [$alias] does not belong to this object");
+                    throw new DbObjectException($this, "Related object [$relationAlias] does not belong to this object");
                 } else if ($valid === null && $relatedObject->_isFieldHasEmptyValue($relationFieldName)) {
-                    $this->linkRelatedObjectToThis($alias, $relatedObject);
+                    $this->linkRelatedObjectToThis($relationAlias, $relatedObject);
                 }
             }
         }
-        $this->_relatedObjects[$alias] = $relatedObject;
+        $this->_relatedObjects[$relationAlias] = $relatedObject;
     }
 
-    protected function _initOneToManyRelation($relationAlias, $object, $ignorePkNotSetError = false) {
+    protected function _initOneToManyRelation($relationAlias, $objectOrDataOrPkValue, $ignorePkNotSetError = false) {
         // todo: implement DbObjectCollection that works as usual array but has some useful methods like find/sort/filter
         $localFieldName = $this->_getLocalFieldNameForRelation($relationAlias);
         $relationFieldName = $this->_getForeignFieldNameForRelation($relationAlias);
         if ($this->_isFieldHasEmptyValue($localFieldName)) {
-            throw new DbObjectException($this, "Cannot link [{$this->_model->getAlias()}] with [{$relationAlias}]: [{$this->_model->getAlias()}->{$localFieldName}] is empty");
+            throw new DbObjectException($this, "Cannot link [{$this->_getModelAlias()}] with [{$relationAlias}]: [{$this->_getModelAlias()}->{$localFieldName}] is empty");
         }
-        if (empty($object)) {
+        if (empty($objectOrDataOrPkValue)) {
             $relatedObjects = false; //< means not loaded
-        } else if (!is_array($object) || !isset($object[0])) {
+        } else if (!is_array($objectOrDataOrPkValue) || !isset($objectOrDataOrPkValue[0])) {
             throw new DbObjectException($this, "Related objects must be a plain array");
         } else {
             // array of related objects
             $relatedObjects = array();
-            foreach ($object as $index => $item) {
+            foreach ($objectOrDataOrPkValue as $index => $item) {
                 if (empty($item)) {
                     throw new DbObjectException($this, "One of related objects (with index{$index}) is empty");
                 } else if (is_object($item)) {
@@ -659,8 +659,8 @@ class DbObject {
         $this->_customErrors = array();
         $this->_setOriginalData(null);
         $this->_isStoringFieldUpdates = false;
-        foreach ($this->_fields as $field) {
-            $field->resetValue();
+        foreach ($this->_fields as $dbField) {
+            $dbField->resetValue();
         }
         $this->_dataBackup = null;
         $this->_updatedFields = array();
@@ -681,9 +681,10 @@ class DbObject {
             $fieldNames = array($fieldNames);
         }
         $errors = array();
-        foreach ($fieldNames as $name) {
-            if (!$this->_fields[$name]->validate(true, $forSave)) {
-                $errors[$name] = $this->_fields[$name]->getValidationError();
+        foreach ($fieldNames as $fieldName) {
+            $field = $this->_getField($fieldName);
+            if (!$field->validate(true, $forSave)) {
+                $errors[$fieldName] = $field->getValidationError();
             }
         }
         return $errors;
@@ -817,9 +818,9 @@ class DbObject {
      */
     public function getValidationErrors() {
         $errors = array();
-        foreach ($this->_fields as $fieldName => $fieldObject) {
-            if (!$fieldObject->isValid()) {
-                $errors[$fieldName] = $fieldObject->getValidationError();
+        foreach ($this->_fields as $fieldName => $dbField) {
+            if (!$dbField->isValid()) {
+                $errors[$fieldName] = $dbField->getValidationError();
             }
         }
         // add custom errors
@@ -995,7 +996,7 @@ class DbObject {
             // collect relations
             if (is_string($relations)) {
                 if (!in_array($relations, array_keys($this->_relationAliasToClassName))) {
-                    throw new DbObjectException($this, "Unknown relation [{$relations}] in [{$this->_model->getAlias()}]");
+                    throw new DbObjectException($this, "Unknown relation [{$relations}] in [{$this->_getModelAlias()}]");
                 }
                 $relations = array($relations);
             } else if (is_array($relations)) {
@@ -1007,7 +1008,7 @@ class DbObject {
                 }
                 if (!empty($diff)) {
                     $unknown = '[' . implode('], [', $diff) . ']';
-                    throw new DbObjectException($this, "Unknown relations $unknown in [{$this->_model->getAlias()}]");
+                    throw new DbObjectException($this, "Unknown relations $unknown in [{$this->_getModelAlias()}]");
                 }
             } else if ($action == 'begin') {
                 $relations = array_keys($this->_relationAliasToClassName);
@@ -1035,13 +1036,13 @@ class DbObject {
                 if (!isset($localFieldName)) {
                     throw new DbObjectException($this, "Unknown relation with alias [$relationAlias]");
                 } else if (empty($this->$localFieldName)) {
-                    throw new DbObjectException($this, "Cannot link [{$this->_model->getAlias()}] with [{$relationAlias}]: [{$this->_model->getAlias()}->{$localFieldName}] is empty");
+                    throw new DbObjectException($this, "Cannot link [{$this->_getModelAlias()}] with [{$relationAlias}]: [{$this->_getModelAlias()}->{$localFieldName}] is empty");
                 }
                 $foreignFieldName = $this->_getForeignFieldNameForRelation($relationAlias);
                 if (is_array($this->_relatedObjects[$relationAlias])) {
                     /** @var DbObject $object */
                     foreach ($this->_relatedObjects[$relationAlias] as $object) {
-                        if ($isSaveAction && $foreignFieldName != $object->_model->getPkColumn()) {
+                        if ($isSaveAction && $foreignFieldName != $object->_getPkFieldName()) {
                             $object->$foreignFieldName($this->$localFieldName);
                         }
                         $ret = $object->$action();
@@ -1055,7 +1056,7 @@ class DbObject {
                             !empty($this->_relatedObjects[$relationAlias]->$foreignFieldName)
                             && $this->_relatedObjects[$relationAlias]->$foreignFieldName !== $this->$localFieldName
                         ) {
-                            throw new DbObjectException($this, "Trying to attach [$relationAlias] that already attached to another [{$this->_model->getAlias()}]");
+                            throw new DbObjectException($this, "Trying to attach [$relationAlias] that already attached to another [{$this->_getModelAlias()}]");
                         }
                         $this->_relatedObjects[$relationAlias]->$foreignFieldName($this->$localFieldName);
                     }
@@ -1237,7 +1238,7 @@ class DbObject {
         if ($this->_isFieldHasEmptyValue($localField)) {
             // local field empty - bad situation but possible when creating new record together with all related
             if (!$ignorePkNotSetError || ($localField != $this->_getPkFieldName() && $this->_getField($localField)->isRequiredOnAnyAction())) {
-                throw new DbObjectException($this, "Cannot validate relation between [{$this->_model->getAlias()}] and [{$relationAlias}]: [{$this->_model->getAlias()}->{$localField}] is empty");
+                throw new DbObjectException($this, "Cannot validate relation between [{$this->_getModelAlias()}] and [{$relationAlias}]: [{$this->_getModelAlias()}->{$localField}] is empty");
             }
         } else {
             $foreignField = $this->_getForeignFieldNameForRelation($relationAlias);
@@ -1272,7 +1273,7 @@ class DbObject {
         if ($this->_isFieldHasEmptyValue($localFieldName)) {
             if (!$this->_getField($localFieldName)->canBeNull()) {
                 // local field empty - bad situation
-                throw new DbObjectException($this, "Cannot find related object [{$relationAlias}] [{$this->_model->getAlias()}->{$localFieldName}] is empty");
+                throw new DbObjectException($this, "Cannot find related object [{$relationAlias}] [{$this->_getModelAlias()}->{$localFieldName}] is empty");
             } else {
                 return null;
             }
@@ -1303,12 +1304,14 @@ class DbObject {
      * Links current object with passed on
      * @param DbObject $dbObject
      * @return $this
+     * @throws DbObjectException
      */
     public function linkTo(DbObject $dbObject) {
-        $alias = $dbObject->_model->getAlias();
-        if ($this->_model->hasTableRelation($alias) && $this->_model->getTableRealtaion($alias)->getType() !== DbRelationConfig::HAS_MANY) {
-            $this->$alias = $dbObject;
+        $relationAlias = $dbObject->_getModel()->getAlias();
+        if ($this->_getTypeOfRealation($relationAlias) === DbRelationConfig::HAS_MANY) {
+            throw new DbObjectException($this, "Cannot attach [single related object] to [has many] relation [{$relationAlias}]");
         }
+        $this->_initRelatedObject($relationAlias, $dbObject);
         return $this;
     }
 
@@ -1325,7 +1328,7 @@ class DbObject {
         } else if (!is_array($fieldNames) && $fieldNames !== '*') {
             $fieldNames = array($this->_getPkFieldName(), $fieldNames);
         }
-        $data = $this->_model->getOne($fieldNames, $conditions, false, false);
+        $data = $this->_getModel()->getOne($fieldNames, $conditions, false, false);
         if (!empty($data)) {
             $this->_fromDbData($data, false);
             if (!empty($relations) && (is_array($relations) || is_string($relations))) {
@@ -1342,9 +1345,9 @@ class DbObject {
      * Used after saving data
      */
     protected function markAllSetFieldsAsDbFields() {
-        foreach ($this->_fields as $object) {
-            if ($object->hasValue()) {
-                $object->setValueReceivedFromDb(true);
+        foreach ($this->_fields as $dbField) {
+            if ($dbField->hasValue()) {
+                $dbField->setValueReceivedFromDb(true);
             }
         }
     }
@@ -1366,15 +1369,16 @@ class DbObject {
             return false;
         }
         $localTransaction = false;
-        if (!$this->_model->inTransaction()) {
-            $this->_model->begin();
+        $model = $this->_getModel();
+        if (!$model->inTransaction()) {
+            $model->begin();
             $localTransaction = true;
         }
         $exists = $this->exists($verifyDbExistance);
         if ($verifyDbExistance && !$exists && !$createIfNotExists) {
             $this->_customErrors[$this->_getPkFieldName()] = '@!db.error_edit_not_existing_record@';
             if ($localTransaction) {
-                $this->_model->rollback();
+                $model->rollback();
             }
             return false;
         }
@@ -1383,7 +1387,7 @@ class DbObject {
             : array();
         if (!$exists) {
             $this->_allowFieldsUpdatesTracking = false;
-            $ret = $this->_model->insert($this->toStrictArray(), '*');
+            $ret = $model->insert($this->toStrictArray(), '*');
             if (!empty($ret)) {
                 $this->_updateWithDbValues($ret);
             }
@@ -1393,13 +1397,13 @@ class DbObject {
             unset($dataToSave[$this->_getPkFieldName()]);
             if (!empty($dataToSave)) {
                 $this->_allowFieldsUpdatesTracking = false;
-                $ret = $this->_model->update($dataToSave, $this->getFindByPkConditions(), '*');
+                $ret = $model->update($dataToSave, $this->getFindByPkConditions(), '*');
                 if (!empty($ret) && count($ret) == 1) {
                     $ret = $ret[0];
                     $this->_updateWithDbValues($ret);
                 } else if (count($ret) > 1) {
-                    $this->_model->rollback();
-                    throw new DbObjectException($this, 'Attempt to update [' . count($ret) . '] records instead of 1: ' . $this->_model->lastQuery());
+                    $model->rollback();
+                    throw new DbObjectException($this, 'Attempt to update [' . count($ret) . '] records instead of 1: ' . $model->lastQuery());
                 }
                 $this->_allowFieldsUpdatesTracking = true;
             } else {
@@ -1428,9 +1432,9 @@ class DbObject {
         }
         if ($localTransaction) {
             if ($ret) {
-                $this->_model->commit();
+                $model->commit();
             } else {
-                $this->_model->rollback();
+                $model->rollback();
             }
         }
         if (!empty($ret)) {
@@ -1469,17 +1473,13 @@ class DbObject {
 
     /**
      * Save single field value to db
-     * @param string $name
+     * @param string $fieldName
      * @param mixed $value
      * @return bool
      * @throws DbObjectException when field does not belong to db object
      */
-    public function saveField($name, $value) {
-        if (isset($this->_fields[$name])) {
-            return $this->begin()->$name($value)->commit();
-        }
-        $class = get_class($this);
-        throw new DbObjectException($this, "Unknown field [$name] detected in [$class]");
+    public function saveField($fieldName, $value) {
+        return $this->begin()->_setFieldValue($fieldName, $value)->commit();
     }
 
     /**
@@ -1504,14 +1504,15 @@ class DbObject {
             if (!empty($errors)) {
                 return false;
             }
-            if (!$this->_model->inTransaction()) {
-                $this->_model->begin();
+            $model = $this->_getModel();
+            if (!$model->inTransaction()) {
+                $model->begin();
                 $localTransaction = true;
             }
             $dataToSave = $this->toStrictArray($fieldNames, true);
             unset($dataToSave[$this->_getPkFieldName()]);
             if (!empty($dataToSave)) {
-                $ret = $this->_model->update($dataToSave, $this->getFindByPkConditions());
+                $ret = $model->update($dataToSave, $this->getFindByPkConditions());
             } else {
                 $ret = true;
             }
@@ -1522,12 +1523,12 @@ class DbObject {
             }
             if (!empty($ret)) {
                 if ($localTransaction) {
-                    $this->_model->commit();
+                    $model->commit();
                 }
                 $this->markAllSetFieldsAsDbFields();
             } else {
                 if ($localTransaction) {
-                    $this->_model->rollback();
+                    $model->rollback();
                 }
             }
             return !empty($ret);
@@ -1548,14 +1549,15 @@ class DbObject {
                 throw new DbObjectException($this, 'Trying to delete [' . get_class($this) . '] object without primary key');
             }
         } else {
-            $alreadyInTransaction = $this->_model->inTransaction();
+            $model = $this->_getModel();
+            $alreadyInTransaction = $model->inTransaction();
             if (!$alreadyInTransaction) {
-                $this->_model->begin();
+                $model->begin();
             }
-            $this->_model->delete($this->getFindByPkConditions());
+            $model->delete($this->getFindByPkConditions());
             $this->afterDelete();
             if (!$alreadyInTransaction) {
-                $this->_model->commit();
+                $model->commit();
             }
             if (!$this->_dontDeleteFiles && $this->_hasFileFields()) {
                 $this->deleteFilesForAllFields();
@@ -1597,9 +1599,9 @@ class DbObject {
      * @return bool
      */
     public function exists($fromDb = false) {
-        $pkSet = $this->_fields[$this->_getPkFieldName()]->hasNotEmptyValue();
+        $pkSet = $this->_getPkField()->hasNotEmptyValue();
         if ($fromDb) {
-            return $pkSet && $this->_model->exists($this->getFindByPkConditions());
+            return $pkSet && $this->_getModel()->exists($this->getFindByPkConditions());
         } else {
             return $pkSet;
         }
@@ -1618,11 +1620,11 @@ class DbObject {
      * Used to collect values to write them to db
      * @param array|null $fieldNames - will return only this fields (if not skipped).
      *      Note: pk field added automatically if object has it
-     * @param bool $onlyUpdated - true: will return only field values that were updated (field->isDbValue == false)
+     * @param bool $onlyUpdatedFields - true: will return only field values that were updated (field->isDbValue == false)
      * @return array
      * @throws DbObjectException when some field value validation fails
      */
-    public function toStrictArray($fieldNames = null, $onlyUpdated = false) {
+    public function toStrictArray($fieldNames = null, $onlyUpdatedFields = false) {
         $values = array();
         if (empty($fieldNames) || !is_array($fieldNames)) {
             $fieldNames = array_keys($this->_fields);
@@ -1630,11 +1632,10 @@ class DbObject {
         if ($this->exists() && !in_array($this->_getPkFieldName(), $fieldNames)) {
             $fieldNames[] = $this->_getPkFieldName();
         }
-        foreach ($fieldNames as $name) {
-            if (!isset($this->_fields[$name])) {
-                throw new DbObjectException($this, "Field [$name] not exists in table [{$this->_model->getTableName()}]");
-            } else if (!$this->_fields[$name]->canBeSkipped($onlyUpdated)) {
-                $values[$name] = $this->_fields[$name]->getValue();
+        foreach ($fieldNames as $fieldName) {
+            $field = $this->_getField($fieldName);
+            if (!$field->canBeSkipped() && (!$onlyUpdatedFields || !$field->isValueReceivedFromDb())) {
+                $values[$fieldName] = $field->getValue();
             }
         }
         return $values;
@@ -1657,18 +1658,20 @@ class DbObject {
         if ($this->exists() && !in_array($this->_getPkFieldName(), $fieldNames)) {
             $fieldNames[] = $this->_getPkFieldName();
         }
-        foreach ($fieldNames as $name) {
-            if ($this->_fields[$name]->hasValue()) {
-                $values[$name] = $this->_fields[$name]->getValue();
-            } else if ($this->exists() && $this->_fields[$name]->isFile()) {
-                $this->_fields[$name]->setValue($this->{$this->_getPkFieldName()}); //< this will trigger file path generation
-                $values[$name] = $this->_fields[$name]->getValue();
+        foreach ($fieldNames as $fieldName) {
+            $field = $this->_getField($fieldName);
+            if ($field->hasValue()) {
+                $values[$fieldName] = $field->getValue();
+            } else if ($this->exists() && $field->isFile()) {
+                $field->setValue($this->_getPkValue()); //< this will trigger file path generation
+                $values[$fieldName] = $field->getValue();
                 /*$server = !empty($this->model->fields[$name]['server']) ? $this->model->fields[$name]['server'] : null;
                 if ($this->_fields[$name]->isImage && $server == \Server::alias()) {
                     $values[$name . '_path'] = $this->{$name . '_path'};
                 }*/
-                if ($this->_fields[$name]->isImage()) {
-                    $values[$name . '_path'] = $this->{$name . '_path'};
+                if ($field->isImage()) {
+                    /** @var ImageField $field  */
+                    $values[$fieldName . '_path'] = $field->getFilePath();
                 }
             }
         }
@@ -1676,6 +1679,12 @@ class DbObject {
         return $values + $this->relationsToPublicArray($relations, $forceRelationsRead);
     }
 
+    /**
+     * @param null|string|array $relations
+     * @param bool $forceRelationsRead
+     * @return array
+     * @throws DbObjectException
+     */
     public function relationsToPublicArray($relations = null, $forceRelationsRead = true) {
         if (empty($relations)) {
             return array();
@@ -1718,14 +1727,20 @@ class DbObject {
      * Collect default values for the fields
      * @param array|null $fieldNames - will return only this fields (if not skipped)
      * @return array
+     * @throws DbFieldException
+     * @throws DbObjectException
      */
     public function getDefaultsArray($fieldNames = null) {
         $values = array();
-        if (empty($fieldNames) || !is_array($fieldNames)) {
+        if (is_string($fieldNames)) {
+            $fieldNames = array($fieldNames);
+        } else if (empty($fieldNames)) {
             $fieldNames = array_keys($this->_fields);
+        } else if (!is_array($fieldNames)) {
+            throw new DbObjectException($this, "getDefaultsArray: \$fieldNames argument must be empty, string or array");
         }
         foreach ($fieldNames as $name) {
-            $values[$name] = $this->_fields[$name]->getDefaultValue();
+            $values[$name] = $this->_getField($name)->getDefaultValue();
         }
         return $values;
     }
@@ -1737,9 +1752,9 @@ class DbObject {
      */
     public function getFieldsValues() {
         $values = array();
-        foreach ($this->_fields as $name => $fieldObject) {
-            if ($fieldObject->hasValue()) {
-                $values[$name] = $fieldObject->getValue();
+        foreach ($this->_fields as $name => $dbField) {
+            if ($dbField->hasValue()) {
+                $values[$name] = $dbField->getValue();
             }
         }
         return $values;
