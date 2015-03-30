@@ -82,26 +82,26 @@ abstract class DbTableConfig {
 
     /**
      * @param DbRelationConfig $config
-     * @param null $alias
+     * @param null $relationAlias
      * @return $this
      * @throws DbTableConfigException
      * @throws Exception\DbColumnConfigException
      */
-    protected function addRelation(DbRelationConfig $config, $alias = null) {
+    protected function addRelation(DbRelationConfig $config, $relationAlias = null) {
         if ($config->getTable() !== $this->getName()) {
             throw new DbTableConfigException($this, "Invalid source table of relation [{$config->getTable()}]. Source table should be [{$this->getName()}]");
         }
         if (!$this->hasColumn($config->getColumn())) {
             throw new DbTableConfigException($this, "Table has no column [{$config->getColumn()}] or column not defined yet");
         }
-        if (empty($alias)) {
-            $alias = $config->getId();
+        if (empty($relationAlias)) {
+            $relationAlias = $config->getId();
         }
-        if (!empty($this->relations[$alias])) {
-            throw new DbTableConfigException($this, "Duplicate config received for relation [{$alias} => {$config->getId()}]");
+        if (!empty($this->relations[$relationAlias])) {
+            throw new DbTableConfigException($this, "Duplicate config received for relation [{$relationAlias} => {$config->getId()}]");
         }
-        $this->relations[$alias] = $config;
-        $this->columns[$config->getColumn()]->addRelation($config);
+        $this->relations[$relationAlias] = $config;
+        $this->columns[$config->getColumn()]->addRelation($config, $relationAlias);
         return $this;
     }
 

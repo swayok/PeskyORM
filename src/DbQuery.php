@@ -557,7 +557,7 @@ class DbQuery {
      * @return array
      */
     public function findOne($withRootTableAlias = false) {
-        return $this->find('first', $withRootTableAlias);
+        return $this->find(Db::FETCH_FIRST, $withRootTableAlias);
     }
 
     /**
@@ -1308,44 +1308,52 @@ class DbQuery {
             case Db::FETCH_VALUE:
             case Db::FETCH_COLUMN:
                 return $records;
-            case Db::FETCH_ALL:
             case Db::FETCH_FIRST:
+                return $this->convertDbDataToNestedArray($records, $withRootTableAlias);
+            case Db::FETCH_ALL:
             default:
-                if ($type == 'first') {
-                    $records = array_slice($records, 0, 1);
+                array_map(array($this, 'convertDbDataToNestedArray'), $records);
+                foreach ($records as &$data) {
+                    $data = $this->convertDbDataToNestedArray($data, $withRootTableAlias);
                 }
-                $return = array();
-                foreach ($records as $record) {
-                    $nested = array();
-                    // process record's column aliases and group column values by table alias
-                    foreach ($record as $colAlias => $value) {
-                        if (preg_match('%^__(.+?)__(.+?)$%is', $colAlias, $colInfo)) {
-                            list(, $tableAlias, $column) = $colInfo;
-                            if (empty($nested[$tableAlias])) {
-                                $nested[$tableAlias] = array();
-                            }
-                            $nested[$tableAlias][$column] = $value;
-                        } else {
-                            $nested[$colAlias] = $value;
-                        }
-                    }
-                    // make record nested + add missing child records
-                    foreach ($this->aliasToTable as $tableAlias => $table) {
-                        if ($tableAlias != $this->alias) {
-                            if (!empty($nested[$tableAlias])) {
-                                $nested[$this->alias][$tableAlias] = $nested[$tableAlias];
-                                unset($nested[$tableAlias]);
-                            } else {
-                                $nested[$this->alias][$tableAlias] = array();
-                            }
-                        }
-                    }
-                    if (!$withRootTableAlias && isset($nested[$this->alias])) {
-                        $nested = $nested[$this->alias];
-                    }
-                    $return[] = $nested;
-                }
-                return $type == Db::FETCH_FIRST ? $return[0] : $return;
+                return $records;
         }
+    }
+
+    /**
+     * Converts $data (plain associative array with keys like __TABLE_ALIAS__.con_name keys to good-looking nested array
+     * @param array $data
+     * @param bool $withRootTableAlias
+     * @return array
+     */
+    protected function convertDbDataToNestedArray($data, $withRootTableAlias = true) {
+        $nested = array();
+        // process record's column aliases and group column values by table alias
+        foreach ($data as $colAlias => $value) {
+            if (preg_match('%^__(.+?)__(.+?)$%is', $colAlias, $colInfo)) {
+                list(, $tableAlias, $column) = $colInfo;
+                if (empty($nested[$tableAlias])) {
+                    $nested[$tableAlias] = array();
+                }
+                $nested[$tableAlias][$column] = $value;
+            } else {
+                $nested[$colAlias] = $value;
+            }
+        }
+        // make record nested + add missing child records
+        foreach ($this->aliasToTable as $tableAlias => $table) {
+            if ($tableAlias != $this->alias) {
+                if (!empty($nested[$tableAlias])) {
+                    $nested[$this->alias][$tableAlias] = $nested[$tableAlias];
+                    unset($nested[$tableAlias]);
+                } else {
+                    $nested[$this->alias][$tableAlias] = array();
+                }
+            }
+        }
+        if (!$withRootTableAlias && isset($nested[$this->alias])) {
+            $nested = $nested[$this->alias];
+        }
+        return $nested;
     }
 }

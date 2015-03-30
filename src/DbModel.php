@@ -249,6 +249,7 @@ abstract class DbModel {
      * @throws DbUtilsException
      */
     static public function getModel($modelName) {
+        // todo: maybe use reflections?
         // load model if not loaded yet
         $modelClass = self::getModelsNamespace() . $modelName;
         if (empty(self::$loadedModels[$modelClass])) {

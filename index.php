@@ -2,6 +2,7 @@
 
 require_once 'error_handling.php';
 require_once 'debug.php';
+require_once 'dBug.php';
 
 spl_autoload_register(function ($class) {
 
@@ -44,8 +45,8 @@ $config = \PeskyORM\DbConnectionConfig::create()
 $user = \PeskyORM\Model\AppModel::getDbObject('User')->find(array('id' => 1));
 
 
-
-dpr($user->toPublicArray(null, array('UserToken'), true));
+new dBug($user);
+//dpr($user->toPublicArray(null, array('UserToken'), true));
 /*foreach ($user->UserToken as $token) {
     dpr($token->toPublicArray());
 }*/

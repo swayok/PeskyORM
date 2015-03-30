@@ -586,14 +586,17 @@ class DbColumnConfig {
      * @return $this
      * @throws DbColumnConfigException
      */
-    public function addRelation(DbRelationConfig $relation) {
+    public function addRelation(DbRelationConfig $relation, $relationAlias = null) {
         if ($relation->getColumn() !== $this->name && $relation->getForeignColumn() !== $this->name) {
             throw new DbColumnConfigException($this, "Relation {$relation->getId()} is not connected to column {$this->name}");
         }
-        if (!empty($this->relations[$relation->getId()])) {
-            throw new DbColumnConfigException($this, "Relation {$relation->getId()} already defined");
+        if (empty($relationAlias)) {
+            $relationAlias = $relation->getId();
         }
-        $this->relations[$relation->getId()] = $relation;
+        if (!empty($this->relations[$relation->getId()])) {
+            throw new DbColumnConfigException($this, "Relation {$relationAlias} already defined");
+        }
+        $this->relations[$relationAlias] = $relation;
         if ($relation->getType() === DbRelationConfig::BELONGS_TO) {
             $this->setIsFk(true);
         }

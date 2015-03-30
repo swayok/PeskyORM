@@ -2,13 +2,10 @@
 
 namespace PeskyORM;
 
-
-use PeskyORM\Lib\StringUtils;
-
 class DbRelationConfig {
 
-    const HAS_ONE = 'one';
-    const HAS_MANY = 'many';
+    const HAS_ONE = 'has_one';
+    const HAS_MANY = 'has_many';
     const BELONGS_TO = 'belongs_to';
 
     /** @var DbTableConfig */

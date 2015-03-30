@@ -92,7 +92,7 @@ class UserTableConfig extends DbTableConfig {
                     ->setIsNullable(false)
                     ->setDefaultValue('')
             )->addColumn(
-                DbColumnConfig::create('nickname', DbColumnConfig::TYPE_TIMESTAMP)
+                DbColumnConfig::create('nickname', DbColumnConfig::TYPE_STRING)
                     ->setIsRequired(false)
                     ->setIsNullable(false)
             )->addColumn(
@@ -118,11 +118,11 @@ class UserTableConfig extends DbTableConfig {
                     ->setIsNullable(false)
                     ->setDefaultValue(false)
             )->addColumn(
-                DbColumnConfig::create('insurance_company_alias', DbColumnConfig::TYPE_TIMESTAMP)
+                DbColumnConfig::create('insurance_company_alias', DbColumnConfig::TYPE_STRING)
                     ->setIsRequired(false)
                     ->setIsNullable(true)
             )->addColumn(
-                DbColumnConfig::create('insurance_contract_id', DbColumnConfig::TYPE_TIMESTAMP)
+                DbColumnConfig::create('insurance_contract_id', DbColumnConfig::TYPE_STRING)
                     ->setIsRequired(false)
                     ->setIsNullable(true)
             )->addColumn(
