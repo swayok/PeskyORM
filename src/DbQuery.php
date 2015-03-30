@@ -2,6 +2,7 @@
 
 namespace PeskyORM;
 
+use PeskyORM\Exception\DbException;
 use PeskyORM\Exception\DbQueryException;
 
 class DbQuery {
@@ -509,13 +510,17 @@ class DbQuery {
 
     /**
      * Build and execute query, process and return records
-     * @param string $type - one of 'all', 'first'.
+     * @param string $type - type of query: 'all', 'first', 'column', 'value', expression, integer
+     *      'all': returns array of records
+     *      'first': returns 1st fetched record
+     *      'column': returns array of values from 1st column in query
+     *      'value', expression, integer: returns 1st column value from 1st selected row
      * @param bool $withRootTableAlias -
      *      true: result will look like array(0 => array('RootAlias' => array('column1' => 'value1', ...), 1 => array(...), ...)
      *      false: result will look like array(0 => array('column1' => 'value1', ...), 1 => array(...), ...)
      * @return array of records
      */
-    public function find($type = 'all', $withRootTableAlias = true) {
+    public function find($type = Db::FETCH_ALL, $withRootTableAlias = true) {
         $query = $this->buildQuery($type);
         if (!$this->db->inTransaction()) {
             $this->db->begin(true, Db::PGSQL_TRANSACTION_TYPE_REPEATABLE_READ);
@@ -524,6 +529,10 @@ class DbQuery {
         $statement = $this->db->query($query);
         if (!empty($localTransaction)) {
             $this->db->commit();
+        }
+        // modify $type when it is expression or integer
+        if (!in_array($type, array(DB::FETCH_ALL, DB::FETCH_FIRST, DB::FETCH_COLUMN))) {
+            $type = DB::FETCH_VALUE;
         }
         return $this->processRecords($statement, $type, $withRootTableAlias);
     }
@@ -626,7 +635,7 @@ class DbQuery {
             $this->query .= $returning;
             //$this->quoteQueryExpressions();
             $statement = $this->db->query($this->query);
-            $result = $this->processRecords($statement, 'all');
+            $result = $this->processRecords($statement, Db::FETCH_ALL);
             return $result;
         } else {
             //$this->quoteQueryExpressions();
@@ -672,7 +681,7 @@ class DbQuery {
             return false;
         }
         if ($this->db->hasReturning) {
-            $result = $this->processRecords($statement, 'first');
+            $result = $this->processRecords($statement, Db::FETCH_FIRST);
         } else {
             $pkValue = $this->db->pdo->lastInsertId();
             if (empty($returning)) {
@@ -738,7 +747,7 @@ class DbQuery {
             if (!$statement || !$statement->rowCount()) {
                 return 0;
             }
-            $result = $this->processRecords($statement, 'all', false);
+            $result = $this->processRecords($statement, Db::FETCH_ALL, false);
             return empty($result) ? $statement->rowCount() : $result;
         }
     }
@@ -792,7 +801,7 @@ class DbQuery {
             $this->query .= $returning;
 //            $this->quoteQueryExpressions();
             $statement = $this->db->query($this->query);
-            $result = $this->processRecords($statement, 'all');
+            $result = $this->processRecords($statement, Db::FETCH_ALL);
             if (empty($result)) {
                 return $statement->rowCount();
             } else {
@@ -820,12 +829,13 @@ class DbQuery {
 
     /**
      * Build DB query from parts
-     * @param string $type - type of query: 'all', 'first', expression, integer
-     *      'all' and 'first': same query with different limits
-     *      'expression' and integer: only 1 field and 1 record fetched
+     * @param string $type - type of query: 'all', 'first', 'column', 'value', DbExpr, integer, bool
+     *      'all', 'column' and 'first': same query with different limits
+     *      'value', DbExpr, integer, bool: only 1 value is fetched from db
      * @return string
+     * @throws DbQueryException
      */
-    public function buildQuery($type = 'all') {
+    public function buildQuery($type = DB::FETCH_ALL) {
         $type = strtolower($type);
         $autoAddPkFieldAndOrder = empty($this->groupBy) && !$this->hasAggregatesInFields();
         $this->query = 'SELECT ';
@@ -833,10 +843,10 @@ class DbQuery {
             $this->query .= 'DISTINCT ';
         }
         // fields
-        if (!in_array($type, array('all', 'first'))) {
-            $this->query .= ' ' . $type . ' ';
-            $autoAddPkFieldAndOrder = false;
-        } else {
+        if (in_array($type, array(DB::FETCH_ALL, DB::FETCH_FIRST, DB::FETCH_COLUMN, DB::FETCH_VALUE))) {
+            if ($type === DB::FETCH_VALUE) {
+                $autoAddPkFieldAndOrder = false;
+            }
             if (empty($this->fields)) {
                 $this->fields('*');
                 if (!empty($this->joins)) {
@@ -846,6 +856,20 @@ class DbQuery {
                 }
             }
             $this->query .= $this->buildFieldsList($autoAddPkFieldAndOrder);
+        } else if ($type instanceof DbExpr) {
+            $this->query .= " {$type->get()} ";
+            $autoAddPkFieldAndOrder = false;
+        } else if (is_bool($type)) {
+            $this->query .= ' ' . ($type ? 'true' : 'false') . ' ';
+            $autoAddPkFieldAndOrder = false;
+        } else if (is_numeric($type)) {
+            $this->query .= " $type ";
+            $autoAddPkFieldAndOrder = false;
+        } else if (is_string($type)) {
+            $this->query .= " {$this->quoteValue($type)} ";
+            $autoAddPkFieldAndOrder = false;
+        } else {
+            throw new DbQueryException($this, "Unknown query \$type");
         }
         // table
         $this->query .= ' FROM ' . $this->quoteName($this->table) . ' AS ' . $this->quoteName($this->alias) . ' ';
@@ -1265,7 +1289,8 @@ class DbQuery {
      * Note: when limit == 1 returns single record, not an array with 1 record
      * @param \PDOStatement $statement
      * @param string $type - type of query: 'all', 'first', 'value', 'column'
-     *      'all' and 'first': same query with different limits
+     *      'all': returns array of records
+     *      'first': returns 1st fetched record
      *      'column': returns array of values from 1st column in query
      *      'value': returns 1st column value from 1st selected row
      * @param bool $withRootTableAlias -
