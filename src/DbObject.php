@@ -590,7 +590,7 @@ class DbObject {
      * @return $this
      * @throws DbObjectException when $filter == false and unknown field detected in $data
      */
-    protected function _fromDbData($data, $filter = false) {
+    public function fromDbData($data, $filter = false) {
         $this->_fromData($data, $filter, true);
         return $this;
     }
@@ -1335,7 +1335,7 @@ class DbObject {
         }
         $data = $this->_getModel()->getOne($fieldNames, $conditions, false, false);
         if (!empty($data)) {
-            $this->_fromDbData($data, false);
+            $this->fromDbData($data, false);
             if (!empty($relations) && (is_array($relations) || is_string($relations))) {
                 $this->readRelations($relations);
             }
@@ -1423,7 +1423,7 @@ class DbObject {
             }
             if (is_array($ret)) {
                 // set $ret as db data (it is all fields actually)
-                $this->_fromDbData($ret);
+                $this->fromDbData($ret);
             } else {
                 // mark updated data as db data
                 $this->markAllSetFieldsAsDbFields();

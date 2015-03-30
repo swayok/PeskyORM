@@ -399,13 +399,18 @@ abstract class DbModel {
     /**
      * Convert records to DbObjects
      * @param array $records
+     * @param bool $dataIsLoadedFromDb
      * @return array
      */
-    public function recordsToObjects($records) {
+    public function recordsToObjects($records, $dataIsLoadedFromDb = false) {
         if (is_array($records) && !empty($records)) {
             $objects = array();
             foreach ($records as $record) {
-                $objects[] = $this->getOwnDbObject($record);
+                if ($dataIsLoadedFromDb) {
+                    $objects[] = $this->getOwnDbObject()->fromDbData($record);
+                } else {
+                    $objects[] = $this->getOwnDbObject($record);
+                }
             }
             return $objects;
         }
@@ -495,7 +500,7 @@ abstract class DbModel {
             ->fromOptions($this->prepareSelect($columns, $conditionsAndOptions))
             ->find('all', $withRootAlias);
         if ($asObjects) {
-            $records = $this->recordsToObjects($records);
+            $records = $this->recordsToObjects($records, true);
         }
         return $records;
     }
