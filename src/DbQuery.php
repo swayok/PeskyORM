@@ -1264,22 +1264,28 @@ class DbQuery {
      * Process records from statement and return required amount of records
      * Note: when limit == 1 returns single record, not an array with 1 record
      * @param \PDOStatement $statement
-     * @param string $type - type of query: 'all', 'first', expression, integer
+     * @param string $type - type of query: 'all', 'first', 'value', 'column'
      *      'all' and 'first': same query with different limits
-     *      expression and integer: only 1 field and 1 record fetched
+     *      'column': returns array of values from 1st column in query
+     *      'value': returns 1st column value from 1st selected row
      * @param bool $withRootTableAlias -
      *      true: result will look like array(0 => array('RootAlias' => array('column1' => 'value1', ...), 1 => array(...), ...)
      *      false: result will look like array(0 => array('column1' => 'value1', ...), 1 => array(...), ...)
-     * @return array[]|array|string|int|float
+     * @return array[]|array|mixed
      */
-    protected function processRecords(\PDOStatement $statement, $type = 'all', $withRootTableAlias = true) {
-        if ($statement && $statement->rowCount() > 0) {
-            $type = strtolower($type);
-            if (!in_array($type, array('all', 'first'))) {
-                $value = $statement->fetchColumn();
-                return $value;
-            } else {
-                $records = $statement->fetchAll(\PDO::FETCH_ASSOC);
+    protected function processRecords(\PDOStatement $statement, $type = Db::FETCH_ALL, $withRootTableAlias = true) {
+        $type = strtolower($type);
+        $records = Db::processRecords($statement, $type);
+        if (empty($records)) {
+            return $records;
+        }
+        switch ($type) {
+            case Db::FETCH_VALUE:
+            case Db::FETCH_COLUMN:
+                return $records;
+            case Db::FETCH_ALL:
+            case Db::FETCH_FIRST:
+            default:
                 if ($type == 'first') {
                     $records = array_slice($records, 0, 1);
                 }
@@ -1314,10 +1320,7 @@ class DbQuery {
                     }
                     $return[] = $nested;
                 }
-                return $type == 'first' ? $return[0] : $return;
-            }
-        } else {
-            return array();
+                return $type == Db::FETCH_FIRST ? $return[0] : $return;
         }
     }
 }
