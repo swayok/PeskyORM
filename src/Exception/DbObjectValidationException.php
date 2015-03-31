@@ -16,7 +16,7 @@ class DbObjectValidationException extends DbObjectException {
      */
     public function __construct(DbObject $dbObject, $validationErrors = null) {
         $this->validationErrors = empty($validationErrors) ? $dbObject->getValidationErrors() : $validationErrors;
-        parent::__construct($dbObject, 'Validation errors');
+        parent::__construct($dbObject, 'Validation errors', DbExceptionCode::VALIDATION_ERRORS);
     }
 
     /**
