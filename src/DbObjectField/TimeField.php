@@ -17,18 +17,17 @@ class TimeField extends DbObjectField {
             return null; //< also prevents situation when unixtimestamp = 0 is passed
         }
         if (!ValidateValue::isDateTime($value)) {
-            throw new DbFieldException($this, "Value [{$value}] is not time or date-time or has bad formatting");
+            throw new DbFieldException($this, "Value is not time or date-time or has bad formatting");
         }
         return Utils::formatDateTime($value, $this->getTimeFormat());
     }
 
     public function isValidValueFormat($value) {
-        $isValid = true;
-        if (!empty($value) && !ValidateValue::isDateTime($value)) {
-            $isValid = false;
-            $this->setValidationError("Value [{$value}] is not time or date-time or has bad formatting");
+        if (empty($value) || ValidateValue::isDateTime($value)) {
+            return true;
         }
-        return $isValid;
+        $this->setValidationError("Value is not time or date-time or has bad formatting");
+        return false;
     }
 
     /**

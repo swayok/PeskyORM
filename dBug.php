@@ -221,9 +221,11 @@ class dBug {
         if (is_object($var)) {
             $reflectionObject = new ReflectionObject($var);
 
-//            $this->printObjectVars($reflectionObject->getConstants(), '[const] ');
-//            $this->printObjectVars($reflectionObject->getStaticProperties(), '[static] ');
             $this->printObjectProps($var, $reflectionObject->getProperties());
+            $parentClass = $reflectionObject->getParentClass();
+            if ($parentClass) {
+                $this->printObjectProps($var, $parentClass->getProperties(ReflectionProperty::IS_PRIVATE), 'parent->');
+            }
 
             //$arrObjMethods = get_class_methods(get_class($var));
 

@@ -13,6 +13,7 @@ use PeskyORM\Lib\Folder;
 use PeskyORM\Lib\ImageUtils;
 use PeskyORM\Lib\StringUtils;
 use PeskyORM\Lib\Utils;
+use PeskyORM\Model\AppModel;
 
 /**
  * Class DbObject
@@ -104,14 +105,26 @@ class DbObject {
 
     /**
      * @param DbModel $model
-     * @param null|array|string|int $data - null: do nothing | int and string: is primary key (read db) | array: object data
+     * @param null $dataOrPkValue
+     * @param bool $filter
+     * @param bool $isDbValues
+     * @return $this
+     */
+    static public function create(DbModel $model, $dataOrPkValue = null, $filter = false, $isDbValues = false) {
+        $className = get_called_class();
+        return new $className($model, $dataOrPkValue, $filter, $isDbValues);
+    }
+
+    /**
+     * @param DbModel $model
+     * @param null|array|string|int $dataOrPkValue - null: do nothing | int and string: is primary key (read db) | array: object data
      * @param bool $filter - used only when $data not empty and is array
      *      true: filters $data that does not belong t0o this object
      *      false: $data that does not belong to this object will trigger exceptions
      * @param bool $isDbValues - true: indicates that field values passsed via $data as array are db values
      * @throws DbObjectException
      */
-    public function __construct(DbModel $model, $data = null, $filter = false, $isDbValues = false) {
+    public function __construct(DbModel $model, $dataOrPkValue = null, $filter = false, $isDbValues = false) {
         $this->_model = $model;
         $this->_dontDeleteFiles = !!$this->_dontDeleteFiles;
         // initiate DbObjectField for all fields
@@ -133,11 +146,11 @@ class DbObject {
         }
         $this->_cleanRelatedObjects();
         // set values if possible
-        if (!empty($data)) {
-            if (is_array($data)) {
-                $this->_fromData($data, !empty($filter), $isDbValues);
+        if (!empty($dataOrPkValue)) {
+            if (is_array($dataOrPkValue)) {
+                $this->_fromData($dataOrPkValue, !empty($filter), $isDbValues);
             } else {
-                $this->read($data);
+                $this->read($dataOrPkValue);
             }
         }
     }
@@ -439,7 +452,7 @@ class DbObject {
             }
             $relatedObject = $objectOrDataOrPkValue;
         } else {
-            $relatedObject = $this->_getModel()->getDbObject($this->_getForeignTableForRelation($relationAlias));
+            $relatedObject = $this->_getModel()->createDbObject($this->_getForeignTableForRelation($relationAlias));
             if (empty($objectOrDataOrPkValue)) {
                 $this->linkRelatedObjectToThis($relationAlias, $relatedObject);
             } else {
@@ -483,7 +496,7 @@ class DbObject {
                     $relatedObjects[] = $item;
                 } else {
                     // array of item data arrays or item ids
-                    $relatedObjects[] = $this->_getModel()->getDbObject($this->_getForeignTableForRelation($relationAlias), $item);
+                    $relatedObjects[] = $this->_getModel()->createDbObject($this->_getForeignTableForRelation($relationAlias), $item);
                 }
             }
             // validate relation

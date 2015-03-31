@@ -9,6 +9,14 @@ use PeskyORM\Lib\Utils;
 
 class FileField extends DbObjectField {
 
+    public function isValidValueFormat($value) {
+        if (empty($value) || !is_array($value) || array_key_exists('tmp_file', $value)) {
+            return true;
+        }
+        $this->setValidationError('File upload expected');
+        return false;
+    }
+
     protected function doBasicValueValidationAndConvertion($value) {
         return $this->formatFile($value);
     }

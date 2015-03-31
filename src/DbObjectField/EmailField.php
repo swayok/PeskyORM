@@ -8,12 +8,11 @@ use PeskyORM\Lib\ValidateValue;
 class EmailField extends StringField {
 
     public function isValidValueFormat($value) {
-        $isValid = true;
-        if (!empty($value) && ValidateValue::isEmail($value)) {
-            $isValid = false;
-            $this->setValidationError("Value [{$value}] is not valid email address");
+        if (empty($value) || ValidateValue::isEmail($value)) {
+            return true;
         }
-        return $isValid;
+        $this->setValidationError("Value is not a valid email address");
+        return false;
     }
 
 

@@ -7,17 +7,14 @@ use PeskyORM\Exception\DbFieldException;
 use PeskyORM\Lib\ImageUtils;
 
 class ImageField extends FileField {
-    public function isValidValueFormat($value) {
-        $isValid = true;
-        if (!empty($value) && is_array($value) && array_key_exists('tmp_file', $value)) {
-            $isValid = ImageUtils::isImage($value);
-            if (!$isValid) {
-                $this->setValidationError('Uploaded file is not image or image type is not supported');
-            }
-        }
-        return $isValid;
-    }
 
+    public function isValidValueFormat($value) {
+        if (empty($value) || parent::isValidValueFormat($value) && ImageUtils::isImage($value)) {
+            return true;
+        }
+        $this->setValidationError('Uploaded file is not image or image type is not supported');
+        return false;
+    }
 
     /**
      * Get fs path to file

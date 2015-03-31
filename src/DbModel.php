@@ -51,6 +51,14 @@ abstract class DbModel {
      */
     public $safeMode = true;
 
+    /**
+     * @return $this
+     * @throws DbUtilsException
+     */
+    static public function getInstance() {
+        return self::getModelByClassName(get_called_class());
+    }
+
     public function __construct() {
         $className = get_class($this);
         if (!preg_match('%^(.*?\\\?)([a-zA-Z0-9]+)Model$%is', $className, $classNameParts)) {
@@ -234,7 +242,7 @@ abstract class DbModel {
             return self::getModel($modelOrObjectName);
         } else {
             // db object requested
-            return self::getDbObject(
+            return self::createDbObject(
                 $modelOrObjectName,
                 !empty($objectArgs) ? $objectArgs[0] : null,
                 !empty($objectArgs) && isset($objectArgs[1]) ? $objectArgs[1] : null
@@ -252,6 +260,15 @@ abstract class DbModel {
         // todo: maybe use reflections?
         // load model if not loaded yet
         $modelClass = self::getModelsNamespace() . $modelName;
+        return self::getModelByClassName($modelClass);
+    }
+
+    /**
+     * @param string $modelClass
+     * @return DbModel
+     * @throws DbUtilsException
+     */
+    static public function getModelByClassName($modelClass) {
         if (empty(self::$loadedModels[$modelClass])) {
             if (!class_exists($modelClass)) {
                 throw new DbUtilsException("Class $modelClass was not found");
@@ -306,7 +323,7 @@ abstract class DbModel {
      * @return DbObject
      * @throws DbUtilsException
      */
-    static public function getDbObject($dbObjectNameOrTableName, $data = null, $filter = false) {
+    static public function createDbObject($dbObjectNameOrTableName, $data = null, $filter = false) {
         $dbObjectClass = self::getFullDbObjectClass($dbObjectNameOrTableName);
         if (!class_exists($dbObjectClass)) {
             throw new DbUtilsException("Class $dbObjectClass was not found");
@@ -345,11 +362,11 @@ abstract class DbModel {
      * @param bool $filter - used only when $data not empty and is array
      *      true: filters $data that does not belong to this object
      *      false: $data that does not belong to this object will trigger exceptions
-     * @return DbObject
+     * @return $this
      * @throws DbModelException
      */
     static public function getOwnDbObject($data = null, $filter = false) {
-        return self::getDbObject(self::dbObjectNameByModelClassName(get_called_class()), $data, $filter);
+        return self::createDbObject(self::dbObjectNameByModelClassName(get_called_class()), $data, $filter);
     }
 
     /**

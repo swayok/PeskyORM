@@ -6,12 +6,11 @@ namespace PeskyORM\DbObjectField;
 class EnumField extends StringField {
 
     public function isValidValueFormat($value) {
-        $isValid = true;
-        if (!empty($value) && (empty($this->getAllowedValues()) || !in_array($value, $this->getAllowedValues()))) {
-            $isValid = false;
-            $this->setValidationError("Value [{$value}] is not allowed");
+        if (empty($value) || empty($this->getAllowedValues()) || in_array($value, $this->getAllowedValues())) {
+            return true;
         }
-        return $isValid;
+        $this->setValidationError("Value is not allowed");
+        return false;
     }
 
 

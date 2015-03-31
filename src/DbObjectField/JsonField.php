@@ -15,12 +15,11 @@ class JsonField extends TextField {
     }
 
     public function isValidValueFormat($value) {
-        $isValid = true;
-        if (!empty($value) && json_decode($value, true) === false) {
-            $isValid = false;
-            $this->setValidationError("Value [$value] is not JSON");
+        if (empty($value) || json_decode($value, true) !== false) {
+            return true;
         }
-        return $isValid;
+        $this->setValidationError("Value is not JSON");
+        return false;
     }
 
 

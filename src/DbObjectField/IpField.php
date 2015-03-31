@@ -19,12 +19,11 @@ class IpField extends StringField {
     }
 
     public function isValidValueFormat($value) {
-        $isValid = true;
-        if (!empty($value) && !ValidateValue::isIpAddress($value)) {
-            $isValid = false;
-            $this->setValidationError("Value [{$value}] is not IP address");
+        if (empty($value) || ValidateValue::isIpAddress($value)) {
+            return true;
         }
-        return $isValid;
+        $this->setValidationError("Value is not IP address");
+        return false;
     }
 
 
