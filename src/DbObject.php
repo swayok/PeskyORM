@@ -8,6 +8,7 @@ use PeskyORM\DbObjectField\TimestampField;
 use PeskyORM\Exception\DbExceptionCode;
 use PeskyORM\Exception\DbFieldException;
 use PeskyORM\Exception\DbObjectException;
+use PeskyORM\Exception\DbObjectValidationException;
 use PeskyORM\Lib\File;
 use PeskyORM\Lib\Folder;
 use PeskyORM\Lib\ImageUtils;
@@ -1366,6 +1367,7 @@ class DbObject {
      *      - array and string - related objects aliases to save
      * @return bool
      * @throws DbObjectException
+     * @throws DbObjectValidationException
      */
     public function save($verifyDbExistance = false, $createIfNotExists = false, $saveRelations = false) {
         if ($this->_isStoringFieldUpdates) {
@@ -1373,7 +1375,7 @@ class DbObject {
         }
         $errors = $this->validate(null, true);
         if (!empty($errors)) {
-            return false;
+            throw new DbObjectValidationException($this, $errors);
         }
         $localTransaction = false;
         $model = $this->_getModel();
@@ -1494,53 +1496,54 @@ class DbObject {
      * Note: does not work with relations
      * @params format: saveUpdates(array) | saveUpdates(field1 [,field2])
      * @param array|string|null $fieldNames
-     * @param string $fieldName2
-     * @param string $fieldName3
      * @return bool
+     * @throws DbObjectException
+     * @throws DbObjectValidationException
      */
-    public function saveUpdates($fieldNames = null, $fieldName2 = null, $fieldName3 = null) {
-        if ($this->exists()) {
-            $localTransaction = false;
-            $fieldNames = func_get_args();
-            if (empty($fieldNames)) {
-                $fieldNames = null;
-            } else if (is_array($fieldNames[0])) {
-                $fieldNames = $fieldNames[0];
-            }
-            $errors = $this->validate($fieldNames, true);
-            if (!empty($errors)) {
-                return false;
-            }
-            $model = $this->_getModel();
-            if (!$model->inTransaction()) {
-                $model->begin();
-                $localTransaction = true;
-            }
-            $dataToSave = $this->toStrictArray($fieldNames, true);
-            unset($dataToSave[$this->_getPkFieldName()]);
-            if (!empty($dataToSave)) {
-                $ret = $model->update($dataToSave, $this->getFindByPkConditions());
-            } else {
-                $ret = true;
-            }
-            if (!empty($ret) && $this->_hasFileFields()) {
-                // save attached files
-                $this->saveFiles();
-                $ret = true;
-            }
-            if (!empty($ret)) {
-                if ($localTransaction) {
-                    $model->commit();
-                }
-                $this->markAllSetFieldsAsDbFields();
-            } else {
-                if ($localTransaction) {
-                    $model->rollback();
-                }
-            }
-            return !empty($ret);
+    public function saveUpdates($fieldNames = null) {
+        if (!$this->exists()) {
+            throw new DbObjectException($this, 'Unable to update non-existing object');
         }
-        return false;
+        $localTransaction = false;
+        if (empty($fieldNames)) {
+            $fieldNames = null;
+        } else if (is_string($fieldNames)) {
+            $fieldNames = array($fieldNames);
+        } else if (!is_array($fieldNames)) {
+            throw new DbObjectException($this, '$fieldNames argument should contain only array, string or null');
+        }
+        $errors = $this->validate($fieldNames, true);
+        if (!empty($errors)) {
+            throw new DbObjectValidationException($this, $errors);
+        }
+        $model = $this->_getModel();
+        if (!$model->inTransaction()) {
+            $model->begin();
+            $localTransaction = true;
+        }
+        $dataToSave = $this->toStrictArray($fieldNames, true);
+        unset($dataToSave[$this->_getPkFieldName()]);
+        if (!empty($dataToSave)) {
+            $ret = $model->update($dataToSave, $this->getFindByPkConditions());
+        } else {
+            $ret = true;
+        }
+        if (!empty($ret) && $this->_hasFileFields()) {
+            // save attached files
+            $this->saveFiles();
+            $ret = true;
+        }
+        if (!empty($ret)) {
+            if ($localTransaction) {
+                $model->commit();
+            }
+            $this->markAllSetFieldsAsDbFields();
+        } else {
+            if ($localTransaction) {
+                $model->rollback();
+            }
+        }
+        return !empty($ret);
     }
 
     /**
@@ -1553,7 +1556,7 @@ class DbObject {
     public function delete($resetFields = true, $ignoreIfNotExists = false) {
         if (!$this->exists()) {
             if (!$ignoreIfNotExists) {
-                throw new DbObjectException($this, 'Trying to delete [' . get_class($this) . '] object without primary key');
+                throw new DbObjectException($this, 'Unable to delete non-existing object');
             }
         } else {
             $model = $this->_getModel();
