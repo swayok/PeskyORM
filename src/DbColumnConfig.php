@@ -583,6 +583,7 @@ class DbColumnConfig {
 
     /**
      * @param DbRelationConfig $relation
+     * @param null $relationAlias
      * @return $this
      * @throws DbColumnConfigException
      */

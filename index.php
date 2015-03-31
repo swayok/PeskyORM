@@ -42,10 +42,31 @@ $config = \PeskyORM\DbConnectionConfig::create()
 \PeskyORM\DbModel::setDbConnectionConfig($config, 'default');
 \PeskyORM\Db::$collectAllQueries = true;
 
-$user = \PeskyORM\Model\AppModel::getDbObject('User')->find(array('id' => 1));
+$model = \PeskyORM\Model\UserModel::getInstance();
+$user = \PeskyORM\Object\User::create($model);
 
+//$user->find(array('id' => 1));
+//new dBug($user->UserToken);
+
+$testEmail = 'qqqqqqq@gmail.com';
+$model->delete(array('email' => $testEmail));
+
+$user
+    ->setEmail($testEmail)
+    ->setPassword(sha1('test'))
+    ->save();
+
+$user->setConfirmed(true)
+    ->setCycleRecording(true);
 
 new dBug($user);
+
+$user->rollback();
+
+new dBug($user);
+
+dpr($user->exists(), $user->toPublicArray(), $user->getValidationErrors());
+
 //dpr($user->toPublicArray(null, array('UserToken'), true));
 /*foreach ($user->UserToken as $token) {
     dpr($token->toPublicArray());

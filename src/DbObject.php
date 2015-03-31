@@ -81,12 +81,6 @@ class DbObject {
      */
     private $_isStoringFieldUpdates = false;
     /**
-     * Values of fields before DbObject->begin() was called. This values will be restored when DbObject->rollback() is called
-     * Used in DbObject->begin(), DbObject->commit(), DbObject->rollback()
-     * @var null|array
-     */
-    private $_dataBackup = null;
-    /**
      * Used by forms to remember some data before it was changed
      * Use case: form allows changing of primary key but save() requires old pk value to manage changes
      * @var null|array
@@ -680,7 +674,6 @@ class DbObject {
         foreach ($this->_fields as $dbField) {
             $dbField->resetValue();
         }
-        $this->_dataBackup = null;
         $this->_updatedFields = array();
         $this->_cleanRelatedObjects();
         return $this;
@@ -941,7 +934,6 @@ class DbObject {
     public function begin($withRelations = false) {
         $this->_updatedFields = array();
         $this->_isStoringFieldUpdates = true;
-        $this->_dataBackup = $this->getFieldsValues();
         $this->runActionForRelations($withRelations, 'begin');
         return $this;
     }
@@ -964,7 +956,6 @@ class DbObject {
         if ($ret) {
             $this->_updatedFields = array();
             $this->_isStoringFieldUpdates = false;
-            $this->_dataBackup = null;
             $ret = $this->runActionForRelations($commitRelations, 'commit');
         }
         return $ret;
@@ -983,14 +974,9 @@ class DbObject {
         // restore db object state before begin()
         $this->_isStoringFieldUpdates = false;
         foreach ($this->_updatedFields as $fieldName) {
-            if (array_key_exists($fieldName, $this->_dataBackup)) {
-                $this->_setFieldValue($fieldName, $this->_dataBackup[$fieldName]);
-            } else {
-                $this->_unsetFieldValue($fieldName);
-            }
+            $this->_getField($fieldName)->restoreDdValueOrReset();
         }
         $this->_updatedFields = array();
-        $this->_dataBackup = null;
         $this->runActionForRelations($rollbackRelations, 'commit');
         return $this;
     }
@@ -1382,6 +1368,9 @@ class DbObject {
      * @throws DbObjectException
      */
     public function save($verifyDbExistance = false, $createIfNotExists = false, $saveRelations = false) {
+        if ($this->_isStoringFieldUpdates) {
+            throw new DbObjectException($this, 'Calling DbObject->save() after DbObject->begin() that was not commited or rejected');
+        }
         $errors = $this->validate(null, true);
         if (!empty($errors)) {
             return false;

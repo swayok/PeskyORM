@@ -29,7 +29,7 @@ abstract class DbObjectField {
     protected $values = array(
         //'value' => mixed,         //< value after $this->convert()
         //'rawValue' => mixed,      //< value in format it was assigned (without type conversion)
-        //'rawDbValue' => mixed,    //< raw value from DB - assigned when isDbValue == true
+        //'dbValue' => mixed,       //< from DB - assigned when isDbValue == true
         //'error' => null|string,   //< validation error
         'isDbValue' => false,       //< indicates that field value must be updated in db
     );
@@ -220,6 +220,20 @@ abstract class DbObjectField {
         $this->values = array(
             'isDbValue' => false
         );
+        return $this;
+    }
+
+    /**
+     * Restored last db value or resets field when no db value
+     * @return $this
+     * @throws DbFieldException
+     */
+    public function restoreDdValueOrReset() {
+        if (array_key_exists('dbValue', $this->values)) {
+            $this->setValue($this->values['dbValue'], true);
+        } else {
+            $this->resetValue();
+        }
         return $this;
     }
 
@@ -437,13 +451,13 @@ abstract class DbObjectField {
         } else if (!$this->canBeNull() && $this->values['value'] === null) {
             $this->setValidationError('Field value cannot be NULL');
         } else if (!$this->isValidValueLength()) {
-            $this->setValidationError("Value [{$this->values['value']}] does not match required min-max length");
+            $this->setValidationError("Value does not match required min-max length");
         } else if (!$this->isValidValueFormat($this->values['value'])) {
             if (empty($this->values['error'])) {
-                $this->setValidationError("Value [{$this->values['value']}] is invalid");
+                $this->setValidationError("Value is invalid");
             }
         } else if ($forSave && !$this->checkIfValueIsUnique()) {
-            $this->setValidationError("Value [{$this->values['value']}] already exists in DB");
+            $this->setValidationError("Value already exists in DB");
         } else {
             $this->runCustomValidators($silent, $forSave);
         }
@@ -493,7 +507,7 @@ abstract class DbObjectField {
      * @return bool
      */
     protected function checkIfValueIsUnique() {
-        $valid = true;
+        $notExists = true;
         if ($this->isUnique() && $this->hasNotEmptyValue()) {
             if (
                 !is_numeric($this->values['value'])
@@ -513,9 +527,9 @@ abstract class DbObjectField {
             if ($this->dbObject->exists()) {
                 $conditions[$this->dbObject->_getPkFieldName() . '!='] = $this->dbObject->_getPkValue();
             }
-            $valid = $this->dbObject->_getModel()->exists($conditions);
+            $notExists = !$this->dbObject->_getModel()->exists($conditions);
         }
-        return $valid;
+        return $notExists;
     }
 
     /**
@@ -540,18 +554,22 @@ abstract class DbObjectField {
     }
 
     /**
-     * If this field can be skipped when value (is not set and not requred) or is virtual or excluded
+     * If this field can be skipped when value (is not set, has no default value on creations and not requred) or is virtual or excluded
      * @return bool
      */
     public function canBeSkipped() {
+        $action = $this->dbObject->exists() ? DbColumnConfig::ON_UPDATE : DbColumnConfig::ON_CREATE;
         if (
             $this->isVirtual()
-            || $this->isExcludedOn($this->dbObject->exists() ? DbColumnConfig::ON_UPDATE : DbColumnConfig::ON_CREATE)
+            || $this->isExcludedOn($action)
         ) {
             return true;
-        } else {
-            // skip on create/update when not set and not required
+        } else if ($action === DbColumnConfig::ON_UPDATE) {
+            // skip on update when not set and not required
             return !$this->hasValue() && $this->checkIfRequiredValueIsSet();
+        } else {
+            // skip on create when not set, has no default value and not required
+            return !$this->hasValue() && !$this->hasDefaultValue() && $this->checkIfRequiredValueIsSet();
         }
     }
 

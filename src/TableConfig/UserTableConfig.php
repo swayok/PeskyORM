@@ -64,7 +64,7 @@ class UserTableConfig extends DbTableConfig {
                     ->setIsExcluded(true)
             )->addColumn(
                 DbColumnConfig::create('storage_total', DbColumnConfig::TYPE_INT)
-                    ->setIsRequired(false)
+                    ->setIsRequired(DbColumnConfig::ON_CREATE)
                     ->setIsNullable(false)
                     ->setDefaultValue(2048)
             )->addColumn(

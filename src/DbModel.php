@@ -59,6 +59,9 @@ abstract class DbModel {
         return self::getModelByClassName(get_called_class());
     }
 
+    /**
+     * @throws DbModelException
+     */
     public function __construct() {
         $className = get_class($this);
         if (!preg_match('%^(.*?\\\?)([a-zA-Z0-9]+)Model$%is', $className, $classNameParts)) {
