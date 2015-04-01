@@ -192,6 +192,13 @@ class DbColumnConfig {
     }
 
     /**
+     * @throws DbColumnConfigException
+     */
+    public function validateConfig() {
+
+    }
+
+    /**
      * @return DbTableConfig
      */
     public function getDbTableConfig() {

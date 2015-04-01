@@ -93,11 +93,6 @@ class DbObject {
      */
     protected $_originalDataKey = '_backup';
 
-    static public $extToConetntType = array(
-        'mp4' => 'video/mp4',
-        'mov' => 'video/quicktime',
-    );
-
     /**
      * @param DbModel $model
      * @param null $dataOrPkValue
@@ -1590,7 +1585,7 @@ class DbObject {
             return false;
         }
         foreach ($this->_getFileFields() as $fieldName => $tableColumnConfig) {
-            Folder::load($this->buildPathToFiles($fieldName))->delete();
+            Folder::load($this->_getFileField($fieldName)->getFileDirPath())->delete();
         }
         return true;
     }
@@ -1771,156 +1766,11 @@ class DbObject {
     }
 
     /**
-     * Get subdir to files based on primary key and maybe some other custom things
-     * @param string $ds - directory separator
-     * @return string
-     */
-    public function getFilesSubdir($ds) {
-        return $this->_getPkValue();
-    }
-
-    /**
-     * Get server url where files are stored (ex: http://sub.server.com)
-     * @param string $field
-     * @return string
-     */
-    /*public function getFilesServer($field) {
-        return (!empty($this->model->fields[$field]['server'])) ? \Server::base_url($this->model->fields[$field]['server']) : '';
-    }*/
-
-    /**
-     * Get relative url to files by $field
      * @param string $fieldName
-     * @return string
+     * @param array $fileInfo
+     * @return bool
+     * @throws DbObjectException
      */
-    public function getFilesBaseRelativeUrl($fieldName) {
-        $objectSubdir = $this->getFilesSubdir('/');
-        if (!empty($objectSubdir)) {
-            $objectSubdir = '/' . trim($objectSubdir, '/\\') . '/';
-        }
-        $fileField = $this->_getFileField($fieldName);
-        return '/' . trim($fileField->getFilesBaseUrl(), '/\\') . $objectSubdir . $fileField->getFilesSubdir();
-    }
-
-    /**
-     * Get absolute url to files by $field
-     * @param $fieldName
-     * @return string
-     */
-    public function getFilesAbsoluteUrl($fieldName) {
-        return /*rtrim($this->getFilesServer($field), '/') . */$this->getFilesBaseRelativeUrl($fieldName);
-    }
-
-    /**
-     * Get base file name for $field (without suffix and extension)
-     * @param string $fieldName
-     * @return string
-     */
-    public function getBaseFileName($fieldName) {
-        return $this->_getFileField($fieldName)->getFileName($fieldName);
-    }
-
-    /**
-     * Get full file name for $field (with suffix and extension)
-     * @param string $fieldName
-     * @param string $suffix
-     * @return string
-     */
-    public function getFullFileName($fieldName, $suffix = '') {
-        $baseName = $this->getBaseFileName($fieldName) . $suffix;
-        $pathTofiles = $this->buildPathToFiles($fieldName);
-        $ext = $this->_getFileField($fieldName)->getDefaultFileExtension();
-        if ($ext !== null) {
-            $baseName = '.' . $ext;
-        } else if (File::exist($pathTofiles . $baseName . '.ext')) {
-            $baseName .= File::contents();
-        }
-        return $baseName;
-    }
-
-    /**
-     * Build FS path to files (absolute FS path to folder with files)
-     * @param string $fieldName
-     * @return string
-     */
-    public function buildPathToFiles($fieldName) {
-        if (!empty($fieldName) && $this->exists() && $this->_getFileField($fieldName)) {
-            $objectSubdir = $this->getFilesSubdir(DIRECTORY_SEPARATOR);
-            if (!empty($objectSubdir)) {
-                $objectSubdir = DIRECTORY_SEPARATOR . trim($objectSubdir, '/\\') . DIRECTORY_SEPARATOR;
-            }
-            $fileField = $this->_getFileField($fieldName);
-            return rtrim($fileField->getFilesBasePath(), '/\\') . $objectSubdir . $fileField->getFilesSubdir();
-        }
-        return 'undefined.file';
-    }
-
-    /**
-     * Build base url to files (url to folder with files)
-     * @param string $fieldName
-     * @return string
-     */
-    public function buildBaseUrlToFiles($fieldName) {
-        if (!empty($fieldName) && $this->exists() && $this->_getFileField($fieldName)) {
-            return $this->getFilesAbsoluteUrl($fieldName);
-        }
-        return 'undefined.file';
-    }
-
-    /**
-     * Get urls to images
-     * @param string $fieldName
-     * @return array
-     */
-    public function getImagesUrl($fieldName) {
-        $images = array();
-        if (!empty($fieldName) && $this->exists() && $this->_getFileField($fieldName)) {
-            $images = ImageUtils::getVersionsUrls(
-                $this->buildPathToFiles($fieldName),
-                $this->buildBaseUrlToFiles($fieldName),
-                $this->getBaseFileName($fieldName),
-                $this->_getFileField($fieldName)->getImageVersions()
-            );
-        }
-        return $images;
-    }
-
-    /**
-     * Get fs paths to images
-     * @param string $fieldName
-     * @return array
-     */
-    public function getImagesPaths($fieldName) {
-        $images = array();
-        if (!empty($fieldName) && $this->exists() && $this->_getFileField($fieldName)) {
-            $images = ImageUtils::getVersionsPaths(
-                $this->buildPathToFiles($fieldName),
-                $this->getBaseFileName($fieldName),
-                $this->_getFileField($fieldName)->getImageVersions()
-            );
-        }
-        return $images;
-    }
-
-    /**
-     * Get fs path to file
-     * @param string $fieldName
-     * @return string
-     */
-    public function getFilePath($fieldName) {
-        return $this->buildPathToFiles($fieldName) . $this->getFullFileName($fieldName);
-    }
-
-    /**
-     * Get url to file
-     * @param string $fieldName
-     * @return string
-     */
-    public function getFileUrl($fieldName) {
-        $ret = $this->buildBaseUrlToFiles($fieldName) . $this->getFullFileName($fieldName);
-        return $ret;
-    }
-
     protected function canSaveFile($fieldName, $fileInfo) {
         return !empty($fileInfo)
             && $this->exists(true)
@@ -1942,9 +1792,9 @@ class DbObject {
                 ini_set('memory_limit', '128M');
             }
             $fileField = $this->_getFileField($fieldName);
-            $baseFileName = $this->getBaseFileName($fieldName);
+            $baseFileName = $fileField->getFileName();
             if ($fileField->isImage()) {
-                $pathToFiles = $this->buildPathToFiles($fieldName);
+                $pathToFiles = $fileField->getFileDirPath();
                 // save image and create requred versions for it
                 return ImageUtils::resize($fileInfo, $pathToFiles, $baseFileName, $fileField->getImageVersions());
             } else {
@@ -1965,12 +1815,13 @@ class DbObject {
      */
     public function saveFileWithCustomName($fieldName, $fileInfo, $fileSuffix = '') {
         if ($this->canSaveFile($fieldName, $fileInfo)) {
-            $pathToFiles = $this->buildPathToFiles($fieldName);
+            $fileField = $this->_getFileField($fieldName);
+            $pathToFiles = $fileField->getFileDirPath();
             if (!is_dir($pathToFiles)) {
                 Folder::add($pathToFiles, 0777);
             }
-            $filePath = $pathToFiles . $this->getBaseFileName($fieldName) . $fileSuffix;
-            $ext = $this->detectUploadedFileExtension($fileInfo, $this->_getFileField($fieldName));
+            $filePath = $pathToFiles . $fileField->getFileName() . $fileSuffix;
+            $ext = $fileField->detectUploadedFileExtension($fileInfo);
             if ($ext === false) {
                 return false;
             } else if (!empty($ext)) {
@@ -1989,46 +1840,6 @@ class DbObject {
     }
 
     /**
-     * Detect Uploaded file extension by file name or content type
-     * @param array $fileInfo - uploaded file info
-     * @param FileField $fileField - file field info (may contain 'extension' key to limit possible extensions)
-     * @param string|bool $saveExtToFile - string: file path to save extension to.
-     *      Extension saved to file only when empty($fieldInfo['extension']) and extesion detected
-     * @return bool|string -
-     *      string: file extension without leading point (ex: 'mp4', 'mov', '')
-     * false: invalid file info or not supported extension
-     * @throws DbFieldException
-     */
-    protected function detectUploadedFileExtension($fileInfo, FileField $fileField, $saveExtToFile = false) {
-        if (empty($fileInfo['type']) && empty($fileInfo['name'])) {
-            return false;
-        }
-        // test content type
-        $receivedExt = false;
-        if (!empty($fileInfo['type'])) {
-            $receivedExt = array_search($fileInfo['type'], self::$extToConetntType);
-        }
-        if (!empty($fileInfo['name']) && (empty($receivedExt) || is_numeric($receivedExt))) {
-            $receivedExt = preg_match('%\.([a-zA-Z0-9]+)\s*$%is', $fileInfo['name'], $matches) ? $matches[1] : '';
-        }
-        $expectedExts = $fileField->getAllwedFileExtensions();
-        if (!empty($expectedExts)) {
-            if (empty($receivedExt)) {
-                $receivedExt = array_shift($expectedExts);
-            } else if (!in_array($receivedExt, $expectedExts)) {
-                throw new DbFieldException(
-                    $fileField,
-                    "Uploaded file has extension [$receivedExt] that is not allowed",
-                    DbExceptionCode::FILE_EXTENSION_NOT_ALLOWED
-                );
-            }
-        } else if ($saveExtToFile && !empty($receivedExt)) {
-            File::save($saveExtToFile, $receivedExt, 0666);
-        }
-        return $receivedExt;
-    }
-
-    /**
      * Delete files attached to DbObject field
      * @param string $fieldName
      * @param string $fileSuffix
@@ -2038,10 +1849,11 @@ class DbObject {
             $this->_getFileField($fieldName)
             && $this->exists(true)
         ) {
-            $pathToFiles = $this->buildPathToFiles($fieldName);
+            $fileField = $this->_getFileField($fieldName);
+            $pathToFiles = $fileField->getFileDirPath();
             if (is_dir($pathToFiles)) {
                 $files = scandir($pathToFiles);
-                $baseFileName = $this->getBaseFileName($fieldName);
+                $baseFileName = $fileField->getFileName();
                 foreach ($files as $fileName) {
                     if (preg_match("%^{$baseFileName}{$fileSuffix}%is", $fileName)) {
                         @File::remove(rtrim($pathToFiles, '/\\') . DIRECTORY_SEPARATOR . $fileName);

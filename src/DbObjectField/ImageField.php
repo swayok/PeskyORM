@@ -17,12 +17,47 @@ class ImageField extends FileField {
     }
 
     /**
+     * Get urls to images
+     * @param string $fieldName
+     * @return array
+     */
+    public function getImagesUrl($fieldName) {
+        $images = array();
+        if (!empty($fieldName) && $this->exists() && $this->_getFileField($fieldName)) {
+            $images = ImageUtils::getVersionsUrls(
+                $this->getFileDirPath($fieldName),
+                $this->buildBaseUrlToFiles($fieldName),
+                $this->getBaseFileName($fieldName),
+                $this->_getFileField($fieldName)->getImageVersions()
+            );
+        }
+        return $images;
+    }
+
+    /**
+     * Get fs paths to images
+     * @param string $fieldName
+     * @return array
+     */
+    public function getImagesPaths($fieldName) {
+        $images = array();
+        if (!empty($fieldName) && $this->exists() && $this->_getFileField($fieldName)) {
+            $images = ImageUtils::getVersionsPaths(
+                $this->getFileDirPath($fieldName),
+                $this->getBaseFileName($fieldName),
+                $this->_getFileField($fieldName)->getImageVersions()
+            );
+        }
+        return $images;
+    }
+
+    /**
      * Get fs path to file
      * @return mixed
      */
     public function getFilePath() {
         if (!isset($this->values['file_path'])) {
-            $this->values['file_path'] = $this->dbObject->getImagesPaths($this->getName());
+            $this->values['file_path'] = $this->getImagesPaths($this->getName());
         }
         return $this->values['file_path'];
     }
@@ -42,7 +77,7 @@ class ImageField extends FileField {
      */
     protected function formatFile($value) {
         if (!is_array($value) || !isset($value['tmp_name'])) {
-            $value = $this->dbObject->getImagesUrl($this->getName());
+            $value = $this->getImagesUrl($this->getName());
             $this->setValueReceivedFromDb(true);
         }
         return $value;
@@ -58,8 +93,8 @@ class ImageField extends FileField {
             // find resize profile
             return ImageUtils::restoreVersion(
                 $fileName,
-                $this->dbObject->getBaseFileName($this->getName()),
-                $this->dbObject->buildPathToFiles($this->getName()),
+                $this->getBaseFileName(),
+                $this->getFileDirPath(),
                 $this->dbColumnConfig['resize_settings']
             );
         }
