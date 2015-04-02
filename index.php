@@ -51,19 +51,29 @@ $user = \PeskyORM\Object\User::create($model);
 $testEmail = 'qqqqqqq@gmail.com';
 $model->delete(array('email' => $testEmail));
 
+\PeskyORM\Lib\File::load(__DIR__ . DIRECTORY_SEPARATOR . 'test_file.jpg')->copy(__DIR__ . DIRECTORY_SEPARATOR . 'test_file1.jpg');
+\PeskyORM\Lib\File::load()->copy(__DIR__ . DIRECTORY_SEPARATOR . 'test_file2.jpg');
 $user
     ->setEmail($testEmail)
     ->setPassword(sha1('test'))
+    ->setFile(array(
+        'tmp_name' => __DIR__ . DIRECTORY_SEPARATOR . 'test_file1.jpg',
+        'name' => 'test_file.jpg',
+        'size' => 123,
+        'type' => 'image/jpeg',
+        'error' => 0
+    ))->setAvatar(array(
+        'tmp_name' => __DIR__ . DIRECTORY_SEPARATOR . 'test_file2.jpg',
+        'name' => 'test_file.jpg',
+        'size' => 123,
+        'type' => 'image/jpeg',
+        'error' => 0
+    ))
     ->save();
 
-$user->setConfirmed(true)
-    ->setCycleRecording(true);
 
-new dBug($user);
 
-$user->rollback();
-
-new dBug($user);
+//new dBug($user);
 
 dpr($user->exists(), $user->toPublicArray(), $user->getValidationErrors());
 

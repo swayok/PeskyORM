@@ -83,13 +83,13 @@ class File {
     static protected $lastLoadedFile = null;
 
     /**
-     * @param $path
+     * @param string|null $path
      * @param bool $create
      * @param int $folderAccess
      * @param int $fileAccess
      * @return File
      */
-    static public function load($path, $create = false, $folderAccess = 0777, $fileAccess = 0666) {
+    static public function load($path = null, $create = false, $folderAccess = 0777, $fileAccess = 0666) {
         if (!empty($path)) {
             self::$lastLoadedFile = new File($path, $create, $folderAccess, $fileAccess);
         }

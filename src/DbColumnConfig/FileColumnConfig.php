@@ -9,6 +9,8 @@ use PeskyORM\Exception\DbColumnConfigException;
 
 class FileColumnConfig extends DbColumnConfig {
 
+    protected $_type = self::TYPE_FILE;
+
     /** @var string */
     protected $basePathToFiles;
     /** @var string|null */
@@ -51,10 +53,11 @@ class FileColumnConfig extends DbColumnConfig {
      * @param string $name
      * @param string|null $basePathToFiles
      * @param string|null $baseUrlToFiles
-     * @return EnumColumnConfig
+     * @return $this
      */
     static public function create($name, $basePathToFiles = null, $baseUrlToFiles = null) {
-        return new EnumColumnConfig($name, $basePathToFiles, $baseUrlToFiles);
+        $class = get_called_class();
+        return new $class($name, $basePathToFiles, $baseUrlToFiles);
     }
 
     /**
@@ -63,7 +66,7 @@ class FileColumnConfig extends DbColumnConfig {
      * @param string|null $baseUrlToFiles
      */
     public function __construct($name, $basePathToFiles = null, $baseUrlToFiles = null) {
-        parent::__construct($name, self::TYPE_FILE);
+        parent::__construct($name, $this->_type);
         if (!empty($basePathToFiles)) {
             $this->setBasePathToFiles($basePathToFiles);
         }

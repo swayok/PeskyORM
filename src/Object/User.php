@@ -39,27 +39,31 @@ use PeskyORM\DbObject;
  * @property-read string    $insurance_contract_activated_date
  * @property-read string    $insurance_contract_activated_time
  * @property-read int       $insurance_contract_activated_ts
- * 
- * @method $this    setId($value = null)
- * @method $this    setEmail($value = null)
- * @method $this    setPassword($value = null)
- * @method $this    setConfirmed($value = null)
- * @method $this    setStorageTotal($value = null)
- * @method $this    setStorageUsed($value = null)
- * @method $this    setFirstName($value = null)
- * @method $this    setLastName($value = null)
- * @method $this    setMidName($value = null)
- * @method $this    setNickname($value = null)
- * @method $this    setGender($value = null)
- * @method $this    setSignature($value = null)
- * @method $this    setBadge($value = null)
- * @method $this    setRegion($value = null)
- * @method $this    setLanguage($value = null)
- * @method $this    setCycleRecording($value = null)
- * @method $this    setInsuranceCompany_alias($value = null)
- * @method $this    setInsuranceContract_id($value = null)
- * @method $this    setInsuranceContract_surname($value = null)
- * @method $this    setInsuranceContractActivated($value = null)
+ * @property-read string    $file
+ * @property-read string    $avatar
+ *
+ * @method $this    setId($value)
+ * @method $this    setEmail($value)
+ * @method $this    setPassword($value)
+ * @method $this    setConfirmed($value)
+ * @method $this    setStorageTotal($value)
+ * @method $this    setStorageUsed($value)
+ * @method $this    setFirstName($value)
+ * @method $this    setLastName($value)
+ * @method $this    setMidName($value)
+ * @method $this    setNickname($value)
+ * @method $this    setGender($value)
+ * @method $this    setSignature($value)
+ * @method $this    setBadge($value)
+ * @method $this    setRegion($value)
+ * @method $this    setLanguage($value)
+ * @method $this    setCycleRecording($value)
+ * @method $this    setInsuranceCompany_alias($value)
+ * @method $this    setInsuranceContract_id($value)
+ * @method $this    setInsuranceContract_surname($value)
+ * @method $this    setInsuranceContractActivated($value)
+ * @method $this    setFile(array $value)
+ * @method $this    setAvatar(array $value)
  *
  */
 class User extends DbObject {

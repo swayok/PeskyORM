@@ -1461,7 +1461,7 @@ class DbObject {
             return false;
         }
         if (empty($fieldNames) || !is_array($fieldNames)) {
-            $fieldNames = $this->_getFileFieldsConfigs();
+            $fieldNames = array_keys($this->_getFileFieldsConfigs());
         } else {
             $fieldNames = array_intersect(array_keys($this->_getFileFieldsConfigs()), $fieldNames);
         }

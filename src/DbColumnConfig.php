@@ -249,7 +249,7 @@ class DbColumnConfig {
      */
     protected function setType($type) {
         $type = strtolower($type);
-        if (empty(self::$typeToDbType[$type])) {
+        if (!array_key_exists($type, self::$typeToDbType)) {
             throw new DbColumnConfigException($this, "Unknown column type [$type]");
         }
         $this->type = $type;
@@ -261,6 +261,9 @@ class DbColumnConfig {
             if (in_array($type, self::$imageFileTypes)) {
                 $this->setIsImage(true);
             }
+        } else {
+            $this->setIsFile(false);
+            $this->setIsImage(false);
         }
         return $this;
     }

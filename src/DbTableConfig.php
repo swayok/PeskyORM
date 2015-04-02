@@ -186,7 +186,7 @@ abstract class DbTableConfig {
      * @return bool
      */
     public function hasFileColumn($colName) {
-        return is_string($colName) && !empty($this->hasFileColumns[$colName]);
+        return is_string($colName) && $this->hasFileColumns && !empty($this->fileColumns[$colName]);
     }
 
     /**

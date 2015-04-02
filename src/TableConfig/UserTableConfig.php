@@ -19,6 +19,7 @@ class UserTableConfig extends DbTableConfig {
     protected $relations = array();
 
     protected function __construct() {
+        parent::__construct();
         $this
             ->addColumn(PkColumnConfig::create())
             ->addColumn(
@@ -134,6 +135,14 @@ class UserTableConfig extends DbTableConfig {
                 DbColumnConfig::create('insurance_contract_activated', DbColumnConfig::TYPE_TIMESTAMP)
                     ->setIsRequired(false)
                     ->setIsNullable(true)
+            )->addColumn(
+                DbColumnConfig\FileColumnConfig::create('file')
+                    ->setBasePathToFiles(__DIR__ . DIRECTORY_SEPARATOR . '../../' . 'files')
+                    ->setBaseUrlToFiles('files/')
+            )->addColumn(
+                DbColumnConfig\ImageColumnConfig::create('avatar')
+                    ->setBasePathToFiles(__DIR__ . DIRECTORY_SEPARATOR . '../../' . 'files')
+                    ->setBaseUrlToFiles('files/')
             );
         $this->addRelation(
             new DbRelationConfig(

@@ -62,14 +62,14 @@ class FileField extends DbObjectField {
     }
 
     /**
-     * Read $infoFileName if db object exists
+     * Read json file if db object exists
      * @return array|null - array('file_name' => string, 'full_file_name' => string, 'ext' => string)
      */
     protected function getFileInfoFromInfoFile() {
         if (!$this->getDbObject()->exists()) {
             return null;
         } else if (!array_key_exists('file_info', $this->values)) {
-            $infoFilePath = $this->getFileDirPath() . self::$infoFileName;
+            $infoFilePath = $this->getInfoFilePath() ;
             $this->values['file_info'] = null;
             if (File::exist($infoFilePath)) {
                 $info = File::readJson($infoFilePath);
@@ -82,11 +82,19 @@ class FileField extends DbObjectField {
     }
 
     /**
+     * @return string
+     * @throws DbFieldException
+     */
+    protected function getInfoFilePath() {
+        return $this->getFileDirPath() . $this->getName() . '_' . self::$infoFileName;
+    }
+
+    /**
      * Get absolute FS path to file
      * @return string
      */
     public function getFilePath() {
-        if (!isset($this->values['file_path'])) {
+        if (empty($this->values['file_path'])) {
             $this->values['file_path'] = $this->getFileDirPath() . $this->getFullFileName();
         }
         return $this->values['file_path'];
@@ -97,7 +105,7 @@ class FileField extends DbObjectField {
      * @return string
      */
     public function getFileUrl() {
-        if (!isset($this->values['file_url'])) {
+        if (empty($this->values['file_url'])) {
             $this->values['file_url'] = $this->getFileDirAbsoluteUrl() . $this->getFullFileName();
         }
         return $this->values['file_url'];
@@ -112,7 +120,7 @@ class FileField extends DbObjectField {
         if (!$this->getDbObject()->exists()) {
             throw new DbFieldException($this, 'Unable to get file dir path of non-existing object');
         }
-        if (!empty($this->values['file_dir_path'])) {
+        if (empty($this->values['file_dir_path'])) {
             $generator = $this->dbColumnConfig->getFileDirPathGenerator();
             if (!empty($generator)) {
                 $dirPath = $generator($this);
@@ -137,7 +145,7 @@ class FileField extends DbObjectField {
         if (!$this->getDbObject()->exists()) {
             throw new DbFieldException($this, 'Unable to get file url of non-existing object');
         }
-        if (!empty($this->values['file_dir_relative_url'])) {
+        if (empty($this->values['file_dir_relative_url'])) {
             $generator = $this->dbColumnConfig->getFileDirRelativeUrlGenerator();
             if (!empty($generator)) {
                 $relUrl = $generator($this);
@@ -162,7 +170,7 @@ class FileField extends DbObjectField {
         if (!$this->getDbObject()->exists()) {
             throw new DbFieldException($this, 'Unable to get file url of non-existing object');
         }
-        if (!empty($this->values['file_dir_absolute_url'])) {
+        if (empty($this->values['file_dir_absolute_url'])) {
             $this->values['file_dir_absolute_url'] = rtrim($this->getFileServerUrl(), '/\\') . '/' . $this->getFileDirRelativeUrl() . '/';
         }
         return $this->values['file_dir_absolute_url'];
@@ -279,7 +287,7 @@ class FileField extends DbObjectField {
      * @throws DbFieldException
      */
     public function detectUploadedFileExtension($uploadedFileInfo) {
-        if (empty($uploadedFileInfo['type']) && empty($uploadedFileInfo['name'])) {
+        if (empty($uploadedFileInfo['type']) && empty($uploadedFileInfo['name']) && empty($uploadedFileInfo['tmp_name'])) {
             return false;
         }
         // test content type
@@ -289,6 +297,8 @@ class FileField extends DbObjectField {
         }
         if (!empty($uploadedFileInfo['name']) && (empty($receivedExt) || is_numeric($receivedExt))) {
             $receivedExt = preg_match('%\.([a-zA-Z0-9]+)\s*$%is', $uploadedFileInfo['name'], $matches) ? $matches[1] : '';
+        } else if (!empty($uploadedFileInfo['tmp_name']) && (empty($receivedExt) || is_numeric($receivedExt))) {
+            $receivedExt = preg_match('%\.([a-zA-Z0-9]+)\s*$%is', $uploadedFileInfo['tmp_name'], $matches) ? $matches[1] : '';
         }
         $expectedExts = $this->getAllowedFileExtensions();
         if (!empty($expectedExts)) {
@@ -350,16 +360,17 @@ class FileField extends DbObjectField {
             set_time_limit(90);
             ini_set('memory_limit', '128M');
         }
-       $fileInfo = $this->storeFileToFS($uploadedFileInfo);
-       if (!empty($fileInfo)) {
+        $fileInfo = $this->storeFileToFS($uploadedFileInfo);
+        if (!empty($fileInfo)) {
             $this->saveUploadedFileInfo($fileInfo);
+            $this->setValue($this->getFileUrl(), true);
             return $this->getFilePath();
-       }
-       return false;
+        }
+        return false;
     }
 
     /**
-     * Save file to FS + collect information for $infoFileName and save it
+     * Save file to FS + collect information
      * @param array $uploadedFileInfo - uploaded file info
      * @return bool|array - array: information about file same as when you get by callings $this->getFileInfoFromInfoFile()
      */
@@ -401,7 +412,7 @@ class FileField extends DbObjectField {
      */
     protected function saveUploadedFileInfo($fileInfo) {
         if (is_array($fileInfo)) {
-            File::saveJson($this->getFileDirPath() . self::$infoFileName, $fileInfo);
+            File::saveJson($this->getInfoFilePath(), $fileInfo);
             $this->values['file_info'] = $fileInfo;
         } else {
             throw new DbFieldException($this, '$fileInfo shoud be an array');

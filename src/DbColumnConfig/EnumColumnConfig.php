@@ -7,6 +7,11 @@ use PeskyORM\Exception\DbColumnConfigException;
 
 class EnumColumnConfig extends DbColumnConfig {
 
+    /**
+     * @param string $name
+     * @param null|array $allowedValues
+     * @return $this
+     */
     static public function create($name, $allowedValues = null) {
         return new EnumColumnConfig($name, $allowedValues);
     }
