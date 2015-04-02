@@ -251,7 +251,7 @@ class DbObject {
     /**
      * @return \PeskyORM\DbColumnConfig[]
      */
-    public function _getFileFields() {
+    public function _getFileFieldsConfigs() {
         return $this->_getTableConfig()->getFileColumns();
     }
 
@@ -1461,16 +1461,12 @@ class DbObject {
             return false;
         }
         if (empty($fieldNames) || !is_array($fieldNames)) {
-            $fieldNames = $this->_getFileFields();
+            $fieldNames = $this->_getFileFieldsConfigs();
         } else {
-            $fieldNames = array_intersect(array_keys($this->_getFileFields()), $fieldNames);
+            $fieldNames = array_intersect(array_keys($this->_getFileFieldsConfigs()), $fieldNames);
         }
         foreach ($fieldNames as $fieldName) {
-            /** @var FileField $field */
-            $field = $this->_getFileField($fieldName);
-            if ($field->isUploadedFile()) {
-                $this->saveFile($fieldName, $field->getValue());
-            }
+            $this->_getFileField($fieldName)->saveUploadedFile();
         }
         return true;
     }
@@ -1565,7 +1561,7 @@ class DbObject {
                 $model->commit();
             }
             if (!$this->_dontDeleteFiles && $this->_hasFileFields()) {
-                $this->deleteFilesForAllFields();
+                $this->deleteFilesAfterObjectDeleted();
             }
         }
         // note: related objects delete must be managed only by database relations (foreign keys), not here
@@ -1580,12 +1576,12 @@ class DbObject {
     /**
      * Delete all files attached to DbObject fields
      */
-    public function deleteFilesForAllFields() {
+    public function deleteFilesAfterObjectDeleted() {
         if (!$this->exists()) {
             return false;
         }
-        foreach ($this->_getFileFields() as $fieldName => $tableColumnConfig) {
-            Folder::load($this->_getFileField($fieldName)->getFileDirPath())->delete();
+        foreach ($this->_getFileFieldsConfigs() as $fieldName => $tableColumnConfig) {
+            Folder::remove($this->_getFileField($fieldName)->getFileDirPath());
         }
         return true;
     }
@@ -1763,104 +1759,6 @@ class DbObject {
             }
         }
         return $values;
-    }
-
-    /**
-     * @param string $fieldName
-     * @param array $fileInfo
-     * @return bool
-     * @throws DbObjectException
-     */
-    protected function canSaveFile($fieldName, $fileInfo) {
-        return !empty($fileInfo)
-            && $this->exists(true)
-            && $this->_getFileField($fieldName)
-            && Utils::isUploadedFile($fileInfo);
-    }
-
-    /**
-     * Save file for field using field settings ($this->fields[$field])
-     * If field type is image - will create required image resizes
-     * @param string $fieldName
-     * @param array $fileInfo - uploaded file info
-     * @return bool|string - string: path to uploaded file (not image)
-     */
-    public function saveFile($fieldName, $fileInfo) {
-        if ($this->canSaveFile($fieldName, $fileInfo)) {
-            if (!defined('UNLIMITED_EXECUTION') || !UNLIMITED_EXECUTION) {
-                set_time_limit(90);
-                ini_set('memory_limit', '128M');
-            }
-            $fileField = $this->_getFileField($fieldName);
-            $baseFileName = $fileField->getFileName();
-            if ($fileField->isImage()) {
-                $pathToFiles = $fileField->getFileDirPath();
-                // save image and create requred versions for it
-                return ImageUtils::resize($fileInfo, $pathToFiles, $baseFileName, $fileField->getImageVersions());
-            } else {
-                // save file
-               return $this->saveFileWithCustomName($fieldName, $fileInfo);
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Save file for field using field settings ($this->fields[$field]) and provided file suffix
-     * Note: will not create image resizes
-     * @param string $fieldName
-     * @param array $fileInfo - uploaded file info
-     * @param string $fileSuffix - custom file name
-     * @return bool|string - string: path to uploaded file
-     */
-    public function saveFileWithCustomName($fieldName, $fileInfo, $fileSuffix = '') {
-        if ($this->canSaveFile($fieldName, $fileInfo)) {
-            $fileField = $this->_getFileField($fieldName);
-            $pathToFiles = $fileField->getFileDirPath();
-            if (!is_dir($pathToFiles)) {
-                Folder::add($pathToFiles, 0777);
-            }
-            $filePath = $pathToFiles . $fileField->getFileName() . $fileSuffix;
-            $ext = $fileField->detectUploadedFileExtension($fileInfo);
-            if ($ext === false) {
-                return false;
-            } else if (!empty($ext)) {
-                $filePath .= '.' . $ext;
-            }
-            // if file $fileInfo['tmp_name'] differs from target file path
-            if ($fileInfo['tmp_name'] != $filePath) {
-                // move tmp file to target file path
-                if (!File::load($fileInfo['tmp_name'])->move($filePath, 0666)) {
-                    return false;
-                }
-            }
-            return $filePath;
-        }
-        return false;
-    }
-
-    /**
-     * Delete files attached to DbObject field
-     * @param string $fieldName
-     * @param string $fileSuffix
-     */
-    public function deleteFilesForField($fieldName, $fileSuffix = '') {
-        if (
-            $this->_getFileField($fieldName)
-            && $this->exists(true)
-        ) {
-            $fileField = $this->_getFileField($fieldName);
-            $pathToFiles = $fileField->getFileDirPath();
-            if (is_dir($pathToFiles)) {
-                $files = scandir($pathToFiles);
-                $baseFileName = $fileField->getFileName();
-                foreach ($files as $fileName) {
-                    if (preg_match("%^{$baseFileName}{$fileSuffix}%is", $fileName)) {
-                        @File::remove(rtrim($pathToFiles, '/\\') . DIRECTORY_SEPARATOR . $fileName);
-                    }
-                }
-            }
-        }
     }
 
 }

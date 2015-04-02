@@ -4,9 +4,12 @@
 namespace PeskyORM\DbObjectField;
 
 use PeskyORM\DbObjectField;
+use PeskyORM\Exception\DbColumnConfigException;
 use PeskyORM\Exception\DbExceptionCode;
 use PeskyORM\Exception\DbFieldException;
+use PeskyORM\Exception\DbObjectException;
 use PeskyORM\Lib\File;
+use PeskyORM\Lib\Folder;
 use PeskyORM\Lib\Utils;
 
 class FileField extends DbObjectField {
@@ -16,8 +19,10 @@ class FileField extends DbObjectField {
         'mov' => 'video/quicktime',
     );
 
+    static public $infoFileName = 'info.json';
+
     public function isValidValueFormat($value) {
-        if (empty($value) || !is_array($value) || array_key_exists('tmp_file', $value)) {
+        if (empty($value) || is_string($value) || Utils::isUploadedFile($value)) {
             return true;
         }
         $this->setValidationError('File upload expected');
@@ -26,133 +31,6 @@ class FileField extends DbObjectField {
 
     protected function doBasicValueValidationAndConvertion($value) {
         return $this->formatFile($value);
-    }
-
-    /**
-     * @return bool
-     * @throws \PeskyORM\Exception\DbFieldException
-     */
-    public function isUploadedFile() {
-        return (!$this->isValueReceivedFromDb() && is_array($this->getValue()) && Utils::isUploadedFile($this->getValue()));
-    }
-
-    /**
-     * Get fs path to file
-     * @return string
-     */
-    public function getFilePath() {
-        if (!isset($this->values['file_path'])) {
-            $this->values['file_path'] = $this->getFileDirPath() . $this->getFullFileName();
-        }
-        return $this->values['file_path'];
-    }
-
-    /**
-     * Get url to file
-     * @return string
-     */
-    public function getFileUrl() {
-        if (!isset($this->values['file_url'])) {
-            $this->values['file_url'] = $this->getFileDirAbsoluteUrl() . $this->getFullFileName();
-        }
-        return $this->values['file_url'];
-    }
-
-    /**
-     * Build FS path to files (absolute FS path to folder with files)
-     * @return string
-     */
-    public function getFileDirPath() {
-        if (!empty($this->values['file_dir_path'])) {
-            if (!$this->getDbObject()->exists()) {
-                $this->values['file_dir_path'] = 'undefined.file';
-            } else {
-                $objectSubdir = $this->getFilesSubdir(DIRECTORY_SEPARATOR);
-                if (!empty($objectSubdir)) {
-                    $objectSubdir = DIRECTORY_SEPARATOR . trim($objectSubdir, '/\\') . DIRECTORY_SEPARATOR;
-                }
-                $this->values['file_dir_path'] = rtrim($this->getFilesBasePath(), '/\\') . $objectSubdir;
-            }
-        }
-        return $this->values['file_dir_path'];
-    }
-
-    /**
-     * Build base url to files (url to folder with files)
-     * @return string
-     */
-    public function getFileDirAbsoluteUrl() {
-        if (!empty($this->values['file_dir_absolute_url'])) {
-            if (!$this->getDbObject()->exists()) {
-                $this->values['file_dir_absolute_url'] = 'undefined.file';
-            } else {
-                $this->values['file_dir_absolute_url'] = $this->getFileServerUrl() . $this->getFileDirRelativeUrl();
-            }
-        }
-        return $this->values['file_dir_absolute_url'];
-    }
-
-    /**
-     * Get relative url to files by $field
-     * @return string
-     */
-    public function getFileDirRelativeUrl() {
-        if (!empty($this->values['file_dir_relative_url'])) {
-            if (!$this->getDbObject()->exists()) {
-                $this->values['file_dir_relative_url'] = 'undefined.file';
-            } else {
-                $objectSubdir = $this->getFilesSubdir('/');
-                if (!empty($objectSubdir)) {
-                    $objectSubdir = '/' . trim($objectSubdir, '/\\') . '/';
-                }
-                $this->values['file_dir_relative_url'] = '/' . trim($this->getFilesBasePath(), '/\\') . $objectSubdir;
-            }
-        }
-        return $this->values['file_dir_relative_url'];
-    }
-
-    /**
-     * Get server url where files are stored (ex: http://sub.server.com)
-     * @return string
-     */
-    public function getFileServerUrl() {
-        // todo: implement getFileServerUrl()
-        return '';
-        // return (!empty($this->model->fields[$field]['server'])) ? \Server::base_url($this->model->fields[$field]['server']) : '';
-    }
-
-    /**
-     * Get full file name for $field (with suffix and extension)
-     * @param string $suffix
-     * @return string
-     */
-    public function getFullFileName($suffix = '') {
-        $baseName = $this->getFileName() . $suffix;
-        $pathTofiles = $this->getFileDirPath();
-        $ext = $this->getDefaultFileExtension();
-        if ($ext !== null) {
-            $baseName = '.' . $ext;
-        } else if (File::exist($pathTofiles . $baseName . '.ext')) {
-            $baseName .= File::contents();
-        }
-        return $baseName;
-    }
-
-    /**
-     * Get subdir to files based on primary key and maybe some other custom things
-     * @param string $ds - directory separator
-     * @return string
-     */
-    public function getFilesSubdir($ds) {
-        // todo: implement usage of FileColumnConfig
-        return $this->getDbObject()->_getPkValue();
-    }
-
-    /**
-     * @return bool
-     */
-    public function isFileExists() {
-        return file_exists($this->getFilePath());
     }
 
     /**
@@ -168,116 +46,383 @@ class FileField extends DbObjectField {
         return $value;
     }
 
-
     /**
-     * @return string
-     * @throws DbFieldException
+     * @return bool
+     * @throws \PeskyORM\Exception\DbFieldException
      */
-    public function getFilesBasePath() {
-        // todo: implement getFilesBasePath
-        // todo throw exception if base path not set or is empty
-        throw new DbFieldException($this, "getFilesBasePath() not implemented yet");
-        return '';
+    public function isUploadedFile() {
+        return (!$this->isValueReceivedFromDb() && is_array($this->getValue()) && Utils::isUploadedFile($this->getValue()));
     }
 
     /**
-     * @param string|callable|null $fallbackValue - null: $this->getName() is used
-     * @return string
-     * @throws DbFieldException
+     * @return bool
      */
-    public function getFileName($fallbackValue = null) {
-
-        // todo: implement hasCustomFileName
-        // todo: throw exception when no file name specified and $fallbackValue is empty or not a string or callable
-        throw new DbFieldException($this, "hasCustomFileName() not implemented yet");
-//        if (empty($fallbackValue)) {
-//            $fallbackValue = $this->getName();
-//        }
-        return '';
+    public function isFileExists() {
+        return File::exist($this->getFilePath());
     }
 
     /**
-     * @return string
-     * @throws DbFieldException
+     * Read $infoFileName if db object exists
+     * @return array|null - array('file_name' => string, 'full_file_name' => string, 'ext' => string)
      */
-    public function getFilesBaseUrl() {
-        // todo: implement getFilesBaseUrl
-        throw new DbFieldException($this, "getFilesBaseUrl() not implemented yet");
-        return '';
-    }
-
-    /**
-     * @return string|null
-     * @throws DbFieldException
-     */
-    public function getDefaultFileExtension() {
-        // todo: implement getFilesExtension
-        // note: extension could be array of accepted extensions
-        // todo: separate accepted extesions and default extension
-        throw new DbFieldException($this, "getFilesExtension() not implemented yet");
-        return null;
-        /*if (!empty($this->_model->fields[$field]['extension'])) {
-            if (is_array($this->_model->fields[$field]['extension'])) {
-                foreach ($this->_model->fields[$field]['extension'] as $ext) {
-                    if (File::exist($pathTofiles . $baseName . '.' . $ext)) {
-                        $baseName .= '.' . $ext;
-                        break;
-                    }
+    protected function getFileInfoFromInfoFile() {
+        if (!$this->getDbObject()->exists()) {
+            return null;
+        } else if (!array_key_exists('file_info', $this->values)) {
+            $infoFilePath = $this->getFileDirPath() . self::$infoFileName;
+            $this->values['file_info'] = null;
+            if (File::exist($infoFilePath)) {
+                $info = File::readJson($infoFilePath);
+                if (!empty($info)) {
+                    $this->values['file_info'] = $info;
                 }
             }
         }
-        return $this->_model->fields[$field]['extension'];
-
-        */
+        return $this->values['file_info'];
     }
 
     /**
-     * @return array
+     * Get absolute FS path to file
+     * @return string
+     */
+    public function getFilePath() {
+        if (!isset($this->values['file_path'])) {
+            $this->values['file_path'] = $this->getFileDirPath() . $this->getFullFileName();
+        }
+        return $this->values['file_path'];
+    }
+
+    /**
+     * Get absolute URL to file
+     * @return string
+     */
+    public function getFileUrl() {
+        if (!isset($this->values['file_url'])) {
+            $this->values['file_url'] = $this->getFileDirAbsoluteUrl() . $this->getFullFileName();
+        }
+        return $this->values['file_url'];
+    }
+
+    /**
+     * Get absolute FS path to file dir
+     * @return string
      * @throws DbFieldException
      */
+    public function getFileDirPath() {
+        if (!$this->getDbObject()->exists()) {
+            throw new DbFieldException($this, 'Unable to get file dir path of non-existing object');
+        }
+        if (!empty($this->values['file_dir_path'])) {
+            $generator = $this->dbColumnConfig->getFileDirPathGenerator();
+            if (!empty($generator)) {
+                $dirPath = $generator($this);
+                if (empty($dirPath) || !is_string($dirPath)) {
+                    throw new DbFieldException($this, "File dir path genetartor function should return not-empty string");
+                }
+            } else {
+                $objectSubdir = DIRECTORY_SEPARATOR . trim($this->getFilesSubdir(DIRECTORY_SEPARATOR), '/\\');
+                $dirPath = rtrim($this->getBasePathToFiles(), '/\\') . $objectSubdir . DIRECTORY_SEPARATOR;
+            }
+            $this->values['file_dir_path'] = $dirPath;
+        }
+        return $this->values['file_dir_path'];
+    }
+
+    /**
+     * Get relative URL to file dir
+     * @return string
+     * @throws DbFieldException
+     */
+    public function getFileDirRelativeUrl() {
+        if (!$this->getDbObject()->exists()) {
+            throw new DbFieldException($this, 'Unable to get file url of non-existing object');
+        }
+        if (!empty($this->values['file_dir_relative_url'])) {
+            $generator = $this->dbColumnConfig->getFileDirRelativeUrlGenerator();
+            if (!empty($generator)) {
+                $relUrl = $generator($this);
+                if (empty($relUrl) || !is_string($relUrl)) {
+                    throw new DbFieldException($this, "File dir relative url genetartor function should return not-empty string");
+                }
+            } else {
+                $objectSubdir = '/' . trim($this->getFilesSubdir('/'), '/\\');;
+                $relUrl = '/' . trim($this->getBaseUrlToFiles(), '/\\') . $objectSubdir . '/';
+            }
+            $this->values['file_dir_relative_url'] = $relUrl;
+        }
+        return $this->values['file_dir_relative_url'];
+    }
+
+    /**
+     * Get absolute URL to file dir
+     * @return string
+     * @throws DbFieldException
+     */
+    public function getFileDirAbsoluteUrl() {
+        if (!$this->getDbObject()->exists()) {
+            throw new DbFieldException($this, 'Unable to get file url of non-existing object');
+        }
+        if (!empty($this->values['file_dir_absolute_url'])) {
+            $this->values['file_dir_absolute_url'] = rtrim($this->getFileServerUrl(), '/\\') . '/' . $this->getFileDirRelativeUrl() . '/';
+        }
+        return $this->values['file_dir_absolute_url'];
+    }
+
+    /**
+     * Get server URL where files are stored (ex: http://sub.server.com)
+     * @return string
+     */
+    public function getFileServerUrl() {
+        // todo: implement getFileServerUrl()
+        return '';
+        // return (!empty($this->model->fields[$field]['server'])) ? \Server::base_url($this->model->fields[$field]['server']) : '';
+    }
+
+    /**
+     * Get subdir to files based on primary key and maybe some other custom things
+     * @param string $directorySeparator - directory separator
+     * @return string
+     * @throws DbFieldException
+     */
+    public function getFilesSubdir($directorySeparator = DIRECTORY_SEPARATOR) {
+        if (!$this->getDbObject()->exists()) {
+            throw new DbFieldException($this, 'Unable to get file subdir of non-existing object');
+        }
+        $generator = $this->dbColumnConfig->getFileSubdirGenerator();
+        if (!empty($generator)) {
+            $subdir = $generator($this, $directorySeparator);
+            if (empty($subdir) || !is_string($subdir)) {
+                throw new DbFieldException($this, "File subdir genetartor function should return not-empty string");
+            }
+            return $subdir;
+        } else {
+            return $this->getDbObject()->_getPkValue();
+        }
+    }
+
+    /**
+     * @return string
+     */
+    public function getBasePathToFiles() {
+        return $this->dbColumnConfig->getBasePathToFiles();
+    }
+
+    /**
+     * @return string
+     */
+    public function getBaseUrlToFiles() {
+        return $this->dbColumnConfig->getBaseUrlToFiles();
+    }
+
+    /**
+     * Get file name without extension
+     * @param string|callable|null $fallbackValue - null: $this->getName() is used
+     * @return string - file name without extension
+     * @throws DbFieldException
+     */
+    public function getFileNameWithoutExtension($fallbackValue = null) {
+        $generator = $this->dbColumnConfig->getFileNameGenerator();
+        if (!empty($generator)) {
+            $fileName = $generator($this);
+            if (empty($fileName) || !is_string($fileName)) {
+                throw new DbFieldException($this, "File name genetartor function should return not-empty string");
+            }
+            return $fileName;
+        } else {
+            return empty($fallbackValue) ? $this->getName() : $fallbackValue;
+        }
+    }
+
+    /**
+     * Get file name with extension
+     * @return string
+     */
+    public function getFullFileName() {
+        $fileInfo = $this->getFileInfoFromInfoFile();
+        if (!empty($fileInfo) && !empty($fileInfo['full_file_name'])) {
+            return $fileInfo['full_file_name'];
+        } else {
+            $fileName = $this->getFileNameWithoutExtension();
+            $ext = $this->getFileExtension();
+            if (!empty($ext)) {
+                $fileName .= '.' . $ext;
+            }
+            return $fileName;
+        }
+    }
+
+    /**
+     * @return string
+     */
+    public function getDefaultFileExtension() {
+        $ext = $this->dbColumnConfig->getDefaultFileExtension();
+        if (empty($ext)) {
+            $allowedExtensions = $this->getAllowedFileExtensions();
+            $ext = empty($allowedExtensions) ? '' : $allowedExtensions[0];
+        }
+        return $ext;
+    }
+
+    /**
+     * @return array|null
+     */
     public function getAllowedFileExtensions() {
-        // todo: implement getAllowedFilesExtensions
-        throw new DbFieldException($this, "getAllwedFilesExtensions() not implemented yet");
-        return array();
+        return $this->dbColumnConfig->getAllowedFileExtensions();
     }
 
     /**
      * Detect Uploaded file extension by file name or content type
-     * @param array $fileInfo - uploaded file info
-     * @param FileField $fileField - file field info (may contain 'extension' key to limit possible extensions)
-     * @param string|bool $saveExtToFile - string: file path to save extension to.
-     *      Extension saved to file only when empty($fieldInfo['extension']) and extesion detected
+     * @param array $uploadedFileInfo - uploaded file info
      * @return bool|string -
      *      string: file extension without leading point (ex: 'mp4', 'mov', '')
      * false: invalid file info or not supported extension
      * @throws DbFieldException
      */
-    public function detectUploadedFileExtension($fileInfo, $saveExtToFile = false) {
-        if (empty($fileInfo['type']) && empty($fileInfo['name'])) {
+    public function detectUploadedFileExtension($uploadedFileInfo) {
+        if (empty($uploadedFileInfo['type']) && empty($uploadedFileInfo['name'])) {
             return false;
         }
         // test content type
         $receivedExt = false;
-        if (!empty($fileInfo['type'])) {
-            $receivedExt = array_search($fileInfo['type'], self::$extToConetntType);
+        if (!empty($uploadedFileInfo['type'])) {
+            $receivedExt = array_search($uploadedFileInfo['type'], self::$extToConetntType);
         }
-        if (!empty($fileInfo['name']) && (empty($receivedExt) || is_numeric($receivedExt))) {
-            $receivedExt = preg_match('%\.([a-zA-Z0-9]+)\s*$%is', $fileInfo['name'], $matches) ? $matches[1] : '';
+        if (!empty($uploadedFileInfo['name']) && (empty($receivedExt) || is_numeric($receivedExt))) {
+            $receivedExt = preg_match('%\.([a-zA-Z0-9]+)\s*$%is', $uploadedFileInfo['name'], $matches) ? $matches[1] : '';
         }
         $expectedExts = $this->getAllowedFileExtensions();
         if (!empty($expectedExts)) {
             if (empty($receivedExt)) {
-                $receivedExt = array_shift($expectedExts);
+                $receivedExt = $this->getDefaultFileExtension();
             } else if (!in_array($receivedExt, $expectedExts)) {
                 throw new DbFieldException(
                     $this,
-                    "Uploaded file has extension [$receivedExt] that is not allowed",
+                    'Uploaded file extension is not allowed',
                     DbExceptionCode::FILE_EXTENSION_NOT_ALLOWED
                 );
             }
-        } else if ($saveExtToFile && !empty($receivedExt)) {
-            File::save($saveExtToFile, $receivedExt, 0666);
         }
         return $receivedExt;
+    }
+
+    /**
+     * @return string
+     * @throws DbFieldException
+     */
+    public function getFileExtension() {
+        $fileInfo = $this->getFileInfoFromInfoFile();
+        if (!empty($fileInfo) && !empty($fileInfo['ext'])) {
+            return $fileInfo['ext'];
+        } else {
+            $defaultExtension = $this->getDefaultFileExtension();
+            if ($this->getDbObject()->exists()) {
+                $allowedExtensions = $this->getAllowedFileExtensions();
+                if (!empty($allowedExtensions)) {
+                    foreach ($allowedExtensions as $ext) {
+                        $fileDir = $this->getFileDirPath();
+                        $fileNameNoExt = $this->getFileNameWithoutExtension();
+                        if (File::exist($fileDir . $fileNameNoExt . '.' . $ext)) {
+                            return $ext;
+                        }
+                    }
+                }
+            }
+            return $defaultExtension;
+        }
+    }
+
+    /**
+     * @return null|string|bool - null: not an upload | string: FS path fo file | false: invalid file uploaded (validation error)
+     * @throws DbFieldException
+     */
+    public function saveUploadedFile() {
+        if (!$this->getDbObject()->exists(true)) {
+            throw new DbFieldException($this, 'Unable to save file of non-existing object');
+        }
+        if (!$this->validate(true, true)) {
+            return false;
+        }
+        if (!$this->isUploadedFile()) {
+            return null;
+        }
+        $uploadedFileInfo = $this->getValue();
+        if (!defined('UNLIMITED_EXECUTION') || !UNLIMITED_EXECUTION) {
+            set_time_limit(90);
+            ini_set('memory_limit', '128M');
+        }
+       $fileInfo = $this->storeFileToFS($uploadedFileInfo);
+       if (!empty($fileInfo)) {
+            $this->saveUploadedFileInfo($fileInfo);
+            return $this->getFilePath();
+       }
+       return false;
+    }
+
+    /**
+     * Save file to FS + collect information for $infoFileName and save it
+     * @param array $uploadedFileInfo - uploaded file info
+     * @return bool|array - array: information about file same as when you get by callings $this->getFileInfoFromInfoFile()
+     */
+    protected function storeFileToFS($uploadedFileInfo) {
+        $pathToFiles = $this->getFileDirPath();
+        if (!is_dir($pathToFiles)) {
+            Folder::add($pathToFiles, 0777);
+        }
+        $fileName = $this->getFileNameWithoutExtension();
+        $fileInfo = array(
+            'file_name' => $fileName,
+            'full_file_name' => $fileName,
+        );
+        try {
+            $ext = $this->detectUploadedFileExtension($uploadedFileInfo);
+            if ($ext === false) {
+                $this->setValidationError('Unable to detect uploaded file extension and content type');
+                return false;
+            } else if (!empty($ext)) {
+                $fileName .= '.' . $ext;
+                $fileInfo['full_file_name'] = $fileName;
+            }
+            $fileInfo['ext'] = $ext;
+
+            // note: ext could be an empty string
+        } catch (DbFieldException $exc) {
+            $this->setValidationError($exc->getMessage());
+            return false;
+        }
+        $filePath = $pathToFiles . $fileName;
+        // move tmp file to target file path
+        return File::load($uploadedFileInfo['tmp_name'])->move($filePath, 0666) ? $fileInfo : false;
+    }
+
+    /**
+     * Save $fileInfo to file and to $this->values['file_info']
+     * @param array $fileInfo
+     * @throws DbFieldException
+     */
+    protected function saveUploadedFileInfo($fileInfo) {
+        if (is_array($fileInfo)) {
+            File::saveJson($this->getFileDirPath() . self::$infoFileName, $fileInfo);
+            $this->values['file_info'] = $fileInfo;
+        } else {
+            throw new DbFieldException($this, '$fileInfo shoud be an array');
+        }
+    }
+
+    /**
+     * Delete files attached to DbObject field
+     * @throws DbObjectException
+     */
+    public function deleteFiles() {
+        if (!$this->getDbObject()->exists()) {
+            throw new DbFieldException($this, 'Unable to delete files of non-existing object');
+        }
+        $pathToFiles = $this->getFileDirPath();
+        if (Folder::exist($pathToFiles)) {
+            $baseFileName = $this->getFileNameWithoutExtension();
+            $files = Folder::load($pathToFiles)->find("{$baseFileName}.*");
+            foreach ($files as $fileName) {
+                File::remove($pathToFiles . $fileName);
+            }
+        }
     }
 }

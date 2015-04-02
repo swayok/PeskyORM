@@ -93,7 +93,7 @@ class Utils {
     }
 
     static public function isUploadedFile($fileInfo) {
-        return array_key_exists('tmp_name', $fileInfo) && empty($fileInfo['error']) && !empty($fileInfo['size']);
+        return is_array($fileInfo) && array_key_exists('tmp_name', $fileInfo) && empty($fileInfo['error']) && !empty($fileInfo['size']);
     }
 
     /**

@@ -14,7 +14,7 @@ abstract class DbObjectField {
      */
     protected $dbObject;
     /**
-     * @var DbColumnConfig
+     * @var DbColumnConfig|DbColumnConfig\FileColumnConfig
      */
     protected $dbColumnConfig;
 //    public $server = null;     //< server alies where file stored
@@ -59,6 +59,13 @@ abstract class DbObjectField {
         if ($this->dbColumnConfig->hasDefaultValue()) {
             $this->setDefaultValue($this->dbColumnConfig->getDefaultValue());
         }
+    }
+
+    /**
+     * @return \PeskyORM\DbColumnConfig|DbColumnConfig\FileColumnConfig
+     */
+    public function getConfig() {
+        return $this->dbColumnConfig;
     }
 
     /**
