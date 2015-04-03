@@ -92,8 +92,12 @@ class Utils {
         return $json;
     }
 
-    static public function isUploadedFile($fileInfo) {
-        return is_array($fileInfo) && array_key_exists('tmp_name', $fileInfo) && empty($fileInfo['error']) && !empty($fileInfo['size']);
+    static public function isSuccessfullFileUpload($fileInfo) {
+        return self::isFileUpload($fileInfo) && empty($fileInfo['error']) && !empty($fileInfo['size']);
+    }
+
+    static public function isFileUpload($fileInfo) {
+        return is_array($fileInfo) && array_key_exists('tmp_name', $fileInfo) && array_key_exists('size', $fileInfo);
     }
 
     /**

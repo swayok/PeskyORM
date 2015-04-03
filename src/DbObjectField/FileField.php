@@ -3,6 +3,8 @@
 
 namespace PeskyORM\DbObjectField;
 
+use PeskyORM\DbFileInfo;
+use PeskyORM\DbImageFileInfo;
 use PeskyORM\DbObjectField;
 use PeskyORM\Exception\DbColumnConfigException;
 use PeskyORM\Exception\DbExceptionCode;
@@ -14,44 +16,122 @@ use PeskyORM\Lib\Utils;
 
 class FileField extends DbObjectField {
 
-    static public $extToConetntType = array(
-        'mp4' => 'video/mp4',
-        'mov' => 'video/quicktime',
+    static public $contentTypeToExt = array(
+        'video/mp4' => 'mp4',
+        'video/quicktime' => 'mov',
     );
 
     static public $infoFileName = 'info.json';
 
+    /**
+     * @var string
+     */
+    protected $fileInfoClassName = 'PeskyORM\DbFileInfo';
+    /**
+     * @var DbFileInfo|DbImageFileInfo|null
+     */
+    protected $fileInfo = null;
+
     public function isValidValueFormat($value) {
-        if (empty($value) || is_string($value) || Utils::isUploadedFile($value)) {
-            return true;
+        if (!empty($value)) {
+            if (!Utils::isFileUpload($value)) {
+                $this->setValidationError('File upload expected');
+                return false;
+            } else if (!Utils::isSuccessfullFileUpload($value)) {
+                $this->setValidationError('File upload failed');
+                return false;
+            } else if (!File::exist($value['tmp_name'])) {
+                $this->setValidationError('File upload was successful but file is missing');
+                return false;
+            }
         }
-        $this->setValidationError('File upload expected');
-        return false;
+        return true;
     }
 
-    protected function doBasicValueValidationAndConvertion($value) {
-        return $this->formatFile($value);
+    public function resetValue() {
+        $this->fileInfo = null;
+        return parent::resetValue();
     }
 
     /**
-     * Format file info
-     * @param $value
-     * @return array - if image uploaded - image inf, else - urls to image versions
+     * @param null $orIfNoValueReturn
+     * @return DbFileInfo|DbImageFileInfo|array|null
+     * @throws DbFieldException
      */
-    protected function formatFile($value) {
-        if (!is_array($value) || !isset($value['tmp_name'])) {
-            $value = $this->getFileUrl();
-            $this->setValueReceivedFromDb(true);
-        }
-        return $value;
+    public function getValue($orIfNoValueReturn = null) {
+        return $this->hasValue() ? $this->values['value'] : $orIfNoValueReturn;
+    }
+
+    public function isValueReceivedFromDb() {
+        return !$this->hasValue();
     }
 
     /**
      * @return bool
-     * @throws \PeskyORM\Exception\DbFieldException
+     * @throws DbFieldException
      */
-    public function isUploadedFile() {
-        return (!$this->isValueReceivedFromDb() && is_array($this->getValue()) && Utils::isUploadedFile($this->getValue()));
+    public function hasFile() {
+        if (!array_key_exists('fileExists', $this->values)) {
+            $folder = Folder::load($this->getFileDirPath());
+            if (!$folder->exists()) {
+                return false;
+            }
+            $fileName = $this->getFileNameWithoutExtension();
+            $this->values['fileExists'] = count($folder->find("^{$fileName}.*")) > 0;
+        }
+        return $this->values['fileExists'];
+    }
+
+    /**
+     * @param bool $initIfNotExists
+     * @param bool $readInfoFromFile
+     * @return null|DbFileInfo|DbImageFileInfo
+     */
+    public function getFileInfo($initIfNotExists = false, $readInfoFromFile = false) {
+        if ($initIfNotExists && empty($this->fileInfo)) {
+            $className = $this->fileInfoClassName;
+            $this->fileInfo = new $className($this);
+        }
+        if ($readInfoFromFile) {
+            $this->fileInfo->readFromFileOrAutodetect();
+        }
+        return $this->fileInfo;
+    }
+
+    /**
+     * @param array|null $value - null: means that
+     * @param bool $isDbValue - not used
+     * @return $this
+     * @throws DbFieldException
+     */
+    public function setValue($value, $isDbValue = false) {
+        if (!Utils::isFileUpload($value)) {
+            throw new DbFieldException($this, 'Value should be array with data about uploaded file');
+        }
+        $this->values['rawValue'] = $this->values['value'] = $value;
+        $this->validate();
+        return $this;
+    }
+
+    public function validate($silent = true, $forSave = false) {
+        unset($this->values['error']);
+        if (!$this->checkIfRequiredValueIsSet()) {
+            $this->setValidationError('Field value is required');
+        } else if (!$this->hasValue()) {
+            return true; //< no upload
+        } else if (!$this->isValidValueFormat($this->getValue())) {
+        } else {
+            try {
+                $this->detectUploadedFileExtension($this->getValue());
+            } catch (DbColumnConfigException $exc) {
+                $this->setValidationError($exc->getMessage());
+                return false;
+            }
+        }
+        if (!$silent && !$this->isValid()) {
+            throw new DbFieldException($this, $this->getValidationError());
+        }
+        return true;
     }
 
     /**
@@ -62,36 +142,17 @@ class FileField extends DbObjectField {
     }
 
     /**
-     * Read json file if db object exists
-     * @return array|null - array('file_name' => string, 'full_file_name' => string, 'ext' => string)
-     */
-    protected function getFileInfoFromInfoFile() {
-        if (!$this->getDbObject()->exists()) {
-            return null;
-        } else if (!array_key_exists('file_info', $this->values)) {
-            $infoFilePath = $this->getInfoFilePath() ;
-            $this->values['file_info'] = null;
-            if (File::exist($infoFilePath)) {
-                $info = File::readJson($infoFilePath);
-                if (!empty($info)) {
-                    $this->values['file_info'] = $info;
-                }
-            }
-        }
-        return $this->values['file_info'];
-    }
-
-    /**
      * @return string
      * @throws DbFieldException
      */
-    protected function getInfoFilePath() {
+    public function getInfoFilePath() {
         return $this->getFileDirPath() . $this->getName() . '_' . self::$infoFileName;
     }
 
     /**
      * Get absolute FS path to file
      * @return string
+     * @throws DbFieldException
      */
     public function getFilePath() {
         if (empty($this->values['file_path'])) {
@@ -103,6 +164,7 @@ class FileField extends DbObjectField {
     /**
      * Get absolute URL to file
      * @return string
+     * @throws DbFieldException
      */
     public function getFileUrl() {
         if (empty($this->values['file_url'])) {
@@ -171,7 +233,7 @@ class FileField extends DbObjectField {
             throw new DbFieldException($this, 'Unable to get file url of non-existing object');
         }
         if (empty($this->values['file_dir_absolute_url'])) {
-            $this->values['file_dir_absolute_url'] = rtrim($this->getFileServerUrl(), '/\\') . '/' . $this->getFileDirRelativeUrl() . '/';
+            $this->values['file_dir_absolute_url'] = rtrim($this->getFileServerUrl(), '/\\') . '/' . trim($this->getFileDirRelativeUrl(), '/\\') . '/';
         }
         return $this->values['file_dir_absolute_url'];
     }
@@ -179,11 +241,22 @@ class FileField extends DbObjectField {
     /**
      * Get server URL where files are stored (ex: http://sub.server.com)
      * @return string
+     * @throws DbFieldException
      */
     public function getFileServerUrl() {
-        // todo: implement getFileServerUrl()
-        return '';
-        // return (!empty($this->model->fields[$field]['server'])) ? \Server::base_url($this->model->fields[$field]['server']) : '';
+        if (empty($this->values['server_url'])) {
+            $generator = $this->dbColumnConfig->getFileServerUrlGenerator();
+            if (!empty($generator)) {
+                $url = $generator($this);
+                if (empty($url) || !is_string($url)) {
+                    throw new DbFieldException($this, "File server url genetartor function should return not-empty string");
+                }
+            } else {
+                $url = 'http://' . $_SERVER['HTTP_HOST'];
+            }
+            $this->values['server_url'] = $url;
+        }
+        return $this->values['server_url'];
     }
 
     /**
@@ -246,9 +319,9 @@ class FileField extends DbObjectField {
      * @return string
      */
     public function getFullFileName() {
-        $fileInfo = $this->getFileInfoFromInfoFile();
-        if (!empty($fileInfo) && !empty($fileInfo['full_file_name'])) {
-            return $fileInfo['full_file_name'];
+        $fileInfo = $this->getFileInfo();
+        if (!empty($fileInfo)) {
+            return $fileInfo->getFileNameWithExtension();
         } else {
             $fileName = $this->getFileNameWithoutExtension();
             $ext = $this->getFileExtension();
@@ -279,38 +352,44 @@ class FileField extends DbObjectField {
     }
 
     /**
+     * @param string $ext
+     * @return bool
+     */
+    public function isFileExtensionAllowed($ext) {
+        $expectedExts = $this->getAllowedFileExtensions();
+        return is_string($ext) && (empty($expectedExts) || in_array($ext, $expectedExts));
+    }
+
+    /**
      * Detect Uploaded file extension by file name or content type
      * @param array $uploadedFileInfo - uploaded file info
-     * @return bool|string -
-     *      string: file extension without leading point (ex: 'mp4', 'mov', '')
-     * false: invalid file info or not supported extension
+     * @return string - file extension without leading point (ex: 'mp4', 'mov', '')
      * @throws DbFieldException
      */
     public function detectUploadedFileExtension($uploadedFileInfo) {
         if (empty($uploadedFileInfo['type']) && empty($uploadedFileInfo['name']) && empty($uploadedFileInfo['tmp_name'])) {
-            return false;
+            throw new DbFieldException(
+                $this,
+                'Uploaded file extension cannot be detected',
+                DbExceptionCode::FILE_EXTENSION_DETECTION_FAILED
+            );
         }
         // test content type
-        $receivedExt = false;
-        if (!empty($uploadedFileInfo['type'])) {
-            $receivedExt = array_search($uploadedFileInfo['type'], self::$extToConetntType);
-        }
-        if (!empty($uploadedFileInfo['name']) && (empty($receivedExt) || is_numeric($receivedExt))) {
+        if (!empty($uploadedFileInfo['type']) && isset(self::$contentTypeToExt[$uploadedFileInfo['type']])) {
+            $receivedExt = self::$contentTypeToExt[$uploadedFileInfo['type']];
+        } else if (!empty($uploadedFileInfo['name'])) {
             $receivedExt = preg_match('%\.([a-zA-Z0-9]+)\s*$%is', $uploadedFileInfo['name'], $matches) ? $matches[1] : '';
-        } else if (!empty($uploadedFileInfo['tmp_name']) && (empty($receivedExt) || is_numeric($receivedExt))) {
+        } else if (!empty($uploadedFileInfo['tmp_name'])) {
             $receivedExt = preg_match('%\.([a-zA-Z0-9]+)\s*$%is', $uploadedFileInfo['tmp_name'], $matches) ? $matches[1] : '';
+        } else {
+            $receivedExt = $this->getDefaultFileExtension();
         }
-        $expectedExts = $this->getAllowedFileExtensions();
-        if (!empty($expectedExts)) {
-            if (empty($receivedExt)) {
-                $receivedExt = $this->getDefaultFileExtension();
-            } else if (!in_array($receivedExt, $expectedExts)) {
-                throw new DbFieldException(
-                    $this,
-                    'Uploaded file extension is not allowed',
-                    DbExceptionCode::FILE_EXTENSION_NOT_ALLOWED
-                );
-            }
+        if (!$this->isFileExtensionAllowed($receivedExt)) {
+            throw new DbFieldException(
+                $this,
+                'Uploaded file extension is not allowed',
+                DbExceptionCode::FILE_EXTENSION_NOT_ALLOWED
+            );
         }
         return $receivedExt;
     }
@@ -320,11 +399,10 @@ class FileField extends DbObjectField {
      * @throws DbFieldException
      */
     public function getFileExtension() {
-        $fileInfo = $this->getFileInfoFromInfoFile();
-        if (!empty($fileInfo) && !empty($fileInfo['ext'])) {
-            return $fileInfo['ext'];
+        $fileInfo = $this->getFileInfo();
+        if (!empty($fileInfo) && !empty($fileInfo->getFileExtension())) {
+            return $fileInfo->getFileExtension();
         } else {
-            $defaultExtension = $this->getDefaultFileExtension();
             if ($this->getDbObject()->exists()) {
                 $allowedExtensions = $this->getAllowedFileExtensions();
                 if (!empty($allowedExtensions)) {
@@ -332,12 +410,15 @@ class FileField extends DbObjectField {
                         $fileDir = $this->getFileDirPath();
                         $fileNameNoExt = $this->getFileNameWithoutExtension();
                         if (File::exist($fileDir . $fileNameNoExt . '.' . $ext)) {
+                            if (!empty($fileInfo)) {
+                                $fileInfo->setFileExtension($ext);
+                            }
                             return $ext;
                         }
                     }
                 }
             }
-            return $defaultExtension;
+            return $this->getDefaultFileExtension();
         }
     }
 
@@ -349,13 +430,13 @@ class FileField extends DbObjectField {
         if (!$this->getDbObject()->exists(true)) {
             throw new DbFieldException($this, 'Unable to save file of non-existing object');
         }
+        $uploadedFileInfo = $this->getValue();
+        if (empty($uploadedFileInfo)) {
+            return null;
+        }
         if (!$this->validate(true, true)) {
             return false;
         }
-        if (!$this->isUploadedFile()) {
-            return null;
-        }
-        $uploadedFileInfo = $this->getValue();
         if (!defined('UNLIMITED_EXECUTION') || !UNLIMITED_EXECUTION) {
             set_time_limit(90);
             ini_set('memory_limit', '128M');
@@ -363,8 +444,8 @@ class FileField extends DbObjectField {
         $fileInfo = $this->storeFileToFS($uploadedFileInfo);
         if (!empty($fileInfo)) {
             $this->saveUploadedFileInfo($fileInfo);
-            $this->setValue($this->getFileUrl(), true);
-            return $this->getFilePath();
+            parent::resetValue(); //< this will not remove $this->fileInfo
+            return $this->getFileInfo();
         }
         return false;
     }
@@ -408,12 +489,16 @@ class FileField extends DbObjectField {
     /**
      * Save $fileInfo to file and to $this->values['file_info']
      * @param array $fileInfo
+     * @return $this
      * @throws DbFieldException
      */
     protected function saveUploadedFileInfo($fileInfo) {
         if (is_array($fileInfo)) {
-            File::saveJson($this->getInfoFilePath(), $fileInfo);
-            $this->values['file_info'] = $fileInfo;
+            $this->fileInfo = null;
+            $this->getFileInfo(true)
+                ->update($fileInfo)
+                ->saveToFile();
+            return $this;
         } else {
             throw new DbFieldException($this, '$fileInfo shoud be an array');
         }

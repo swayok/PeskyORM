@@ -384,7 +384,7 @@ class ImageUtils {
                 if ($fileNameToRestore == $versionFileName) {
                     $extToContentType = array_flip(self::$contentTypeToExtension);
                     $resizeSettings['type'] = $extToContentType[$ext];
-                    $ext = ImageLib::findFileExtension($imagesPath, $versionFileName);
+                    $ext = self::findFileExtension($imagesPath, $versionFileName);
                     if (!$ext) {
                         return self::applyResize($imagesPath . $originalFileName, $imagesPath . $versionFileName, $resizeSettings);
                     } else {

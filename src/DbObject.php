@@ -162,7 +162,7 @@ class DbObject {
 
     /**
      * @param $fieldName
-     * @return DbObjectField
+     * @return DbObjectField|FileField|ImageField
      * @throws DbObjectException
      */
     public function _getField($fieldName) {
@@ -731,7 +731,12 @@ class DbObject {
      * @throws DbObjectException
      */
     public function _getFieldValue($fieldName) {
-        return $this->_getField($fieldName)->getValue();
+        $field = $this->_getField($fieldName);
+        if ($field->isFile() && !$field->hasValue()) {
+            return $field->hasFile() ? $field->getFileInfo(true, true) : null;
+        } else {
+            return $field->getValue();
+        }
     }
 
     /**
@@ -782,20 +787,6 @@ class DbObject {
                 $this->_findRelatedObject($fieldNameOrAlias);
             }
             return $this->_relatedObjects[$fieldNameOrAlias];
-        } else if (
-            preg_match('%^(.*)_(path|exists)$%', $fieldNameOrAlias, $matches)
-            && $this->_hasFileField($matches[1])
-        ) {
-            // field name looks like "file_path" or "file_exists" and field "file" exists in object
-            $field = $this->_getFileField($matches[1]);
-            switch($matches[2]) {
-                case 'exists':
-                    return $field->isFileExists();
-                    break;
-                case 'path':
-                    return $field->getFilePath();
-                    break;
-            }
         } else if (
             preg_match('%^(.*)_(date|time|ts)$%is', $fieldNameOrAlias, $matches)
             && $this->_hasField($matches[1])
@@ -1420,13 +1411,6 @@ class DbObject {
             if ($this->_hasFileFields()) {
                 $this->saveFiles();
             }
-            if (is_array($ret)) {
-                // set $ret as db data (it is all fields actually)
-                $this->fromDbData($ret);
-            } else {
-                // mark updated data as db data
-                $this->markAllSetFieldsAsDbFields();
-            }
             if (!empty($saveRelations)) {
                 foreach ($relatedObjects as $alias => $dbObject) {
                     $this->linkTo($dbObject);
@@ -1455,18 +1439,22 @@ class DbObject {
      * Save attached files
      * @param null|string|array $fieldNames
      * @return bool
+     * @throws DbFieldException
+     * @throws DbObjectException
      */
     protected function saveFiles($fieldNames = null) {
-        if (!$this->exists()) {
-            return false;
-        }
         if (empty($fieldNames) || !is_array($fieldNames)) {
             $fieldNames = array_keys($this->_getFileFieldsConfigs());
         } else {
             $fieldNames = array_intersect(array_keys($this->_getFileFieldsConfigs()), $fieldNames);
         }
-        foreach ($fieldNames as $fieldName) {
-            $this->_getFileField($fieldName)->saveUploadedFile();
+        if (!empty($fieldNames)) {
+            if (!$this->existsInDb()) {
+                throw new DbObjectException($this, 'Unable to save files of non-existing object');
+            }
+            foreach ($fieldNames as $fieldName) {
+                $this->_getFileField($fieldName)->saveUploadedFile();
+            }
         }
         return true;
     }
@@ -1595,17 +1583,34 @@ class DbObject {
     }
 
     /**
-     * Check if db record exists
-     * @param bool $fromDb = true: send query to db | false: check if primary key is not empty
+     * Check if object has not empty PK value
+     * @param bool $testIfReceivedFromDb = true: also test if DbField->isValueReceivedFromDb() returns true
      * @return bool
+     * @throws DbObjectException
      */
-    public function exists($fromDb = false) {
+    public function exists($testIfReceivedFromDb = false) {
         $pkSet = $this->_getPkField()->hasNotEmptyValue();
-        if ($fromDb) {
-            return $pkSet && $this->_getModel()->exists($this->getFindByPkConditions());
-        } else {
-            return $pkSet;
+        if (!$pkSet) {
+            return false;
         }
+        if ($testIfReceivedFromDb) {
+            return $this->_getPkField()->isValueReceivedFromDb();
+        }
+        return true;
+    }
+
+    /**
+     * Check if record exists in DB. Uses DB Query to verify existence
+     * @return bool
+     * @throws DbObjectException
+     */
+    public function existsInDb() {
+        $pkSet = $this->_getPkField()->hasNotEmptyValue();
+        $exists = $pkSet && $this->_getModel()->exists($this->getFindByPkConditions());
+        if ($exists) {
+            $this->_getPkField()->setValueReceivedFromDb(true);
+        }
+        return $exists;
     }
 
     /**
@@ -1664,15 +1669,10 @@ class DbObject {
             if ($field->hasValue()) {
                 $values[$fieldName] = $field->getValue();
             } else if ($this->exists() && $field->isFile()) {
-                $field->setValue($this->_getPkValue()); //< this will trigger file path generation
-                $values[$fieldName] = $field->getValue();
-                /*$server = !empty($this->model->fields[$name]['server']) ? $this->model->fields[$name]['server'] : null;
-                if ($this->_fields[$name]->isImage && $server == \Server::alias()) {
-                    $values[$name . '_path'] = $this->{$name . '_path'};
-                }*/
-                if ($field->isImage()) {
-                    /** @var ImageField $field  */
-                    $values[$fieldName . '_path'] = $field->getFilePath();
+                if ($field->hasFile()) {
+                    $values[$fieldName] = $field->getFileInfo(true, true)->toPublicArray();
+                } else {
+                    $values[$fieldName] = null;
                 }
             }
         }

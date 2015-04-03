@@ -4,6 +4,10 @@ require_once 'error_handling.php';
 require_once 'debug.php';
 require_once 'dBug.php';
 
+if (!preg_match('%/$%is', $_SERVER['REQUEST_URI'])) {
+    exit;
+}
+
 spl_autoload_register(function ($class) {
 
     // project-specific namespace prefix

@@ -8,25 +8,23 @@ use PeskyORM\Lib\ImageUtils;
 
 class ImageField extends FileField {
 
+    /**
+     * @var string
+     */
+    protected $fileInfoClassName = 'PeskyORM\DbFileInfo';
+
     public function isValidValueFormat($value) {
-        if (empty($value) || parent::isValidValueFormat($value) && ImageUtils::isImage($value)) {
+        if (empty($value)) {
             return true;
         }
-        $this->setValidationError('Uploaded file is not image or image type is not supported');
-        return false;
-    }
-
-    /**
-     * Format file info
-     * @param $value
-     * @return array - if image uploaded - image inf, else - urls to image versions
-     */
-    protected function formatFile($value) {
-        if (!is_array($value) || !isset($value['tmp_name'])) {
-            $value = $this->getImagesUrls();
-            $this->setValueReceivedFromDb(true);
+        if (!parent::isValidValueFormat($value)) {
+            return false;
         }
-        return $value;
+        if (!ImageUtils::isImage($value)) {
+            $this->setValidationError('Uploaded file is not image or image type is not supported');
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -71,27 +69,18 @@ class ImageField extends FileField {
     }
 
     /**
-     * Get fs path to file
-     * @return mixed
-     */
-    public function getFilePath() {
-        if (!isset($this->values['file_path'])) {
-            $this->values['file_path'] = $this->getImagesPaths();
-        }
-        return $this->values['file_path'];
-    }
-
-    /**
      * Restore image version by name
+     * @param string $fileNameToRestore
      * @return bool|string - false: fail | string: file path
+     * @throws DbFieldException
      */
-    public function restoreImageVersionByFileName() {
+    public function restoreImageVersionByFileName($fileNameToRestore) {
         // find resize profile
         return ImageUtils::restoreVersion(
-            $this->getName(),
+            $fileNameToRestore,
             $this->getFileNameWithoutExtension(),
             $this->getFileDirPath(),
-            $this->dbColumnConfig['resize_settings']
+            $this->getImageVersions()
         );
     }
 

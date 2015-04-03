@@ -295,26 +295,21 @@ abstract class DbObjectField {
 
     /**
      * @param null|mixed $orIfNoValueReturn
-     * @return mixed|null
+     * @return mixed|null|DbFileInfo|DbImageFileInfo
      * @throws DbFieldException
      * @throws Exception\DbObjectException
      */
     public function getValue($orIfNoValueReturn = null) {
         if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
-            return $this->dbObject->{$this->dbColumnConfig->importVirtualColumnValueFrom()};
+            return $this->dbObject->_getFieldValue($this->dbColumnConfig->importVirtualColumnValueFrom());
         }
         if (!$this->hasValue() && $this->getName() !== $this->dbObject->_getPkField()) {
             // value not set and not a primary key
-            if ($this->dbObject->exists()) {
+            if (!$this->isFile() && $this->dbObject->exists()) {
                 // on object update
-                if ($this->isFile()) {
-                    // import pk form object to create image urls and fill value
-                    $this->importPkValue();
-                } else {
-                    // value is set in db but possibly was not fetched
-                    // to avoid overwriting of correct value object must notify about this situation
-                    throw new DbFieldException($this, "Field value is not set. Possibly value was not fetched from DB");
-                }
+                // value is set in db but possibly was not fetched
+                // to avoid overwriting of correct value object must notify about this situation
+                throw new DbFieldException($this, "Field value is not set. Possibly value was not fetched from DB");
             } else {
                 // on object create just set default value or null
                 $this->setValue($this->getDefaultValueOr(null));
@@ -468,8 +463,8 @@ abstract class DbObjectField {
         } else {
             $this->runCustomValidators($silent, $forSave);
         }
-        if (!empty($this->values['error']) && !$silent) {
-            throw new DbFieldException($this, $this->values['error']);
+        if (!$silent && !$this->isValid()) {
+            throw new DbFieldException($this, $this->getValidationError());
         }
         return $this->isValid();
     }
@@ -503,7 +498,7 @@ abstract class DbObjectField {
             $valid = $this->hasNotEmptyValue();
             // test if value is required for current action
             if (!$valid) {
-                $valid = !$this->isRequiredOn($this->dbObject->exists(false) ? DbColumnConfig::ON_UPDATE : DbColumnConfig::ON_CREATE);
+                $valid = !$this->isRequiredOn($this->dbObject->exists() ? DbColumnConfig::ON_UPDATE : DbColumnConfig::ON_CREATE);
             }
         }
         return $valid;
