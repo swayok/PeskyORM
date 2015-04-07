@@ -7,6 +7,8 @@ use PeskyORM\Exception\DbTableConfigException;
 
 abstract class DbTableConfig {
 
+    protected $autoloadColumnConfigsFromPrivateMethods = true;
+
     protected $db = 'default';
     protected $schema = 'public';
     protected $name;
@@ -23,7 +25,24 @@ abstract class DbTableConfig {
     /** @var DbTableConfig[]  */
     static private $instances = array();
 
-    protected function __construct() {}
+    protected function __construct() {
+        if ($this->autoloadColumnConfigsFromPrivateMethods) {
+            $this->loadColumnConfigsFromPrivateMethods();
+        }
+    }
+
+    protected function loadColumnConfigsFromPrivateMethods() {
+        $objectReflection = new \ReflectionObject($this);
+        $methods = $objectReflection->getMethods(\ReflectionMethod::IS_PRIVATE);
+        foreach ($methods as $method) {
+            if (preg_match('%^_[a-zA-Z][a-zA-Z0-9_]*$%is', $method->getName())) {
+                $method->setAccessible(true);
+                $fieldConfig = $method->invoke($this);
+                $method->setAccessible(false);
+                $this->addColumn($fieldConfig);
+            }
+        }
+    }
 
     /**
      * @return $this

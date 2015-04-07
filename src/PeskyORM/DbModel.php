@@ -51,6 +51,12 @@ abstract class DbModel {
      */
     public $safeMode = true;
 
+    static protected $tablesConfigsDirName = 'TableConfig';
+    static protected $tableConfigClassSuffix = 'TableConfig';
+    static protected $objectsClassesDirName = 'Object';
+    static protected $modelClassSuffix = 'Model';
+    static protected $modelsClassesDirName = 'Model';
+
     /**
      * @return $this
      * @throws DbUtilsException
@@ -64,7 +70,7 @@ abstract class DbModel {
      */
     public function __construct() {
         $className = get_class($this);
-        if (!preg_match('%^(.*?\\\?)([a-zA-Z0-9]+)Model$%is', $className, $classNameParts)) {
+        if (!preg_match('%^(.*?\\\?)([a-zA-Z0-9]+)' . $this::$modelClassSuffix .'$%is', $className, $classNameParts)) {
             throw new DbModelException($this, "Invalid Model class name [{$className}]. Required name is like NameSpace\\SomeModel.");
         }
         $this->nameSpace = $classNameParts[1];
@@ -220,10 +226,10 @@ abstract class DbModel {
      */
     public function loadTableConfig($modelName) {
         if (empty($this->configsNameSpace)) {
-            $this->configsNameSpace = preg_replace('%\\\.*?$%s', '', $this->nameSpace) . '\\TableConfig\\';
+            $this->configsNameSpace = preg_replace('%\\\.*?$%s', '', $this->nameSpace) . '\\' . $this::$tablesConfigsDirName .'\\';
         }
         if (empty($this->configClass)) {
-            $this->configClass = $this->configsNameSpace . $modelName . 'TableConfig';
+            $this->configClass = $this->configsNameSpace . $modelName . $this::$tableConfigClassSuffix;
         }
         if (!class_exists($this->configClass)) {
             throw new DbModelException($this, "Db table config class [{$this->configClass}] not found");
@@ -239,9 +245,9 @@ abstract class DbModel {
      * @throws DbModelException
      */
     static public function __callStatic($modelOrObjectName, $objectArgs = array()) {
-        if (preg_match('%^(.*)Model$%s', $modelOrObjectName, $matches)) {
+        $calledClass = get_called_class();
+        if (preg_match('%^(.*)' . $calledClass::$modelClassSuffix . '$%s', $modelOrObjectName, $matches)) {
             // model requested
-            $modelOrObjectName = $matches[1];
             return self::getModel($modelOrObjectName);
         } else {
             // db object requested
@@ -313,7 +319,12 @@ abstract class DbModel {
      * @return string
      */
     static public function dbObjectNameByModelClassName($class) {
-        return preg_replace(array('%^.*[\\\]%is', '%Model$%', '%Model/%'), array('', '', 'Object'), $class);
+        $calledClass = get_called_class();
+        return preg_replace(
+            array('%^.*[\\\]%is', '%' . $calledClass::$modelClassSuffix . '$%', '%' . $calledClass::$modelsClassesDirName . '/%'),
+            array('', '', $calledClass::$objectsClassesDirName),
+            $class
+        );
     }
 
     /**
@@ -331,7 +342,8 @@ abstract class DbModel {
         if (!class_exists($dbObjectClass)) {
             throw new DbUtilsException("Class $dbObjectClass was not found");
         }
-        return new $dbObjectClass(self::getModel(StringUtils::modelize($dbObjectNameOrTableName) . 'Model'), $data, $filter);
+        $calledClass = get_called_class();
+        return new $dbObjectClass(self::getModel(StringUtils::modelize($dbObjectNameOrTableName) . $calledClass::$modelClassSuffix), $data, $filter);
     }
 
     /**
@@ -348,7 +360,8 @@ abstract class DbModel {
     }
 
     static public function getObjectsNamespace() {
-        return preg_replace('%[a-zA-Z0-9_]+\\\$%', 'Object\\', self::getModelsNamespace());
+        $calledClass = get_called_class();
+        return preg_replace('%[a-zA-Z0-9_]+\\\$%', $calledClass::$objectsClassesDirName . '\\', self::getModelsNamespace());
     }
 
     static public function getFullModelClassByTableName($tableName) {
@@ -356,7 +369,8 @@ abstract class DbModel {
     }
 
     static public function getModelNameByTableName($tableName) {
-        return StringUtils::modelize($tableName) . 'Model';
+        $calledClass = get_called_class();
+        return StringUtils::modelize($tableName) . $calledClass::$modelClassSuffix;
     }
 
     /**
