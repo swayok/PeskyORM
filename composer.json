@@ -19,6 +19,6 @@
   "type": "symfony-bundle",
   "target-dir": "Swayok/PeskyORM",
   "autoload": {
-      "psr-0": { "Swayok\\PeskyORM": "" }
+      "psr-0": { "PeskyORM": "" }
   }
 }
