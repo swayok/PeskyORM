@@ -1,5 +1,6 @@
 {
   "name": "swayok/peskyorm",
+  "type": "library",
   "description": "PeskyORM - annoying ORM that contains tons of exceptions and throws them when anything goes wrong",
   "keywords": [
     "php",
@@ -16,8 +17,7 @@
   "support": {
     "issues": "https://github.com/swayok/PeskyORM/issues"
   },
-  "type": "symfony-bundle",
   "autoload": {
-      "psr-0": { "PeskyORM": "" }
+      "psr-0": { "PeskyORM": "/swayok/peskyorm/src" }
   }
 }
