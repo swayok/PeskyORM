@@ -17,7 +17,6 @@
     "issues": "https://github.com/swayok/PeskyORM/issues"
   },
   "type": "symfony-bundle",
-  "target-dir": "Swayok/PeskyORM",
   "autoload": {
       "psr-0": { "PeskyORM": "" }
   }
