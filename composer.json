@@ -1,0 +1,24 @@
+{
+  "name": "swayok/peskyorm",
+  "description": "PeskyORM - annoying ORM that contains tons of exceptions and throws them when anything goes wrong",
+  "keywords": [
+    "php",
+    "orm",
+    "database",
+    "web"
+  ],
+  "authors": [
+    {
+      "name": "Alexander Filippov"
+    }
+  ],
+  "license": "MIT",
+  "support": {
+    "issues": "https://github.com/swayok/PeskyORM/issues"
+  },
+  "type": "symfony-bundle",
+  "target-dir": "Swayok/PeskyORM",
+  "autoload": {
+      "psr-0": { "Swayok\\PeskyORM": "" }
+  }
+}
