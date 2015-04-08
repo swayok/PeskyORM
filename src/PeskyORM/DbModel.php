@@ -1,6 +1,7 @@
 <?php
 
 namespace PeskyORM;
+use Db\DbObject;
 use PeskyORM\DbColumnConfig;
 use PeskyORM\Exception\DbModelException;
 use PeskyORM\Exception\DbQueryException;
@@ -120,7 +121,7 @@ abstract class DbModel {
     /**
      * @return string|null
      */
-    public function getPkColumn() {
+    public function getPkColumnName() {
         return $this->tableConfig->getPk();
     }
 
@@ -220,6 +221,38 @@ abstract class DbModel {
     }
 
     /**
+     * @return null|string
+     */
+    public function getOrderField() {
+        return $this->orderField;
+    }
+
+    /**
+     * @param null|string $orderField
+     * @return $this
+     */
+    public function setOrderField($orderField) {
+        $this->orderField = $orderField;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getOrderDirection() {
+        return $this->orderDirection;
+    }
+
+    /**
+     * @param string $orderDirection
+     * @return $this
+     */
+    public function setOrderDirection($orderDirection) {
+        $this->orderDirection = $orderDirection;
+        return $this;
+    }
+
+    /**
      * Load config class
      * @param string $modelName
      * @throws DbModelException
@@ -261,13 +294,17 @@ abstract class DbModel {
 
     /**
      * Load and return requested Model
-     * @param string $modelName - class name or table name (UserToken or user_tokens)
+     * @param string $modelName - class name (UserToken or UserTokenModel)
      * @return DbModel
      * @throws DbUtilsException
      */
     static public function getModel($modelName) {
         // todo: maybe use reflections?
         // load model if not loaded yet
+        $calledClass = get_called_class();
+        if (!preg_match('%' . $calledClass::$modelClassSuffix . '$%i', $modelName)) {
+            $modelName .= $calledClass::$modelClassSuffix;
+        }
         $modelClass = self::getModelsNamespace() . $modelName;
         return self::getModelByClassName($modelClass);
     }
@@ -334,7 +371,7 @@ abstract class DbModel {
      * @param bool $filter - used only when $data not empty and is array
      *      true: filters $data that does not belong to this object
      *      false: $data that does not belong to this object will trigger exceptions
-     * @return DbObject
+     * @return \PeskyORM\DbObject
      * @throws DbUtilsException
      */
     static public function createDbObject($dbObjectNameOrTableName, $data = null, $filter = false) {
@@ -379,7 +416,7 @@ abstract class DbModel {
      * @param bool $filter - used only when $data not empty and is array
      *      true: filters $data that does not belong to this object
      *      false: $data that does not belong to this object will trigger exceptions
-     * @return $this
+     * @return \PeskyORM\DbObject
      * @throws DbModelException
      */
     static public function getOwnDbObject($data = null, $filter = false) {
@@ -456,27 +493,31 @@ abstract class DbModel {
      * Build valid 'JOIN' settings from 'CONTAIN' table aliases
      * @param array $where
      * @return mixed $where
+     * @throws DbModelException
      */
-    /*public function resolveContains($where) {
+    public function resolveContains($where) {
         if (is_array($where)) {
             if (!empty($where['CONTAIN']) && is_array($where['CONTAIN'])) {
                 $where['JOIN'] = array();
+
                 foreach ($where['CONTAIN'] as $alias => $fields) {
                     if (is_int($alias)) {
                         $alias = $fields;
                         $fields = !empty($relation['fields']) ? $relation['fields'] : '*';
                     }
-                    if (!empty($this->relations[$alias]) && empty($this->relations[$alias]['many'])) {
-                        $model = self::getModel($this->relations[$alias]['model']);
-                        $relation = $this->relations[$alias];
+                    $relationConfig = $this->getTableRealtaion($alias);
+                    if ($relationConfig->getType() === DbRelationConfig::HAS_MANY) {
+                        throw new DbModelException($this, "Queries with one-to-many joins are not allowed via 'CONTAIN' key");
+                    } else {
+                        $model = $this->getRelatedModel($alias);
                         $where['JOIN'][$alias] = array(
-                            'type' => !empty($relation['type']) ? $relation['type'] : 'left',
+                            'type' => $relationConfig->getJoinType(),
                             'table1_model' => $model,
-                            'table1_field' => $relation['foreign_field'],
+                            'table1_field' => $relationConfig->getForeignColumn(),
                             'table1_alias' => $alias,
                             'table2_alias' => $this->alias,
-                            'table2_field' => $relation['local_field'],
-                            'conditions' => !empty($relation['conditions']) && is_array($relation['conditions']) ? $relation['conditions'] : array(),
+                            'table2_field' => $relationConfig->getColumn(),
+                            'conditions' => $relationConfig->getAdditionalJoinConditions(),
                             'fields' => $fields
                         );
                     }
@@ -488,7 +529,7 @@ abstract class DbModel {
             unset($where['CONTAIN']);
         }
         return $where;
-    }*/
+    }
 
     /**
      * Add columns into options and resolve contains
@@ -504,7 +545,7 @@ abstract class DbModel {
                 $options = array();
             }
         } else {
-            //$options = $this->resolveContains($options);
+            $options = $this->resolveContains($options);
         }
         if (!empty($columns)) {
             $options['FIELDS'] = $columns;
@@ -620,7 +661,7 @@ abstract class DbModel {
      */
     public function getOne($columns, $conditionsAndOptions = null, $asObject = true, $withRootAlias = false) {
         if (is_numeric($conditionsAndOptions) || is_int($conditionsAndOptions)) {
-            $conditionsAndOptions = array($this->getPkColumn() => $conditionsAndOptions);
+            $conditionsAndOptions = array($this->getPkColumnName() => $conditionsAndOptions);
         }
         $record = $this->builder()
             ->fromOptions($this->prepareSelect($columns, $conditionsAndOptions))
@@ -699,7 +740,7 @@ abstract class DbModel {
      * @return string|int|float|bool
      */
     public function expression($expression, $conditionsAndOptions = null) {
-        return $this->builder()->expression($expression, $conditionsAndOptions);
+        return $this->builder()->expression($expression, $this->resolveContains($conditionsAndOptions));
     }
 
     public function exists($conditionsAndOptions) {
@@ -710,6 +751,15 @@ abstract class DbModel {
     public function count($conditionsAndOptions = null) {
         if (is_array($conditionsAndOptions)) {
             unset($conditionsAndOptions['ORDER'], $conditionsAndOptions['LIMIT'], $conditionsAndOptions['OFFSET']);
+        }
+        $conditionsAndOptions = $this->resolveContains($conditionsAndOptions);
+        // remove left joins for count query - they will not affect result but will slow down query
+        if (!empty($conditionsAndOptions['JOIN'])) {
+            foreach ($conditionsAndOptions['JOIN'] as $key => $options) {
+                if ($options['type'] === DbRelationConfig::JOIN_LEFT) {
+                    unset($conditionsAndOptions['JOIN'][$key]);
+                }
+            }
         }
         return 0 + $this->expression('COUNT(*)', $conditionsAndOptions);
     }

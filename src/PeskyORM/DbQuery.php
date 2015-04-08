@@ -154,11 +154,11 @@ class DbQuery {
         }
         $table = $this->aliasToTable[$tableAlias];
         if (
-            !in_array($this->models[$table]->getPkColumn(), $fields)
-            && !in_array($tableAlias . '.' . $this->models[$table]->getPkColumn(), $fields)
+            !in_array($this->models[$table]->getPkColumnName(), $fields)
+            && !in_array($tableAlias . '.' . $this->models[$table]->getPkColumnName(), $fields)
         ) {
-            $fieldAlias = $this->buildFieldAlias($tableAlias, $this->models[$table]->getPkColumn(), $fieldAlias);
-            $fields[$fieldAlias] = $this->models[$table]->getPkColumn();
+            $fieldAlias = $this->buildFieldAlias($tableAlias, $this->models[$table]->getPkColumnName(), $fieldAlias);
+            $fields[$fieldAlias] = $this->models[$table]->getPkColumnName();
         }
         return $fields;
     }
@@ -205,13 +205,13 @@ class DbQuery {
         if (empty($knownTableAlias)) {
             $knownTableAlias = $this->alias;
             if (empty($knownTableColumn)) {
-                $knownTableColumn = $this->models[$this->table]->getPkColumn();
+                $knownTableColumn = $this->models[$this->table]->getPkColumnName();
             }
         } else if (empty($this->aliasToTable[$knownTableAlias])) {
             throw new DbQueryException($this, "DbQuery->join(): table with alias [$knownTableAlias] is not known");
         }
         if (empty($knownTableColumn)) {
-            $knownTableColumn = $this->models[$this->aliasToTable[$knownTableAlias]]->getPkColumn();
+            $knownTableColumn = $this->models[$this->aliasToTable[$knownTableAlias]]->getPkColumnName();
         }
         $this->models[$relatedModel->getTableName()] = $relatedModel;
         $this->aliasToTable[$relatedAlias] = $relatedModel->getTableName();
@@ -544,7 +544,9 @@ class DbQuery {
      * @return string|int|float|bool
      */
     public function expression($expression, $conditionsAndOptions = array()) {
-        $expression = $this->replaceQuotes($expression);
+        if (!is_object($expression)) {
+            $expression = new DbExpr($expression);
+        }
         return $this->fromOptions($conditionsAndOptions)->find($expression, false);
     }
 
@@ -576,7 +578,7 @@ class DbQuery {
         }
         $model = $this->models[$this->table];
         if ($returning === null) {
-            $fields = $model->getPkColumn();
+            $fields = $model->getPkColumnName();
         } else if ($returning === true) {
             $fields = '*';
         } else if (is_string($returning) || is_array($returning)) {
@@ -611,7 +613,7 @@ class DbQuery {
         }
         if (!empty($this->orderBy) || !empty($this->limit)) {
             $model = $this->models[$this->table];
-            $subquery = 'SELECT ' . $this->quoteName($model->getPkColumn())
+            $subquery = 'SELECT ' . $this->quoteName($model->getPkColumnName())
                 . ' FROM ' . $this->quoteName($this->table)
                 . ' AS ' . $this->quoteName($this->alias)
                  . $where;
@@ -626,7 +628,7 @@ class DbQuery {
             if (!empty($this->limit)) {
                 $subquery .= " LIMIT {$this->limit} ";
             }
-            $this->query .= ' WHERE ' . $this->quoteName($model->getPkColumn()) . ' IN (' . $subquery . ')';
+            $this->query .= ' WHERE ' . $this->quoteName($model->getPkColumnName()) . ' IN (' . $subquery . ')';
         } else {
             $this->query .= ' AS ' . $this->quoteName($this->alias) . $where;
         }
@@ -687,7 +689,7 @@ class DbQuery {
             if (empty($returning)) {
                 return $pkValue;
             } else {
-                $this->where(array($model->getPkColumn() => $pkValue));
+                $this->where(array($model->getPkColumnName() => $pkValue));
                 $result = $this->findOne(false);
             }
         }
@@ -829,22 +831,24 @@ class DbQuery {
 
     /**
      * Build DB query from parts
-     * @param string $type - type of query: 'all', 'first', 'column', 'value', DbExpr, integer, bool
+     * @param string $typeOrExpression - type of query: 'all', 'first', 'column', 'value', DbExpr, integer, bool
      *      'all', 'column' and 'first': same query with different limits
      *      'value', DbExpr, integer, bool: only 1 value is fetched from db
      * @return string
      * @throws DbQueryException
      */
-    public function buildQuery($type = DB::FETCH_ALL) {
-        $type = strtolower($type);
+    public function buildQuery($typeOrExpression = DB::FETCH_ALL) {
+        if (is_string($typeOrExpression)) {
+            $typeOrExpression = strtolower($typeOrExpression);
+        }
         $autoAddPkFieldAndOrder = empty($this->groupBy) && !$this->hasAggregatesInFields();
         $this->query = 'SELECT ';
         if ($this->distinct) {
             $this->query .= 'DISTINCT ';
         }
         // fields
-        if (in_array($type, array(DB::FETCH_ALL, DB::FETCH_FIRST, DB::FETCH_COLUMN, DB::FETCH_VALUE))) {
-            if ($type === DB::FETCH_VALUE) {
+        if (in_array($typeOrExpression, array(DB::FETCH_ALL, DB::FETCH_FIRST, DB::FETCH_COLUMN, DB::FETCH_VALUE))) {
+            if ($typeOrExpression === DB::FETCH_VALUE) {
                 $autoAddPkFieldAndOrder = false;
             }
             if (empty($this->fields)) {
@@ -856,17 +860,17 @@ class DbQuery {
                 }
             }
             $this->query .= $this->buildFieldsList($autoAddPkFieldAndOrder);
-        } else if ($type instanceof DbExpr) {
-            $this->query .= " {$type->get()} ";
+        } else if ($typeOrExpression instanceof DbExpr) {
+            $this->query .= " {$typeOrExpression->get()} ";
             $autoAddPkFieldAndOrder = false;
-        } else if (is_bool($type)) {
-            $this->query .= ' ' . ($type ? 'true' : 'false') . ' ';
+        } else if (is_bool($typeOrExpression)) {
+            $this->query .= ' ' . ($typeOrExpression ? 'true' : 'false') . ' ';
             $autoAddPkFieldAndOrder = false;
-        } else if (is_numeric($type)) {
-            $this->query .= " $type ";
+        } else if (is_numeric($typeOrExpression)) {
+            $this->query .= " $typeOrExpression ";
             $autoAddPkFieldAndOrder = false;
-        } else if (is_string($type)) {
-            $this->query .= " {$this->quoteValue($type)} ";
+        } else if (is_string($typeOrExpression)) {
+            $this->query .= " {$this->quoteValue($typeOrExpression)} ";
             $autoAddPkFieldAndOrder = false;
         } else {
             throw new DbQueryException($this, "Unknown query \$type");
@@ -892,7 +896,7 @@ class DbQuery {
         }
         // order by
         if (empty($this->orderBy) && $autoAddPkFieldAndOrder) {
-            $this->orderBy($this->models[$this->table]->getPkColumn() . ' asc');
+            $this->orderBy($this->models[$this->table]->getPkColumnName() . ' asc');
         }
         if (!empty($this->orderBy)) {
             $sorting = array();

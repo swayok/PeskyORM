@@ -194,7 +194,7 @@ class DbObject {
      * @return mixed
      */
     public function _getPkFieldName() {
-        return $this->_getModel()->getPkColumn();
+        return $this->_getModel()->getPkColumnName();
     }
 
     /**
@@ -646,7 +646,7 @@ class DbObject {
                     if ($this->_hasRelatedObject($fieldNameOrAlias)) {
                         $this->_getRelatedObject($fieldNameOrAlias)->updateValues($value);
                     } else {
-                        $this->_initRelatedObject($fieldNameOrAlias, $data, true);
+                        $this->_initRelatedObject($fieldNameOrAlias, $value, true);
                     }
                 } else if (!$filter && $fieldNameOrAlias[0] !== '_') {
                     $class = get_class($this);
@@ -897,7 +897,9 @@ class DbObject {
             return $relatedObject !== false;
         } else {
             // 1:1 relation
-            if ($relatedObject->exists()) {
+            if (empty($relatedObject)) {
+                return false;
+            } else if ($relatedObject->exists()) {
                 return true;
             } else {
                 // todo: is this really needed? what situation is this?

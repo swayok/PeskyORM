@@ -28,6 +28,9 @@ abstract class DbTableConfig {
     protected function __construct() {
         if ($this->autoloadColumnConfigsFromPrivateMethods) {
             $this->loadColumnConfigsFromPrivateMethods();
+        } else {
+            $this->loadColumnsConfigs();
+            $this->loadRelationsConfiigs();
         }
     }
 
@@ -35,13 +38,23 @@ abstract class DbTableConfig {
         $objectReflection = new \ReflectionObject($this);
         $methods = $objectReflection->getMethods(\ReflectionMethod::IS_PRIVATE);
         foreach ($methods as $method) {
-            if (preg_match('%^_[a-zA-Z][a-zA-Z0-9_]*$%is', $method->getName())) {
-                $method->setAccessible(true);
-                $fieldConfig = $method->invoke($this);
-                $method->setAccessible(false);
-                $this->addColumn($fieldConfig);
+            $method->setAccessible(true);
+            $config = $method->invoke($this);
+            $method->setAccessible(false);
+            if ($config instanceof DbColumnConfig) {
+                $this->addColumn($config);
+            } else if ($config instanceof DbRelationConfig) {
+                $this->addRelation($config, $method->getName());
             }
         }
+    }
+
+    protected function loadColumnsConfigs() {
+
+    }
+
+    protected function loadRelationsConfiigs() {
+
     }
 
     /**

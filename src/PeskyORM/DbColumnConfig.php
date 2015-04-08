@@ -139,6 +139,8 @@ class DbColumnConfig {
     protected $isImage = false;
     /** @var bool */
     protected $isFk = false;
+    /** @var array */
+    protected $customData = array();
 
     // service params
     static public $fileTypes = array(
@@ -662,6 +664,29 @@ class DbColumnConfig {
      */
     public function isExistsInDb() {
         return !$this->isVirtual();
+    }
+
+    /**
+     * @param null|string $key
+     * @return array|null
+     */
+    public function getCustomData($key = null) {
+        if (empty($key)) {
+            return $this->customData;
+        } else if (is_array($this->customData) && array_key_exists($key, $this->customData)) {
+            return $this->customData[$key];
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * @param array $customData
+     * @return $this
+     */
+    public function customData($customData) {
+        $this->customData = $customData;
+        return $this;
     }
 
 }
