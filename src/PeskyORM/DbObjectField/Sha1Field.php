@@ -7,11 +7,11 @@ use PeskyORM\Exception\DbFieldException;
 
 class Sha1Field extends StringField {
 
-    const SHA1_LENGTH = 32;
+    const SHA1_LENGTH = 40;
 
     protected function doBasicValueValidationAndConvertion($value) {
         $value = parent::doBasicValueValidationAndConvertion($value);
-        if (!empty($value) && !$this->isValidValueLength()) {
+        if (!empty($value) && !$this->isValidValueLength($value)) {
             throw new DbFieldException($this, "Passed value [{$value}] does not match SHA1 hash sring length (" . self::SHA1_LENGTH . ')');
         }
         return $value;

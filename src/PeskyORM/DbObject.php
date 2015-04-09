@@ -4,6 +4,7 @@ namespace PeskyORM;
 use PeskyORM\DbColumnConfig;
 use PeskyORM\DbObjectField\FileField;
 use PeskyORM\DbObjectField\ImageField;
+use PeskyORM\DbObjectField\PasswordField;
 use PeskyORM\DbObjectField\TimestampField;
 use PeskyORM\Exception\DbExceptionCode;
 use PeskyORM\Exception\DbFieldException;
@@ -162,7 +163,7 @@ class DbObject {
 
     /**
      * @param $fieldName
-     * @return DbObjectField|FileField|ImageField
+     * @return DbObjectField|FileField|ImageField|PasswordField
      * @throws DbObjectException
      */
     public function _getField($fieldName) {
@@ -1743,7 +1744,7 @@ class DbObject {
             throw new DbObjectException($this, "getDefaultsArray: \$fieldNames argument must be empty, string or array");
         }
         foreach ($fieldNames as $name) {
-            $values[$name] = $this->_getField($name)->getDefaultValue();
+            $values[$name] = $this->_getField($name)->getDefaultValueOr(null);
         }
         return $values;
     }

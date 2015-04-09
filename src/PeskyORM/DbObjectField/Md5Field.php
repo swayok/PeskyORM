@@ -11,7 +11,7 @@ class Md5Field extends StringField {
 
     protected function doBasicValueValidationAndConvertion($value) {
         $value = parent::doBasicValueValidationAndConvertion($value);
-        if (!empty($value) && !$this->isValidValueLength()) {
+        if (!empty($value) && !$this->isValidValueLength($value)) {
             throw new DbFieldException($this, "Passed value [{$value}] does not match MD5 hash sring length (" . self::MD5_LENGTH . ')');
         }
         return $value;

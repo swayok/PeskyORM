@@ -14,9 +14,9 @@ class DbColumnConfig {
     const TYPE_STRING = 'string';
     const TYPE_TEXT = 'text';
     const TYPE_JSON = 'json';
-//    const TYPE_DB_ENTITY_NAME = 'db_entity_name';
     const TYPE_SHA1 = 'sha1';
     const TYPE_MD5 = 'md5';
+    const TYPE_PASSWORD = 'password';
     const TYPE_EMAIL = 'email';
     const TYPE_TIMESTAMP = 'timestamp';
     const TYPE_DATE = 'date';
@@ -49,9 +49,9 @@ class DbColumnConfig {
         self::TYPE_STRING => self::DB_TYPE_VARCHAR,
         self::TYPE_TEXT => self::DB_TYPE_TEXT,
         self::TYPE_JSON => self::DB_TYPE_TEXT,
-//        self::TYPE_DB_ENTITY_NAME => self::DB_TYPE_VARCHAR,
         self::TYPE_SHA1 => self::DB_TYPE_VARCHAR,
         self::TYPE_MD5 => self::DB_TYPE_VARCHAR,
+        self::TYPE_PASSWORD => self::DB_TYPE_VARCHAR,
         self::TYPE_EMAIL => self::DB_TYPE_VARCHAR,
         self::TYPE_TIMESTAMP => self::DB_TYPE_TIMESTAMP,
         self::TYPE_DATE => self::DB_TYPE_DATE,
@@ -165,7 +165,7 @@ class DbColumnConfig {
     /**
      * @param string $name
      * @param string $type
-     * @return DbColumnConfig
+     * @return $this
      */
     static public function create($name, $type) {
         $className = get_called_class();

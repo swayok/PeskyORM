@@ -14,7 +14,7 @@ abstract class DbObjectField {
      */
     protected $dbObject;
     /**
-     * @var DbColumnConfig|DbColumnConfig\FileColumnConfig
+     * @var DbColumnConfig|DbColumnConfig\FileColumnConfig|DbColumnConfig\ImageColumnConfig|DbColumnConfig\PasswordColumnConfig
      */
     protected $dbColumnConfig;
 //    public $server = null;     //< server alies where file stored
