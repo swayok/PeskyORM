@@ -58,17 +58,6 @@ abstract class DbTableConfig {
     }
 
     /**
-     * @return $this
-     */
-    static public function get() {
-        $className = get_called_class();
-        if (empty(self::$instances[$className])) {
-            self::$instances[$className] = new $className();
-        }
-        return self::$instances[$className];
-    }
-
-    /**
      * @param DbColumnConfig $config
      * @return $this
      * @throws DbTableConfigException
