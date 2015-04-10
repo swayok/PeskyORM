@@ -5,7 +5,7 @@ namespace PeskyORM\DbObjectField;
 
 use PeskyORM\Lib\ValidateValue;
 use PeskyORM\DbObjectField;
-use PeskyORM\Exception\DbFieldException;
+use PeskyORM\Exception\DbObjectFieldException;
 
 class FloatField extends DbObjectField {
 
@@ -14,7 +14,7 @@ class FloatField extends DbObjectField {
             return null;
         }
         if (!ValidateValue::isFloat($value, true)) {
-            throw new DbFieldException($this, "Passed value [{$value}] is not decimal number");
+            throw new DbObjectFieldException($this, "Passed value [{$value}] is not decimal number");
         }
         return $value;
     }

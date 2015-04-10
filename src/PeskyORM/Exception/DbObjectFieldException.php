@@ -4,7 +4,7 @@ namespace PeskyORM\Exception;
 
 use PeskyORM\DbObjectField;
 
-class DbFieldException extends DbObjectException {
+class DbObjectFieldException extends DbObjectException {
 
     protected $dbField;
 

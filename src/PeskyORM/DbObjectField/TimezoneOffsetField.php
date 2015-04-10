@@ -12,7 +12,7 @@ class TimezoneField extends IntegerField {
     /**
      * @param mixed $value
      * @return mixed|null|string
-     * @throws \PeskyORM\Exception\DbFieldException
+     * @throws \PeskyORM\Exception\DbObjectFieldException
      */
     protected function doBasicValueValidationAndConvertion($value) {
         $value = parent::doBasicValueValidationAndConvertion($value);

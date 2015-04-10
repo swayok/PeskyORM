@@ -25,12 +25,20 @@ abstract class DbTableConfig {
     /** @var DbTableConfig[]  */
     static private $instances = array();
 
+    static public function getInstance() {
+        $class = get_called_class();
+        if (empty(self::$instances[$class])) {
+            self::$instances[$class] = new $class();
+        }
+        return self::$instances[$class];
+    }
+
     protected function __construct() {
         if ($this->autoloadColumnConfigsFromPrivateMethods) {
             $this->loadColumnConfigsFromPrivateMethods();
         } else {
             $this->loadColumnsConfigs();
-            $this->loadRelationsConfiigs();
+            $this->loadRelationsConfigs();
         }
     }
 
@@ -53,7 +61,7 @@ abstract class DbTableConfig {
 
     }
 
-    protected function loadRelationsConfiigs() {
+    protected function loadRelationsConfigs() {
 
     }
 

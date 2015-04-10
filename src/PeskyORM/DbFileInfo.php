@@ -5,7 +5,7 @@ namespace PeskyORM;
 
 
 use PeskyORM\DbObjectField\FileField;
-use PeskyORM\Exception\DbFieldException;
+use PeskyORM\Exception\DbObjectFieldException;
 use PeskyORM\Lib\File;
 
 class DbFileInfo {
@@ -47,7 +47,7 @@ class DbFileInfo {
 
     public function saveToFile() {
         if (!$this->fileField->getDbObject()->exists()) {
-            throw new DbFieldException($this->fileField, 'Unable to save file info json file of non-existing object');
+            throw new DbObjectFieldException($this->fileField, 'Unable to save file info json file of non-existing object');
         }
         $data = array();
         foreach (self::$jsonMap as $jsonKey => $paramName) {

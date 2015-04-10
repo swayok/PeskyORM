@@ -5,7 +5,7 @@ namespace PeskyORM\DbObjectField;
 
 use PeskyORM\Lib\ValidateValue;
 use PeskyORM\DbObjectField;
-use PeskyORM\Exception\DbFieldException;
+use PeskyORM\Exception\DbObjectFieldException;
 
 class IntegerField extends DbObjectField {
 
@@ -14,7 +14,7 @@ class IntegerField extends DbObjectField {
             return null;
         }
         if (!ValidateValue::isInteger($value, true)) {
-            throw new DbFieldException($this, "Passed value [{$value}] is not integer number");
+            throw new DbObjectFieldException($this, "Passed value [{$value}] is not integer number");
         }
         return $value;
     }

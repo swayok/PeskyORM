@@ -5,7 +5,7 @@ namespace PeskyORM\DbObjectField;
 
 use PeskyORM\Lib\ValidateValue;
 use PeskyORM\DbObjectField;
-use PeskyORM\Exception\DbFieldException;
+use PeskyORM\Exception\DbObjectFieldException;
 use PeskyORM\Lib\Utils;
 
 class TimeField extends DbObjectField {
@@ -17,7 +17,7 @@ class TimeField extends DbObjectField {
             return null; //< also prevents situation when unixtimestamp = 0 is passed
         }
         if (!ValidateValue::isDateTime($value)) {
-            throw new DbFieldException($this, "Value is not time or date-time or has bad formatting");
+            throw new DbObjectFieldException($this, "Value is not time or date-time or has bad formatting");
         }
         return Utils::formatDateTime($value, $this->getTimeFormat());
     }

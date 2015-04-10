@@ -1,7 +1,6 @@
 <?php
 
 namespace PeskyORM;
-use Db\DbObject;
 use PeskyORM\DbColumnConfig;
 use PeskyORM\Exception\DbModelException;
 use PeskyORM\Exception\DbQueryException;
@@ -267,7 +266,7 @@ abstract class DbModel {
         if (!class_exists($this->configClass)) {
             throw new DbModelException($this, "Db table config class [{$this->configClass}] not found");
         }
-        $this->setTableConfig(call_user_func(array($this->configClass, 'get')));
+        $this->setTableConfig(call_user_func(array($this->configClass, 'getInstance')));
     }
 
     /**

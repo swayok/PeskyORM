@@ -8,7 +8,7 @@ use PeskyORM\DbImageFileInfo;
 use PeskyORM\DbObjectField;
 use PeskyORM\Exception\DbColumnConfigException;
 use PeskyORM\Exception\DbExceptionCode;
-use PeskyORM\Exception\DbFieldException;
+use PeskyORM\Exception\DbObjectFieldException;
 use PeskyORM\Exception\DbObjectException;
 use PeskyORM\Lib\File;
 use PeskyORM\Lib\Folder;
@@ -56,7 +56,7 @@ class FileField extends DbObjectField {
     /**
      * @param null $orIfNoValueReturn
      * @return DbFileInfo|DbImageFileInfo|array|null
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function getValue($orIfNoValueReturn = null) {
         return $this->hasValue() ? $this->values['value'] : $orIfNoValueReturn;
@@ -68,7 +68,7 @@ class FileField extends DbObjectField {
 
     /**
      * @return bool
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function hasFile() {
         if (!array_key_exists('fileExists', $this->values)) {
@@ -102,11 +102,11 @@ class FileField extends DbObjectField {
      * @param array|null $value - null: means that
      * @param bool $isDbValue - not used
      * @return $this
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function setValue($value, $isDbValue = false) {
         if (!Utils::isFileUpload($value)) {
-            throw new DbFieldException($this, 'Value should be array with data about uploaded file');
+            throw new DbObjectFieldException($this, 'Value should be array with data about uploaded file');
         }
         $this->values['rawValue'] = $this->values['value'] = $value;
         $this->validate();
@@ -129,7 +129,7 @@ class FileField extends DbObjectField {
             }
         }
         if (!$silent && !$this->isValid()) {
-            throw new DbFieldException($this, $this->getValidationError());
+            throw new DbObjectFieldException($this, $this->getValidationError());
         }
         return true;
     }
@@ -143,7 +143,7 @@ class FileField extends DbObjectField {
 
     /**
      * @return string
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function getInfoFilePath() {
         return $this->getFileDirPath() . $this->getName() . '_' . self::$infoFileName;
@@ -152,7 +152,7 @@ class FileField extends DbObjectField {
     /**
      * Get absolute FS path to file
      * @return string
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function getFilePath() {
         if (empty($this->values['file_path'])) {
@@ -164,7 +164,7 @@ class FileField extends DbObjectField {
     /**
      * Get absolute URL to file
      * @return string
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function getFileUrl() {
         if (empty($this->values['file_url'])) {
@@ -176,18 +176,18 @@ class FileField extends DbObjectField {
     /**
      * Get absolute FS path to file dir
      * @return string
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function getFileDirPath() {
         if (!$this->getDbObject()->exists()) {
-            throw new DbFieldException($this, 'Unable to get file dir path of non-existing object');
+            throw new DbObjectFieldException($this, 'Unable to get file dir path of non-existing object');
         }
         if (empty($this->values['file_dir_path'])) {
             $generator = $this->dbColumnConfig->getFileDirPathGenerator();
             if (!empty($generator)) {
                 $dirPath = $generator($this);
                 if (empty($dirPath) || !is_string($dirPath)) {
-                    throw new DbFieldException($this, "File dir path genetartor function should return not-empty string");
+                    throw new DbObjectFieldException($this, "File dir path genetartor function should return not-empty string");
                 }
             } else {
                 $objectSubdir = DIRECTORY_SEPARATOR . trim($this->getFilesSubdir(DIRECTORY_SEPARATOR), '/\\');
@@ -201,18 +201,18 @@ class FileField extends DbObjectField {
     /**
      * Get relative URL to file dir
      * @return string
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function getFileDirRelativeUrl() {
         if (!$this->getDbObject()->exists()) {
-            throw new DbFieldException($this, 'Unable to get file url of non-existing object');
+            throw new DbObjectFieldException($this, 'Unable to get file url of non-existing object');
         }
         if (empty($this->values['file_dir_relative_url'])) {
             $generator = $this->dbColumnConfig->getFileDirRelativeUrlGenerator();
             if (!empty($generator)) {
                 $relUrl = $generator($this);
                 if (empty($relUrl) || !is_string($relUrl)) {
-                    throw new DbFieldException($this, "File dir relative url genetartor function should return not-empty string");
+                    throw new DbObjectFieldException($this, "File dir relative url genetartor function should return not-empty string");
                 }
             } else {
                 $objectSubdir = '/' . trim($this->getFilesSubdir('/'), '/\\');;
@@ -226,11 +226,11 @@ class FileField extends DbObjectField {
     /**
      * Get absolute URL to file dir
      * @return string
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function getFileDirAbsoluteUrl() {
         if (!$this->getDbObject()->exists()) {
-            throw new DbFieldException($this, 'Unable to get file url of non-existing object');
+            throw new DbObjectFieldException($this, 'Unable to get file url of non-existing object');
         }
         if (empty($this->values['file_dir_absolute_url'])) {
             $this->values['file_dir_absolute_url'] = rtrim($this->getFileServerUrl(), '/\\') . '/' . trim($this->getFileDirRelativeUrl(), '/\\') . '/';
@@ -241,7 +241,7 @@ class FileField extends DbObjectField {
     /**
      * Get server URL where files are stored (ex: http://sub.server.com)
      * @return string
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function getFileServerUrl() {
         if (empty($this->values['server_url'])) {
@@ -249,7 +249,7 @@ class FileField extends DbObjectField {
             if (!empty($generator)) {
                 $url = $generator($this);
                 if (empty($url) || !is_string($url)) {
-                    throw new DbFieldException($this, "File server url genetartor function should return not-empty string");
+                    throw new DbObjectFieldException($this, "File server url genetartor function should return not-empty string");
                 }
             } else {
                 $url = 'http://' . $_SERVER['HTTP_HOST'];
@@ -263,17 +263,17 @@ class FileField extends DbObjectField {
      * Get subdir to files based on primary key and maybe some other custom things
      * @param string $directorySeparator - directory separator
      * @return string
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function getFilesSubdir($directorySeparator = DIRECTORY_SEPARATOR) {
         if (!$this->getDbObject()->exists()) {
-            throw new DbFieldException($this, 'Unable to get file subdir of non-existing object');
+            throw new DbObjectFieldException($this, 'Unable to get file subdir of non-existing object');
         }
         $generator = $this->dbColumnConfig->getFileSubdirGenerator();
         if (!empty($generator)) {
             $subdir = $generator($this, $directorySeparator);
             if (empty($subdir) || !is_string($subdir)) {
-                throw new DbFieldException($this, "File subdir genetartor function should return not-empty string");
+                throw new DbObjectFieldException($this, "File subdir genetartor function should return not-empty string");
             }
             return $subdir;
         } else {
@@ -299,14 +299,14 @@ class FileField extends DbObjectField {
      * Get file name without extension
      * @param string|callable|null $fallbackValue - null: $this->getName() is used
      * @return string - file name without extension
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function getFileNameWithoutExtension($fallbackValue = null) {
         $generator = $this->dbColumnConfig->getFileNameGenerator();
         if (!empty($generator)) {
             $fileName = $generator($this);
             if (empty($fileName) || !is_string($fileName)) {
-                throw new DbFieldException($this, "File name genetartor function should return not-empty string");
+                throw new DbObjectFieldException($this, "File name genetartor function should return not-empty string");
             }
             return $fileName;
         } else {
@@ -364,11 +364,11 @@ class FileField extends DbObjectField {
      * Detect Uploaded file extension by file name or content type
      * @param array $uploadedFileInfo - uploaded file info
      * @return string - file extension without leading point (ex: 'mp4', 'mov', '')
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function detectUploadedFileExtension($uploadedFileInfo) {
         if (empty($uploadedFileInfo['type']) && empty($uploadedFileInfo['name']) && empty($uploadedFileInfo['tmp_name'])) {
-            throw new DbFieldException(
+            throw new DbObjectFieldException(
                 $this,
                 'Uploaded file extension cannot be detected',
                 DbExceptionCode::FILE_EXTENSION_DETECTION_FAILED
@@ -385,7 +385,7 @@ class FileField extends DbObjectField {
             $receivedExt = $this->getDefaultFileExtension();
         }
         if (!$this->isFileExtensionAllowed($receivedExt)) {
-            throw new DbFieldException(
+            throw new DbObjectFieldException(
                 $this,
                 'Uploaded file extension is not allowed',
                 DbExceptionCode::FILE_EXTENSION_NOT_ALLOWED
@@ -396,7 +396,7 @@ class FileField extends DbObjectField {
 
     /**
      * @return string
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function getFileExtension() {
         $fileInfo = $this->getFileInfo();
@@ -424,11 +424,11 @@ class FileField extends DbObjectField {
 
     /**
      * @return null|string|bool - null: not an upload | string: FS path fo file | false: invalid file uploaded (validation error)
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function saveUploadedFile() {
         if (!$this->getDbObject()->exists(true)) {
-            throw new DbFieldException($this, 'Unable to save file of non-existing object');
+            throw new DbObjectFieldException($this, 'Unable to save file of non-existing object');
         }
         $uploadedFileInfo = $this->getValue();
         if (empty($uploadedFileInfo)) {
@@ -477,7 +477,7 @@ class FileField extends DbObjectField {
             $fileInfo['ext'] = $ext;
 
             // note: ext could be an empty string
-        } catch (DbFieldException $exc) {
+        } catch (DbObjectFieldException $exc) {
             $this->setValidationError($exc->getMessage());
             return false;
         }
@@ -490,7 +490,7 @@ class FileField extends DbObjectField {
      * Save $fileInfo to file and to $this->values['file_info']
      * @param array $fileInfo
      * @return $this
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     protected function saveUploadedFileInfo($fileInfo) {
         if (is_array($fileInfo)) {
@@ -500,7 +500,7 @@ class FileField extends DbObjectField {
                 ->saveToFile();
             return $this;
         } else {
-            throw new DbFieldException($this, '$fileInfo shoud be an array');
+            throw new DbObjectFieldException($this, '$fileInfo shoud be an array');
         }
     }
 
@@ -510,7 +510,7 @@ class FileField extends DbObjectField {
      */
     public function deleteFiles() {
         if (!$this->getDbObject()->exists()) {
-            throw new DbFieldException($this, 'Unable to delete files of non-existing object');
+            throw new DbObjectFieldException($this, 'Unable to delete files of non-existing object');
         }
         $pathToFiles = $this->getFileDirPath();
         if (Folder::exist($pathToFiles)) {

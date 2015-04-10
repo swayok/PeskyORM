@@ -11,6 +11,8 @@ abstract class ValidateValue {
     const IP_ADDRESS_REGEXP = '%^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$%is';
     //    const EMAIL_REGEXP = '%^(([^<>()\[\].,;:\s@"*\'#$\%\^&=+\\\/!\?]+(\.[^<>()\[\],;:\s@"*\'#$\%\^&=+\\\/!\?]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$%is';
     const EMAIL_REGEXP = "%^[a-z0-9!#\$\%&'*+/=?\^_`{|}~-]+(?:\.[a-z0-9!#\$\%&'*+/=?\^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$%is"; //< http://www.regular-expressions.info/email.html
+    const SHA1_REGEXP = "%^[a-fA-F0-9]{40}$%is";
+    const MD5_REGEXP = "%^[a-fA-F0-9]{32}$%is";
     const DB_ENTITY_NAME_REGEXP = '%^[a-z][a-z0-9_]*$%';
 
     static public function isInteger(&$value, $convert = false) {
@@ -50,18 +52,18 @@ abstract class ValidateValue {
     }
 
     static public function isIpAddress($value) {
-        if (is_string($value) && preg_match(self::IP_ADDRESS_REGEXP, $value)) {
-            return true;
-        } else {
-            return false;
-        }
+        return is_string($value) && preg_match(self::IP_ADDRESS_REGEXP, $value);
     }
 
     static public function isEmail($value) {
-        if (is_string($value) && preg_match(self::EMAIL_REGEXP, $value)) {
-            return true;
-        } else {
-            return false;
-        }
+        return is_string($value) && preg_match(self::EMAIL_REGEXP, $value);
+    }
+
+    static public function isSha1($value) {
+        return is_string($value) && preg_match(self::SHA1_REGEXP, $value);
+    }
+
+    static public function isMd5($value) {
+        return is_string($value) && preg_match(self::MD5_REGEXP, $value);
     }
 }

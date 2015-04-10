@@ -141,6 +141,8 @@ class DbColumnConfig {
     protected $isFk = false;
     /** @var array */
     protected $customData = array();
+    /** @var array */
+    protected $customValidators = array();
 
     // service params
     static public $fileTypes = array(
@@ -687,6 +689,38 @@ class DbColumnConfig {
     public function customData($customData) {
         $this->customData = $customData;
         return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getCustomValidators() {
+        return $this->customValidators;
+    }
+
+    /**
+     * @param array $customValidators - should contain only callable values
+     * @return $this
+     * @throws DbColumnConfigException
+     */
+    public function setCustomValidators($customValidators) {
+        if (!is_array($customValidators)) {
+            throw new DbColumnConfigException($this, '$customValidators arg should be an array');
+        }
+        foreach ($customValidators as $validator) {
+            if (!is_callable($validator)) {
+                throw new DbColumnConfigException($this, '$customValidators should contain only functions');
+            }
+        }
+        $this->customValidators = $customValidators;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasCustomValidators() {
+        return !empty($this->customValidators);
     }
 
 }

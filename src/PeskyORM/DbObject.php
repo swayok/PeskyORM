@@ -6,16 +6,11 @@ use PeskyORM\DbObjectField\FileField;
 use PeskyORM\DbObjectField\ImageField;
 use PeskyORM\DbObjectField\PasswordField;
 use PeskyORM\DbObjectField\TimestampField;
-use PeskyORM\Exception\DbExceptionCode;
-use PeskyORM\Exception\DbFieldException;
+use PeskyORM\Exception\DbObjectFieldException;
 use PeskyORM\Exception\DbObjectException;
 use PeskyORM\Exception\DbObjectValidationException;
-use PeskyORM\Lib\File;
 use PeskyORM\Lib\Folder;
-use PeskyORM\Lib\ImageUtils;
 use PeskyORM\Lib\StringUtils;
-use PeskyORM\Lib\Utils;
-use PeskyORM\Model\AppModel;
 
 /**
  * Class DbObject
@@ -254,6 +249,16 @@ class DbObject {
      */
     public function _getFileFieldsConfigs() {
         return $this->_getTableConfig()->getFileColumns();
+    }
+
+    /**
+     * @param string $fieldName
+     * @param mixed $value
+     * @return bool
+     * @throws DbObjectException
+     */
+    public function isValidFieldValue($fieldName, $value) {
+        return $this->_getField($fieldName)->isValidValueFormat($value);
     }
 
     /**
@@ -522,7 +527,7 @@ class DbObject {
     /**
      * @param $alias
      * @param DbObject $relatedObject
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      * @throws DbObjectException
      */
     protected function linkRelatedObjectToThis($alias, DbObject $relatedObject) {
@@ -728,7 +733,7 @@ class DbObject {
     /**
      * @param string $fieldName
      * @return mixed|null
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      * @throws DbObjectException
      */
     public function _getFieldValue($fieldName) {
@@ -745,7 +750,7 @@ class DbObject {
      * @param mixed $newValue
      * @param bool $isDbValue
      * @return $this
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      * @throws DbObjectException
      */
     public function _setFieldValue($fieldName, $newValue, $isDbValue = false) {
@@ -1139,7 +1144,7 @@ class DbObject {
      * @return $this
      */
     public function read($pkValue, $fieldNames = '*', $relations = false) {
-        $this->_setFieldValue($this->_getPkField(), $pkValue);
+        $this->_setFieldValue($this->_getPkFieldName(), $pkValue);
         return $this->find($this->getFindByPkConditions(), $fieldNames, $relations);
     }
 
@@ -1374,7 +1379,7 @@ class DbObject {
         }
         $exists = $this->exists($verifyDbExistance);
         if ($verifyDbExistance && !$exists && !$createIfNotExists) {
-            $this->_customErrors[$this->_getPkFieldName()] = '@!db.error_edit_not_existing_record@';
+            $this->_getPkField()->setValidationError('@!db.error_edit_not_existing_record@');
             if ($localTransaction) {
                 $model->rollback();
             }
@@ -1442,7 +1447,7 @@ class DbObject {
      * Save attached files
      * @param null|string|array $fieldNames
      * @return bool
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      * @throws DbObjectException
      */
     protected function saveFiles($fieldNames = null) {
@@ -1731,7 +1736,7 @@ class DbObject {
      * Collect default values for the fields
      * @param array|null $fieldNames - will return only this fields (if not skipped)
      * @return array
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      * @throws DbObjectException
      */
     public function getDefaultsArray($fieldNames = null) {

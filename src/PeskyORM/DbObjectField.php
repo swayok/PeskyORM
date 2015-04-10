@@ -3,7 +3,7 @@
 namespace PeskyORM;
 
 use PeskyORM\DbColumnConfig;
-use PeskyORM\Exception\DbFieldException;
+use PeskyORM\Exception\DbObjectFieldException;
 
 /**
  * Class DbObjectField
@@ -70,11 +70,11 @@ abstract class DbObjectField {
 
     /**
      * @return mixed
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function getDefaultValue() {
         if (!$this->hasDefaultValue()) {
-            throw new DbFieldException($this, "Default value is not set");
+            throw new DbObjectFieldException($this, "Default value is not set");
         }
         return $this->defaultValue;
     }
@@ -98,12 +98,12 @@ abstract class DbObjectField {
     /**
      * @param mixed $defaultValue
      * @return $this
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function setDefaultValue($defaultValue) {
         $defaultValue = $this->processNewValue($defaultValue);
         if (!$this->isValidValueFormat($defaultValue)) {
-            throw new DbFieldException($this, "Invalid default value [{$defaultValue}] provided. Error: {$this->values['error']}");
+            throw new DbObjectFieldException($this, "Invalid default value [{$defaultValue}] provided. Error: {$this->values['error']}");
         }
         $this->defaultValue = $defaultValue;
         return $this;
@@ -233,7 +233,7 @@ abstract class DbObjectField {
     /**
      * Restored last db value or resets field when no db value
      * @return $this
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function restoreDdValueOrReset() {
         if (array_key_exists('dbValue', $this->values)) {
@@ -244,15 +244,23 @@ abstract class DbObjectField {
         return $this;
     }
 
+    public function getDbValue() {
+        if (array_key_exists('dbValue', $this->values)) {
+            $this->values['dbValue'];
+        } else {
+
+        }
+    }
+
     /**
      * @param mixed $value
      * @param bool $isDbValue
      * @return $this
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function setValue($value, $isDbValue = false) {
         if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
-            throw new DbFieldException(
+            throw new DbObjectFieldException(
                 $this,
                 "Virtual field value [{$this->getName()}] cannot be set directly. " .
                     "Value is imported from field [{$this->dbColumnConfig->importVirtualColumnValueFrom()}]."
@@ -287,7 +295,7 @@ abstract class DbObjectField {
 
     /**
      * @return bool
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function hasNotEmptyValue() {
         return $this->hasValue() && (!empty($this->values['value']) || is_bool($this->values['value']) || is_numeric($this->values['value']));
@@ -296,7 +304,7 @@ abstract class DbObjectField {
     /**
      * @param null|mixed $orIfNoValueReturn
      * @return mixed|null|DbFileInfo|DbImageFileInfo
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      * @throws Exception\DbObjectException
      */
     public function getValue($orIfNoValueReturn = null) {
@@ -309,7 +317,7 @@ abstract class DbObjectField {
                 // on object update
                 // value is set in db but possibly was not fetched
                 // to avoid overwriting of correct value object must notify about this situation
-                throw new DbFieldException($this, "Field value is not set. Possibly value was not fetched from DB");
+                throw new DbObjectFieldException($this, "Field value is not set. Possibly value was not fetched from DB");
             } else {
                 // on object create just set default value or null
                 $this->setValue($this->getDefaultValueOr(null));
@@ -390,7 +398,7 @@ abstract class DbObjectField {
      * Analyze new value: validate data type and convert to field type
      * @param mixed $value
      * @return mixed
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     protected function processNewValue($value) {
         if ($value === null && !$this->canBeNull()) {
@@ -429,7 +437,7 @@ abstract class DbObjectField {
      *
      * @param mixed $value
      * @return mixed
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     protected function doBasicValueValidationAndConvertion($value) {
         return $value;
@@ -440,7 +448,7 @@ abstract class DbObjectField {
      * @param bool $silent - true: do not throw exception
      * @param bool $forSave - true: allow additional validations (like isUnique)
      * @return bool
-     * @throws DbFieldException if $silent == false and value is invalid
+     * @throws DbObjectFieldException if $silent == false and value is invalid
      */
     public function validate($silent = true, $forSave = false) {
         unset($this->values['error']);
@@ -461,10 +469,10 @@ abstract class DbObjectField {
         } else if ($forSave && !$this->checkIfValueIsUnique()) {
             $this->setValidationError("Value already exists in DB");
         } else {
-            $this->runCustomValidators($silent, $forSave);
+            $this->runCustomValidators();
         }
         if (!$silent && !$this->isValid()) {
-            throw new DbFieldException($this, $this->getValidationError());
+            throw new DbObjectFieldException($this, $this->getValidationError());
         }
         return $this->isValid();
     }
@@ -537,7 +545,7 @@ abstract class DbObjectField {
      * Check if value has valid format
      * @param $value
      * @return bool
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function isValidValueFormat($value) {
         return true;
@@ -545,12 +553,20 @@ abstract class DbObjectField {
 
     /**
      * Apply custom validators
-     * @param bool $silent - true: do not throw exception
-     * @param bool $forSave - true: allow additional validations (like isUnique)
      * @return bool
+     * @throws DbObjectFieldException
      */
-    protected function runCustomValidators($silent = true, $forSave = false) {
-        //todo: implement custom validators
+    protected function runCustomValidators() {
+        if ($this->dbColumnConfig->hasCustomValidators()) {
+            foreach ($this->dbColumnConfig->getCustomValidators() as $validator) {
+                if (!$validator($this, $this->values['value'])) {
+                    if (empty($this->getValidationError())) {
+                        throw new DbObjectFieldException($this, 'Custom validators should call DbObjectField->setValidationError() for invalid value');
+                    }
+                    return false;
+                }
+            }
+        }
         return true;
     }
 

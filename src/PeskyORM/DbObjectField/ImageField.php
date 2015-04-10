@@ -3,7 +3,7 @@
 
 namespace PeskyORM\DbObjectField;
 
-use PeskyORM\Exception\DbFieldException;
+use PeskyORM\Exception\DbObjectFieldException;
 use PeskyORM\Lib\ImageUtils;
 
 class ImageField extends FileField {
@@ -30,11 +30,11 @@ class ImageField extends FileField {
     /**
      * Get urls to image versions
      * @return array
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function getImagesUrls() {
         if (!$this->dbObject->exists()) {
-            throw new DbFieldException($this, 'Unable to get images urls of non-existing object');
+            throw new DbObjectFieldException($this, 'Unable to get images urls of non-existing object');
         }
         $images = array();
         if ($this->dbObject->exists()) {
@@ -51,11 +51,11 @@ class ImageField extends FileField {
     /**
      * Get fs paths to image file versions
      * @return array
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function getImagesPaths() {
         if (!$this->dbObject->exists()) {
-            throw new DbFieldException($this, 'Unable to get images paths of non-existing object');
+            throw new DbObjectFieldException($this, 'Unable to get images paths of non-existing object');
         }
         $images = array();
         if ($this->dbObject->exists()) {
@@ -72,7 +72,7 @@ class ImageField extends FileField {
      * Restore image version by name
      * @param string $fileNameToRestore
      * @return bool|string - false: fail | string: file path
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function restoreImageVersionByFileName($fileNameToRestore) {
         // find resize profile
@@ -86,11 +86,11 @@ class ImageField extends FileField {
 
     /**
      * @return array
-     * @throws DbFieldException
+     * @throws DbObjectFieldException
      */
     public function getImageVersions() {
         // todo: implement getFilesExtension
-//        throw new DbFieldException($this, "getImageVersions() not implemented yet");
+//        throw new DbObjectFieldException($this, "getImageVersions() not implemented yet");
         return array();
 //        return isset($this->_model->fields[$field]['resize_settings']) ? $this->_model->fields[$field]['resize_settings'] : array()
     }
