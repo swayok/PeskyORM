@@ -118,7 +118,7 @@ class DbColumnConfig {
     protected $isVirtual = false;
     /**
      * Value for this virtual column must be imported from another column if this option is string and already defined column
-     * @var bool|string
+     * @var bool|string - false: don't import
      */
     protected $importVirtualColumnValueFrom = false;
     /**
@@ -493,9 +493,13 @@ class DbColumnConfig {
     }
 
     /**
-     * @return bool|string
+     * @return bool|string - false: don't import
+     * @throws DbColumnConfigException
      */
     public function importVirtualColumnValueFrom() {
+        if (!$this->dbTableConfig->hasColumn($this->importVirtualColumnValueFrom)) {
+            throw new DbColumnConfigException($this, "Column [{$this->importVirtualColumnValueFrom}] is not defined");
+        }
         return $this->importVirtualColumnValueFrom;
     }
 
@@ -508,7 +512,7 @@ class DbColumnConfig {
         if (!is_string($columnName)) {
             throw new DbColumnConfigException($this, "Argument \$columnName in setImportVirtualColumnValueFrom() must be a string. Passed value: [{$columnName}]");
         }
-        if (!$this->dbTableConfig->hasColumn($columnName)) {
+        if (!empty($this->dbTableConfig) && !$this->dbTableConfig->hasColumn($columnName)) {
             throw new DbColumnConfigException($this, "Column [{$columnName}] is not defined");
         }
         $this->importVirtualColumnValueFrom = $columnName;

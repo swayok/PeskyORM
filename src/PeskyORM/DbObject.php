@@ -89,6 +89,8 @@ class DbObject {
      */
     protected $_originalDataKey = '_backup';
 
+    const ERROR_OBJECT_NOT_EXISTS = 'Object not exists or not loaded';
+
     /**
      * @param DbModel $model
      * @param null $dataOrPkValue
@@ -726,7 +728,7 @@ class DbObject {
         } else if ($this->_hasRelation($fieldNameOrAlias)) {
             return $this->_initRelatedObject($fieldNameOrAlias, $args[0]);
         } else {
-            throw new DbObjectException($this, "Unknown DbObject field or relation alias [$fieldNameOrAlias]");
+            throw new DbObjectException($this, "Unknown DbObject field or relation alias [$fieldName]");
         }
     }
 
@@ -1605,6 +1607,16 @@ class DbObject {
             return $this->_getPkField()->isValueReceivedFromDb();
         }
         return true;
+    }
+
+    /**
+     * Throw exception if object not exists
+     * @throws DbObjectException
+     */
+    public function requireExistence() {
+        if (!$this->exists()) {
+            throw new DbObjectException($this, self::ERROR_OBJECT_NOT_EXISTS);
+        }
     }
 
     /**

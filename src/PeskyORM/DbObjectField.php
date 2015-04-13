@@ -346,7 +346,7 @@ abstract class DbObjectField {
      * @return $this
      */
     public function setValueReceivedFromDb($fromDb = true) {
-        if ($this->hasValue()) {
+        if (!$this->isVirtual() && $this->hasValue()) {
             $this->values['isDbValue'] = !!$fromDb;
             if ($this->values['isDbValue']) {
                 $this->values['dbValue'] = $this->values['value'];
