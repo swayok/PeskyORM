@@ -286,8 +286,12 @@ abstract class DbObjectField {
      * @return bool
      */
     public function hasValue() {
-        if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
-            return $this->dbObject->_getField($this->dbColumnConfig->importVirtualColumnValueFrom())->hasValue();
+        if ($this->isVirtual()) {
+            if (!empty($this->dbColumnConfig->importVirtualColumnValueFrom())) {
+                return $this->dbObject->_getField($this->dbColumnConfig->importVirtualColumnValueFrom())->hasValue();
+            } else {
+                return true;
+            }
         } else {
             return array_key_exists('value', $this->values);
         }
@@ -308,8 +312,12 @@ abstract class DbObjectField {
      * @throws Exception\DbObjectException
      */
     public function getValue($orIfNoValueReturn = null) {
-        if ($this->isVirtual() && $this->dbColumnConfig->importVirtualColumnValueFrom()) {
-            return $this->dbObject->_getFieldValue($this->dbColumnConfig->importVirtualColumnValueFrom());
+        if ($this->isVirtual()) {
+            if (!empty($this->dbColumnConfig->importVirtualColumnValueFrom())) {
+                return $this->dbObject->_getFieldValue($this->dbColumnConfig->importVirtualColumnValueFrom());
+            } else if ($this->dbColumnConfig->hasVirtualColumnValueGenerator()) {
+                return call_user_func($this->dbColumnConfig->getVirtualColumnValueGenerator(), $this);
+            }
         }
         if (!$this->hasValue() && $this->getName() !== $this->dbObject->_getPkField()) {
             // value not set and not a primary key
@@ -453,7 +461,7 @@ abstract class DbObjectField {
     public function validate($silent = true, $forSave = false) {
         unset($this->values['error']);
         // skip validation if value is not set or it is a db value (isDbValue is reliable enough to be used)
-        if (!$this->hasValue() || $this->isValueReceivedFromDb()) {
+        if (!$this->hasValue() || $this->isValueReceivedFromDb() || $this->isVirtual()) {
             return true;
         }
         if (!$this->checkIfRequiredValueIsSet()) {

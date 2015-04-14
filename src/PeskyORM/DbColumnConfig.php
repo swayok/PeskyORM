@@ -122,6 +122,11 @@ class DbColumnConfig {
      */
     protected $importVirtualColumnValueFrom = false;
     /**
+     * Function to generate virual field value - function ($dbObjectField) { return 'some_value'; }
+     * @var bool|callable
+     */
+    protected $virtualColumnValueGenerator = false;
+    /**
      * self::ON_NONE - forced skip disabled
      * self::ON_ALL - forced skip enabled for any operation
      * self::ON_CREATE - forced skip enabled for record creation only
@@ -497,7 +502,7 @@ class DbColumnConfig {
      * @throws DbColumnConfigException
      */
     public function importVirtualColumnValueFrom() {
-        if (!$this->dbTableConfig->hasColumn($this->importVirtualColumnValueFrom)) {
+        if (!empty($this->importVirtualColumnValueFrom) && !$this->dbTableConfig->hasColumn($this->importVirtualColumnValueFrom)) {
             throw new DbColumnConfigException($this, "Column [{$this->importVirtualColumnValueFrom}] is not defined");
         }
         return $this->importVirtualColumnValueFrom;
@@ -725,6 +730,41 @@ class DbColumnConfig {
      */
     public function hasCustomValidators() {
         return !empty($this->customValidators);
+    }
+
+    /**
+     * @return bool|callable
+     */
+    public function getVirtualColumnValueGenerator() {
+        return $this->virtualColumnValueGenerator;
+    }
+
+    /**
+     * @param callable $virtualColumnValueGenerator
+     * @return $this
+     * @throws DbColumnConfigException
+     */
+    public function setVirtualColumnValueGenerator($virtualColumnValueGenerator) {
+        if (!is_callable($virtualColumnValueGenerator)) {
+            throw new DbColumnConfigException($this, '$virtualColumnValueGenerator should be a function');
+        }
+        $this->virtualColumnValueGenerator = $virtualColumnValueGenerator;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasVirtualColumnValueGenerator() {
+        return !empty($this->virtualColumnValueGenerator);
+    }
+
+    /**
+     * @return $this
+     */
+    public function removeVirtualColumnValueGenerator() {
+        $this->virtualColumnValueGenerator = false;
+        return $this;
     }
 
 }
