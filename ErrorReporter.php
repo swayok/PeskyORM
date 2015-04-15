@@ -2,6 +2,8 @@
 
 namespace ErrorReporter;
 
+use PeskyORM\Lib\Utils;
+
 function fix_objects_for_dump(&$data, $printObjectClassOnly = false) {
     try {
         if (is_array($data)) {
@@ -388,7 +390,7 @@ function error_handler($code, $message, $file, $line, $context = null, $trace = 
                     || $isMobile
                 ) {
                     // request via ajax
-                    echo json_encode_cyrillic(array(
+                    echo Utils::jsonEncodeCyrillic(array(
                         'success' => false,
                         'auth' => false,
                         'message' => translate($httpCode . '.page_title') . '<br>' . translate($httpCode . '.page_content'),

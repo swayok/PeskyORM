@@ -330,7 +330,7 @@ class DbColumnConfig {
      * @return int
      */
     public function getMinLength() {
-        return $this->maxLength;
+        return $this->minLength;
     }
 
     /**
