@@ -19,5 +19,15 @@
   },
   "autoload": {
       "psr-0": { "PeskyORM": "/src" }
+  },
+  "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/swayok/utils.git"
+        }
+    ],
+  "require": {
+      "php": ">=5.3",
+      "swayok/utils": "master@dev"
   }
 }
