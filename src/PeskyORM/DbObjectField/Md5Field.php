@@ -4,7 +4,7 @@
 namespace PeskyORM\DbObjectField;
 
 use PeskyORM\Exception\DbObjectFieldException;
-use PeskyORM\Lib\ValidateValue;
+use Swayok\Utils\ValidateValue;
 
 class Md5Field extends StringField {
 

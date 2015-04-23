@@ -3,10 +3,10 @@
 
 namespace PeskyORM\DbObjectField;
 
-use PeskyORM\Lib\ValidateValue;
+use Swayok\Utils\ValidateValue;
 use PeskyORM\DbObjectField;
 use PeskyORM\Exception\DbObjectFieldException;
-use PeskyORM\Lib\Utils;
+use Swayok\Utils\Utils;
 
 class DateField extends DbObjectField {
 

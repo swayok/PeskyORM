@@ -3,8 +3,8 @@
 namespace PeskyORM;
 
 use PeskyORM\Exception\DbColumnConfigException;
-use PeskyORM\Lib\ValidateValue;
-use PeskyORM\Lib\StringUtils;
+use Swayok\Utils\ValidateValue;
+use Swayok\Utils\StringUtils;
 
 class DbColumnConfig {
 

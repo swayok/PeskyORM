@@ -55,8 +55,8 @@ $user = \PeskyORM\Object\User::create($model);
 $testEmail = 'qqqqqqq@gmail.com';
 $model->delete(array('email' => $testEmail));
 
-\PeskyORM\Lib\File::load(__DIR__ . DIRECTORY_SEPARATOR . 'test_file.jpg')->copy(__DIR__ . DIRECTORY_SEPARATOR . 'test_file1.jpg');
-\PeskyORM\Lib\File::load()->copy(__DIR__ . DIRECTORY_SEPARATOR . 'test_file2.jpg');
+\Swayok\Utils\File::load(__DIR__ . DIRECTORY_SEPARATOR . 'test_file.jpg')->copy(__DIR__ . DIRECTORY_SEPARATOR . 'test_file1.jpg');
+\Swayok\Utils\File::load()->copy(__DIR__ . DIRECTORY_SEPARATOR . 'test_file2.jpg');
 $user
     ->setEmail($testEmail)
     ->setPassword(sha1('test'))

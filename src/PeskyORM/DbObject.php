@@ -9,8 +9,8 @@ use PeskyORM\DbObjectField\TimestampField;
 use PeskyORM\Exception\DbObjectFieldException;
 use PeskyORM\Exception\DbObjectException;
 use PeskyORM\Exception\DbObjectValidationException;
-use PeskyORM\Lib\Folder;
-use PeskyORM\Lib\StringUtils;
+use Swayok\Utils\Folder;
+use Swayok\Utils\StringUtils;
 
 /**
  * Class DbObject

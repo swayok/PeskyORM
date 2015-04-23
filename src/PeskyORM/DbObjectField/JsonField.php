@@ -3,7 +3,7 @@
 
 namespace PeskyORM\DbObjectField;
 
-use PeskyORM\Lib\Utils;
+use Swayok\Utils\Utils;
 
 class JsonField extends TextField {
 

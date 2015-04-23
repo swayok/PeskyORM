@@ -3,7 +3,7 @@
 namespace PeskyORM;
 
 use PeskyORM\Exception\DbException;
-use PeskyORM\Lib\Utils;
+use Swayok\Utils\Utils;
 
 class Db {
 

@@ -5,8 +5,8 @@ use PeskyORM\DbColumnConfig;
 use PeskyORM\Exception\DbModelException;
 use PeskyORM\Exception\DbQueryException;
 use PeskyORM\Exception\DbUtilsException;
-use PeskyORM\Lib\Set;
-use PeskyORM\Lib\StringUtils;
+use Swayok\Utils\Set;
+use Swayok\Utils\StringUtils;
 
 /**
  * Class Model
