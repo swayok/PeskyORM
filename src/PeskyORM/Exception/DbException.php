@@ -6,12 +6,17 @@ use PeskyORM\Db;
 
 class DbException extends \Exception {
 
-    /** @var Db */
+    /** @var Db|null */
     protected $db;
     /** @var null|string|int */
     protected $errorCode = null;
 
-    public function __construct(Db $db, $message, $errorCode = null) {
+    /**
+     * @param Db|null $db
+     * @param int $message
+     * @param null $errorCode
+     */
+    public function __construct($db, $message, $errorCode = null) {
         $this->db = $db;
         $this->errorCode = $errorCode;
         parent::__construct($message, 500);
@@ -25,7 +30,7 @@ class DbException extends \Exception {
     }
 
     /**
-     * @return Db
+     * @return Db|null
      */
     public function getDb() {
         return $this->db;
