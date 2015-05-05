@@ -1408,7 +1408,7 @@ class DbObject {
                     $this->_updateWithDbValues($ret);
                 } else if (count($ret) > 1) {
                     $model->rollback();
-                    throw new DbObjectException($this, 'Attempt to update [' . count($ret) . '] records instead of 1: ' . $model->lastQuery());
+                    throw new DbObjectException($this, 'Attempt to update [' . count($ret) . '] records instead of 1: ' . $model->getLastQuery());
                 }
                 $this->_allowFieldsUpdatesTracking = true;
             } else {

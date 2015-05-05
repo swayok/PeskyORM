@@ -374,6 +374,13 @@ abstract class DbObjectField {
     /**
      * @return bool
      */
+    protected function isConvertEmptyValueToNull() {
+        return $this->getConfig()->isConvertEmptyValueToNull();
+    }
+
+    /**
+     * @return bool
+     */
     public function isValid() {
         return empty($this->values['error']);
     }
@@ -409,6 +416,9 @@ abstract class DbObjectField {
      * @throws DbObjectFieldException
      */
     protected function processNewValue($value) {
+        if ($this->isConvertEmptyValueToNull() && empty($value)) {
+            $value = null;
+        }
         if ($value === null && !$this->canBeNull()) {
             if ($this->hasDefaultValue()) {
                 $value = $this->getDefaultValue();

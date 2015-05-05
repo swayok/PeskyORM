@@ -100,6 +100,8 @@ class DbColumnConfig {
     protected $isNullable = true;
     /** @var mixed */
     protected $defaultValue = self::DEFAULT_VALUE_NOT_SET;
+    /** @var bool */
+    protected $convertEmptyValueToNull = false;
     /** @var array */
     protected $allowedValues = array();
     /**
@@ -391,6 +393,22 @@ class DbColumnConfig {
      */
     public function setDefaultValue($defaultValue) {
         $this->defaultValue = $defaultValue;
+        return $this;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function isConvertEmptyValueToNull() {
+        return $this->convertEmptyValueToNull;
+    }
+
+    /**
+     * @param boolean $convertEmptyValueToNull
+     * @return $this
+     */
+    public function setConvertEmptyValueToNull($convertEmptyValueToNull) {
+        $this->convertEmptyValueToNull = !!$convertEmptyValueToNull;
         return $this;
     }
 

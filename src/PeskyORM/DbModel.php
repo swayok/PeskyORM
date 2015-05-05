@@ -694,7 +694,7 @@ abstract class DbModel {
      * @param array $fieldNames - field names use
      * @param array[] $rows - arrays of values for $fieldNames
      * @param bool|string $returning - string: something compatible with RETURNING for postgresql query | false: do not return
-     * @return int - amount of rows created
+     * @return int|array - int: amount of rows created | array: records (when $returning !== false)
      * @throws DbQueryException
      */
     public function insertMany($fieldNames, $rows, $returning = false) {
@@ -779,7 +779,7 @@ abstract class DbModel {
         return 0 + $this->expression("AVG(`$column`)", $conditionsAndOptions);
     }
 
-    public function lastQuery() {
+    public function getLastQuery() {
         return $this->getDataSource()->lastQuery();
     }
 
