@@ -737,7 +737,7 @@ abstract class DbModel {
      */
     public function update($data, $conditionsAndOptions = null, $returning = false) {
         if (is_numeric($conditionsAndOptions) || is_int($conditionsAndOptions)) {
-            $conditionsAndOptions = array('id' => $conditionsAndOptions);
+            $conditionsAndOptions = array($this->getPkColumnName() => $conditionsAndOptions);
         }
         return $this->builder()->fromOptions($conditionsAndOptions)->update($data, $returning);
     }

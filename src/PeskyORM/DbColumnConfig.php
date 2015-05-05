@@ -726,7 +726,12 @@ class DbColumnConfig {
     }
 
     /**
-     * @param array $customValidators - should contain only callable values
+     * @param array $customValidators - should contain only callable values.
+     * Callable:
+        function (DbObjectField $dbObjectField, $value) {
+            //$dbObjectField->setValidationError('Invalid value');
+            return true;
+        }
      * @return $this
      * @throws DbColumnConfigException
      */

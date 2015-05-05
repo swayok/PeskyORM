@@ -598,14 +598,18 @@ class DbQuery {
      * Run DELETE query
      * @param bool|string $returning - something compatible with RETURNING for postgresql query
      *      http://www.postgresql.org/docs/9.2/static/sql-delete.html
-     * @return int|array
-     *      - int: affected rown when $returning === false or 'RETURNING' statement not supported
-     *      - array: according to $returning
+     * @return array|int - int: affected rown when $returning === false or 'RETURNING' statement not supported
+     * - int: affected rown when $returning === false or 'RETURNING' statement not supported
+     * - array: according to $returning
+     * @throws DbException
+     * @throws DbQueryException
      */
     public function delete($returning = false) {
         $this->query = 'DELETE FROM ' . $this->quoteName($this->table);
         $where = '';
-        if (!empty($this->where)) {
+        if (empty($this->where)) {
+            throw new DbQueryException($this, 'DbQuery->delete() - delete without conditions');
+        } else {
             $conditions = trim($this->assembleConditions($this->where));
             if (!empty($conditions)) {
                 $where .= ' WHERE ' . $conditions . ' ';
