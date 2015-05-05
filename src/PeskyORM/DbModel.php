@@ -5,8 +5,8 @@ use PeskyORM\DbColumnConfig;
 use PeskyORM\Exception\DbModelException;
 use PeskyORM\Exception\DbQueryException;
 use PeskyORM\Exception\DbUtilsException;
-use PeskyORM\Lib\Set;
-use PeskyORM\Lib\StringUtils;
+use Swayok\Utils\Set;
+use Swayok\Utils\StringUtils;
 
 /**
  * Class Model
@@ -22,6 +22,12 @@ abstract class DbModel {
 
     const ORDER_ASCENDING = 'ASC';
     const ORDER_DESCENDING = 'DESC';
+
+    /**
+     * Key in self::$dataSources and self::$dbConnectionConfigs
+     * @var string
+     */
+    protected $connectionAlias = 'default';
 
     /** @var DbTableConfig */
     protected $tableConfig;
@@ -451,7 +457,10 @@ abstract class DbModel {
      * @throws DbModelException
      * @throws \PeskyORM\Exception\DbConnectionConfigException
      */
-    public function getDataSource($alias = 'default') {
+    public function getDataSource($alias = null) {
+        if (empty($alias)) {
+            $alias = $this->connectionAlias;
+        }
         if (empty(self::$dataSources[$alias])) {
             if (empty(self::$dbConnectionConfigs[$alias])) {
                 throw new DbModelException($this, "Unknown data source with alias [$alias]");
@@ -465,6 +474,17 @@ abstract class DbModel {
             );
         }
         return self::$dataSources[$alias];
+    }
+
+    /**
+     * @param string $alias
+     * @return bool
+     */
+    public function hasConnectionToDataSource($alias = null) {
+        if (empty($alias)) {
+            $alias = $this->connectionAlias;
+        }
+        return !empty(self::$dataSources[$alias]);
     }
 
     /**

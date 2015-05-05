@@ -10,9 +10,9 @@ use PeskyORM\Exception\DbColumnConfigException;
 use PeskyORM\Exception\DbExceptionCode;
 use PeskyORM\Exception\DbObjectFieldException;
 use PeskyORM\Exception\DbObjectException;
-use PeskyORM\Lib\File;
-use PeskyORM\Lib\Folder;
-use PeskyORM\Lib\Utils;
+use Swayok\Utils\File;
+use Swayok\Utils\Folder;
+use Swayok\Utils\Utils;
 
 class FileField extends DbObjectField {
 

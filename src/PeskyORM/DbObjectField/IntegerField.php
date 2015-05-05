@@ -3,7 +3,7 @@
 
 namespace PeskyORM\DbObjectField;
 
-use PeskyORM\Lib\ValidateValue;
+use Swayok\Utils\ValidateValue;
 use PeskyORM\DbObjectField;
 use PeskyORM\Exception\DbObjectFieldException;
 

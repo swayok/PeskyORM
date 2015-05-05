@@ -4,7 +4,7 @@
 namespace PeskyORM\DbObjectField;
 
 use PeskyORM\Exception\DbObjectFieldException;
-use PeskyORM\Lib\ImageUtils;
+use Swayok\Utils\ImageUtils;
 
 class ImageField extends FileField {
 

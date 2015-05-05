@@ -2,7 +2,7 @@
 
 namespace ErrorReporter;
 
-use PeskyORM\Lib\Utils;
+use Swayok\Utils\Utils;
 
 function fix_objects_for_dump(&$data, $printObjectClassOnly = false) {
     try {

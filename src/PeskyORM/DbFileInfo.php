@@ -6,7 +6,7 @@ namespace PeskyORM;
 
 use PeskyORM\DbObjectField\FileField;
 use PeskyORM\Exception\DbObjectFieldException;
-use PeskyORM\Lib\File;
+use Swayok\Utils\File;
 
 class DbFileInfo {
 
