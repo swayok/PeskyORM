@@ -341,22 +341,24 @@ class DbQuery {
             } else if (is_object($orderBy)) {
                 $orderBy = array($orderBy);
             }
+            $orderDirectionRegexp = '%^(.*?)\s+(ASC|DESC)%is';
             foreach ($orderBy as $orderField) {
                 $direction = 'ASC';
-                $field = $orderField;
-                if (is_object($orderField)) {
-                    /** @var DbExpr $orderField */
-                    $orderField = $this->replaceQuotes($orderField->get());
-                }
-                if (preg_match('%^(.*?)\s+(ASC|DESC)%is', $orderField, $parts)) {
-                    $direction = strtoupper(trim($parts[2]));
-                    $field = $parts[1];
-                }
-                $colInfo = $this->disassembleField($field);
-                if (!is_object($colInfo['assembled'])) {
+                if (!is_object($orderField)) {
+                    if (preg_match($orderDirectionRegexp, $orderField, $parts)) {
+                        $direction = strtoupper(trim($parts[2]));
+                        $orderField = $parts[1];
+                    }
+                    $colInfo = $this->disassembleField($orderField);
                     $this->orderBy[$colInfo['assembled']] = $direction;
                 } else {
-                    $this->orderBy[$this->replaceQuotes($colInfo['assembled']->get())] = $direction;
+                    /** @var DbExpr $orderField */
+                    $orderField = $orderField->get();
+                    if (preg_match($orderDirectionRegexp, $orderField, $parts)) {
+                        $direction = strtoupper(trim($parts[2]));
+                        $orderField = $parts[1];
+                    }
+                    $this->orderBy[$this->replaceQuotes($orderField)] = $direction;
                 }
             }
         }

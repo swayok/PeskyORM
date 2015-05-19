@@ -58,7 +58,7 @@ class DbFileInfo {
             }
         }
         $infoFilePath = $this->fileField->getInfoFilePath();
-        File::saveJson($infoFilePath, $data, 0666);
+        File::saveJson($infoFilePath, $data, true);
     }
 
     /**

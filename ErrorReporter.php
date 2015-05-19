@@ -2,6 +2,7 @@
 
 namespace ErrorReporter;
 
+use Swayok\Utils\File;
 use Swayok\Utils\Utils;
 
 function fix_objects_for_dump(&$data, $printObjectClassOnly = false) {
@@ -96,7 +97,7 @@ function error_handler($code, $message, $file, $line, $context = null, $trace = 
         return;
     }
     if (preg_match('%(/var.*?\.jpg)\s*is\s*not\s*a\s*valid\s*JPEG\s*file%is', $message, $matches)) {
-        \File::remove($matches[1]);
+        File::remove($matches[1]);
         return;
     }
     $doNotShow = $silent;

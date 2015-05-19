@@ -593,7 +593,7 @@ class DbObject {
 
     /**
      * Clean current fields and fill them using passed $data array + mark all passed field values as db values
-     * @param array $data
+     * @param array|DbObject $data
      * @param bool|array $filter -
      *      true: filters data that does not belong to this object
      *      false: data that does not belong to this object will trigger exceptions
@@ -1281,7 +1281,8 @@ class DbObject {
         } else {
             // load object[s]
             $conditions = $this->_insertDataIntoRelationConditions($this->_aliasToJoinConditions[$relationAlias]);
-            if ($this->_getTypeOfRealation($relationAlias) === DbRelationConfig::HAS_MANY) {
+            $relationType = $this->_getTypeOfRealation($relationAlias);
+            if ($relationType === DbRelationConfig::HAS_MANY) {
                 $model = $this->_getModel()->getRelatedModel($relationAlias);
                 // change model alias for some time
                 $modelAliasBak = $model->getAlias();
@@ -1294,7 +1295,10 @@ class DbObject {
                 // change model alias for some time
                 $modelAliasBak = $relatedObject->_getModel()->getAlias();
                 $relatedObject->_getModel()->setAlias($relationAlias);
-                $relatedObject->find($conditions)->linkTo($this);
+                $relatedObject->find($conditions);
+                if ($relatedObject->exists() && $relationType !== DbRelationConfig::BELONGS_TO) {
+                    $relatedObject->linkTo($this);
+                }
                 $relatedObject->_getModel()->setAlias($modelAliasBak); //< restore model alias to default value
             }
             return $this->_relatedObjects[$relationAlias];

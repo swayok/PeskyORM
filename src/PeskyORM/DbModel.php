@@ -588,7 +588,7 @@ abstract class DbModel {
      * @param null|array|string $conditionsAndOptions
      * @param bool $asObjects - true: return DbObject | false: return array
      * @param bool $withRootAlias
-     * @return array[]|DbObject[]
+     * @return array|DbObject[]
      */
     public function select($columns = '*', $conditionsAndOptions = null, $asObjects = false, $withRootAlias = false) {
         $records = $this->builder()

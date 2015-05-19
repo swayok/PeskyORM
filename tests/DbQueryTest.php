@@ -3,6 +3,7 @@
 namespace Db;
 
 use Db\Model\AppModel;
+use Swayok\Utils\Set;
 
 require_once 'DbQuery.php';
 
@@ -467,7 +468,7 @@ class DbQueryTest extends DbQuery {
                 'remember' => true
             )
         );
-        $tokens = \Set::extract('/token', $records);
+        $tokens = Set::extract('/token', $records);
         self::create($tokensModel)->where(array('token' => $tokens))->delete(); //< in case when token was not deleted
         $insertedRecords = self::create($tokensModel)->insertMany(array_keys($record), $records, true);
         dpr('Inserted: ', $insertedRecords, count($insertedRecords) === 2 ? 'Ok' : 'Fail');
@@ -477,7 +478,7 @@ class DbQueryTest extends DbQuery {
         $updatedRecords = self::create($tokensModel)->where(array('token' => $tokens))->update(array('user_agent' => 'DbQueryTest-update'), array('token', 'user_id'));
         dpr('Updated:', $updatedRecords, count($updatedRecords) === 2 && count($updatedRecords[0]) == 2 ? 'Ok' : 'Fail');
         $utokens = self::create($tokensModel)->where(array('token' => $tokens))->find();
-        $uAgents = array_unique(\Set::extract('/UserToken/user_agent', $utokens));
+        $uAgents = array_unique(Set::extract('/UserToken/user_agent', $utokens));
         dpr($utokens, count($utokens) == 2 && count($uAgents) == 1 && array_shift($uAgents) == 'DbQueryTest-update' ? 'Ok' : 'Fail');
         // delete 2 records
         $deletedRecords = self::create($tokensModel)->where(array('token' => $tokens))->delete(null);
