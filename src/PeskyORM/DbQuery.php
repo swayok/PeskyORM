@@ -1120,28 +1120,12 @@ class DbQuery {
         $this->query = $this->replaceQuotes($this->query);
     }
 
+    /**
+     * @param string $expression
+     * @return string
+     */
     public function replaceQuotes($expression) {
-        $expression = preg_replace_callback('%``(.*?)``%is', array($this, 'regexpQuoteValue'), $expression);
-        $expression = preg_replace_callback('%`(.*?)`%is', array($this, 'regexpQuoteName'), $expression);
-        return $expression;
-    }
-
-    /**
-     * Quote value extracted by regexp
-     * @param array $matches - regexp matches
-     * @return string
-     */
-    public function regexpQuoteValue($matches) {
-        return $this->quoteValue($matches[1]);
-    }
-
-    /**
-     * Quote name extracted by regexp
-     * @param array $matches - regexp matches
-     * @return string
-     */
-    public function regexpQuoteName($matches) {
-        return $this->quoteName($matches[1]);
+        return $this->getDb()->replaceQuotes($expression);
     }
 
     /**

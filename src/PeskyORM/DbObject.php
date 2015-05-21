@@ -546,7 +546,7 @@ class DbObject {
      * 1. If $this->pkValue() empty or not passed in $data or they are no equal - $this->reset() is called
      * 2. If $this->pkValue() is not empty, passed in $data and they are equal - loaded object will be updated by
      *      fields from $data, while other fields (not present in $data) will remain untouched
-     * @param array $data
+     * @param array|DbObject $data
      * @param bool|array $filter -
      *      true: filters data that does not belong to this object
      *      false: data that does not belong to this object will trigger exceptions

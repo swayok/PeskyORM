@@ -827,6 +827,14 @@ abstract class DbModel {
         return $this->getDataSource()->quoteValue($value, $fieldInfoOrType);
     }
 
+    /**
+     * @param string $expression
+     * @return string
+     */
+    public function replaceQuotes($expression) {
+        return $this->getDataSource()->replaceQuotes($expression);
+    }
+
     public function query($query) {
         return $this->getDataSource()->query($query);
     }

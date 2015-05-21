@@ -307,6 +307,20 @@ class Db {
         }
     }
 
+    /**
+     * @param string $expression
+     * @return string
+     */
+    public function replaceQuotes($expression) {
+        $expression = preg_replace_callback('%``(.*?)``%is', function ($matches) {
+            return $this->quoteValue($matches[1]);
+        }, $expression);
+        $expression = preg_replace_callback('%`(.*?)`%is', function ($matches) {
+            return $this->quoteName($matches[1]);
+        }, $expression);
+        return $expression;
+    }
+
     /* Service */
 
     /**
