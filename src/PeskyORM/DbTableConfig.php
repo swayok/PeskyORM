@@ -50,6 +50,9 @@ abstract class DbTableConfig {
             $config = $method->invoke($this);
             $method->setAccessible(false);
             if ($config instanceof DbColumnConfig) {
+                if (!$config->hasName()) {
+                    $config->setName($method->getName());
+                }
                 $this->addColumn($config);
             } else if ($config instanceof DbRelationConfig) {
                 $this->addRelation($config, $method->getName());

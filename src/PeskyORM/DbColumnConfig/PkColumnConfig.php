@@ -6,8 +6,8 @@ use PeskyORM\DbColumnConfig;
 
 class PkColumnConfig extends DbColumnConfig {
 
-    static public function create($name = 'id', $type = self::TYPE_INT) {
-        return new PkColumnConfig($name, $type);
+    static public function create($type = self::TYPE_INT, $name = 'id') {
+        return new PkColumnConfig($type, $name);
     }
 
     public function __construct($name = 'id', $type = self::TYPE_INT) {

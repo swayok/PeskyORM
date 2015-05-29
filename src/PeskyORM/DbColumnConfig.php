@@ -176,7 +176,7 @@ class DbColumnConfig {
      * @param string $type
      * @return $this
      */
-    static public function create($name, $type) {
+    static public function create($type, $name = null) {
         $className = get_called_class();
         return new $className($name, $type);
     }
@@ -198,7 +198,9 @@ class DbColumnConfig {
      * @param string $type
      */
     public function __construct($name, $type) {
-        $this->setName($name);
+        if (!empty($name)) {
+            $this->setName($name);
+        }
         $this->setType($type);
     }
 
@@ -227,9 +229,20 @@ class DbColumnConfig {
 
     /**
      * @return string
+     * @throws DbColumnConfigException
      */
     public function getName() {
+        if (empty($this->name)) {
+            throw new DbColumnConfigException($this, 'DB column name is not provided');
+        }
         return $this->name;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasName() {
+        return !empty($this->name);
     }
 
     /**
@@ -237,7 +250,10 @@ class DbColumnConfig {
      * @return $this
      * @throws DbColumnConfigException
      */
-    protected function setName($name) {
+    public function setName($name) {
+        if ($this->hasName()) {
+            throw new DbColumnConfigException($this, "Changing DB column's name is forbidden");
+        }
         $pattern = '^[a-zA-Z][a-zA-Z0-9_]*$';
         if (!preg_match("%^{$pattern}$%is", $name)) {
             throw new DbColumnConfigException($this, "Invalid DB column name [$name]. Column name pattern: $pattern");

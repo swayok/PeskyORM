@@ -17,11 +17,11 @@ class PasswordColumnConfig extends DbColumnConfig {
      * @param null $notUsed
      * @return $this
      */
-    static public function create($name, $notUsed = null) {
+    static public function create($name = null, $notUsed = null) {
         return new PasswordColumnConfig($name);
     }
 
-    public function __construct($name, $notUsed = null) {
+    public function __construct($name = null, $notUsed = null) {
         parent::__construct($name, self::TYPE_PASSWORD);
     }
 

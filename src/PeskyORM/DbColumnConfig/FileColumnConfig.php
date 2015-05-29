@@ -55,7 +55,7 @@ class FileColumnConfig extends DbColumnConfig {
      * @param string|null $baseUrlToFiles
      * @return $this
      */
-    static public function create($name, $basePathToFiles = null, $baseUrlToFiles = null) {
+    static public function create($basePathToFiles = null, $baseUrlToFiles = null, $name = null) {
         $class = get_called_class();
         return new $class($name, $basePathToFiles, $baseUrlToFiles);
     }

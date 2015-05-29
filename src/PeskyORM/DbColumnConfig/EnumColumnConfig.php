@@ -12,7 +12,7 @@ class EnumColumnConfig extends DbColumnConfig {
      * @param null|array $allowedValues
      * @return $this
      */
-    static public function create($name, $allowedValues = null) {
+    static public function create($allowedValues = null, $name = null) {
         return new EnumColumnConfig($name, $allowedValues);
     }
 
