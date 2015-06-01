@@ -2,7 +2,7 @@
 
 namespace Db;
 
-use Db\Model\AppModel;
+use App\Model\Model;
 use Swayok\Utils\Set;
 
 require_once 'DbQuery.php';
@@ -13,7 +13,7 @@ class DbQueryTest extends DbQuery {
     static $testModel;
 
     static public function runTests() {
-        self::$testModel = AppModel::VideoModel();
+        self::$testModel = Model::VideoModel();
         echo '<h1>Columns</h1>';
         self::testColumns();
         echo '<h1>Conditions</h1>';
@@ -350,7 +350,7 @@ class DbQueryTest extends DbQuery {
     static protected function testJoins() {
         $query = self::createTestBuilder();
         $query->fields('id');
-        $usersModel = AppModel::UserModel();
+        $usersModel = Model::UserModel();
         // 1st join v1 - no table2 alias
         $test = 'SELECT "Video"."id" AS "__Video__id", "Owner"."id" AS "__Owner__id" FROM "public"."videos" AS "Video"  LEFT JOIN "public"."users" AS "Owner" ON ("Owner"."id"="Video"."user_id")  ORDER BY  "Video"."id" ASC';
         $res = trim($query->join($usersModel, 'Owner', 'id', null, 'user_id', 'id', 'left')->buildQuery());
@@ -404,7 +404,7 @@ class DbQueryTest extends DbQuery {
     static protected function testRecordsProcessing() {
         $query = self::createTestBuilder();
         $records = $query->fields('*')
-            ->join(AppModel::UserModel(), 'Owner', 'id', null, 'user_id', '*', 'left')
+            ->join(Model::UserModel(), 'Owner', 'id', null, 'user_id', '*', 'left')
             ->limit(3)
             ->find();
         dpr($records, !empty($records[0]['Video']) && (!empty($records[0]['Video']['Owner'])) ? 'Ok' : 'Fail');
@@ -415,9 +415,9 @@ class DbQueryTest extends DbQuery {
     static protected function testRecordsManagement() {
         echo '<h2>create/update/delete 1 record</h2>';
         // create 1 record
-        $tokensModel = AppModel::UserTokenModel();
+        $tokensModel = Model::UserTokenModel();
         $tokensModel->begin();
-        $user = self::create(AppModel::UserModel())->findOne();
+        $user = self::create(Model::UserModel())->findOne();
         dpr($user);
         $record = array(
             'token' => sha1('test1'),
@@ -442,7 +442,7 @@ class DbQueryTest extends DbQuery {
 
         echo '<h2>create/update/delete 1 record (with returning statement / all fields)</h2>';
         // create 1 record with returning all data
-        $tokensModel = AppModel::UserTokenModel();
+        $tokensModel = Model::UserTokenModel();
         $insertedRecord = self::create($tokensModel)->insert($record, true);
         dpr($insertedRecord, $insertedRecord['token'] == $record['token'] ? 'Ok' : 'Fail');
         $utoken = self::create($tokensModel)->where(array('token' => $record['token']))->findOne();

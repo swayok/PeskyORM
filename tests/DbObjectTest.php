@@ -2,10 +2,8 @@
 
 namespace Db;
 
-use Db\Model\AppModel;
-
-use Db\Object\User;
-use Db\Object\Video;
+use App\Model\Model;
+use PeskyORM\Db;
 
 require_once 'DbObject.php';
 
@@ -17,9 +15,9 @@ class DbObjectTest {
     static $userObject;
 
     static public function runTests() {
-        self::$videoObject = AppModel::Video();
-        self::$userObject = AppModel::User();
-        self::$videoObject->model->begin();
+        self::$videoObject = Model::Video();
+        self::$userObject = Model::User();
+        self::$videoObject->_getModel()->begin();
         Db::$collectAllQueries = true;
         /*echo '<h1>Find and Read</h1>';
         self::testReading();*/
