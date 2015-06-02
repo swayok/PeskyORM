@@ -4,6 +4,7 @@
 namespace PeskyORM\DbObjectField;
 
 use PeskyORM\Exception\DbObjectFieldException;
+use Swayok\Utils\Exception\ImageUtilsException;
 use Swayok\Utils\ImageUtils;
 
 class ImageField extends FileField {
@@ -42,7 +43,7 @@ class ImageField extends FileField {
                 $this->getFileDirPath(),
                 $this->getFileDirRelativeUrl(),
                 $this->getFileNameWithoutExtension(),
-                $this->getImageVersions()
+                $this->getImageVersionsConfigs()
             );
         }
         return $images;
@@ -62,7 +63,7 @@ class ImageField extends FileField {
             $images = ImageUtils::getVersionsPaths(
                 $this->getFileDirPath(),
                 $this->getFileNameWithoutExtension(),
-                $this->getImageVersions()
+                $this->getImageVersionsConfigs()
             );
         }
         return $images;
@@ -80,7 +81,7 @@ class ImageField extends FileField {
             $fileNameToRestore,
             $this->getFileNameWithoutExtension(),
             $this->getFileDirPath(),
-            $this->getImageVersions()
+            $this->getImageVersionsConfigs()
         );
     }
 
@@ -88,10 +89,30 @@ class ImageField extends FileField {
      * @return array
      * @throws DbObjectFieldException
      */
-    public function getImageVersions() {
-        // todo: implement getFilesExtension
-//        throw new DbObjectFieldException($this, "getImageVersions() not implemented yet");
-        return array();
-//        return isset($this->_model->fields[$field]['resize_settings']) ? $this->_model->fields[$field]['resize_settings'] : array()
+    public function getImageVersionsConfigs() {
+        return $this->getConfig()->getImageVersionsConfigs();
+    }
+
+    /**
+     * Store image to FS + add info about image versions
+     * @param array $uploadedFileInfo
+     * @param string $pathToFiles
+     * @param array $fileInfo
+     * @return bool
+     */
+    protected function storeFileToFS($uploadedFileInfo, $pathToFiles, $fileInfo) {
+        try {
+            $filesNames = ImageUtils::resize(
+                $uploadedFileInfo,
+                $pathToFiles,
+                $fileInfo['file_name'],
+                $this->getImageVersionsConfigs()
+            );
+        } catch (ImageUtilsException $exc) {
+            $this->setValidationError($exc->getMessage());
+            return false;
+        }
+        $fileInfo['files_names'] = $filesNames;
+        return $fileInfo;
     }
 }

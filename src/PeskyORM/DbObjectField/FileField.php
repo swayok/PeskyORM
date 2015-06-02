@@ -441,7 +441,7 @@ class FileField extends DbObjectField {
             set_time_limit(90);
             ini_set('memory_limit', '128M');
         }
-        $fileInfo = $this->storeFileToFS($uploadedFileInfo);
+        $fileInfo = $this->analyzeUploadedFileAndSaveToFS($uploadedFileInfo);
         if (!empty($fileInfo)) {
             $this->saveUploadedFileInfo($fileInfo);
             parent::resetValue(); //< this will not remove $this->fileInfo
@@ -455,7 +455,7 @@ class FileField extends DbObjectField {
      * @param array $uploadedFileInfo - uploaded file info
      * @return bool|array - array: information about file same as when you get by callings $this->getFileInfoFromInfoFile()
      */
-    protected function storeFileToFS($uploadedFileInfo) {
+    protected function analyzeUploadedFileAndSaveToFS($uploadedFileInfo) {
         $pathToFiles = $this->getFileDirPath();
         if (!is_dir($pathToFiles)) {
             Folder::add($pathToFiles, 0777);
@@ -481,8 +481,20 @@ class FileField extends DbObjectField {
             $this->setValidationError($exc->getMessage());
             return false;
         }
-        $filePath = $pathToFiles . $fileName;
+
         // move tmp file to target file path
+        return $this->storeFileToFS($uploadedFileInfo, $pathToFiles, $fileInfo);
+    }
+
+    /**
+     * Store file to FS
+     * @param array $uploadedFileInfo
+     * @param string $pathToFiles
+     * @param array $fileInfo
+     * @return bool
+     */
+    protected function storeFileToFS($uploadedFileInfo, $pathToFiles, $fileInfo) {
+        $filePath = $pathToFiles . $fileInfo['full_file_name'];
         return File::load($uploadedFileInfo['tmp_name'])->move($filePath, 0666) ? $fileInfo : false;
     }
 

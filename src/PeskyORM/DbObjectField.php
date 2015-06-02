@@ -62,7 +62,7 @@ abstract class DbObjectField {
     }
 
     /**
-     * @return \PeskyORM\DbColumnConfig|DbColumnConfig\FileColumnConfig
+     * @return \PeskyORM\DbColumnConfig|DbColumnConfig\FileColumnConfig|DbColumnConfig\ImageColumnConfig
      */
     public function getConfig() {
         return $this->dbColumnConfig;

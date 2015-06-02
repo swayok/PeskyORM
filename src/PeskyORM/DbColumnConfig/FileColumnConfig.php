@@ -71,7 +71,7 @@ class FileColumnConfig extends DbColumnConfig {
             $this->setBasePathToFiles($basePathToFiles);
         }
         if (!empty($baseUrlToFiles)) {
-            $this->setBasePathToFiles($baseUrlToFiles);
+            $this->setBaseUrlToFiles($baseUrlToFiles);
         }
     }
 
@@ -141,7 +141,7 @@ class FileColumnConfig extends DbColumnConfig {
      * @throws DbColumnConfigException
      */
     public function setDefaultFileExtension($defaultFileExtension) {
-        if (empty($allowedFileExtensions) || !is_string($defaultFileExtension)) {
+        if (empty($defaultFileExtension) || !is_string($defaultFileExtension)) {
             throw new DbColumnConfigException($this, '$defaultFileExtension must be not-empty string');
         }
         $allowedExtensions = $this->getAllowedFileExtensions();
