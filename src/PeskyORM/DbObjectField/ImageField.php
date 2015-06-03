@@ -3,6 +3,7 @@
 
 namespace PeskyORM\DbObjectField;
 
+use PeskyORM\DbImageFileInfo;
 use PeskyORM\Exception\DbObjectFieldException;
 use Swayok\Utils\Exception\ImageUtilsException;
 use Swayok\Utils\ImageUtils;
@@ -12,7 +13,7 @@ class ImageField extends FileField {
     /**
      * @var string
      */
-    protected $fileInfoClassName = 'PeskyORM\DbFileInfo';
+    protected $fileInfoClassName = 'PeskyORM\DbImageFileInfo';
 
     public function isValidValueFormat($value) {
         if (empty($value)) {
@@ -97,7 +98,7 @@ class ImageField extends FileField {
      * Store image to FS + add info about image versions
      * @param array $uploadedFileInfo
      * @param string $pathToFiles
-     * @param array $fileInfo
+     * @param DbImageFileInfo $fileInfo
      * @return bool
      */
     protected function storeFileToFS($uploadedFileInfo, $pathToFiles, $fileInfo) {
@@ -105,14 +106,14 @@ class ImageField extends FileField {
             $filesNames = ImageUtils::resize(
                 $uploadedFileInfo,
                 $pathToFiles,
-                $fileInfo['file_name'],
+                $fileInfo->getFileNameWithoutExtension(),
                 $this->getImageVersionsConfigs()
             );
         } catch (ImageUtilsException $exc) {
             $this->setValidationError($exc->getMessage());
             return false;
         }
-        $fileInfo['files_names'] = $filesNames;
+        $fileInfo->setFilesNames($filesNames);
         return $fileInfo;
     }
 }

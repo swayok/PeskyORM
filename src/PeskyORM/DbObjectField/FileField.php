@@ -32,6 +32,13 @@ class FileField extends DbObjectField {
      */
     protected $fileInfo = null;
 
+    protected function init() {
+        $config = $this->getConfig();
+        if (empty($config->importVirtualColumnValueFrom())) {
+            $config->setImportVirtualColumnValueFrom($this->getDbObject()->_getPkFieldName());
+        }
+    }
+
     public function isValidValueFormat($value) {
         if (!empty($value)) {
             if (!Utils::isFileUpload($value)) {
@@ -59,11 +66,35 @@ class FileField extends DbObjectField {
      * @throws DbObjectFieldException
      */
     public function getValue($orIfNoValueReturn = null) {
-        return $this->hasValue() ? $this->values['value'] : $orIfNoValueReturn;
+        if ($this->hasUploadedFileInfo()) {
+            return $this->values['value'];
+        } else if ($this->isValueReceivedFromDb()) {
+            return $this->getFileInfo(true, true);
+        } else {
+            return $orIfNoValueReturn;
+        }
+    }
+
+    public function hasValue() {
+        return $this->hasUploadedFileInfo() || $this->isValueReceivedFromDb();
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasUploadedFileInfo() {
+        return !empty($this->values['value']) && is_array($this->values['value']);
+    }
+
+    /**
+     * @return null|array
+     */
+    public function getUploadedFileInfo() {
+        return empty($this->values['value']) ? null : $this->values['value'];
     }
 
     public function isValueReceivedFromDb() {
-        return !$this->hasValue();
+        return $this->getDbObject()->_getField($this->dbColumnConfig->importVirtualColumnValueFrom())->hasValue();
     }
 
     /**
@@ -89,13 +120,20 @@ class FileField extends DbObjectField {
      */
     public function getFileInfo($initIfNotExists = false, $readInfoFromFile = false) {
         if ($initIfNotExists && empty($this->fileInfo)) {
-            $className = $this->fileInfoClassName;
-            $this->fileInfo = new $className($this);
+            $this->fileInfo = $this->createFileInfoObject();
         }
         if ($readInfoFromFile) {
             $this->fileInfo->readFromFileOrAutodetect();
         }
         return $this->fileInfo;
+    }
+
+    /**
+     * @return DbFileInfo|DbImageFileInfo
+     */
+    protected function createFileInfoObject() {
+        $className = $this->fileInfoClassName;
+        return new $className($this);
     }
 
     /**
@@ -117,13 +155,13 @@ class FileField extends DbObjectField {
         unset($this->values['error']);
         if (!$this->checkIfRequiredValueIsSet()) {
             $this->setValidationError('Field value is required');
-        } else if (!$this->hasValue()) {
+        } else if (!$this->hasUploadedFileInfo()) {
             return true; //< no upload
         } else if (!$this->isValidValueFormat($this->getValue())) {
         } else {
             try {
                 $this->detectUploadedFileExtension($this->getValue());
-            } catch (DbColumnConfigException $exc) {
+            } catch (DbObjectFieldException $exc) {
                 $this->setValidationError($exc->getMessage());
                 return false;
             }
@@ -277,7 +315,7 @@ class FileField extends DbObjectField {
             }
             return $subdir;
         } else {
-            return $this->getDbObject()->_getPkValue();
+            return $this->getDbObject()->_getFieldValue($this->getConfig()->importVirtualColumnValueFrom());
         }
     }
 
@@ -319,15 +357,17 @@ class FileField extends DbObjectField {
      * @return string
      */
     public function getFullFileName() {
-        $fileInfo = $this->getFileInfo();
-        if (!empty($fileInfo)) {
+        $fileInfo = $this->getFileInfo(true, true);
+        if (!empty($fileInfo->getFileNameWithExtension())) {
             return $fileInfo->getFileNameWithExtension();
         } else {
             $fileName = $this->getFileNameWithoutExtension();
+            $fileInfo->setFileNameWithoutExtension($fileName);
             $ext = $this->getFileExtension();
             if (!empty($ext)) {
                 $fileName .= '.' . $ext;
             }
+            $fileInfo->setFileNameWithExtension($fileName);
             return $fileName;
         }
     }
@@ -366,7 +406,7 @@ class FileField extends DbObjectField {
      * @return string - file extension without leading point (ex: 'mp4', 'mov', '')
      * @throws DbObjectFieldException
      */
-    public function detectUploadedFileExtension($uploadedFileInfo) {
+    public function detectUploadedFileExtension(array $uploadedFileInfo) {
         if (empty($uploadedFileInfo['type']) && empty($uploadedFileInfo['name']) && empty($uploadedFileInfo['tmp_name'])) {
             throw new DbObjectFieldException(
                 $this,
@@ -399,10 +439,9 @@ class FileField extends DbObjectField {
      * @throws DbObjectFieldException
      */
     public function getFileExtension() {
-        $fileInfo = $this->getFileInfo();
-        if (!empty($fileInfo) && !empty($fileInfo->getFileExtension())) {
-            return $fileInfo->getFileExtension();
-        } else {
+        $fileInfo = $this->getFileInfo(true, true);
+        if (empty($fileInfo->getFileExtension())) {
+            $fileInfo->setFileExtension($this->getDefaultFileExtension());
             if ($this->getDbObject()->exists()) {
                 $allowedExtensions = $this->getAllowedFileExtensions();
                 if (!empty($allowedExtensions)) {
@@ -410,16 +449,14 @@ class FileField extends DbObjectField {
                         $fileDir = $this->getFileDirPath();
                         $fileNameNoExt = $this->getFileNameWithoutExtension();
                         if (File::exist($fileDir . $fileNameNoExt . '.' . $ext)) {
-                            if (!empty($fileInfo)) {
-                                $fileInfo->setFileExtension($ext);
-                            }
+                            $fileInfo->setFileExtension($ext);
                             return $ext;
                         }
                     }
                 }
             }
-            return $this->getDefaultFileExtension();
         }
+        return $fileInfo->getFileExtension();
     }
 
     /**
@@ -455,16 +492,15 @@ class FileField extends DbObjectField {
      * @param array $uploadedFileInfo - uploaded file info
      * @return bool|array - array: information about file same as when you get by callings $this->getFileInfoFromInfoFile()
      */
-    protected function analyzeUploadedFileAndSaveToFS($uploadedFileInfo) {
+    protected function analyzeUploadedFileAndSaveToFS(array $uploadedFileInfo) {
         $pathToFiles = $this->getFileDirPath();
         if (!is_dir($pathToFiles)) {
             Folder::add($pathToFiles, 0777);
         }
         $fileName = $this->getFileNameWithoutExtension();
-        $fileInfo = array(
-            'file_name' => $fileName,
-            'full_file_name' => $fileName,
-        );
+        $fileInfo = $this->createFileInfoObject();
+        $fileInfo->setFileNameWithoutExtension($fileName);
+        $fileInfo->setFileNameWithExtension($fileName);
         try {
             $ext = $this->detectUploadedFileExtension($uploadedFileInfo);
             if ($ext === false) {
@@ -472,12 +508,12 @@ class FileField extends DbObjectField {
                 return false;
             } else if (!empty($ext)) {
                 $fileName .= '.' . $ext;
-                $fileInfo['full_file_name'] = $fileName;
+                $fileInfo->setFileExtension($ext);
+                $fileInfo->setFileNameWithExtension($fileName);
             }
-            $fileInfo['ext'] = $ext;
-
             // note: ext could be an empty string
         } catch (DbObjectFieldException $exc) {
+            dpr(1);
             $this->setValidationError($exc->getMessage());
             return false;
         }
@@ -490,26 +526,28 @@ class FileField extends DbObjectField {
      * Store file to FS
      * @param array $uploadedFileInfo
      * @param string $pathToFiles
-     * @param array $fileInfo
+     * @param DbFileInfo $fileInfo
      * @return bool
      */
     protected function storeFileToFS($uploadedFileInfo, $pathToFiles, $fileInfo) {
-        $filePath = $pathToFiles . $fileInfo['full_file_name'];
+        $filePath = $pathToFiles . $fileInfo->getFileNameWithExtension();
         return File::load($uploadedFileInfo['tmp_name'])->move($filePath, 0666) ? $fileInfo : false;
     }
 
     /**
      * Save $fileInfo to file and to $this->values['file_info']
-     * @param array $fileInfo
+     * @param array|DbFileInfo|DbImageFileInfo $fileInfo
      * @return $this
      * @throws DbObjectFieldException
      */
     protected function saveUploadedFileInfo($fileInfo) {
         if (is_array($fileInfo)) {
-            $this->fileInfo = null;
-            $this->getFileInfo(true)
-                ->update($fileInfo)
-                ->saveToFile();
+            $this->fileInfo = $this->createFileInfoObject()->update($fileInfo);
+            $this->fileInfo->saveToFile();
+            return $this;
+        } else if ($fileInfo instanceof DbFileInfo) {
+            $this->fileInfo = $fileInfo;
+            $fileInfo->saveToFile();
             return $this;
         } else {
             throw new DbObjectFieldException($this, '$fileInfo shoud be an array');

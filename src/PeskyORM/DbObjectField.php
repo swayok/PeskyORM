@@ -50,15 +50,20 @@ abstract class DbObjectField {
     public function __construct(DbObject $dbObject, DbColumnConfig $dbColumnConfig) {
         $this->dbColumnConfig = $dbColumnConfig;
         $this->dbObject = $dbObject;
-//        if (!empty($info['validators']) && is_array($info['validators'])) {
-//            $this->validators = $info['validators'];
-//        }
         foreach ($this->dbColumnConfig->getRelations() as $alias => $relationConfig) {
             $this->addRelation($alias, $relationConfig);
         }
         if ($this->dbColumnConfig->hasDefaultValue()) {
             $this->setDefaultValue($this->dbColumnConfig->getDefaultValue());
         }
+        $this->init();
+    }
+
+    /**
+     * For child classes
+     */
+    protected function init() {
+
     }
 
     /**

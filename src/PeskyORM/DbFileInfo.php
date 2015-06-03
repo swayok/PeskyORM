@@ -5,17 +5,21 @@ namespace PeskyORM;
 
 
 use PeskyORM\DbObjectField\FileField;
+use PeskyORM\DbObjectField\ImageField;
 use PeskyORM\Exception\DbObjectFieldException;
 use Swayok\Utils\File;
 
 class DbFileInfo {
 
+    /**
+     * @var null|FileField|ImageField
+     */
     protected $fileField = null;
     protected $fileExtension = null;
     protected $fileNameWithoutExtension = null;
     protected $fileNameWithExtension = null;
 
-    static protected $jsonMap = array(
+    protected $jsonMap = array(
         'file_name' => 'fileNameWithoutExtension',
         'full_file_name' => 'fileNameWithExtension',
         'ext' => 'fileExtension',
@@ -29,9 +33,6 @@ class DbFileInfo {
         $this->fileField = $fileField;
     }
 
-    /**
-     *
-     */
     public function readFromFileOrAutodetect() {
         if ($this->fileField->getDbObject()->exists()) {
             $infoFilePath = $this->fileField->getInfoFilePath();
@@ -50,7 +51,7 @@ class DbFileInfo {
             throw new DbObjectFieldException($this->fileField, 'Unable to save file info json file of non-existing object');
         }
         $data = array();
-        foreach (self::$jsonMap as $jsonKey => $paramName) {
+        foreach ($this->jsonMap as $jsonKey => $paramName) {
             $method = 'get' . ucfirst($paramName);
             $value = $this->$method();
             if ($value !== null) {
@@ -66,7 +67,7 @@ class DbFileInfo {
      * @return $this
      */
     public function update($data) {
-        foreach (self::$jsonMap as $jsonKey => $paramName) {
+        foreach ($this->jsonMap as $jsonKey => $paramName) {
             if (array_key_exists($jsonKey, $data) && $data[$jsonKey] !== null) {
                 $method = 'set' . ucfirst($paramName);
                 $this->$method($data[$jsonKey]);

@@ -1690,14 +1690,14 @@ class DbObject {
         }
         foreach ($fieldNames as $fieldName) {
             $field = $this->_getField($fieldName);
-            if ($field->hasValue()) {
-                $values[$fieldName] = $field->getValue();
-            } else if ($this->exists() && $field->isFile()) {
+            if ($field->isFile()) {
                 if ($field->hasFile()) {
                     $values[$fieldName] = $field->getFileInfo(true, true)->toPublicArray();
                 } else {
                     $values[$fieldName] = null;
                 }
+            } else if ($field->hasValue()) {
+                $values[$fieldName] = $field->getValue();
             }
         }
 
