@@ -143,10 +143,13 @@ class FileField extends DbObjectField {
      * @throws DbObjectFieldException
      */
     public function setValue($value, $isDbValue = false) {
-        if (!Utils::isFileUpload($value)) {
+        if (!empty($value) && !Utils::isFileUpload($value)) {
             throw new DbObjectFieldException($this, 'Value should be array with data about uploaded file');
+        } else if (empty($value)) {
+            $this->resetValue();
+        } else {
+            $this->values['rawValue'] = $this->values['value'] = $value;
         }
-        $this->values['rawValue'] = $this->values['value'] = $value;
         $this->validate();
         return $this;
     }
@@ -467,7 +470,7 @@ class FileField extends DbObjectField {
         if (!$this->getDbObject()->exists(true)) {
             throw new DbObjectFieldException($this, 'Unable to save file of non-existing object');
         }
-        $uploadedFileInfo = $this->getValue();
+        $uploadedFileInfo = $this->getUploadedFileInfo();
         if (empty($uploadedFileInfo)) {
             return null;
         }

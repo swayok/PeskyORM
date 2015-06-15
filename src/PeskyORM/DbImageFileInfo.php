@@ -35,17 +35,35 @@ class DbImageFileInfo extends DbFileInfo {
     }
 
     /**
-     * @return string
+     * @param null|string $versionName
+     * @return string|array
+     * @throws Exception\DbObjectFieldException
      */
-    public function getFilePath() {
-        return $this->fileField->getImagesPaths();
+    public function getFilePath($versionName = null) {
+        $paths = $this->fileField->getImagesPaths();
+        if (empty($versionName)) {
+            return $paths;
+        } else if (!empty($paths[$versionName])) {
+            return $paths[$versionName];
+        } else {
+            return null;
+        }
     }
 
     /**
-     * @return string
+     * @param null|string $versionName
+     * @return string|array
+     * @throws Exception\DbObjectFieldException
      */
-    public function getFileUrl() {
-        return $this->fileField->getImagesUrls();
+    public function getFileUrl($versionName = null) {
+        $urls = $this->fileField->getImagesUrls();
+        if (empty($versionName)) {
+            return $urls;
+        } else if (!empty($urls[$versionName])) {
+            return $urls[$versionName];
+        } else {
+            return null;
+        }
     }
 
 }

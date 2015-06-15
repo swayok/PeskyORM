@@ -92,15 +92,15 @@ class DbObject {
     const ERROR_OBJECT_NOT_EXISTS = 'Object not exists or not loaded';
 
     /**
-     * @param DbModel $model
      * @param null $dataOrPkValue
      * @param bool $filter
      * @param bool $isDbValues
      * @return $this
      */
-    static public function create(DbModel $model, $dataOrPkValue = null, $filter = false, $isDbValues = false) {
+    static public function create($dataOrPkValue = null, $filter = false, $isDbValues = false) {
         $className = get_called_class();
-        return new $className($model, $dataOrPkValue, $filter, $isDbValues);
+        $modelClassName = str_ireplace('DbObject\\', 'Model\\', $className . 'Model');
+        return new $className($modelClassName::getInstance(), $dataOrPkValue, $filter, $isDbValues);
     }
 
     /**
