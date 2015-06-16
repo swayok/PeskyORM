@@ -102,15 +102,12 @@ class FileField extends DbObjectField {
      * @throws DbObjectFieldException
      */
     public function hasFile() {
-        if (!array_key_exists('fileExists', $this->values)) {
-            $folder = Folder::load($this->getFileDirPath());
-            if (!$folder->exists()) {
-                return false;
-            }
-            $fileName = $this->getFileNameWithoutExtension();
-            $this->values['fileExists'] = count($folder->find("^{$fileName}.*")) > 0;
+        $folder = Folder::load($this->getFileDirPath());
+        if (!$folder->exists()) {
+            return false;
         }
-        return $this->values['fileExists'];
+        $fileName = $this->getFileNameWithoutExtension();
+        return count($folder->find("^{$fileName}.*")) > 0;
     }
 
     /**
@@ -196,10 +193,7 @@ class FileField extends DbObjectField {
      * @throws DbObjectFieldException
      */
     public function getFilePath() {
-        if (empty($this->values['file_path'])) {
-            $this->values['file_path'] = $this->getFileDirPath() . $this->getFullFileName();
-        }
-        return $this->values['file_path'];
+        return $this->getFileDirPath() . $this->getFullFileName();
     }
 
     /**
@@ -208,10 +202,7 @@ class FileField extends DbObjectField {
      * @throws DbObjectFieldException
      */
     public function getFileUrl() {
-        if (empty($this->values['file_url'])) {
-            $this->values['file_url'] = $this->getFileDirAbsoluteUrl() . $this->getFullFileName();
-        }
-        return $this->values['file_url'];
+        return $this->getFileDirAbsoluteUrl() . $this->getFullFileName();
     }
 
     /**
@@ -223,20 +214,17 @@ class FileField extends DbObjectField {
         if (!$this->getDbObject()->exists()) {
             throw new DbObjectFieldException($this, 'Unable to get file dir path of non-existing object');
         }
-        if (empty($this->values['file_dir_path'])) {
-            $generator = $this->dbColumnConfig->getFileDirPathGenerator();
-            if (!empty($generator)) {
-                $dirPath = $generator($this);
-                if (empty($dirPath) || !is_string($dirPath)) {
-                    throw new DbObjectFieldException($this, "File dir path genetartor function should return not-empty string");
-                }
-            } else {
-                $objectSubdir = DIRECTORY_SEPARATOR . trim($this->getFilesSubdir(DIRECTORY_SEPARATOR), '/\\');
-                $dirPath = rtrim($this->getBasePathToFiles(), '/\\') . $objectSubdir . DIRECTORY_SEPARATOR;
+        $generator = $this->dbColumnConfig->getFileDirPathGenerator();
+        if (!empty($generator)) {
+            $dirPath = $generator($this);
+            if (empty($dirPath) || !is_string($dirPath)) {
+                throw new DbObjectFieldException($this, "File dir path genetartor function should return not-empty string");
             }
-            $this->values['file_dir_path'] = $dirPath;
+        } else {
+            $objectSubdir = DIRECTORY_SEPARATOR . trim($this->getFilesSubdir(DIRECTORY_SEPARATOR), '/\\');
+            $dirPath = rtrim($this->getBasePathToFiles(), '/\\') . $objectSubdir . DIRECTORY_SEPARATOR;
         }
-        return $this->values['file_dir_path'];
+        return $dirPath;
     }
 
     /**
@@ -248,20 +236,17 @@ class FileField extends DbObjectField {
         if (!$this->getDbObject()->exists()) {
             throw new DbObjectFieldException($this, 'Unable to get file url of non-existing object');
         }
-        if (empty($this->values['file_dir_relative_url'])) {
-            $generator = $this->dbColumnConfig->getFileDirRelativeUrlGenerator();
-            if (!empty($generator)) {
-                $relUrl = $generator($this);
-                if (empty($relUrl) || !is_string($relUrl)) {
-                    throw new DbObjectFieldException($this, "File dir relative url genetartor function should return not-empty string");
-                }
-            } else {
-                $objectSubdir = '/' . trim($this->getFilesSubdir('/'), '/\\');;
-                $relUrl = '/' . trim($this->getBaseUrlToFiles(), '/\\') . $objectSubdir . '/';
+        $generator = $this->dbColumnConfig->getFileDirRelativeUrlGenerator();
+        if (!empty($generator)) {
+            $relUrl = $generator($this);
+            if (empty($relUrl) || !is_string($relUrl)) {
+                throw new DbObjectFieldException($this, "File dir relative url genetartor function should return not-empty string");
             }
-            $this->values['file_dir_relative_url'] = $relUrl;
+        } else {
+            $objectSubdir = '/' . trim($this->getFilesSubdir('/'), '/\\');;
+            $relUrl = '/' . trim($this->getBaseUrlToFiles(), '/\\') . $objectSubdir . '/';
         }
-        return $this->values['file_dir_relative_url'];
+        return $relUrl;
     }
 
     /**
@@ -273,10 +258,7 @@ class FileField extends DbObjectField {
         if (!$this->getDbObject()->exists()) {
             throw new DbObjectFieldException($this, 'Unable to get file url of non-existing object');
         }
-        if (empty($this->values['file_dir_absolute_url'])) {
-            $this->values['file_dir_absolute_url'] = rtrim($this->getFileServerUrl(), '/\\') . '/' . trim($this->getFileDirRelativeUrl(), '/\\') . '/';
-        }
-        return $this->values['file_dir_absolute_url'];
+        return rtrim($this->getFileServerUrl(), '/\\') . '/' . trim($this->getFileDirRelativeUrl(), '/\\') . '/';
     }
 
     /**
@@ -285,19 +267,16 @@ class FileField extends DbObjectField {
      * @throws DbObjectFieldException
      */
     public function getFileServerUrl() {
-        if (empty($this->values['server_url'])) {
-            $generator = $this->dbColumnConfig->getFileServerUrlGenerator();
-            if (!empty($generator)) {
-                $url = $generator($this);
-                if (empty($url) || !is_string($url)) {
-                    throw new DbObjectFieldException($this, "File server url genetartor function should return not-empty string");
-                }
-            } else {
-                $url = 'http://' . $_SERVER['HTTP_HOST'];
+        $generator = $this->dbColumnConfig->getFileServerUrlGenerator();
+        if (!empty($generator)) {
+            $url = $generator($this);
+            if (empty($url) || !is_string($url)) {
+                throw new DbObjectFieldException($this, "File server url genetartor function should return not-empty string");
             }
-            $this->values['server_url'] = $url;
+        } else {
+            $url = 'http://' . $_SERVER['HTTP_HOST'];
         }
-        return $this->values['server_url'];
+        return $url;
     }
 
     /**
@@ -538,7 +517,7 @@ class FileField extends DbObjectField {
     }
 
     /**
-     * Save $fileInfo to file and to $this->values['file_info']
+     * Save $fileInfo to file and to $this->fileInfo
      * @param array|DbFileInfo|DbImageFileInfo $fileInfo
      * @return $this
      * @throws DbObjectFieldException
