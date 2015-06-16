@@ -32,7 +32,7 @@ abstract class DbModel {
     /** @var DbTableConfig */
     protected $tableConfig;
     /** @var string */
-    private $nameSpace;
+    private $namespace;
     /** @var null|string */
     protected $alias = null;
     /** @var string|null */
@@ -46,7 +46,7 @@ abstract class DbModel {
      * @var null|string
      */
     protected $configClass = null;
-    protected $configsNameSpace;
+    protected $configsNamespace;
     /**
      * @var array - additional conditions for relations to be used in JOINs = array('RelationAlias' => array(condition1, condition2))
      */
@@ -79,7 +79,7 @@ abstract class DbModel {
         if (!preg_match('%^(.*?\\\?)([a-zA-Z0-9]+)' . $this::$modelClassSuffix .'$%is', $className, $classNameParts)) {
             throw new DbModelException($this, "Invalid Model class name [{$className}]. Required name is like NameSpace\\SomeModel.");
         }
-        $this->nameSpace = $classNameParts[1];
+        $this->namespace = $classNameParts[1];
         $this->loadTableConfig($classNameParts[2]);
         if (empty($this->alias)) {
             $this->alias = StringUtils::modelize($this->tableConfig->getName());
@@ -112,8 +112,8 @@ abstract class DbModel {
     /**
      * @return string
      */
-    public function getNameSpace() {
-        return $this->nameSpace;
+    public function getNamespace() {
+        return $this->namespace;
     }
 
     /**
@@ -263,11 +263,8 @@ abstract class DbModel {
      * @throws DbModelException
      */
     public function loadTableConfig($modelName) {
-        if (empty($this->configsNameSpace)) {
-            $this->configsNameSpace = preg_replace('%\\\.*?$%s', '', $this->nameSpace) . '\\' . $this::$tablesConfigsDirName .'\\';
-        }
         if (empty($this->configClass)) {
-            $this->configClass = $this->configsNameSpace . $modelName . $this::$tableConfigClassSuffix;
+            $this->configClass = $this->getConfigsNamespace() . $modelName . $this::$tableConfigClassSuffix;
         }
         if (!class_exists($this->configClass)) {
             throw new DbModelException($this, "Db table config class [{$this->configClass}] not found");
@@ -299,18 +296,18 @@ abstract class DbModel {
 
     /**
      * Load and return requested Model
-     * @param string $modelName - class name (UserToken or UserTokenModel)
+     * @param string $modelNameOrObjectName - class name (UserToken or UserTokenModel o User)
      * @return DbModel
      * @throws DbUtilsException
      */
-    static public function getModel($modelName) {
+    static public function getModel($modelNameOrObjectName) {
         // todo: maybe use reflections?
         // load model if not loaded yet
         $calledClass = get_called_class();
-        if (!preg_match('%' . $calledClass::$modelClassSuffix . '$%i', $modelName)) {
-            $modelName .= $calledClass::$modelClassSuffix;
+        if (!preg_match('%' . $calledClass::$modelClassSuffix . '$%i', $modelNameOrObjectName)) {
+            $modelNameOrObjectName .= $calledClass::$modelClassSuffix;
         }
-        $modelClass = self::getModelsNamespace() . $modelName;
+        $modelClass = $calledClass::getModelsNamespace() . $modelNameOrObjectName;
         return self::getModelByClassName($modelClass);
     }
 
@@ -363,8 +360,8 @@ abstract class DbModel {
     static public function dbObjectNameByModelClassName($class) {
         $calledClass = get_called_class();
         return preg_replace(
-            array('%^.*[\\\]%is', '%' . $calledClass::$modelClassSuffix . '$%', '%' . $calledClass::$modelsClassesDirName . '/%'),
-            array('', '', $calledClass::$objectsClassesDirName),
+            array('%^.*[\\\]%is', '%' . $calledClass::$modelClassSuffix . '$%', '%^' . $calledClass::getModelsNamespace() . '/%'),
+            array('', '', $calledClass::getObjectsNamespace() . '/'),
             $class
         );
     }
@@ -376,16 +373,18 @@ abstract class DbModel {
      * @param bool $filter - used only when $data not empty and is array
      *      true: filters $data that does not belong to this object
      *      false: $data that does not belong to this object will trigger exceptions
-     * @return \PeskyORM\DbObject
+     * @param bool $isDbValues
+     * @return DbObject
      * @throws DbUtilsException
      */
-    static public function createDbObject($dbObjectNameOrTableName, $data = null, $filter = false) {
+    static public function createDbObject($dbObjectNameOrTableName, $data = null, $filter = false, $isDbValues = false) {
         $dbObjectClass = self::getFullDbObjectClass($dbObjectNameOrTableName);
         if (!class_exists($dbObjectClass)) {
             throw new DbUtilsException("Class $dbObjectClass was not found");
         }
         $calledClass = get_called_class();
-        return new $dbObjectClass(self::getModel(StringUtils::modelize($dbObjectNameOrTableName) . $calledClass::$modelClassSuffix), $data, $filter);
+        $model = $calledClass::getModel(StringUtils::modelize($dbObjectNameOrTableName));
+        return new $dbObjectClass($data, $filter, $isDbValues, $model);
     }
 
     /**
@@ -394,7 +393,8 @@ abstract class DbModel {
      * @return string
      */
     static public function getFullDbObjectClass($dbObjectNameOrTableName) {
-        return self::getObjectsNamespace() . StringUtils::modelize($dbObjectNameOrTableName);
+        $calledClass = get_called_class();
+        return $calledClass::getObjectsNamespace() . StringUtils::modelize($dbObjectNameOrTableName);
     }
 
     static public function getModelsNamespace() {
@@ -403,11 +403,19 @@ abstract class DbModel {
 
     static public function getObjectsNamespace() {
         $calledClass = get_called_class();
-        return preg_replace('%[a-zA-Z0-9_]+\\\$%', $calledClass::$objectsClassesDirName . '\\', self::getModelsNamespace());
+        return preg_replace('%[a-zA-Z0-9_]+\\\$%', $calledClass::$objectsClassesDirName . '\\', $calledClass::getModelsNamespace());
+    }
+
+    protected function getConfigsNamespace() {
+        if (empty($this->configsNamespace)) {
+            $this->configsNamespace = preg_replace('%^(.*)\\\.+?$%s', '$1', $this->namespace) . '\\' . $this::$tablesConfigsDirName .'\\';
+        }
+        return $this->configsNamespace;
     }
 
     static public function getFullModelClassByTableName($tableName) {
-        return self::getModelsNamespace() . self::getModelNameByTableName($tableName);
+        $calledClass = get_called_class();
+        return $calledClass::getModelsNamespace() . $calledClass::getModelNameByTableName($tableName);
     }
 
     static public function getModelNameByTableName($tableName) {
@@ -416,16 +424,26 @@ abstract class DbModel {
     }
 
     /**
+     * @param $objectClass
+     * @return string
+     */
+    static public function getModelByObjectClass($objectClass) {
+        $calledClass = get_called_class();
+        return $calledClass::getModel(preg_replace('%^.*\\\%', '', $objectClass));
+    }
+
+    /**
      * Load DbObject for current model and create new instance of it
      * @param null|array|string|int $data - null: do nothing | int and string: is primary key (read db) | array: object data
      * @param bool $filter - used only when $data not empty and is array
      *      true: filters $data that does not belong to this object
      *      false: $data that does not belong to this object will trigger exceptions
-     * @return \PeskyORM\DbObject
-     * @throws DbModelException
+     * @param bool $isDbValues
+     * @return DbObject
+     * @throws DbUtilsException
      */
-    static public function getOwnDbObject($data = null, $filter = false) {
-        return self::createDbObject(self::dbObjectNameByModelClassName(get_called_class()), $data, $filter);
+    static public function getOwnDbObject($data = null, $filter = false, $isDbValues = false) {
+        return self::createDbObject(self::dbObjectNameByModelClassName(get_called_class()), $data, $filter, $isDbValues);
     }
 
     /**
@@ -498,7 +516,7 @@ abstract class DbModel {
             $objects = array();
             foreach ($records as $record) {
                 if ($dataIsLoadedFromDb) {
-                    $objects[] = $this->getOwnDbObject()->fromDbData($record);
+                    $objects[] = $this->getOwnDbObject($record, false, true);
                 } else {
                     $objects[] = $this->getOwnDbObject($record);
                 }

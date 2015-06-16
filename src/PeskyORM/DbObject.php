@@ -88,23 +88,30 @@ class DbObject {
      * @var string
      */
     protected $_originalDataKey = '_backup';
+    /**
+     * @var string
+     */
+    protected $_baseModelClass = DbModel::class;
 
     const ERROR_OBJECT_NOT_EXISTS = 'Object not exists or not loaded';
 
     /**
-     * @param null $dataOrPkValue
-     * @param bool $filter
-     * @param bool $isDbValues
+     * @param DbModel|null $model
+     * @param null|array|string|int $dataOrPkValue - null: do nothing | int and string: is primary key (read db) | array: object data
+     * @param bool $filter - used only when $data not empty and is array
+     *      true: filters $data that does not belong t0o this object
+     *      false: $data that does not belong to this object will trigger exceptions
+     * @param bool $isDbValues - true: indicates that field values passsed via $data as array are db values
+     * @throws DbObjectException
      * @return $this
      */
-    static public function create($dataOrPkValue = null, $filter = false, $isDbValues = false) {
+    static public function create($dataOrPkValue = null, $filter = false, $isDbValues = false, $model = null) {
         $className = get_called_class();
-        $modelClassName = str_ireplace('DbObject\\', 'Model\\', $className . 'Model');
-        return new $className($modelClassName::getInstance(), $dataOrPkValue, $filter, $isDbValues);
+        return new $className($dataOrPkValue, $filter, $isDbValues);
     }
 
     /**
-     * @param DbModel $model
+     * @param DbModel|null $model
      * @param null|array|string|int $dataOrPkValue - null: do nothing | int and string: is primary key (read db) | array: object data
      * @param bool $filter - used only when $data not empty and is array
      *      true: filters $data that does not belong t0o this object
@@ -112,8 +119,18 @@ class DbObject {
      * @param bool $isDbValues - true: indicates that field values passsed via $data as array are db values
      * @throws DbObjectException
      */
-    public function __construct(DbModel $model, $dataOrPkValue = null, $filter = false, $isDbValues = false) {
-        $this->_model = $model;
+    public function __construct($dataOrPkValue = null, $filter = false, $isDbValues = false, $model = null) {
+        dpr($dataOrPkValue, $filter, $isDbValues);
+        if (!empty($model)) {
+            if (!is_object($model)) {
+                throw new DbObjectException($this, 'Model should be an object of class inherited from ' . DbModel::class . ' class');
+            } else if (!$model instanceof DbModel) {
+                throw new DbObjectException($this, 'Model ' . get_class($model) . ' should be inherited from ' . DbModel::class . ' class');
+            }
+            $this->_model = $model;
+        } else {
+            $this->_model = $this->_loadModel();
+        }
         $this->_dontDeleteFiles = !!$this->_dontDeleteFiles;
         // initiate DbObjectField for all fields
         $nameSpace = __NAMESPACE__ . '\\DbObjectField';
@@ -282,6 +299,11 @@ class DbObject {
      */
     public function _getModel() {
         return $this->_model;
+    }
+
+    protected function _loadModel() {
+        $baseModelClass = $this->_baseModelClass;
+        return $baseModelClass::getModelByObjectClass(get_called_class());
     }
 
     /**
