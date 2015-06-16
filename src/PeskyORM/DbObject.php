@@ -120,7 +120,6 @@ class DbObject {
      * @throws DbObjectException
      */
     public function __construct($dataOrPkValue = null, $filter = false, $isDbValues = false, $model = null) {
-        dpr($dataOrPkValue, $filter, $isDbValues);
         if (!empty($model)) {
             if (!is_object($model)) {
                 throw new DbObjectException($this, 'Model should be an object of class inherited from ' . DbModel::class . ' class');

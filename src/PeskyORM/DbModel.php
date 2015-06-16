@@ -806,7 +806,7 @@ abstract class DbModel {
     }
 
     public function max($column, $conditionsAndOptions = null) {
-        return 0 + $this->expression("MAX(`$column`)`", $conditionsAndOptions);
+        return 0 + $this->expression("MAX(`$column`)", $conditionsAndOptions);
     }
 
     public function min($column, $conditionsAndOptions = null) {

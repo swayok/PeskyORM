@@ -867,7 +867,7 @@ class DbQuery {
             }
             $this->query .= $this->buildFieldsList($autoAddPkFieldAndOrder);
         } else if ($typeOrExpression instanceof DbExpr) {
-            $this->query .= " {$typeOrExpression->get()} ";
+            $this->query .= " {$this->replaceQuotes($typeOrExpression->get())} ";
             $autoAddPkFieldAndOrder = false;
         } else if (is_bool($typeOrExpression)) {
             $this->query .= ' ' . ($typeOrExpression ? 'true' : 'false') . ' ';
