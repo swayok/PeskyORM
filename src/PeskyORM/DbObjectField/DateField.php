@@ -3,6 +3,7 @@
 
 namespace PeskyORM\DbObjectField;
 
+use PeskyORM\DbExpr;
 use Swayok\Utils\ValidateValue;
 use PeskyORM\DbObjectField;
 use PeskyORM\Exception\DbObjectFieldException;
@@ -23,7 +24,7 @@ class DateField extends DbObjectField {
     }
 
     public function isValidValueFormat($value) {
-        if (empty($value) || ValidateValue::isDateTime($value)) {
+        if (empty($value) || $value instanceof DbExpr || ValidateValue::isDateTime($value)) {
             return true;
         }
         $this->setValidationError("Value is not date or date-time or has bad formatting");

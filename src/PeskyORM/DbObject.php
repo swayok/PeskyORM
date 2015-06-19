@@ -965,6 +965,7 @@ class DbObject {
      *      - array: list of relations
      * @return bool
      * @throws DbObjectException
+     * @throws DbObjectValidationException
      */
     public function commit($commitRelations = false) {
         $ret = true;

@@ -421,6 +421,9 @@ abstract class DbObjectField {
      * @throws DbObjectFieldException
      */
     protected function processNewValue($value) {
+        if (is_object($value) && $value instanceof DbExpr) {
+            return $value;
+        }
         if ($this->isConvertEmptyValueToNull() && empty($value)) {
             $value = null;
         }
