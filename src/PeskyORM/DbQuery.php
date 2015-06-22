@@ -840,14 +840,18 @@ class DbQuery {
      * @param string $typeOrExpression - type of query: 'all', 'first', 'column', 'value', DbExpr, integer, bool
      *      'all', 'column' and 'first': same query with different limits
      *      'value', DbExpr, integer, bool: only 1 value is fetched from db
+     * @param bool $addPkField
+     * @param bool $addDefaultOrderBy
      * @return string
      * @throws DbQueryException
      */
-    public function buildQuery($typeOrExpression = DB::FETCH_ALL) {
+    public function buildQuery($typeOrExpression = DB::FETCH_ALL, $addPkField = true, $addDefaultOrderBy = true) {
         if (is_string($typeOrExpression)) {
             $typeOrExpression = strtolower($typeOrExpression);
         }
-        $autoAddPkFieldAndOrder = empty($this->groupBy) && !$this->hasAggregatesInFields();
+        $hasGroupByOrAggregates = !empty($this->groupBy) || $this->hasAggregatesInFields();
+        $autoAddPkField = $addPkField && !$hasGroupByOrAggregates;
+        $autoAddOrderBy = $addDefaultOrderBy && !$hasGroupByOrAggregates;
         $this->query = 'SELECT ';
         if ($this->distinct) {
             $this->query .= 'DISTINCT ';
@@ -855,7 +859,7 @@ class DbQuery {
         // fields
         if (in_array($typeOrExpression, array(DB::FETCH_ALL, DB::FETCH_FIRST, DB::FETCH_COLUMN, DB::FETCH_VALUE))) {
             if ($typeOrExpression === DB::FETCH_VALUE) {
-                $autoAddPkFieldAndOrder = false;
+                $autoAddPkField = false;
             }
             if (empty($this->fields)) {
                 $this->fields('*');
@@ -865,19 +869,19 @@ class DbQuery {
                     }
                 }
             }
-            $this->query .= $this->buildFieldsList($autoAddPkFieldAndOrder);
+            $this->query .= $this->buildFieldsList($autoAddPkField);
         } else if ($typeOrExpression instanceof DbExpr) {
             $this->query .= " {$this->replaceQuotes($typeOrExpression->get())} ";
-            $autoAddPkFieldAndOrder = false;
+            $autoAddOrderBy = false;
         } else if (is_bool($typeOrExpression)) {
             $this->query .= ' ' . ($typeOrExpression ? 'true' : 'false') . ' ';
-            $autoAddPkFieldAndOrder = false;
+            $autoAddOrderBy = false;
         } else if (is_numeric($typeOrExpression)) {
             $this->query .= " $typeOrExpression ";
-            $autoAddPkFieldAndOrder = false;
+            $autoAddOrderBy = false;
         } else if (is_string($typeOrExpression)) {
             $this->query .= " {$this->quoteValue($typeOrExpression)} ";
-            $autoAddPkFieldAndOrder = false;
+            $autoAddOrderBy = false;
         } else {
             throw new DbQueryException($this, "Unknown query \$type");
         }
@@ -901,7 +905,7 @@ class DbQuery {
             $this->query .= ' GROUP BY ' . implode(', ', $this->groupBy) . ' ';
         }
         // order by
-        if (empty($this->orderBy) && $autoAddPkFieldAndOrder) {
+        if (empty($this->orderBy) && $autoAddOrderBy) {
             $this->orderBy($this->models[$this->table]->getPkColumnName() . ' asc');
         }
         if (!empty($this->orderBy)) {
