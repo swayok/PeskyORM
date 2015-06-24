@@ -1712,7 +1712,9 @@ class DbObject {
         }
         foreach ($fieldNames as $fieldName) {
             $field = $this->_getField($fieldName);
-            if ($field->isFile()) {
+            if ($field->isPrivate()) {
+                continue;
+            } else if ($field->isFile()) {
                 if ($field->hasFile()) {
                     $values[$fieldName] = $field->getFileInfo(true, true)->toPublicArray();
                 } else {

@@ -146,6 +146,10 @@ abstract class DbObjectField {
         return $this->dbColumnConfig->isVirtual();
     }
 
+    public function isPrivate() {
+        return $this->dbColumnConfig->isPrivate();
+    }
+
     public function canBeNull() {
         return $this->dbColumnConfig->isNullable();
     }

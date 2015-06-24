@@ -119,6 +119,11 @@ class DbColumnConfig {
     /** @var bool */
     protected $isVirtual = false;
     /**
+     * This field will be excluded from DbObject->toPublicArray() resutls
+     * @var bool
+     */
+    protected $isPrivate = false;
+    /**
      * Value for this virtual column must be imported from another column if this option is string and already defined column
      * @var bool|string - false: don't import
      */
@@ -803,6 +808,22 @@ class DbColumnConfig {
      */
     public function removeVirtualColumnValueGenerator() {
         $this->virtualColumnValueGenerator = false;
+        return $this;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function isPrivate() {
+        return $this->isPrivate;
+    }
+
+    /**
+     * @param boolean $isPrivate
+     * @return $this
+     */
+    public function setIsPrivate($isPrivate) {
+        $this->isPrivate = !!$isPrivate;
         return $this;
     }
 
