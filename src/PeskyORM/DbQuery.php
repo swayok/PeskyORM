@@ -342,10 +342,18 @@ class DbQuery {
                 $orderBy = array($orderBy);
             }
             $orderDirectionRegexp = '%^(.*?)\s+(ASC|DESC)%is';
-            foreach ($orderBy as $orderField) {
-                $direction = 'ASC';
+            foreach ($orderBy as $orderField => $direction) {
+                $parse = false;
+                if (is_numeric($orderField)) {
+                    $parse = true;
+                    $orderField = $direction;
+                    $direction = false;
+                }
+                if (empty($direction) || !in_array(strtolower($direction), array('asc', 'desc'))) {
+                    $direction = 'ASC';
+                }
                 if (!is_object($orderField)) {
-                    if (preg_match($orderDirectionRegexp, $orderField, $parts)) {
+                    if ($parse && preg_match($orderDirectionRegexp, $orderField, $parts)) {
                         $direction = strtoupper(trim($parts[2]));
                         $orderField = $parts[1];
                     }
