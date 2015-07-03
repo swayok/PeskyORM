@@ -71,6 +71,11 @@ abstract class DbModel {
         return self::getModelByClassName(get_called_class());
     }
 
+    static public function getModelClassSuffix() {
+        $className = get_called_class();
+        return $className::$modelClassSuffix;
+    }
+
     /**
      * @throws DbModelException
      */
