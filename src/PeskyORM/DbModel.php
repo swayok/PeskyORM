@@ -383,11 +383,12 @@ abstract class DbModel {
      * @throws DbUtilsException
      */
     static public function createDbObject($dbObjectNameOrTableName, $data = null, $filter = false, $isDbValues = false) {
-        $dbObjectClass = self::getFullDbObjectClass($dbObjectNameOrTableName);
+        $calledClass = get_called_class();
+        $dbObjectClass = $calledClass::getFullDbObjectClass($dbObjectNameOrTableName);
+        dpr($calledClass, $dbObjectClass);
         if (!class_exists($dbObjectClass)) {
             throw new DbUtilsException("Class $dbObjectClass was not found");
         }
-        $calledClass = get_called_class();
         $model = $calledClass::getModel(StringUtils::modelize($dbObjectNameOrTableName));
         return new $dbObjectClass($data, $filter, $isDbValues, $model);
     }
@@ -448,7 +449,8 @@ abstract class DbModel {
      * @throws DbUtilsException
      */
     static public function getOwnDbObject($data = null, $filter = false, $isDbValues = false) {
-        return self::createDbObject(self::dbObjectNameByModelClassName(get_called_class()), $data, $filter, $isDbValues);
+        $calledClass = get_called_class();
+        return $calledClass::createDbObject($calledClass::dbObjectNameByModelClassName($calledClass), $data, $filter, $isDbValues);
     }
 
     /**
