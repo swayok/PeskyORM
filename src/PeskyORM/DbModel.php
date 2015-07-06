@@ -385,7 +385,6 @@ abstract class DbModel {
     static public function createDbObject($dbObjectNameOrTableName, $data = null, $filter = false, $isDbValues = false) {
         $calledClass = get_called_class();
         $dbObjectClass = $calledClass::getFullDbObjectClass($dbObjectNameOrTableName);
-        dpr($calledClass, $dbObjectClass);
         if (!class_exists($dbObjectClass)) {
             throw new DbUtilsException("Class $dbObjectClass was not found");
         }
