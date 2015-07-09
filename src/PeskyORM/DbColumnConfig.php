@@ -761,7 +761,7 @@ class DbColumnConfig {
             throw new DbColumnConfigException($this, '$customValidators arg should be an array');
         }
         foreach ($customValidators as $validator) {
-            if (!is_callable($validator)) {
+            if (is_string($validator) || !is_callable($validator)) {
                 throw new DbColumnConfigException($this, '$customValidators should contain only functions');
             }
         }
@@ -789,7 +789,7 @@ class DbColumnConfig {
      * @throws DbColumnConfigException
      */
     public function setVirtualColumnValueGenerator($virtualColumnValueGenerator) {
-        if (!is_callable($virtualColumnValueGenerator)) {
+        if (is_string($virtualColumnValueGenerator) || !is_callable($virtualColumnValueGenerator)) {
             throw new DbColumnConfigException($this, '$virtualColumnValueGenerator should be a function');
         }
         $this->virtualColumnValueGenerator = $virtualColumnValueGenerator;

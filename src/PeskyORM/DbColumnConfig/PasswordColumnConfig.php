@@ -31,7 +31,7 @@ class PasswordColumnConfig extends DbColumnConfig {
      * @throws DbColumnConfigException
      */
     public function setHashFunction($hashFunction) {
-        if (!is_callable($hashFunction)) {
+        if (is_string($hashFunction) || !is_callable($hashFunction)) {
             throw new DbColumnConfigException($this, '$hashFunction argument must be callable');
         }
         $this->hashFunction = $hashFunction;
