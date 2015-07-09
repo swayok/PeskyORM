@@ -17,8 +17,8 @@ class DateField extends DbObjectField {
         if (empty($value)) {
             return null; //< also prevents situation when unixtimestamp = 0 is passed
         }
-        if (!ValidateValue::isDateTime($value)) {
-            throw new DbObjectFieldException($this, "Value is not date or date-time or has bad formatting");
+        if (!$this->isValidValueFormat()) {
+            throw new DbObjectFieldException($this, $this->getValidationError());
         }
         return Utils::formatDateTime($value, $this->getDateFormat());
     }

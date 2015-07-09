@@ -13,10 +13,18 @@ class IntegerField extends DbObjectField {
         if ($value === '') {
             return null;
         }
-        if (!ValidateValue::isInteger($value, true)) {
-            throw new DbObjectFieldException($this, "Passed value [{$value}] is not integer number");
+        if (!$this->isValidValueFormat($value)) {
+            throw new DbObjectFieldException($this, $this->getValidationError());
         }
         return $value;
+    }
+
+    public function isValidValueFormat($value) {
+        if (empty($value) || $value instanceof DbExpr || ValidateValue::isInteger($value, true)) {
+            return true;
+        }
+        $this->setValidationError("Value is not a valid integer number");
+        return false;
     }
 
 }

@@ -13,9 +13,18 @@ class FloatField extends DbObjectField {
         if ($value === '') {
             return null;
         }
-        if (!ValidateValue::isFloat($value, true)) {
-            throw new DbObjectFieldException($this, "Passed value [{$value}] is not decimal number");
+        if (!$this->isValidValueFormat($value)) {
+            throw new DbObjectFieldException($this, $this->getValidationError());
         }
         return $value;
     }
+
+    public function isValidValueFormat($value) {
+        if (empty($value) || $value instanceof DbExpr || ValidateValue::isFloat($value, true)) {
+            return true;
+        }
+        $this->setValidationError("Value is not a valid float number");
+        return false;
+    }
+
 }
