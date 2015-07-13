@@ -629,14 +629,14 @@ abstract class DbModel {
      * @param null|array|string $conditionsAndOptions
      * @param bool $asObject - true: return DbObject | false: return array
      * @param bool $withRootAlias
-     * @return array|DbObject[]
+     * @return array|DbObject
      */
     public function selectOne($columns = '*', $conditionsAndOptions = null, $asObject = false, $withRootAlias = false) {
         $record = $this->builder()
             ->fromOptions($this->prepareSelect($columns, $conditionsAndOptions))
             ->find('first', $withRootAlias);
         if ($asObject) {
-            $record = $this->recordsToObjects($record);
+            $record = $this->recordsToObjects(array($record), true)[0];
         }
         return $record;
     }
