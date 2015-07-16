@@ -341,12 +341,13 @@ abstract class DbModel {
         if (!$this->hasTableRelation($alias)) {
             throw new DbModelException($this, "Unknown relation with alias [$alias]");
         }
-        $rforeignTable = $this->getTableRealtaion($alias)->getForeignTable();
-        $relatedModelClass = self::getFullModelClassByTableName($rforeignTable);
+        $foreignTable = $this->getTableRealtaion($alias)->getForeignTable();
+        $class = get_class($this);
+        $relatedModelClass = $class::getFullModelClassByTableName($foreignTable);
         if (!class_exists($relatedModelClass)) {
             throw new DbModelException($this, "Related model class [{$relatedModelClass}] not found for relation [{$alias}]");
         }
-        return $this->getModel(self::getModelNameByTableName($rforeignTable));
+        return $this->getModel($class::getModelNameByTableName($foreignTable));
     }
 
     /**
