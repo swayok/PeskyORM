@@ -1443,7 +1443,7 @@ class DbObject {
                     $ret = true;
                 }
             }
-        } catch (\Exception $exc) {
+        } catch (\PDOException $exc) {
             $model->rollback();
             throw $exc;
         }
@@ -1546,7 +1546,7 @@ class DbObject {
         if (!empty($dataToSave)) {
             try {
                 $ret = $model->update($dataToSave, $this->getFindByPkConditions());
-            } catch (\Exception $exc) {
+            } catch (\PDOException $exc) {
                 $model->rollback();
                 throw $exc;
             }
@@ -1592,7 +1592,7 @@ class DbObject {
             }
             try {
                 $model->delete($this->getFindByPkConditions());
-            } catch (\Exception $exc) {
+            } catch (\PDOException $exc) {
                 $model->rollback();
                 throw $exc;
             }
