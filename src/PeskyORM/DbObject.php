@@ -471,7 +471,7 @@ class DbObject {
             }
             $relatedObject = $objectOrDataOrPkValue;
         } else {
-            $relatedObject = $this->_getModel()->createDbObject($this->_getForeignTableForRelation($relationAlias));
+            $relatedObject = $this->_getModel()->getRelatedModel($relationAlias)->getOwnDbObject();
             if (empty($objectOrDataOrPkValue)) {
                 $this->linkRelatedObjectToThis($relationAlias, $relatedObject);
             } else {
@@ -515,7 +515,7 @@ class DbObject {
                     $relatedObjects[] = $item;
                 } else {
                     // array of item data arrays or item ids
-                    $relatedObjects[] = $this->_getModel()->createDbObject($this->_getForeignTableForRelation($relationAlias), $item);
+                    $relatedObjects[] = $this->_getModel()->getRelatedModel($relationAlias)->getOwnDbObject($item);
                 }
             }
             // validate relation
