@@ -100,6 +100,9 @@ class Db {
 
     public function query($query) {
         $index = -1;
+        if (is_object($query) && $query instanceof DbExpr) {
+            $query = self::replaceQuotes($query->get());
+        }
         if (!$this->dontRememberNextQuery) {
             $this->queryString = $query;
             $index = self::rememberQuery($query);
@@ -125,6 +128,9 @@ class Db {
 
     public function exec($query) {
         $index = -1;
+        if (is_object($query) && $query instanceof DbExpr) {
+            $query = self::replaceQuotes($query->get());
+        }
         if (!$this->dontRememberNextQuery) {
             $this->queryString = $query;
             $index = self::rememberQuery($query);
