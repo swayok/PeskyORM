@@ -1596,8 +1596,8 @@ class DbObject {
                 $model->rollback();
                 throw $exc;
             }
-            $this->afterDelete();
-            if (!$alreadyInTransaction) {
+            $this->afterDelete(); //< transaction can be closed there
+            if (!$alreadyInTransaction && $model->inTransaction()) {
                 $model->commit();
             }
             if (!$this->_dontDeleteFiles && $this->_hasFileFields()) {
