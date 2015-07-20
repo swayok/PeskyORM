@@ -1416,31 +1416,36 @@ class DbObject {
         $relatedObjects = !empty($saveRelations)
             ? $this->getRelationsToSave($saveRelations)
             : array();
-        if (!$exists) {
-            $this->_allowFieldsUpdatesTracking = false;
-            $ret = $model->insert($this->toStrictArray(), '*');
-            if (!empty($ret)) {
-                $this->_updateWithDbValues($ret);
-            }
-            $this->_allowFieldsUpdatesTracking = true;
-        } else {
-            $dataToSave = $this->toStrictArray(null, true);
-            unset($dataToSave[$this->_getPkFieldName()]);
-            if (!empty($dataToSave)) {
+        try {
+            if (!$exists) {
                 $this->_allowFieldsUpdatesTracking = false;
-                $ret = $model->update($dataToSave, $this->getFindByPkConditions(), '*');
-                if (!empty($ret) && count($ret) == 1) {
-                    $ret = $ret[0];
+                $ret = $model->insert($this->toStrictArray(), '*');
+                if (!empty($ret)) {
                     $this->_updateWithDbValues($ret);
-                } else if (count($ret) > 1) {
-                    $model->rollback();
-                    throw new DbObjectException($this, 'Attempt to update [' . count($ret) . '] records instead of 1: ' . $model->getLastQuery());
                 }
                 $this->_allowFieldsUpdatesTracking = true;
             } else {
-                // nothing to update
-                $ret = true;
+                $dataToSave = $this->toStrictArray(null, true);
+                unset($dataToSave[$this->_getPkFieldName()]);
+                if (!empty($dataToSave)) {
+                    $this->_allowFieldsUpdatesTracking = false;
+                    $ret = $model->update($dataToSave, $this->getFindByPkConditions(), '*');
+                    if (!empty($ret) && count($ret) == 1) {
+                        $ret = $ret[0];
+                        $this->_updateWithDbValues($ret);
+                    } else if (count($ret) > 1) {
+                        $model->rollback();
+                        throw new DbObjectException($this, 'Attempt to update [' . count($ret) . '] records instead of 1: ' . $model->getLastQuery());
+                    }
+                    $this->_allowFieldsUpdatesTracking = true;
+                } else {
+                    // nothing to update
+                    $ret = true;
+                }
             }
+        } catch (\PDOException $exc) {
+            $model->rollback();
+            throw $exc;
         }
         if (!empty($ret)) {
             // save attached files
@@ -1539,7 +1544,12 @@ class DbObject {
         $dataToSave = $this->toStrictArray($fieldNames, true);
         unset($dataToSave[$this->_getPkFieldName()]);
         if (!empty($dataToSave)) {
-            $ret = $model->update($dataToSave, $this->getFindByPkConditions());
+            try {
+                $ret = $model->update($dataToSave, $this->getFindByPkConditions());
+            } catch (\PDOException $exc) {
+                $model->rollback();
+                throw $exc;
+            }
         } else {
             $ret = true;
         }
@@ -1566,7 +1576,8 @@ class DbObject {
      * @param bool $resetFields - true: will reset DbFields (default) | false: only primary key will be reset
      * @param bool $ignoreIfNotExists - true: will not throw exception if object not exists
      * @return $this
-     * @throws DbObjectException when object not exists
+     * @throws DbObjectException
+     * @throws \Exception
      */
     public function delete($resetFields = true, $ignoreIfNotExists = false) {
         if (!$this->exists()) {
@@ -1579,7 +1590,12 @@ class DbObject {
             if (!$alreadyInTransaction) {
                 $model->begin();
             }
-            $model->delete($this->getFindByPkConditions());
+            try {
+                $model->delete($this->getFindByPkConditions());
+            } catch (\PDOException $exc) {
+                $model->rollback();
+                throw $exc;
+            }
             $this->afterDelete();
             if (!$alreadyInTransaction) {
                 $model->commit();

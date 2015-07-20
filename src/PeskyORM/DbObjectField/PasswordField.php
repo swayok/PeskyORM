@@ -58,4 +58,12 @@ class PasswordField extends Sha1Field {
         }
     }
 
+    public function setValue($value, $isDbValue = false) {
+        // prevent cleaning password by update via form submit
+        if (empty($value) && !$isDbValue && $this->isValueReceivedFromDb()) {
+            return $this;
+        }
+        return parent::setValue($value, $isDbValue);
+    }
+
 }
