@@ -29,8 +29,10 @@ class Db {
         )
     );
 
-    protected $engine = self::PGSQL;
-    protected $name = '';
+    protected $dbEngine = self::PGSQL;
+    protected $dbName = '';
+    protected $dbUser = '';
+    protected $dbHost = '';
     protected $dontRememberNextQuery = '';
 
     static $inTransaction = false;
@@ -76,26 +78,57 @@ class Db {
      * @param string $server - server address in format 'host.name' or 'ddd.ddd.ddd.ddd', can contain port ':ddddd' (default: 'localhost')
      */
     public function __construct($dbType, $dbName, $user = null, $password = null, $server = 'localhost') {
-        $this->engine = strtolower($dbType);
-        switch ($this->engine) {
+        $this->dbEngine = strtolower($dbType);
+        $this->dbName = $dbName;
+        $this->dbUser = $user;
+        $this->dbHost = $server;
+        switch ($this->dbEngine) {
             case self::MYSQL:
             case self::PGSQL:
                 $this->pdo = new \PDO(
-                    $this->engine . ':host=' . $server . ';dbname=' . $dbName,
+                    $this->dbEngine . ':host=' . $server . ';dbname=' . $dbName,
                     $user,
                     $password
                 );
                 break;
             case self::SQLITE:
-                $this->pdo = new \PDO($this->engine . ':' . $dbName);
+                $this->pdo = new \PDO($this->dbEngine . ':' . $dbName);
                 break;
         }
         //$this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $this->defaultLimit = self::$engineSpecials['no_limit'][$this->engine];
-        $this->boolTrue = self::$engineSpecials['bool'][$this->engine][true];
-        $this->boolFalse = self::$engineSpecials['bool'][$this->engine][false];
-        $this->nameQuotes = self::$engineSpecials['name_quotes'][$this->engine];
-        $this->hasReturning = $this->engine == self::PGSQL;
+        $this->defaultLimit = self::$engineSpecials['no_limit'][$this->dbEngine];
+        $this->boolTrue = self::$engineSpecials['bool'][$this->dbEngine][true];
+        $this->boolFalse = self::$engineSpecials['bool'][$this->dbEngine][false];
+        $this->nameQuotes = self::$engineSpecials['name_quotes'][$this->dbEngine];
+        $this->hasReturning = $this->dbEngine == self::PGSQL;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDbEngine() {
+        return $this->dbEngine;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDbHost() {
+        return $this->dbHost;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDbName() {
+        return $this->dbName;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getDbUser() {
+        return $this->dbUser;
     }
 
     public function query($query) {
@@ -220,8 +253,8 @@ class Db {
     /* Transactions */
 
     public function begin($readOnly = false, $transactionType = null) {
-        if (!empty($transactionType) && !in_array($transactionType, self::$transactionTypes[$this->engine])) {
-            throw new DbException($this, "Unknown transaction type [{$transactionType}] for DB engine [{$this->engine}]");
+        if (!empty($transactionType) && !in_array($transactionType, self::$transactionTypes[$this->dbEngine])) {
+            throw new DbException($this, "Unknown transaction type [{$transactionType}] for DB engine [{$this->dbEngine}]");
         }
         if (!$readOnly && (empty($transactionType) || $transactionType === self::PGSQL_TRANSACTION_TYPE_DEFAULT)) {
             try {
