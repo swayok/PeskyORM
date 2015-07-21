@@ -77,7 +77,7 @@ class Db {
      * @param null|string $password - user password
      * @param string $server - server address in format 'host.name' or 'ddd.ddd.ddd.ddd', can contain port ':ddddd' (default: 'localhost')
      */
-    public function __construct($dbType, $dbName, $user = null, $password = null, $server = 'localhost') {
+    public function __construct($dbType, $dbName = null, $user = null, $password = null, $server = 'localhost') {
         $this->dbEngine = strtolower($dbType);
         $this->dbName = $dbName;
         $this->dbUser = $user;
@@ -86,13 +86,13 @@ class Db {
             case self::MYSQL:
             case self::PGSQL:
                 $this->pdo = new \PDO(
-                    $this->dbEngine . ':host=' . $server . ';dbname=' . $dbName,
+                    $this->dbEngine . ':host=' . $server . (!empty($dbName) ? ';dbname=' . $dbName : ''),
                     $user,
                     $password
                 );
                 break;
             case self::SQLITE:
-                $this->pdo = new \PDO($this->dbEngine . ':' . $dbName);
+                $this->pdo = new \PDO($this->dbEngine . (!empty($dbName) ? ':' . $dbName : ''));
                 break;
         }
         //$this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -101,6 +101,10 @@ class Db {
         $this->boolFalse = self::$engineSpecials['bool'][$this->dbEngine][false];
         $this->nameQuotes = self::$engineSpecials['name_quotes'][$this->dbEngine];
         $this->hasReturning = $this->dbEngine == self::PGSQL;
+    }
+
+    public function disconnect() {
+        $this->pdo = null;
     }
 
     /**

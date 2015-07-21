@@ -476,6 +476,13 @@ abstract class DbModel {
     }
 
     /**
+     * @return string
+     */
+    public function getConnectionAlias() {
+        return $this->connectionAlias;
+    }
+
+    /**
      * Get data source object
      * @param string $alias
      * @return Db
