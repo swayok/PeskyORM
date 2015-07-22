@@ -23,12 +23,6 @@ abstract class DbModel {
     const ORDER_ASCENDING = 'ASC';
     const ORDER_DESCENDING = 'DESC';
 
-    /**
-     * Key in self::$dataSources and self::$dbConnectionConfigs
-     * @var string
-     */
-    protected $connectionAlias = 'default';
-
     /** @var DbTableConfig */
     protected $tableConfig;
     /** @var string */
@@ -479,7 +473,7 @@ abstract class DbModel {
      * @return string
      */
     public function getConnectionAlias() {
-        return $this->connectionAlias;
+        return $this->getTableConfig()->getConnectionAlias();
     }
 
     /**
@@ -491,7 +485,7 @@ abstract class DbModel {
      */
     public function getDataSource($alias = null) {
         if (empty($alias)) {
-            $alias = $this->connectionAlias;
+            $alias = $this->getConnectionAlias();
         }
         if (empty(self::$dataSources[$alias])) {
             if (empty(self::$dbConnectionConfigs[$alias])) {
@@ -514,7 +508,7 @@ abstract class DbModel {
      */
     public function hasConnectionToDataSource($alias = null) {
         if (empty($alias)) {
-            $alias = $this->connectionAlias;
+            $alias = $this->getConnectionAlias();
         }
         return !empty(self::$dataSources[$alias]);
     }

@@ -9,7 +9,7 @@ abstract class DbTableConfig {
 
     protected $autoloadColumnConfigsFromPrivateMethods = true;
 
-    protected $db = 'default';
+    protected $connectionAlias = 'default';
     protected $schema = 'public';
     protected $name;
     protected $pk = null;
@@ -160,8 +160,8 @@ abstract class DbTableConfig {
     /**
      * @return string
      */
-    public function getDb() {
-        return $this->db;
+    public function getConnectionAlias() {
+        return $this->connectionAlias;
     }
 
     /**
