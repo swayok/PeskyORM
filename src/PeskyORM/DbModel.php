@@ -141,10 +141,17 @@ abstract class DbModel {
      * @throws DbModelException
      */
     public function getTableConfig() {
-        if (empty($this->tableConfig)) {
+        if (!$this->hasTableConfig()) {
             throw new DbModelException($this, "DB table config not loaded");
         }
         return $this->tableConfig;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasTableConfig() {
+        return !empty($this->tableConfig);
     }
 
     /**
@@ -507,7 +514,7 @@ abstract class DbModel {
      * @return bool
      */
     public function hasConnectionToDataSource($alias = null) {
-        if (empty($alias)) {
+        if (empty($alias) && $this->hasTableConfig()) {
             $alias = $this->getConnectionAlias();
         }
         return !empty(self::$dataSources[$alias]);

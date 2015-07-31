@@ -10,12 +10,7 @@ class DbModelException extends DbException {
 
     public function __construct(DbModel $dbModel, $message, $errorCode = null) {
         $this->dbModel = $dbModel;
-        try {
-            $ds = $dbModel->hasConnectionToDataSource() ? $dbModel->getDataSource() : null;
-        } catch (DbModelException $exc) {
-            $ds = null;
-        }
-        parent::__construct($ds, $message, $errorCode);
+        parent::__construct($dbModel->hasConnectionToDataSource() ? $dbModel->getDataSource() : null, $message, $errorCode);
     }
 
     /**
