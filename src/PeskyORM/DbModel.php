@@ -687,14 +687,19 @@ abstract class DbModel {
     /**
      * Get 1 record from DB
      * @param string|array $columns
-     * @param null|array|string|int $conditionsAndOptions -
+     * @param array|string|int $conditionsAndOptions -
      *      array|string: conditions,
      *      numeric|int: record's pk value, automatically converted to array($this->primaryKey => $where)
      * @param bool $asObject - true: return DbObject | false: return array
      * @param bool $withRootAlias
      * @return array|bool|DbObject
+     * @throws DbModelException
+     * @throws \PeskyORM\Exception\DbQueryException
      */
-    public function selectOne($columns, $conditionsAndOptions = null, $asObject = true, $withRootAlias = false) {
+    public function selectOne($columns, $conditionsAndOptions, $asObject = true, $withRootAlias = false) {
+        if (empty($conditionsAndOptions)){
+            throw new DbModelException($this, 'Selecting one record without conditions is not allowed');
+        }
         if (is_numeric($conditionsAndOptions) || is_int($conditionsAndOptions)) {
             $conditionsAndOptions = array($this->getPkColumnName() => $conditionsAndOptions);
         }
