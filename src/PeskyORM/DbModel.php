@@ -634,23 +634,6 @@ abstract class DbModel {
     }
 
     /**
-     * @param string|array $columns
-     * @param null|array|string $conditionsAndOptions
-     * @param bool $asObject - true: return DbObject | false: return array
-     * @param bool $withRootAlias
-     * @return array|DbObject
-     */
-    public function selectOne($columns = '*', $conditionsAndOptions = null, $asObject = false, $withRootAlias = false) {
-        $record = $this->builder()
-            ->fromOptions($this->prepareSelect($columns, $conditionsAndOptions))
-            ->find('first', $withRootAlias);
-        if ($asObject) {
-            $record = $this->recordsToObjects(array($record), true)[0];
-        }
-        return $record;
-    }
-
-    /**
      * Selects only 1 column
      * @param string $column
      * @param null|array|string $conditionsAndOptions
@@ -711,7 +694,7 @@ abstract class DbModel {
      * @param bool $withRootAlias
      * @return array|bool|DbObject
      */
-    public function getOne($columns, $conditionsAndOptions = null, $asObject = true, $withRootAlias = false) {
+    public function selectOne($columns, $conditionsAndOptions = null, $asObject = true, $withRootAlias = false) {
         if (is_numeric($conditionsAndOptions) || is_int($conditionsAndOptions)) {
             $conditionsAndOptions = array($this->getPkColumnName() => $conditionsAndOptions);
         }
@@ -721,7 +704,7 @@ abstract class DbModel {
         if (!is_array($record)) {
             return $record;
         } else if ($asObject) {
-            return self::getOwnDbObject($record);
+            return self::getOwnDbObject($record, false, true);
         } else {
             return $record;
         }

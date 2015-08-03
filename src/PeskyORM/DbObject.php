@@ -1355,7 +1355,7 @@ class DbObject {
         } else if (!is_array($fieldNames) && $fieldNames !== '*') {
             $fieldNames = array($this->_getPkFieldName(), $fieldNames);
         }
-        $data = $this->_getModel()->getOne($fieldNames, $conditions, false, false);
+        $data = $this->_getModel()->selectOne($fieldNames, $conditions, false, false);
         if (!empty($data)) {
             $this->fromDbData($data, false);
             if (!empty($relations) && (is_array($relations) || is_string($relations))) {
