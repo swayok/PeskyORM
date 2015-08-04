@@ -66,8 +66,12 @@ class Db {
     /** @var null|string $queryString */
     protected $queryString = null;
 
+    /** @var bool|callable */
     static public $collectAllQueries = false;
     static protected $allQueries = array();
+
+    /** @var null|callable */
+    static public $connectionWrapper = null;
 
     /**
      * Create pdo connection
@@ -101,6 +105,24 @@ class Db {
         $this->boolFalse = self::$engineSpecials['bool'][$this->dbEngine][false];
         $this->nameQuotes = self::$engineSpecials['name_quotes'][$this->dbEngine];
         $this->hasReturning = $this->dbEngine == self::PGSQL;
+        $this->wrapConnection();
+    }
+
+    /**
+     * Set a wrapper to PDO connection. Wrapper called on any new DB connection
+     * @param callable $wrapper
+     */
+    static public function setConnectionWrapper(callable $wrapper) {
+        self::$connectionWrapper = $wrapper;
+    }
+
+    /**
+     * Wrap PDO connection if wrapper is provided
+     */
+    private function wrapConnection() {
+        if (is_callable(self::$connectionWrapper)) {
+            $this->pdo = call_user_func_array(self::$connectionWrapper, [$this, $this->pdo]);
+        }
     }
 
     public function disconnect() {
@@ -224,6 +246,9 @@ class Db {
                     'columns' => $statement->columnCount(),
                     'rows' => $statement->rowCount(),
                 );
+            }
+            if (is_callable(self::$collectAllQueries)) {
+                call_user_func(self::$collectAllQueries, self::$allQueries[$index]);
             }
         }
     }
