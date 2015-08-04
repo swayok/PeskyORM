@@ -696,7 +696,7 @@ abstract class DbModel {
      * @throws DbModelException
      * @throws \PeskyORM\Exception\DbQueryException
      */
-    public function selectOne($columns, $conditionsAndOptions, $asObject = true, $withRootAlias = false) {
+    public function selectOne($columns, $conditionsAndOptions, $asObject = false, $withRootAlias = false) {
         if (empty($conditionsAndOptions)){
             throw new DbModelException($this, 'Selecting one record without conditions is not allowed');
         }
