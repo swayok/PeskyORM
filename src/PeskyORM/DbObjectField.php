@@ -542,11 +542,13 @@ abstract class DbObjectField {
      */
     public function isValidValueMinMaxRange($value) {
         $isValid = true;
-        if ($this->getMinValue() !== null) {
-            $isValid = $value >= $this->getMinValue();
-        }
-        if ($isValid && $this->getMaxValue() !== null) {
-            $isValid = $value <= $this->getMaxValue();
+        if ($value !== null) {
+            if ($this->getMinValue() !== null) {
+                $isValid = $value >= $this->getMinValue();
+            }
+            if ($isValid && $this->getMaxValue() !== null) {
+                $isValid = $value <= $this->getMaxValue();
+            }
         }
         return $isValid;
     }
