@@ -96,6 +96,10 @@ class DbColumnConfig {
     protected $minLength = 0;
     /** @var int */
     protected $maxLength = 0;
+    /** @var int */
+    protected $minValue = null;
+    /** @var int */
+    protected $maxValue = null;
     /** @var bool */
     protected $isNullable = true;
     /** @var mixed */
@@ -168,6 +172,11 @@ class DbColumnConfig {
 
     static protected $valueLengthOptionsAllowedForDbTypes = array(
         self::DB_TYPE_VARCHAR
+    );
+
+    static protected $valueMinMaxOptionsAllowedForDbTypes = array(
+        self::DB_TYPE_INT,
+        self::DB_TYPE_FLOAT
     );
 
     static protected $valueLengthOptionsNotAllowedForTypes = array(
@@ -337,7 +346,7 @@ class DbColumnConfig {
             throw new DbColumnConfigException($this, "Max length option cannot be applied to column with type [{$this->getType()}]");
         }
         if (in_array($this->getType(), self::$valueLengthOptionsNotAllowedForTypes)) {
-            throw new DbColumnConfigException($this, "Max length option value for column with type [{$this->getType()}] is fixed to [{$this->maxLength}]");
+            throw new DbColumnConfigException($this, "Max length option value for column with type [{$this->getType()}] is fixed to [{$this->getMinLength()}]");
         }
         if (!ValidateValue::isInteger($maxLength, true) && $maxLength < 0) {
             throw new DbColumnConfigException($this, "Invalid value provided for max length: {$maxLength}");
@@ -366,7 +375,7 @@ class DbColumnConfig {
             throw new DbColumnConfigException($this, "Min length option cannot be applied to column with type [{$this->getType()}]");
         }
         if (in_array($this->getType(), self::$valueLengthOptionsNotAllowedForTypes)) {
-            throw new DbColumnConfigException($this, "Min length option value for column with type [{$this->getType()}] is fixed to [{$this->maxLength}]");
+            throw new DbColumnConfigException($this, "Min length option value for column with type [{$this->getType()}] is fixed to [{$this->getMaxLength()}]");
         }
         if (!ValidateValue::isInteger($minLength, true) || $minLength < 0) {
             throw new DbColumnConfigException($this, "Invalid value provided for min length: {$minLength}");
@@ -376,6 +385,62 @@ class DbColumnConfig {
         }
         $this->minLength = $minLength;
         return $this;
+    }
+
+    /**
+     * @param int|float|null $maxValue - null: no limit
+     * @return $this
+     * @throws DbColumnConfigException
+     */
+    public function setMaxValue($maxValue) {
+        if (!in_array($this->getDbType(), self::$valueMinMaxOptionsAllowedForDbTypes)) {
+            throw new DbColumnConfigException($this, "Max value option cannot be applied to column with type [{$this->getType()}]");
+        }
+        if ($maxValue !== null) {
+            if (!ValidateValue::isFloat($maxValue, true)) {
+                throw new DbColumnConfigException($this, "Invalid value provided for max value option: {$maxValue}");
+            }
+            if ($this->getMinValue() != null && $maxValue < $this->getMinValue()) {
+                throw new DbColumnConfigException($this, "Max value [{$maxValue}] cannot be lower then min value [{$this->getMinValue()}]");
+            }
+        }
+        $this->maxValue = $maxValue;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getMaxValue() {
+        return $this->maxValue;
+    }
+
+    /**
+     * @param int|float|null $minValue - null: no limit
+     * @return $this
+     * @throws DbColumnConfigException
+     */
+    public function setMinValue($minValue) {
+        if (!in_array($this->getDbType(), self::$valueMinMaxOptionsAllowedForDbTypes)) {
+            throw new DbColumnConfigException($this, "Min value option cannot be applied to column with type [{$this->getType()}]");
+        }
+        if ($minValue !== null) {
+            if (!ValidateValue::isFloat($minValue, true)) {
+                throw new DbColumnConfigException($this, "Invalid value provided for min value option: {$minValue}");
+            }
+            if ($this->getMaxValue() !== null && $minValue > $this->getMaxValue()) {
+                throw new DbColumnConfigException($this, "Min value [{$minValue}] cannot be higher then max value [{$this->getMaxValue()}]");
+            }
+        }
+        $this->minValue = $minValue;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getMinValue() {
+        return $this->minValue;
     }
 
     /**

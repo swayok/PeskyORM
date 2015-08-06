@@ -162,6 +162,14 @@ abstract class DbObjectField {
         return $this->dbColumnConfig->getMaxLength();
     }
 
+    public function getMinValue() {
+        return $this->dbColumnConfig->getMinValue();
+    }
+
+    public function getMaxValue() {
+        return $this->dbColumnConfig->getMaxValue();
+    }
+
     /**
      * @param $action - self::ON_UPDATE or self::ON_CREATE
      * @return bool
@@ -492,6 +500,8 @@ abstract class DbObjectField {
             $this->setValidationError('Field value cannot be NULL');
         } else if (!$this->isValidValueLength($this->values['value'])) {
             $this->setValidationError("Value does not match required min-max length");
+        } else if (!$this->isValidValueMinMaxRange($this->values['value'])) {
+            $this->setValidationError("Value does not match required values range");
         } else if (!$this->isValidValueFormat($this->values['value'])) {
             if (empty($this->values['error'])) {
                 $this->setValidationError("Value is invalid");
@@ -519,6 +529,22 @@ abstract class DbObjectField {
         }
         if ($isValid && $this->getMaxLength() > 0) {
             $isValid = mb_strlen($value) <= $this->getMaxLength();
+        }
+        return $isValid;
+    }
+
+    /**
+     * Check if field length does not exceeds $this->length
+     * @param mixed $value
+     * @return bool
+     */
+    public function isValidValueMinMaxRange($value) {
+        $isValid = true;
+        if ($this->getMinValue() !== null) {
+            $isValid = $value >= $this->getMinValue();
+        }
+        if ($isValid && $this->getMaxValue() !== null) {
+            $isValid = $value <= $this->getMaxValue();
         }
         return $isValid;
     }
