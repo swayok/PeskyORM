@@ -524,11 +524,13 @@ abstract class DbObjectField {
      */
     public function isValidValueLength($value) {
         $isValid = true;
-        if ($this->getMinLength() > 0) {
-            $isValid = mb_strlen($value) >= $this->getMinLength();
-        }
-        if ($isValid && $this->getMaxLength() > 0) {
-            $isValid = mb_strlen($value) <= $this->getMaxLength();
+        if ($value !== null) {
+            if ($this->getMinLength() > 0) {
+                $isValid = mb_strlen($value) >= $this->getMinLength();
+            }
+            if ($isValid && $this->getMaxLength() > 0) {
+                $isValid = mb_strlen($value) <= $this->getMaxLength();
+            }
         }
         return $isValid;
     }
