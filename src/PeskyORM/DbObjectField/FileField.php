@@ -6,7 +6,6 @@ namespace PeskyORM\DbObjectField;
 use PeskyORM\DbFileInfo;
 use PeskyORM\DbImageFileInfo;
 use PeskyORM\DbObjectField;
-use PeskyORM\Exception\DbColumnConfigException;
 use PeskyORM\Exception\DbExceptionCode;
 use PeskyORM\Exception\DbObjectFieldException;
 use PeskyORM\Exception\DbObjectException;

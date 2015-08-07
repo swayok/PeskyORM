@@ -7,12 +7,12 @@ use PeskyORM\Exception\DbConnectionConfigException;
 class DbConnectionConfig {
 
     const POSTGRESQL = 'pgsql';
-//    const MYSQL = 'mysql';
+    const MYSQL = 'mysql';
 //    const SQLITE = 'sqlite';
 
     static private $drivers = array(
         self::POSTGRESQL,
-//        self::MYSQL,
+        self::MYSQL,
 //        self::SQLITE,
     );
 
