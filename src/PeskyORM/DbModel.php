@@ -367,8 +367,16 @@ abstract class DbModel {
     static public function dbObjectNameByModelClassName($class) {
         $calledClass = get_called_class();
         return preg_replace(
-            array('%^.*[\\\]%is', '%' . $calledClass::$modelClassSuffix . '$%', '%^' . $calledClass::getModelsNamespace() . '/%'),
-            array('', '', $calledClass::getObjectsNamespace() . '/'),
+            array(
+                '%^.*[\\\]%is',
+                '%' . $calledClass::$modelClassSuffix . '$%',
+                '%^' . preg_quote(addslashes($calledClass::getModelsNamespace()), '%') . '/%'
+            ),
+            array(
+                '',
+                '',
+                $calledClass::getObjectsNamespace() . '/'
+            ),
             $class
         );
     }
