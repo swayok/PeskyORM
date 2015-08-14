@@ -342,7 +342,7 @@ abstract class DbObjectField {
                 // on object update
                 // value is set in db but possibly was not fetched
                 // to avoid overwriting of correct value object must notify about this situation
-                throw new DbObjectFieldException($this, "Field value is not set. Possibly value was not fetched from DB");
+                throw new DbObjectFieldException($this, "Field [{$this->getName()}] value is not set. Possibly value was not fetched from DB");
             } else {
                 // on object create just set default value or null
                 $this->setValue($this->getDefaultValueOr(null));
