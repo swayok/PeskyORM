@@ -283,6 +283,13 @@ abstract class DbObjectField {
                     "Value is imported from field [{$this->dbColumnConfig->importVirtualColumnValueFrom()}]."
             );
         }
+        if (
+            !$isDbValue
+            && $this->isExcludedOn($this->getDbObject()->exists() ? DbColumnConfig::ON_UPDATE : DbColumnConfig::ON_CREATE)
+        ) {
+            // if field is excluded for current action - ignore update
+            return $this;
+        }
         $this->values['rawValue'] = $value;
         $this->values['value'] = $this->processNewValue($this->values['rawValue']);
         $this->setValueReceivedFromDb($isDbValue);
