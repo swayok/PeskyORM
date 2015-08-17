@@ -203,6 +203,13 @@ abstract class DbObjectField {
     }
 
     /**
+     * @return bool
+     */
+    public function isExcludedForAllActions() {
+        return $this->dbColumnConfig->getIsExcluded() === DbColumnConfig::ON_ALL;
+    }
+
+    /**
      * @return array
      */
     public function getAllowedValues() {
@@ -283,11 +290,8 @@ abstract class DbObjectField {
                     "Value is imported from field [{$this->dbColumnConfig->importVirtualColumnValueFrom()}]."
             );
         }
-        if (
-            !$isDbValue
-            && $this->isExcludedOn($this->getDbObject()->exists() ? DbColumnConfig::ON_UPDATE : DbColumnConfig::ON_CREATE)
-        ) {
-            // if field is excluded for current action - ignore update
+        if (!$isDbValue && $this->isExcludedForAllActions()) {
+            // if field is excluded for all actions - ignore update
             return $this;
         }
         $this->values['rawValue'] = $value;

@@ -1791,11 +1791,12 @@ class DbObject {
     /**
      * Collect default values for the fields
      * @param array|null $fieldNames - will return only this fields (if not skipped)
+     * @param bool $addExcludedFields - true: if field is excluded for all actions - it will not be returned
      * @return array
      * @throws DbObjectFieldException
      * @throws DbObjectException
      */
-    public function getDefaultsArray($fieldNames = null) {
+    public function getDefaultsArray($fieldNames = null, $ignoreExcludedFields = true) {
         $values = array();
         if (is_string($fieldNames)) {
             $fieldNames = array($fieldNames);
@@ -1805,7 +1806,10 @@ class DbObject {
             throw new DbObjectException($this, "getDefaultsArray: \$fieldNames argument must be empty, string or array");
         }
         foreach ($fieldNames as $name) {
-            $values[$name] = $this->_getField($name)->getDefaultValueOr(null);
+            $field = $this->_getField($name);
+            if (!$ignoreExcludedFields || !$field->isExcludedForAllActions()) {
+                $values[$name] = $this->_getField($name)->getDefaultValueOr(null);
+            }
         }
         return $values;
     }
