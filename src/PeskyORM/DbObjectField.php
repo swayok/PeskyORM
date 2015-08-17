@@ -291,8 +291,8 @@ abstract class DbObjectField {
             );
         }
         if (!$isDbValue && $this->isExcludedForAllActions()) {
-            // if field is excluded for all actions - ignore update
-            return $this;
+            // if field is excluded for all actions - throw exception
+            throw new DbObjectFieldException($this, 'Cannot set non-db value to an excluded DB object field');
         }
         $this->values['rawValue'] = $value;
         $this->values['value'] = $this->processNewValue($this->values['rawValue']);
