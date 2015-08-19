@@ -93,6 +93,12 @@ class DbObject {
      */
     protected $_baseModelClass = DbModel::class;
 
+    /**
+     * $this->toPublicArray() will automatically add PK value to returned array
+     * @var bool
+     */
+    protected $_autoAddPkValueToPublicArray = true;
+
     const ERROR_OBJECT_NOT_EXISTS = 'Object not exists or not loaded';
 
     /**
@@ -1723,7 +1729,7 @@ class DbObject {
         if (empty($fieldNames) || !is_array($fieldNames)) {
             $fieldNames = $this->_allFieldNames;
         }
-        if ($this->exists() && !in_array($this->_getPkFieldName(), $fieldNames)) {
+        if ($this->_autoAddPkValueToPublicArray && $this->exists() && !in_array($this->_getPkFieldName(), $fieldNames)) {
             $fieldNames[] = $this->_getPkFieldName();
         }
         foreach ($fieldNames as $fieldName) {
