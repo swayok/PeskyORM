@@ -124,7 +124,17 @@ class FileColumnConfig extends DbColumnConfig {
         if (!is_string($baseUrlToFiles)) {
             throw new DbColumnConfigException($this, '$baseUrlToFiles should be a string');
         }
-        $this->baseUrlToFiles = $baseUrlToFiles;
+        if (preg_match('%(http://[^/]+)(/.*$|$)%i', $baseUrlToFiles, $urlParts)) {
+            $this->baseUrlToFiles = $urlParts[2];
+            if (!$this->hasFileServerUrlGenerator()) {
+                $baseUrl = $urlParts[1];
+                $this->setFileServerUrlGenerator(function () use ($baseUrl) {
+                    return $baseUrl;
+                });
+            }
+        } else {
+            $this->baseUrlToFiles = $baseUrlToFiles;
+        }
         return $this;
     }
 
@@ -245,6 +255,13 @@ class FileColumnConfig extends DbColumnConfig {
      */
     public function getFileServerUrlGenerator() {
         return $this->fileServerUrlGenerator;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasFileServerUrlGenerator() {
+        return !empty($this->fileServerUrlGenerator);
     }
 
     /**

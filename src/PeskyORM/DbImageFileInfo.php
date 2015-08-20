@@ -66,4 +66,13 @@ class DbImageFileInfo extends DbFileInfo {
         }
     }
 
+    /**
+     * @param null|string $versionName
+     * @return string
+     * @throws Exception\DbObjectFieldException
+     */
+    public function getAbsoluteFileUrl($versionName = null) {
+        return $this->fileField->getFileServerUrl() . $this->getFileUrl($versionName);
+    }
+
 }

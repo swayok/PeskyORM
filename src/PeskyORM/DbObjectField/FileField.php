@@ -257,7 +257,7 @@ class FileField extends DbObjectField {
         if (!$this->getDbObject()->exists()) {
             throw new DbObjectFieldException($this, 'Unable to get file url of non-existing object');
         }
-        return rtrim($this->getFileServerUrl(), '/\\') . '/' . trim($this->getFileDirRelativeUrl(), '/\\') . '/';
+        return $this->getFileServerUrl() . '/' . trim($this->getFileDirRelativeUrl(), '/\\') . '/';
     }
 
     /**
@@ -275,7 +275,7 @@ class FileField extends DbObjectField {
         } else {
             $url = 'http://' . $_SERVER['HTTP_HOST'];
         }
-        return $url;
+        return rtrim($url, '/\\');
     }
 
     /**

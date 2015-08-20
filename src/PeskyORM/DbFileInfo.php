@@ -139,6 +139,14 @@ class DbFileInfo {
     }
 
     /**
+     * @return string
+     * @throws DbObjectFieldException
+     */
+    public function getAbsoluteFileUrl() {
+        return $this->fileField->getFileServerUrl() . $this->getFileUrl();
+    }
+
+    /**
      * @return array
      */
     public function toPublicArray() {
