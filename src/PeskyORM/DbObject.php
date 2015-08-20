@@ -117,6 +117,17 @@ class DbObject {
     }
 
     /**
+     * Read data from DB using Model
+     * @param string|array $conditions - conditions to use
+     * @param array|string $fieldNames - list of fields to get
+     * @param array|null|string $relations - list of relations to read with object
+     * @return $this
+     */
+    static public function search($conditions, $fieldNames = '*', $relations = array()) {
+        return self::create()->find($conditions, $fieldNames, $relations);
+    }
+
+    /**
      * @param DbModel|null $model
      * @param null|array|string|int $dataOrPkValue - null: do nothing | int and string: is primary key (read db) | array: object data
      * @param bool $filter - used only when $data not empty and is array
