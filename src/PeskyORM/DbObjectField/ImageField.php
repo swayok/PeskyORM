@@ -87,6 +87,25 @@ class ImageField extends FileField {
     }
 
     /**
+     * @param string $versionName
+     * @return bool|string
+     * @throws DbObjectFieldException
+     */
+    public function restoreImageVersion($versionName, $ext = null) {
+        $configs = $this->getImageVersionsConfigs();
+        if (empty($configs[$versionName])) {
+            return false;
+        }
+        return ImageUtils::restoreVersionForConfig(
+            $versionName,
+            $configs[$versionName],
+            $this->getFileNameWithoutExtension(),
+            $this->getFileDirPath(),
+            $ext
+        );
+    }
+
+    /**
      * @return array
      * @throws DbObjectFieldException
      */
