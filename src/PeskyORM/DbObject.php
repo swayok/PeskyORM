@@ -437,10 +437,11 @@ class DbObject {
      * @param string $relationAlias
      * @param null|DbObject|DbObject[] $objectOrDataOrPkValue
      * @param bool $ignorePkNotSetError - true: exception '[local_field] is empty' when local_field is primary key will be ignored
+     * @param bool $isDbValues
      * @return bool|$this[]|$this - false: for hasMany relation
      * @throws DbObjectException
      */
-    protected function _initRelatedObject($relationAlias, $objectOrDataOrPkValue = null, $ignorePkNotSetError = false) {
+    protected function _initRelatedObject($relationAlias, $objectOrDataOrPkValue = null, $ignorePkNotSetError = false, $isDbValues = false) {
         if (!$this->_hasRelation($relationAlias)) {
             throw new DbObjectException($this, "Unknown relation with alias [$relationAlias]");
         }
@@ -450,9 +451,9 @@ class DbObject {
         }
         // check if passed object is valid
         if ($this->_getTypeOfRealation($relationAlias) === DbRelationConfig::HAS_MANY) {
-            $this->_initOneToManyRelation($relationAlias, $objectOrDataOrPkValue, $ignorePkNotSetError);
+            $this->_initOneToManyRelation($relationAlias, $objectOrDataOrPkValue, $ignorePkNotSetError, $isDbValues);
         } else {
-            $this->_initOneToOneRelation($relationAlias, $objectOrDataOrPkValue, $ignorePkNotSetError);
+            $this->_initOneToOneRelation($relationAlias, $objectOrDataOrPkValue, $ignorePkNotSetError, $isDbValues);
         }
         return $this->_relatedObjects[$relationAlias];
     }
@@ -461,9 +462,10 @@ class DbObject {
      * @param string $relationAlias
      * @param array|DbObject|null $objectOrDataOrPkValue
      * @param bool $ignorePkNotSetError
+     * @param bool $isDbValues
      * @throws DbObjectException
      */
-    protected function _initOneToOneRelation($relationAlias, $objectOrDataOrPkValue = null, $ignorePkNotSetError = false) {
+    protected function _initOneToOneRelation($relationAlias, $objectOrDataOrPkValue = null, $ignorePkNotSetError = false, $isDbValues = false) {
         $localFieldName = $this->_getLocalFieldNameForRelation($relationAlias);
         $relationFieldName = $this->_getForeignFieldNameForRelation($relationAlias);
         $localFieldIsPrimaryKey = $localFieldName === $this->_getPkFieldName();
@@ -493,7 +495,7 @@ class DbObject {
                 $this->linkRelatedObjectToThis($relationAlias, $relatedObject);
             } else {
                 if (is_array($objectOrDataOrPkValue)) {
-                    $relatedObject->_fromData($objectOrDataOrPkValue);
+                    $relatedObject->_fromData($objectOrDataOrPkValue, false, $isDbValues);
                 } else if ($relatedObject->_getPkField()->isValidValueFormat($objectOrDataOrPkValue)) {
                     $relatedObject->read($objectOrDataOrPkValue);
                 } else {
@@ -510,21 +512,29 @@ class DbObject {
         $this->_relatedObjects[$relationAlias] = $relatedObject;
     }
 
-    protected function _initOneToManyRelation($relationAlias, $objectOrDataOrPkValue, $ignorePkNotSetError = false) {
+    /**
+     * @param string $relationAlias
+     * @param array|DbObject $objectsOrRecordsList
+     * @param bool $ignorePkNotSetError
+     * @param bool $isDbValues
+     * @throws DbObjectException
+     * @throws Exception\DbModelException
+     */
+    protected function _initOneToManyRelation($relationAlias, $objectsOrRecordsList, $ignorePkNotSetError = false, $isDbValues = false) {
         // todo: implement DbObjectCollection that works as usual array but has some useful methods like find/sort/filter
         $localFieldName = $this->_getLocalFieldNameForRelation($relationAlias);
         $relationFieldName = $this->_getForeignFieldNameForRelation($relationAlias);
         if ($this->_isFieldHasEmptyValue($localFieldName)) {
             throw new DbObjectException($this, "Cannot link [{$this->_getModelAlias()}] with [{$relationAlias}]: [{$this->_getModelAlias()}->{$localFieldName}] is empty");
         }
-        if (empty($objectOrDataOrPkValue)) {
+        if (empty($objectsOrRecordsList)) {
             $relatedObjects = false; //< means not loaded
-        } else if (!is_array($objectOrDataOrPkValue) || !isset($objectOrDataOrPkValue[0])) {
+        } else if (!is_array($objectsOrRecordsList) || !isset($objectsOrRecordsList[0])) {
             throw new DbObjectException($this, "Related objects must be a plain array");
         } else {
             // array of related objects
             $relatedObjects = array();
-            foreach ($objectOrDataOrPkValue as $index => $item) {
+            foreach ($objectsOrRecordsList as $index => $item) {
                 if (empty($item)) {
                     throw new DbObjectException($this, "One of related objects (with index{$index}) is empty");
                 } else if (is_object($item)) {
@@ -532,7 +542,7 @@ class DbObject {
                     $relatedObjects[] = $item;
                 } else {
                     // array of item data arrays or item ids
-                    $relatedObjects[] = $this->_getModel()->getRelatedModel($relationAlias)->getOwnDbObject($item);
+                    $relatedObjects[] = $this->_getModel()->getRelatedModel($relationAlias)->getOwnDbObject($item, false, $isDbValues);
                 }
             }
             // validate relation
@@ -651,11 +661,11 @@ class DbObject {
      *      true: filters data that does not belong to this object
      *      false: data that does not belong to this object will trigger exceptions
      *      array: list of fields to use
-     * @param bool $isDbValue - true: all values are updates fro db values | false: all values are db values
+     * @param bool $isDbValues - true: all values are updates fro db values | false: all values are db values
      * @return $this
      * @throws DbObjectException when $filter == false and unknown field detected in $data
      */
-    protected function _fromData($data, $filter = false, $isDbValue = false) {
+    protected function _fromData($data, $filter = false, $isDbValues = false) {
         // reset db object values when:
         // 1. object has no pk value
         // 2. $data does not contain pk value
@@ -682,17 +692,21 @@ class DbObject {
             }
             // set primary key first
             if (isset($data[$pkField->getName()])) {
-                $pkField->setValue($data[$pkField->getName()], $isDbValue);
+                $pkField->setValue($data[$pkField->getName()], $isDbValues);
                 unset($data[$pkField->getName()]);
             }
             foreach ($data as $fieldNameOrAlias => $value) {
                 if ($this->_hasField($fieldNameOrAlias)) {
-                    $this->_getField($fieldNameOrAlias)->setValue($value, $isDbValue);
+                    $this->_getField($fieldNameOrAlias)->setValue($value, $isDbValues);
                 } else if ($this->_hasRelation($fieldNameOrAlias) && is_array($value)) {
                     if ($this->_hasRelatedObject($fieldNameOrAlias)) {
-                        $this->_getRelatedObject($fieldNameOrAlias)->updateValues($value);
+                        if ($isDbValues) {
+                            $this->_getRelatedObject($fieldNameOrAlias)->fromDbData($value);
+                        } else {
+                            $this->_getRelatedObject($fieldNameOrAlias)->updateValues($value);
+                        }
                     } else {
-                        $this->_initRelatedObject($fieldNameOrAlias, $value, true);
+                        $this->_initRelatedObject($fieldNameOrAlias, $value, true, $isDbValues);
                     }
                 } else if (!$filter && $fieldNameOrAlias[0] !== '_') {
                     $class = get_class($this);
