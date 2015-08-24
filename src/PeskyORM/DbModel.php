@@ -2,6 +2,7 @@
 
 namespace PeskyORM;
 use PeskyORM\DbColumnConfig;
+use PeskyORM\Exception\DbException;
 use PeskyORM\Exception\DbModelException;
 use PeskyORM\Exception\DbQueryException;
 use PeskyORM\Exception\DbUtilsException;
@@ -68,6 +69,11 @@ abstract class DbModel {
     static public function getModelClassSuffix() {
         $className = get_called_class();
         return $className::$modelClassSuffix;
+    }
+
+    static public function getTableConfigClassSuffix() {
+        $className = get_called_class();
+        return $className::$tableConfigClassSuffix;
     }
 
     /**
@@ -502,9 +508,19 @@ abstract class DbModel {
         if (empty($alias)) {
             $alias = $this->getConnectionAlias();
         }
+        return self::_getDataSource($alias);
+    }
+
+    /**
+     * @param string $alias
+     * @return Db
+     * @throws DbUtilsException
+     * @throws Exception\DbConnectionConfigException
+     */
+    static public function _getDataSource($alias) {
         if (empty(self::$dataSources[$alias])) {
             if (empty(self::$dbConnectionConfigs[$alias])) {
-                throw new DbModelException($this, "Unknown data source with alias [$alias]");
+                throw new DbUtilsException("Unknown DB connection with alias [$alias]");
             }
             self::$dataSources[$alias] = new Db(
                 self::$dbConnectionConfigs[$alias]->getDriver(),
