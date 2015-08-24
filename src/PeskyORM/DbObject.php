@@ -1318,7 +1318,7 @@ class DbObject {
     /**
      * Find related object or list of objects by relation alias
      * @param string $relationAlias
-     * @return $this|$this[]|bool
+     * @return DbObject|DbObject[]|bool
      * @throws DbObjectException when local field is empty
      */
     protected function _findRelatedObject($relationAlias) {
@@ -1762,7 +1762,7 @@ class DbObject {
             if ($field->isPrivate()) {
                 continue;
             } else if ($field->isFile()) {
-                if ($field->hasFile()) {
+                if ($this->exists() && $field->hasFile()) {
                     $values[$fieldName] = $field->getFileInfo(true, true)->toPublicArray();
                 } else {
                     $values[$fieldName] = null;
@@ -1805,14 +1805,18 @@ class DbObject {
                 $this->_findRelatedObject($relationAlias); //< read relation data
             }
             // show related object if it is set or
-            if (!empty($this->_relatedObjects[$relationAlias])) {
-                if (is_array($this->_relatedObjects[$relationAlias])) {
+            $relatedObjects = $this->_relatedObjects[$relationAlias];
+            if (!empty($relatedObjects)) {
+                if (is_array($relatedObjects)) {
+                    $return[$relationAlias] = [];
                     /** @var DbObject $object */
-                    foreach ($this->_relatedObjects[$relationAlias] as $object) {
+                    foreach ($relatedObjects as $object) {
                         $return[$relationAlias][] = $object->toPublicArray($fieldNames);
                     }
+                } else if ($relatedObjects->exists()) {
+                    $return[$relationAlias] = $relatedObjects->toPublicArray($fieldNames);
                 } else {
-                    $return[$relationAlias] = $this->_relatedObjects[$relationAlias]->toPublicArray($fieldNames);
+                    $return[$relationAlias] = null;
                 }
             }
         }
