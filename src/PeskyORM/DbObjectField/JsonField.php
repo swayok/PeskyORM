@@ -22,5 +22,9 @@ class JsonField extends TextField {
         return false;
     }
 
+    public function getArray() {
+        return isset($this->values['value']) ? json_decode($this->values['value'], true) : [];
+    }
+
 
 }

@@ -4,6 +4,7 @@ namespace PeskyORM;
 use PeskyORM\DbColumnConfig;
 use PeskyORM\DbObjectField\FileField;
 use PeskyORM\DbObjectField\ImageField;
+use PeskyORM\DbObjectField\JsonField;
 use PeskyORM\DbObjectField\PasswordField;
 use PeskyORM\DbObjectField\TimestampField;
 use PeskyORM\Exception\DbObjectFieldException;
@@ -188,7 +189,40 @@ class DbObject {
      * @return bool
      */
     public function _hasField($fieldName) {
-        return is_string($fieldName) && !empty($this->_fields[$fieldName]);
+        return is_string($fieldName) && (!empty($this->_fields[$fieldName]) || $this->isSuffixedField($fieldName));
+    }
+
+    /**
+     * Check if field name has a suffix like '_ts', '_array', etc and it really exists
+     * @param string $fieldName
+     * @return bool
+     */
+    protected function isSuffixedField($fieldName) {
+        $fieldName = $this->getSuffixedFieldName($fieldName);
+        return !empty($fieldName) && !empty($this->_fields[$fieldName]);
+    }
+
+    /**
+     * @param string $fieldName
+     * @return DbObjectField
+     */
+    protected function getSuffixedField($fieldName) {
+        $realFieldName = $this->getSuffixedFieldName($fieldName);
+        if (!empty($realFieldName) && !empty($this->_fields[$realFieldName])) {
+            return $this->_fields[$realFieldName];
+        }
+        throw new DbObjectException($this, "Db object has no field called [{$fieldName}]");
+    }
+
+    /**
+     * @param string $fieldName
+     * @return bool
+     */
+    protected function getSuffixedFieldName($fieldName) {
+        if (preg_match('%^(.+)_[a-zA-Z0-9]+$%i', $fieldName, $matches)) {
+            return $matches[1];
+        }
+        return false;
     }
 
     /**
@@ -199,6 +233,9 @@ class DbObject {
     public function _getField($fieldName) {
         if (!$this->_hasField($fieldName)) {
             throw new DbObjectException($this, "Db object has no field called [{$fieldName}]");
+        }
+        if (empty($this->_fields[$fieldName])) {
+            return $this->getSuffixedField($fieldName);
         }
         return $this->_fields[$fieldName];
     }
@@ -794,6 +831,30 @@ class DbObject {
         $field = $this->_getField($fieldName);
         if ($field->isFile() && !$field->hasValue()) {
             return $field->hasFile() ? $field->getFileInfo(true, true) : null;
+        } else if ($this->isSuffixedField($fieldName)) {
+            if (
+                preg_match('%^(.+)_(date|time|ts)$%is', $fieldName, $matches)
+                && $field instanceof TimestampField
+            ) {
+                switch ($matches[2]) {
+                    case 'date':
+                        return $field->getDate();
+                        break;
+                    case 'time':
+                        return $field->getTime();
+                        break;
+                    case 'ts':
+                        return $field->getUnixTimestamp();
+                        break;
+                }
+            } else if (
+                preg_match('%^(.+)_(arr|array)$%is', $fieldName, $matches)
+                && $field instanceof JsonField
+            ) {
+                return $field->getArray();
+            } else {
+                throw new DbObjectException($this, "Unknown DbObject field or relation alias [$fieldName]");
+            }
         } else {
             return $field->getValue();
         }
@@ -847,24 +908,6 @@ class DbObject {
                 $this->_findRelatedObject($fieldNameOrAlias);
             }
             return $this->_relatedObjects[$fieldNameOrAlias];
-        } else if (
-            preg_match('%^(.*)_(date|time|ts)$%is', $fieldNameOrAlias, $matches)
-            && $this->_hasField($matches[1])
-            && $this->_getField($matches[1]) instanceof TimestampField
-        ) {
-            /** @var TimestampField $field */
-            $field = $this->_getField($matches[1]);
-            switch($matches[2]) {
-                case 'date':
-                    return $field->getDate();
-                    break;
-                case 'time':
-                    return $field->getTime();
-                    break;
-                case 'ts':
-                    return $field->getUnixTimestamp();
-                    break;
-            }
         } else {
             throw new DbObjectException($this, "Unknown DbObject field or relation alias [$fieldNameOrAlias]");
         }
