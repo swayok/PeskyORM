@@ -32,6 +32,7 @@ class DbColumnConfig {
     const DB_TYPE_INT = 'integer';
     const DB_TYPE_FLOAT = 'numeric';
     const DB_TYPE_BOOL = 'boolean';
+    const DB_TYPE_JSONB = 'jsonb';
     const DB_TYPE_TIMESTAMP = 'timestamp';
     const DB_TYPE_DATE = 'date';
     const DB_TYPE_TIME = 'time';
@@ -49,6 +50,7 @@ class DbColumnConfig {
         self::TYPE_STRING => self::DB_TYPE_VARCHAR,
         self::TYPE_TEXT => self::DB_TYPE_TEXT,
         self::TYPE_JSON => self::DB_TYPE_TEXT,
+        self::TYPE_JSONB => self::DB_TYPE_JSONB,
         self::TYPE_SHA1 => self::DB_TYPE_VARCHAR,
         self::TYPE_MD5 => self::DB_TYPE_VARCHAR,
         self::TYPE_PASSWORD => self::DB_TYPE_VARCHAR,
