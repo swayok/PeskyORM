@@ -14,6 +14,7 @@ class DbColumnConfig {
     const TYPE_STRING = 'string';
     const TYPE_TEXT = 'text';
     const TYPE_JSON = 'json';
+    const TYPE_JSONB = 'jsonb';
     const TYPE_SHA1 = 'sha1';
     const TYPE_MD5 = 'md5';
     const TYPE_PASSWORD = 'password';
