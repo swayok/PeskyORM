@@ -1044,6 +1044,9 @@ class DbObject {
     public function commit($commitRelations = false) {
         $ret = true;
         if (!empty($this->_updatedFields)) {
+            if (!$this->_isStoringFieldUpdates && count($this->_updatedFields) > 1) {
+                throw new DbObjectException($this, 'Attempt to commit() several field updates without calling begin()');
+            }
             $ret = $this->saveUpdates($this->_updatedFields);
         }
         if ($ret) {
@@ -1219,11 +1222,7 @@ class DbObject {
      */
     public function fieldUpdated($fieldName) {
         if ($this->_allowFieldsUpdatesTracking) {
-            if ($this->_isStoringFieldUpdates) {
-                $this->_updatedFields[] = $fieldName;
-            } else {
-                $this->_updatedFields = array($fieldName); //< for single field saving
-            }
+            $this->_updatedFields[] = $fieldName;
         }
         // reinit related objects
         foreach ($this->_getField($fieldName)->getRelations() as $alias => $relationConfig) {
