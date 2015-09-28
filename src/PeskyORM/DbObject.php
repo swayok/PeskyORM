@@ -763,13 +763,17 @@ class DbObject {
     public function reset() {
         $this->_customErrors = array();
         $this->_setOriginalData(null);
-        $this->_isStoringFieldUpdates = false;
+        $this->cleanUpdatesOfFields();
         foreach ($this->_fields as $dbField) {
             $dbField->resetValue();
         }
-        $this->_updatedFields = array();
         $this->_cleanRelatedObjects();
         return $this;
+    }
+
+    private function cleanUpdatesOfFields() {
+        $this->_isStoringFieldUpdates = false;
+        $this->_updatedFields = array();
     }
 
     /**
@@ -1024,7 +1028,7 @@ class DbObject {
      * @return $this
      */
     public function begin($withRelations = false) {
-        $this->_updatedFields = array();
+        $this->cleanUpdatesOfFields();
         $this->_isStoringFieldUpdates = true;
         $this->runActionForRelations($withRelations, 'begin');
         return $this;
@@ -1050,8 +1054,7 @@ class DbObject {
             $ret = $this->saveUpdates($this->_updatedFields);
         }
         if ($ret) {
-            $this->_updatedFields = array();
-            $this->_isStoringFieldUpdates = false;
+            $this->cleanUpdatesOfFields();
             $ret = $this->runActionForRelations($commitRelations, 'commit');
         }
         return $ret;
@@ -1072,7 +1075,7 @@ class DbObject {
         foreach ($this->_updatedFields as $fieldName) {
             $this->_getField($fieldName)->restoreDdValueOrReset();
         }
-        $this->_updatedFields = array();
+        $this->cleanUpdatesOfFields();
         $this->runActionForRelations($rollbackRelations, 'commit');
         return $this;
     }
@@ -1540,6 +1543,7 @@ class DbObject {
             }
         }
         if (!empty($ret)) {
+            $this->cleanUpdatesOfFields();
             $this->afterSave(!$exists);
         }
         return !empty($ret);
