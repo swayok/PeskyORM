@@ -858,8 +858,8 @@ class DbQuery {
             $typeOrExpression = strtolower($typeOrExpression);
         }
         $hasGroupByOrAggregates = !empty($this->groupBy) || $this->hasAggregatesInFields();
-        $autoAddPkField = $addPkField && !$hasGroupByOrAggregates;
-        $autoAddOrderBy = $addDefaultOrderBy && !$hasGroupByOrAggregates;
+        $autoAddPkField = $addPkField && !$hasGroupByOrAggregates && !$this->distinct;
+        $autoAddOrderBy = $addDefaultOrderBy && !$hasGroupByOrAggregates && !$this->distinct;
         $this->query = 'SELECT ';
         if ($this->distinct) {
             $this->query .= 'DISTINCT ';
