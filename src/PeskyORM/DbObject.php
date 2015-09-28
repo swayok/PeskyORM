@@ -1645,6 +1645,9 @@ class DbObject {
                 $model->rollback();
             }
         }
+        if (!empty($ret)) {
+            $this->cleanUpdatesOfFields();
+        }
         return !empty($ret);
     }
 
