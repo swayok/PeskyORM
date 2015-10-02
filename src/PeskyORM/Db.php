@@ -348,7 +348,7 @@ class Db {
      */
     public function quoteValue($value, $fieldInfoOrType = \PDO::PARAM_STR) {
         if (is_object($value) && $value instanceof DbExpr) {
-            return $value->get();
+            return self::replaceQuotes($value->get());
         } else {
             if (is_array($value)) {
                 $value = $this->serializeArray($value);

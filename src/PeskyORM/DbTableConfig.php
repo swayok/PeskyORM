@@ -45,6 +45,7 @@ abstract class DbTableConfig {
     protected function loadColumnConfigsFromPrivateMethods() {
         $objectReflection = new \ReflectionObject($this);
         $methods = $objectReflection->getMethods(\ReflectionMethod::IS_PRIVATE);
+        $relations = array();
         foreach ($methods as $method) {
             $method->setAccessible(true);
             $config = $method->invoke($this);
@@ -55,8 +56,12 @@ abstract class DbTableConfig {
                 }
                 $this->addColumn($config);
             } else if ($config instanceof DbRelationConfig) {
-                $this->addRelation($config, $method->getName());
+                // delay to let all columns be created
+                $relations[$method->getName()] = $config;
             }
+        }
+        foreach ($relations as $name => $config) {
+            $this->addRelation($config, $name);
         }
     }
 
