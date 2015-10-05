@@ -4,13 +4,13 @@ namespace PeskyORM;
 
 class DbRelationConfig {
 
-    const HAS_ONE = 'has_one';
-    const HAS_MANY = 'has_many';
-    const BELONGS_TO = 'belongs_to';
+    const HAS_ONE = DbJoinConfig::HAS_ONE;
+    const HAS_MANY = DbJoinConfig::HAS_MANY;
+    const BELONGS_TO = DbJoinConfig::BELONGS_TO;
 
-    const JOIN_LEFT = 'left';
-    const JOIN_RIGHT = 'right';
-    const JOIN_INNER = 'inner';
+    const JOIN_LEFT = DbJoinConfig::JOIN_LEFT;
+    const JOIN_RIGHT = DbJoinConfig::JOIN_RIGHT;
+    const JOIN_INNER = DbJoinConfig::JOIN_INNER;
 
     /** @var DbTableConfig */
     protected $dbTableConfig;

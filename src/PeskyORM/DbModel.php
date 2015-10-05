@@ -586,16 +586,23 @@ abstract class DbModel {
                         throw new DbModelException($this, "Queries with one-to-many joins are not allowed via 'CONTAIN' key");
                     } else {
                         $model = $this->getRelatedModel($alias);
-                        $where['JOIN'][$alias] = array(
-                            'type' => $relationConfig->getJoinType(),
-                            'table1_model' => $model,
-                            'table1_field' => $relationConfig->getForeignColumn(),
-                            'table1_alias' => $alias,
-                            'table2_alias' => $this->alias,
-                            'table2_field' => $relationConfig->getColumn(),
-                            'conditions' => $relationConfig->getAdditionalJoinConditions(),
-                            'fields' => $fields
-                        );
+                        $additionalConditions = $relationConfig->getAdditionalJoinConditions();
+                        if (is_array($fields)) {
+                            if (isset($fields['CONDITIONS'])) {
+                                $additionalConditions = array_replace_recursive($additionalConditions, $fields['CONDITIONS']);
+                            }
+                            unset($fields['CONDITIONS']);
+                            if (empty($fields)) {
+                                $fields = '*';
+                            }
+                        }
+                        $where['JOIN'][$alias] = DbJoinConfig::create($alias)
+                            ->setConfigForLocalTable($this, $relationConfig->getColumn())
+                            ->setJoinType($relationConfig->getJoinType())
+                            ->setConfigForForeignTable($model, $relationConfig->getForeignColumn())
+                            ->setAdditionalJoinConditions($additionalConditions)
+                            ->setForeignColumnsToSelect($fields)
+                            ->getConfigsForDbQuery();
                     }
                 }
                 if (empty($where['JOIN'])) {
