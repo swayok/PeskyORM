@@ -1200,12 +1200,12 @@ class DbQuery {
                 } else if (is_string($column) && !in_array(strtolower(trim($column)), array('and', 'or'))) {
                     // 2.1
                     $customOperator = $columnQuoted ? '' : '\s+(.+?)\s*$|'; //< when column is expression ($columnQuoted = true) it is possible to fail custom operator search
-                    if (preg_match('%^\s*(.*?)(?:' . $customOperator . '\s*(>|<|=|\!=|>=|<=|LIKE|NOT\s+LIKE|\~\*|\~|!\~\*|!\~|SIMILAR\s+TO|NOT\s+SIMILAR\s+TO|IN|NOT IN))\s*$%is', $column, $matches)) {
+                    if (preg_match('%^\s*(.*?)(?:' . $customOperator . '\s*(>|<|=|\!=|>=|<=|\s+LIKE|\s+NOT\s+LIKE|\~\*|\~|!\~\*|!\~|\s+SIMILAR\s+TO|\s+NOT\s+SIMILAR\s+TO|\s+IN|\s+NOT\s+IN|\s+BETWEEN|\s+NOT\s+BETWEEN))\s*$%is', $column, $matches)) {
                         if (trim($matches[1]) == '') {
                             throw new DbQueryException($this, "DbQuery->assembleConditions(): empty column name in [$column]");
                         }
                         $column = trim($matches[1]);
-                        $operator = strtoupper(trim(empty($matches[2]) ? $matches[3] : $matches[2]));
+                        $operator = strtoupper(preg_replace('%\s+%', ' ', trim(empty($matches[2]) ? $matches[3] : $matches[2])));
                     }
                     if (empty($operator)) {
                         // 2
