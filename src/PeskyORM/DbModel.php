@@ -590,15 +590,20 @@ abstract class DbModel {
                     } else {
                         $model = $this->getRelatedModel($alias);
                         $additionalConditions = $relationConfig->getAdditionalJoinConditions();
+                        $joinType = $relationConfig->getJoinType();
                         if (is_array($fields)) {
+                            if (isset($fields['TYPE'])) {
+                                $joinType = $fields['TYPE'];
+                            }
+                            unset($fields['TYPE']);
                             if (isset($fields['CONDITIONS'])) {
                                 $additionalConditions = array_replace_recursive($additionalConditions, $fields['CONDITIONS']);
                             }
                             unset($fields['CONDITIONS']);
                             if (!empty($fields['CONTAIN'])) {
                                 $subContains = array('CONTAIN' => $fields['CONTAIN']);
-                                unset($fields['CONTAIN']);
                             }
+                            unset($fields['CONTAIN']);
                             if (empty($fields)) {
                                 $fields = '*';
                             }
@@ -606,7 +611,7 @@ abstract class DbModel {
 
                         $where['JOIN'][$alias] = DbJoinConfig::create($alias)
                             ->setConfigForLocalTable($this, $relationConfig->getColumn())
-                            ->setJoinType($relationConfig->getJoinType())
+                            ->setJoinType($joinType)
                             ->setConfigForForeignTable($model, $relationConfig->getForeignColumn())
                             ->setAdditionalJoinConditions($additionalConditions)
                             ->setForeignColumnsToSelect($fields)
