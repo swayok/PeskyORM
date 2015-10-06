@@ -573,7 +573,10 @@ abstract class DbModel {
      */
     public function resolveContains($where) {
         if (is_array($where)) {
-            if (!empty($where['CONTAIN']) && is_array($where['CONTAIN'])) {
+            if (!empty($where['CONTAIN'])) {
+                if (!is_array($where['CONTAIN'])) {
+                    $where['CONTAIN'] = array($where['CONTAIN']);
+                }
                 $where['JOIN'] = array();
 
                 foreach ($where['CONTAIN'] as $alias => $fields) {
@@ -592,10 +595,15 @@ abstract class DbModel {
                                 $additionalConditions = array_replace_recursive($additionalConditions, $fields['CONDITIONS']);
                             }
                             unset($fields['CONDITIONS']);
+                            if (!empty($fields['CONTAIN'])) {
+                                $subContains = array('CONTAIN' => $fields['CONTAIN']);
+                                unset($fields['CONTAIN']);
+                            }
                             if (empty($fields)) {
                                 $fields = '*';
                             }
                         }
+
                         $where['JOIN'][$alias] = DbJoinConfig::create($alias)
                             ->setConfigForLocalTable($this, $relationConfig->getColumn())
                             ->setJoinType($relationConfig->getJoinType())
@@ -603,6 +611,11 @@ abstract class DbModel {
                             ->setAdditionalJoinConditions($additionalConditions)
                             ->setForeignColumnsToSelect($fields)
                             ->getConfigsForDbQuery();
+
+                        if (!empty($subContains)) {
+                            $subJoins = $model->resolveContains($subContains);
+                            $where['JOIN'] = array_merge($where['JOIN'], $subJoins['JOIN']);
+                        }
                     }
                 }
                 if (empty($where['JOIN'])) {
