@@ -837,16 +837,18 @@ abstract class DbModel {
         return $this->expression('1', $conditionsAndOptions) == 1;
     }
 
-    public function count($conditionsAndOptions = null) {
+    public function count($conditionsAndOptions = null, $removeNotInnerJoins = false) {
         if (is_array($conditionsAndOptions)) {
             unset($conditionsAndOptions['ORDER'], $conditionsAndOptions['LIMIT'], $conditionsAndOptions['OFFSET']);
         }
         $conditionsAndOptions = $this->resolveContains($conditionsAndOptions);
-        // remove left joins for count query - they will not affect result but will slow down query
-        if (!empty($conditionsAndOptions['JOIN'])) {
-            foreach ($conditionsAndOptions['JOIN'] as $key => $options) {
-                if ($options['type'] === DbRelationConfig::JOIN_LEFT) {
-                    unset($conditionsAndOptions['JOIN'][$key]);
+        if ($removeNotInnerJoins) {
+            // remove left joins for count query - they will not affect result but will slow down query
+            if (!empty($conditionsAndOptions['JOIN'])) {
+                foreach ($conditionsAndOptions['JOIN'] as $key => $options) {
+                    if ($options['type'] === DbRelationConfig::JOIN_LEFT) {
+                        unset($conditionsAndOptions['JOIN'][$key]);
+                    }
                 }
             }
         }
