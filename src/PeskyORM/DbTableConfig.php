@@ -60,9 +60,11 @@ abstract class DbTableConfig {
                 $relations[$method->getName()] = $config;
             }
         }
+        $this->loadColumnsConfigs();
         foreach ($relations as $name => $config) {
             $this->addRelation($config, $name);
         }
+        $this->loadRelationsConfigs();
     }
 
     protected function loadColumnsConfigs() {
