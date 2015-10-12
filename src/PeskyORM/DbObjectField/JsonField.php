@@ -14,11 +14,11 @@ class JsonField extends TextField {
         return parent::doBasicValueValidationAndConvertion($value);
     }
 
-    public function isValidValueFormat($value) {
+    public function isValidValueFormat($value, $silent = true) {
         if (empty($value) || json_decode($value, true) !== false) {
             return true;
         }
-        $this->setValidationError("Value is not JSON");
+        $this->setValidationError('Value is not JSON', !$silent);
         return false;
     }
 

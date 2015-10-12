@@ -18,11 +18,11 @@ class IpField extends StringField {
         return self::IPV4_MAX_LENGTH;
     }
 
-    public function isValidValueFormat($value) {
+    public function isValidValueFormat($value, $silent = true) {
         if (empty($value) || ValidateValue::isIpAddress($value)) {
             return true;
         }
-        $this->setValidationError("Value is not IP address");
+        $this->setValidationError('Value is not IP address', !$silent);
         return false;
     }
 

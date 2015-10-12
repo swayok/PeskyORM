@@ -425,10 +425,15 @@ abstract class DbObjectField {
 
     /**
      * @param string|array $error
+     * @param bool $throwException
      * @return $this
+     * @throws DbObjectFieldException
      */
-    public function setValidationError($error) {
+    public function setValidationError($error, $throwException = false) {
         $this->values['error'] = $error;
+        if ($throwException) {
+            throw new DbObjectFieldException($this, $error);
+        }
         return $this;
     }
 
@@ -617,11 +622,12 @@ abstract class DbObjectField {
 
     /**
      * Check if value has valid format
-     * @param $value
+     * @param mixed $value
+     * @param bool $silent - false: on validation error method should throw DbObjectFieldException
      * @return bool
      * @throws DbObjectFieldException
      */
-    public function isValidValueFormat($value) {
+    public function isValidValueFormat($value, $silent = true) {
         return true;
     }
 

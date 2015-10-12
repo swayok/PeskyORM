@@ -26,11 +26,11 @@ class Sha1Field extends StringField {
         return self::SHA1_LENGTH;
     }
 
-    public function isValidValueFormat($value) {
+    public function isValidValueFormat($value, $silent = true) {
         if (empty($value) || ValidateValue::isSha1($value)) {
             return true;
         }
-        $this->setValidationError("Value is not valid");
+        $this->setValidationError('Value is not valid', !$silent);
         return false;
     }
 

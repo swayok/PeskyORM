@@ -19,17 +19,15 @@ class TimestampField extends DbObjectField {
         if (empty($value)) {
             return null; //< also prevents situation when unixtimestamp = 0 is passed
         }
-        if (!$this->isValidValueFormat($value)) {
-            throw new DbObjectFieldException($this, $this->getValidationError());
-        }
+        $this->isValidValueFormat($value, false);
         return Utils::formatDateTime($value, $this->getTimestampFormat());
     }
 
-    public function isValidValueFormat($value) {
+    public function isValidValueFormat($value, $silent = true) {
         if (empty($value) || $value instanceof DbExpr || ValidateValue::isDateTime($value)) {
             return true;
         }
-        $this->setValidationError('Value is not date-time or has bad formatting');
+        $this->setValidationError('Value is not date-time or has bad formatting', !$silent);
         return false;
     }
 

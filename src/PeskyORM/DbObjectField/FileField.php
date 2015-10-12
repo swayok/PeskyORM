@@ -38,16 +38,16 @@ class FileField extends DbObjectField {
         }
     }
 
-    public function isValidValueFormat($value) {
+    public function isValidValueFormat($value, $silent = true) {
         if (!empty($value)) {
             if (!Utils::isFileUpload($value)) {
-                $this->setValidationError('File upload expected');
+                $this->setValidationError('File upload expected', !$silent);
                 return false;
             } else if (!Utils::isSuccessfullFileUpload($value)) {
-                $this->setValidationError('File upload failed');
+                $this->setValidationError('File upload failed', !$silent);
                 return false;
             } else if (!File::exist($value['tmp_name'])) {
-                $this->setValidationError('File upload was successful but file is missing');
+                $this->setValidationError('File upload was successful but file is missing', !$silent);
                 return false;
             }
         }
@@ -153,20 +153,20 @@ class FileField extends DbObjectField {
     public function validate($silent = true, $forSave = false) {
         unset($this->values['error']);
         if (!$this->checkIfRequiredValueIsSet()) {
-            $this->setValidationError('Field value is required');
-        } else if (!$this->hasUploadedFileInfo()) {
-            return true; //< no upload
-        } else if (!$this->isValidValueFormat($this->getValue())) {
-        } else {
-            try {
-                $this->detectUploadedFileExtension($this->getValue());
-            } catch (DbObjectFieldException $exc) {
-                $this->setValidationError($exc->getMessage());
-                return false;
-            }
+            $this->setValidationError('Field value is required', !$silent);
+            return false;
         }
-        if (!$silent && !$this->isValid()) {
-            throw new DbObjectFieldException($this, $this->getValidationError());
+        if (!$this->hasUploadedFileInfo()) {
+            return true; //< no upload
+        }
+        if (!$this->isValidValueFormat($this->getValue(), $silent)) {
+            return false;
+        }
+        try {
+            $this->detectUploadedFileExtension($this->getValue());
+        } catch (DbObjectFieldException $exc) {
+            $this->setValidationError($exc->getMessage(), !$silent);
+            return false;
         }
         return true;
     }
@@ -494,7 +494,6 @@ class FileField extends DbObjectField {
             }
             // note: ext could be an empty string
         } catch (DbObjectFieldException $exc) {
-            dpr(1);
             $this->setValidationError($exc->getMessage());
             return false;
         }

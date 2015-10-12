@@ -14,17 +14,15 @@ class FloatField extends DbObjectField {
         if ($value === '') {
             return null;
         }
-        if (!$this->isValidValueFormat($value)) {
-            throw new DbObjectFieldException($this, $this->getValidationError());
-        }
+        $this->isValidValueFormat($value, false);
         return $value;
     }
 
-    public function isValidValueFormat($value) {
+    public function isValidValueFormat($value, $silent = true) {
         if (empty($value) || $value instanceof DbExpr || ValidateValue::isFloat($value, true)) {
             return true;
         }
-        $this->setValidationError("Value is not a valid float number");
+        $this->setValidationError('Value is not a valid float number', !$silent);
         return false;
     }
 

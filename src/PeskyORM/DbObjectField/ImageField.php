@@ -15,15 +15,15 @@ class ImageField extends FileField {
      */
     protected $fileInfoClassName = 'PeskyORM\DbImageFileInfo';
 
-    public function isValidValueFormat($value) {
+    public function isValidValueFormat($value, $silent = true) {
         if (empty($value)) {
             return true;
         }
-        if (!parent::isValidValueFormat($value)) {
+        if (!parent::isValidValueFormat($value, $silent)) {
             return false;
         }
         if (!ImageUtils::isImage($value)) {
-            $this->setValidationError('Uploaded file is not image or image type is not supported');
+            $this->setValidationError('Uploaded file is not image or image type is not supported', !$silent);
             return false;
         }
         return true;

@@ -26,11 +26,11 @@ class Md5Field extends StringField {
         return self::MD5_LENGTH;
     }
 
-    public function isValidValueFormat($value) {
+    public function isValidValueFormat($value, $silent = true) {
         if (empty($value) || ValidateValue::isMd5($value)) {
             return true;
         }
-        $this->setValidationError("Value is not valid");
+        $this->setValidationError('Value is not valid', !$silent);
         return false;
     }
 
