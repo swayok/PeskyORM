@@ -31,6 +31,8 @@ class DbColumnConfig {
     const DB_TYPE_VARCHAR = 'varchar';
     const DB_TYPE_TEXT = 'text';
     const DB_TYPE_INT = 'integer';
+    const DB_TYPE_SMALLINT = 'smallint';
+    const DB_TYPE_BIGINT = 'bigint';
     const DB_TYPE_FLOAT = 'numeric';
     const DB_TYPE_BOOL = 'boolean';
     const DB_TYPE_JSONB = 'jsonb';
