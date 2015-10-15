@@ -15,6 +15,14 @@ class ImageField extends FileField {
      */
     protected $fileInfoClassName = 'PeskyORM\DbImageFileInfo';
 
+    protected function fixUploadInfo($uploadInfo) {
+        // convert .jpeg extension to .jpg
+        if (!empty($uploadInfo['name']) && preg_match('%\.jpeg$%s', $uploadInfo['name'])) {
+            $uploadInfo['name'] = preg_replace('%\.jpeg$%s', '.jpg', $uploadInfo['name']);
+        }
+        return $uploadInfo;
+    }
+
     public function isValidValueFormat($value, $silent = true) {
         if (empty($value)) {
             return true;

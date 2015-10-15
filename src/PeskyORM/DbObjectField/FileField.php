@@ -144,10 +144,19 @@ class FileField extends DbObjectField {
         } else if (empty($value)) {
             $this->resetValue();
         } else {
-            $this->values['rawValue'] = $this->values['value'] = $value;
+            $this->values['rawValue'] = $this->values['value'] = $this->fixUploadInfo($value);
         }
         $this->validate();
         return $this;
+    }
+
+    /**
+     * Used to fix uploaded file info. For example: change file name or extension
+     * @param array $uploadInfo
+     * @return mixed
+     */
+    protected function fixUploadInfo($uploadInfo) {
+        return $uploadInfo;
     }
 
     public function validate($silent = true, $forSave = false) {
