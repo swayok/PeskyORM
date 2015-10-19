@@ -7,6 +7,7 @@ use PeskyORM\DbImageFileInfo;
 use PeskyORM\Exception\DbObjectFieldException;
 use Swayok\Utils\Exception\ImageUtilsException;
 use Swayok\Utils\ImageUtils;
+use Swayok\Utils\ImageVersionConfig;
 
 class ImageField extends FileField {
 
@@ -14,14 +15,6 @@ class ImageField extends FileField {
      * @var string
      */
     protected $fileInfoClassName = 'PeskyORM\DbImageFileInfo';
-
-    protected function fixUploadInfo($uploadInfo) {
-        // convert .jpeg extension to .jpg
-        if (!empty($uploadInfo['name']) && preg_match('%\.jpeg$%s', $uploadInfo['name'])) {
-            $uploadInfo['name'] = preg_replace('%\.jpeg$%s', '.jpg', $uploadInfo['name']);
-        }
-        return $uploadInfo;
-    }
 
     public function isValidValueFormat($value, $silent = true) {
         if (empty($value)) {
@@ -141,6 +134,17 @@ class ImageField extends FileField {
             return false;
         }
         $fileInfo->setFilesNames($filesNames);
+        // update file info if there was a ImageVersionConfig::SOURCE_VERSION_NAME version of image and it is different
+        if (
+            !empty($filesNames[ImageVersionConfig::SOURCE_VERSION_NAME])
+            && $filesNames[ImageVersionConfig::SOURCE_VERSION_NAME] !== $fileInfo->getFileNameWithExtension()
+        ) {
+            $fileInfo->setFileNameWithExtension($filesNames[ImageVersionConfig::SOURCE_VERSION_NAME]);
+            if (preg_match('%(^.*?)\.([a-zA-Z0-9]+)$%', $filesNames[ImageVersionConfig::SOURCE_VERSION_NAME], $parts)) {
+                $fileInfo->setFileNameWithoutExtension($parts[1])
+                    ->setFileExtension($parts[2]);
+            }
+        }
         return $fileInfo;
     }
 }
