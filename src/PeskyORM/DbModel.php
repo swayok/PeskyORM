@@ -340,21 +340,39 @@ abstract class DbModel {
 
     /**
      * Get related model by relation alias
-     * @param string $alias
+     * @param string $relationAlias
      * @return DbModel
      * @throws DbModelException
      */
-    public function getRelatedModel($alias) {
-        if (!$this->hasTableRelation($alias)) {
-            throw new DbModelException($this, "Unknown relation with alias [$alias]");
+    public function getRelatedModel($relationAlias) {
+        if (!$this->hasTableRelation($relationAlias)) {
+            throw new DbModelException($this, "Unknown relation with alias [$relationAlias]");
         }
-        $foreignTable = $this->getTableRealtaion($alias)->getForeignTable();
+        $foreignTable = $this->getTableRealtaion($relationAlias)->getForeignTable();
         $class = get_class($this);
         $relatedModelClass = $class::getFullModelClassByTableName($foreignTable);
         if (!class_exists($relatedModelClass)) {
-            throw new DbModelException($this, "Related model class [{$relatedModelClass}] not found for relation [{$alias}]");
+            throw new DbModelException($this, "Related model class [{$relatedModelClass}] not found for relation [{$relationAlias}]");
         }
         return $this->getModel($class::getModelNameByTableName($foreignTable));
+    }
+
+    /**
+     * @param DbRelationConfig $relation
+     * @return DbObject
+     * @throws DbModelException
+     */
+    public function getRelatedObject($relationAlias) {
+        return $this->getRelatedModel($relationAlias)->getOwnDbObject();
+    }
+
+    /**
+     * @param $relationAlias
+     * @return mixed
+     * @throws DbModelException
+     */
+    public function getRelatedObjectClass($relationAlias) {
+        return $this->getModel()->getFullDbObjectClass($this->getTableRealtaion($relationAlias)->getForeignTable());
     }
 
     /**

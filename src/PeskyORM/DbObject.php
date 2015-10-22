@@ -521,10 +521,7 @@ class DbObject {
             }
         }
         if (is_object($objectOrDataOrPkValue)) {
-            $objectClass = get_class($objectOrDataOrPkValue);
-            if ($objectClass !== $this->_relationAliasToClassName[$relationAlias]) {
-                throw new DbObjectException($this, "Trying to assign object of class [$objectClass] as object of class [{$this->_relationAliasToClassName[$relationAlias]}]");
-            }
+            $this->_validateRelatedObjectClass($objectOrDataOrPkValue, $relationAlias);
             $relatedObject = $objectOrDataOrPkValue;
         } else {
             $relatedObject = $this->_getModel()->getRelatedModel($relationAlias)->getOwnDbObject();
@@ -735,8 +732,14 @@ class DbObject {
             foreach ($data as $fieldNameOrAlias => $value) {
                 if ($this->_hasField($fieldNameOrAlias)) {
                     $this->_getField($fieldNameOrAlias)->setValue($value, $isDbValues);
-                } else if ($this->_hasRelation($fieldNameOrAlias) && is_array($value)) {
-                    if ($this->_hasRelatedObject($fieldNameOrAlias)) {
+                } else if (
+                    $this->_hasRelation($fieldNameOrAlias)
+                    && (
+                        is_array($value)
+                        || $this->_isValidRelatedObject($fieldNameOrAlias, $value)
+                    )
+                ) {
+                    if ($this->_hasRelatedObject($fieldNameOrAlias) && !is_object($value)) {
                         if ($isDbValues) {
                             $this->_getRelatedObject($fieldNameOrAlias)->fromDbData($value);
                         } else {
@@ -754,6 +757,23 @@ class DbObject {
             $class = get_class($this);
             throw new DbObjectException($this, "Invalid data passed to [$class] (details in browser console)");
         }
+    }
+
+    /**
+     * @param string $relationAlias
+     * @param mixed $possibleObject
+     * @return bool
+     */
+    protected function _isValidRelatedObject($relationAlias, $possibleObject) {
+        if (
+            !is_object($possibleObject)
+            || !($possibleObject instanceof DbObject)
+            || !$this->_hasRelation($relationAlias)
+            || $this->_getTypeOfRealation($relationAlias) === DbRelationConfig::HAS_MANY
+        ) {
+            return false;
+        }
+        return get_class($possibleObject) === $this->_relationAliasToClassName[$relationAlias];
     }
 
     /**
