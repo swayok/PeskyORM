@@ -43,6 +43,11 @@ class DbObject {
      * @var array
      */
     protected $_aliasToJoinConditions = array();
+    /**
+     * associative list that maps related object alias to relation select conditions with data inserts
+     * @var array
+     */
+    protected $_aliasToSelectConditions = array();
 
     /**
      * associative list that maps related object aliases to their DbObject (has one / belongs to) or array of DbObject (has many)
@@ -163,7 +168,7 @@ class DbObject {
         // initiate related objects
         /** @var DbRelationConfig $settings */
         foreach ($this->_model->getTableRealtaions() as $alias => $settings) {
-            $this->_aliasToJoinConditions[$alias] = $this->_buildRelationJoinConditions($alias, $settings);
+            list($this->_aliasToJoinConditions[$alias], $this->_aliasToSelectConditions[$alias]) = $this->_buildRelationConditions($alias, $settings);
             $this->_relationAliasToClassName[$alias] = $this->_model->getFullDbObjectClass($settings->getForeignTable());
         }
         $this->_cleanRelatedObjects();
@@ -404,10 +409,11 @@ class DbObject {
      * @param DbRelationConfig $relationSettings
      * @return array
      */
-    protected function _buildRelationJoinConditions($relationAlias, DbRelationConfig $relationSettings) {
-        $conditions = $this->_getModel()->getAdditionalConditionsForRelation($relationAlias);
-        $conditions[$relationAlias . '.' . $relationSettings->getForeignColumn()] = $this->_getModelAlias() . '.' . $relationSettings->getColumn();
-        return $conditions;
+    protected function _buildRelationConditions($relationAlias, DbRelationConfig $relationSettings) {
+        $joinConditions = $selectConditions = $this->_getModel()->getAdditionalConditionsForRelation($relationAlias);
+        $joinConditions[$relationAlias . '.' . $relationSettings->getForeignColumn()] = $this->_getModelAlias() . '.' . $relationSettings->getColumn();
+        $selectConditions[$relationAlias . '.' . $relationSettings->getForeignColumn()] = ':' . $relationSettings->getColumn();
+        return array($joinConditions, $selectConditions);
     }
 
     /**
@@ -415,21 +421,23 @@ class DbObject {
      * @param $conditions
      * @return array
      */
-    protected function _insertDataIntoRelationConditions($conditions) {
+    protected function _insertDataIntoRelationConditions($relationAlias) {
         $dbObject = $this;
         $replacer = function ($matches) use ($dbObject) {
-            if ($dbObject->_hasField($matches[2])) {
-                return $dbObject->{$matches[2]};
+            if ($dbObject->_hasField($matches[1])) {
+                return $dbObject->{$matches[1]};
             } else {
                 return $matches[0];
             }
         };
+        $conditions = $this->_aliasToSelectConditions[$relationAlias];
         $newConditions = array();
+        $fields = array_keys($this->_fields);
         foreach ($conditions as $key => $value) {
-            $key = preg_replace_callback("%`?({$this->_getModelAlias()})`?\.`?([a-zA-Z0-9_]+)`?%is", $replacer, $key);
-            $key = preg_replace_callback("%(?:^|\s)(`?)([a-zA-Z0-9_]+)`?%is", $replacer, $key);
-            $value = preg_replace_callback("%`?({$this->_getModelAlias()})`?\.`?([a-zA-Z0-9_]+)`?%is", $replacer, $value);
-            $value = preg_replace_callback("%(?:^|\s)(`?)([a-zA-Z0-9_]+)`?%is", $replacer, $value);
+            foreach ($fields as $name) {
+                $key = preg_replace_callback("%:({$name})%is", $replacer, $key);
+                $value = preg_replace_callback("%:({$name})%is", $replacer, $value);
+            }
             $newConditions[$key] = $value;
         }
         return $newConditions;
@@ -452,6 +460,7 @@ class DbObject {
      */
     protected function _cleanRelatedObjects() {
         foreach ($this->_getModel()->getTableRealtaions() as $alias => $settings) {
+            unset($this->_relatedObjects[$alias]);
             $this->_relatedObjects[$alias] = false;
         }
     }
@@ -1007,7 +1016,7 @@ class DbObject {
         if ($this->_hasField($fieldNameOrAlias)) {
             return $this->_getField($fieldNameOrAlias)->hasValue();
         } else if ($this->_hasRelation($fieldNameOrAlias)) {
-            return $this->_hasRelatedObject($fieldNameOrAlias);
+            return $this->_hasRelatedObject($fieldNameOrAlias, true);
         } else {
             throw new DbObjectException($this, "Unknown DbObject field or relation alias [$fieldNameOrAlias]");
         }
@@ -1017,11 +1026,11 @@ class DbObject {
      * @param string $alias
      * @return bool
      */
-    protected function _hasRelatedObject($alias) {
+    protected function _hasRelatedObject($alias, $returnTrueForNotInitiatedHasMany = false) {
         $relation = $this->_getRelationConfig($alias);
         $relatedObject = $this->_relatedObjects[$alias];
         if ($relation->getType() === DbRelationConfig::HAS_MANY) {
-            return $relatedObject !== false;
+            return $returnTrueForNotInitiatedHasMany || ($relatedObject !== false);
         } else {
             // 1:1 relation
             if (empty($relatedObject)) {
@@ -1398,7 +1407,7 @@ class DbObject {
             }
         } else {
             // load object[s]
-            $conditions = $this->_insertDataIntoRelationConditions($this->_aliasToJoinConditions[$relationAlias]);
+            $conditions = $this->_insertDataIntoRelationConditions($relationAlias);
             $relationType = $this->_getTypeOfRealation($relationAlias);
             if ($relationType === DbRelationConfig::HAS_MANY) {
                 $model = $this->_getModel()->getRelatedModel($relationAlias);
