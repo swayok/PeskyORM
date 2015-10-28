@@ -147,6 +147,13 @@ class DbFileInfo {
     }
 
     /**
+     * @return bool
+     */
+    public function isFileExists() {
+        return $this->fileField->isFileExists();
+    }
+
+    /**
      * @return array
      */
     public function toPublicArray() {
