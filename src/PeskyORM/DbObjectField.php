@@ -455,7 +455,14 @@ abstract class DbObjectField {
         if (is_object($value) && $value instanceof DbExpr) {
             return $value;
         }
-        if ($this->isConvertEmptyValueToNull() && empty($value)) {
+        if (
+            $this->isConvertEmptyValueToNull()
+            && empty($value)
+            && (
+                !is_bool($value)
+                || $this->getType() !== DbColumnConfig::TYPE_BOOL
+            )
+        ) {
             $value = null;
         }
         if ($value === null && !$this->canBeNull()) {
