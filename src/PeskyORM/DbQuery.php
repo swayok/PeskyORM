@@ -39,6 +39,8 @@ class DbQuery {
     /* service */
     /** @var array */
     protected $aliasToTable = array();
+    /** @var array */
+    protected $shortAliases = array();
     /** @var DbModel[] */
     protected $models = array();
 
@@ -58,11 +60,20 @@ class DbQuery {
         } else {
             $this->alias = $alias;
         }
-        $this->aliasToTable[$this->alias] = $this->table;
+        $this->mapAliasToTable($this->alias, $this->table);
     }
 
     protected function getFullTableName(DbModel $model) {
         return "{$model->getTableConfig()->getSchema()}.{$model->getTableConfig()->getName()}";
+    }
+
+    protected function mapAliasToTable($alias, $table) {
+        $this->aliasToTable[$alias] = $table;
+        $this->shortAliases[$alias] = $this->shortenAlias($alias);
+    }
+
+    protected function shortenAlias($alias) {
+        return mb_strlen($alias) > 16 ? chr(rand(97, 122)) . hash("crc32b", $alias) . rand(0, 9) : $alias;
     }
 
     public function getDb() {
@@ -214,7 +225,7 @@ class DbQuery {
             $knownTableColumn = $this->models[$this->aliasToTable[$knownTableAlias]]->getPkColumnName();
         }
         $this->models[$relatedModel->getTableName()] = $relatedModel;
-        $this->aliasToTable[$relatedAlias] = $relatedModel->getTableName();
+        $this->mapAliasToTable($relatedAlias, $relatedModel->getTableName());
         $col1Info = $this->disassembleField($relatedColumn, $relatedAlias);
         $col2Info = $this->disassembleField($knownTableColumn, $knownTableAlias);
         $conditions = !empty($conditions) && is_array($conditions) ? $conditions : array();
@@ -840,7 +851,8 @@ class DbQuery {
         $this->having = '';
         $this->query = '';
         $this->models = array($this->table => $this->models[$this->table]);
-        $this->aliasToTable = array($this->alias => $this->table);
+        $this->aliasToTable = array();
+        $this->mapAliasToTable($this->alias, $this->table);
     }
 
     /**
@@ -956,6 +968,12 @@ class DbQuery {
                 if ($doNotAddAnyAliases) {
                     $allColumns[] = $fieldName;
                 } else {
+                    if (mb_strlen($colAlias) > 63) {
+                        throw new DbQueryException(
+                            $this,
+                            "Column alias [$colAlias] exceeds 63 symbols (identifier limit for postgresql)"
+                        );
+                    }
                     $allColumns[] = $fieldName . ' AS ' . $this->quoteName($colAlias);
                 }
             }
@@ -977,7 +995,7 @@ class DbQuery {
      * @return string
      */
     protected function buildFieldAlias($tableAlias, $colName, $colAlias = null) {
-        return '__' . $tableAlias . '__' . (empty($colAlias) || is_numeric($colAlias) ? $colName : $colAlias);
+        return '_' . $this->shortAliases[$tableAlias] . '__' . (empty($colAlias) || is_numeric($colAlias) ? $colName : $colAlias);
     }
 
     /**
@@ -1327,7 +1345,7 @@ class DbQuery {
     }
 
     /**
-     * Converts $data (plain associative array with keys like __TABLE_ALIAS__.con_name keys to good-looking nested array
+     * Converts $data (plain associative array with keys like _TABLE_ALIAS__col_name keys to good-looking nested array
      * @param array $data
      * @param bool $withRootTableAlias
      * @return array
@@ -1335,9 +1353,13 @@ class DbQuery {
     protected function convertDbDataToNestedArray($data, $withRootTableAlias = true) {
         $nested = array();
         // process record's column aliases and group column values by table alias
+        $shortAliasToAlias = array_flip($this->shortAliases);
         foreach ($data as $colAlias => $value) {
-            if (preg_match('%^__(.+?)__(.+?)$%is', $colAlias, $colInfo)) {
+            if (preg_match('%^_(.+?)__(.+?)$%is', $colAlias, $colInfo)) {
                 list(, $tableAlias, $column) = $colInfo;
+                if (isset($shortAliasToAlias[$tableAlias])) {
+                    $tableAlias = $shortAliasToAlias[$tableAlias];
+                }
                 if (empty($nested[$tableAlias])) {
                     $nested[$tableAlias] = array();
                 }
