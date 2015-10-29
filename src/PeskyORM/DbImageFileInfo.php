@@ -55,8 +55,8 @@ class DbImageFileInfo extends DbFileInfo {
      * @return string|array
      * @throws Exception\DbObjectFieldException
      */
-    public function getFileUrl($versionName = null) {
-        $urls = $this->fileField->getImagesUrls();
+    protected function getRelativeFileUrl($versionName = null) {
+        $urls = $this->fileField->getRelativeImagesUrls();
         if (empty($versionName)) {
             return $urls;
         } else if (!empty($urls[$versionName])) {
@@ -72,7 +72,7 @@ class DbImageFileInfo extends DbFileInfo {
      * @throws Exception\DbObjectFieldException
      */
     public function getAbsoluteFileUrl($versionName = null) {
-        return $this->fileField->getFileServerUrl() . $this->getFileUrl($versionName);
+        return $this->fileField->getFileServerUrl() . $this->getRelativeFileUrl($versionName);
     }
 
 }

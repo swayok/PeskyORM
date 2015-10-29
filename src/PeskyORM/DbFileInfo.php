@@ -133,17 +133,10 @@ class DbFileInfo {
 
     /**
      * @return string
-     */
-    public function getFileUrl() {
-        return $this->fileField->getFileUrl();
-    }
-
-    /**
-     * @return string
      * @throws DbObjectFieldException
      */
     public function getAbsoluteFileUrl() {
-        return $this->fileField->getFileServerUrl() . $this->getFileUrl();
+        return $this->fileField->getAbsoluteFileUrl();
     }
 
     /**
@@ -159,7 +152,7 @@ class DbFileInfo {
     public function toPublicArray() {
         return array(
             'path' => $this->getFilePath(),
-            'url' => $this->getFileUrl(),
+            'url' => $this->getAbsoluteFileUrl(),
             'file_name' => $this->getFileNameWithoutExtension(),
             'full_file_name' => $this->getFileNameWithExtension(),
             'ext' => $this->getFileExtension(),

@@ -35,7 +35,7 @@ class ImageField extends FileField {
      * @return array
      * @throws DbObjectFieldException
      */
-    public function getImagesUrls() {
+    public function getRelativeImagesUrls() {
         if (!$this->dbObject->exists()) {
             throw new DbObjectFieldException($this, 'Unable to get images urls of non-existing object');
         }

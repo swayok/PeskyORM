@@ -209,7 +209,7 @@ class FileField extends DbObjectField {
      * @return string
      * @throws DbObjectFieldException
      */
-    public function getFileUrl() {
+    public function getAbsoluteFileUrl() {
         return $this->getFileDirAbsoluteUrl() . $this->getFullFileName();
     }
 
