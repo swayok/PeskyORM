@@ -31,6 +31,42 @@ class ImageField extends FileField {
     }
 
     /**
+     * Get fs paths to image file versions
+     * @return array
+     * @throws DbObjectFieldException
+     */
+    public function getImagesPaths() {
+        if (!$this->dbObject->exists()) {
+            throw new DbObjectFieldException($this, 'Unable to get images paths of non-existing object');
+        }
+        $images = array();
+        if ($this->dbObject->exists()) {
+            $images = ImageUtils::getVersionsPaths(
+                $this->getFileDirPath(),
+                $this->getFileNameWithoutExtension(),
+                $this->getImageVersionsConfigs()
+            );
+        }
+        return $images;
+    }
+
+    /**
+     * @param null|string $versionName
+     * @return string|array
+     * @throws Exception\DbObjectFieldException
+     */
+    public function getImageVersionPath($versionName) {
+        $paths = $this->getImagesPaths();
+        if (empty($versionName)) {
+            return $paths;
+        } else if (!empty($paths[$versionName])) {
+            return $paths[$versionName];
+        } else {
+            return null;
+        }
+    }
+
+    /**
      * Get urls to image versions
      * @return array
      * @throws DbObjectFieldException
@@ -52,23 +88,39 @@ class ImageField extends FileField {
     }
 
     /**
-     * Get fs paths to image file versions
-     * @return array
-     * @throws DbObjectFieldException
+     * @param null|string $versionName
+     * @return string|array
+     * @throws Exception\DbObjectFieldException
      */
-    public function getImagesPaths() {
-        if (!$this->dbObject->exists()) {
-            throw new DbObjectFieldException($this, 'Unable to get images paths of non-existing object');
+    public function getRelativeImageUrl($versionName) {
+        $urls = $this->getRelativeImagesUrls();
+        if (empty($versionName)) {
+            return $urls;
+        } else if (!empty($urls[$versionName])) {
+            return $urls[$versionName];
+        } else {
+            return null;
         }
-        $images = array();
-        if ($this->dbObject->exists()) {
-            $images = ImageUtils::getVersionsPaths(
-                $this->getFileDirPath(),
-                $this->getFileNameWithoutExtension(),
-                $this->getImageVersionsConfigs()
-            );
+    }
+
+    /**
+     * @param null|string $versionName
+     * @return string
+     * @throws Exception\DbObjectFieldException
+     */
+    public function getAbsoluteFileUrl($versionName = null) {
+        $relativeUrl = $this->getRelativeImageUrl($versionName);
+        $serverUrl = $this->getFileServerUrl();
+        if (is_array($relativeUrl)) {
+            $ret = [];
+            foreach ($relativeUrl as $url) {
+                $ret[] = $serverUrl . $url;
+            }
+        } else if (empty($relativeUrl)) {
+            return null;
+        } else {
+            return $serverUrl . $relativeUrl;
         }
-        return $images;
     }
 
     /**

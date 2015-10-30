@@ -40,30 +40,7 @@ class DbImageFileInfo extends DbFileInfo {
      * @throws Exception\DbObjectFieldException
      */
     public function getFilePath($versionName = null) {
-        $paths = $this->fileField->getImagesPaths();
-        if (empty($versionName)) {
-            return $paths;
-        } else if (!empty($paths[$versionName])) {
-            return $paths[$versionName];
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * @param null|string $versionName
-     * @return string|array
-     * @throws Exception\DbObjectFieldException
-     */
-    protected function getRelativeFileUrl($versionName = null) {
-        $urls = $this->fileField->getRelativeImagesUrls();
-        if (empty($versionName)) {
-            return $urls;
-        } else if (!empty($urls[$versionName])) {
-            return $urls[$versionName];
-        } else {
-            return null;
-        }
+        return $this->fileField->getImageVersionPath($versionName);
     }
 
     /**
@@ -72,7 +49,7 @@ class DbImageFileInfo extends DbFileInfo {
      * @throws Exception\DbObjectFieldException
      */
     public function getAbsoluteFileUrl($versionName = null) {
-        return $this->fileField->getFileServerUrl() . $this->getRelativeFileUrl($versionName);
+        return $this->fileField->getAbsoluteFileUrl($versionName);
     }
 
 }
