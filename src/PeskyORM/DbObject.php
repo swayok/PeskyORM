@@ -1829,12 +1829,7 @@ class DbObject {
      */
     public function toPublicArray($fieldNames = null, $relations = false, $forceRelationsRead = true) {
         $values = array();
-        if (empty($fieldNames) || !is_array($fieldNames)) {
-            $fieldNames = $this->_allFieldNames;
-        }
-        if ($this->_autoAddPkValueToPublicArray && $this->exists() && !in_array($this->_getPkFieldName(), $fieldNames)) {
-            $fieldNames[] = $this->_getPkFieldName();
-        }
+        $fieldNames = $this->resolveFieldsListForToPublicArray($fieldNames);
         foreach ($fieldNames as $fieldName) {
             $field = $this->_getField($fieldName);
             if ($field->isPrivate()) {
@@ -1853,13 +1848,40 @@ class DbObject {
         return $values + $this->relationsToPublicArray($relations, $forceRelationsRead);
     }
 
+    public function toPublicArrayWithoutFiles($fieldNames = null, $relations = false, $forceRelationsRead = true) {
+        $values = array();
+        $fieldNames = $this->resolveFieldsListForToPublicArray($fieldNames);
+        foreach ($fieldNames as $fieldName) {
+            $field = $this->_getField($fieldName);
+            if ($field->isPrivate() || $field->isFile()) {
+                continue;
+            } else if ($field->isFile()) {
+                continue;
+            } else if ($field->hasValue()) {
+                $values[$fieldName] = $field->getValue();
+            }
+        }
+
+        return $values + $this->relationsToPublicArray($relations, $forceRelationsRead);
+    }
+
+    protected function resolveFieldsListForToPublicArray($fieldNames) {
+        if (empty($fieldNames) || !is_array($fieldNames)) {
+            $fieldNames = $this->_allFieldNames;
+        }
+        if ($this->_autoAddPkValueToPublicArray && $this->exists() && !in_array($this->_getPkFieldName(), $fieldNames)) {
+            $fieldNames[] = $this->_getPkFieldName();
+        }
+        return $fieldNames;
+    }
+
     /**
      * @param null|string|array $relations
      * @param bool $forceRelationsRead
      * @return array
      * @throws DbObjectException
      */
-    public function relationsToPublicArray($relations = null, $forceRelationsRead = true) {
+    public function relationsToPublicArray($relations = null, $forceRelationsRead = true, $withImages = true) {
         if (empty($relations)) {
             return array();
         } if ($relations === true) {
@@ -1889,10 +1911,14 @@ class DbObject {
                     $return[$relationAlias] = [];
                     /** @var DbObject $object */
                     foreach ($relatedObjects as $object) {
-                        $return[$relationAlias][] = $object->toPublicArray($fieldNames);
+                        $return[$relationAlias][] = $withImages
+                            ? $object->toPublicArray($fieldNames, false)
+                            : $object->toPublicArrayWithoutFiles($fieldNames, false);
                     }
                 } else if ($relatedObjects->exists()) {
-                    $return[$relationAlias] = $relatedObjects->toPublicArray($fieldNames);
+                    $return[$relationAlias] = $withImages
+                        ? $relatedObjects->toPublicArray($fieldNames, false)
+                        : $relatedObjects->toPublicArrayWithoutFiles($fieldNames, false);
                 } else {
                     $return[$relationAlias] = null;
                 }
