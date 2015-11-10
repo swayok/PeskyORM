@@ -154,6 +154,10 @@ abstract class DbObjectField {
         return $this->dbColumnConfig->isNullable();
     }
 
+    public function shouldTrimValue() {
+        return $this->dbColumnConfig->isTrimValue();
+    }
+
     public function getMinLength() {
         return $this->dbColumnConfig->getMinLength();
     }
@@ -473,6 +477,9 @@ abstract class DbObjectField {
             }
         }
         if ($value !== null) {
+            if (is_string($value) && $this->shouldTrimValue()) {
+                $value = trim($value);
+            }
             $value = $this->doBasicValueValidationAndConvertion($value);
             if ($this->isUnique() && empty($value) && $this->canBeNull()) {
                 $value = null;

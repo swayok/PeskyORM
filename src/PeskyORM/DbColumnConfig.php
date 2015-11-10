@@ -107,6 +107,8 @@ class DbColumnConfig {
     protected $maxValue = null;
     /** @var bool */
     protected $isNullable = true;
+    /** @var bool */
+    protected $trimValue = false;
     /** @var mixed */
     protected $defaultValue = self::DEFAULT_VALUE_NOT_SET;
     /** @var bool */
@@ -462,6 +464,22 @@ class DbColumnConfig {
     public function setIsNullable($isNullable) {
         $this->isNullable = !!$isNullable;
         return $this;
+    }
+
+    /**
+     * @param bool $trimValue
+     * @return $this
+     */
+    public function setTrimValue($trimValue = true) {
+        $this->trimValue = !!$trimValue;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isTrimValue() {
+        return $this->trimValue;
     }
 
     /**
