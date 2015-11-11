@@ -1392,23 +1392,26 @@ class DbObject {
     /**
      * Find related object or list of objects by relation alias
      * @param string $relationAlias
-     * @return DbObject|DbObject[]|bool
-     * @throws DbObjectException when local field is empty
+     * @return DbObject|DbObject[]
+     * @throws DbObjectException when local field is empty but required
      */
     protected function _findRelatedObject($relationAlias) {
-        $this->_relatedObjects[$relationAlias] = array();
         $localFieldName = $this->_getLocalFieldNameForRelation($relationAlias);
+        $relationType = $this->_getTypeOfRealation($relationAlias);
         if ($this->_isFieldHasEmptyValue($localFieldName)) {
             if (!$this->_getField($localFieldName)->canBeNull()) {
                 // local field empty - bad situation
                 throw new DbObjectException($this, "Cannot find related object [{$relationAlias}] [{$this->_getModelAlias()}->{$localFieldName}] is empty");
             } else {
-                return null;
+                if ($relationType === DbRelationConfig::HAS_MANY) {
+                    $this->_relatedObjects[$relationAlias] = array();
+                } else {
+                    $this->_relatedObjects[$relationAlias] = $this->_initRelatedObject($relationAlias);
+                }
             }
         } else {
             // load object[s]
             $conditions = $this->_insertDataIntoRelationConditions($relationAlias);
-            $relationType = $this->_getTypeOfRealation($relationAlias);
             if ($relationType === DbRelationConfig::HAS_MANY) {
                 $model = $this->_getModel()->getRelatedModel($relationAlias);
                 // change model alias for some time
@@ -1428,8 +1431,8 @@ class DbObject {
                 }
                 $relatedObject->_getModel()->setAlias($modelAliasBak); //< restore model alias to default value
             }
-            return $this->_relatedObjects[$relationAlias];
         }
+        return $this->_relatedObjects[$relationAlias];
     }
 
     /**
