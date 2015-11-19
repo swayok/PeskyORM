@@ -33,6 +33,14 @@ class PasswordField extends Sha1Field {
         return $this;
     }
 
+    public function valueWasSavedToDb() {
+        if (!$this->isVirtual() && $this->hasValue()) {
+            $this->values['isDbValue'] = true;
+            $this->values['dbValue'] = $this->values['rawValue'] = $this->values['value'];
+        }
+        return $this;
+    }
+
     /**
      * @param $password
      * @return string

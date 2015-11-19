@@ -1482,7 +1482,7 @@ class DbObject {
     protected function markAllSetFieldsAsDbFields() {
         foreach ($this->_fields as $dbField) {
             if ($dbField->hasValue()) {
-                $dbField->setValueReceivedFromDb(true);
+                $dbField->valueWasSavedToDb();
             }
         }
     }

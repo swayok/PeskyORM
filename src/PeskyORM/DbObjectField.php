@@ -399,6 +399,13 @@ abstract class DbObjectField {
     }
 
     /**
+     * Notify field that value was saved to db
+     */
+    public function valueWasSavedToDb() {
+        return $this->setValueReceivedFromDb(true);
+    }
+
+    /**
      * @param mixed $value
      * @return bool
      */
