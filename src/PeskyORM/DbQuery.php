@@ -145,7 +145,10 @@ class DbQuery {
             } else {
                 $fieldInfo = $this->disassembleField($fieldName, $tableAlias);
                 $fieldAlias = $this->buildFieldAlias($fieldInfo['tableAlias'], $fieldInfo['colName'], $fieldAlias);
-                $this->fields[$tableAlias][$fieldAlias] = $fieldInfo['colName'];
+                if (empty($this->fields[$fieldInfo['tableAlias']])) {
+                    $this->fields[$fieldInfo['tableAlias']] = array();
+                }
+                $this->fields[$fieldInfo['tableAlias']][$fieldAlias] = $fieldInfo['colName'];
             }
         }
         return $this;
@@ -472,19 +475,6 @@ class DbQuery {
             if (is_string($options)) {
                 $this->where($options);
             } else if (is_array($options)) {
-                $optionsKeys = array('FIELDS', 'CONDITIONS', 'ORDER', 'GROUP', 'OFFSET', 'LIMIT', 'JOIN', 'HAVING', 'DISTINCT');
-                // conditions
-                if (!empty($options['CONDITIONS'])) {
-                    $this->where($options['CONDITIONS']);
-                } else {
-                    $this->where(array_diff_key($options, array_flip($optionsKeys)));
-                }
-                if (!empty($options['FIELDS'])) {
-                    $this->fields($options['FIELDS']);
-                }
-                if (array_key_exists('DISTINCT', $options)) {
-                    $this->distinct(!!$options['DISTINCT']);
-                }
                 if (!empty($options['JOIN'])) {
                     foreach ($options['JOIN'] as $relatedAlias => $join) {
                         if (empty($join['table1_model']) || empty($join['table1_field']) || empty($join['table2_field'])){
@@ -507,6 +497,21 @@ class DbQuery {
                         );
                     }
                 }
+                if (!empty($options['CONDITIONS'])) {
+                    $this->where($options['CONDITIONS']);
+                } else {
+                    $optionsKeys = array(
+                        'FIELDS', 'ORDER', 'GROUP', 'OFFSET',
+                        'LIMIT', 'JOIN', 'HAVING', 'DISTINCT'
+                    );
+                    $this->where(array_diff_key($options, array_flip($optionsKeys)));
+                }
+                if (!empty($options['FIELDS'])) {
+                    $this->fields($options['FIELDS']);
+                }
+                if (array_key_exists('DISTINCT', $options)) {
+                    $this->distinct(!!$options['DISTINCT']);
+                }
                 if (!empty($options['ORDER'])) {
                     $this->orderBy($options['ORDER']);
                 }
@@ -520,7 +525,7 @@ class DbQuery {
                     $this->offset($options['OFFSET']);
                 }
                 if (!empty($options['HAVING'])) {
-                    // for future
+                    // todo: implement HAVING
                 }
             } else {
                 throw new DbQueryException($this, 'DbQuery->fromOptions(): something wrong passed as $options - ' . print_r($options, true));
