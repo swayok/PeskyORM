@@ -178,8 +178,7 @@ class Db {
             self::rememberQueryStatement($index, $statement, $this->pdo);
         }
         if (empty($statement)) {
-            $errorInfo = $this->pdo->errorInfo();
-            throw new \PDOException($errorInfo[2] . ' <br>Query: ' . $query, $errorInfo[1]);
+            throw $this->getDetailedException($query);
         }
         $this->dontRememberNextQuery = false;
         return $statement;
@@ -206,11 +205,24 @@ class Db {
             self::rememberQueryStatement($index, $statement, $this->pdo);
         }
         if (empty($statement) && !is_int($statement)) {
-            $errorInfo = $this->pdo->errorInfo();
-            throw new DbException($this, $errorInfo[2] . ' <br>Query: ' . $query, $errorInfo[1]);
+            throw $this->getDetailedException($query);
         }
         $this->dontRememberNextQuery = false;
         return $statement;
+    }
+
+    /**
+     * Make detailed exception from last pdo error
+     * @param string $query - failed query
+     * @return \PDOException
+     */
+    private function getDetailedException($query) {
+        $errorInfo = $this->pdo->errorInfo();
+        if (preg_match('%syntax error at or near "\$\d+"%is', $errorInfo[2])) {
+            $errorInfo[2] .= "\n NOTE: PeskyORM do not use prepared statements. You possibly used one of Postgresql jsonb opertaors - '?', '?|' or '?&'."
+                . ' You should use alternative functions: jsonb_exists(jsonb, text), jsonb_exists_any(jsonb, text) or jsonb_exists_all(jsonb, text) respectively';
+        }
+        return new \PDOException($errorInfo[2] . "<br>\nQuery: " . $query, $errorInfo[1]);
     }
 
     /** DEBUG helpers */
