@@ -113,8 +113,8 @@ class ImageField extends FileField {
         $serverUrl = $this->getFileServerUrl();
         if (is_array($relativeUrl)) {
             $ret = [];
-            foreach ($relativeUrl as $url) {
-                $ret[] = $serverUrl . $url;
+            foreach ($relativeUrl as $version => $url) {
+                $ret[$version] = $serverUrl . $url;
             }
             return $ret;
         } else if (empty($relativeUrl)) {
