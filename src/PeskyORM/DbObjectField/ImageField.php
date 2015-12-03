@@ -53,7 +53,7 @@ class ImageField extends FileField {
     /**
      * @param null|string $versionName
      * @return string|array
-     * @throws Exception\DbObjectFieldException
+     * @throws DbObjectFieldException
      */
     public function getImageVersionPath($versionName) {
         $paths = $this->getImagesPaths();
@@ -90,7 +90,7 @@ class ImageField extends FileField {
     /**
      * @param null|string $versionName
      * @return string|array
-     * @throws Exception\DbObjectFieldException
+     * @throws DbObjectFieldException
      */
     public function getRelativeImageUrl($versionName) {
         $urls = $this->getRelativeImagesUrls();
@@ -106,7 +106,7 @@ class ImageField extends FileField {
     /**
      * @param null|string $versionName
      * @return string
-     * @throws Exception\DbObjectFieldException
+     * @throws DbObjectFieldException
      */
     public function getAbsoluteFileUrl($versionName = null) {
         $relativeUrl = $this->getRelativeImageUrl($versionName);
@@ -116,6 +116,7 @@ class ImageField extends FileField {
             foreach ($relativeUrl as $url) {
                 $ret[] = $serverUrl . $url;
             }
+            return $ret;
         } else if (empty($relativeUrl)) {
             return null;
         } else {
