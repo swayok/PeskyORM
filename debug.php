@@ -41,6 +41,10 @@ function _dprPlain($args, $a) {
     return _dprPlainForced($args, $a);
 }
 
+function dprPlainForced() {
+    return _dprPlainForced(func_get_args(), debug_backtrace(false));
+}
+
 function _dprPlainForced($args, $a) {
     ob_start('htmlspecialchars');
     if (isset($a[0])) {
