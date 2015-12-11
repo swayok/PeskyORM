@@ -308,7 +308,10 @@ class Db {
             $this->dontRememberNextQuery = true;
             $this->exec('BEGIN ISOLATION LEVEL ' . $transactionType . ' ' . ($readOnly ? 'READ ONLY' : ''));
         }
-        if (function_exists('\dbt')) {
+        if (
+            $transactionType !== self::PGSQL_TRANSACTION_TYPE_REPEATABLE_READ
+            && function_exists('\dbt')
+        ) {
             self::$transactionsTraces[] = Utils::getBackTrace(true, false);
         }
     }
