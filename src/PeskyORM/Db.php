@@ -301,6 +301,7 @@ class Db {
             try {
                 $this->pdo->beginTransaction();
             } catch (\Exception $exc) {
+                self::$transactionsTraces['current'] = Utils::getBackTrace(true, false);
                 throw new DbException($this, 'Already in transaction: ' . Utils::printToStr(self::$transactionsTraces));
             }
         } else {
