@@ -251,8 +251,13 @@ class FileField extends DbObjectField {
                 throw new DbObjectFieldException($this, "File dir relative url genetartor function should return not-empty string");
             }
         } else {
-            $objectSubdir = '/' . trim($this->getFilesSubdir('/'), '/\\');;
-            $relUrl = '/' . trim($this->getBaseUrlToFiles(), '/\\') . $objectSubdir . '/';
+            $objectSubdir = '/' . trim($this->getFilesSubdir('/'), '/\\') . '/';
+            $relUrl = trim($this->getBaseUrlToFiles(), '/\\');
+            if (!preg_match('%^(https?|ftp)://%is', $relUrl)) {
+                $relUrl = '/' . $relUrl . $objectSubdir;
+            } else {
+                $relUrl .= $objectSubdir;
+            }
         }
         return $relUrl;
     }

@@ -114,13 +114,17 @@ class ImageField extends FileField {
         if (is_array($relativeUrl)) {
             $ret = [];
             foreach ($relativeUrl as $version => $url) {
-                $ret[$version] = $serverUrl . $url;
+                if (!preg_match('%^(https?|ftp)://%is', $url)) {
+                    $ret[$version] = $serverUrl . $url;
+                }
             }
             return $ret;
         } else if (empty($relativeUrl)) {
             return null;
-        } else {
+        } else if (!preg_match('%^(https?|ftp)://%is', $relativeUrl)) {
             return $serverUrl . $relativeUrl;
+        } else {
+            return $relativeUrl;
         }
     }
 

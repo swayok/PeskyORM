@@ -11,9 +11,9 @@ class FileColumnConfig extends DbColumnConfig {
 
     protected $_type = self::TYPE_FILE;
 
-    /** @var string */
+    /** @var string|callable */
     protected $basePathToFiles;
-    /** @var string|null */
+    /** @var string|null|callable */
     protected $baseUrlToFiles = null;
     /**
      * @var array|null - null: any extension
@@ -42,7 +42,7 @@ class FileColumnConfig extends DbColumnConfig {
      * @var callable|null
      * function (FileField $field) {}
      */
-    protected $fileDirUrlGenerator = null;
+    protected $fileDirRelativeUrlGenerator = null;
     /**
      * @var callable|null
      * function (FileField $field) {}
@@ -88,16 +88,16 @@ class FileColumnConfig extends DbColumnConfig {
      * @return string
      */
     public function getBasePathToFiles() {
-        return $this->basePathToFiles;
+        return is_callable($this->basePathToFiles) ? call_user_func($this->basePathToFiles) : $this->basePathToFiles;
     }
 
     /**
-     * @param string $basePathToFiles
+     * @param string|callable $basePathToFiles
      * @return $this
      * @throws DbColumnConfigException
      */
     public function setBasePathToFiles($basePathToFiles) {
-        if (empty($basePathToFiles) || !is_string($basePathToFiles)) {
+        if (empty($basePathToFiles) || (!is_string($basePathToFiles) && !is_callable($basePathToFiles))) {
             throw new DbColumnConfigException($this, '$basePathToFiles is required to be not-empty string');
         }
         $this->basePathToFiles = $basePathToFiles;
@@ -112,19 +112,19 @@ class FileColumnConfig extends DbColumnConfig {
         if ($this->baseUrlToFiles === null) {
             throw new DbColumnConfigException($this, '$baseUrlToFiles is not provided');
         }
-        return $this->baseUrlToFiles;
+        return is_callable($this->baseUrlToFiles) ? call_user_func($this->baseUrlToFiles) : $this->baseUrlToFiles;
     }
 
     /**
-     * @param string|null $baseUrlToFiles
+     * @param string|null|callable $baseUrlToFiles
      * @return $this
      * @throws DbColumnConfigException
      */
     public function setBaseUrlToFiles($baseUrlToFiles) {
-        if (!is_string($baseUrlToFiles)) {
+        if (!is_string($baseUrlToFiles) && !is_callable($baseUrlToFiles)) {
             throw new DbColumnConfigException($this, '$baseUrlToFiles should be a string');
         }
-        if (preg_match('%(http://[^/]+)(/.*$|$)%i', $baseUrlToFiles, $urlParts)) {
+        if (!is_callable($baseUrlToFiles) && preg_match('%(http://[^/]+)(/.*$|$)%i', $baseUrlToFiles, $urlParts)) {
             $this->baseUrlToFiles = $urlParts[2];
             if (!$this->hasFileServerUrlGenerator()) {
                 $baseUrl = $urlParts[1];
@@ -190,15 +190,15 @@ class FileColumnConfig extends DbColumnConfig {
      * @return callable|null
      */
     public function getFileDirRelativeUrlGenerator() {
-        return $this->fileDirUrlGenerator;
+        return $this->fileDirRelativeUrlGenerator;
     }
 
     /**
-     * @param callable $fileDirUrlGenerator - function (FileField $field) {}
+     * @param callable $fileDirRelativeUrlGenerator - function (FileField $field) {}
      * @return $this
      */
-    public function setFileDirUrlGenerator(callable $fileDirUrlGenerator) {
-        $this->fileDirUrlGenerator = $fileDirUrlGenerator;
+    public function setFileDirRelativeUrlGenerator(callable $fileDirRelativeUrlGenerator) {
+        $this->fileDirRelativeUrlGenerator = $fileDirRelativeUrlGenerator;
         return $this;
     }
 
