@@ -395,7 +395,7 @@ abstract class DbModel {
             [
                 '%^.*[\\\]%is',
                 '%' . $calledClass::$modelClassSuffix . '$%',
-                '%^' . preg_quote(addslashes($calledClass::getModelsNamespace()), '%') . '/%'
+                '%^' . preg_quote(addslashes(call_user_func([$calledClass, 'getModelsNamespace'])), '%') . '/%'
             ],
             [
                 '',
@@ -458,7 +458,8 @@ abstract class DbModel {
 
     static public function getFullModelClassByTableName($tableName) {
         $calledClass = get_called_class();
-        return $calledClass::getModelsNamespace() . $calledClass::getModelNameByTableName($tableName);
+        $ns = call_user_func([$calledClass, 'getModelsNamespace']);
+        return $ns . call_user_func([$calledClass, 'getModelNameByTableName'], $tableName);
     }
 
     static public function getModelNameByTableName($tableName) {
