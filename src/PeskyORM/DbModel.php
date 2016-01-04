@@ -15,11 +15,11 @@ use Swayok\Utils\StringUtils;
 abstract class DbModel {
 
     /** @var Db[] */
-    static protected $dataSources = array();
+    static protected $dataSources = [];
     /** @var DbConnectionConfig[] */
-    static protected $dbConnectionConfigs = array();
+    static protected $dbConnectionConfigs = [];
     /** @var DbModel[] */
-    static protected $loadedModels = array();    //< Model objects
+    static protected $loadedModels = [];    //< Model objects
 
     const ORDER_ASCENDING = 'ASC';
     const ORDER_DESCENDING = 'DESC';
@@ -43,9 +43,9 @@ abstract class DbModel {
     protected $configClass = null;
     protected $configsNamespace;
     /**
-     * @var array - additional conditions for relations to be used in JOINs = array('RelationAlias' => array(condition1, condition2))
+     * @var array - additional conditions for relations to be used in JOINs = ['RelationAlias' => [condition1, condition2]]
      */
-    public $relationsConditions = array();
+    public $relationsConditions = [];
     /**
      * In safe mode Db Objects will throw exceptions when they receive unknown field
      * @var bool
@@ -63,17 +63,18 @@ abstract class DbModel {
      * @throws DbUtilsException
      */
     static public function getInstance() {
-        return self::getModelByClassName(get_called_class());
+        $calledClass = get_called_class();
+        return call_user_func([$calledClass, 'getModelByClassName'], $calledClass);
     }
 
     static public function getModelClassSuffix() {
-        $className = get_called_class();
-        return $className::$modelClassSuffix;
+        $calledClass = get_called_class();
+        return $calledClass::$modelClassSuffix;
     }
 
     static public function getTableConfigClassSuffix() {
-        $className = get_called_class();
-        return $className::$tableConfigClassSuffix;
+        $calledClass = get_called_class();
+        return $calledClass::$tableConfigClassSuffix;
     }
 
     /**
@@ -90,10 +91,10 @@ abstract class DbModel {
             $this->alias = StringUtils::modelize($this->tableConfig->getName());
         }
         if (empty($this->tableConfig->getName())) {
-            throw new DbModelException($this, 'Model ' . get_class($this) . ' has no table name');
+            throw new DbModelException($this, 'Model ' . $className . ' has no table name');
         }
         if (empty($this->tableConfig->getPk())) {
-            throw new DbModelException($this, 'Model ' . get_class($this) . ' has no primary key');
+            throw new DbModelException($this, 'Model ' . $className . ' has no primary key');
         }
         if (empty($this->orderField)) {
             $this->orderField = $this->tableConfig->getPk();
@@ -111,7 +112,7 @@ abstract class DbModel {
         if (!empty($this->relationsConditions[$relationAlias])) {
             return $this->relationsConditions[$relationAlias];
         }
-        return array();
+        return [];
     }
 
     /**
@@ -274,14 +275,14 @@ abstract class DbModel {
      * @param string $modelName
      * @throws DbModelException
      */
-    public function loadTableConfig($modelName) {
+    public function loadTableConfig($objectName) {
         if (empty($this->configClass)) {
-            $this->configClass = $this->getConfigsNamespace() . $modelName . $this::$tableConfigClassSuffix;
+            $this->configClass = $this->getConfigsNamespace() . $this->getTableConfigNameByObjectName($objectName);
         }
         if (!class_exists($this->configClass)) {
             throw new DbModelException($this, "Db table config class [{$this->configClass}] not found");
         }
-        $this->setTableConfig(call_user_func(array($this->configClass, 'getInstance')));
+        $this->setTableConfig(call_user_func([$this->configClass, 'getInstance']));
     }
 
     /**
@@ -291,14 +292,15 @@ abstract class DbModel {
      * @return DbModel|DbObject
      * @throws DbModelException
      */
-    static public function __callStatic($modelOrObjectName, $objectArgs = array()) {
+    static public function __callStatic($modelOrObjectName, $objectArgs = []) {
         $calledClass = get_called_class();
         if (preg_match('%^(.*)' . $calledClass::$modelClassSuffix . '$%s', $modelOrObjectName, $matches)) {
             // model requested
-            return self::getModel($modelOrObjectName);
+            return call_user_func([$calledClass, 'getModel'], $modelOrObjectName);
         } else {
             // db object requested
-            return self::createDbObject(
+            return call_user_func(
+                [$calledClass, 'createDbObject'],
                 $modelOrObjectName,
                 !empty($objectArgs) ? $objectArgs[0] : null,
                 !empty($objectArgs) && isset($objectArgs[1]) ? $objectArgs[1] : null
@@ -319,8 +321,8 @@ abstract class DbModel {
         if (!preg_match('%' . $calledClass::$modelClassSuffix . '$%i', $modelNameOrObjectName)) {
             $modelNameOrObjectName .= $calledClass::$modelClassSuffix;
         }
-        $modelClass = $calledClass::getModelsNamespace() . $modelNameOrObjectName;
-        return self::getModelByClassName($modelClass);
+        $modelClass = call_user_func([$calledClass, 'getModelsNamespace']) . $modelNameOrObjectName;
+        return call_user_func([$calledClass, 'getModelByClassName'], $modelClass);
     }
 
     /**
@@ -349,12 +351,11 @@ abstract class DbModel {
             throw new DbModelException($this, "Unknown relation with alias [$relationAlias]");
         }
         $foreignTable = $this->getTableRealtaion($relationAlias)->getForeignTable();
-        $class = get_class($this);
-        $relatedModelClass = $class::getFullModelClassByTableName($foreignTable);
+        $relatedModelClass = $this->getFullModelClassByTableName($foreignTable);
         if (!class_exists($relatedModelClass)) {
             throw new DbModelException($this, "Related model class [{$relatedModelClass}] not found for relation [{$relationAlias}]");
         }
-        return $this->getModel($class::getModelNameByTableName($foreignTable));
+        return $this->getModel($this->getModelNameByTableName($foreignTable));
     }
 
     /**
@@ -380,7 +381,7 @@ abstract class DbModel {
      * @return string
      */
     public function dbObjectName() {
-        return self::dbObjectNameByModelClassName(get_class($this));
+        return $this->dbObjectNameByModelClassName(get_class($this));
     }
 
     /**
@@ -391,16 +392,16 @@ abstract class DbModel {
     static public function dbObjectNameByModelClassName($class) {
         $calledClass = get_called_class();
         return preg_replace(
-            array(
+            [
                 '%^.*[\\\]%is',
                 '%' . $calledClass::$modelClassSuffix . '$%',
                 '%^' . preg_quote(addslashes($calledClass::getModelsNamespace()), '%') . '/%'
-            ),
-            array(
+            ],
+            [
                 '',
                 '',
-                $calledClass::getObjectsNamespace() . '/'
-            ),
+                call_user_func([$calledClass, 'getObjectsNamespace']) . '/'
+            ],
             $class
         );
     }
@@ -418,11 +419,11 @@ abstract class DbModel {
      */
     static public function createDbObject($dbObjectNameOrTableName, $data = null, $filter = false, $isDbValues = false) {
         $calledClass = get_called_class();
-        $dbObjectClass = $calledClass::getFullDbObjectClass($dbObjectNameOrTableName);
+        $dbObjectClass = call_user_func([$calledClass, 'getFullDbObjectClass'], $dbObjectNameOrTableName);
         if (!class_exists($dbObjectClass)) {
             throw new DbUtilsException("Class $dbObjectClass was not found");
         }
-        $model = $calledClass::getModel(StringUtils::modelize($dbObjectNameOrTableName));
+        $model = call_user_func([$calledClass, 'getModel'], StringUtils::modelize($dbObjectNameOrTableName));
         return new $dbObjectClass($data, $filter, $isDbValues, $model);
     }
 
@@ -432,8 +433,7 @@ abstract class DbModel {
      * @return string
      */
     static public function getFullDbObjectClass($dbObjectNameOrTableName) {
-        $calledClass = get_called_class();
-        return $calledClass::getObjectsNamespace() . StringUtils::modelize($dbObjectNameOrTableName);
+        return call_user_func([get_called_class(), 'getObjectsNamespace']) . StringUtils::modelize($dbObjectNameOrTableName);
     }
 
     static public function getModelsNamespace() {
@@ -442,7 +442,11 @@ abstract class DbModel {
 
     static public function getObjectsNamespace() {
         $calledClass = get_called_class();
-        return preg_replace('%[a-zA-Z0-9_]+\\\$%', $calledClass::$objectsClassesDirName . '\\', $calledClass::getModelsNamespace());
+        return preg_replace(
+            '%[a-zA-Z0-9_]+\\\$%',
+            $calledClass::$objectsClassesDirName . '\\',
+            call_user_func([$calledClass, 'getModelsNamespace'])
+        );
     }
 
     protected function getConfigsNamespace() {
@@ -459,7 +463,24 @@ abstract class DbModel {
 
     static public function getModelNameByTableName($tableName) {
         $calledClass = get_called_class();
-        return StringUtils::modelize($tableName) . $calledClass::$modelClassSuffix;
+        return call_user_func([$calledClass, 'getObjectNameByTableName'], $tableName) . $calledClass::$modelClassSuffix;
+    }
+
+    static public function getObjectNameByTableName($tableName) {
+        return StringUtils::modelize($tableName);
+    }
+
+    static public function getTableConfigNameByObjectName($objectName) {
+        $calledClass = get_called_class();
+        return $objectName . $calledClass::$tableConfigClassSuffix;
+    }
+
+    static public function getTableConfigNameByTableName($tableName) {
+        $calledClass = get_called_class();
+        return call_user_func(
+            [$calledClass, 'getTableConfigNameByObjectName'],
+            call_user_func([$calledClass, 'getObjectNameByTableName'], $tableName)
+        );
     }
 
     /**
@@ -468,7 +489,7 @@ abstract class DbModel {
      */
     static public function getModelByObjectClass($objectClass) {
         $calledClass = get_called_class();
-        return $calledClass::getModel(preg_replace('%^.*\\\%', '', $objectClass));
+        return call_user_func([get_called_class(), 'getModel'], preg_replace('%^.*\\\%', '', $objectClass));
     }
 
     /**
@@ -483,7 +504,13 @@ abstract class DbModel {
      */
     static public function getOwnDbObject($data = null, $filter = false, $isDbValues = false) {
         $calledClass = get_called_class();
-        return $calledClass::createDbObject($calledClass::dbObjectNameByModelClassName($calledClass), $data, $filter, $isDbValues);
+        return call_user_func(
+            [$calledClass, 'createDbObject'],
+            call_user_func([$calledClass, 'dbObjectNameByModelClassName'], $calledClass),
+            $data,
+            $filter,
+            $isDbValues
+        );
     }
 
     /**
@@ -491,7 +518,7 @@ abstract class DbModel {
      * @return array
      */
     public function getDbFields() {
-        $ret = array();
+        $ret = [];
         foreach ($this->getTableColumns() as $name => $column) {
             if ($column->isExistsInDb()) {
                 $ret[] = $name;
@@ -570,7 +597,7 @@ abstract class DbModel {
      */
     public function recordsToObjects($records, $dataIsLoadedFromDb = false) {
         if (is_array($records) && !empty($records)) {
-            $objects = array();
+            $objects = [];
             foreach ($records as $record) {
                 if ($dataIsLoadedFromDb) {
                     $objects[] = $this->getOwnDbObject($record, false, true);
@@ -593,9 +620,9 @@ abstract class DbModel {
         if (is_array($where)) {
             if (!empty($where['CONTAIN'])) {
                 if (!is_array($where['CONTAIN'])) {
-                    $where['CONTAIN'] = array($where['CONTAIN']);
+                    $where['CONTAIN'] = [$where['CONTAIN']];
                 }
-                $where['JOIN'] = array();
+                $where['JOIN'] = [];
 
                 foreach ($where['CONTAIN'] as $alias => $fields) {
                     if (is_int($alias)) {
@@ -619,7 +646,7 @@ abstract class DbModel {
                             }
                             unset($fields['CONDITIONS']);
                             if (!empty($fields['CONTAIN'])) {
-                                $subContains = array('CONTAIN' => $fields['CONTAIN']);
+                                $subContains = ['CONTAIN' => $fields['CONTAIN']];
                             }
                             unset($fields['CONTAIN']);
                             if (empty($fields)) {
@@ -659,9 +686,9 @@ abstract class DbModel {
     protected function prepareSelect($columns, $options) {
         if (!is_array($options)) {
             if (!empty($options) && is_string($options)) {
-                $options = array($options);
+                $options = [$options];
             } else {
-                $options = array();
+                $options = [];
             }
         } else {
             $options = $this->resolveContains($options);
@@ -707,7 +734,7 @@ abstract class DbModel {
      * @return array
      */
     public function selectColumn($column, $conditionsAndOptions = null) {
-        $records = $this->select(array('value' => $column), $conditionsAndOptions, false, false);
+        $records = $this->select(['value' => $column], $conditionsAndOptions, false, false);
         return Set::extract('/value', $records);
     }
 
@@ -720,8 +747,8 @@ abstract class DbModel {
      * @return array
      */
     public function selectAssoc($keysColumn, $valuesColumn, $conditionsAndOptions = null) {
-        $records = $this->select(array('key' => $keysColumn, 'value' => $valuesColumn), $conditionsAndOptions, false, false);
-        $res = array();
+        $records = $this->select(['key' => $keysColumn, 'value' => $valuesColumn], $conditionsAndOptions, false, false);
+        $res = [];
         foreach ($records as $record) {
             $res[$record['key']] = $record['value'];
         }
@@ -733,18 +760,18 @@ abstract class DbModel {
      * @param string $columns
      * @param null|array $conditionsAndOptions
      * @param bool $asObjects - true: return DbObject | false: return array
-     * @return array - array('count' => int, 'records' => array)
+     * @return array - 'count' => int, 'records' => array)
      */
     public function selectWithCount($columns, $conditionsAndOptions = null, $asObjects = false) {
         $conditionsAndOptions = $this->prepareSelect($columns, $conditionsAndOptions);
         $count = $this->count($conditionsAndOptions);
         if (empty($count)) {
-            return array('records' => array(), 'count' => 0);
+            return ['records' => [], 'count' => 0];
         }
-        $results = array(
+        $results = [
             'records' => $this->select($columns, $conditionsAndOptions, false, false),
             'count' => $count
-        );
+        ];
         if ($asObjects) {
             $results['records'] = $this->recordsToObjects($results['records']);
         }
@@ -756,7 +783,7 @@ abstract class DbModel {
      * @param string|array $columns
      * @param array|string|int $conditionsAndOptions -
      *      array|string: conditions,
-     *      numeric|int: record's pk value, automatically converted to array($this->primaryKey => $where)
+     *      numeric|int: record's pk value, automatically converted to [$this->primaryKey => $where]
      * @param bool $asObject - true: return DbObject | false: return array
      * @param bool $withRootAlias
      * @return array|bool|DbObject
@@ -768,7 +795,7 @@ abstract class DbModel {
             throw new DbModelException($this, 'Selecting one record without conditions is not allowed');
         }
         if (is_numeric($conditionsAndOptions) || is_int($conditionsAndOptions)) {
-            $conditionsAndOptions = array($this->getPkColumnName() => $conditionsAndOptions);
+            $conditionsAndOptions = [$this->getPkColumnName() => $conditionsAndOptions];
         }
         $record = $this->builder()
             ->fromOptions($this->prepareSelect($columns, $conditionsAndOptions))
@@ -776,7 +803,7 @@ abstract class DbModel {
         if (!is_array($record)) {
             return $record;
         } else if ($asObject) {
-            return self::getOwnDbObject($record, false, true);
+            return $this->getOwnDbObject($record, false, true);
         } else {
             return $record;
         }
@@ -814,7 +841,7 @@ abstract class DbModel {
      * @param array $data - associatine array, fields to update
      * @param null|array|string|int $conditionsAndOptions -
      *      array|string: conditions,
-     *      numeric|int: record id, automatically converted to array('id' => $where)
+     *      numeric|int: record id, automatically converted to ['id' => $where]
      * @param null|bool|string $returning
      *      string: something compatible with RETURNING for postgresql query ('*' = all fields)
      *      array: list of fields to return
@@ -825,7 +852,7 @@ abstract class DbModel {
      */
     public function update($data, $conditionsAndOptions = null, $returning = false) {
         if (is_numeric($conditionsAndOptions) || is_int($conditionsAndOptions)) {
-            $conditionsAndOptions = array($this->getPkColumnName() => $conditionsAndOptions);
+            $conditionsAndOptions = [$this->getPkColumnName() => $conditionsAndOptions];
         }
         return $this->builder()->fromOptions($conditionsAndOptions)->update($data, $returning);
     }
