@@ -355,7 +355,7 @@ abstract class DbModel {
         if (!class_exists($relatedModelClass)) {
             throw new DbModelException($this, "Related model class [{$relatedModelClass}] not found for relation [{$relationAlias}]");
         }
-        return $this->getModel($this->getModelNameByTableName($foreignTable));
+        return $this->getModelByClassName($this->getFullModelClassByTableName($foreignTable));
     }
 
     /**
