@@ -310,19 +310,27 @@ abstract class DbModel {
 
     /**
      * Load and return requested Model
-     * @param string $modelNameOrObjectName - class name (UserToken or UserTokenModel o User)
+     * @param string $modelNameOrObjectName - base class name (UserToken or UserTokenModel or User)
      * @return DbModel
      * @throws DbUtilsException
      */
     static public function getModel($modelNameOrObjectName) {
-        // todo: maybe use reflections?
-        // load model if not loaded yet
         $calledClass = get_called_class();
-        if (!preg_match('%' . $calledClass::$modelClassSuffix . '$%i', $modelNameOrObjectName)) {
-            $modelNameOrObjectName .= $calledClass::$modelClassSuffix;
-        }
-        $modelClass = call_user_func([$calledClass, 'getModelsNamespace']) . $modelNameOrObjectName;
+        $modelClass = call_user_func([$calledClass, 'getFullModelClassNameByName'], $modelNameOrObjectName);
         return call_user_func([$calledClass, 'getModelByClassName'], $modelClass);
+    }
+
+    /**
+     * @param string $modelNameOrObjectName - base class name (UserToken or UserTokenModel or User)
+     * @return string
+     */
+    static public function getFullModelClassNameByName($modelNameOrObjectName) {
+        $modelNameOrObjectName = preg_replace(
+            '%' . $calledClass::$modelClassSuffix . '$%i',
+            $calledClass::$modelClassSuffix,
+            $modelNameOrObjectName
+        );
+        return call_user_func([$calledClass, 'getModelsNamespace']) . $modelNameOrObjectName;
     }
 
     /**
