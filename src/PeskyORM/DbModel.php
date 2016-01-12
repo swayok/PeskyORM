@@ -808,7 +808,7 @@ abstract class DbModel {
         }
         $record = $this->builder()
             ->fromOptions($this->prepareSelect($columns, $conditionsAndOptions))
-            ->findOne($withRootAlias);
+            ->findOne($asObject ? false : $withRootAlias);
         if (!is_array($record)) {
             return $record;
         } else if ($asObject) {
