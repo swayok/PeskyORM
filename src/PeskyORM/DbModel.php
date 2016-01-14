@@ -289,7 +289,7 @@ abstract class DbModel {
      * Loads models by class name. Example: Model::User() will create object of class User (or pick existing if already exists)
      * @param $modelOrObjectName - class name or table name (UserTokenModel, UserToken or user_tokens)
      * @param array $objectArgs - used only for DbObjects to pass data array or primary key value
-     * @return DbModel|DbObject
+     * @return DbModel|DbObject|$this
      * @throws DbModelException
      */
     static public function __callStatic($modelOrObjectName, $objectArgs = []) {
@@ -311,7 +311,7 @@ abstract class DbModel {
     /**
      * Load and return requested Model
      * @param string $modelNameOrObjectName - base class name (UserToken or UserTokenModel or User)
-     * @return DbModel
+     * @return $this
      * @throws DbUtilsException
      */
     static public function getModel($modelNameOrObjectName) {
@@ -335,7 +335,7 @@ abstract class DbModel {
 
     /**
      * @param string $modelClass
-     * @return DbModel
+     * @return $this
      * @throws DbUtilsException
      */
     static public function getModelByClassName($modelClass) {
@@ -346,6 +346,16 @@ abstract class DbModel {
             self::$loadedModels[$modelClass] = new $modelClass();
         }
         return self::$loadedModels[$modelClass];
+    }
+
+    /**
+     * @param string $tableName
+     * @return $this
+     * @throws DbUtilsException
+     */
+    static public function getModelByTableName($tableName) {
+        $modelClass = static::getFullModelClassByTableName($tableName);
+        return static::getModelByClassName($modelClass);
     }
 
     /**
