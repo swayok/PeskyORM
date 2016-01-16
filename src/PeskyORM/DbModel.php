@@ -82,7 +82,7 @@ abstract class DbModel {
      */
     public function __construct() {
         $className = get_class($this);
-        if (!preg_match('%^(.*?\\\?)([a-zA-Z0-9]+)' . $this::$modelClassSuffix .'$%is', $className, $classNameParts)) {
+        if (!preg_match('%^(.*?\\\?)([a-zA-Z0-9]+)' . $this->getModelClassSuffix() .'$%is', $className, $classNameParts)) {
             throw new DbModelException($this, "Invalid Model class name [{$className}]. Required name is like NameSpace\\SomeModel.");
         }
         $this->namespace = $classNameParts[1];
@@ -436,12 +436,11 @@ abstract class DbModel {
      * @throws DbUtilsException
      */
     static public function createDbObject($dbObjectNameOrTableName, $data = null, $filter = false, $isDbValues = false) {
-        $calledClass = get_called_class();
-        $dbObjectClass = call_user_func([$calledClass, 'getFullDbObjectClass'], $dbObjectNameOrTableName);
+        $dbObjectClass = static::getFullDbObjectClass($dbObjectNameOrTableName);
         if (!class_exists($dbObjectClass)) {
             throw new DbUtilsException("Class $dbObjectClass was not found");
         }
-        $model = call_user_func([$calledClass, 'getModel'], StringUtils::modelize($dbObjectNameOrTableName));
+        $model = static::getModel(StringUtils::modelize($dbObjectNameOrTableName));
         return new $dbObjectClass($data, $filter, $isDbValues, $model);
     }
 
@@ -522,10 +521,8 @@ abstract class DbModel {
      * @throws DbUtilsException
      */
     static public function getOwnDbObject($data = null, $filter = false, $isDbValues = false) {
-        $calledClass = get_called_class();
-        return call_user_func(
-            [$calledClass, 'createDbObject'],
-            call_user_func([$calledClass, 'dbObjectNameByModelClassName'], $calledClass),
+        return static::createDbObject(
+            static::dbObjectNameByModelClassName(get_called_class()),
             $data,
             $filter,
             $isDbValues
