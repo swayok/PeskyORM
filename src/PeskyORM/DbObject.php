@@ -110,16 +110,16 @@ class DbObject {
     /**
      * @param DbModel|null $model
      * @param null|array|string|int $dataOrPkValue - null: do nothing | int and string: is primary key (read db) | array: object data
-     * @param bool $fieldsToUse - used only when $data not empty and is array
+     * @param bool $ignoreUnknownData - used only when $data not empty and is array
      *      true: filters $data that does not belong t0o this object
      *      false: $data that does not belong to this object will trigger exceptions
      * @param bool $isDbValues - true: indicates that field values passsed via $data as array are db values
      * @throws DbObjectException
      * @return $this
      */
-    static public function create($dataOrPkValue = null, $fieldsToUse = false, $isDbValues = false, $model = null) {
+    static public function create($dataOrPkValue = null, $ignoreUnknownData = false, $isDbValues = false, $model = null) {
         $className = get_called_class();
-        return new $className($dataOrPkValue, $fieldsToUse, $isDbValues);
+        return new $className($dataOrPkValue, $ignoreUnknownData, $isDbValues);
     }
 
     /**
@@ -136,13 +136,13 @@ class DbObject {
     /**
      * @param DbModel|null $model
      * @param null|array|string|int $dataOrPkValue - null: do nothing | int and string: is primary key (read db) | array: object data
-     * @param bool $fieldsToUse - used only when $data not empty and is array
+     * @param bool $ignoreUnknownData - used only when $data not empty and is array
      *      true: filters $data that does not belong t0o this object
      *      false: $data that does not belong to this object will trigger exceptions
      * @param bool $isDbValues - true: indicates that field values passsed via $data as array are db values
      * @throws DbObjectException
      */
-    public function __construct($dataOrPkValue = null, $fieldsToUse = false, $isDbValues = false, $model = null) {
+    public function __construct($dataOrPkValue = null, $ignoreUnknownData = false, $isDbValues = false, $model = null) {
         if (!empty($model)) {
             if (!is_object($model)) {
                 throw new DbObjectException($this, 'Model should be an object of class inherited from ' . DbModel::class . ' class');
@@ -175,7 +175,7 @@ class DbObject {
         // set values if possible
         if (!empty($dataOrPkValue)) {
             if (is_array($dataOrPkValue)) {
-                $this->_fromData($dataOrPkValue, !empty($fieldsToUse), $isDbValues);
+                $this->_fromData($dataOrPkValue, !empty($ignoreUnknownData), $isDbValues);
             } else {
                 $this->read($dataOrPkValue);
             }
@@ -638,15 +638,15 @@ class DbObject {
      * 2. If $this->pkValue() is not empty, passed in $data and they are equal - loaded object will be updated by
      *      fields from $data, while other fields (not present in $data) will remain untouched
      * @param array|DbObject $data
-     * @param bool|array $fieldsToUse -
+     * @param bool|array $ignoreUnknownData -
      *      true: filters data that does not belong to this object
      *      false: data that does not belong to this object will trigger exceptions
      *      array: list of fields to use
      * @return $this
-     * @throws DbObjectException when $fieldsToUse == false and unknown field detected in $data
+     * @throws DbObjectException when $ignoreUnknownData == false and unknown field detected in $data
      */
-    public function fromData($data, $fieldsToUse = false) {
-        $this->_fromData($data, $fieldsToUse, false);
+    public function fromData($data, $ignoreUnknownData = false) {
+        $this->_fromData($data, $ignoreUnknownData, false);
         return $this;
     }
 
@@ -655,18 +655,18 @@ class DbObject {
      * Primary key value may be omitted in $data
      * Can work if $this->exists() == false, pk just not imported
      * @param array $values
-     * @param bool|array $fieldsToUse -
+     * @param bool|array $ignoreUnknownData -
      *      true: filters data that does not belong to this object
      *      false: data that does not belong to this object will trigger exceptions
      *      array: list of fields to use
      * @return $this
-     * @throws DbObjectException when $fieldsToUse == false and unknown field detected in $data
+     * @throws DbObjectException when $ignoreUnknownData == false and unknown field detected in $data
      */
-    public function updateValues($values, $fieldsToUse = false) {
+    public function updateValues($values, $ignoreUnknownData = false) {
         if ($this->exists()) {
             $values[$this->_getPkFieldName()] = $this->_getPkValue();
         }
-        $this->_fromData($values, $fieldsToUse, false);
+        $this->_fromData($values, $ignoreUnknownData, false);
         return $this;
     }
 
@@ -685,30 +685,30 @@ class DbObject {
     /**
      * Clean current fields and fill them using passed $data array + mark all passed field values as db values
      * @param array|DbObject $data
-     * @param bool|array $fieldsToUse -
+     * @param bool|array $ignoreUnknownData -
      *      true: filters data that does not belong to this object
      *      false: data that does not belong to this object will trigger exceptions
      *      array: list of fields to use
      * @return $this
-     * @throws DbObjectException when $fieldsToUse == false and unknown field detected in $data
+     * @throws DbObjectException when $ignoreUnknownData == false and unknown field detected in $data
      */
-    public function fromDbData($data, $fieldsToUse = false) {
-        $this->_fromData($data, $fieldsToUse, true);
+    public function fromDbData($data, $ignoreUnknownData = false) {
+        $this->_fromData($data, $ignoreUnknownData, true);
         return $this;
     }
 
     /**
      * Clean current fields and fill them using passed $data array
      * @param array $data
-     * @param bool|array $fieldsToUse -
+     * @param bool|array $ignoreUnknownData -
      *      true: filters data that does not belong to this object
      *      false: data that does not belong to this object will trigger exceptions
      *      array: list of fields to use
      * @param bool $isDbValues - true: all values are updates fro db values | false: all values are db values
      * @return $this
-     * @throws DbObjectException when $fieldsToUse == false and unknown field detected in $data
+     * @throws DbObjectException when $ignoreUnknownData == false and unknown field detected in $data
      */
-    protected function _fromData($data, $fieldsToUse = false, $isDbValues = false) {
+    protected function _fromData($data, $ignoreUnknownData = false, $isDbValues = false) {
         // reset db object values when:
         // 1. object has no pk value
         // 2. $data does not contain pk value
@@ -729,9 +729,9 @@ class DbObject {
                 unset($data[$this->_originalDataKey]);
             }
             // filter fields
-            if (is_array($fieldsToUse)) {
-                $data = array_intersect_key($data, array_flip($fieldsToUse));
-                $fieldsToUse = false;
+            if (is_array($ignoreUnknownData)) {
+                $data = array_intersect_key($data, array_flip($ignoreUnknownData));
+                $ignoreUnknownData = false;
             }
             // set primary key first
             if (isset($data[$pkField->getName()])) {
@@ -757,7 +757,7 @@ class DbObject {
                     } else {
                         $this->_initRelatedObject($fieldNameOrAlias, $value, true, $isDbValues);
                     }
-                } else if (!$fieldsToUse && $fieldNameOrAlias[0] !== '_') {
+                } else if (!$ignoreUnknownData && $fieldNameOrAlias[0] !== '_') {
                     $class = get_class($this);
                     throw new DbObjectException($this, "Unknown field [$fieldNameOrAlias] detected in [$class]");
                 }
