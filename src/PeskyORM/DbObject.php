@@ -232,7 +232,7 @@ class DbObject {
 
     /**
      * @param $fieldName
-     * @return DbObjectField|FileField|ImageField|PasswordField
+     * @return DbObjectField|FileField|ImageField|PasswordField|TimestampField
      * @throws DbObjectException
      */
     public function _getField($fieldName) {
