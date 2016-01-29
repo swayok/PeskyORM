@@ -6,7 +6,6 @@ namespace PeskyORM\DbObjectField;
 use PeskyORM\DbExpr;
 use Swayok\Utils\ValidateValue;
 use PeskyORM\DbObjectField;
-use PeskyORM\Exception\DbObjectFieldException;
 use Swayok\Utils\Utils;
 
 class TimestampField extends DbObjectField {

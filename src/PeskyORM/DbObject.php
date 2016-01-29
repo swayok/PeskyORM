@@ -2,6 +2,7 @@
 
 namespace PeskyORM;
 use PeskyORM\DbColumnConfig;
+use PeskyORM\DbObjectField\DateField;
 use PeskyORM\DbObjectField\FileField;
 use PeskyORM\DbObjectField\ImageField;
 use PeskyORM\DbObjectField\JsonField;
@@ -210,6 +211,7 @@ class DbObject {
     /**
      * @param string $fieldName
      * @return DbObjectField
+     * @throws DbObjectException
      */
     protected function getSuffixedField($fieldName) {
         $realFieldName = $this->getSuffixedFieldName($fieldName);
@@ -880,6 +882,11 @@ class DbObject {
                         return $field->getUnixTimestamp();
                         break;
                 }
+            } else if (
+                preg_match('%^(.+)_(ts)$%is', $fieldName, $matches)
+                && $field instanceof DateField
+            ) {
+                return $field->getUnixTimestamp();
             } else if (
                 preg_match('%^(.+)_(arr|array)$%is', $fieldName, $matches)
                 && $field instanceof JsonField

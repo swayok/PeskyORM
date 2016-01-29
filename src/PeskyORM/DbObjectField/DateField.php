@@ -6,7 +6,6 @@ namespace PeskyORM\DbObjectField;
 use PeskyORM\DbExpr;
 use Swayok\Utils\ValidateValue;
 use PeskyORM\DbObjectField;
-use PeskyORM\Exception\DbObjectFieldException;
 use Swayok\Utils\Utils;
 
 class DateField extends DbObjectField {
@@ -41,6 +40,13 @@ class DateField extends DbObjectField {
      */
     public function setDateFormat($dateFormat) {
         $this->dateFormat = $dateFormat;
+    }
+
+    /**
+     * @return int
+     */
+    public function getUnixTimestamp() {
+        return isset($this->values['value']) ? strtotime($this->values['value']) : 0;
     }
 
 }
