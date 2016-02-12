@@ -666,7 +666,7 @@ class DbObject {
      */
     public function updateValues($values, $ignoreUnknownData = false) {
         if ($this->exists()) {
-            unset($values[$this->_getPkFieldName()]);
+            $values[$this->_getPkFieldName()] = $this->_getPkValue(); //< to avoid reset calling
         } else {
             $values = array_replace($this->toStrictArray(), $values);
         }
