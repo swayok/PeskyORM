@@ -63,8 +63,8 @@ class Db {
     public $hasReturning;
     /** @var \PDO $pdo */
     public $pdo;
-    /** @var null|string $queryString */
-    protected $queryString = null;
+    /** @var null|string $lastQuery */
+    protected $lastQuery = null;
 
     /** @var bool|callable */
     static public $collectAllQueries = false;
@@ -163,7 +163,7 @@ class Db {
             $query = self::replaceQuotes($query->get());
         }
         if (!$this->dontRememberNextQuery) {
-            $this->queryString = $query;
+            $this->lastQuery = $query;
             $index = self::rememberQuery($query);
         }
         try {
@@ -190,7 +190,7 @@ class Db {
             $query = self::replaceQuotes($query->get());
         }
         if (!$this->dontRememberNextQuery) {
-            $this->queryString = $query;
+            $this->lastQuery = $query;
             $index = self::rememberQuery($query);
         }
         try {
@@ -280,7 +280,7 @@ class Db {
     }
 
     public function lastQuery() {
-        return $this->queryString;
+        return $this->lastQuery;
     }
 
     static public function getAllQueries() {
