@@ -253,7 +253,7 @@ class FileField extends DbObjectField {
         } else {
             $objectSubdir = '/' . trim($this->getFilesSubdir('/'), '/\\') . '/';
             $relUrl = trim($this->getBaseUrlToFiles(), '/\\');
-            if (!preg_match('%^(https?|ftp)://%is', $relUrl)) {
+            if (!$this->isAbsoluteUrl($relUrl)) {
                 $relUrl = '/' . $relUrl . $objectSubdir;
             } else {
                 $relUrl .= $objectSubdir;
@@ -271,7 +271,16 @@ class FileField extends DbObjectField {
         if (!$this->getDbObject()->exists()) {
             throw new DbObjectFieldException($this, 'Unable to get file url of non-existing object');
         }
-        return $this->getFileServerUrl() . '/' . trim($this->getFileDirRelativeUrl(), '/\\') . '/';
+        $relativeUrl = $this->getFileDirRelativeUrl();
+        if ($this->isAbsoluteUrl($relativeUrl)) {
+            return $relativeUrl;
+        } else {
+            return $this->getFileServerUrl() . '/' . trim($relativeUrl, '/\\') . '/';
+        }
+    }
+
+    public function isAbsoluteUrl($url) {
+        return preg_match('%^(https?|ftp)://%is', $url);
     }
 
     /**
