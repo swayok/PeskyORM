@@ -58,9 +58,9 @@ class DbConnectionConfig {
      */
     public function setDriver($driver) {
         if (empty($driver)) {
-            throw new DbConnectionConfigException($this, "DB Driver cannot be empty");
+            throw new DbConnectionConfigException($this, 'DB Driver cannot be empty');
         }
-        if (!in_array($driver, self::$drivers)) {
+        if (!in_array($driver, self::$drivers, true)) {
             throw new DbConnectionConfigException($this, "DB Driver [{$driver}] is not supported");
         }
         $this->driver = $driver;
@@ -73,9 +73,9 @@ class DbConnectionConfig {
      */
     public function getDriver() {
         if (empty($this->driver)) {
-            throw new DbConnectionConfigException($this, "DB Driver cannot be empty");
+            throw new DbConnectionConfigException($this, 'DB Driver cannot be empty');
         }
-        if (!in_array($this->driver, self::$drivers)) {
+        if (!in_array($this->driver, self::$drivers, true)) {
             throw new DbConnectionConfigException($this, "DB Driver [{$this->driver}] is not supported");
         }
         return $this->driver;
@@ -88,7 +88,7 @@ class DbConnectionConfig {
      */
     public function setDbName($dbName) {
         if (empty($dbName)) {
-            throw new DbConnectionConfigException($this, "DB Name cannot be empty");
+            throw new DbConnectionConfigException($this, 'DB Name cannot be empty');
         }
         $this->dbName = $dbName;
         return $this;
@@ -100,7 +100,7 @@ class DbConnectionConfig {
      */
     public function getDbName() {
         if (empty($this->dbName)) {
-            throw new DbConnectionConfigException($this, "DB Name cannot be empty");
+            throw new DbConnectionConfigException($this, 'DB Name cannot be empty');
         }
         return $this->dbName;
     }
@@ -112,7 +112,7 @@ class DbConnectionConfig {
      */
     public function setUserName($userName) {
         if (empty($userName)) {
-            throw new DbConnectionConfigException($this, "User Name for DB connection cannot be empty");
+            throw new DbConnectionConfigException($this, 'User Name for DB connection cannot be empty');
         }
         $this->userName = $userName;
         return $this;
@@ -124,7 +124,7 @@ class DbConnectionConfig {
      */
     public function getUserName() {
         if (empty($this->userName)) {
-            throw new DbConnectionConfigException($this, "User Name for DB connection cannot be empty");
+            throw new DbConnectionConfigException($this, 'User Name for DB connection cannot be empty');
         }
         return $this->userName;
     }
@@ -136,7 +136,7 @@ class DbConnectionConfig {
      */
     public function setPassword($password) {
         if (empty($password)) {
-            throw new DbConnectionConfigException($this, "User Password for DB connection cannot be empty");
+            throw new DbConnectionConfigException($this, 'User Password for DB connection cannot be empty');
         }
         $this->password = $password;
         return $this;
@@ -148,7 +148,7 @@ class DbConnectionConfig {
      */
     public function getPassword() {
         if (empty($this->password)) {
-            throw new DbConnectionConfigException($this, "User Password for DB connection cannot be empty");
+            throw new DbConnectionConfigException($this, 'User Password for DB connection cannot be empty');
         }
         return $this->password;
     }
