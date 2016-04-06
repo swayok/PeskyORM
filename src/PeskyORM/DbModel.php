@@ -899,6 +899,13 @@ abstract class DbModel {
     }
 
     public function count($conditionsAndOptions = null, $removeNotInnerJoins = false) {
+        return 0 + $this->expression(
+            'COUNT(*)',
+            $this->cleanOptionsForCount($conditionsAndOptions, $removeNotInnerJoins)
+        );
+    }
+
+    protected function cleanOptionsForCount($conditionsAndOptions, $removeNotInnerJoins) {
         if (is_array($conditionsAndOptions)) {
             unset($conditionsAndOptions['ORDER'], $conditionsAndOptions['LIMIT'], $conditionsAndOptions['OFFSET']);
         }
@@ -913,7 +920,7 @@ abstract class DbModel {
                 }
             }
         }
-        return 0 + $this->expression('COUNT(*)', $conditionsAndOptions);
+        return $conditionsAndOptions;
     }
 
     public function sum($column, $conditionsAndOptions = null) {
