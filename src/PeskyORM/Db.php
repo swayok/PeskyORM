@@ -125,6 +125,14 @@ class Db {
         }
     }
 
+    /**
+     * Run $callback() when connection established (actually it is already established)
+     * @param \Closure $callback
+     */
+    public function onConnect(\Closure $callback) {
+        $callback($this);
+    }
+
     public function disconnect() {
         $this->pdo = null;
     }
@@ -209,6 +217,19 @@ class Db {
         }
         $this->dontRememberNextQuery = false;
         return $statement;
+    }
+
+    /**
+     * Set timezone for current connection
+     * @param string $timezone
+     * @return bool|int
+     * @throws DbException
+     */
+    public function setTimezone($timezone) {
+        if ($this->dbEngine === self::PGSQL) {
+            return $this->exec(DbExpr::create("SET SESSION TIME ZONE ``$timezone``"));
+        }
+        throw new DbException($this, "setTimezone() is not supported by {$this->dbEngine} DB engine");
     }
 
     /**
