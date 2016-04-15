@@ -1,0 +1,88 @@
+<?php
+
+namespace PeskyORM\Core;
+
+class DbConnections {
+
+    const ADAPTER_MYSQL = 'mysql';
+    const ADAPTER_POSTGRES = 'pgsql';
+
+    static private $adapters = [
+        self::ADAPTER_MYSQL => 'PeskyORM\Adapter\Mysql',
+        self::ADAPTER_POSTGRES => 'PeskyORM\Adapter\Postgres'
+    ];
+
+    const FETCH_ALL = 'all';
+    const FETCH_FIRST = 'first';
+    const FETCH_VALUE = 'value';
+    const FETCH_COLUMN = 'column';
+
+    /**
+     * @var DbAdapter[]|DbAdapterInterface[]
+     */
+    static private $connections = [];
+
+    /**
+     * @var null|string $queryString
+     */
+    protected $lastQuery = null;
+
+    /**
+     * Add custom DB adapter
+     * @param $name
+     * @param $className - class must implement \PeskyORM\Core\DbAdapterInterface
+     * @throws \InvalidArgumentException
+     */
+    static public function addAdapter($name, $className) {
+        if (!in_array(DbAdapterInterface::class, class_implements($className), true)) {
+            throw new \InvalidArgumentException("Class [$className] must implement " . DbAdapterInterface::class . ' interface');
+        }
+        self::$adapters[$name] = $className;
+    }
+
+    /**
+     * @param string $connectionName
+     * @param string $adapterName
+     * @param null|string $dbName
+     * @param null|string $user
+     * @param null|string $password
+     * @param string $server
+     * @return DbAdapter|DbAdapterInterface
+     * @throws \InvalidArgumentException
+     */
+    static public function create(
+        $connectionName,
+        $adapterName,
+        $dbName = null,
+        $user = null,
+        $password = null,
+        $server = 'localhost'
+    ) {
+        if (empty($adapterName) || !isset(self::$adapters[$adapterName])) {
+            throw new \InvalidArgumentException("DB adapter with name [$adapterName] not found");
+        }
+        $connectionName = strtolower($connectionName);
+        if (isset(self::$connections[$connectionName])) {
+            throw new \InvalidArgumentException("DB connection with name [$connectionName] already exists");
+        }
+        self::$connections[$connectionName] = new self::$adapters[$adapterName]($dbName, $user, $password, $server);
+        return self::$connections[$connectionName];
+    }
+
+    /**
+     * Get connection
+     * @param $connectionName
+     * @return DbAdapter|DbAdapterInterface
+     * @throws \InvalidArgumentException
+     */
+    static public function getConnection($connectionName) {
+        if (!isset(self::$connections[$connectionName])) {
+            throw new \InvalidArgumentException("DB connection with name [$connectionName] not found");
+        }
+        return self::$connections[$connectionName];
+    }
+
+
+
+
+}

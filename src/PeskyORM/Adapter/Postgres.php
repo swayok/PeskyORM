@@ -2,7 +2,7 @@
 
 namespace PeskyORM\Adapter;
 
-use PeskyORM\DbAdapter;
+use PeskyORM\Core\DbAdapter;
 
 class Postgres extends DbAdapter {
 
@@ -28,13 +28,13 @@ class Postgres extends DbAdapter {
     /**
      * @var bool
      */
-    static $inTransaction = false;
+    static protected $inTransaction = false;
 
     protected function makePdo() {
         return new \PDO(
-            'pgsql:host=' . $this->dbHost . (!empty($this->dbName) ? ';dbname=' . $this->dbName : ''),
-            $this->dbUser,
-            $this->dbPassword
+            'pgsql:host=' . $this->getDbHost() . ';dbname=' . $this->getDbName(),
+            $this->getDbUser(),
+            $this->getDbPassword()
         );
     }
 
