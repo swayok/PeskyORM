@@ -90,19 +90,19 @@ abstract class DbAdapter implements DbAdapterInterface {
 
     /**
      * Connect to DB once
-     * @return $this
+     * @return \PDO
      */
     public function getConnection() {
         if ($this->pdo === null) {
-            $this->makePdo();
+            $this->pdo = $this->makePdo();
             $this->wrapConnection();
         }
-        return $this;
+        return $this->pdo;
     }
 
     /**
      * Create \PDO object
-     * @return $this
+     * @return \PDO
      */
     abstract protected function makePdo();
 
@@ -116,7 +116,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      */
     private function wrapConnection() {
         if (is_callable(static::$connectionWrapper)) {
-            $this->pdo = call_user_func(static::$connectionWrapper, $this, $this->pdo);
+            $this->pdo = call_user_func(static::$connectionWrapper, $this, $this->getConnection());
         }
     }
 
@@ -178,7 +178,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         }
         $this->lastQuery = $query;
         try {
-            return $this->pdo->query($query);
+            return $this->getConnection()->query($query);
         } catch (\PDOException $exc) {
             throw $this->getDetailedException($query);
         }
@@ -196,7 +196,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         }
         $this->lastQuery = $query;
         try {
-            return $this->pdo->exec($query);
+            return $this->getConnection()->exec($query);
         } catch (\PDOException $exc) {
             throw $this->getDetailedException($query);
         }
@@ -210,7 +210,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      */
     public function begin($readOnly = false, $transactionType = null) {
         try {
-            $this->pdo->beginTransaction();
+            $this->getConnection()->beginTransaction();
             static::rememberTransactionTrace();
         } catch (\Exception $exc) {
             static::rememberTransactionTrace('failed');
@@ -238,14 +238,14 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @return bool
      */
     public function inTransaction() {
-        return $this->pdo->inTransaction();
+        return $this->getConnection()->inTransaction();
     }
 
     /**
      * @return $this
      */
     public function commit() {
-        $this->pdo->commit();
+        $this->getConnection()->commit();
         return $this;
     }
 
@@ -253,7 +253,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @return $this
      */
     public function rollback() {
-        $this->pdo->rollBack();
+        $this->getConnection()->rollBack();
         return $this;
     }
 
@@ -276,7 +276,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      */
     public function getPdoError() {
         $ret = [];
-        list($ret['sql_code'], $ret['code'], $ret['message']) = $this->pdo->errorInfo();
+        list($ret['sql_code'], $ret['code'], $ret['message']) = $this->getConnection()->errorInfo();
         return $ret;
     }
 
@@ -327,7 +327,7 @@ abstract class DbAdapter implements DbAdapterInterface {
             if (is_array($value)) {
                 $value = static::serializeArray($value);
             }
-            return $this->pdo->quote($value, $type);
+            return $this->getConnection()->quote($value, $type);
         }
     }
 

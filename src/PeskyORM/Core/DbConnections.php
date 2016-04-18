@@ -12,11 +12,6 @@ class DbConnections {
         self::ADAPTER_POSTGRES => 'PeskyORM\Adapter\Postgres'
     ];
 
-    const FETCH_ALL = 'all';
-    const FETCH_FIRST = 'first';
-    const FETCH_VALUE = 'value';
-    const FETCH_COLUMN = 'column';
-
     /**
      * @var DbAdapter[]|DbAdapterInterface[]
      */
@@ -82,7 +77,14 @@ class DbConnections {
         return self::$connections[$connectionName];
     }
 
-
+    /**
+     * Disconnect all adapters
+     */
+    static public function disconnectAll() {
+        foreach (self::$connections as $adapter) {
+            $adapter->disconnect();
+        }
+    }
 
 
 }
