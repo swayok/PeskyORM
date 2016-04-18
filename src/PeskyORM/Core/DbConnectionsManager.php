@@ -2,7 +2,7 @@
 
 namespace PeskyORM\Core;
 
-class DbConnections {
+class DbConnectionsManager {
 
     const ADAPTER_MYSQL = 'mysql';
     const ADAPTER_POSTGRES = 'pgsql';
