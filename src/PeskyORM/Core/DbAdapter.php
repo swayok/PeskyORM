@@ -4,6 +4,7 @@ namespace PeskyORM\Core;
 
 use PeskyORM\DbColumnConfig;
 use PeskyORM\DbExpr;
+use Swayok\Utils\Utils;
 
 abstract class DbAdapter implements DbAdapterInterface {
 
@@ -16,6 +17,18 @@ abstract class DbAdapter implements DbAdapterInterface {
 
     // db-specific value for unlimited amount of query results (ex: SELECT .. OFFSET 10 LIMIT 0)
     const NO_LIMIT = '0';
+
+    /**
+     * Traces of all transactions (required for debug)
+     * @var array
+     */
+    protected static $transactionsTraces = [];
+
+    /**
+     * Enables/disables collecting of transactions traces
+     * @var bool
+     */
+    protected static $isTransactionTracesEnabled = false;
 
     protected $dbName = '';
     protected $dbUser = '';
@@ -46,14 +59,14 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @param callable $wrapper
      */
     static public function setConnectionWrapper(callable $wrapper) {
-        self::$connectionWrapper = $wrapper;
+        static::$connectionWrapper = $wrapper;
     }
 
     /**
      * Remove PDO connection wrapper. This does not unwrap existing PDO objects
      */
     static public function unsetConnectionWrapper() {
-        self::$connectionWrapper = null;
+        static::$connectionWrapper = null;
     }
 
     /**
@@ -102,8 +115,8 @@ abstract class DbAdapter implements DbAdapterInterface {
      * Wrap PDO connection if wrapper is provided
      */
     private function wrapConnection() {
-        if (is_callable(self::$connectionWrapper)) {
-            $this->pdo = call_user_func(self::$connectionWrapper, $this, $this->pdo);
+        if (is_callable(static::$connectionWrapper)) {
+            $this->pdo = call_user_func(static::$connectionWrapper, $this, $this->pdo);
         }
     }
 
@@ -144,6 +157,16 @@ abstract class DbAdapter implements DbAdapterInterface {
     }
 
     /**
+     * Enable/disable tracing of transactions
+     * Use when you have problems related to transactions
+     * @param bool $enable = true: enable; false: disable
+     * @return $this
+     */
+    static public function enableTransactionTraces($enable = true) {
+        static::$isTransactionTracesEnabled = $enable;
+    }
+
+    /**
      * @param string|DbExpr $query
      * @return bool|\PDOStatement
      * @throws \InvalidArgumentException
@@ -177,6 +200,61 @@ abstract class DbAdapter implements DbAdapterInterface {
         } catch (\PDOException $exc) {
             throw $this->getDetailedException($query);
         }
+    }
+
+    /**
+     * @param bool $readOnly - true: transaction only reads data
+     * @param null|string $transactionType - type of transaction
+     * @return $this
+     * @throws \PeskyORM\Core\DbException
+     */
+    public function begin($readOnly = false, $transactionType = null) {
+        try {
+            $this->pdo->beginTransaction();
+            static::rememberTransactionTrace();
+        } catch (\Exception $exc) {
+            static::rememberTransactionTrace('failed');
+            throw new DbException('Already in transaction: ' . Utils::printToStr(static::$transactionsTraces));
+        }
+        return $this;
+    }
+
+    /**
+     * Remember transaction trace
+     * @param null|string $key - array key for this trace
+     */
+    static protected function rememberTransactionTrace($key = null) {
+        if (static::$isTransactionTracesEnabled) {
+            $trace = Utils::getBackTrace(true, false, true, 2);
+            if ($key) {
+                static::$transactionsTraces[$key] = $trace;
+            } else {
+                static::$transactionsTraces[] = $trace;
+            }
+        }
+    }
+
+    /**
+     * @return bool
+     */
+    public function inTransaction() {
+        return $this->pdo->inTransaction();
+    }
+
+    /**
+     * @return $this
+     */
+    public function commit() {
+        $this->pdo->commit();
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function rollback() {
+        $this->pdo->rollBack();
+        return $this;
     }
 
     /**

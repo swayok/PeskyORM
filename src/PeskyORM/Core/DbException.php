@@ -2,6 +2,6 @@
 
 namespace PeskyORM\Core;
 
-class DbException extends \PDOException{
+class DbException extends \PDOException {
 
 }

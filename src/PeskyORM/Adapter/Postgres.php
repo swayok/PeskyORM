@@ -38,5 +38,49 @@ class Postgres extends DbAdapter {
         );
     }
 
+    /**
+     * @inheritdoc
+     * @throws \InvalidArgumentException
+     * @throws \PDOException
+     */
+    public function begin($readOnly = false, $transactionType = null) {
+        if (empty($transactionType)) {
+            $transactionType = static::TRANSACTION_TYPE_DEFAULT;
+        }
+        if (!in_array($transactionType, self::$transactionTypes, true)) {
+            throw new \InvalidArgumentException("Unknown transaction type [{$transactionType}] for PostgreSQL");
+        }
+        if (!$readOnly && $transactionType === static::TRANSACTION_TYPE_DEFAULT) {
+            return parent::begin();
+        } else {
+            self::$inTransaction = true;
+            $this->exec('BEGIN ISOLATION LEVEL ' . $transactionType . ' ' . ($readOnly ? 'READ ONLY' : ''));
+            static::rememberTransactionTrace();
+        }
+        return $this;
+    }
+
+    public function inTransaction() {
+        return self::$inTransaction || $this->pdo->inTransaction();
+    }
+
+    public function commit() {
+        if (self::$inTransaction) {
+            self::$inTransaction = false;
+            $this->exec('COMMIT');
+        } else {
+            $this->pdo->commit();
+        }
+    }
+
+    public function rollback() {
+        if (self::$inTransaction) {
+            self::$inTransaction = false;
+            $this->exec('ROLLBACK');
+        } else {
+            $this->pdo->rollBack();
+        }
+    }
+
 
 }
