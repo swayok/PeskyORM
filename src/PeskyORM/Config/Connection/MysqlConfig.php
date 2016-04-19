@@ -24,19 +24,19 @@ class MysqlConfig implements DbConnectionConfigInterface {
         $user = array_key_exists('user', $config) ? $config['user'] : null;
         $password = array_key_exists('password', $config) ? $config['password'] : null;
         $object = new static($dbName, $user, $password);
-        if (array_key_exists('host', $config)) {
+        if (!empty($config['host'])) {
             $object->setDbHost($config['host']);
         }
-        if (array_key_exists('port', $config)) {
+        if (!empty($config['port'])) {
             $object->setDbPort($config['port']);
         }
-        if (array_key_exists('charset', $config)) {
+        if (!empty($config['charset'])) {
             $object->setCharset($config['charset']);
         }
-        if (array_key_exists('socket', $config)) {
+        if (!empty($config['socket'])) {
             $object->setUnixSocket($config['socket']);
         }
-        if (array_key_exists('options', $config)) {
+        if (!empty($config['options'])) {
             $object->setOptions($config['options']);
         }
         return $object;
@@ -54,14 +54,22 @@ class MysqlConfig implements DbConnectionConfigInterface {
     ) {
         if (empty($dbName)) {
             throw new \InvalidArgumentException('DB name argument cannot be empty');
+        } else if (!is_string($dbName)) {
+            throw new \InvalidArgumentException('DB name argument must be a string');
         }
         $this->dbName = $dbName;
+
         if (empty($user)) {
             throw new \InvalidArgumentException('DB user argument cannot be empty');
+        } else if (!is_string($user)) {
+            throw new \InvalidArgumentException('DB user argument must be a string');
         }
         $this->dbUser = $user;
+
         if (empty($password)) {
             throw new \InvalidArgumentException('DB password argument cannot be empty');
+        } else if (!is_string($password)) {
+            throw new \InvalidArgumentException('DB password argument must be a string');
         }
         $this->dbPassword = $password;
     }
@@ -109,6 +117,11 @@ class MysqlConfig implements DbConnectionConfigInterface {
      * @return $this
      */
     public function setCharset($charset) {
+        if (empty($charset)) {
+            throw new \InvalidArgumentException('DB charset argument cannot be empty');
+        } else if (!is_string($charset)) {
+            throw new \InvalidArgumentException('DB charset argument must be a string');
+        }
         $this->charset = $charset;
         return $this;
     }
@@ -125,6 +138,11 @@ class MysqlConfig implements DbConnectionConfigInterface {
      * @return $this
      */
     public function setDbHost($dbHost) {
+        if (empty($dbHost)) {
+            throw new \InvalidArgumentException('DB host argument cannot be empty');
+        } else if (!is_string($dbHost)) {
+            throw new \InvalidArgumentException('DB host argument must be a string');
+        }
         $this->dbHost = $dbHost;
         return $this;
     }
@@ -139,9 +157,10 @@ class MysqlConfig implements DbConnectionConfigInterface {
     /**
      * @param string $dbPort
      * @return $this
+     * @throws \InvalidArgumentException
      */
     public function setDbPort($dbPort) {
-        if (!preg_match('%^\d+$%', $dbPort)) {
+        if (!is_numeric($dbPort) || !preg_match('%^\d+$%', $dbPort)) {
             throw new \InvalidArgumentException('DB port argument must be an integer number');
         }
         $this->dbPort = $dbPort;

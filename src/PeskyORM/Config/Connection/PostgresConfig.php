@@ -22,13 +22,13 @@ class PostgresConfig implements DbConnectionConfigInterface {
         $user = array_key_exists('user', $config) ? $config['user'] : null;
         $password = array_key_exists('password', $config) ? $config['password'] : null;
         $object = new static($dbName, $user, $password);
-        if (array_key_exists('host', $config)) {
+        if (!empty($config['host'])) {
             $object->setDbHost($config['host']);
         }
-        if (array_key_exists('port', $config)) {
+        if (!empty($config['port'])) {
             $object->setDbPort($config['port']);
         }
-        if (array_key_exists('options', $config)) {
+        if (!empty($config['options'])) {
             $object->setOptions($config['options']);
         }
         return $object;
@@ -46,25 +46,24 @@ class PostgresConfig implements DbConnectionConfigInterface {
     ) {
         if (empty($dbName)) {
             throw new \InvalidArgumentException('DB name argument cannot be empty');
+        } else if (!is_string($dbName)) {
+            throw new \InvalidArgumentException('DB name argument must be a string');
         }
         $this->dbName = $dbName;
+        
         if (empty($user)) {
             throw new \InvalidArgumentException('DB user argument cannot be empty');
+        } else if (!is_string($user)) {
+            throw new \InvalidArgumentException('DB user argument must be a string');
         }
         $this->dbUser = $user;
+        
         if (empty($password)) {
             throw new \InvalidArgumentException('DB password argument cannot be empty');
+        } else if (!is_string($password)) {
+            throw new \InvalidArgumentException('DB password argument must be a string');
         }
         $this->dbPassword = $password;
-        if (!empty($host)) {
-            $this->dbHost = $host;
-        }
-        if (!empty($port)) {
-            if (!preg_match('%^\d+$%', $port)) {
-                throw new \InvalidArgumentException('DB port argument must be an integer number');
-            }
-            $this->dbPort = $port;
-        }
     }
 
     /**
@@ -101,6 +100,11 @@ class PostgresConfig implements DbConnectionConfigInterface {
      * @return $this
      */
     public function setDbHost($dbHost) {
+        if (empty($dbHost)) {
+            throw new \InvalidArgumentException('DB host argument cannot be empty');
+        } else if (!is_string($dbHost)) {
+            throw new \InvalidArgumentException('DB host argument must be a string');
+        }
         $this->dbHost = $dbHost;
         return $this;
     }
@@ -115,9 +119,10 @@ class PostgresConfig implements DbConnectionConfigInterface {
     /**
      * @param string $dbPort
      * @return $this
+     * @throws \InvalidArgumentException
      */
     public function setDbPort($dbPort) {
-        if (!preg_match('%^\d+$%', $dbPort)) {
+        if (!is_numeric($dbPort) || !preg_match('%^\d+$%', $dbPort)) {
             throw new \InvalidArgumentException('DB port argument must be an integer number');
         }
         $this->dbPort = $dbPort;
