@@ -48,7 +48,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      *
      * @var null|callable
      */
-    static private $connectionWrapper = null;
+    static protected $connectionWrapper = null;
 
     /**
      * Last executed query
@@ -100,6 +100,7 @@ abstract class DbAdapter implements DbAdapterInterface {
     /**
      * Create \PDO object
      * @return \PDO
+     * @throws \PDOException
      */
     protected function makePdo() {
         return new \PDO(
@@ -144,7 +145,7 @@ abstract class DbAdapter implements DbAdapterInterface {
 
     /**
      * @param string|DbExpr $query
-     * @return bool|\PDOStatement
+     * @return \PDOStatement
      * @throws \InvalidArgumentException
      * @throws \PDOException
      */
