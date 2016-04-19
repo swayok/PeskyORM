@@ -8,8 +8,8 @@ class DbConnectionsManager {
     const ADAPTER_POSTGRES = 'pgsql';
 
     static private $adapters = [
-        self::ADAPTER_MYSQL => 'PeskyORM\Adapter\Mysql',
-        self::ADAPTER_POSTGRES => 'PeskyORM\Adapter\Postgres'
+        self::ADAPTER_MYSQL => '\PeskyORM\Adapter\Mysql',
+        self::ADAPTER_POSTGRES => '\PeskyORM\Adapter\Postgres'
     ];
 
     /**
@@ -38,20 +38,13 @@ class DbConnectionsManager {
     /**
      * @param string $connectionName
      * @param string $adapterName
-     * @param null|string $dbName
-     * @param null|string $user
-     * @param null|string $password
-     * @param string $server
+     * @param DbConnectionConfigInterface $connectionConfig
      * @return DbAdapter|DbAdapterInterface
-     * @throws \InvalidArgumentException
      */
-    static public function create(
+    static public function createConnection(
         $connectionName,
         $adapterName,
-        $dbName = null,
-        $user = null,
-        $password = null,
-        $server = 'localhost'
+        DbConnectionConfigInterface $connectionConfig
     ) {
         if (empty($adapterName) || !isset(self::$adapters[$adapterName])) {
             throw new \InvalidArgumentException("DB adapter with name [$adapterName] not found");
@@ -60,13 +53,13 @@ class DbConnectionsManager {
         if (isset(self::$connections[$connectionName])) {
             throw new \InvalidArgumentException("DB connection with name [$connectionName] already exists");
         }
-        self::$connections[$connectionName] = new self::$adapters[$adapterName]($dbName, $user, $password, $server);
+        self::$connections[$connectionName] = new self::$adapters[$adapterName]($connectionConfig);
         return self::$connections[$connectionName];
     }
 
     /**
      * Get connection
-     * @param $connectionName
+     * @param string $connectionName
      * @return DbAdapter|DbAdapterInterface
      * @throws \InvalidArgumentException
      */

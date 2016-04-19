@@ -2,6 +2,7 @@
 
 namespace PeskyORM\Adapter;
 
+use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Core\DbAdapter;
 
 class Mysql extends DbAdapter {
@@ -9,11 +10,9 @@ class Mysql extends DbAdapter {
     const VALUE_QUOTES = '"';
     const NAME_QUOTES = '`';
 
-    protected function makePdo() {
-        return new \PDO(
-            'mysql:host=' . $this->getDbHost() . ';dbname=' . $this->getDbName(),
-            $this->getDbUser(),
-            $this->getDbPassword()
-        );
+    public function __construct(MysqlConfig $connectionConfig) {
+        parent::__construct($connectionConfig);
     }
+
+
 }

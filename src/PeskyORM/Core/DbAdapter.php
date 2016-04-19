@@ -8,6 +8,8 @@ use Swayok\Utils\Utils;
 
 abstract class DbAdapter implements DbAdapterInterface {
 
+    const DEFAULT_DB_PORT_NUMBER = '';
+
     const VALUE_QUOTES = '';
     const NAME_QUOTES = '';
 
@@ -30,10 +32,10 @@ abstract class DbAdapter implements DbAdapterInterface {
      */
     protected static $isTransactionTracesEnabled = false;
 
-    protected $dbName = '';
-    protected $dbUser = '';
-    protected $dbHost = '';
-    protected $dbPassword = '';
+    /**
+     * @var DbConnectionConfigInterface
+     */
+    protected $connectionConfig;
 
     /**
      * @var \PDO $pdo
@@ -70,22 +72,10 @@ abstract class DbAdapter implements DbAdapterInterface {
     }
 
     /**
-     * DbAdapter constructor.
-     * @param string $dbName
-     * @param string $user
-     * @param string $password
-     * @param string $server
+     * @param DbConnectionConfigInterface $connectionConfig
      */
-    public function __construct(
-        $dbName,
-        $user,
-        $password,
-        $server = 'localhost'
-    ) {
-        $this->dbName = $dbName;
-        $this->dbUser = $user;
-        $this->dbHost = $server;
-        $this->dbPassword = $password;
+    public function __construct(DbConnectionConfigInterface $connectionConfig) {
+        $this->connectionConfig = $connectionConfig;
     }
 
     /**
@@ -101,10 +91,24 @@ abstract class DbAdapter implements DbAdapterInterface {
     }
 
     /**
+     * @return DbConnectionConfigInterface
+     */
+    public function getConnectionConfig() {
+        return $this->connectionConfig;
+    }
+
+    /**
      * Create \PDO object
      * @return \PDO
      */
-    abstract protected function makePdo();
+    protected function makePdo() {
+        return new \PDO(
+            $this->connectionConfig->getPdoConnectionString(),
+            $this->connectionConfig->getUserName(),
+            $this->connectionConfig->getUserPassword(),
+            $this->connectionConfig->getOptions()
+        );
+    }
 
     public function disconnect() {
         $this->pdo = null;
@@ -121,39 +125,11 @@ abstract class DbAdapter implements DbAdapterInterface {
     }
 
     /**
-     * @return string
-     */
-    public function getDbName() {
-        return $this->dbName;
-    }
-
-    /**
-     * @return string
-     */
-    public function getDbUser() {
-        return $this->dbUser;
-    }
-
-    /**
-     * @return string
-     */
-    public function getDbHost() {
-        return $this->dbHost;
-    }
-
-    /**
      * Get last executed query
      * @return null|string
      */
     public function getLastQuery() {
         return $this->lastQuery;
-    }
-
-    /**
-     * @return string
-     */
-    public function getDbPassword() {
-        return $this->dbPassword;
     }
 
     /**
