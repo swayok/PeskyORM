@@ -2,8 +2,7 @@
 
 namespace PeskyORM\Core;
 
-use PeskyORM\DbColumnConfig;
-use PeskyORM\DbExpr;
+use PeskyORM\Config\Schema\DbColumnConfig;
 use Swayok\Utils\Utils;
 
 abstract class DbAdapter implements DbAdapterInterface {
@@ -81,10 +80,12 @@ abstract class DbAdapter implements DbAdapterInterface {
     /**
      * Connect to DB once
      * @return \PDO
+     * @throws \PDOException
      */
     public function getConnection() {
         if ($this->pdo === null) {
             $this->pdo = $this->makePdo();
+            $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
             $this->wrapConnection();
         }
         return $this->pdo;
@@ -118,6 +119,7 @@ abstract class DbAdapter implements DbAdapterInterface {
 
     /**
      * Wrap PDO connection if wrapper is provided
+     * @throws \PDOException
      */
     private function wrapConnection() {
         if (is_callable(static::$connectionWrapper)) {
@@ -163,37 +165,142 @@ abstract class DbAdapter implements DbAdapterInterface {
 
     /**
      * @param string|DbExpr $query
-     * @return int
-     * @throws \InvalidArgumentException
+     * @param array $returning - list of QUOTED DB fields to return from statement. Must be resolved by
+     * @return int|array = array: returned if $returning argument is not empty
      * @throws \PDOException
+     * @throws \InvalidArgumentException
      */
-    public function exec($query) {
+    public function exec($query, array $returning = []) {
         if ($query instanceof DbExpr) {
             $query = $this->replaceDbExprQuotes($query->get());
         }
         $this->lastQuery = $query;
         try {
-            return $this->getConnection()->exec($query);
+            if (count($returning) > 0) {
+                $affectedRowsCount = $this->execWithReturning($query, $returning);
+            } else {
+                $affectedRowsCount = $this->getConnection()->exec($query);
+            }
+            if (!$affectedRowsCount || !is_int($affectedRowsCount)) {
+                $exc = $this->getDetailedException($query);
+                if ($exc !== null) {
+                    throw $exc;
+                }
+            }
+            if (!empty($returning)) {
+                return $this->resolveReturningFieldsAfterExec($query, $returning, $affectedRowsCount);
+            }
+            return $affectedRowsCount;
         } catch (\PDOException $exc) {
             throw $this->getDetailedException($query);
         }
     }
 
     /**
+     * @param string $query
+     * @param array $returning
+     * @return int|array
+     * @throws \PDOException
+     * @throws \PeskyORM\Core\DbException
+     */
+    protected function execWithReturning($query, array $returning) {
+        throw new DbException(__CLASS__ . ' does not support exec() with RETURNING');
+    }
+
+    /**
+     * Resolve situation when some fields needed to be returned after query was executed.
+     * This functionality should be resolved by adapters if they support this feature
+     * @param string$query
+     * @param array $returning
+     * @param int $affectedRowsCount
+     * @return array
+     * @throws \PeskyORM\Core\DbException
+     */
+    protected function resolveReturningFieldsAfterExec($query, array $returning, $affectedRowsCount) {
+        throw new DbException(__CLASS__ . ' does not support RETURNING after exec()');
+    }
+
+    /**
+     * @return bool
+     * @throws \PDOException
+     */
+    public function inTransaction() {
+        return $this->getConnection()->inTransaction();
+    }
+
+    /**
      * @param bool $readOnly - true: transaction only reads data
      * @param null|string $transactionType - type of transaction
      * @return $this
+     * @throws \InvalidArgumentException
+     * @throws \PDOException
      * @throws \PeskyORM\Core\DbException
      */
     public function begin($readOnly = false, $transactionType = null) {
+        $this->guardTransaction('begin');
         try {
             $this->getConnection()->beginTransaction();
             static::rememberTransactionTrace();
-        } catch (\Exception $exc) {
+        } catch (\PDOException $exc) {
             static::rememberTransactionTrace('failed');
-            throw new DbException('Already in transaction: ' . Utils::printToStr(static::$transactionsTraces));
+            throw $exc;
         }
         return $this;
+    }
+
+    /**
+     * @return $this
+     * @throws \InvalidArgumentException
+     * @throws \PeskyORM\Core\DbException
+     * @throws \PDOException
+     */
+    public function commit() {
+        $this->guardTransaction('commit');
+        $this->getConnection()->commit();
+        return $this;
+    }
+
+    /**
+     * @return $this
+     * @throws \InvalidArgumentException
+     * @throws \PeskyORM\Core\DbException
+     * @throws \PDOException
+     */
+    public function rollBack() {
+        $this->guardTransaction('rollback');
+        $this->getConnection()->rollBack();
+        return $this;
+    }
+
+    /**
+     * @param string $action = begin|commit|rollback
+     * @throws \InvalidArgumentException
+     * @throws \PeskyORM\Core\DbException
+     * @throws \PDOException
+     */
+    protected function guardTransaction($action) {
+        switch ($action) {
+            case 'begin':
+                if ($this->inTransaction()) {
+                    static::rememberTransactionTrace('failed');
+                    throw new DbException('Already in transaction: ' . Utils::printToStr(static::$transactionsTraces));
+                }
+                break;
+            case 'commit':
+                if (!$this->inTransaction()) {
+                    static::rememberTransactionTrace('failed');
+                    throw new DbException('Attempt to commit not started transaction: ' . Utils::printToStr(static::$transactionsTraces));
+                }
+                break;
+            case 'rollback':
+                if (!$this->inTransaction()) {
+                    static::rememberTransactionTrace('failed');
+                    throw new DbException('Attempt to rollback not started transaction: ' . Utils::printToStr(static::$transactionsTraces));
+                }
+                break;
+            default:
+                throw new \InvalidArgumentException('$action argument must be one of: "begin", "commit", "rollback"');
+        }
     }
 
     /**
@@ -212,48 +319,39 @@ abstract class DbAdapter implements DbAdapterInterface {
     }
 
     /**
-     * @return bool
-     */
-    public function inTransaction() {
-        return $this->getConnection()->inTransaction();
-    }
-
-    /**
-     * @return $this
-     */
-    public function commit() {
-        $this->getConnection()->commit();
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function rollback() {
-        $this->getConnection()->rollBack();
-        return $this;
-    }
-
-    /**
      * Make detailed exception from last pdo error
      * @param string $query - failed query
-     * @return \PDOException
+     * @param null|\PDOStatement|\PDO $pdoStatement
+     * @return \PDOException or null if no error
+     * @throws \InvalidArgumentException
+     * @throws \PDOException
      */
-    private function getDetailedException($query) {
-        $errorInfo = $this->getPdoError();
+    private function getDetailedException($query, $pdoStatement = null) {
+        $errorInfo = $this->getPdoError($pdoStatement);
+        if ($errorInfo['message'] === null) {
+            return null;
+        }
         if (preg_match('%syntax error at or near "\$\d+"%i', $errorInfo[2])) {
             $errorInfo['message'] .= "\n NOTE: PeskyORM do not use prepared statements. You possibly used one of Postgresql jsonb opertaors - '?', '?|' or '?&'."
                 . ' You should use alternative functions: jsonb_exists(jsonb, text), jsonb_exists_any(jsonb, text) or jsonb_exists_all(jsonb, text) respectively';
         }
-        return new \PDOException($errorInfo['code'] . "<br>\nQuery: " . $query, $errorInfo['message']);
+        return new \PDOException($errorInfo['message'] . ". \nQuery: " . $query, $errorInfo['code']);
     }
 
     /**
+     * @param null|\PDOStatement|\PDO $pdoStatement
      * @return array
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
      */
-    public function getPdoError() {
+    public function getPdoError($pdoStatement = null) {
         $ret = [];
-        list($ret['sql_code'], $ret['code'], $ret['message']) = $this->getConnection()->errorInfo();
+        if (empty($pdoStatement)) {
+            $pdoStatement = $this->getConnection();
+        } else if (!($pdoStatement instanceof \PDOStatement) && !($pdoStatement instanceof \PDO)) {
+            throw new \InvalidArgumentException('$pdoStatement argument should be instance of \PDOStatement or \PDO');
+        }
+        list($ret['sql_code'], $ret['code'], $ret['message']) = $pdoStatement->errorInfo();
         return $ret;
     }
 
@@ -280,6 +378,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @param mixed $value
      * @param int|DbColumnConfig $fieldInfoOrType - one of \PDO::PARAM_* or DbColumnConfig
      * @return string
+     * @throws \PDOException
      * @throws \InvalidArgumentException
      */
     public function quoteValue($value, $fieldInfoOrType = \PDO::PARAM_STR) {
@@ -320,6 +419,7 @@ abstract class DbAdapter implements DbAdapterInterface {
     /**
      * @param string $expression
      * @return string
+     * @throws \PDOException
      * @throws \InvalidArgumentException
      */
     public function replaceDbExprQuotes($expression) {

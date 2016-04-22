@@ -29,54 +29,45 @@ class Postgres extends DbAdapter {
     /**
      * @var bool
      */
-    static protected $inTransaction = false;
+    protected $inTransaction = false;
 
     public function __construct(PostgresConfig $connectionConfig) {
         parent::__construct($connectionConfig);
     }
 
-    /**
-     * @inheritdoc
-     * @throws \InvalidArgumentException
-     * @throws \PDOException
-     */
+    public function inTransaction() {
+        return $this->inTransaction;
+    }
+
     public function begin($readOnly = false, $transactionType = null) {
+        $this->guardTransaction('begin');
         if (empty($transactionType)) {
             $transactionType = static::TRANSACTION_TYPE_DEFAULT;
         }
         if (!in_array($transactionType, self::$transactionTypes, true)) {
-            throw new \InvalidArgumentException("Unknown transaction type [{$transactionType}] for PostgreSQL");
+            throw new \InvalidArgumentException("Unknown transaction type '{$transactionType}' for PostgreSQL");
         }
-        if (!$readOnly && $transactionType === static::TRANSACTION_TYPE_DEFAULT) {
-            return parent::begin();
-        } else {
-            self::$inTransaction = true;
+        try {
             $this->exec('BEGIN ISOLATION LEVEL ' . $transactionType . ' ' . ($readOnly ? 'READ ONLY' : ''));
+            $this->inTransaction = true;
             static::rememberTransactionTrace();
+        } catch (\PDOException $exc) {
+            static::rememberTransactionTrace('failed');
+            throw $exc;
         }
         return $this;
     }
 
-    public function inTransaction() {
-        return self::$inTransaction || $this->pdo->inTransaction();
-    }
-
     public function commit() {
-        if (self::$inTransaction) {
-            self::$inTransaction = false;
-            $this->exec('COMMIT');
-        } else {
-            $this->pdo->commit();
-        }
+        $this->guardTransaction('commit');
+        $this->exec('COMMIT');
+        $this->inTransaction = false;
     }
 
-    public function rollback() {
-        if (self::$inTransaction) {
-            self::$inTransaction = false;
-            $this->exec('ROLLBACK');
-        } else {
-            $this->pdo->rollBack();
-        }
+    public function rollBack() {
+        $this->guardTransaction('rollback');
+        $this->exec('ROLLBACK');
+        $this->inTransaction = false;
     }
 
 

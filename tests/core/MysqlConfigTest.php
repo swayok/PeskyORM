@@ -217,29 +217,29 @@ class MysqlConfigTest extends PHPUnit_Framework_TestCase {
 
     public function testValidConfig() {
         $config = new MysqlConfig('dbname', 'username', 'password');
-        $this->assertEquals($config->getUserName(), 'username');
-        $this->assertEquals($config->getUserPassword(), 'password');
-        $this->assertEquals($config->getOptions(), []);
-        $this->assertEquals($config->getPdoConnectionString(), 'mysql:host=localhost;port=3306;dbname=dbname;charset=utf8');
+        $this->assertEquals('username', $config->getUserName());
+        $this->assertEquals('password', $config->getUserPassword());
+        $this->assertEquals([], $config->getOptions());
+        $this->assertEquals('mysql:host=localhost;port=3306;dbname=dbname;charset=utf8', $config->getPdoConnectionString());
 
         $config->setDbHost('192.168.0.1');
-        $this->assertEquals($config->getPdoConnectionString(), 'mysql:host=192.168.0.1;port=3306;dbname=dbname;charset=utf8');
+        $this->assertEquals('mysql:host=192.168.0.1;port=3306;dbname=dbname;charset=utf8', $config->getPdoConnectionString());
 
         $config->setDbPort(9999);
-        $this->assertEquals($config->getPdoConnectionString(), 'mysql:host=192.168.0.1;port=9999;dbname=dbname;charset=utf8');
+        $this->assertEquals('mysql:host=192.168.0.1;port=9999;dbname=dbname;charset=utf8', $config->getPdoConnectionString());
 
         $config->setDbPort('8888');
-        $this->assertEquals($config->getPdoConnectionString(), 'mysql:host=192.168.0.1;port=8888;dbname=dbname;charset=utf8');
+        $this->assertEquals('mysql:host=192.168.0.1;port=8888;dbname=dbname;charset=utf8', $config->getPdoConnectionString());
 
         $config->setCharset('cp1251');
-        $this->assertEquals($config->getPdoConnectionString(), 'mysql:host=192.168.0.1;port=8888;dbname=dbname;charset=cp1251');
+        $this->assertEquals('mysql:host=192.168.0.1;port=8888;dbname=dbname;charset=cp1251', $config->getPdoConnectionString());
 
         $testOptions = ['test' => 'test'];
         $config->setOptions($testOptions);
-        $this->assertEquals($config->getOptions(), $testOptions);
+        $this->assertEquals($testOptions, $config->getOptions());
 
         $config->setUnixSocket('/tmp/mysql.sock');
-        $this->assertEquals($config->getPdoConnectionString(), 'mysql:unix_socket=/tmp/mysql.sock;dbname=dbname;charset=cp1251');
+        $this->assertEquals('mysql:unix_socket=/tmp/mysql.sock;dbname=dbname;charset=cp1251', $config->getPdoConnectionString());
     }
 
     /**
@@ -292,12 +292,12 @@ class MysqlConfigTest extends PHPUnit_Framework_TestCase {
         ];
         $config = MysqlConfig::fromArray($test);
         $this->assertEquals(
-            $config->getPdoConnectionString(),
-            "mysql:host=localhost;port=3306;dbname={$test['name']};charset=utf8"
+            "mysql:host=localhost;port=3306;dbname={$test['name']};charset=utf8",
+            $config->getPdoConnectionString()
         );
-        $this->assertEquals($config->getUserName(), $test['user']);
-        $this->assertEquals($config->getUserPassword(), $test['password']);
-        $this->assertEquals($config->getOptions(), []);
+        $this->assertEquals($test['user'], $config->getUserName());
+        $this->assertEquals($test['password'], $config->getUserPassword());
+        $this->assertEquals([], $config->getOptions());
     }
 
     public function testValidConfigFromArray2() {
@@ -313,10 +313,10 @@ class MysqlConfigTest extends PHPUnit_Framework_TestCase {
         ];
         $config = MysqlConfig::fromArray($test);
         $this->assertEquals(
-            $config->getPdoConnectionString(),
-            "mysql:host={$test['host']};port={$test['port']};dbname={$test['name']};charset={$test['charset']}"
+            "mysql:host={$test['host']};port={$test['port']};dbname={$test['name']};charset={$test['charset']}",
+            $config->getPdoConnectionString()
         );
-        $this->assertEquals($config->getOptions(), $test['options']);
+        $this->assertEquals($test['options'], $config->getOptions());
     }
 
     public function testValidConfigFromArray3() {
@@ -331,9 +331,9 @@ class MysqlConfigTest extends PHPUnit_Framework_TestCase {
         ];
         $config = MysqlConfig::fromArray($test);
         $this->assertEquals(
-            $config->getPdoConnectionString(),
-            "mysql:host={$test['host']};port={$test['port']};dbname={$test['name']};charset=utf8"
+            "mysql:host={$test['host']};port={$test['port']};dbname={$test['name']};charset=utf8",
+            $config->getPdoConnectionString()
         );
-        $this->assertEquals($config->getOptions(), $test['options']);
+        $this->assertEquals($test['options'], $config->getOptions());
     }
 }

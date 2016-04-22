@@ -199,23 +199,23 @@ class PostgresConfigTest extends PHPUnit_Framework_TestCase {
 
     public function testValidConfig() {
         $config = new PostgresConfig('dbname', 'username', 'password');
-        $this->assertEquals($config->getUserName(), 'username');
-        $this->assertEquals($config->getUserPassword(), 'password');
-        $this->assertEquals($config->getOptions(), []);
-        $this->assertEquals($config->getPdoConnectionString(), 'pgsql:host=localhost;port=5432;dbname=dbname');
+        $this->assertEquals('username', $config->getUserName());
+        $this->assertEquals('password', $config->getUserPassword());
+        $this->assertEquals([], $config->getOptions());
+        $this->assertEquals('pgsql:host=localhost;port=5432;dbname=dbname', $config->getPdoConnectionString());
 
         $config->setDbHost('192.168.0.1');
-        $this->assertEquals($config->getPdoConnectionString(), 'pgsql:host=192.168.0.1;port=5432;dbname=dbname');
+        $this->assertEquals('pgsql:host=192.168.0.1;port=5432;dbname=dbname', $config->getPdoConnectionString());
 
         $config->setDbPort(9999);
-        $this->assertEquals($config->getPdoConnectionString(), 'pgsql:host=192.168.0.1;port=9999;dbname=dbname');
+        $this->assertEquals('pgsql:host=192.168.0.1;port=9999;dbname=dbname', $config->getPdoConnectionString());
 
         $config->setDbPort('8888');
-        $this->assertEquals($config->getPdoConnectionString(), 'pgsql:host=192.168.0.1;port=8888;dbname=dbname');
+        $this->assertEquals('pgsql:host=192.168.0.1;port=8888;dbname=dbname', $config->getPdoConnectionString());
 
         $testOptions = ['test' => 'test'];
         $config->setOptions($testOptions);
-        $this->assertEquals($config->getOptions(), $testOptions);
+        $this->assertEquals($testOptions, $config->getOptions());
     }
 
     /**
@@ -270,10 +270,10 @@ class PostgresConfigTest extends PHPUnit_Framework_TestCase {
             'options' => ''
         ];
         $config = PostgresConfig::fromArray($test);
-        $this->assertEquals($config->getPdoConnectionString(), "pgsql:host=localhost;port=5432;dbname={$test['name']}");
-        $this->assertEquals($config->getUserName(), $test['user']);
-        $this->assertEquals($config->getUserPassword(), $test['password']);
-        $this->assertEquals($config->getOptions(), []);
+        $this->assertEquals("pgsql:host=localhost;port=5432;dbname={$test['name']}", $config->getPdoConnectionString());
+        $this->assertEquals($test['user'], $config->getUserName());
+        $this->assertEquals($test['password'], $config->getUserPassword());
+        $this->assertEquals([], $config->getOptions());
     }
 
     public function testValidConfigFromArray2() {
@@ -287,10 +287,10 @@ class PostgresConfigTest extends PHPUnit_Framework_TestCase {
         ];
         $config = PostgresConfig::fromArray($test);
         $this->assertEquals(
-            $config->getPdoConnectionString(),
-            "pgsql:host={$test['host']};port={$test['port']};dbname={$test['name']}"
+            "pgsql:host={$test['host']};port={$test['port']};dbname={$test['name']}",
+            $config->getPdoConnectionString()
         );
-        $this->assertEquals($config->getOptions(), $test['options']);
+        $this->assertEquals($test['options'], $config->getOptions());
     }
 
 }

@@ -46,6 +46,10 @@ class PostgresAdapterFunctionalityTest extends PHPUnit_Extensions_Database_TestC
      * @return PHPUnit_Extensions_Database_DataSet_IDataSet
      */
     protected function getDataSet() {
+        return new PHPUnit_Extensions_Database_DataSet_ArrayDataSet([]);
+    }
+
+    public function testNothing() {
 
     }
 }

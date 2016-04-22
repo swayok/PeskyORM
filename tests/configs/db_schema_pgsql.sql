@@ -74,3 +74,9 @@ ALTER TABLE "public"."settings" ADD PRIMARY KEY ("id");
 -- --------------------------------------------------------
 
 ALTER TABLE "public"."admins" ADD FOREIGN KEY ("parent_id") REFERENCES "public"."admins" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- --------------------------------------------------------
+
+ALTER TABLE "public"."admins" OWNER TO "pesky_orm_test";
+ALTER TABLE "public"."info_pages" OWNER TO "pesky_orm_test";
+ALTER TABLE "public"."settings" OWNER TO "pesky_orm_test";
