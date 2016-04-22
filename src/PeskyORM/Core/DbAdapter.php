@@ -344,19 +344,28 @@ abstract class DbAdapter implements DbAdapterInterface {
             case 'begin':
                 if ($this->inTransaction()) {
                     static::rememberTransactionTrace('failed');
-                    throw new DbException('Already in transaction: ' . Utils::printToStr(static::$transactionsTraces));
+                    throw new DbException(
+                        'Already in transaction: ' . Utils::printToStr(static::$transactionsTraces),
+                        DbException::CODE_TRANSACTION_BEGIN_FAIL
+                    );
                 }
                 break;
             case 'commit':
                 if (!$this->inTransaction()) {
                     static::rememberTransactionTrace('failed');
-                    throw new DbException('Attempt to commit not started transaction: ' . Utils::printToStr(static::$transactionsTraces));
+                    throw new DbException(
+                        'Attempt to commit not started transaction: ' . Utils::printToStr(static::$transactionsTraces),
+                        DbException::CODE_TRANSACTION_COMMIT_FAIL
+                    );
                 }
                 break;
             case 'rollback':
                 if (!$this->inTransaction()) {
                     static::rememberTransactionTrace('failed');
-                    throw new DbException('Attempt to rollback not started transaction: ' . Utils::printToStr(static::$transactionsTraces));
+                    throw new DbException(
+                        'Attempt to rollback not started transaction: ' . Utils::printToStr(static::$transactionsTraces),
+                        DbException::CODE_TRANSACTION_ROLLBACK_FAIL
+                    );
                 }
                 break;
             default:
