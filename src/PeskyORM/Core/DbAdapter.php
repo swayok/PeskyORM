@@ -169,25 +169,18 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function exec($query, array $returning = []) {
+    public function exec($query) {
         if ($query instanceof DbExpr) {
             $query = $this->replaceDbExprQuotes($query->get());
         }
         $this->lastQuery = $query;
         try {
-            if (count($returning) > 0) {
-                $affectedRowsCount = $this->execWithReturning($query, $returning);
-            } else {
-                $affectedRowsCount = $this->getConnection()->exec($query);
-            }
+            $affectedRowsCount = $this->getConnection()->exec($query);
             if (!$affectedRowsCount || !is_int($affectedRowsCount)) {
                 $exc = $this->getDetailedException($query);
                 if ($exc !== null) {
                     throw $exc;
                 }
-            }
-            if (!empty($returning)) {
-                return $this->resolveReturningFieldsAfterExec($query, $returning, $affectedRowsCount);
             }
             return $affectedRowsCount;
         } catch (\PDOException $exc) {
@@ -196,27 +189,96 @@ abstract class DbAdapter implements DbAdapterInterface {
     }
 
     /**
-     * @param string $query
-     * @param array $returning
-     * @return int|array
+     * @param string $table
+     * @param array $data - key-value array where key = table column and value = value of associated column
+     * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
+     *          Data type is one of \PDO::PARAM_* contants or null.
+     *          If value is null or column not present - value quoter will autodetect column type (see quoteValue())
+     * @param bool|array $returning - return some data back after $data inserted to $table
+     *          - true: return values for all columns of inserted table row
+     *          - false: do not return anything
+     *          - array: list of columns to return values for
+     * @return bool|array - array returned only if $returning is not empty
      * @throws \PDOException
+     * @throws \InvalidArgumentException
      * @throws \PeskyORM\Core\DbException
      */
-    protected function execWithReturning($query, array $returning) {
-        throw new DbException(__CLASS__ . ' does not support exec() with RETURNING');
+    public function insert($table, array $data, array $dataTypes = [], $returning = false) {
+        if (empty($table) || !is_string($table)) {
+            throw new \InvalidArgumentException('$table argument cannot be empty and must be a string');
+        }
+        if (empty($data)) {
+            throw new \InvalidArgumentException('$data argument cannot be empty');
+        }
+        if (!is_array($returning) && !is_bool($returning)) {
+            throw new \InvalidArgumentException('$returning argument must be array or boolean');
+        }
+        $columns = array_keys($data);
+        $query = 'INSERT INTO ' . $this->quoteName($table) . ' ' . $this->buildColumnsList($columns) 
+                 . ' VALUES ' . $this->buildValuesList($columns, $data, $dataTypes);
+        if (empty($returning)) {
+            $rowsAffected = $this->exec($query);
+            if (!$rowsAffected) {
+                throw new DbException(
+                    "Inserting data into table {$table} resulted in modification of 0 rows. Query: " . $this->getLastQuery(),
+                    DbException::CODE_INSERT_FAILED
+                );
+            }
+            return true;
+        } else {
+            $data = $this->resolveQueryWithReturningColumns($query, $returning);
+            if (!is_array($data)) {
+                throw new DbException(
+                    'DB Adapter [' . get_class($this) . '] returned non-array from resolveQueryWithReturningColumns()',
+                    DbException::CODE_ADAPTER_IMPLEMENTATION_PROBLEM
+                );
+            }
+            return $data;
+        }
     }
 
     /**
-     * Resolve situation when some fields needed to be returned after query was executed.
-     * This functionality should be resolved by adapters if they support this feature
-     * @param string$query
-     * @param array $returning
-     * @param int $affectedRowsCount
-     * @return array
-     * @throws \PeskyORM\Core\DbException
+     * @param array $columns - expected set of columns
+     * @param array $valuesAssoc - key-value array where keys = columns
+     * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
+     * @return string - "('value1','value2',...)"
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
      */
-    protected function resolveReturningFieldsAfterExec($query, array $returning, $affectedRowsCount) {
-        throw new DbException(__CLASS__ . ' does not support RETURNING after exec()');
+    protected function buildValuesList(array $columns, array $valuesAssoc, array $dataTypes = []) {
+        $ret = [];
+        foreach ($columns as $column) {
+            if (!array_key_exists($column, $valuesAssoc)) {
+                throw new \InvalidArgumentException(
+                    "\$valuesAssoc array does not contain key [$column]. Data: " . print_r($valuesAssoc, true)
+                );
+            }
+            $ret[] = $this->quoteValue($valuesAssoc[$column], empty($dataTypes[$column]) ? null : $dataTypes[$column]);
+        }
+        return '(' . implode(',', $ret) . ')';
+    }
+
+    /**
+     * @param array $columns
+     * @return string - "(`column1','column2',...)"
+     * @throws \InvalidArgumentException
+     */
+    protected function buildColumnsList(array $columns) {
+        $quoted = array_map(function ($column) {
+            return $this->quoteName($column);
+        }, $columns);
+        return '(' . implode(',', $quoted) . ')';
+    }
+
+    /**
+     * This method should resolve RETURNING functionality and return requested data
+     * @param string $query - DB query to execute
+     * @param array|bool $returning - @see insert()
+     * @return array
+     * @throws \InvalidArgumentException
+     */
+    protected function resolveQueryWithReturningColumns($query, $returning) {
+        throw new \InvalidArgumentException('DB Adapter [' . get_class($this) . '] does not support RETURNING functionality');
     }
 
     /**
