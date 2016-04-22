@@ -115,6 +115,102 @@ class MysqlAdapterConnectingToDbTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Invalid db entity name
+     */
+    public function testQuotingOfInvalidDbEntity() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteName('";DROP table1;');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Value in $fieldType argument must be a constant like
+     */
+    public function testQuotingOfInvalidDbValueType() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteValue('test', 'abrakadabra');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $value expected to be integer or numeric string. String [abrakadabra] received
+     */
+    public function testQuotingOfInvalidIntDbValue() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteValue('abrakadabra', PDO::PARAM_INT);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $value expected to be integer or numeric string. Object fo class [\PeskyORM\Adapter\Mysql] received
+     */
+    public function testQuotingOfInvalidIntDbValue2() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteValue($adapter, PDO::PARAM_INT);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $value expected to be integer or numeric string. Array received
+     */
+    public function testQuotingOfInvalidIntDbValue3() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteValue(['key' => 'val'], PDO::PARAM_INT);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $value expected to be integer or numeric string. Resource received
+     */
+    public function testQuotingOfInvalidIntDbValue4() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteValue(curl_init('http://test.url'), PDO::PARAM_INT);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $value expected to be integer or numeric string. Boolean [true] received
+     */
+    public function testQuotingOfInvalidIntDbValue5() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteValue(true, PDO::PARAM_INT);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $value expected to be integer or numeric string. Boolean [false] received
+     */
+    public function testQuotingOfInvalidIntDbValue6() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteValue(false, PDO::PARAM_INT);
+    }
+
+    public function testQuoting() {
+        $adapter = static::getValidAdapter();
+        $this->assertEquals('`table1`', $adapter->quoteName('table1'));
+        $this->assertEquals("'\\';DROP table1;'", $adapter->quoteValue('\';DROP table1;'));
+        $this->assertEquals('1', $adapter->quoteValue(true));
+        $this->assertEquals('1', $adapter->quoteValue(1, PDO::PARAM_BOOL));
+        $this->assertEquals('1', $adapter->quoteValue('1', PDO::PARAM_BOOL));
+        $this->assertEquals('0', $adapter->quoteValue(false));
+        $this->assertEquals('0', $adapter->quoteValue(0, PDO::PARAM_BOOL));
+        $this->assertEquals('0', $adapter->quoteValue('0', PDO::PARAM_BOOL));
+        $this->assertEquals('NULL', $adapter->quoteValue(null));
+        $this->assertEquals('NULL', $adapter->quoteValue('abrakadabra', PDO::PARAM_NULL));
+        $this->assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_INT));
+        $this->assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_BOOL));
+        $this->assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_STR));
+        $this->assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_LOB));
+        $this->assertEquals("'123'", $adapter->quoteValue(123));
+        $this->assertEquals("'123'", $adapter->quoteValue(123, PDO::PARAM_INT));
+        $this->assertEquals(
+            'DELETE FROM `table1` WHERE `col1` = \'value1\'',
+            $adapter->replaceDbExprQuotes(DbExpr::create('DELETE FROM `table1` WHERE `col1` = ``value1``'))
+        );
+    }
+
+    /**
      * @expectedException PDOException
      * @expectedExceptionMessage Column 'key' cannot be null
      */

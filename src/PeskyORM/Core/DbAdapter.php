@@ -2,7 +2,6 @@
 
 namespace PeskyORM\Core;
 
-use PeskyORM\Config\Schema\DbColumnConfig;
 use Swayok\Utils\Utils;
 
 abstract class DbAdapter implements DbAdapterInterface {
@@ -365,7 +364,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @throws \InvalidArgumentException
      */
     public function quoteName($name) {
-        if (!preg_match('%[a-zA-Z_]+(\.a-zA-Z_)?%i', $name)) {
+        if (!preg_match('%^[a-zA-Z_]+(\.a-zA-Z_)?%i', $name)) {
             throw new \InvalidArgumentException("Invalid db entity name [$name]");
         }
         return static::NAME_QUOTES
@@ -376,34 +375,55 @@ abstract class DbAdapter implements DbAdapterInterface {
     /**
      * Quote passed value
      * @param mixed $value
-     * @param int|DbColumnConfig $fieldInfoOrType - one of \PDO::PARAM_* or DbColumnConfig
+     * @param int|null $valueDataType - one of \PDO::PARAM_* or null for autodetection (detects bool, null, string only)
      * @return string
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function quoteValue($value, $fieldInfoOrType = \PDO::PARAM_STR) {
+    public function quoteValue($value, $valueDataType = null) {
         if ($value instanceof DbExpr) {
             return $this->replaceDbExprQuotes($value->get());
         } else {
-            $type = \PDO::PARAM_STR;
-            if (is_bool($value)) {
-                return $value ? static::BOOL_TRUE : static::BOOL_FALSE;
-            } else if ($value === null) {
+            if ($value === null || $valueDataType === \PDO::PARAM_NULL) {
                 return 'NULL';
-            } else if ($fieldInfoOrType instanceof DbColumnConfig) {
-                switch ($fieldInfoOrType->getDbType()) {
-                    case DbColumnConfig::DB_TYPE_INT:
-                    case DbColumnConfig::DB_TYPE_BIGINT:
-                        $type = \PDO::PARAM_INT;
-                        break;
-                    case DbColumnConfig::DB_TYPE_BOOL:
-                        return $value ? static::BOOL_TRUE: static::BOOL_FALSE;
+            } else if ((empty($valueDataType) && is_bool($value)) || $valueDataType === \PDO::PARAM_BOOL) {
+                return $value ? static::BOOL_TRUE : static::BOOL_FALSE;
+            }
+            if (empty($valueDataType)) {
+                if (is_int($value)) {
+                    $valueDataType = \PDO::PARAM_INT;
+                } else {
+                    $valueDataType = \PDO::PARAM_STR;
                 }
+            } else if ($valueDataType === \PDO::PARAM_INT) {
+                if (is_int($value) || (is_string($value) && ctype_digit($value))) {
+                    $value = (int) $value;
+                } else {
+                    if (is_string($value)) {
+                        $realType = "String [$value]";
+                    } else if (is_array($value)) {
+                        $realType = 'Array';
+                    } else if (is_object($value)) {
+                        $realType = 'Object fo class [\\' . get_class($value) . ']';
+                    } else if (is_bool($value)) {
+                        $realType = 'Boolean [' . ($value ? 'true' : 'false') . ']';
+                    } else if (is_resource($value)) {
+                        $realType = 'Resource';
+                    } else if (is_callable($value)) {
+                        $realType = 'Callable';
+                    } else {
+                        $realType = 'Value of unknown type';
+                    }
+                    throw new \InvalidArgumentException("\$value expected to be integer or numeric string. $realType received");
+                }
+            }
+            if (!in_array($valueDataType, [\PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_LOB], true)) {
+                throw new \InvalidArgumentException('Value in $fieldType argument must be a constant like \PDO::PARAM_*');
             }
             if (is_array($value)) {
                 $value = static::serializeArray($value);
             }
-            return $this->getConnection()->quote($value, $type);
+            return $this->getConnection()->quote($value, $valueDataType);
         }
     }
 
