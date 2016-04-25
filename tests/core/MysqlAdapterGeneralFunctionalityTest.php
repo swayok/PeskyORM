@@ -4,7 +4,7 @@ use PeskyORM\Adapter\Mysql;
 use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Core\DbExpr;
 
-class MysqlAdapterConnectingToDbTest extends \PHPUnit_Framework_TestCase {
+class MysqlAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCase {
 
     /** @var MysqlConfig */
     static protected $dbConnectionConfig;
@@ -125,6 +125,42 @@ class MysqlAdapterConnectingToDbTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Db entity name must be a string
+     */
+    public function testQuotingOfInvalidDbEntity2() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteName(['arrr']);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Db entity name must be a string
+     */
+    public function testQuotingOfInvalidDbEntity3() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteName($adapter);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Db entity name must be a string
+     */
+    public function testQuotingOfInvalidDbEntity4() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteName(true);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Db entity name must be a string
+     */
+    public function testQuotingOfInvalidDbEntity5() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteName(false);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
      * @expectedExceptionMessage Value in $fieldType argument must be a constant like
      */
     public function testQuotingOfInvalidDbValueType() {
@@ -210,89 +246,53 @@ class MysqlAdapterConnectingToDbTest extends \PHPUnit_Framework_TestCase {
         );
     }
 
-    /**
-     * @expectedException PDOException
-     * @expectedExceptionMessage Column 'key' cannot be null
-     */
-    public function testInvalidValueInQuery() {
+    public function testBuildColumnsList() {
         $adapter = static::getValidAdapter();
-        $adapter->begin();
-        $adapter->exec(
-            DbExpr::create('INSERT INTO `settings` (`key`, `value`) VALUES (null, ``test_value``)')
-        );
-        $adapter->rollBack();
+        $method = (new ReflectionClass($adapter))->getMethod('buildColumnsList');
+        $method->setAccessible(true);
+        $colsList = $method->invoke($adapter, ['column1', 'alias.column2']);
+        $this->assertEquals('(`column1`,`alias`.`column2`)', $colsList);
     }
 
     /**
-     * @expectedException PDOException
-     * @expectedExceptionMessageRegExp  %Table '.*?\.abrakadabra' doesn't exist%i
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $columns argument cannot be empty
      */
-    public function testInvalidTableInQuery() {
+    public function testInvalidColumnsInBuildValuesList() {
         $adapter = static::getValidAdapter();
-        $adapter->exec(
-            DbExpr::create('INSERT INTO `abrakadabra` (`key`, `value`) VALUES (``test_key``, ``test_value``)')
-        );
-    }
-
-    public function testQueriesAndTransactions() {
-        $adapter = static::getValidAdapter();
-        $insertQuery = DbExpr::create('INSERT INTO `settings` (`key`, `value`) VALUES(``test_key``, ``"test_value"``)');
-        $selectQuery = DbExpr::create('SELECT * FROM `settings` WHERE `key` = ``test_key``');
-        $adapter->begin();
-        $rowsAffected = $adapter->exec($insertQuery);
-        $this->assertEquals(
-            "INSERT INTO `settings` (`key`, `value`) VALUES('test_key', '\\\"test_value\\\"')",
-            $adapter->getLastQuery()
-        );
-        $this->assertEquals(1, $rowsAffected);
-        $stmnt = $adapter->query($selectQuery);
-        $this->assertEquals(1, $stmnt->rowCount());
-        $record = \PeskyORM\Core\Utils::getDataFromStatement($stmnt, \PeskyORM\Core\Utils::FETCH_FIRST);
-        $this->assertArraySubset([
-            'key' => 'test_key',
-            'value' => '"test_value"',
-        ], $record);
-        // test rollback
-        $adapter->rollBack();
-        $stmnt = $adapter->query($selectQuery);
-        $this->assertEquals(0, $stmnt->rowCount());
-        // test commit
-        $adapter->begin();
-        $adapter->exec($insertQuery);
-        $adapter->commit();
-        $stmnt = $adapter->query($selectQuery);
-        $this->assertEquals(1, $stmnt->rowCount());
-        $this->assertArraySubset([
-            'key' => 'test_key',
-            'value' => '"test_value"',
-        ], $record);
+        $method = (new ReflectionClass($adapter))->getMethod('buildValuesList');
+        $method->setAccessible(true);
+        $method->invoke($adapter, [], []);
     }
 
     /**
-     * @expectedException \PeskyORM\Core\DbException
-     * @expectedExceptionMessage Already in transaction
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $valuesAssoc array does not contain key [col2]
      */
-    public function testTransactionsNestingPrevention() {
+    public function testInvalidDataInBuildValuesList() {
         $adapter = static::getValidAdapter();
-        $adapter->begin();
-        $adapter->begin();
+        $method = (new ReflectionClass($adapter))->getMethod('buildValuesList');
+        $method->setAccessible(true);
+        $method->invoke($adapter, ['col1', 'col2'], ['col1' => '1']);
     }
 
-    /**
-     * @expectedException \PeskyORM\Core\DbException
-     * @expectedExceptionMessage Attempt to commit not started transaction
-     */
-    public function testTransactionCommitWithoutBegin() {
+    public function testBuildValuesList() {
         $adapter = static::getValidAdapter();
-        $adapter->commit();
-    }
-
-    /**
-     * @expectedException \PeskyORM\Core\DbException
-     * @expectedExceptionMessage Attempt to rollback not started transaction
-     */
-    public function testTransactionRollbackWithoutBegin() {
-        $adapter = static::getValidAdapter();
-        $adapter->rollBack();
+        $method = (new ReflectionClass($adapter))->getMethod('buildValuesList');
+        $method->setAccessible(true);
+        $data = [
+            'col1' => 'val1',
+            'col2' => 1,
+            'col3' => null,
+            'col4' => true,
+            'col5' => false,
+            'col6' => '',
+            'col7' => 1.22
+        ];
+        $columns = array_keys($data);
+        $valsList = $method->invoke($adapter, $columns, $data);
+        $this->assertEquals("('val1','1',NULL,1,0,'','1.22')", $valsList);
+        $valsList = $method->invoke($adapter, $columns, $data, ['col2' => PDO::PARAM_BOOL]);
+        $this->assertEquals("('val1',1,NULL,1,0,'','1.22')", $valsList);
     }
 }

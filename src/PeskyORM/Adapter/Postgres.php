@@ -11,6 +11,7 @@ class Postgres extends DbAdapter {
     const TRANSACTION_TYPE_REPEATABLE_READ = 'REPEATABLE READ';
     const TRANSACTION_TYPE_SERIALIZABLE = 'SERIALIZABLE';
     const TRANSACTION_TYPE_DEFAULT = self::TRANSACTION_TYPE_READ_COMMITTED;
+    const TRANSACTION_TYPE_FOR_DATA_MODIFICATION = self::TRANSACTION_TYPE_READ_COMMITTED;
 
     static public $transactionTypes = [
         self::TRANSACTION_TYPE_READ_COMMITTED,
@@ -25,6 +26,8 @@ class Postgres extends DbAdapter {
     const BOOL_FALSE = 'FALSE';
 
     const NO_LIMIT = 'ALL';
+
+    public $writeTransactionQueriesToLastQuery = true;
 
     /**
      * @var bool
@@ -48,8 +51,12 @@ class Postgres extends DbAdapter {
             throw new \InvalidArgumentException("Unknown transaction type '{$transactionType}' for PostgreSQL");
         }
         try {
+            $lastQuery = $this->getLastQuery();
             $this->exec('BEGIN ISOLATION LEVEL ' . $transactionType . ' ' . ($readOnly ? 'READ ONLY' : ''));
             $this->inTransaction = true;
+            if (!$this->writeTransactionQueriesToLastQuery) {
+                $this->lastQuery = $lastQuery;
+            }
             static::rememberTransactionTrace();
         } catch (\PDOException $exc) {
             static::rememberTransactionTrace('failed');
@@ -60,13 +67,21 @@ class Postgres extends DbAdapter {
 
     public function commit() {
         $this->guardTransaction('commit');
+        $lastQuery = $this->getLastQuery();
         $this->exec('COMMIT');
+        if (!$this->writeTransactionQueriesToLastQuery) {
+            $this->lastQuery = $lastQuery;
+        }
         $this->inTransaction = false;
     }
 
     public function rollBack() {
         $this->guardTransaction('rollback');
+        $lastQuery = $this->getLastQuery();
         $this->exec('ROLLBACK');
+        if (!$this->writeTransactionQueriesToLastQuery) {
+            $this->lastQuery = $lastQuery;
+        }
         $this->inTransaction = false;
     }
 

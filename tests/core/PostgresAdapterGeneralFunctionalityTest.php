@@ -4,7 +4,7 @@ use PeskyORM\Adapter\Postgres;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbExpr;
 
-class PostgresAdapterConnectingToDbTest extends \PHPUnit_Framework_TestCase {
+class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCase {
 
     /** @var PostgresConfig */
     static protected $dbConnectionConfig;
@@ -125,6 +125,42 @@ class PostgresAdapterConnectingToDbTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Db entity name must be a string
+     */
+    public function testQuotingOfInvalidDbEntity2() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteName(['arrr']);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Db entity name must be a string
+     */
+    public function testQuotingOfInvalidDbEntity3() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteName($adapter);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Db entity name must be a string
+     */
+    public function testQuotingOfInvalidDbEntity4() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteName(true);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Db entity name must be a string
+     */
+    public function testQuotingOfInvalidDbEntity5() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteName(false);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
      * @expectedExceptionMessage Value in $fieldType argument must be a constant like
      */
     public function testQuotingOfInvalidDbValueType() {
@@ -208,6 +244,56 @@ class PostgresAdapterConnectingToDbTest extends \PHPUnit_Framework_TestCase {
             'DELETE FROM "table1" WHERE "col1" = \'value1\'',
             $adapter->replaceDbExprQuotes(DbExpr::create('DELETE FROM `table1` WHERE `col1` = ``value1``'))
         );
+    }
+    
+    public function testBuildColumnsList() {
+        $adapter = static::getValidAdapter();
+        $method = (new ReflectionClass($adapter))->getMethod('buildColumnsList');
+        $method->setAccessible(true);
+        $colsList = $method->invoke($adapter, ['column1', 'alias.column2']);
+        $this->assertEquals('("column1","alias"."column2")', $colsList);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $columns argument cannot be empty
+     */
+    public function testInvalidColumnsInBuildValuesList() {
+        $adapter = static::getValidAdapter();
+        $method = (new ReflectionClass($adapter))->getMethod('buildValuesList');
+        $method->setAccessible(true);
+        $method->invoke($adapter, [], []);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $valuesAssoc array does not contain key [col2]
+     */
+    public function testInvalidDataInBuildValuesList() {
+        $adapter = static::getValidAdapter();
+        $method = (new ReflectionClass($adapter))->getMethod('buildValuesList');
+        $method->setAccessible(true);
+        $method->invoke($adapter, ['col1', 'col2'], ['col1' => '1']);
+    }
+
+    public function testBuildValuesList() {
+        $adapter = static::getValidAdapter();
+        $method = (new ReflectionClass($adapter))->getMethod('buildValuesList');
+        $method->setAccessible(true);
+        $data = [
+            'col1' => 'val1',
+            'col2' => 1,
+            'col3' => null,
+            'col4' => true,
+            'col5' => false,
+            'col6' => '',
+            'col7' => 1.22
+        ];
+        $columns = array_keys($data);
+        $valsList = $method->invoke($adapter, $columns, $data);
+        $this->assertEquals("('val1','1',NULL,TRUE,FALSE,'','1.22')", $valsList);
+        $valsList = $method->invoke($adapter, $columns, $data, ['col2' => PDO::PARAM_BOOL]);
+        $this->assertEquals("('val1',TRUE,NULL,TRUE,FALSE,'','1.22')", $valsList);
     }
 
 }

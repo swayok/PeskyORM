@@ -31,6 +31,12 @@ abstract class DbAdapter implements DbAdapterInterface {
     protected static $isTransactionTracesEnabled = false;
 
     /**
+     * Transaction type to use for insert, update and delete operations
+     * @var string|null
+     */
+    const TRANSACTION_TYPE_FOR_DATA_MODIFICATION = null;
+
+    /**
      * @var DbConnectionConfigInterface
      */
     protected $connectionConfig;
@@ -164,7 +170,6 @@ abstract class DbAdapter implements DbAdapterInterface {
 
     /**
      * @param string|DbExpr $query
-     * @param array $returning - list of QUOTED DB fields to return from statement. Must be resolved by
      * @return int|array = array: returned if $returning argument is not empty
      * @throws \PDOException
      * @throws \InvalidArgumentException
@@ -217,45 +222,234 @@ abstract class DbAdapter implements DbAdapterInterface {
         $query = 'INSERT INTO ' . $this->quoteName($table) . ' ' . $this->buildColumnsList($columns) 
                  . ' VALUES ' . $this->buildValuesList($columns, $data, $dataTypes);
         if (empty($returning)) {
+            $this->begin(false, static::TRANSACTION_TYPE_FOR_DATA_MODIFICATION);
             $rowsAffected = $this->exec($query);
             if (!$rowsAffected) {
+                $this->rollBack();
                 throw new DbException(
                     "Inserting data into table {$table} resulted in modification of 0 rows. Query: " . $this->getLastQuery(),
                     DbException::CODE_INSERT_FAILED
                 );
             }
+            $this->commit();
             return true;
         } else {
-            $data = $this->resolveQueryWithReturningColumns($query, $returning);
-            if (!is_array($data)) {
+            $record = $this->resolveQueryWithReturningColumns(
+                $query,
+                $table,
+                $columns,
+                $data,
+                $dataTypes,
+                $returning,
+                'insert'
+            );
+            if (!is_array($record)) {
                 throw new DbException(
                     'DB Adapter [' . get_class($this) . '] returned non-array from resolveQueryWithReturningColumns()',
                     DbException::CODE_ADAPTER_IMPLEMENTATION_PROBLEM
                 );
             }
-            return $data;
+            return $record;
         }
     }
 
     /**
-     * @param array $columns - expected set of columns
-     * @param array $valuesAssoc - key-value array where keys = columns
+     * @param string $table
+     * @param array $columns - list of columns to insert data to
+     * @param array $data - key-value array where key = table column and value = value of associated column
      * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
-     * @return string - "('value1','value2',...)"
+     *          Data type is one of \PDO::PARAM_* contants or null.
+     *          If value is null or column not present - value quoter will autodetect column type (see quoteValue())
+     * @param bool|array $returning - return some data back after $data inserted to $table
+     *          - true: return values for all columns of inserted table row
+     *          - false: do not return anything
+     *          - array: list of columns to return values for
+     * @return bool|array - array returned only if $returning is not empty
      * @throws \PDOException
      * @throws \InvalidArgumentException
+     * @throws \PeskyORM\Core\DbException
      */
-    protected function buildValuesList(array $columns, array $valuesAssoc, array $dataTypes = []) {
-        $ret = [];
-        foreach ($columns as $column) {
-            if (!array_key_exists($column, $valuesAssoc)) {
+    public function insertMany($table, array $columns, array $data, array $dataTypes = [], $returning = false) {
+        if (empty($table) || !is_string($table)) {
+            throw new \InvalidArgumentException('$table argument cannot be empty and must be a string');
+        }
+        if (empty($columns)) {
+            throw new \InvalidArgumentException('$columns argument cannot be empty');
+        }
+        if (empty($data)) {
+            throw new \InvalidArgumentException('$data argument cannot be empty');
+        }
+        if (!is_array($returning) && !is_bool($returning)) {
+            throw new \InvalidArgumentException('$returning argument must be array or boolean');
+        }
+        $query = 'INSERT INTO ' . $this->quoteName($table) . ' ' . $this->buildColumnsList($columns) . ' VALUES ';
+        foreach ($data as $key => $record) {
+            if (!is_array($record)) {
                 throw new \InvalidArgumentException(
-                    "\$valuesAssoc array does not contain key [$column]. Data: " . print_r($valuesAssoc, true)
+                    "\$data argument must contain only arrays. Non-array received at index [$key]"
                 );
             }
-            $ret[] = $this->quoteValue($valuesAssoc[$column], empty($dataTypes[$column]) ? null : $dataTypes[$column]);
+            $query .= $this->buildValuesList($columns, $record, $dataTypes, $key) . ',';
         }
-        return '(' . implode(',', $ret) . ')';
+        $query = rtrim($query, ', ');
+        if (empty($returning)) {
+            $this->begin(false, static::TRANSACTION_TYPE_FOR_DATA_MODIFICATION);
+            $rowsAffected = $this->exec($query);
+            if (!$rowsAffected) {
+                $this->rollBack();
+                throw new DbException(
+                    "Inserting data into table {$table} resulted in modification of 0 rows. Query: " . $this->getLastQuery(),
+                    DbException::CODE_INSERT_FAILED
+                );
+            } else if (count($data) !== $rowsAffected) {
+                $this->rollBack();
+                throw new DbException(
+                    "Inserting data into table {$table} resulted in modification of $rowsAffected rows while "
+                        . count($data). ' rows should be inserted. Query: ' . $this->getLastQuery(),
+                    DbException::CODE_INSERT_FAILED
+                );
+            }
+            $this->commit();
+            return true;
+        } else {
+            $records = $this->resolveQueryWithReturningColumns(
+                $query,
+                $table,
+                $columns,
+                $data,
+                $dataTypes,
+                $returning,
+                'insert_many'
+            );
+            if (!is_array($records)) {
+                throw new DbException(
+                    'DB Adapter [' . get_class($this) . '] returned non-array from resolveQueryWithReturningColumns()',
+                    DbException::CODE_ADAPTER_IMPLEMENTATION_PROBLEM
+                );
+            }
+            return $records;
+        }
+    }
+
+    /**
+     * @param string $table
+     * @param array $data - key-value array where key = table column and value = value of associated column
+     * @param string|DbExpr $conditions - WHERE conditions
+     * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
+     *          Data type is one of \PDO::PARAM_* contants or null.
+     *          If value is null or column not present - value quoter will autodetect column type (see quoteValue())
+     * @param bool|array $returning - return some data back after $data inserted to $table
+     *          - true: return values for all columns of inserted table row
+     *          - false: do not return anything
+     *          - array: list of columns to return values for
+     * @return bool|array - array returned only if $returning is not empty
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     * @throws \PeskyORM\Core\DbException
+     */
+    public function update($table, array $data, $conditions, array $dataTypes = [], $returning = false) {
+        if (empty($table) || !is_string($table)) {
+            throw new \InvalidArgumentException('$table argument cannot be empty and must be a string');
+        }
+        if (!is_string($conditions) && !($conditions instanceof DbExpr)) {
+            throw new \InvalidArgumentException('$conditions argument must be a string of DbExpr object');
+        } else if (empty($conditions)) {
+            throw new \InvalidArgumentException(
+                '$conditions argument is not allowed to be empty. Use "true" or "1 = 1" if you want to update all.'
+            );
+        }
+        if (empty($data)) {
+            throw new \InvalidArgumentException('$data argument cannot be empty');
+        }
+        if (!is_array($returning) && !is_bool($returning)) {
+            throw new \InvalidArgumentException('$returning argument must be array or boolean');
+        }
+        $columns = array_keys($data);
+        $query = 'UPDATE ' . $this->quoteName($table)  . ' SET ' . $this->buildValuesListForUpdate($data)
+            . ' WHERE ' . ($conditions instanceof DbExpr ? $this->replaceDbExprQuotes($conditions) : $conditions);
+        if (empty($returning)) {
+            $this->begin(false, static::TRANSACTION_TYPE_FOR_DATA_MODIFICATION);
+            $rowsAffected = $this->exec($query);
+            if (!$rowsAffected) {
+                $this->rollBack();
+                throw new DbException(
+                    "Inserting data into table {$table} resulted in modification of 0 rows. Query: " . $this->getLastQuery(),
+                    DbException::CODE_INSERT_FAILED
+                );
+            }
+            $this->commit();
+            return true;
+        } else {
+            $records = $this->resolveQueryWithReturningColumns(
+                $query,
+                $table,
+                $columns,
+                $data,
+                $dataTypes,
+                $returning,
+                'update'
+            );
+            if (!is_array($records)) {
+                throw new DbException(
+                    'DB Adapter [' . get_class($this) . '] returned non-array from resolveQueryWithReturningColumns()',
+                    DbException::CODE_ADAPTER_IMPLEMENTATION_PROBLEM
+                );
+            }
+            return $records;
+        }
+    }
+
+    /**
+     * @param string $table
+     * @param string|DbExpr $conditions - WHERE conditions
+     * @param bool|array $returning - return some data back after $data inserted to $table
+     *          - true: return values for all columns of inserted table row
+     *          - false: do not return anything
+     *          - array: list of columns to return values for
+     * @return int|array - int: number of deleted records | array: returned only if $returning is not empty
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     * @throws \PeskyORM\Core\DbException
+     */
+    public function delete($table, $conditions, $returning = false) {
+        if (empty($table) || !is_string($table)) {
+            throw new \InvalidArgumentException('$table argument cannot be empty and must be a string');
+        }
+        if (empty($conditions)) {
+            throw new \InvalidArgumentException(
+                '$conditions argument is not allowed to be empty. Use "true" or "1 = 1" if you want to update all.'
+            );
+        } else if (!is_string($conditions) && !($conditions instanceof DbExpr)) {
+            throw new \InvalidArgumentException('$conditions argument must be a string of DbExpr object');
+        }
+        if (!is_array($returning) && !is_bool($returning)) {
+            throw new \InvalidArgumentException('$returning argument must be array or boolean');
+        }
+        $query = 'DELETE FROM ' . $this->quoteName($table)
+            . ' WHERE ' . ($conditions instanceof DbExpr ? $this->replaceDbExprQuotes($conditions) : $conditions);
+        if (empty($returning)) {
+            $this->begin(false, static::TRANSACTION_TYPE_FOR_DATA_MODIFICATION);
+            $rowsAffected = $this->exec($query);
+            $this->commit();
+            return $rowsAffected;
+        } else {
+            $records = $this->resolveQueryWithReturningColumns(
+                $query,
+                $table,
+                [],
+                [],
+                [],
+                $returning,
+                'delete'
+            );
+            if (!is_array($records)) {
+                throw new DbException(
+                    'DB Adapter [' . get_class($this) . '] returned non-array from resolveQueryWithReturningColumns()',
+                    DbException::CODE_ADAPTER_IMPLEMENTATION_PROBLEM
+                );
+            }
+            return $records;
+        }
     }
 
     /**
@@ -271,13 +465,74 @@ abstract class DbAdapter implements DbAdapterInterface {
     }
 
     /**
+     * @param array $columns - expected set of columns
+     * @param array $valuesAssoc - key-value array where keys = columns
+     * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
+     * @param int $recordIdx - index of record (needed to make exception message more useful)
+     * @return string - "('value1','value2',...)"
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    protected function buildValuesList(array $columns, array $valuesAssoc, array $dataTypes = [], $recordIdx = 0) {
+        $ret = [];
+        if (empty($columns)) {
+            throw new \InvalidArgumentException('$columns argument cannot be empty');
+        }
+        foreach ($columns as $column) {
+            if (!array_key_exists($column, $valuesAssoc)) {
+                throw new \InvalidArgumentException(
+                    "\$valuesAssoc array does not contain key [$column]. Record index: $recordIdx. "
+                        . 'Data: ' . print_r($valuesAssoc, true)
+                );
+            }
+            $ret[] = $this->quoteValue(
+                $valuesAssoc[$column],
+                empty($dataTypes[$column]) ? null : $dataTypes[$column]
+            );
+        }
+        return '(' . implode(',', $ret) . ')';
+    }
+
+    /**
+     * @param array $valuesAssoc - key-value array where keys = columns
+     * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
+     * @return string - "col1" = 'val1', "col2" = 'val2'
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    protected function buildValuesListForUpdate($valuesAssoc, array $dataTypes = []) {
+        $ret = [];
+        foreach ($valuesAssoc as $column => $value) {
+            $quotedValue = $this->quoteValue(
+                $valuesAssoc[$column],
+                empty($dataTypes[$column]) ? null : $dataTypes[$column]
+            );
+            $ret[] = $this->quoteName($column) . '=' . $quotedValue;
+        }
+        return implode(',', $ret);
+    }
+
+    /**
      * This method should resolve RETURNING functionality and return requested data
      * @param string $query - DB query to execute
+     * @param $table
+     * @param array $columns
+     * @param array $data
+     * @param array $dataTypes
      * @param array|bool $returning - @see insert()
+     * @param string $operation - Name of operation to perform: 'insert', 'insert_many', 'update', 'delete'
      * @return array
      * @throws \InvalidArgumentException
      */
-    protected function resolveQueryWithReturningColumns($query, $returning) {
+    protected function resolveQueryWithReturningColumns(
+        $query,
+        $table,
+        array $columns,
+        array $data,
+        array $dataTypes,
+        $returning,
+        $operation
+    ) {
         throw new \InvalidArgumentException('DB Adapter [' . get_class($this) . '] does not support RETURNING functionality');
     }
 
@@ -396,7 +651,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @throws \InvalidArgumentException
      * @throws \PDOException
      */
-    private function getDetailedException($query, $pdoStatement = null) {
+    protected function getDetailedException($query, $pdoStatement = null) {
         $errorInfo = $this->getPdoError($pdoStatement);
         if ($errorInfo['message'] === null) {
             return null;
@@ -435,6 +690,9 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @throws \InvalidArgumentException
      */
     public function quoteName($name) {
+        if (!is_string($name)) {
+            throw new \InvalidArgumentException('Db entity name must be a string');
+        }
         if (!preg_match('%^[a-zA-Z_]+(\.a-zA-Z_)?%i', $name)) {
             throw new \InvalidArgumentException("Invalid db entity name [$name]");
         }
