@@ -31,12 +31,6 @@ abstract class DbAdapter implements DbAdapterInterface {
     protected static $isTransactionTracesEnabled = false;
 
     /**
-     * Transaction type to use for insert, update and delete operations
-     * @var string|null
-     */
-    const TRANSACTION_TYPE_FOR_DATA_MODIFICATION = null;
-
-    /**
      * @var DbConnectionConfigInterface
      */
     protected $connectionConfig;
@@ -153,6 +147,7 @@ abstract class DbAdapter implements DbAdapterInterface {
     /**
      * @param string|DbExpr $query
      * @return \PDOStatement
+     * @throws \PeskyORM\Core\DbException
      * @throws \InvalidArgumentException
      * @throws \PDOException
      */
@@ -164,13 +159,18 @@ abstract class DbAdapter implements DbAdapterInterface {
         try {
             return $this->getConnection()->query($query);
         } catch (\PDOException $exc) {
-            throw $this->getDetailedException($query);
+            $exc = $this->getDetailedException($query, null, $exc);
+            if ($this->inTransaction()) {
+                $this->rollBack(); //< error within transactions makes it broken in postgresql
+            }
+            throw $exc;
         }
     }
 
     /**
      * @param string|DbExpr $query
      * @return int|array = array: returned if $returning argument is not empty
+     * @throws \PeskyORM\Core\DbException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
@@ -189,7 +189,11 @@ abstract class DbAdapter implements DbAdapterInterface {
             }
             return $affectedRowsCount;
         } catch (\PDOException $exc) {
-            throw $this->getDetailedException($query);
+            $exc = $this->getDetailedException($query, null, $exc);
+            if ($this->inTransaction()) {
+                $this->rollBack(); //< error within transactions makes it broken in postgresql
+            }
+            throw $exc;
         }
     }
 
@@ -203,29 +207,30 @@ abstract class DbAdapter implements DbAdapterInterface {
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
      *          - array: list of columns to return values for
+     * @param string $pkName - Name of primary key for $returning in DB drivers that support only getLastInsertId()
      * @return bool|array - array returned only if $returning is not empty
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \PeskyORM\Core\DbException
      */
-    public function insert($table, array $data, array $dataTypes = [], $returning = false) {
+    public function insert($table, array $data, array $dataTypes = [], $returning = false, $pkName = 'id') {
         $this->guardTableNameArg($table);
         $this->guardDataArg($data);
         $this->guardReturningArg($returning);
+        if ($returning) {
+            $this->guardPkNameArg($pkName);
+        }
         $columns = array_keys($data);
         $query = 'INSERT INTO ' . $this->quoteName($table) . ' ' . $this->buildColumnsList($columns) 
                  . ' VALUES ' . $this->buildValuesList($columns, $data, $dataTypes);
         if (empty($returning)) {
-            $this->begin(false, static::TRANSACTION_TYPE_FOR_DATA_MODIFICATION);
             $rowsAffected = $this->exec($query);
             if (!$rowsAffected) {
-                $this->rollBack();
                 throw new DbException(
                     "Inserting data into table {$table} resulted in modification of 0 rows. Query: " . $this->getLastQuery(),
                     DbException::CODE_INSERT_FAILED
                 );
             }
-            $this->commit();
             return true;
         } else {
             $record = $this->resolveQueryWithReturningColumns(
@@ -235,6 +240,7 @@ abstract class DbAdapter implements DbAdapterInterface {
                 $data,
                 $dataTypes,
                 $returning,
+                $pkName,
                 'insert'
             );
             if (!is_array($record)) {
@@ -258,16 +264,20 @@ abstract class DbAdapter implements DbAdapterInterface {
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
      *          - array: list of columns to return values for
+     * @param string $pkName - Name of primary key for $returning in DB drivers that support only getLastInsertId()
      * @return bool|array - array returned only if $returning is not empty
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \PeskyORM\Core\DbException
      */
-    public function insertMany($table, array $columns, array $data, array $dataTypes = [], $returning = false) {
+    public function insertMany($table, array $columns, array $data, array $dataTypes = [], $returning = false, $pkName = 'id') {
         $this->guardTableNameArg($table);
         $this->guardColumnsArg($columns);
         $this->guardDataArg($data);
         $this->guardReturningArg($returning);
+        if ($returning) {
+            $this->guardPkNameArg($pkName);
+        }
         $query = 'INSERT INTO ' . $this->quoteName($table) . ' ' . $this->buildColumnsList($columns) . ' VALUES ';
         foreach ($data as $key => $record) {
             if (!is_array($record)) {
@@ -279,23 +289,19 @@ abstract class DbAdapter implements DbAdapterInterface {
         }
         $query = rtrim($query, ', ');
         if (empty($returning)) {
-            $this->begin(false, static::TRANSACTION_TYPE_FOR_DATA_MODIFICATION);
             $rowsAffected = $this->exec($query);
             if (!$rowsAffected) {
-                $this->rollBack();
                 throw new DbException(
                     "Inserting data into table {$table} resulted in modification of 0 rows. Query: " . $this->getLastQuery(),
                     DbException::CODE_INSERT_FAILED
                 );
             } else if (count($data) !== $rowsAffected) {
-                $this->rollBack();
                 throw new DbException(
                     "Inserting data into table {$table} resulted in modification of $rowsAffected rows while "
                         . count($data). ' rows should be inserted. Query: ' . $this->getLastQuery(),
                     DbException::CODE_INSERT_FAILED
                 );
             }
-            $this->commit();
             return true;
         } else {
             $records = $this->resolveQueryWithReturningColumns(
@@ -305,6 +311,7 @@ abstract class DbAdapter implements DbAdapterInterface {
                 $data,
                 $dataTypes,
                 $returning,
+                $pkName,
                 'insert_many'
             );
             if (!is_array($records)) {
@@ -324,53 +331,18 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
      *          Data type is one of \PDO::PARAM_* contants or null.
      *          If value is null or column not present - value quoter will autodetect column type (see quoteValue())
-     * @param bool|array $returning - return some data back after $data inserted to $table
-     *          - true: return values for all columns of inserted table row
-     *          - false: do not return anything
-     *          - array: list of columns to return values for
-     * @return bool|array - array returned only if $returning is not empty
+     * @return int - number of modified rows
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \PeskyORM\Core\DbException
      */
-    public function update($table, array $data, $conditions, array $dataTypes = [], $returning = false) {
+    public function update($table, array $data, $conditions, array $dataTypes = []) {
         $this->guardTableNameArg($table);
         $this->guardDataArg($data);
         $this->guardConditionsArg($conditions);
-        $this->guardReturningArg($returning);
-        $columns = array_keys($data);
-        $query = 'UPDATE ' . $this->quoteName($table)  . ' SET ' . $this->buildValuesListForUpdate($data)
+        $query = 'UPDATE ' . $this->quoteName($table)  . ' SET ' . $this->buildValuesListForUpdate($data, $dataTypes)
             . ' WHERE ' . ($conditions instanceof DbExpr ? $this->replaceDbExprQuotes($conditions) : $conditions);
-        if (empty($returning)) {
-            $this->begin(false, static::TRANSACTION_TYPE_FOR_DATA_MODIFICATION);
-            $rowsAffected = $this->exec($query);
-            if (!$rowsAffected) {
-                $this->rollBack();
-                throw new DbException(
-                    "Inserting data into table {$table} resulted in modification of 0 rows. Query: " . $this->getLastQuery(),
-                    DbException::CODE_INSERT_FAILED
-                );
-            }
-            $this->commit();
-            return true;
-        } else {
-            $records = $this->resolveQueryWithReturningColumns(
-                $query,
-                $table,
-                $columns,
-                $data,
-                $dataTypes,
-                $returning,
-                'update'
-            );
-            if (!is_array($records)) {
-                throw new DbException(
-                    'DB Adapter [' . get_class($this) . '] returned non-array from resolveQueryWithReturningColumns()',
-                    DbException::CODE_ADAPTER_IMPLEMENTATION_PROBLEM
-                );
-            }
-            return $records;
-        }
+        return $this->exec($query);
     }
 
     /**
@@ -392,10 +364,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         $query = 'DELETE FROM ' . $this->quoteName($table)
             . ' WHERE ' . ($conditions instanceof DbExpr ? $this->replaceDbExprQuotes($conditions) : $conditions);
         if (empty($returning)) {
-            $this->begin(false, static::TRANSACTION_TYPE_FOR_DATA_MODIFICATION);
-            $rowsAffected = $this->exec($query);
-            $this->commit();
-            return $rowsAffected;
+            return $this->exec($query);
         } else {
             $records = $this->resolveQueryWithReturningColumns(
                 $query,
@@ -404,6 +373,7 @@ abstract class DbAdapter implements DbAdapterInterface {
                 [],
                 [],
                 $returning,
+                null,
                 'delete'
             );
             if (!is_array($records)) {
@@ -438,6 +408,15 @@ abstract class DbAdapter implements DbAdapterInterface {
         }
     }
 
+    private function guardPkNameArg($pkName) {
+        if (empty($pkName)) {
+            throw new \InvalidArgumentException('$pkName argument cannot be empty');
+        } else if (!is_string($pkName)) {
+            throw new \InvalidArgumentException('$pkName argument must be a string');
+        }
+        $this->quoteName($pkName);
+    }
+
     private function guardDataArg(array $data) {
         if (empty($data)) {
             throw new \InvalidArgumentException('$data argument cannot be empty');
@@ -452,14 +431,15 @@ abstract class DbAdapter implements DbAdapterInterface {
 
     /**
      * @param array $columns
+     * @param bool $withBraces - add "()" around columns list
      * @return string - "(`column1','column2',...)"
      * @throws \InvalidArgumentException
      */
-    protected function buildColumnsList(array $columns) {
-        $quoted = array_map(function ($column) {
+    protected function buildColumnsList(array $columns, $withBraces = true) {
+        $quoted = implode(',', array_map(function ($column) {
             return $this->quoteName($column);
-        }, $columns);
-        return '(' . implode(',', $quoted) . ')';
+        }, $columns));
+        return $withBraces ? '(' . $quoted . ')' : $quoted;
     }
 
     /**
@@ -518,6 +498,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @param array $data
      * @param array $dataTypes
      * @param array|bool $returning - @see insert()
+     * @param $pkName - Name of primary key for $returning in DB drivers that support only getLastInsertId()
      * @param string $operation - Name of operation to perform: 'insert', 'insert_many', 'update', 'delete'
      * @return array
      * @throws \InvalidArgumentException
@@ -529,6 +510,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         array $data,
         array $dataTypes,
         $returning,
+        $pkName,
         $operation
     ) {
         throw new \InvalidArgumentException('DB Adapter [' . get_class($this) . '] does not support RETURNING functionality');
@@ -645,14 +627,15 @@ abstract class DbAdapter implements DbAdapterInterface {
      * Make detailed exception from last pdo error
      * @param string $query - failed query
      * @param null|\PDOStatement|\PDO $pdoStatement
+     * @param null|\PDOException $originalException
      * @return \PDOException or null if no error
      * @throws \InvalidArgumentException
      * @throws \PDOException
      */
-    protected function getDetailedException($query, $pdoStatement = null) {
+    protected function getDetailedException($query, $pdoStatement = null, $originalException = null) {
         $errorInfo = $this->getPdoError($pdoStatement);
         if ($errorInfo['message'] === null) {
-            return null;
+            return $originalException;
         }
         if (preg_match('%syntax error at or near "\$\d+"%i', $errorInfo[2])) {
             $errorInfo['message'] .= "\n NOTE: PeskyORM do not use prepared statements. You possibly used one of Postgresql jsonb opertaors - '?', '?|' or '?&'."
@@ -691,7 +674,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         if (!is_string($name)) {
             throw new \InvalidArgumentException('Db entity name must be a string');
         }
-        if (!preg_match('%^[a-zA-Z_]+(\.a-zA-Z_)?%i', $name)) {
+        if (!preg_match('%^[a-zA-Z_][a-zA-Z_0-9]*(\.[a-zA-Z_0-9]+)?$%i', $name)) {
             throw new \InvalidArgumentException("Invalid db entity name [$name]");
         }
         return static::NAME_QUOTES

@@ -107,8 +107,37 @@ class PostgresAdapterInsertDataTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals($dataForAssert, $data);
         $this->assertEquals($dataForAssert['is_active'], $data['is_active']);
         $this->assertNull($data['parent_id']);
+        
+        // insert already within transaction
+        $adapter->begin();
+        $adapter->insert('settings', ['key' => 'in_transaction', 'value' => json_encode('yes')]);
+        $adapter->commit();
 
-        // todo: test returning
+        // test returning
+        /** @var array $return */
+        $return = $adapter->insert(
+            'settings',
+            ['key' => 'test_key_returning1', 'value' => json_encode('test_value1')],
+            [],
+            ['id', 'key']
+        );
+        $this->assertArrayHasKey('id', $return);
+        $this->assertArrayHasKey('key', $return);
+        $this->assertArrayNotHasKey('value', $return);
+        $this->assertEquals('test_key_returning1', $return['key']);
+
+        $return = $adapter->insert(
+            'settings',
+            ['key' => 'test_key_returning2', 'value' => json_encode('test_value1')],
+            [],
+            true
+        );
+        $this->assertArrayHasKey('id', $return);
+        $this->assertArrayHasKey('key', $return);
+        $this->assertArrayHasKey('value', $return);
+        $this->assertGreaterThanOrEqual(1, $return['id']);
+        $this->assertEquals('test_key_returning2', $return['key']);
+        $this->assertEquals(json_encode('test_value1'), $return['value']);
     }
 
     public function testInsertMany() {
@@ -156,8 +185,39 @@ class PostgresAdapterInsertDataTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals($dataForAssert[1]['is_active'], $data[1]['is_active']);
         $this->assertNull($data[0]['parent_id']);
         $this->assertEquals($dataForAssert[1]['parent_id'], $data[1]['parent_id']);
+    }
 
-        // todo: test returning
+    public function testInsertMenyReturning() {
+        static::cleanTables();
+        $adapter = static::getValidAdapter();
+        /** @var array $return */
+        $testData3 = [
+            ['key' => 'test_key_returning2', 'value' => json_encode('test_value1')],
+            ['key' => 'test_key_returning3', 'value' => json_encode('test_value1')],
+        ];
+        $return = $adapter->insertMany('settings', ['key', 'value'], $testData3, [], true);
+        $this->assertCount(2, $return);
+        $this->assertArrayHasKey('id', $return[0]);
+        $this->assertArraySubset($testData3[0], $return[0]);
+        $this->assertGreaterThanOrEqual(1, $return[0]['id']);
+        $this->assertArrayHasKey('id', $return[1]);
+        $this->assertArraySubset($testData3[1], $return[1]);
+        $this->assertGreaterThanOrEqual(1, $return[1]['id']);
+
+        $testData4 = [
+            ['key' => 'test_key_returning4', 'value' => json_encode('test_value1')],
+            ['key' => 'test_key_returning5', 'value' => json_encode('test_value1')],
+        ];
+        $return = $adapter->insertMany('settings', ['key', 'value'], $testData4, [], ['id']);
+        $this->assertCount(2, $return);
+        $this->assertArrayHasKey('id', $return[0]);
+        $this->assertArrayNotHasKey('key', $return[0]);
+        $this->assertArrayNotHasKey('value', $return[0]);
+        $this->assertGreaterThanOrEqual(1, $return[0]['id']);
+        $this->assertArrayHasKey('id', $return[1]);
+        $this->assertArrayNotHasKey('key', $return[1]);
+        $this->assertArrayNotHasKey('value', $return[1]);
+        $this->assertGreaterThanOrEqual(1, $return[1]['id']);
     }
 
 }

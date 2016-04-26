@@ -56,8 +56,32 @@ class PostgresAdapterDeleteTest extends \PHPUnit_Framework_TestCase {
             Utils::FETCH_VALUE
         );
         $this->assertEquals(1, $count);
+    }
 
-        // todo: test returning
+    public function testDeleteReturning() {
+        static::cleanTables();
+        $adapter = static::getValidAdapter();
+        $testData1 = [
+            ['key' => 'test_key1', 'value' => json_encode('test_value1')],
+            ['key' => 'test_key2', 'value' => json_encode('test_value2')]
+        ];
+        $insertedData = $adapter->insertMany('settings', ['key', 'value'], $testData1, [], true);
+        $deletedRecords = $adapter->delete(
+            'settings',
+            DbExpr::create("`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)"),
+            true
+        );
+        $this->assertCount(2, $deletedRecords);
+        $this->assertEquals($insertedData, $deletedRecords);
+
+        $insertedData = $adapter->insertMany('settings', ['key', 'value'], $testData1, [], ['id', 'value']);
+        $deletedRecords = $adapter->delete(
+            'settings',
+            DbExpr::create("`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)"),
+            ['id', 'value']
+        );
+        $this->assertCount(2, $deletedRecords);
+        $this->assertEquals($insertedData, $deletedRecords);
     }
 
 }

@@ -138,8 +138,6 @@ class PostgresAdapterUpdateDataTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals($dataForAssert[1], $data[1]);
         $this->assertEquals($dataForAssert[1]['is_active'], $data[1]['is_active']);
         $this->assertEquals($dataForAssert[1]['parent_id'], $data[1]['parent_id']);
-
-        // todo: test returning
     }
 
 }

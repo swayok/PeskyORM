@@ -186,6 +186,46 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
         $this->invokePrivateAdapterMethod('guardReturningArg', 123);
     }
 
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $pkName argument cannot be empty
+     */
+    public function testInvalidPkName() {
+        $this->invokePrivateAdapterMethod('guardPkNameArg', '');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $pkName argument must be a string
+     */
+    public function testInvalidPkName2() {
+        $this->invokePrivateAdapterMethod('guardPkNameArg', true);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $pkName argument cannot be empty
+     */
+    public function testInvalidPkName3() {
+        $this->invokePrivateAdapterMethod('guardPkNameArg', []);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Invalid db entity name
+     */
+    public function testInvalidPkName4() {
+        $this->invokePrivateAdapterMethod('guardPkNameArg', 'teasd as das d 90as9()');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $pkName argument must be a string
+     */
+    public function testInvalidPkName5() {
+        $this->invokePrivateAdapterMethod('guardPkNameArg', \PeskyORM\Core\DbExpr::create('test'));
+    }
+
     public function testValidArgs() {
         $this->invokePrivateAdapterMethod('guardTableNameArg', 'table');
         $this->invokePrivateAdapterMethod('guardDataArg', ['key' => 'value']);
