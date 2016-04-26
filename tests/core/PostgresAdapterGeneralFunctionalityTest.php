@@ -296,4 +296,6 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
         $this->assertEquals("('val1',TRUE,NULL,TRUE,FALSE,'','1.22')", $valsList);
     }
 
+    
+
 }

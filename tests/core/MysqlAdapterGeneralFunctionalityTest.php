@@ -4,7 +4,7 @@ use PeskyORM\Adapter\Mysql;
 use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Core\DbExpr;
 
-class MysqlAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCase {
+class MysqlAdapterGeneralFunctionalityTest extends PHPUnit_Framework_TestCase {
 
     /** @var MysqlConfig */
     static protected $dbConnectionConfig;

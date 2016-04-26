@@ -5,7 +5,7 @@ use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
 
-class PostgresAdapterUpdatesTest extends \PHPUnit_Framework_TestCase {
+class PostgresAdapterUpdateDataTest extends \PHPUnit_Framework_TestCase {
 
     /** @var PostgresConfig */
     static protected $dbConnectionConfig;
@@ -79,122 +79,6 @@ class PostgresAdapterUpdatesTest extends \PHPUnit_Framework_TestCase {
             $item['is_active'] = (bool)$item['is_active'];
         }
         return $data;
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $table argument cannot be empty and must be a string
-     */
-    public function testInvalidTableInUpdate() {
-        $adapter = static::getValidAdapter();
-        $adapter->update(null, [], '1=1');
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $table argument cannot be empty and must be a string
-     */
-    public function testInvalidTableInUpdate2() {
-        $adapter = static::getValidAdapter();
-        $adapter->update('', [], '1=1');
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $table argument cannot be empty and must be a string
-     */
-    public function testInvalidTableInUpdate3() {
-        $adapter = static::getValidAdapter();
-        $adapter->update(false, [], '1=1');
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $table argument cannot be empty and must be a string
-     */
-    public function testInvalidTableInUpdate4() {
-        $adapter = static::getValidAdapter();
-        $adapter->update($adapter, [], '1=1');
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $data argument cannot be empty
-     */
-    public function testInvalidDataInUpdate() {
-        $adapter = static::getValidAdapter();
-        $adapter->update('test', [], '1=1');
-    }
-    
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $conditions argument is not allowed to be empty
-     */
-    public function testInvalidConditionsInUpdate() {
-        $adapter = static::getValidAdapter();
-        $adapter->update('test', ['key' => 'value'], '');
-    }
-    
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $conditions argument must be a string of DbExpr object
-     */
-    public function testInvalidConditionsInUpdate2() {
-        $adapter = static::getValidAdapter();
-        $adapter->update('test', ['key' => 'value'], []);
-    }
-    
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $conditions argument must be a string of DbExpr object
-     */
-    public function testInvalidConditionsInUpdate3() {
-        $adapter = static::getValidAdapter();
-        $adapter->update('test', ['key' => 'value'], $adapter);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $conditions argument must be a string of DbExpr object
-     */
-    public function testInvalidConditionsInUpdate4() {
-        $adapter = static::getValidAdapter();
-        $adapter->update('test', ['key' => 'value'], false);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $conditions argument must be a string of DbExpr object
-     */
-    public function testInvalidConditionsInUpdate5() {
-        $adapter = static::getValidAdapter();
-        $adapter->update('test', ['key' => 'value'], true);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $returning argument must be array or boolean
-     */
-    public function testInvalidReturningInUpdate() {
-        $adapter = static::getValidAdapter();
-        $adapter->update('test', ['key' => 'value'], '1=1', [], '*');
-    }
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $returning argument must be array or boolean
-     */
-    public function testInvalidReturningInUpdate2() {
-        $adapter = static::getValidAdapter();
-        $adapter->update('test', ['key' => 'value'], '1=1', [], $adapter);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $returning argument must be array or boolean
-     */
-    public function testInvalidReturningInUpdate3() {
-        $adapter = static::getValidAdapter();
-        $adapter->update('test', ['key' => 'value'], '1=1', [], 123);
     }
 
     public function testUpdate() {

@@ -1,11 +1,11 @@
 <?php
 
-require_once __DIR__ . '/PostgresAdapterUpdatesTest.php';
+require_once __DIR__ . '/PostgresAdapterUpdateDataTest.php';
 
 use PeskyORM\Adapter\Mysql;
 use PeskyORM\Config\Connection\MysqlConfig;
 
-class MysqlAdapterUpdatesTest extends PostgresAdapterUpdatesTest {
+class MysqlAdapterUpdateDataTest extends PostgresAdapterUpdateDataTest {
 
     /** @var MysqlConfig */
     static protected $dbConnectionConfig;

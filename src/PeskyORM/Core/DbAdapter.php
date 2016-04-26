@@ -209,15 +209,9 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @throws \PeskyORM\Core\DbException
      */
     public function insert($table, array $data, array $dataTypes = [], $returning = false) {
-        if (empty($table) || !is_string($table)) {
-            throw new \InvalidArgumentException('$table argument cannot be empty and must be a string');
-        }
-        if (empty($data)) {
-            throw new \InvalidArgumentException('$data argument cannot be empty');
-        }
-        if (!is_array($returning) && !is_bool($returning)) {
-            throw new \InvalidArgumentException('$returning argument must be array or boolean');
-        }
+        $this->guardTableNameArg($table);
+        $this->guardDataArg($data);
+        $this->guardReturningArg($returning);
         $columns = array_keys($data);
         $query = 'INSERT INTO ' . $this->quoteName($table) . ' ' . $this->buildColumnsList($columns) 
                  . ' VALUES ' . $this->buildValuesList($columns, $data, $dataTypes);
@@ -270,18 +264,10 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @throws \PeskyORM\Core\DbException
      */
     public function insertMany($table, array $columns, array $data, array $dataTypes = [], $returning = false) {
-        if (empty($table) || !is_string($table)) {
-            throw new \InvalidArgumentException('$table argument cannot be empty and must be a string');
-        }
-        if (empty($columns)) {
-            throw new \InvalidArgumentException('$columns argument cannot be empty');
-        }
-        if (empty($data)) {
-            throw new \InvalidArgumentException('$data argument cannot be empty');
-        }
-        if (!is_array($returning) && !is_bool($returning)) {
-            throw new \InvalidArgumentException('$returning argument must be array or boolean');
-        }
+        $this->guardTableNameArg($table);
+        $this->guardColumnsArg($columns);
+        $this->guardDataArg($data);
+        $this->guardReturningArg($returning);
         $query = 'INSERT INTO ' . $this->quoteName($table) . ' ' . $this->buildColumnsList($columns) . ' VALUES ';
         foreach ($data as $key => $record) {
             if (!is_array($record)) {
@@ -348,22 +334,10 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @throws \PeskyORM\Core\DbException
      */
     public function update($table, array $data, $conditions, array $dataTypes = [], $returning = false) {
-        if (empty($table) || !is_string($table)) {
-            throw new \InvalidArgumentException('$table argument cannot be empty and must be a string');
-        }
-        if (!is_string($conditions) && !($conditions instanceof DbExpr)) {
-            throw new \InvalidArgumentException('$conditions argument must be a string of DbExpr object');
-        } else if (empty($conditions)) {
-            throw new \InvalidArgumentException(
-                '$conditions argument is not allowed to be empty. Use "true" or "1 = 1" if you want to update all.'
-            );
-        }
-        if (empty($data)) {
-            throw new \InvalidArgumentException('$data argument cannot be empty');
-        }
-        if (!is_array($returning) && !is_bool($returning)) {
-            throw new \InvalidArgumentException('$returning argument must be array or boolean');
-        }
+        $this->guardTableNameArg($table);
+        $this->guardDataArg($data);
+        $this->guardConditionsArg($conditions);
+        $this->guardReturningArg($returning);
         $columns = array_keys($data);
         $query = 'UPDATE ' . $this->quoteName($table)  . ' SET ' . $this->buildValuesListForUpdate($data)
             . ' WHERE ' . ($conditions instanceof DbExpr ? $this->replaceDbExprQuotes($conditions) : $conditions);
@@ -412,19 +386,9 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @throws \PeskyORM\Core\DbException
      */
     public function delete($table, $conditions, $returning = false) {
-        if (empty($table) || !is_string($table)) {
-            throw new \InvalidArgumentException('$table argument cannot be empty and must be a string');
-        }
-        if (empty($conditions)) {
-            throw new \InvalidArgumentException(
-                '$conditions argument is not allowed to be empty. Use "true" or "1 = 1" if you want to update all.'
-            );
-        } else if (!is_string($conditions) && !($conditions instanceof DbExpr)) {
-            throw new \InvalidArgumentException('$conditions argument must be a string of DbExpr object');
-        }
-        if (!is_array($returning) && !is_bool($returning)) {
-            throw new \InvalidArgumentException('$returning argument must be array or boolean');
-        }
+        $this->guardTableNameArg($table);
+        $this->guardConditionsArg($conditions);
+        $this->guardReturningArg($returning);
         $query = 'DELETE FROM ' . $this->quoteName($table)
             . ' WHERE ' . ($conditions instanceof DbExpr ? $this->replaceDbExprQuotes($conditions) : $conditions);
         if (empty($returning)) {
@@ -449,6 +413,40 @@ abstract class DbAdapter implements DbAdapterInterface {
                 );
             }
             return $records;
+        }
+    }
+
+    private function guardTableNameArg($table) {
+        if (empty($table) || !is_string($table) || is_numeric($table)) {
+            throw new \InvalidArgumentException('$table argument cannot be empty and must be a non-numeric string');
+        }
+    }
+
+    private function guardConditionsArg($conditions) {
+        if (!is_string($conditions) && !($conditions instanceof DbExpr)) {
+            throw new \InvalidArgumentException('$conditions argument must be a string or DbExpr object');
+        } else if (empty($conditions)) {
+            throw new \InvalidArgumentException(
+                '$conditions argument is not allowed to be empty. Use "true" or "1 = 1" if you want to update all.'
+            );
+        }
+    }
+
+    private function guardReturningArg($returning) {
+        if (!is_array($returning) && !is_bool($returning)) {
+            throw new \InvalidArgumentException('$returning argument must be array or boolean');
+        }
+    }
+
+    private function guardDataArg(array $data) {
+        if (empty($data)) {
+            throw new \InvalidArgumentException('$data argument cannot be empty');
+        }
+    }
+
+    private function guardColumnsArg(array $columns) {
+        if (empty($columns)) {
+            throw new \InvalidArgumentException('$columns argument cannot be empty');
         }
     }
 

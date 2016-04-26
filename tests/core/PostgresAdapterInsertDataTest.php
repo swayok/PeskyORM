@@ -5,7 +5,7 @@ use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
 
-class PostgresAdapterInsertsTest extends \PHPUnit_Framework_TestCase {
+class PostgresAdapterInsertDataTest extends \PHPUnit_Framework_TestCase {
 
     /** @var PostgresConfig */
     static protected $dbConnectionConfig;
@@ -81,77 +81,6 @@ class PostgresAdapterInsertsTest extends \PHPUnit_Framework_TestCase {
         return $data;
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $table argument cannot be empty and must be a string
-     */
-    public function testInvalidTableInInsert() {
-        $adapter = static::getValidAdapter();
-        $adapter->insert(null, []);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $table argument cannot be empty and must be a string
-     */
-    public function testInvalidTableInInsert2() {
-        $adapter = static::getValidAdapter();
-        $adapter->insert('', []);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $table argument cannot be empty and must be a string
-     */
-    public function testInvalidTableInInsert3() {
-        $adapter = static::getValidAdapter();
-        $adapter->insert(false, []);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $table argument cannot be empty and must be a string
-     */
-    public function testInvalidTableInInsert4() {
-        $adapter = static::getValidAdapter();
-        $adapter->insert($adapter, []);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $data argument cannot be empty
-     */
-    public function testInvalidDataInInsert() {
-        $adapter = static::getValidAdapter();
-        $adapter->insert('test', []);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $returning argument must be array or boolean
-     */
-    public function testInvalidReturningInInsert() {
-        $adapter = static::getValidAdapter();
-        $adapter->insert('test', ['key' => 'value'], [], '*');
-    }
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $returning argument must be array or boolean
-     */
-    public function testInvalidReturningInInsert2() {
-        $adapter = static::getValidAdapter();
-        $adapter->insert('test', ['key' => 'value'], [], $adapter);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $returning argument must be array or boolean
-     */
-    public function testInvalidReturningInInsert3() {
-        $adapter = static::getValidAdapter();
-        $adapter->insert('test', ['key' => 'value'], [], 123);
-    }
-
     public function testInsertOne() {
         static::cleanTables();
         $adapter = static::getValidAdapter();
@@ -180,113 +109,6 @@ class PostgresAdapterInsertsTest extends \PHPUnit_Framework_TestCase {
         $this->assertNull($data['parent_id']);
 
         // todo: test returning
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $table argument cannot be empty and must be a string
-     */
-    public function testInvalidTableInInsertMany() {
-        $adapter = static::getValidAdapter();
-        $adapter->insertMany(null, [], []);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $table argument cannot be empty and must be a string
-     */
-    public function testInvalidTableInInsertMany2() {
-        $adapter = static::getValidAdapter();
-        $adapter->insertMany('', [], []);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $table argument cannot be empty and must be a string
-     */
-    public function testInvalidTableInInsertMany3() {
-        $adapter = static::getValidAdapter();
-        $adapter->insertMany(false, [], []);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $table argument cannot be empty and must be a string
-     */
-    public function testInvalidTableInInsertMany4() {
-        $adapter = static::getValidAdapter();
-        $adapter->insertMany($adapter, [], []);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columns argument cannot be empty
-     */
-    public function testInvalidColumnsInInsertMany() {
-        $adapter = static::getValidAdapter();
-        $adapter->insertMany('test', [], []);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $data argument cannot be empty
-     */
-    public function testInvalidDataInInsertMany() {
-        $adapter = static::getValidAdapter();
-        $adapter->insertMany('test', ['col1'], []);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $valuesAssoc array does not contain key [col1]
-     */
-    public function testInvalidDataInInsertMany2() {
-        $adapter = static::getValidAdapter();
-        $adapter->insertMany('test', ['col1'], [[]]);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $valuesAssoc array does not contain key [col2]
-     */
-    public function testInvalidDataInInsertMany3() {
-        $adapter = static::getValidAdapter();
-        $adapter->insertMany('test', ['col1', 'col2'], [['col1' => '1']]);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $data argument must contain only arrays
-     */
-    public function testInvalidDataInInsertMany4() {
-        $adapter = static::getValidAdapter();
-        $adapter->insertMany('test', ['col1', 'col2'], ['col1' => '1']);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $returning argument must be array or boolean
-     */
-    public function testInvalidReturningInInsertMany() {
-        $adapter = static::getValidAdapter();
-        $adapter->insertMany('test', ['key'], ['key' => 'value'], [], '*');
-    }
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $returning argument must be array or boolean
-     */
-    public function testInvalidReturningInInsertMany2() {
-        $adapter = static::getValidAdapter();
-        $adapter->insertMany('test', ['key'], ['key' => 'value'], [], $adapter);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $returning argument must be array or boolean
-     */
-    public function testInvalidReturningInInsertMany3() {
-        $adapter = static::getValidAdapter();
-        $adapter->insertMany('test', ['key'], ['key' => 'value'], [], 123);
     }
 
     public function testInsertMany() {
