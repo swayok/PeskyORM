@@ -146,18 +146,24 @@ abstract class DbAdapter implements DbAdapterInterface {
 
     /**
      * @param string|DbExpr $query
-     * @return \PDOStatement
+     * @param string|null $fetchData - null: return PDOStatement; string: one of \PeskyORM\Core\Utils::FETCH_*
+     * @return \PDOStatement|array|string
      * @throws \PeskyORM\Core\DbException
      * @throws \InvalidArgumentException
      * @throws \PDOException
      */
-    public function query($query) {
+    public function query($query, $fetchData = null) {
         if ($query instanceof DbExpr) {
             $query = $this->replaceDbExprQuotes($query->get());
         }
         $this->lastQuery = $query;
         try {
-            return $this->getConnection()->query($query);
+            $stmnt = $this->getConnection()->query($query);
+            if (!$fetchData) {
+                return $stmnt;
+            } else {
+                return \PeskyORM\Core\Utils::getDataFromStatement($stmnt, $fetchData);
+            }
         } catch (\PDOException $exc) {
             $exc = $this->getDetailedException($query, null, $exc);
             if ($this->inTransaction()) {

@@ -35,6 +35,14 @@ class Postgres extends DbAdapter {
      */
     protected $inTransaction = false;
 
+    public function isDbSupportsTableSchemas() {
+        return true;
+    }
+
+    public function getDefaultTableSchema() {
+        return 'public';
+    }
+
     public function __construct(PostgresConfig $connectionConfig) {
         parent::__construct($connectionConfig);
     }

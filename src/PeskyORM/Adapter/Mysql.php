@@ -13,6 +13,14 @@ class Mysql extends DbAdapter {
     const VALUE_QUOTES = '"';
     const NAME_QUOTES = '`';
 
+    public function isDbSupportsTableSchemas() {
+        return false;
+    }
+
+    public function getDefaultTableSchema() {
+        return null;
+    }
+
     public function __construct(MysqlConfig $connectionConfig) {
         parent::__construct($connectionConfig);
     }

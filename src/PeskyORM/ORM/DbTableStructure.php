@@ -1,10 +1,8 @@
 <?php
 
-namespace PeskyORM\Config\Schema;
+namespace PeskyORM\ORM;
 
-use PeskyORM\Exception\DbTableConfigException;
-
-abstract class DbTableConfig {
+abstract class DbTableStructure {
 
     protected $autoloadColumnConfigsFromPrivateMethods = true;
 
@@ -15,13 +13,13 @@ abstract class DbTableConfig {
     protected $hasFileColumns = false;
     protected $fileColumns = array();
 
-    /** @var DbColumnConfig[] */
+    /** @var DbTableColumn[] */
     protected $columns = array();
 
     /** @var DbRelationConfig[] */
     protected $relations = array();
 
-    /** @var DbTableConfig[]  */
+    /** @var DbTableStructure[]  */
     static private $instances = array();
 
     static public function getInstance() {
@@ -49,7 +47,7 @@ abstract class DbTableConfig {
             $method->setAccessible(true);
             $config = $method->invoke($this);
             $method->setAccessible(false);
-            if ($config instanceof DbColumnConfig) {
+            if ($config instanceof DbTableColumn) {
                 if (!$config->hasName()) {
                     $config->setName($method->getName());
                 }
@@ -75,11 +73,11 @@ abstract class DbTableConfig {
     }
 
     /**
-     * @param DbColumnConfig $config
+     * @param DbTableColumn $config
      * @return $this
      * @throws DbTableConfigException
      */
-    protected function addColumn(DbColumnConfig $config) {
+    protected function addColumn(DbTableColumn $config) {
         if (!empty($this->columns[$config->getName()])) {
             throw new DbTableConfigException($this, "Duplicate config received for column [{$config->getName()}]");
         }
@@ -108,7 +106,7 @@ abstract class DbTableConfig {
 
     /**
      * @param string $colName
-     * @return DbColumnConfig
+     * @return DbTableColumn
      * @throws DbTableConfigException
      */
     public function getColumn($colName) {
@@ -126,11 +124,11 @@ abstract class DbTableConfig {
      * @throws Exception\DbColumnConfigException
      */
     protected function addRelation(DbRelationConfig $config, $relationAlias = null) {
-        if ($config->getTable() !== $this->getName()) {
-            throw new DbTableConfigException($this, "Invalid source table of relation [{$config->getTable()}]. Source table should be [{$this->getName()}]");
+        if ($config->getLocalTableName() !== $this->getName()) {
+            throw new DbTableConfigException($this, "Invalid source table of relation [{$config->getLocalTableName()}]. Source table should be [{$this->getName()}]");
         }
-        if (!$this->hasColumn($config->getColumn())) {
-            throw new DbTableConfigException($this, "Table has no column [{$config->getColumn()}] or column not defined yet");
+        if (!$this->hasColumn($config->getLocalColumn())) {
+            throw new DbTableConfigException($this, "Table has no column [{$config->getLocalColumn()}] or column not defined yet");
         }
         if (empty($relationAlias)) {
             $relationAlias = $config->getId();
@@ -139,7 +137,7 @@ abstract class DbTableConfig {
             throw new DbTableConfigException($this, "Duplicate config received for relation [{$relationAlias} => {$config->getId()}]");
         }
         $this->relations[$relationAlias] = $config;
-        $this->columns[$config->getColumn()]->addRelation($config, $relationAlias);
+        $this->columns[$config->getLocalColumn()]->addRelation($config, $relationAlias);
         return $this;
     }
 
@@ -154,11 +152,11 @@ abstract class DbTableConfig {
     /**
      * @param string $alias
      * @return DbRelationConfig
-     * @throws DbTableConfigException
+     * @throws \InvalidArgumentException
      */
     public function getRelation($alias) {
         if (!$this->hasRelation($alias)) {
-            throw new DbTableConfigException($this, "Table has no relation [{$alias}]");
+            throw new \InvalidArgumentException("Table has no relation with alias '{$alias}'");
         }
         return $this->relations[$alias];
     }
@@ -185,7 +183,7 @@ abstract class DbTableConfig {
     }
 
     /**
-     * @return DbColumnConfig[]
+     * @return DbTableColumn[]
      */
     public function getColumns() {
         return $this->columns;
@@ -201,15 +199,23 @@ abstract class DbTableConfig {
     /**
      * @return string|null
      */
-    public function getPk() {
+    public function getPkColumnName() {
         return $this->pk;
     }
 
     /**
      * @return bool
      */
-    public function hasPk() {
+    public function hasPkColumn() {
         return $this->pk !== null;
+    }
+
+    /**
+     * @return DbTableColumn
+     * @throws DbTableConfigException
+     */
+    public function getPkColumn() {
+        return $this->getColumn($this->pk);
     }
 
     /**
@@ -228,7 +234,7 @@ abstract class DbTableConfig {
     }
 
     /**
-     * @return DbColumnConfig[] = array('column_name' => DbColumnConfig)
+     * @return DbTableColumn[] = array('column_name' => DbTableColumn)
      */
     public function getFileColumns() {
         return $this->fileColumns;

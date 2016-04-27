@@ -1,12 +1,11 @@
 <?php
 
-namespace PeskyORM\Config\Schema;
+namespace PeskyORM\ORM;
 
-use PeskyORM\Exception\DbColumnConfigException;
 use Swayok\Utils\StringUtils;
 use Swayok\Utils\ValidateValue;
 
-class DbColumnConfig {
+class DbTableColumn {
 
     const TYPE_INT = 'integer';
     const TYPE_FLOAT = 'float';
@@ -70,11 +69,11 @@ class DbColumnConfig {
 
     /**
      * Contains map where keys are column types and values are names of classes that extend DbObjectField class
-     * Class names provided here used only for cusom data types registered via DbColumnConfig::registerType() method
+     * Class names provided here used only for cusom data types registered via DbTableColumn::registerType() method
      * Class names must be provided with namespace.
      * For hardcoded data types class names generated automatically. For example:
      * type = timezone_offset, class_name = TimezoneOffsetField
-     * Namespace for hardcoded types provided in argument of method DbColumnConfig->getClassName()
+     * Namespace for hardcoded types provided in argument of method DbTableColumn->getClassName()
      * @var array
      */
     static protected $typeToDbObjectFieldClass = array(
@@ -89,7 +88,7 @@ class DbColumnConfig {
     const ON_UPDATE = 'update';
 
     // params that can be set directly or calculated
-    /** @var DbTableConfig */
+    /** @var DbTableStructure */
     protected $dbTableConfig;
     /** @var string */
     protected $name;
@@ -205,7 +204,7 @@ class DbColumnConfig {
     /**
      * Add custom column type
      * @param string $type - name of type
-     * @param string $dbType - name of type in DB (usually one of DbColumnConfig::DB_TYPE_*)
+     * @param string $dbType - name of type in DB (usually one of DbTableColumn::DB_TYPE_*)
      * @param $dbObjectFieldClass - full name of class that extends DbObjectFieldClass
      */
     static public function registerType($type, $dbType, $dbObjectFieldClass) {
@@ -738,7 +737,7 @@ class DbColumnConfig {
      * @throws DbColumnConfigException
      */
     public function addRelation(DbRelationConfig $relation, $relationAlias = null) {
-        if ($relation->getColumn() !== $this->name && $relation->getForeignColumn() !== $this->name) {
+        if ($relation->getLocalColumn() !== $this->name && $relation->getForeignColumn() !== $this->name) {
             throw new DbColumnConfigException($this, "Relation {$relation->getId()} is not connected to column {$this->name}");
         }
         if (empty($relationAlias)) {

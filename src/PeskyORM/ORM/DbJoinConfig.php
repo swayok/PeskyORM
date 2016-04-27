@@ -1,9 +1,6 @@
 <?php
 
-namespace PeskyORM\Config\Schema;
-
-use PeskyORM\Exception\DbQueryException;
-use PeskyORM\Exception\DbUtilsException;
+namespace PeskyORM\ORM;
 
 class DbJoinConfig {
 
@@ -17,13 +14,13 @@ class DbJoinConfig {
 
     /** @var string|null */
     protected $joinAlias = null;
-    /** @var DbModel|null */
+    /** @var DbTable|null */
     protected $model = null;
     /** @var string|null */
     protected $column = null;
     /** @var string|null */
     protected $joinType = null;
-    /** @var DbModel|null */
+    /** @var DbTable|null */
     protected $foreignModel = null;
     /** @var string|null */
     protected $foreignColumn = null;
@@ -46,14 +43,14 @@ class DbJoinConfig {
 
     /**
      * @param string $joinAlias
-     * @param DbModel $model
+     * @param DbTable $model
      * @param string $column
      * @param string $joinType
-     * @param string $foreignModelAlias
+     * @param DbTable $foreignModel
      * @param string $foreignColumn
      * @return DbJoinConfig
      */
-    static public function construct($joinAlias, DbModel $model, $column, $joinType, DbModel $foreignModel, $foreignColumn) {
+    static public function construct($joinAlias, DbTable $model, $column, $joinType, DbTable $foreignModel, $foreignColumn) {
         return self::create($joinAlias)
             ->setConfigForLocalTable($model, $column)
             ->setJoinType($joinType)
@@ -61,20 +58,20 @@ class DbJoinConfig {
     }
 
     /**
-     * @param DbModel $model
+     * @param DbTable $model
      * @param string $column
      * @return $this
      */
-    public function setConfigForLocalTable(DbModel $model, $column) {
+    public function setConfigForLocalTable(DbTable $model, $column) {
         return $this->setModel($model)->setColumn($column);
     }
 
     /**
-     * @param DbModel $foreignModel
+     * @param DbTable $foreignModel
      * @param string $foreignColumn
      * @return $this
      */
-    public function setConfigForForeignTable(DbModel $foreignModel, $foreignColumn) {
+    public function setConfigForForeignTable(DbTable $foreignModel, $foreignColumn) {
         return $this->setForeignModel($foreignModel)->setForeignColumn($foreignColumn);
     }
 
@@ -87,7 +84,7 @@ class DbJoinConfig {
             'table1_model' => $this->getForeignModel(),
             'table1_field' => $this->getForeignColumn(),
             'table1_alias' => $this->getJoinAlias(),
-            'table2_alias' => $this->getModel()->getAlias(),
+            'table2_alias' => $this->getTable()->getAlias(),
             'table2_field' => $this->getColumn(),
             'conditions' => $this->getAdditionalJoinConditions(),
             'fields' => $this->getForeignColumnsToSelect()
@@ -127,14 +124,14 @@ class DbJoinConfig {
     }
 
     /**
-     * @return null|DbModel
+     * @return null|DbTable
      */
     public function getForeignModel() {
         return $this->foreignModel;
     }
 
     /**
-     * @param null|DbModel $foreignModel
+     * @param null|DbTable $foreignModel
      * @return $this
      */
     public function setForeignModel($foreignModel) {
@@ -175,14 +172,14 @@ class DbJoinConfig {
     }
 
     /**
-     * @return null|DbModel
+     * @return null|DbTable
      */
-    public function getModel() {
+    public function getTable() {
         return $this->model;
     }
 
     /**
-     * @param null|DbModel $model
+     * @param null|DbTable $model
      * @return $this
      */
     public function setModel($model) {

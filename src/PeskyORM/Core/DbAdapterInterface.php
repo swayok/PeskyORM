@@ -29,9 +29,10 @@ interface DbAdapterInterface {
 
     /**
      * @param string|DbExpr $query
+     * @param string|null $fetchData - null: return PDOStatement; string: one of \PeskyORM\Core\Utils::FETCH_*
      * @return \PDOStatement
      */
-    public function query($query);
+    public function query($query, $fetchData = null);
 
     /**
      * @param string $table
@@ -51,11 +52,13 @@ interface DbAdapterInterface {
      * @return bool
      */
     public function inTransaction();
-    
+
     /**
+     * @param bool $readOnly - true: transaction only reads data
+     * @param null|string $transactionType - type of transaction
      * @return $this
      */
-    public function begin();
+    public function begin($readOnly = false, $transactionType = null);
     
     /**
      * @return $this
@@ -96,5 +99,18 @@ interface DbAdapterInterface {
      * @return string
      */
     public function replaceDbExprQuotes($expression);
+
+    /**
+     * Does DB supports table schemas?
+     * Postgres - yes: "public"."table_name"; Mysql - no
+     * @return bool
+     */
+    public function isDbSupportsTableSchemas();
+
+    /**
+     * Get default DB table schema
+     * @return string|null - null: for DB Adapters that does not support table schemas
+     */
+    public function getDefaultTableSchema();
     
 }
