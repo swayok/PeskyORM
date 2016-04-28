@@ -222,6 +222,15 @@ class MysqlAdapterGeneralFunctionalityTest extends PHPUnit_Framework_TestCase {
         $adapter->quoteValue(false, PDO::PARAM_INT);
     }
 
+    /**
+     * @expectedException PHPUnit_Framework_Error
+     * @expectedExceptionMessage must be an instance of PeskyORM\Core\DbExpr, string given
+     */
+    public function testQuotingOfInvalidDbExpr() {
+        $adapter = static::getValidAdapter();
+        $adapter->replaceDbExprQuotes(DbExpr::create('`test`')->get());
+    }
+
     public function testQuoting() {
         $adapter = static::getValidAdapter();
         $this->assertEquals('`table1`', $adapter->quoteName('table1'));

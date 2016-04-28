@@ -154,7 +154,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      */
     public function query($query, $fetchData = null) {
         if ($query instanceof DbExpr) {
-            $query = $this->replaceDbExprQuotes($query->get());
+            $query = $this->replaceDbExprQuotes($query);
         }
         $this->lastQuery = $query;
         try {
@@ -182,7 +182,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      */
     public function exec($query) {
         if ($query instanceof DbExpr) {
-            $query = $this->replaceDbExprQuotes($query->get());
+            $query = $this->replaceDbExprQuotes($query);
         }
         $this->lastQuery = $query;
         try {
@@ -698,7 +698,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      */
     public function quoteValue($value, $valueDataType = null) {
         if ($value instanceof DbExpr) {
-            return $this->replaceDbExprQuotes($value->get());
+            return $this->replaceDbExprQuotes($value);
         } else {
             if ($value === null || $valueDataType === \PDO::PARAM_NULL) {
                 return 'NULL';
@@ -753,19 +753,108 @@ abstract class DbAdapter implements DbAdapterInterface {
     }
 
     /**
-     * @param string $expression
+     * @param DbExpr $expression
      * @return string
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function replaceDbExprQuotes($expression) {
-        $expression = preg_replace_callback('%``(.*?)``%s', function ($matches) {
-            return $this->quoteValue($matches[1]);
-        }, $expression);
-        $expression = preg_replace_callback('%`(.*?)`%s', function ($matches) {
-            return $this->quoteName($matches[1]);
-        }, $expression);
-        return $expression;
+    public function replaceDbExprQuotes(DbExpr $expression) {
+        $quoted = preg_replace_callback(
+            '%``(.*?)``%s',
+            function ($matches) {
+                return $this->quoteValue($matches[1]);
+            },
+            $expression->get()
+        );
+        $quoted = preg_replace_callback(
+            '%`(.*?)`%s',
+            function ($matches) {
+                return $this->quoteName($matches[1]);
+            },
+            $quoted
+        );
+        return $quoted;
+    }
+
+    /**
+     * @param string $operator
+     * @param array|float|int|string $value
+     * @return string
+     * @throws \InvalidArgumentException
+     */
+    public function convertConditionOperator($operator, $value) {
+        if ($value === null) {
+            // 2.2
+            return in_array($operator, ['!', '!=', 'NOT', 'IS NOT'], true) ? 'IS NOT' : 'IS';
+        } else if (is_array($value)) {
+            // 2.4
+            switch ($operator) {
+                case '=':
+                case 'IN':
+                    return 'IN';
+                case '!=':
+                case 'NOT':
+                case 'NOT IN':
+                    return 'NOT IN';
+                default:
+                    throw new \InvalidArgumentException(
+                        "Condition operator [$operator] does not support list of values"
+                    );
+            }
+        } else if (in_array($operator, ['NOT', 'IS NOT'], true)) {
+            // NOT and IS NOT cannot be used for non-null values and for comparison of single value
+            return '!=';
+        } else {
+            $map = $this->getConditionOperatorsMap();
+            return isset($map[$operator]) ? $map[$operator] : $operator;
+        }
+    }
+
+    /**
+     * @return array - key-value array where keys = general operators and values = driver-specific operators
+     */
+    public function getConditionOperatorsMap() {
+        return [];
+    }
+
+    /**
+     * @param array|float|int|string $value
+     * @param string $operator
+     * @return string
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    public function assembleConditionValue($value, $operator) {
+        // todo: think about possibility to validate value by means of DbTableScructure objects
+        if (in_array($operator, ['BETWEEN', 'NOT BETWEEN'], true)) {
+            // 2.3
+            if (!is_array($value)) {
+                throw new \InvalidArgumentException(
+                    'Condition value for BETWEEN and NOT BETWEEN operator must be an array with 2 values: [min, max]'
+                );
+            } else if (count($value) !== 2){
+                throw new \InvalidArgumentException(
+                    'BETWEEN and NOT BETWEEN conditions require value to an array with 2 values: [min, max]'
+                );
+            }
+            /** @var array $value */
+            $value = array_values($value);
+            return $this->quoteValue($value[0]) . ' AND ' . $this->quoteValue($value[1]);
+        } else if (is_array($value)) {
+            // 2.4
+            if (empty($value)) {
+                throw new \InvalidArgumentException('Empty array is not allowed as condition value');
+            } else {
+                $quotedValues = [];
+                foreach ($value as $val) {
+                    $quotedValues[] = $this->quoteValue($val);
+                }
+                return '(' . implode(',', $quotedValues) . ')';
+            }
+        } else {
+            // 2.1, 2.2
+            return $this->quoteValue($value);
+        }
     }
 
 }

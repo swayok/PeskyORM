@@ -120,15 +120,12 @@ class DbSelect {
     }
 
     /**
-     * @param string|DbExpr $expression
+     * @param DbExpr $expression
      * @return string
      * @throws \InvalidArgumentException
      */
-    public function fetchValue($expression) {
-        if (!is_string($expression) && !($expression instanceof DbExpr)) {
-            throw new \InvalidArgumentException('$expression argument bust be an array or instance of DbExpr class');
-        }
-        return $this->columns([$expression instanceof DbExpr ? $expression : DbExpr::create($expression)])
+    public function fetchValue(DbExpr $expression) {
+        return $this->columns([$expression])
             ->_fetch(Utils::FETCH_VALUE);
     }
 

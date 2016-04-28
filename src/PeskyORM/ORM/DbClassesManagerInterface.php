@@ -11,6 +11,12 @@ interface DbClassesManagerInterface {
     static public function getTableInstance($tableName);
 
     /**
+     * @param string $tableAlias
+     * @return DbTable
+     */
+    static public function getTableInstanceByAlias($tableAlias);
+
+    /**
      * @param string $tableName
      * @return DbTableStructure
      */

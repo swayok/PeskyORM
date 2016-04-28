@@ -13,6 +13,39 @@ class Mysql extends DbAdapter {
     const VALUE_QUOTES = '"';
     const NAME_QUOTES = '`';
 
+    static protected $dataTypesMap = [
+        'bytea' => 'BINARY',
+        'date' => 'DATE',
+        'time' => 'TIME',
+        'timestamp' => 'DATETIME',
+        'timestamptz' => 'DATETIME',
+        'timestamp with time zone' => 'DATETIME',
+        'timestamp without time zone' => 'DATETIME',
+        'decimal' => 'DECIMAL',
+        'numeric' => 'DECIMAL',
+        'real' => 'DECIMAL',
+        'double precision' => 'DECIMAL',
+        'int2' => 'SIGNED INTEGER',
+        'smallint' => 'SIGNED INTEGER',
+        'int4' => 'SIGNED INTEGER',
+        'integer' => 'SIGNED INTEGER',
+        'int8' => 'SIGNED INTEGER',
+        'bigint' => 'SIGNED INTEGER',
+    ];
+
+    protected static $conditionOperatorsMap = [
+        'SIMILAR TO' => 'LIKE',
+        'NOT SIMILAR TO' => 'NOT LIKE',
+        '~' => 'REGEXP',
+        '!~' => 'REGEXP',
+        '~*' => 'REGEXP',
+        '!~*' => 'REGEXP',
+    ];
+
+    public function __construct(MysqlConfig $connectionConfig) {
+        parent::__construct($connectionConfig);
+    }
+
     public function isDbSupportsTableSchemas() {
         return false;
     }
@@ -21,10 +54,29 @@ class Mysql extends DbAdapter {
         return null;
     }
 
-    public function __construct(MysqlConfig $connectionConfig) {
-        parent::__construct($connectionConfig);
+    public function addDataTypeCastToExpression($dataType, $expression) {
+        if (!is_string($dataType)) {
+            throw new \InvalidArgumentException('$dataType must be a string');
+        }
+        if (!is_string($expression)) {
+            throw new \InvalidArgumentException('$expression must be a string');
+        }
+        return 'CAST(' . $expression . ' AS ' . static::getRealDataType($dataType) . ')';
+    }
+
+    protected function getRealDataType($dataType) {
+        $dataType = strtolower($dataType);
+        if (isset(static::$dataTypesMap[$dataType])) {
+            return static::$dataTypesMap[$dataType];
+        } else {
+            return 'CHAR';
+        }
     }
     
+    public function getConditionOperatorsMap() {
+        return static::$conditionOperatorsMap;
+    }
+
     protected function resolveQueryWithReturningColumns(
         $query,
         $table,

@@ -42,11 +42,4 @@ class DbExpr {
     public function get() {
         return $this->expression;
     }
-
-    /**
-     * @return string
-     */
-    public function __toString() {
-        return $this->expression;
-    }
 }

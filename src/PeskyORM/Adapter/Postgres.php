@@ -35,6 +35,10 @@ class Postgres extends DbAdapter {
      */
     protected $inTransaction = false;
 
+    public function __construct(PostgresConfig $connectionConfig) {
+        parent::__construct($connectionConfig);
+    }
+
     public function isDbSupportsTableSchemas() {
         return true;
     }
@@ -43,8 +47,8 @@ class Postgres extends DbAdapter {
         return 'public';
     }
 
-    public function __construct(PostgresConfig $connectionConfig) {
-        parent::__construct($connectionConfig);
+    public function addDataTypeCastToExpression($dataType, $expression) {
+        return $expression . '::' . $dataType;
     }
 
     public function inTransaction() {

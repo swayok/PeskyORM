@@ -2,6 +2,7 @@
 
 namespace PeskyORM\ORM;
 
+use PeskyORM\Core\DbExpr;
 use Swayok\Utils\StringUtils;
 
 abstract class DbTable implements DbTableInterface {
@@ -99,6 +100,14 @@ abstract class DbTable implements DbTableInterface {
     }
 
     /**
+     * @param string $relationAlias - alias for relation defined in DbTableStructure
+     * @return bool
+     */
+    static public function hasRelation($relationAlias) {
+        return static::getStructure()->hasRelation($relationAlias);
+    }
+
+    /**
      * @return DbRecord
      */
     static public function newRecord() {
@@ -160,63 +169,340 @@ abstract class DbTable implements DbTableInterface {
 
     /**
      * Make a query that returns only 1 value defined by $expression
-     * @param string $expression - example: 'COUNT(*)', 'SUM(`field`)'
+     * @param DbExpr $expression - example: DbExpr::create('COUNT(*)'), DbExpr::create('SUM(`field`)')
      * @param array $conditionsAndOptions
      * @return string
      * @throws \InvalidArgumentException
      */
-    static public function selectValue($expression, array $conditionsAndOptions = []) {
+    static public function selectValue(DbExpr $expression, array $conditionsAndOptions = []) {
         return DbSelect::from(static::getTableName())
             ->parseArray($conditionsAndOptions)
             ->fetchValue($expression);
     }
 
     /**
+     * Does table contain any record matching provided condition
      * @param array $conditionsAndOptions
      * @return bool
      * @throws \InvalidArgumentException
      */
-    static public function exists(array $conditionsAndOptions) {
+    static public function hasMatchingRecord(array $conditionsAndOptions) {
         $conditionsAndOptions['LIMIT'] = 1;
-        return (int)static::selectValue('1', $conditionsAndOptions) === 1;
+        unset($conditionsAndOptions['OFFSET'], $conditionsAndOptions['ORDER']);
+        return static::selectValue(DbExpr::create('1'), $conditionsAndOptions) === 1;
+    }
+
+    /**
+     * @param array $conditionsAndOptions
+     * @param bool $removeNotInnerJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
+     * @return int
+     */
+    static public function count(array $conditionsAndOptions, $removeNotInnerJoins = false) {
+        return DbSelect::from(static::getTableName())
+            ->parseArray($conditionsAndOptions)
+            ->fetchCount($removeNotInnerJoins);
     }
 
     /**
      * @return null|string
      */
-    public function getLastQuery() {
+    static public function getLastQuery() {
         return static::getConnection()->getLastQuery();
     }
     
-    public function beginTransaction($readOnly = false, $transactionType = null) {
+    static public function beginTransaction($readOnly = false, $transactionType = null) {
         static::getConnection()->begin($readOnly, $transactionType);
     }
 
-    public function inTransaction() {
+    static public function inTransaction() {
         return static::getConnection()->inTransaction();
     }
 
-    public function commitTransaction() {
+    static public function commitTransaction() {
         static::getConnection()->commit();
     }
 
-    public function rollBackTransaction() {
+    static public function rollBackTransaction() {
         static::getConnection()->rollBack();
     }
 
-    public function quoteName($name) {
+    static public function quoteName($name) {
         return static::getConnection()->quoteName($name);
     }
 
-    public function quoteValue($value, $fieldInfoOrType = \PDO::PARAM_STR) {
+    static public function quoteValue($value, $fieldInfoOrType = \PDO::PARAM_STR) {
         return static::getConnection()->quoteValue($value, $fieldInfoOrType);
     }
 
-    public function query($query, $fetchData = null) {
+    static public function query($query, $fetchData = null) {
         return static::getConnection()->query($query, $fetchData);
     }
 
-    public function exec($query) {
+    static public function exec($query) {
         return static::getConnection()->exec($query);
     }
+
+    /**
+     * @param array $data
+     * @param bool|array $returning - return some data back after $data inserted to $table
+     *          - true: return values for all columns of inserted table row
+     *          - false: do not return anything
+     *          - array: list of columns to return values for
+     * @return array|bool - array returned only if $returning is not empty
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    static public function insert(array $data, $returning = false) {
+        return static::getConnection()->insert(
+            static::getTableName(),
+            $data,
+            static::getPdoDataTypesForColumns(),
+            $returning
+        );
+    }
+
+    /**
+     * @param array $columns - list of column names to insert data for
+     * @param array $rows - data to insert
+     * @param bool|array $returning - return some data back after $data inserted to $table
+     *          - true: return values for all columns of inserted table row
+     *          - false: do not return anything
+     *          - array: list of columns to return values for
+     * @return array|bool - array returned only if $returning is not empty
+     * @throws \InvalidArgumentException
+     * @throws \PDOException
+     */
+    static public function insertMany(array $columns, array $rows, $returning = false) {
+        return static::getConnection()->insertMany(
+            static::getTableName(),
+            $columns,
+            $rows,
+            static::getPdoDataTypesForColumns($columns),
+            $returning
+        );
+    }
+
+    /**
+     * @param array $data - key-value array where key = table column and value = value of associated column
+     * @param array $conditions - WHERE conditions
+     * @return int - number of modified rows
+     * @throws \PeskyORM\ORM\OrmException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     * @throws \PeskyORM\Core\DbException
+     */
+    static public function update(array $data, array $conditions) {
+        return static::getConnection()->update(
+            static::getTableName(),
+            $data,
+            static::assembleWhereConditionsFromArray($conditions),
+            static::getPdoDataTypesForColumns()
+        );
+    }
+
+    /**
+     * @param array $conditions - WHERE conditions
+     * @param bool|array $returning - return some data back after $data inserted to $table
+     *          - true: return values for all columns of inserted table row
+     *          - false: do not return anything
+     *          - array: list of columns to return values for
+     * @return int|array - int: number of deleted records | array: returned only if $returning is not empty
+     * @throws \PeskyORM\ORM\OrmException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    static public function delete(array $conditions = [], $returning = false) {
+        return static::getConnection()->delete(
+            static::getTableName(),
+            static::assembleWhereConditionsFromArray($conditions),
+            $returning
+        );
+    }
+
+    /**
+     * Get list of PDO data types for requested $columns
+     * @param array $columns
+     * @return array
+     * @throws \InvalidArgumentException
+     */
+    static protected function getPdoDataTypesForColumns(array $columns = []) {
+        $pdoDataTypes = [];
+        if (empty($columns)) {
+            $columns = array_keys(static::getStructure()->getColumns());
+        }
+        foreach ($columns as $columnName) {
+            $columnInfo = static::getStructure()->getColumn($columnName);
+            switch ($columnInfo->getDbType()) {
+                case $columnInfo::DB_TYPE_BOOL:
+                    $pdoDataTypes[$columnInfo->getName()] = \PDO::PARAM_BOOL;
+                    break;
+                case $columnInfo::DB_TYPE_INT:
+                case $columnInfo::DB_TYPE_BIGINT:
+                case $columnInfo::DB_TYPE_SMALLINT:
+                    $pdoDataTypes[$columnInfo->getName()] = \PDO::PARAM_INT;
+                    break;
+                default:
+                    $pdoDataTypes[$columnInfo->getName()] = \PDO::PARAM_STR;
+            }
+        }
+        return $pdoDataTypes;
+    }
+
+    /**
+     * we have next cases:
+     * 1. $value is instance of DbExpr (converted to quoted string), $column - index or field name
+     *
+     * 2. $column and $value are strings
+     *     (results in 'colname' <operator> 'value')
+     * 2.1 $column contains equation sign (for example 'colname >', results in 'colname' > 'value')
+     *     Short list of equations:
+     *          >, <, =, !=, >=, <=, LIKE, ~, ~*, !~, !~*, SIMILAR TO, IN; NOT; NOT IN; IS; IS NOT
+     * 2.2 $value === null, $column may contain: 'NOT', '!=', '=', 'IS', 'IS NOT'
+     *     (results in 'colname' IS NULL or 'colname' IS NOT NULL)
+     * 2.3 $column contains 'BETWEEN' or 'NOT BETWEEN' and $value is array or string like 'val1 and val2'
+     *     (results in 'colname' BETWEEN a and b)
+     * 2.4 $column contains no equation sign or contains '!=' or 'NOT', $value is array
+     *     (results in 'colname' IN (a,b,c))
+     *
+     * 3. $value === array()
+     * 3.1. $column !== 'OR' -> recursion: $this->assembleConditions($value))
+     * 3.2. $column === 'OR' -> recursion: $this->assembleConditions($value, 'OR'))
+     *
+     * @param array $conditions
+     * @param string $glue - 'AND' or 'OR'
+     * @return string
+     * @throws \PeskyORM\ORM\OrmException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    static public function assembleWhereConditionsFromArray(array $conditions, $glue = 'AND') {
+        $glue = strtoupper(trim($glue));
+        if (!in_array($glue, ['AND', 'OR'], true)) {
+            throw new \InvalidArgumentException('$glue argument must be "AND" or "OR"');
+        }
+        if (empty($conditions)) {
+            return '';
+        } else {
+            $assembled = [];
+            foreach ($conditions as $column => $value) {
+                // 1 - custom expressions
+                if (is_object($value)) {
+                    if ($value instanceof DbExpr) {
+                        $value = static::getConnection()->replaceDbExprQuotes($value);
+                        if (is_numeric($column)) {
+                            $assembled[] = $value;
+                        }
+                    } else {
+                        throw new \InvalidArgumentException(
+                            '$conditions argument may contain objects of class DbExpr only. Other object are forbidden.'
+                        );
+                    }
+                } else if (
+                    (is_numeric($column) && is_array($value))
+                    || in_array(strtolower(trim($column)), ['and', 'or'], true)
+                ) {
+                    // 3: 3.1 and 3.2 - recursion
+                    $subGlue = is_numeric($column) ? 'AND' : $column;
+                    $assembled[] = '(' . static::assembleWhereConditionsFromArray($value, $subGlue) . ')';
+                } else {
+                    $operator = '=';
+                    // find and prepare operator
+                    $operators = [
+                        '\s*(?:>|<|=|\!=|>=|<=)',   //< basic operators
+                        '\s+(?:.+?)\s*$',           //< other operators
+                    ];
+                    $operatorsRegexp = '%^' . implode('|', $operators) . '\s*$%i';
+                    //$operatorsRegexp = '%^\s*(.*?)(?:\s*(>|<|=|\!=|>=|<=|\s+LIKE|\s+NOT\s+LIKE|\~\*|\~|!\~\*|!\~|\s+SIMILAR\s+TO|\s+NOT\s+SIMILAR\s+TO|\s+IN|\s+NOT\s+IN|\s+BETWEEN|\s+NOT\s+BETWEEN))\s*$%is';
+                    if (preg_match($operatorsRegexp, $column, $matches)) {
+                        // 2.1
+                        if (trim($matches[1]) !== '') {
+                            throw new \InvalidArgumentException(
+                                "Empty column name detected in \$conditions argument: $column"
+                            );
+                        }
+                        $column = trim($matches[1]);
+                        $operator = strtoupper(preg_replace('%\s+%', ' ', trim($matches[2])));
+                    }
+                    $operator = static::getConnection()->convertConditionOperator($operator, $value);
+                    $column = static::quoteConditionColumn($column);
+                    $value = static::getConnection()->assembleConditionValue($value, $operator);
+                    $assembled[] = "{$column} {$operator} {$value}";
+                }
+            }
+            return implode(" $glue ", $assembled);
+        }
+    }
+
+    /**
+     * @param string $column
+     * @return string - quoted column
+     * @throws \PeskyORM\ORM\OrmException
+     * @throws \InvalidArgumentException
+     */
+    static protected function quoteConditionColumn($column) {
+        return static::parseColumnRepresentation($column)['quoted'];
+    }
+
+    /**
+     * Parse $column and collect information about it
+     * @param string $column - supported formats:
+     *      - 'column'
+     *      - 'column::data_type_convert'
+     *      - 'table_alias.column'
+     *      - 'table_alias.column::data_type_convert'
+     * @return array = [
+     *      'raw' => string,
+     *      'table_alias' => string,
+     *      'column' => DbTableColumn,
+     *      'table' => DbTable,
+     *      'data_type_convert' => string,
+     *      'quoted' => string
+     *  ]
+     * @throws \InvalidArgumentException
+     * @throws OrmException
+     */
+    static public function parseColumnRepresentation($column) {
+        if (!is_string($column)) {
+            throw new \InvalidArgumentException('$column argument must be a string');
+        }
+        $ret = [
+            'raw' => $column,
+            'table_alias' => '',
+            'column' => '',
+            'table' => '',
+            'data_type_convert' => '',
+            'quoted' => ''
+        ];
+        if (preg_match('%^\s*(\w+)(?:\.(\w+))?(?:::([a-zA-Z0-9 _]+))?\s*$%i', $column, $columnParts)) {
+            if (empty($columnParts[2])) {
+                // $column = 'column'|'column::data_type_convert'
+                $ret['table'] = static::getInstance();
+                $ret['column'] = $columnParts[1];
+                $ret['table_alias'] = static::getTableAlias();
+            } else {
+                // $column = 'table_alias.column'|'table_alias.column::data_type_convert'
+                list(, $ret['table_alias'], $ret['column']) = $columnParts;
+                if (static::hasRelation($ret['table_alias'])) {
+                    $ret['table'] = static::getRelatedTable($ret['table_alias']);
+                } else {
+                    $ret['table'] = DbClassesManager::getTableInstanceByAlias($ret['table_alias']);
+                }
+            }
+            $ret['column'] = $ret['table']->getStructure()->getColumn($ret['column']);
+            $ret['data_type_convert'] = !empty($columnParts[3]) ? $columnParts[3] : '';
+            $ret['quoted'] = static::quoteName($ret['table_alias']) . '.' . static::quoteName($ret['column']);
+            $ret['quoted'] = $ret['table']->getConnection()->addDataTypeCastToExpression(
+                $ret['data_type_convert'],
+                $ret['quoted']
+            );
+        } else {
+            throw new \InvalidArgumentException(
+                "Cannot parse $column argument. Maybe its format is wrong. \$column = '$column'"
+            );
+        }
+        
+        return $ret;
+    }
+
+
 }

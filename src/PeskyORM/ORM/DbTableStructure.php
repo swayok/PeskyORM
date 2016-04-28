@@ -107,11 +107,11 @@ abstract class DbTableStructure {
     /**
      * @param string $colName
      * @return DbTableColumn
-     * @throws DbTableConfigException
+     * @throws \InvalidArgumentException
      */
     public function getColumn($colName) {
         if (!$this->hasColumn($colName)) {
-            throw new DbTableConfigException($this, "Table does not contain column [{$colName}]");
+            throw new \InvalidArgumentException("Table does not contain column [{$colName}]");
         }
         return $this->columns[$colName];
     }
