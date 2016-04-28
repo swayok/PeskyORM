@@ -785,7 +785,7 @@ abstract class DbAdapter implements DbAdapterInterface {
     public function convertConditionOperator($operator, $value) {
         if ($value === null) {
             // 2.2
-            return in_array($operator, ['!', '!=', 'NOT', 'IS NOT'], true) ? 'IS NOT' : 'IS';
+            return in_array($operator, ['!=', 'NOT', 'IS NOT'], true) ? 'IS NOT' : 'IS';
         } else if (is_array($value)) {
             // 2.4
             switch ($operator) {
@@ -796,11 +796,17 @@ abstract class DbAdapter implements DbAdapterInterface {
                 case 'NOT':
                 case 'NOT IN':
                     return 'NOT IN';
+                case 'BETWEEN':
+                case 'NOT BETWEEN':
+                    return $operator;
                 default:
                     throw new \InvalidArgumentException(
                         "Condition operator [$operator] does not support list of values"
                     );
             }
+        } else if (!($value instanceof DbExpr) && in_array($operator, ['IN', 'NOT IN'], true)) {
+            // value is not an array and not DbExpr - convert to single-value operator
+            return $operator === 'IN' ? '=' : '!=';
         } else if (in_array($operator, ['NOT', 'IS NOT'], true)) {
             // NOT and IS NOT cannot be used for non-null values and for comparison of single value
             return '!=';
@@ -826,7 +832,9 @@ abstract class DbAdapter implements DbAdapterInterface {
      */
     public function assembleConditionValue($value, $operator) {
         // todo: think about possibility to validate value by means of DbTableScructure objects
-        if (in_array($operator, ['BETWEEN', 'NOT BETWEEN'], true)) {
+        if ($value instanceof DbExpr) {
+            return '(' . $this->replaceDbExprQuotes($value) . ')';
+        } else if (in_array($operator, ['BETWEEN', 'NOT BETWEEN'], true)) {
             // 2.3
             if (!is_array($value)) {
                 throw new \InvalidArgumentException(

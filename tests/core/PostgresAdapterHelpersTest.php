@@ -236,4 +236,108 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
         $this->invokePrivateAdapterMethod('guardReturningArg', false);
         $this->invokePrivateAdapterMethod('guardReturningArg', ['key1', 'key2']);
     }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Condition operator [>=] does not support list of values
+     */
+    public function testInvalidConvertConditionOperator() {
+        $adapter = $this->getValidAdapter();
+        $adapter->convertConditionOperator('>=', [1, 2, 3]);
+    }
+
+    public function testConvertConditionOperatorForNullValue() {
+        $adapter = $this->getValidAdapter();
+
+        $operator = $adapter->convertConditionOperator('=', null);
+        $this->assertEquals('IS', $operator);
+        $operator = $adapter->convertConditionOperator('IS', null);
+        $this->assertEquals('IS', $operator);
+        $operator = $adapter->convertConditionOperator('>=', null);
+        $this->assertEquals('IS', $operator);
+        $operator = $adapter->convertConditionOperator('OPER', null);
+        $this->assertEquals('IS', $operator);
+
+        $operator = $adapter->convertConditionOperator('!=', null);
+        $this->assertEquals('IS NOT', $operator);
+        $operator = $adapter->convertConditionOperator('NOT', null);
+        $this->assertEquals('IS NOT', $operator);
+        $operator = $adapter->convertConditionOperator('IS NOT', null);
+        $this->assertEquals('IS NOT', $operator);
+    }
+
+    public function testConvertConditionOperatorForArrayValue() {
+        $adapter = $this->getValidAdapter();
+
+        $operator = $adapter->convertConditionOperator('=', [1, 2, 3]);
+        $this->assertEquals('IN', $operator);
+        $operator = $adapter->convertConditionOperator('!=', [1, 2, 3]);
+        $this->assertEquals('NOT IN', $operator);
+
+        $operator = $adapter->convertConditionOperator('IN', 1);
+        $this->assertEquals('=', $operator);
+        $operator = $adapter->convertConditionOperator('NOT IN', 1);
+        $this->assertEquals('!=', $operator);
+
+        $operator = $adapter->convertConditionOperator('IN', [1, 2, 3]);
+        $this->assertEquals('IN', $operator);
+        $operator = $adapter->convertConditionOperator('NOT IN', [1, 2, 3]);
+        $this->assertEquals('NOT IN', $operator);
+
+        $operator = $adapter->convertConditionOperator('IN', \PeskyORM\Core\DbExpr::create('SELECT'));
+        $this->assertEquals('IN', $operator);
+        $operator = $adapter->convertConditionOperator('NOT IN', \PeskyORM\Core\DbExpr::create('SELECT'));
+        $this->assertEquals('NOT IN', $operator);
+    }
+
+    public function testConvertConditionOperator() {
+        $adapter = $this->getValidAdapter();
+
+        $operator = $adapter->convertConditionOperator('BETWEEN', [1, 2, 3]);
+        $this->assertEquals('BETWEEN', $operator);
+        $operator = $adapter->convertConditionOperator('NOT BETWEEN', 'oo');
+        $this->assertEquals('NOT BETWEEN', $operator);
+
+        $operator = $adapter->convertConditionOperator('>', 1);
+        $this->assertEquals('>', $operator);
+        $operator = $adapter->convertConditionOperator('<', 'a');
+        $this->assertEquals('<', $operator);
+        $operator = $adapter->convertConditionOperator('CUSTOM', 'qwe');
+        $this->assertEquals('CUSTOM', $operator);
+        $operator = $adapter->convertConditionOperator('LIKE', 'weqwe');
+        $this->assertEquals('LIKE', $operator);
+        $operator = $adapter->convertConditionOperator('NOT LIKE', 'ewqewqe');
+        $this->assertEquals('NOT LIKE', $operator);
+    }
+
+    public function testConvertConditionOperatorForStringComparison() {
+        $adapter = $this->getValidAdapter();
+
+        $operator = $adapter->convertConditionOperator('SIMILAR TO', 'qwe');
+        $this->assertEquals('SIMILAR TO', $operator);
+        $operator = $adapter->convertConditionOperator('NOT SIMILAR TO', 'qwe');
+        $this->assertEquals('NOT SIMILAR TO', $operator);
+
+        $operator = $adapter->convertConditionOperator('REGEXP', 'wqe');
+        $this->assertEquals('~*', $operator);
+        $operator = $adapter->convertConditionOperator('NOT REGEXP', 'ewqe');
+        $this->assertEquals('!~*', $operator);
+
+        $operator = $adapter->convertConditionOperator('REGEX', 'weq');
+        $this->assertEquals('~*', $operator);
+        $operator = $adapter->convertConditionOperator('NOT REGEX', 'qwe');
+        $this->assertEquals('!~*', $operator);
+
+        $operator = $adapter->convertConditionOperator('~', 'ewq');
+        $this->assertEquals('~', $operator);
+        $operator = $adapter->convertConditionOperator('!~', 'ewqe');
+        $this->assertEquals('!~', $operator);
+
+        $operator = $adapter->convertConditionOperator('~*', 'ewqe');
+        $this->assertEquals('~*', $operator);
+        $operator = $adapter->convertConditionOperator('!~*', 'ewqe');
+        $this->assertEquals('!~*', $operator);
+    }
+
+
 }

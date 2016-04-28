@@ -35,6 +35,13 @@ class Postgres extends DbAdapter {
      */
     protected $inTransaction = false;
 
+    static protected $conditionOperatorsMap = [
+        'REGEXP' => '~*',
+        'NOT REGEXP' => '!~*',
+        'REGEX' => '~*',
+        'NOT REGEX' => '!~*',
+    ];
+
     public function __construct(PostgresConfig $connectionConfig) {
         parent::__construct($connectionConfig);
     }
@@ -49,6 +56,10 @@ class Postgres extends DbAdapter {
 
     public function addDataTypeCastToExpression($dataType, $expression) {
         return $expression . '::' . $dataType;
+    }
+
+    public function getConditionOperatorsMap() {
+        return static::$conditionOperatorsMap;
     }
 
     public function inTransaction() {

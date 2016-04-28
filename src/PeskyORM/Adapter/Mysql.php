@@ -37,9 +37,11 @@ class Mysql extends DbAdapter {
         'SIMILAR TO' => 'LIKE',
         'NOT SIMILAR TO' => 'NOT LIKE',
         '~' => 'REGEXP',
-        '!~' => 'REGEXP',
+        '!~' => 'NOT REGEXP',
         '~*' => 'REGEXP',
-        '!~*' => 'REGEXP',
+        '!~*' => 'NOT REGEXP',
+        'REGEX' => 'REGEXP',
+        'NOT REGEX' => 'NOT REGEXP',
     ];
 
     public function __construct(MysqlConfig $connectionConfig) {

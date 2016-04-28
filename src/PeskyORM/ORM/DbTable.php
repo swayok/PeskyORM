@@ -350,9 +350,9 @@ abstract class DbTable implements DbTableInterface {
 
     /**
      * we have next cases:
-     * 1. $value is instance of DbExpr (converted to quoted string), $column - index or field name
+     * 1. $value is instance of DbExpr (converted to quoted string), $column - index
      *
-     * 2. $column and $value are strings
+     * 2. $column is string
      *     (results in 'colname' <operator> 'value')
      * 2.1 $column contains equation sign (for example 'colname >', results in 'colname' > 'value')
      *     Short list of equations:
@@ -361,8 +361,8 @@ abstract class DbTable implements DbTableInterface {
      *     (results in 'colname' IS NULL or 'colname' IS NOT NULL)
      * 2.3 $column contains 'BETWEEN' or 'NOT BETWEEN' and $value is array or string like 'val1 and val2'
      *     (results in 'colname' BETWEEN a and b)
-     * 2.4 $column contains no equation sign or contains '!=' or 'NOT', $value is array
-     *     (results in 'colname' IN (a,b,c))
+     * 2.4 $column contains no equation sign or contains '!=' or 'NOT', $value is array or DbExpr
+     *     (results in 'colname' IN (a,b,c) or 'colname' IN (SELECT '*' FROM ...))
      *
      * 3. $value === array()
      * 3.1. $column !== 'OR' -> recursion: $this->assembleConditions($value))
@@ -385,18 +385,16 @@ abstract class DbTable implements DbTableInterface {
         } else {
             $assembled = [];
             foreach ($conditions as $column => $value) {
-                // 1 - custom expressions
-                if (is_object($value)) {
-                    if ($value instanceof DbExpr) {
-                        $value = static::getConnection()->replaceDbExprQuotes($value);
-                        if (is_numeric($column)) {
-                            $assembled[] = $value;
-                        }
-                    } else {
-                        throw new \InvalidArgumentException(
-                            '$conditions argument may contain objects of class DbExpr only. Other object are forbidden.'
-                        );
-                    }
+                if (is_object($value) && !($value instanceof DbExpr)) {
+                    throw new \InvalidArgumentException(
+                        '$conditions argument may contain objects of class DbExpr only. Other object are forbidden.'
+                    );
+                }
+                $valueIsDbExpr = is_object($value) && ($value instanceof DbExpr);
+                if (is_numeric($column) && $valueIsDbExpr) {
+                    // 1 - custom expressions
+                    $assembled[] = static::getConnection()->replaceDbExprQuotes($value);
+                    continue;
                 } else if (
                     (is_numeric($column) && is_array($value))
                     || in_array(strtolower(trim($column)), ['and', 'or'], true)
