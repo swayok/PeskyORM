@@ -92,7 +92,8 @@ class Db {
                 $this->pdo = new \PDO(
                     $this->dbEngine . ':host=' . $server . (!empty($dbName) ? ';dbname=' . $dbName : ''),
                     $user,
-                    $password
+                    $password,
+                    [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
                 );
                 break;
             case self::SQLITE:
@@ -180,13 +181,16 @@ class Db {
             if (!$this->dontRememberNextQuery) {
                 self::rememberQueryException($index, $exc);
             }
-            $statement = false;
+            throw $this->getDetailedException($query, $exc);
         }
         if (!$this->dontRememberNextQuery) {
             self::rememberQueryStatement($index, $statement, $this->pdo);
         }
         if (empty($statement)) {
-            throw $this->getDetailedException($query);
+            $exc = $this->getDetailedException($query);
+            if ($exc) {
+                throw new $exc;
+            }
         }
         $this->dontRememberNextQuery = false;
         return $statement;
@@ -207,13 +211,16 @@ class Db {
             if (!$this->dontRememberNextQuery) {
                 self::rememberQueryException($index, $exc);
             }
-            $statement = false;
+            throw $this->getDetailedException($query, $exc);
         }
         if (!$this->dontRememberNextQuery) {
             self::rememberQueryStatement($index, $statement, $this->pdo);
         }
         if (empty($statement) && !is_int($statement)) {
-            throw $this->getDetailedException($query);
+            $exc = $this->getDetailedException($query);
+            if ($exc) {
+                throw new $exc;
+            }
         }
         $this->dontRememberNextQuery = false;
         return $statement;
@@ -235,15 +242,24 @@ class Db {
     /**
      * Make detailed exception from last pdo error
      * @param string $query - failed query
+     * @param null|\PDOException $originalException
      * @return \PDOException
      */
-    private function getDetailedException($query) {
+    private function getDetailedException($query, $originalException = null) {
         $errorInfo = $this->pdo->errorInfo();
-        if (preg_match('%syntax error at or near "\$\d+"%is', $errorInfo[2])) {
-            $errorInfo[2] .= "\n NOTE: PeskyORM do not use prepared statements. You possibly used one of Postgresql jsonb opertaors - '?', '?|' or '?&'."
+        $message = $errorInfo[2];
+        if (empty($message)) {
+            if (empty($originalException)) {
+                return null;
+            } else {
+                $message = $originalException->getMessage();
+            }
+        }
+        if (preg_match('%syntax error at or near "\$\d+"%is', $message)) {
+            $message .= "\n NOTE: PeskyORM do not use prepared statements. You possibly used one of Postgresql jsonb opertaors - '?', '?|' or '?&'."
                 . ' You should use alternative functions: jsonb_exists(jsonb, text), jsonb_exists_any(jsonb, text) or jsonb_exists_all(jsonb, text) respectively';
         }
-        return new \PDOException($errorInfo[2] . "<br>\nQuery: " . $query, $errorInfo[1]);
+        return new \PDOException($message . "<br>\nQuery: " . $query, $errorInfo[1]);
     }
 
     /** DEBUG helpers */
