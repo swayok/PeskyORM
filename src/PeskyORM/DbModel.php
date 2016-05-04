@@ -905,7 +905,7 @@ abstract class DbModel {
         );
     }
 
-    protected function cleanOptionsForCount($conditionsAndOptions, $removeNotInnerJoins) {
+    public function cleanOptionsForCount($conditionsAndOptions, $removeNotInnerJoins) {
         if (is_array($conditionsAndOptions)) {
             unset($conditionsAndOptions['ORDER'], $conditionsAndOptions['LIMIT'], $conditionsAndOptions['OFFSET']);
         }
