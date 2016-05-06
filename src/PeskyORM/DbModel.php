@@ -653,7 +653,9 @@ abstract class DbModel {
                 if (!is_array($where['CONTAIN'])) {
                     $where['CONTAIN'] = [$where['CONTAIN']];
                 }
-                $where['JOIN'] = [];
+                if (empty($where['JOIN']) || !is_array($where['JOIN'])) {
+                    $where['JOIN'] = [];
+                }
 
                 foreach ($where['CONTAIN'] as $alias => $fields) {
                     if (is_int($alias)) {
