@@ -84,6 +84,9 @@ class DbQuery {
      * @param string|array $fields
      * @param string|null $tableAlias
      * @return DbQuery
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
      * @throws DbQueryException
      */
     public function fields($fields, $tableAlias = null) {
@@ -201,6 +204,9 @@ class DbQuery {
      * @param string|null $type - type of join: 'inner', 'left', 'right', 'full'. default: 'inner'
      * @param bool|null|array $conditions - additional join conditions
      * @return DbQuery
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\DbModelException
      * @throws DbQueryException
      */
     public function join(DbModel $relatedModel, $relatedAlias, $relatedColumn, $knownTableAlias = null, $knownTableColumn = null,
@@ -254,6 +260,9 @@ class DbQuery {
      * @param string $knownTableColumn - column of 2nd table
      * @param array|string $fields - columns to fetch from $table1
      * @return DbQuery
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
      * @throws DbQueryException
      */
     public function leftJoin(DbModel  $relatedModel, $relatedAlias, $relatedColumn, $knownTableAlias = null, $knownTableColumn = null, $fields = '*') {
@@ -270,6 +279,9 @@ class DbQuery {
      * @param string $knownTableColumn - column of 2nd table
      * @param array|string $fields - columns to fetch from $table1
      * @return DbQuery
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
      * @throws DbQueryException
      */
     public function rightJoin(DbModel  $relatedModel, $relatedAlias, $relatedColumn, $knownTableAlias = null, $knownTableColumn = null, $fields = '*') {
@@ -286,6 +298,9 @@ class DbQuery {
      * @param string $knownTableColumn - column of 2nd table
      * @param array|string $fields - columns to fetch from $table1
      * @return DbQuery
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
      * @throws DbQueryException
      */
     public function fullJoin(DbModel  $relatedModel, $relatedAlias, $relatedColumn, $knownTableAlias = null, $knownTableColumn = null, $fields = '*') {
@@ -340,6 +355,9 @@ class DbQuery {
      *  When ModelAlias omitted - $this->alias is used
      * @param bool $append - true: add $orderBy to existing sorting | false: replace existsing sorting
      * @return DbQuery
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
      * @throws DbQueryException
      */
     public function orderBy($orderBy, $append = true) {
@@ -393,6 +411,9 @@ class DbQuery {
      *      When ModelAlias omitted - $this->alias is used
      * @param bool $append - true: add $orderBy to existing grouping | false: replace existsing grouping
      * @return DbQuery
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
      * @throws DbQueryException
      */
     public function groupBy($columns, $append = true) {
@@ -468,6 +489,9 @@ class DbQuery {
      * Note: if 'CONDITIONS' key not empty - it's value will be used instead of any other conditions placed outside
      * @param array $options
      * @return DbQuery
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
      * @throws DbQueryException
      */
     public function fromOptions($options) {
@@ -545,6 +569,10 @@ class DbQuery {
      *      true: result will look like array(0 => array('RootAlias' => array('column1' => 'value1', ...), 1 => array(...), ...)
      *      false: result will look like array(0 => array('column1' => 'value1', ...), 1 => array(...), ...)
      * @return array of records
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\DbQueryException
      */
     public function find($type = Db::FETCH_ALL, $withRootTableAlias = true) {
         $query = $this->buildQuery($type);
@@ -557,17 +585,21 @@ class DbQuery {
             $this->db->commit();
         }
         // modify $type when it is expression or integer
-        if (!in_array($type, array(DB::FETCH_ALL, DB::FETCH_FIRST, DB::FETCH_COLUMN))) {
-            $type = DB::FETCH_VALUE;
+        if (!in_array($type, array(Db::FETCH_ALL, Db::FETCH_FIRST, Db::FETCH_COLUMN), true)) {
+            $type = Db::FETCH_VALUE;
         }
         return $this->processRecords($statement, $type, $withRootTableAlias);
     }
 
     /**
      * Calculate result of an expression that returns single value
-     * @param string $expression - some expression to fetch. For example: 'COUNT(*)' or '1'
+     * @param string|DbExpr $expression - some expression to fetch. For example: 'COUNT(*)' or '1'
      * @param array $conditionsAndOptions - query conditions and options
      * @return string|int|float|bool
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbQueryException
      */
     public function expression($expression, $conditionsAndOptions = array()) {
         if (!is_object($expression)) {
@@ -583,6 +615,10 @@ class DbQuery {
      *      true: result will look like array(0 => array('RootAlias' => array('column1' => 'value1', ...), 1 => array(...), ...)
      *      false: result will look like array(0 => array('column1' => 'value1', ...), 1 => array(...), ...)
      * @return array
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\DbQueryException
      */
     public function findOne($withRootTableAlias = false) {
         return $this->find(Db::FETCH_FIRST, $withRootTableAlias);
@@ -597,6 +633,10 @@ class DbQuery {
      *      true: return all fields ('*')
      *      false: return nothing
      * @return string
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbQueryException
      */
     protected function buildReturning($returning) {
         if ($returning === false) {
@@ -625,6 +665,8 @@ class DbQuery {
      * @param bool|string $returning - something compatible with RETURNING for postgresql query
      *      http://www.postgresql.org/docs/9.2/static/sql-delete.html
      * @return array|int - int: affected rown when $returning === false or 'RETURNING' statement not supported
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
      * - int: affected rown when $returning === false or 'RETURNING' statement not supported
      * - array: according to $returning
      * @throws DbException
@@ -685,6 +727,10 @@ class DbQuery {
      *      true: return all fields ('*')
      *      false: return nothing
      * @return bool|int|string|array
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbQueryException
      *  - false: failed to insert record
      *  - null: inserted, but no result returned by $returning
      *  - string or int: primary key value of just inserted value
@@ -745,6 +791,9 @@ class DbQuery {
      *      false: return nothing
      *   !!! Warning: not possible for db engines that do not support 'RETURNING' statement
      * @return int|array - int: amount of rows affected | array: list of data provided by RETURNING
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbException
      * @throws DbQueryException
      */
     public function insertMany($fieldNames, $rows, $returning = false) {
@@ -797,6 +846,9 @@ class DbQuery {
      *      false: return nothing
      *   !!! Warning: not possible for db engines that do not support 'RETURNING' statement
      * @return int|array - int: amount of records updated | array: data provided by RETURNING
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbException
      * @throws DbQueryException
      */
     public function update($data, $returning = false) {
@@ -868,6 +920,9 @@ class DbQuery {
      * @param bool $addPkField
      * @param bool $addDefaultOrderBy
      * @return string
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbException
      * @throws DbQueryException
      */
     public function buildQuery($typeOrExpression = DB::FETCH_ALL, $addPkField = true, $addDefaultOrderBy = true) {
@@ -957,6 +1012,8 @@ class DbQuery {
      * @param bool $autoAddPkField - true: add pk field if it is absent
      * @param bool $doNotAddAnyAliases - true: will not add table alias and column alias to fields, leave only plain field_name
      * @return string
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\DbQueryException
      */
     protected function buildFieldsList($autoAddPkField, $doNotAddAnyAliases = false) {
         $allColumns = array();
@@ -1009,7 +1066,7 @@ class DbQuery {
      *  1. If $tableAlias is unknown - throws exception
      *  2. If $model is unknown - throws exception
      *  3. If $colName is unknown - throws exception
-     * @param string $colName:
+     * @param string $colName :
      *  1. 'column1' => array(
      *    'tableAlias' => $this->alias,
      *    'colName' => 'column1',
@@ -1036,6 +1093,9 @@ class DbQuery {
      *  )
      * @param string|null $tableAlias - used if column contains no table alias and does not belong to $this->table
      * @return array = array(
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
      *    'tableAlias' => $tableAlias,
      *    'colName' => $colName,
      *    'table' => $table,
@@ -1105,6 +1165,7 @@ class DbQuery {
      *  3. DbExpr object - converted to string
      * @param bool $recursion - true: means that this method called itself. This will restrict 3rd level recursion
      * @return string
+     * @throws \PeskyORM\Exception\DbException
      * @throws DbQueryException
      */
     public function quoteName($name, $recursion = false) {
@@ -1169,6 +1230,9 @@ class DbQuery {
      * @param null|string|array $conditions
      * @param null|string|array $glue - 'AND' | 'OR'
      * @return string
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
      * @throws DbQueryException
      */
     public function assembleConditions($conditions = null, $glue = 'AND') {
@@ -1326,6 +1390,7 @@ class DbQuery {
      *      true: result will look like array(0 => array('RootAlias' => array('column1' => 'value1', ...), 1 => array(...), ...)
      *      false: result will look like array(0 => array('column1' => 'value1', ...), 1 => array(...), ...)
      * @return array[]|array|mixed
+     * @throws \PeskyORM\Exception\DbException
      */
     protected function processRecords(\PDOStatement $statement, $type = Db::FETCH_ALL, $withRootTableAlias = true) {
         $type = strtolower($type);

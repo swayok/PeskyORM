@@ -163,6 +163,7 @@ abstract class DbModel {
 
     /**
      * @return DbRelationConfig[]
+     * @throws \PeskyORM\Exception\DbModelException
      */
     public function getTableRealtaions() {
         return $this->getTableConfig()->getRelations();
@@ -189,6 +190,7 @@ abstract class DbModel {
 
     /**
      * @return DbColumnConfig[]
+     * @throws \PeskyORM\Exception\DbModelException
      */
     public function getTableColumns() {
         return $this->getTableConfig()->getColumns();
@@ -362,6 +364,8 @@ abstract class DbModel {
      * Get related model by relation alias
      * @param string $relationAlias
      * @return DbModel
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbUtilsException
      * @throws DbModelException
      */
     public function getRelatedModel($relationAlias) {
@@ -379,6 +383,8 @@ abstract class DbModel {
     /**
      * @param DbRelationConfig $relation
      * @return DbObject
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbUtilsException
      * @throws DbModelException
      */
     public function getRelatedObject($relationAlias) {
@@ -388,6 +394,8 @@ abstract class DbModel {
     /**
      * @param $relationAlias
      * @return mixed
+     * @throws \PeskyORM\Exception\DbUtilsException
+     * @throws \PeskyORM\Exception\DbTableConfigException
      * @throws DbModelException
      */
     public function getRelatedObjectClass($relationAlias) {
@@ -532,6 +540,7 @@ abstract class DbModel {
     /**
      * Collect real DB fields excluding virtual fields like files and images
      * @return array
+     * @throws \PeskyORM\Exception\DbModelException
      */
     public function getDbFields() {
         $ret = [];
@@ -553,6 +562,7 @@ abstract class DbModel {
 
     /**
      * @return string
+     * @throws \PeskyORM\Exception\DbModelException
      */
     public function getConnectionAlias() {
         return $this->getTableConfig()->getConnectionAlias();
@@ -562,6 +572,7 @@ abstract class DbModel {
      * Get data source object
      * @param string $alias
      * @return Db
+     * @throws \PeskyORM\Exception\DbUtilsException
      * @throws DbModelException
      * @throws \PeskyORM\Exception\DbConnectionConfigException
      */
@@ -597,6 +608,7 @@ abstract class DbModel {
     /**
      * @param string $alias
      * @return bool
+     * @throws \PeskyORM\Exception\DbModelException
      */
     public function hasConnectionToDataSource($alias = null) {
         if (empty($alias) && $this->hasTableConfig()) {
@@ -610,6 +622,7 @@ abstract class DbModel {
      * @param array $records
      * @param bool $dataIsLoadedFromDb
      * @return array
+     * @throws \PeskyORM\Exception\DbUtilsException
      */
     public function recordsToObjects($records, $dataIsLoadedFromDb = false) {
         if (is_array($records) && !empty($records)) {
@@ -630,6 +643,8 @@ abstract class DbModel {
      * Build valid 'JOIN' settings from 'CONTAIN' table aliases
      * @param array $where
      * @return mixed $where
+     * @throws \PeskyORM\Exception\DbUtilsException
+     * @throws \PeskyORM\Exception\DbTableConfigException
      * @throws DbModelException
      */
     public function resolveContains($where) {
@@ -698,6 +713,9 @@ abstract class DbModel {
      * @param mixed $columns
      * @param mixed $options
      * @return array|mixed
+     * @throws \PeskyORM\Exception\DbUtilsException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
      */
     protected function prepareSelect($columns, $options) {
         if (!is_array($options)) {
@@ -732,6 +750,10 @@ abstract class DbModel {
      * @param bool $asObjects - true: return DbObject | false: return array
      * @param bool $withRootAlias
      * @return array|DbObject[]
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbUtilsException
+     * @throws \PeskyORM\Exception\DbQueryException
      */
     public function select($columns = '*', $conditionsAndOptions = null, $asObjects = false, $withRootAlias = false) {
         $records = $this->builder()
@@ -748,10 +770,15 @@ abstract class DbModel {
      * @param string $column
      * @param null|array|string $conditionsAndOptions
      * @return array
+     * @throws \PeskyORM\Exception\DbUtilsException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbQueryException
      */
     public function selectColumn($column, $conditionsAndOptions = null) {
-        $records = $this->select(['value' => $column], $conditionsAndOptions, false, false);
-        return Set::extract('/value', $records);
+        return $this->builder()
+            ->fromOptions($this->prepareSelect(['value' => $column], $conditionsAndOptions))
+            ->find(Db::FETCH_COLUMN);
     }
 
     /**
@@ -761,6 +788,10 @@ abstract class DbModel {
      * @param string $valuesColumn
      * @param null|array|string $conditionsAndOptions
      * @return array
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbUtilsException
+     * @throws \PeskyORM\Exception\DbQueryException
      */
     public function selectAssoc($keysColumn, $valuesColumn, $conditionsAndOptions = null) {
         $records = $this->select(['key' => $keysColumn, 'value' => $valuesColumn], $conditionsAndOptions, false, false);
@@ -777,6 +808,10 @@ abstract class DbModel {
      * @param null|array $conditionsAndOptions
      * @param bool $asObjects - true: return DbObject | false: return array
      * @return array - 'count' => int, 'records' => array)
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbQueryException
+     * @throws \PeskyORM\Exception\DbUtilsException
      */
     public function selectWithCount($columns, $conditionsAndOptions = null, $asObjects = false) {
         $conditionsAndOptions = $this->prepareSelect($columns, $conditionsAndOptions);
@@ -803,6 +838,8 @@ abstract class DbModel {
      * @param bool $asObject - true: return DbObject | false: return array
      * @param bool $withRootAlias
      * @return array|bool|DbObject
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbUtilsException
      * @throws DbModelException
      * @throws \PeskyORM\Exception\DbQueryException
      */
@@ -865,6 +902,7 @@ abstract class DbModel {
      *      true: return all fields ('*')
      *      false: return nothing
      * @return int|array
+     * @throws \PeskyORM\Exception\DbQueryException
      */
     public function update($data, $conditionsAndOptions = null, $returning = false) {
         if (is_numeric($conditionsAndOptions) || is_int($conditionsAndOptions)) {
@@ -878,6 +916,8 @@ abstract class DbModel {
      * @param array|string|null $conditionsAndOptions
      * @param bool|string $returning - expression
      * @return int|array - PDOStatement returned only when $returning specified
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\DbQueryException
      */
     public function delete($conditionsAndOptions = null, $returning = false) {
         return $this->builder()->fromOptions($conditionsAndOptions)->delete($returning);
@@ -888,6 +928,9 @@ abstract class DbModel {
      * @param string $expression - example: 'COUNT(*)', 'SUM(`field`)'
      * @param array|string|null $conditionsAndOptions
      * @return string|int|float|bool
+     * @throws \PeskyORM\Exception\DbUtilsException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbModelException
      */
     public function expression($expression, $conditionsAndOptions = null) {
         return $this->builder()->expression($expression, $this->resolveContains($conditionsAndOptions));
@@ -970,6 +1013,9 @@ abstract class DbModel {
     /**
      * @param string $expression
      * @return string
+     * @throws \PeskyORM\Exception\DbUtilsException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbConnectionConfigException
      */
     public function replaceQuotes($expression) {
         return $this->getDataSource()->replaceQuotes($expression);
