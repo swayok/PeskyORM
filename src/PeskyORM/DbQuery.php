@@ -925,7 +925,7 @@ class DbQuery {
      * @throws \PeskyORM\Exception\DbException
      * @throws DbQueryException
      */
-    public function buildQuery($typeOrExpression = DB::FETCH_ALL, $addPkField = true, $addDefaultOrderBy = true) {
+    public function buildQuery($typeOrExpression = Db::FETCH_ALL, $addPkField = true, $addDefaultOrderBy = true) {
         if (is_string($typeOrExpression)) {
             $typeOrExpression = strtolower($typeOrExpression);
         }
@@ -937,8 +937,8 @@ class DbQuery {
             $this->query .= 'DISTINCT ';
         }
         // fields
-        if (in_array($typeOrExpression, array(DB::FETCH_ALL, DB::FETCH_FIRST, DB::FETCH_COLUMN, DB::FETCH_VALUE))) {
-            if ($typeOrExpression === DB::FETCH_VALUE) {
+        if (in_array($typeOrExpression, array(Db::FETCH_ALL, Db::FETCH_FIRST, Db::FETCH_COLUMN, Db::FETCH_VALUE))) {
+            if ($typeOrExpression === Db::FETCH_VALUE || $typeOrExpression === Db::FETCH_COLUMN) {
                 $autoAddPkField = false;
             }
             if (empty($this->fields)) {

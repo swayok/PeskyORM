@@ -752,6 +752,7 @@ abstract class DbModel {
      * @param bool $asObjects - true: return DbObject | false: return array
      * @param bool $withRootAlias
      * @return array|DbObject[]
+     * @throws \PeskyORM\Exception\DbException
      * @throws \PeskyORM\Exception\DbTableConfigException
      * @throws \PeskyORM\Exception\DbModelException
      * @throws \PeskyORM\Exception\DbUtilsException
@@ -772,6 +773,7 @@ abstract class DbModel {
      * @param string $column
      * @param null|array|string $conditionsAndOptions
      * @return array
+     * @throws \PeskyORM\Exception\DbException
      * @throws \PeskyORM\Exception\DbUtilsException
      * @throws \PeskyORM\Exception\DbTableConfigException
      * @throws \PeskyORM\Exception\DbModelException
@@ -840,6 +842,7 @@ abstract class DbModel {
      * @param bool $asObject - true: return DbObject | false: return array
      * @param bool $withRootAlias
      * @return array|bool|DbObject
+     * @throws \PeskyORM\Exception\DbException
      * @throws \PeskyORM\Exception\DbTableConfigException
      * @throws \PeskyORM\Exception\DbUtilsException
      * @throws DbModelException
@@ -874,6 +877,10 @@ abstract class DbModel {
      *      true: return all fields ('*')
      *      false: return nothing
      * @return bool|int|string|array - false: failed to insert record | string and int: primary key value of just inserted value
+     * @throws \PeskyORM\Exception\DbQueryException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbException
      */
     public function insert($data, $returning = null) {
         return $this->builder()->insert($data, $returning);
@@ -885,6 +892,9 @@ abstract class DbModel {
      * @param array[] $rows - arrays of values for $fieldNames
      * @param bool|string $returning - string: something compatible with RETURNING for postgresql query | false: do not return
      * @return int|array - int: amount of rows created | array: records (when $returning !== false)
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbException
      * @throws DbQueryException
      */
     public function insertMany($fieldNames, $rows, $returning = false) {
@@ -904,6 +914,9 @@ abstract class DbModel {
      *      true: return all fields ('*')
      *      false: return nothing
      * @return int|array
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \PeskyORM\Exception\DbQueryException
      */
     public function update($data, $conditionsAndOptions = null, $returning = false) {
@@ -918,6 +931,8 @@ abstract class DbModel {
      * @param array|string|null $conditionsAndOptions
      * @param bool|string $returning - expression
      * @return int|array - PDOStatement returned only when $returning specified
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbTableConfigException
      * @throws \PeskyORM\Exception\DbException
      * @throws \PeskyORM\Exception\DbQueryException
      */
@@ -930,6 +945,8 @@ abstract class DbModel {
      * @param string $expression - example: 'COUNT(*)', 'SUM(`field`)'
      * @param array|string|null $conditionsAndOptions
      * @return string|int|float|bool
+     * @throws \PeskyORM\Exception\DbQueryException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \PeskyORM\Exception\DbUtilsException
      * @throws \PeskyORM\Exception\DbTableConfigException
      * @throws \PeskyORM\Exception\DbModelException
