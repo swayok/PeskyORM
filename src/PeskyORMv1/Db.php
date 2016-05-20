@@ -16,6 +16,11 @@ class Db {
     const PGSQL_TRANSACTION_TYPE_SERIALIZABLE = 'SERIALIZABLE';
     const PGSQL_TRANSACTION_TYPE_DEFAULT = self::PGSQL_TRANSACTION_TYPE_READ_COMMITTED;
 
+    const FETCH_ALL = 'all';
+    const FETCH_FIRST = 'first';
+    const FETCH_VALUE = 'value';
+    const FETCH_COLUMN = 'column';
+
     static public $transactionTypes = array(
         self::PGSQL => array(
             self::PGSQL_TRANSACTION_TYPE_READ_COMMITTED,
@@ -58,8 +63,8 @@ class Db {
     public $hasReturning;
     /** @var \PDO $pdo */
     public $pdo;
-    /** @var null|string $lastQuery */
-    protected $lastQuery = null;
+    /** @var null|string $queryString */
+    protected $queryString = null;
 
     /** @var bool|callable */
     static public $collectAllQueries = false;
@@ -87,7 +92,8 @@ class Db {
                 $this->pdo = new \PDO(
                     $this->dbEngine . ':host=' . $server . (!empty($dbName) ? ';dbname=' . $dbName : ''),
                     $user,
-                    $password
+                    $password,
+                    [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
                 );
                 break;
             case self::SQLITE:
@@ -118,6 +124,14 @@ class Db {
         if (is_callable(self::$connectionWrapper)) {
             $this->pdo = call_user_func_array(self::$connectionWrapper, [$this, $this->pdo]);
         }
+    }
+
+    /**
+     * Run $callback() when connection established (actually it is already established)
+     * @param \Closure $callback
+     */
+    public function onConnect(\Closure $callback) {
+        $callback($this);
     }
 
     public function disconnect() {
@@ -158,7 +172,7 @@ class Db {
             $query = self::replaceQuotes($query->get());
         }
         if (!$this->dontRememberNextQuery) {
-            $this->lastQuery = $query;
+            $this->queryString = $query;
             $index = self::rememberQuery($query);
         }
         try {
@@ -167,13 +181,16 @@ class Db {
             if (!$this->dontRememberNextQuery) {
                 self::rememberQueryException($index, $exc);
             }
-            $statement = false;
+            throw $this->getDetailedException($query, $exc);
         }
         if (!$this->dontRememberNextQuery) {
             self::rememberQueryStatement($index, $statement, $this->pdo);
         }
         if (empty($statement)) {
-            throw $this->getDetailedException($query);
+            $exc = $this->getDetailedException($query);
+            if ($exc) {
+                throw new $exc;
+            }
         }
         $this->dontRememberNextQuery = false;
         return $statement;
@@ -185,7 +202,7 @@ class Db {
             $query = self::replaceQuotes($query->get());
         }
         if (!$this->dontRememberNextQuery) {
-            $this->lastQuery = $query;
+            $this->queryString = $query;
             $index = self::rememberQuery($query);
         }
         try {
@@ -194,30 +211,55 @@ class Db {
             if (!$this->dontRememberNextQuery) {
                 self::rememberQueryException($index, $exc);
             }
-            $statement = false;
+            throw $this->getDetailedException($query, $exc);
         }
         if (!$this->dontRememberNextQuery) {
             self::rememberQueryStatement($index, $statement, $this->pdo);
         }
         if (empty($statement) && !is_int($statement)) {
-            throw $this->getDetailedException($query);
+            $exc = $this->getDetailedException($query);
+            if ($exc) {
+                throw new $exc;
+            }
         }
         $this->dontRememberNextQuery = false;
         return $statement;
     }
 
     /**
+     * Set timezone for current connection
+     * @param string $timezone
+     * @return bool|int
+     * @throws DbException
+     */
+    public function setTimezone($timezone) {
+        if ($this->dbEngine === self::PGSQL) {
+            return $this->exec(DbExpr::create("SET SESSION TIME ZONE ``$timezone``"));
+        }
+        throw new DbException($this, "setTimezone() is not supported by {$this->dbEngine} DB engine");
+    }
+
+    /**
      * Make detailed exception from last pdo error
      * @param string $query - failed query
+     * @param null|\PDOException $originalException
      * @return \PDOException
      */
-    private function getDetailedException($query) {
+    private function getDetailedException($query, $originalException = null) {
         $errorInfo = $this->pdo->errorInfo();
-        if (preg_match('%syntax error at or near "\$\d+"%is', $errorInfo[2])) {
-            $errorInfo[2] .= "\n NOTE: PeskyORM do not use prepared statements. You possibly used one of Postgresql jsonb opertaors - '?', '?|' or '?&'."
+        $message = $errorInfo[2];
+        if (empty($message)) {
+            if (empty($originalException)) {
+                return null;
+            } else {
+                $message = $originalException->getMessage();
+            }
+        }
+        if (preg_match('%syntax error at or near "\$\d+"%is', $message)) {
+            $message .= "\n NOTE: PeskyORM do not use prepared statements. You possibly used one of Postgresql jsonb opertaors - '?', '?|' or '?&'."
                 . ' You should use alternative functions: jsonb_exists(jsonb, text), jsonb_exists_any(jsonb, text) or jsonb_exists_all(jsonb, text) respectively';
         }
-        return new \PDOException($errorInfo[2] . "<br>\nQuery: " . $query, $errorInfo[1]);
+        return new \PDOException($message . "<br>\nQuery: " . $query, $errorInfo[1]);
     }
 
     /** DEBUG helpers */
@@ -275,7 +317,7 @@ class Db {
     }
 
     public function lastQuery() {
-        return $this->lastQuery;
+        return $this->queryString;
     }
 
     static public function getAllQueries() {
@@ -409,6 +451,38 @@ class Db {
      */
     public function serializeArray($array) {
         return json_decode($array);
+    }
+
+    /**
+     * Get all records as arrays
+     * @param \PDOStatement $statement
+     * @param string $type = 'first', 'all', 'value', 'column'
+     * @return array|string
+     * @throws DbException
+     */
+    static public function processRecords(\PDOStatement $statement, $type = self::FETCH_ALL) {
+        $type = strtolower($type);
+        if (!in_array($type, array(self::FETCH_COLUMN, self::FETCH_ALL, self::FETCH_FIRST, self::FETCH_VALUE))) {
+            throw new DbException(null, "Unknown processing type [{$type}]");
+        }
+        if ($statement && $statement->rowCount() > 0) {
+            switch ($type) {
+                case self::FETCH_COLUMN:
+                    $records = $statement->fetchAll(\PDO::FETCH_COLUMN);
+                    return $records;
+                case self::FETCH_VALUE:
+                    return $statement->fetchColumn();
+                case self::FETCH_FIRST:
+                    return $statement->fetch(\PDO::FETCH_ASSOC);
+                case self::FETCH_ALL:
+                default:
+                    return $statement->fetchAll(\PDO::FETCH_ASSOC);
+            }
+        } else if (in_array($type, array(self::FETCH_COLUMN, self::FETCH_ALL, self::FETCH_FIRST))) {
+            return array();
+        } else {
+            return null;
+        }
     }
 
 }

@@ -1890,6 +1890,7 @@ class DbObject {
     /**
      * @param null|string|array $relations
      * @param bool $forceRelationsRead
+     * @param bool $withImages
      * @return array
      * @throws DbObjectException
      */
@@ -1912,7 +1913,6 @@ class DbObject {
             if (!$this->_hasRelation($relationAlias)) {
                 throw new DbObjectException($this, "Unknown relation with alias [$relationAlias]");
             }
-            $return[$relationAlias] = array();
             if ($forceRelationsRead) {
                 $this->_findRelatedObject($relationAlias); //< read relation data
             }
