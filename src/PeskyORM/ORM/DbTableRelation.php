@@ -2,7 +2,7 @@
 
 namespace PeskyORM\ORM;
 
-class DbRelationConfig {
+class DbTableRelation {
 
     const HAS_ONE = DbJoinConfig::HAS_ONE;
     const HAS_MANY = DbJoinConfig::HAS_MANY;
@@ -13,10 +13,10 @@ class DbRelationConfig {
     const JOIN_INNER = DbJoinConfig::JOIN_INNER;
 
     /** @var DbTableStructure */
-    protected $localTableSchema;
+    protected $localTableStructure;
 
     /** @var string */
-    protected $id;
+    protected $name;
     /** @var string */
     protected $type;
     /** @var  */
@@ -35,59 +35,59 @@ class DbRelationConfig {
     protected $foreignColumn;
 
     /** @var string */
-    protected $displayField;
+    protected $displayColumnName;
 
     /** @var array */
     protected $additionalJoinConditions = [];
 
     /**
-     * @param DbTableStructure $localTableSchema
+     * @param DbTableStructure $localTableStructure
      * @param string $localColumn
      * @param string $type
      * @param string $foreignTableName
      * @param string $foreignColumn
-     * @return DbRelationConfig
+     * @return DbTableRelation
      */
     static public function create(
-        DbTableStructure $localTableSchema,
+        DbTableStructure $localTableStructure,
         $localColumn,
         $type,
         $foreignTableName,
         $foreignColumn
     ) {
-        return new DbRelationConfig($localTableSchema, $localColumn, $type, $foreignTableName, $foreignColumn);
+        return new DbTableRelation($localTableStructure, $localColumn, $type, $foreignTableName, $foreignColumn);
     }
 
     /**
-     * @param DbTableStructure $localTableSchema
+     * @param DbTableStructure $localTableStructure
      * @param string $localColumn
      * @param string $type
      * @param string $foreignTableName
      * @param string $foreignColumn
-     * @return DbRelationConfig
+     * @return DbTableRelation
      */
     public function __construct(
-        DbTableStructure $localTableSchema,
+        DbTableStructure $localTableStructure,
         $localColumn,
         $type,
         $foreignTableName,
         $foreignColumn
     ) {
-        $this->localTableSchema = $localTableSchema;
-        $this->localTableName = $localTableSchema->getName();
+        $this->localTableStructure = $localTableStructure;
+        $this->localTableName = $localTableStructure->getName();
         $this->localColumn = $localColumn;
         $this->type = $type;
         $this->foreignTableName = $foreignTableName;
         $this->foreignColumn = $foreignColumn;
-        $this->displayField = $localColumn;
-        $this->id = "{$this->localTableName}.{$this->localColumn} {$this->type} {$this->foreignTableName}.{$this->foreignColumn}";
+        $this->displayColumnName = $localColumn;
+        $this->name = "{$this->localTableName}.{$this->localColumn} {$this->type} {$this->foreignTableName}.{$this->foreignColumn}";
     }
 
     /**
      * @return string
      */
-    public function getId() {
-        return $this->id;
+    public function getName() {
+        return $this->name;
     }
 
     /**
@@ -111,15 +111,6 @@ class DbRelationConfig {
      */
     public function getLocalTableName() {
         return $this->localTableName;
-    }
-
-    /**
-     * @param string $localTableName
-     * @return $this
-     */
-    public function setLocalTableName($localTableName) {
-        $this->localTableName = $localTableName;
-        return $this;
     }
 
     /**
@@ -199,23 +190,23 @@ class DbRelationConfig {
     /**
      * @return DbTableStructure
      */
-    public function getDbTableSchema() {
-        return $this->localTableSchema;
+    public function getDbTableStructure() {
+        return $this->localTableStructure;
     }
 
     /**
      * @return string
      */
-    public function getDisplayField() {
-        return $this->displayField;
+    public function getDisplayColumnName() {
+        return $this->displayColumnName;
     }
 
     /**
-     * @param string $displayField
+     * @param string $columnName
      * @return $this
      */
-    public function setDisplayField($displayField) {
-        $this->displayField = $displayField;
+    public function setDisplayColumnName($columnName) {
+        $this->displayColumnName = $columnName;
         return $this;
     }
 

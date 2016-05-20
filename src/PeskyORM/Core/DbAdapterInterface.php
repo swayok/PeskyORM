@@ -187,5 +187,90 @@ interface DbAdapterInterface {
      * @return string - something like 'expression::datatype' or 'CAST(expression AS datatype)'
      */
     public function addDataTypeCastToExpression($dataType, $expression);
-    
+
+    /**
+     * Select many records form DB by compiling simple query from passed parameters.
+     * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
+     * @param string $table
+     * @param array $columns - empty array means "all columns" (SELECT *), must contain only strings and DbExpr objects
+     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @return array
+     * @throws \PDOException
+     * @throws \PeskyORM\Core\DbException
+     * @throws \InvalidArgumentException
+     */
+    public function select($table, array $columns = [], $conditionsAndOptions = null);
+
+    /**
+     * Select many records form DB by compiling simple query from passed parameters returning an array with values for
+     * specified $column.
+     * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
+     * @param string $table
+     * @param string|DbExpr $column
+     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @return array
+     * @throws \PDOException
+     * @throws \PeskyORM\Core\DbException
+     * @throws \InvalidArgumentException
+     */
+    public function selectColumn($table, $column, $conditionsAndOptions = null);
+
+    /**
+     * Select many records form DB by compiling simple query from passed parameters returning an associative array.
+     * The query is something like: "SELECT $keysColumn, $valuesColumn FROM $table $conditionsAndOptions"
+     * @param string $table
+     * @param string $keysColumn
+     * @param string $valuesColumn
+     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @return array
+     * @throws \PDOException
+     * @throws \PeskyORM\Core\DbException
+     * @throws \InvalidArgumentException
+     */
+    public function selectAssoc($table, $keysColumn, $valuesColumn, $conditionsAndOptions = null);
+
+    /**
+     * Select first matching record form DB by compiling simple query from passed parameters.
+     * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
+     * @param string $table
+     * @param array $columns - empty array means "all columns" (SELECT *), must contain only strings and DbExpr objects
+     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @return array
+     * @throws \PDOException
+     * @throws \PeskyORM\Core\DbException
+     * @throws \InvalidArgumentException
+     */
+    public function selectOne($table, array $columns = [], $conditionsAndOptions = null);
+
+    /**
+     * Select a value form DB by compiling simple query from passed parameters.
+     * The query is something like: "SELECT $expression FROM $table $conditionsAndOptions"
+     * @param string $table
+     * @param DbExpr $expression - something like "COUNT(*)" or anything else
+     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @return array
+     * @throws \PDOException
+     * @throws \PeskyORM\Core\DbException
+     * @throws \InvalidArgumentException
+     */
+    public function selectValue($table, DbExpr $expression, $conditionsAndOptions = null);
+
+    /**
+     * Make a simple SELECT query from passed parameters
+     * @param string $table
+     * @param array $columns - empty array means "all columns" (SELECT *), must contain only strings and DbExpr objects
+     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @return string - something like: "SELECT $columns FROM $table $conditionsAndOptions"
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    public function makeSelectQuery($table, array $columns = [], $conditionsAndOptions = null);
+
+    /**
+     * Get table description from DB
+     * @param string $table
+     * @return array
+     */
+    public function describeTable($table);
+
 }

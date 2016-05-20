@@ -61,7 +61,7 @@ class DbSelect {
      */
     public function parseArray(array $conditionsAndOptions) {
         $conditionsAndOptions = $this->prepareSelect($conditionsAndOptions);
-
+        // todo: config query from $conditionsAndOptions (don't forget about 'FIELDS' key)
         return $this;
     }
 
@@ -81,11 +81,18 @@ class DbSelect {
     }
 
     /**
-     * @return DbRecordsSet
-     * @throws \InvalidArgumentException
+     * @return array
      */
     public function fetchMany() {
-        return DbRecordsSet::create($this);
+        return $this->_fetch(Utils::FETCH_ALL);
+    }
+
+    /**
+     * @return array
+     */
+    public function fetchNextPage() {
+        // todo: analyze LIMIT and OFFSET and update OFFSET to fetch next pack of data
+        return $this->_fetch(Utils::FETCH_ALL);
     }
 
     /**
@@ -205,7 +212,7 @@ class DbSelect {
                         $columns = !empty($relation['fields']) ? $relation['fields'] : '*';
                     }
                     $relationConfig = $this->getTableRealtaion($alias);
-                    if ($relationConfig->getType() === DbRelationConfig::HAS_MANY) {
+                    if ($relationConfig->getType() === DbTableRelation::HAS_MANY) {
                         throw new DbModelException($this, "Queries with one-to-many joins are not allowed via 'CONTAIN' key");
                     } else {
                         $model = $this->getRelatedModel($alias);
@@ -254,11 +261,10 @@ class DbSelect {
 
     /**
      * Add columns into options and resolve contains
-     * @param mixed $columns
      * @param mixed $options
      * @return array|mixed
      */
-    protected function prepareSelect($columns, $options) {
+    protected function prepareSelect($options) {
         if (!is_array($options)) {
             if (!empty($options) && is_string($options)) {
                 $options = [$options];
@@ -267,9 +273,6 @@ class DbSelect {
             }
         } else {
             $options = $this->resolveContains($options);
-        }
-        if (!empty($columns)) {
-            $options['FIELDS'] = $columns;
         }
         return $options;
     }

@@ -147,4 +147,12 @@ class Postgres extends DbAdapter {
     }
 
 
+    /**
+     * Get table description from DB
+     * @param string $table
+     * @return array
+     */
+    public function describeTable($table) {
+        // todo: implement describeTable
+    }
 }

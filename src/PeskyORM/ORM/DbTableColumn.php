@@ -45,7 +45,7 @@ class DbTableColumn {
      * If value is NULL then type is virtual and has no representation in DB
      * @var array
      */
-    static protected $typeToDbType = array(
+    static protected $typeToDbType = [
         self::TYPE_INT => self::DB_TYPE_INT,
         self::TYPE_FLOAT => self::DB_TYPE_FLOAT,
         self::TYPE_BOOL => self::DB_TYPE_BOOL,
@@ -65,7 +65,7 @@ class DbTableColumn {
         self::TYPE_IPV4_ADDRESS => self::DB_TYPE_IP_ADDRESS,
         self::TYPE_FILE => null,
         self::TYPE_IMAGE => null,
-    );
+    ];
 
     /**
      * Contains map where keys are column types and values are names of classes that extend DbObjectField class
@@ -76,9 +76,7 @@ class DbTableColumn {
      * Namespace for hardcoded types provided in argument of method DbTableColumn->getClassName()
      * @var array
      */
-    static protected $typeToDbObjectFieldClass = array(
-
-    );
+    static protected $typeToDbObjectFieldClass = [];
 
     const DEFAULT_VALUE_NOT_SET = '___NOT_SET___';
 
@@ -89,7 +87,7 @@ class DbTableColumn {
 
     // params that can be set directly or calculated
     /** @var DbTableStructure */
-    protected $dbTableConfig;
+    protected $tableStructure;
     /** @var string */
     protected $name;
     /** @var string */
@@ -151,7 +149,7 @@ class DbTableColumn {
      * @var int
      */
     protected $isExcluded = self::ON_NONE;
-    /** @var DbRelationConfig[] */
+    /** @var DbTableRelation[] */
     protected $relations = array();
 
     // calculated params (not allowed to be set directly)
@@ -232,18 +230,18 @@ class DbTableColumn {
     }
 
     /**
-     * @return DbTableConfig
+     * @return DbTableStructure
      */
-    public function getDbTableConfig() {
-        return $this->dbTableConfig;
+    public function getTableStructure() {
+        return $this->tableStructure;
     }
 
     /**
-     * @param DbTableConfig $dbTableConfig
+     * @param DbTableStructure $tableStructure
      * @return $this
      */
-    public function setDbTableConfig(DbTableConfig $dbTableConfig) {
-        $this->dbTableConfig = $dbTableConfig;
+    public function setTableStructure(DbTableStructure $tableStructure) {
+        $this->tableStructure = $tableStructure;
         return $this;
     }
 
@@ -628,7 +626,7 @@ class DbTableColumn {
      * @throws DbColumnConfigException
      */
     public function importVirtualColumnValueFrom() {
-        if (!empty($this->importVirtualColumnValueFrom) && !$this->dbTableConfig->hasColumn($this->importVirtualColumnValueFrom)) {
+        if (!empty($this->importVirtualColumnValueFrom) && !$this->tableStructure->hasColumn($this->importVirtualColumnValueFrom)) {
             throw new DbColumnConfigException($this, "Column [{$this->importVirtualColumnValueFrom}] is not defined");
         }
         return $this->importVirtualColumnValueFrom;
@@ -643,7 +641,7 @@ class DbTableColumn {
         if (!is_string($columnName)) {
             throw new DbColumnConfigException($this, "Argument \$columnName in setImportVirtualColumnValueFrom() must be a string. Passed value: [{$columnName}]");
         }
-        if (!empty($this->dbTableConfig) && !$this->dbTableConfig->hasColumn($columnName)) {
+        if (!empty($this->tableStructure) && !$this->tableStructure->hasColumn($columnName)) {
             throw new DbColumnConfigException($this, "Column [{$columnName}] is not defined");
         }
         $this->importVirtualColumnValueFrom = $columnName;
@@ -712,7 +710,7 @@ class DbTableColumn {
     }
 
     /**
-     * @return DbRelationConfig[]
+     * @return DbTableRelation[]
      */
     public function getRelations() {
         return $this->relations;
@@ -720,7 +718,7 @@ class DbTableColumn {
 
     /**
      * @param string $relationName
-     * @return DbRelationConfig
+     * @return DbTableRelation
      * @throws DbColumnConfigException
      */
     public function getRelation($relationName) {
@@ -731,23 +729,23 @@ class DbTableColumn {
     }
 
     /**
-     * @param DbRelationConfig $relation
+     * @param DbTableRelation $relation
      * @param null $relationAlias
      * @return $this
      * @throws DbColumnConfigException
      */
-    public function addRelation(DbRelationConfig $relation, $relationAlias = null) {
+    public function addRelation(DbTableRelation $relation, $relationAlias = null) {
         if ($relation->getLocalColumn() !== $this->name && $relation->getForeignColumn() !== $this->name) {
-            throw new DbColumnConfigException($this, "Relation {$relation->getId()} is not connected to column {$this->name}");
+            throw new DbColumnConfigException($this, "Relation {$relation->getName()} is not connected to column {$this->name}");
         }
         if (empty($relationAlias)) {
-            $relationAlias = $relation->getId();
+            $relationAlias = $relation->getName();
         }
-        if (!empty($this->relations[$relation->getId()])) {
+        if (!empty($this->relations[$relation->getName()])) {
             throw new DbColumnConfigException($this, "Relation {$relationAlias} already defined");
         }
         $this->relations[$relationAlias] = $relation;
-        if ($relation->getType() === DbRelationConfig::BELONGS_TO) {
+        if ($relation->getType() === DbTableRelation::BELONGS_TO) {
             $this->setIsFk(true);
         }
         return $this;
