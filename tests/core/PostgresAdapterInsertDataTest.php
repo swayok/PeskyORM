@@ -140,6 +140,33 @@ class PostgresAdapterInsertDataTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals(json_encode('test_value1'), $return['value']);
     }
 
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $columns argument must contain only strings
+     */
+    public function testInvalidColumnsForInsertMany() {
+        $adapter = static::getValidAdapter();
+        $adapter->insertMany('settings', [null], [['key' => 'value']]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $columns argument must contain only strings
+     */
+    public function testInvalidColumnsForInsertMany2() {
+        $adapter = static::getValidAdapter();
+        $adapter->insertMany('settings', [DbExpr::create('test')], [['key' => 'value']]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $columns argument must contain only strings
+     */
+    public function testInvalidColumnsForInsertMany3() {
+        $adapter = static::getValidAdapter();
+        $adapter->insertMany('settings', [['subarray']], [['key' => 'value']]);
+    }
+
     public function testInsertMany() {
         static::cleanTables();
         $adapter = static::getValidAdapter();
@@ -160,6 +187,14 @@ class PostgresAdapterInsertDataTest extends \PHPUnit_Framework_TestCase {
             $adapter->query(DbExpr::create(
                 "SELECT * FROM `settings` WHERE `key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``) ORDER BY `key`"
             )),
+            Utils::FETCH_ALL
+        );
+        $this->assertArraySubset($testData1[0], $data[0]);
+        $this->assertArraySubset($testData1[1], $data[1]);
+        $data = $adapter->query(
+            DbExpr::create(
+                "SELECT * FROM `settings` WHERE `key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``) ORDER BY `key`"
+            ),
             Utils::FETCH_ALL
         );
         $this->assertArraySubset($testData1[0], $data[0]);
@@ -187,7 +222,7 @@ class PostgresAdapterInsertDataTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals($dataForAssert[1]['parent_id'], $data[1]['parent_id']);
     }
 
-    public function testInsertMenyReturning() {
+    public function testInsertManyReturning() {
         static::cleanTables();
         $adapter = static::getValidAdapter();
         /** @var array $return */

@@ -278,7 +278,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      */
     public function insertMany($table, array $columns, array $data, array $dataTypes = [], $returning = false, $pkName = 'id') {
         $this->guardTableNameArg($table);
-        $this->guardColumnsArg($columns);
+        $this->guardColumnsArg($columns, false);
         $this->guardDataArg($data);
         $this->guardReturningArg($returning);
         if ($returning) {
@@ -408,6 +408,12 @@ abstract class DbAdapter implements DbAdapterInterface {
         }
     }
 
+    private function guardConditionsAndOptionsArg($conditionsAndOptions) {
+        if (!empty($conditionsAndOptions) && !($conditionsAndOptions instanceof DbExpr)) {
+            throw new \InvalidArgumentException('$conditionsAndOptions argument must be an instance of DbExpr class');
+        }
+    }
+
     private function guardReturningArg($returning) {
         if (!is_array($returning) && !is_bool($returning)) {
             throw new \InvalidArgumentException('$returning argument must be array or boolean');
@@ -429,21 +435,29 @@ abstract class DbAdapter implements DbAdapterInterface {
         }
     }
 
-    private function guardColumnsArg(array $columns) {
+    private function guardColumnsArg(array $columns, $allowDbExpr = true) {
         if (empty($columns)) {
             throw new \InvalidArgumentException('$columns argument cannot be empty');
+        }
+        foreach ($columns as $column) {
+            if (!is_string($column) && (!$allowDbExpr || !($column instanceof DbExpr))) {
+                throw new \InvalidArgumentException(
+                    '$columns argument must contain only strings' . ($allowDbExpr ? ' and DbExpr objects' : '')
+                );
+            }
         }
     }
 
     /**
-     * @param array $columns
+     * @param array $columns - should contain only strings and DbExpr objects
      * @param bool $withBraces - add "()" around columns list
      * @return string - "(`column1','column2',...)"
+     * @throws \PDOException
      * @throws \InvalidArgumentException
      */
     protected function buildColumnsList(array $columns, $withBraces = true) {
         $quoted = implode(',', array_map(function ($column) {
-            return $this->quoteName($column);
+            return ($column instanceof DbExpr) ? $this->replaceDbExprQuotes($column) : $this->quoteName($column);
         }, $columns));
         return $withBraces ? '(' . $quoted . ')' : $quoted;
     }
@@ -680,6 +694,9 @@ abstract class DbAdapter implements DbAdapterInterface {
         if (!is_string($name)) {
             throw new \InvalidArgumentException('Db entity name must be a string');
         }
+        if ($name === '*') {
+            return '*';
+        }
         if (!preg_match('%^[a-zA-Z_][a-zA-Z_0-9]*(\.[a-zA-Z_0-9]+)?$%i', $name)) {
             throw new \InvalidArgumentException("Invalid db entity name [$name]");
         }
@@ -831,7 +848,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @throws \InvalidArgumentException
      */
     public function assembleConditionValue($value, $operator) {
-        // todo: think about possibility to validate value by means of DbTableScructure objects
+        // todo: think about possibility to validate value by means of DbTableStructure objects
         if ($value instanceof DbExpr) {
             return '(' . $this->replaceDbExprQuotes($value) . ')';
         } else if (in_array($operator, ['BETWEEN', 'NOT BETWEEN'], true)) {
@@ -863,6 +880,139 @@ abstract class DbAdapter implements DbAdapterInterface {
             // 2.1, 2.2
             return $this->quoteValue($value);
         }
+    }
+
+    /**
+     * Select many records form DB by compiling simple query from passed parameters.
+     * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
+     * @param string $table
+     * @param array $columns - empty array means "all columns" (SELECT *), must contain only strings and DbExpr objects
+     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @return array
+     * @throws \PDOException
+     * @throws \PeskyORM\Core\DbException
+     * @throws \InvalidArgumentException
+     */
+    public function select($table, array $columns = [], $conditionsAndOptions = null) {
+        return $this->query(
+            $this->makeSelectQuery($table, $columns, $conditionsAndOptions),
+            \PeskyORM\Core\Utils::FETCH_ALL
+        );
+    }
+
+    /**
+     * Select many records form DB by compiling simple query from passed parameters returning an array with values for
+     * specified $column.
+     * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
+     * @param string $table
+     * @param string|DbExpr $column
+     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @return array
+     * @throws \PDOException
+     * @throws \PeskyORM\Core\DbException
+     * @throws \InvalidArgumentException
+     */
+    public function selectColumn($table, $column, $conditionsAndOptions = null) {
+        if (empty($column)) {
+            throw new \InvalidArgumentException('$column argument cannot be empty');
+        } else if (!is_string($column) && !($column instanceof DbExpr)) {
+            throw new \InvalidArgumentException('$column argument must be a string or DbExpr object');
+        }
+        return $this->query(
+            $this->makeSelectQuery($table, [$column], $conditionsAndOptions),
+            \PeskyORM\Core\Utils::FETCH_COLUMN
+        );
+    }
+
+    /**
+     * Select many records form DB by compiling simple query from passed parameters returning an associative array.
+     * The query is something like: "SELECT $keysColumn, $valuesColumn FROM $table $conditionsAndOptions"
+     * @param string $table
+     * @param string $keysColumn
+     * @param string $valuesColumn
+     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @return array
+     * @throws \PDOException
+     * @throws \PeskyORM\Core\DbException
+     * @throws \InvalidArgumentException
+     */
+    public function selectAssoc($table, $keysColumn, $valuesColumn, $conditionsAndOptions = null) {
+        if (empty($keysColumn)) {
+            throw new \InvalidArgumentException('$keysColumn argument cannot be empty');
+        } else if (!is_string($keysColumn)) {
+            throw new \InvalidArgumentException('$keysColumn argument must be a string');
+        }
+        if (empty($valuesColumn)) {
+            throw new \InvalidArgumentException('$valuesColumn argument cannot be empty');
+        } else if (!is_string($valuesColumn)) {
+            throw new \InvalidArgumentException('$valuesColumn argument must be a string');
+        }
+        $records = $this->query(
+            $this->makeSelectQuery($table, [$keysColumn, $valuesColumn], $conditionsAndOptions),
+            \PeskyORM\Core\Utils::FETCH_ALL
+        );
+        $assoc = [];
+        foreach ($records as $record) {
+            $assoc[$record[$keysColumn]] = $record[$valuesColumn];
+        }
+        return $assoc;
+    }
+
+    /**
+     * Select first matching record form DB by compiling simple query from passed parameters.
+     * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
+     * @param string $table
+     * @param array $columns - empty array means "all columns" (SELECT *), must contain only strings and DbExpr objects
+     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @return array
+     * @throws \PDOException
+     * @throws \PeskyORM\Core\DbException
+     * @throws \InvalidArgumentException
+     */
+    public function selectOne($table, array $columns = [], $conditionsAndOptions = null) {
+        return $this->query(
+            $this->makeSelectQuery($table, $columns, $conditionsAndOptions),
+            \PeskyORM\Core\Utils::FETCH_FIRST
+        );
+    }
+
+    /**
+     * Select a value form DB by compiling simple query from passed parameters.
+     * The query is something like: "SELECT $expression FROM $table $conditionsAndOptions"
+     * @param string $table
+     * @param DbExpr $expression - something like "COUNT(*)" or anything else
+     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @return array
+     * @throws \PDOException
+     * @throws \PeskyORM\Core\DbException
+     * @throws \InvalidArgumentException
+     */
+    public function selectValue($table, DbExpr $expression, $conditionsAndOptions = null) {
+        return $this->query(
+            $this->makeSelectQuery($table, [$expression], $conditionsAndOptions),
+            \PeskyORM\Core\Utils::FETCH_VALUE
+        );
+    }
+
+    /**
+     * Make a simple SELECT query from passed parameters
+     * @param string $table
+     * @param array $columns - empty array means "all columns" (SELECT *), must contain only strings and DbExpr objects
+     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @return string - something like: "SELECT $columns FROM $table $conditionsAndOptions"
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    public function makeSelectQuery($table, array $columns = [], $conditionsAndOptions = null) {
+        $this->guardTableNameArg($table);
+        if (empty($columns)) {
+            $columns = ['*'];
+        } else {
+            $this->guardColumnsArg($columns);
+        }
+        $this->guardConditionsAndOptionsArg($conditionsAndOptions);
+        $suffix = empty($conditionsAndOptions) ? '' : ' ' . $this->replaceDbExprQuotes($conditionsAndOptions);
+        return 'SELECT ' . $this->buildColumnsList($columns, false) . ' FROM ' . $this->quoteName($table) . $suffix;
     }
 
 }

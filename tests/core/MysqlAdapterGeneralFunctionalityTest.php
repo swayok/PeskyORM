@@ -228,12 +228,13 @@ class MysqlAdapterGeneralFunctionalityTest extends PHPUnit_Framework_TestCase {
      */
     public function testQuotingOfInvalidDbExpr() {
         $adapter = static::getValidAdapter();
-        $adapter->replaceDbExprQuotes(DbExpr::create('`test`')->get());
+        $adapter->replaceDbExprQuotes('test');
     }
 
     public function testQuoting() {
         $adapter = static::getValidAdapter();
         $this->assertEquals('`table1`', $adapter->quoteName('table1'));
+        $this->assertEquals('*', $adapter->quoteName('*'));
         $this->assertEquals("'\\';DROP table1;'", $adapter->quoteValue('\';DROP table1;'));
         $this->assertEquals('1', $adapter->quoteValue(true));
         $this->assertEquals('1', $adapter->quoteValue(1, PDO::PARAM_BOOL));

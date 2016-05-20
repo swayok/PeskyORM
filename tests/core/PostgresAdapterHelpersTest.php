@@ -2,6 +2,7 @@
 
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\Config\Connection\PostgresConfig;
+use PeskyORM\Core\DbExpr;
 
 class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
 
@@ -26,13 +27,18 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
     /**
      * @param string $methodName
      * @param mixed $arg
+     * @param mixed $arg2
      * @return ReflectionMethod
      */
-    protected function invokePrivateAdapterMethod($methodName, $arg) {
+    protected function invokePrivateAdapterMethod($methodName, $arg, $arg2 = '__NOT_SET__') {
         $adapter = static::getValidAdapter();
         $method = (new ReflectionClass($adapter))->getMethod($methodName);
         $method->setAccessible(true);
-        return $method->invoke($adapter, $arg);
+        if ($arg2 === '__NOT_SET__') {
+            return $method->invoke($adapter, $arg);
+        } else {
+            return $method->invoke($adapter, $arg, $arg2);
+        }
     }
 
     /**
@@ -114,6 +120,22 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
     public function testInvalidColumns2() {
         $this->invokePrivateAdapterMethod('guardColumnsArg', 'test');
     }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $columns argument must contain only strings and DbExpr objects
+     */
+    public function testInvalidColumns3() {
+        $this->invokePrivateAdapterMethod('guardColumnsArg', [$this]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $columns argument must contain only strings
+     */
+    public function testInvalidColumns4() {
+        $this->invokePrivateAdapterMethod('guardColumnsArg', [DbExpr::create('test')], false);
+    }
     
     /**
      * @expectedException InvalidArgumentException
@@ -161,6 +183,30 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
      */
     public function testInvalidConditions6() {
         $this->invokePrivateAdapterMethod('guardConditionsArg', 123);
+    }
+    
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $conditionsAndOptions argument must be an instance of DbExpr class
+     */
+    public function testInvalidConditionsAndOptions() {
+        $this->invokePrivateAdapterMethod('guardConditionsAndOptionsArg', 123);
+    }
+    
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $conditionsAndOptions argument must be an instance of DbExpr class
+     */
+    public function testInvalidConditionsAndOptions2() {
+        $this->invokePrivateAdapterMethod('guardConditionsAndOptionsArg', $this);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $conditionsAndOptions argument must be an instance of DbExpr class
+     */
+    public function testInvalidConditionsAndOptions3() {
+        $this->invokePrivateAdapterMethod('guardConditionsAndOptionsArg', 'string');
     }
 
     /**
@@ -223,15 +269,15 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $pkName argument must be a string
      */
     public function testInvalidPkName5() {
-        $this->invokePrivateAdapterMethod('guardPkNameArg', \PeskyORM\Core\DbExpr::create('test'));
+        $this->invokePrivateAdapterMethod('guardPkNameArg', DbExpr::create('test'));
     }
 
     public function testValidArgs() {
         $this->invokePrivateAdapterMethod('guardTableNameArg', 'table');
         $this->invokePrivateAdapterMethod('guardDataArg', ['key' => 'value']);
-        $this->invokePrivateAdapterMethod('guardColumnsArg', ['key1', 'key2']);
+        $this->invokePrivateAdapterMethod('guardColumnsArg', ['key1', DbExpr::create('key2')]);
         $this->invokePrivateAdapterMethod('guardConditionsArg', 'test');
-        $this->invokePrivateAdapterMethod('guardConditionsArg', \PeskyORM\Core\DbExpr::create('test'));
+        $this->invokePrivateAdapterMethod('guardConditionsArg', DbExpr::create('test'));
         $this->invokePrivateAdapterMethod('guardReturningArg', true);
         $this->invokePrivateAdapterMethod('guardReturningArg', false);
         $this->invokePrivateAdapterMethod('guardReturningArg', ['key1', 'key2']);
@@ -284,9 +330,9 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
         $operator = $adapter->convertConditionOperator('NOT IN', [1, 2, 3]);
         $this->assertEquals('NOT IN', $operator);
 
-        $operator = $adapter->convertConditionOperator('IN', \PeskyORM\Core\DbExpr::create('SELECT'));
+        $operator = $adapter->convertConditionOperator('IN', DbExpr::create('SELECT'));
         $this->assertEquals('IN', $operator);
-        $operator = $adapter->convertConditionOperator('NOT IN', \PeskyORM\Core\DbExpr::create('SELECT'));
+        $operator = $adapter->convertConditionOperator('NOT IN', DbExpr::create('SELECT'));
         $this->assertEquals('NOT IN', $operator);
     }
 
@@ -337,6 +383,53 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
         $this->assertEquals('~*', $operator);
         $operator = $adapter->convertConditionOperator('!~*', 'ewqe');
         $this->assertEquals('!~*', $operator);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $table argument cannot be empty and must be a non-numeric string
+     */
+    public function testInvalidArgsInMakeSelectQuery() {
+        $adapter = $this->getValidAdapter();
+        $adapter->makeSelectQuery('');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $columns argument must contain only strings and DbExpr objects
+     */
+    public function testInvalidArgsInMakeSelectQuery2() {
+        $adapter = $this->getValidAdapter();
+        $adapter->makeSelectQuery('table', [$this]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $conditionsAndOptions argument must be an instance of DbExpr class
+     */
+    public function testInvalidArgsInMakeSelectQuery3() {
+        $adapter = $this->getValidAdapter();
+        $adapter->makeSelectQuery('table', [], 'string');
+    }
+
+    public function testMakeSelectQuery() {
+        $adapter = $this->getValidAdapter();
+
+        $query = $adapter->makeSelectQuery('test_table', ['col1', DbExpr::create('`col2` as `col22`')]);
+        $this->assertEquals(
+            $adapter->replaceDbExprQuotes(DbExpr::create(
+                'SELECT `col1`,`col2` as `col22` FROM `test_table`'
+            )),
+            $query
+        );
+
+        $query = $adapter->makeSelectQuery('test_table', [], DbExpr::create('WHERE `col1` > ``0``'));
+        $this->assertEquals(
+            $adapter->replaceDbExprQuotes(DbExpr::create(
+                'SELECT `*` FROM `test_table` WHERE `col1` > ``0``'
+            )),
+            $query
+        );
     }
 
 
