@@ -332,7 +332,7 @@ abstract class DbTable implements DbTableInterface {
         }
         foreach ($columns as $columnName) {
             $columnInfo = static::getStructure()->getColumn($columnName);
-            switch ($columnInfo->getDbType()) {
+            switch ($columnInfo->getOrmDataType()) {
                 case $columnInfo::DB_TYPE_BOOL:
                     $pdoDataTypes[$columnInfo->getName()] = \PDO::PARAM_BOOL;
                     break;

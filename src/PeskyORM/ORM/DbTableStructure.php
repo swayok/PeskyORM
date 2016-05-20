@@ -199,7 +199,7 @@ abstract class DbTableStructure {
             if ($method->isStatic()) {
                 continue;
             }
-            if (preg_match('%^[a-z][a-z0-9_]*$%', $method)) {
+            if (preg_match(DbTableColumn::NAME_VALIDATION_REGEXP, $method)) {
                 static::$columns[$method->getName()] = $method;
             } else if (preg_match('%^[A-Z][a-z0-9_]*$%', $method)) {
                 static::$relations[$method->getName()] = $method;

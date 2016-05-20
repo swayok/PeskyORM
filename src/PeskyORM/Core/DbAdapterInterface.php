@@ -273,4 +273,10 @@ interface DbAdapterInterface {
      */
     public function describeTable($table);
 
+    /**
+     * @param string $ormDataType - one of DbAdapter::ORM_DATA_TYPE_* if you use DbAdapter class
+     * @return string
+     */
+    public function convertOrmDataTypeToDbDataType($ormDataType);
+
 }

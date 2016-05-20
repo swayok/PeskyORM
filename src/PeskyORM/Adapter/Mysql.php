@@ -63,12 +63,12 @@ class Mysql extends DbAdapter {
         if (!is_string($expression)) {
             throw new \InvalidArgumentException('$expression must be a string');
         }
-        return 'CAST(' . $expression . ' AS ' . static::getRealDataType($dataType) . ')';
+        return 'CAST(' . $expression . ' AS ' . $this->getRealDataType($dataType) . ')';
     }
 
     protected function getRealDataType($dataType) {
         $dataType = strtolower($dataType);
-        if (isset(static::$dataTypesMap[$dataType])) {
+        if (array_key_exists($dataType, static::$dataTypesMap)) {
             return static::$dataTypesMap[$dataType];
         } else {
             return 'CHAR';
@@ -205,5 +205,13 @@ class Mysql extends DbAdapter {
      */
     public function describeTable($table) {
         // todo: implement describeTable
+    }
+
+    /**
+     * @param string $ormDataType - one of DbAdapter::ORM_DATA_TYPE_* if you use DbAdapter class
+     * @return string
+     */
+    public function convertOrmDataTypeToDbDataType($ormDataType) {
+        return $this->getRealDataType($ormDataType);
     }
 }

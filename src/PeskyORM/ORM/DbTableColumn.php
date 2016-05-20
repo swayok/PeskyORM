@@ -2,6 +2,7 @@
 
 namespace PeskyORM\ORM;
 
+use PeskyORM\Core\DbAdapter;
 use Swayok\Utils\StringUtils;
 use Swayok\Utils\ValidateValue;
 
@@ -27,48 +28,38 @@ class DbTableColumn {
     const TYPE_FILE = 'file';
     const TYPE_IMAGE = 'image';
 
-    const DB_TYPE_VARCHAR = 'varchar';
-    const DB_TYPE_TEXT = 'text';
-    const DB_TYPE_INT = 'integer';
-    const DB_TYPE_SMALLINT = 'smallint';
-    const DB_TYPE_BIGINT = 'bigint';
-    const DB_TYPE_FLOAT = 'numeric';
-    const DB_TYPE_BOOL = 'boolean';
-    const DB_TYPE_JSONB = 'jsonb';
-    const DB_TYPE_TIMESTAMP = 'timestamp';
-    const DB_TYPE_DATE = 'date';
-    const DB_TYPE_TIME = 'time';
-    const DB_TYPE_IP_ADDRESS = 'ip';
+    const NAME_VALIDATION_REGEXP = '%^[a-z][a-z0-9_]*$%';
 
     /**
      * Contains map where keys are column types and values are real DB types
      * If value is NULL then type is virtual and has no representation in DB
      * @var array
      */
-    static protected $typeToDbType = [
-        self::TYPE_INT => self::DB_TYPE_INT,
-        self::TYPE_FLOAT => self::DB_TYPE_FLOAT,
-        self::TYPE_BOOL => self::DB_TYPE_BOOL,
-        self::TYPE_STRING => self::DB_TYPE_VARCHAR,
-        self::TYPE_TEXT => self::DB_TYPE_TEXT,
-        self::TYPE_JSON => self::DB_TYPE_TEXT,
-        self::TYPE_JSONB => self::DB_TYPE_JSONB,
-        self::TYPE_SHA1 => self::DB_TYPE_VARCHAR,
-        self::TYPE_MD5 => self::DB_TYPE_VARCHAR,
-        self::TYPE_PASSWORD => self::DB_TYPE_VARCHAR,
-        self::TYPE_EMAIL => self::DB_TYPE_VARCHAR,
-        self::TYPE_TIMESTAMP => self::DB_TYPE_TIMESTAMP,
-        self::TYPE_DATE => self::DB_TYPE_DATE,
-        self::TYPE_TIME => self::DB_TYPE_TIME,
-        self::TYPE_TIMEZONE_OFFSET => self::DB_TYPE_INT,
-        self::TYPE_ENUM => self::DB_TYPE_VARCHAR,
-        self::TYPE_IPV4_ADDRESS => self::DB_TYPE_IP_ADDRESS,
+    static protected $typeToOrmDataType = [
+        self::TYPE_INT => DbAdapter::ORM_DATA_TYPE_INT,
+        self::TYPE_FLOAT => DbAdapter::ORM_DATA_TYPE_FLOAT,
+        self::TYPE_BOOL => DbAdapter::ORM_DATA_TYPE_BOOL,
+        self::TYPE_STRING => DbAdapter::ORM_DATA_TYPE_VARCHAR,
+        self::TYPE_TEXT => DbAdapter::ORM_DATA_TYPE_TEXT,
+        self::TYPE_JSON => DbAdapter::ORM_DATA_TYPE_TEXT,
+        self::TYPE_JSONB => DbAdapter::ORM_DATA_TYPE_JSONB,
+        self::TYPE_SHA1 => DbAdapter::ORM_DATA_TYPE_VARCHAR,
+        self::TYPE_MD5 => DbAdapter::ORM_DATA_TYPE_VARCHAR,
+        self::TYPE_PASSWORD => DbAdapter::ORM_DATA_TYPE_VARCHAR,
+        self::TYPE_EMAIL => DbAdapter::ORM_DATA_TYPE_VARCHAR,
+        self::TYPE_TIMESTAMP => DbAdapter::ORM_DATA_TYPE_TIMESTAMP,
+        self::TYPE_DATE => DbAdapter::ORM_DATA_TYPE_DATE,
+        self::TYPE_TIME => DbAdapter::ORM_DATA_TYPE_TIME,
+        self::TYPE_TIMEZONE_OFFSET => DbAdapter::ORM_DATA_TYPE_INT,
+        self::TYPE_ENUM => DbAdapter::ORM_DATA_TYPE_VARCHAR,
+        self::TYPE_IPV4_ADDRESS => DbAdapter::ORM_DATA_TYPE_IP_ADDRESS,
         self::TYPE_FILE => null,
         self::TYPE_IMAGE => null,
     ];
 
     /**
-     * Contains map where keys are column types and values are names of classes that extend DbObjectField class
+     * Contains map where keys are column types and values are names of classes
+     * that implement DbTableColumnValueProcessorInterface
      * Class names provided here used only for cusom data types registered via DbTableColumn::registerType() method
      * Class names must be provided with namespace.
      * For hardcoded data types class names generated automatically. For example:
@@ -76,7 +67,7 @@ class DbTableColumn {
      * Namespace for hardcoded types provided in argument of method DbTableColumn->getClassName()
      * @var array
      */
-    static protected $typeToDbObjectFieldClass = [];
+    static protected $customValueProcessors = [];
 
     const DEFAULT_VALUE_NOT_SET = '___NOT_SET___';
 
@@ -93,7 +84,7 @@ class DbTableColumn {
     /** @var string */
     protected $type;
     /** @var string */
-    protected $dbType;
+    protected $ormDataType;
     /** @var int */
     protected $minLength = 0;
     /** @var int */
@@ -175,12 +166,12 @@ class DbTableColumn {
     );
 
     static protected $valueLengthOptionsAllowedForDbTypes = array(
-        self::DB_TYPE_VARCHAR
+        DbAdapter::ORM_DATA_TYPE_VARCHAR
     );
 
     static protected $valueMinMaxOptionsAllowedForDbTypes = array(
-        self::DB_TYPE_INT,
-        self::DB_TYPE_FLOAT
+        DbAdapter::ORM_DATA_TYPE_INT,
+        DbAdapter::ORM_DATA_TYPE_FLOAT
     );
 
     static protected $valueLengthOptionsNotAllowedForTypes = array(
@@ -207,26 +198,20 @@ class DbTableColumn {
      */
     static public function registerType($type, $dbType, $dbObjectFieldClass) {
         $type = strtolower($type);
-        self::$typeToDbType[$type] = strtolower($dbType);
-        self::$typeToDbObjectFieldClass[$type] = $dbObjectFieldClass;
+        self::$typeToOrmDataType[$type] = strtolower($dbType);
+        self::$customValueProcessors[$type] = $dbObjectFieldClass;
     }
 
     /**
      * @param string $name
      * @param string $type
+     * @throws \BadMethodCallException
      */
     public function __construct($name, $type) {
         if (!empty($name)) {
             $this->setName($name);
         }
         $this->setType($type);
-    }
-
-    /**
-     * @throws DbColumnConfigException
-     */
-    public function validateConfig() {
-
     }
 
     /**
@@ -247,11 +232,11 @@ class DbTableColumn {
 
     /**
      * @return string
-     * @throws DbColumnConfigException
+     * @throws \BadMethodCallException
      */
     public function getName() {
         if (empty($this->name)) {
-            throw new DbColumnConfigException($this, 'DB column name is not provided');
+            throw new \BadMethodCallException('DB column name is not provided');
         }
         return $this->name;
     }
@@ -266,15 +251,17 @@ class DbTableColumn {
     /**
      * @param string $name
      * @return $this
-     * @throws DbColumnConfigException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
     public function setName($name) {
         if ($this->hasName()) {
-            throw new DbColumnConfigException($this, "Changing DB column's name is forbidden");
+            throw new \BadMethodCallException('Clumn name alteration is forbidden');
         }
-        $pattern = '^[a-zA-Z][a-zA-Z0-9_]*$';
-        if (!preg_match("%^{$pattern}$%is", $name)) {
-            throw new DbColumnConfigException($this, "Invalid DB column name [$name]. Column name pattern: $pattern");
+        if (!preg_match(static::NAME_VALIDATION_REGEXP, $name)) {
+            throw new \InvalidArgumentException(
+                "\$name argument contains invalid value: '$name'. Pattern: " . static::NAME_VALIDATION_REGEXP
+            );
         }
         $this->name = $name;
         return $this;
@@ -290,20 +277,20 @@ class DbTableColumn {
     /**
      * @param string $type
      * @return $this
-     * @throws DbColumnConfigException
+     * @throws \InvalidArgumentException
      */
     protected function setType($type) {
         $type = strtolower($type);
-        if (!array_key_exists($type, self::$typeToDbType)) {
-            throw new DbColumnConfigException($this, "Unknown column type [$type]");
+        if (!array_key_exists($type, self::$typeToOrmDataType)) {
+            throw new \InvalidArgumentException("Unknown column type: '$type'");
         }
         $this->type = $type;
-        $this->dbType = self::$typeToDbType[$this->type];
-        if (in_array($type, self::$fileTypes)) {
+        $this->ormDataType = self::$typeToOrmDataType[$this->type];
+        if (in_array($type, self::$fileTypes, true)) {
             $this->setIsFile(true);
             $this->setIsVirtual(true);
             $this->setIsExcluded(true);
-            if (in_array($type, self::$imageFileTypes)) {
+            if (in_array($type, self::$imageFileTypes, true)) {
                 $this->setIsImage(true);
             }
         } else {
@@ -316,8 +303,8 @@ class DbTableColumn {
     /**
      * @return string
      */
-    public function getDbType() {
-        return $this->dbType;
+    public function getOrmDataType() {
+        return $this->ormDataType;
     }
 
     /**
@@ -326,8 +313,8 @@ class DbTableColumn {
      * @return string
      */
     public function getClassName($defaultNamespace) {
-        if (isset(self::$typeToDbObjectFieldClass[$this->getType()])) {
-            return self::$typeToDbObjectFieldClass[$this->getType()];
+        if (isset(self::$customValueProcessors[$this->getType()])) {
+            return self::$customValueProcessors[$this->getType()];
         } else {
             return rtrim($defaultNamespace, '\\') . '\\' . StringUtils::classify($this->getType()) . 'Field';
         }
@@ -346,7 +333,7 @@ class DbTableColumn {
      * @throws DbColumnConfigException
      */
     public function setMaxLength($maxLength) {
-        if (!in_array($this->getDbType(), self::$valueLengthOptionsAllowedForDbTypes)) {
+        if (!in_array($this->getOrmDataType(), self::$valueLengthOptionsAllowedForDbTypes)) {
             throw new DbColumnConfigException($this, "Max length option cannot be applied to column with type [{$this->getType()}]");
         }
         if (in_array($this->getType(), self::$valueLengthOptionsNotAllowedForTypes)) {
@@ -375,7 +362,7 @@ class DbTableColumn {
      * @throws DbColumnConfigException
      */
     public function setMinLength($minLength) {
-        if (!in_array($this->getDbType(), self::$valueLengthOptionsAllowedForDbTypes)) {
+        if (!in_array($this->getOrmDataType(), self::$valueLengthOptionsAllowedForDbTypes)) {
             throw new DbColumnConfigException($this, "Min length option cannot be applied to column with type [{$this->getType()}]");
         }
         if (in_array($this->getType(), self::$valueLengthOptionsNotAllowedForTypes)) {
@@ -397,7 +384,7 @@ class DbTableColumn {
      * @throws DbColumnConfigException
      */
     public function setMaxValue($maxValue) {
-        if (!in_array($this->getDbType(), self::$valueMinMaxOptionsAllowedForDbTypes)) {
+        if (!in_array($this->getOrmDataType(), self::$valueMinMaxOptionsAllowedForDbTypes)) {
             throw new DbColumnConfigException($this, "Max value option cannot be applied to column with type [{$this->getType()}]");
         }
         if ($maxValue !== null) {
@@ -425,7 +412,7 @@ class DbTableColumn {
      * @throws DbColumnConfigException
      */
     public function setMinValue($minValue) {
-        if (!in_array($this->getDbType(), self::$valueMinMaxOptionsAllowedForDbTypes)) {
+        if (!in_array($this->getOrmDataType(), self::$valueMinMaxOptionsAllowedForDbTypes)) {
             throw new DbColumnConfigException($this, "Min value option cannot be applied to column with type [{$this->getType()}]");
         }
         if ($minValue !== null) {
@@ -908,7 +895,7 @@ class DbTableColumn {
      * @return $this
      */
     public function setIsPrivate($isPrivate) {
-        $this->isPrivate = !!$isPrivate;
+        $this->isPrivate = (bool)$isPrivate;
         return $this;
     }
 
