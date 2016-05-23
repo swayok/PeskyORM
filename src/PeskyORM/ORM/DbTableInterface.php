@@ -4,6 +4,7 @@ namespace PeskyORM\ORM;
 
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
+use PeskyORM\ORM\Exception\OrmException;
 
 interface DbTableInterface {
 

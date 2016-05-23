@@ -80,13 +80,24 @@ class DbTableRelation {
         $this->foreignTableName = $foreignTableName;
         $this->foreignColumn = $foreignColumn;
         $this->displayColumnName = $localColumn;
-        $this->name = "{$this->localTableName}.{$this->localColumn} {$this->type} {$this->foreignTableName}.{$this->foreignColumn}";
+    }
+
+    /**
+     * @param string $name
+     * @return string
+     */
+    public function setName($name) {
+        $this->name = $name;
     }
 
     /**
      * @return string
+     * @throws \BadMethodCallException
      */
     public function getName() {
+        if (empty($this->name)) {
+            throw new \BadMethodCallException('Relation name is not set');
+        }
         return $this->name;
     }
 

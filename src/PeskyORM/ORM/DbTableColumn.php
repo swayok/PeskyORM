@@ -2,9 +2,7 @@
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\DbAdapter;
-use Swayok\Utils\StringUtils;
-use Swayok\Utils\ValidateValue;
+use PeskyORM\ORM\Exception\ValueNotFoundException;
 
 class DbTableColumn {
 
@@ -30,130 +28,109 @@ class DbTableColumn {
 
     const NAME_VALIDATION_REGEXP = '%^[a-z][a-z0-9_]*$%';
 
-    /**
-     * Contains map where keys are column types and values are real DB types
-     * If value is NULL then type is virtual and has no representation in DB
-     * @var array
-     */
-    static protected $typeToOrmDataType = [
-        self::TYPE_INT => DbAdapter::ORM_DATA_TYPE_INT,
-        self::TYPE_FLOAT => DbAdapter::ORM_DATA_TYPE_FLOAT,
-        self::TYPE_BOOL => DbAdapter::ORM_DATA_TYPE_BOOL,
-        self::TYPE_STRING => DbAdapter::ORM_DATA_TYPE_VARCHAR,
-        self::TYPE_TEXT => DbAdapter::ORM_DATA_TYPE_TEXT,
-        self::TYPE_JSON => DbAdapter::ORM_DATA_TYPE_TEXT,
-        self::TYPE_JSONB => DbAdapter::ORM_DATA_TYPE_JSONB,
-        self::TYPE_SHA1 => DbAdapter::ORM_DATA_TYPE_VARCHAR,
-        self::TYPE_MD5 => DbAdapter::ORM_DATA_TYPE_VARCHAR,
-        self::TYPE_PASSWORD => DbAdapter::ORM_DATA_TYPE_VARCHAR,
-        self::TYPE_EMAIL => DbAdapter::ORM_DATA_TYPE_VARCHAR,
-        self::TYPE_TIMESTAMP => DbAdapter::ORM_DATA_TYPE_TIMESTAMP,
-        self::TYPE_DATE => DbAdapter::ORM_DATA_TYPE_DATE,
-        self::TYPE_TIME => DbAdapter::ORM_DATA_TYPE_TIME,
-        self::TYPE_TIMEZONE_OFFSET => DbAdapter::ORM_DATA_TYPE_INT,
-        self::TYPE_ENUM => DbAdapter::ORM_DATA_TYPE_VARCHAR,
-        self::TYPE_IPV4_ADDRESS => DbAdapter::ORM_DATA_TYPE_IP_ADDRESS,
-        self::TYPE_FILE => null,
-        self::TYPE_IMAGE => null,
-    ];
-
-    /**
-     * Contains map where keys are column types and values are names of classes
-     * that implement DbTableColumnValueProcessorInterface
-     * Class names provided here used only for cusom data types registered via DbTableColumn::registerType() method
-     * Class names must be provided with namespace.
-     * For hardcoded data types class names generated automatically. For example:
-     * type = timezone_offset, class_name = TimezoneOffsetField
-     * Namespace for hardcoded types provided in argument of method DbTableColumn->getClassName()
-     * @var array
-     */
-    static protected $customValueProcessors = [];
-
     const DEFAULT_VALUE_NOT_SET = '___NOT_SET___';
 
-    const ON_NONE = false;
-    const ON_ALL = true;
-    const ON_CREATE = 'create';
-    const ON_UPDATE = 'update';
-
     // params that can be set directly or calculated
-    /** @var DbTableStructure */
-    protected $tableStructure;
-    /** @var string */
-    protected $name;
-    /** @var string */
-    protected $type;
-    /** @var string */
-    protected $ormDataType;
-    /** @var int */
-    protected $minLength = 0;
-    /** @var int */
-    protected $maxLength = 0;
-    /** @var int */
-    protected $minValue = null;
-    /** @var int */
-    protected $maxValue = null;
-    /** @var bool */
-    protected $isNullable = true;
-    /** @var bool */
-    protected $trimValue = false;
-    /** @var mixed */
-    protected $defaultValue = self::DEFAULT_VALUE_NOT_SET;
-    /** @var bool */
-    protected $convertEmptyValueToNull = false;
-    /** @var array */
-    protected $allowedValues = array();
     /**
-     * self::ON_NONE - allows field to be 'null' (if $null == true), unset or empty string
-     * self::ON_ALL - field is required for both creation and update
-     * self::ON_CREATE - field is required only for creation
-     * self::ON_UPDATE - field is required only for update
-     * @var bool|string
+     * @var DbTableStructure
      */
-    protected $isRequired = self::ON_NONE;
-    /** @var bool */
-    protected $isPk = false;
-    /** @var bool */
-    protected $isUnique = false;
-    /** @var bool */
-    protected $isVirtual = false;
+    protected $tableStructure;
     /**
-     * This field will be excluded from DbObject->toPublicArray() resutls
+     * @var DbTableRelation[]
+     */
+    protected $relations = [];
+    /**
+     * @var string
+     */
+    protected $name;
+    /**
+     * @var string
+     */
+    protected $type;
+    /**
+     * @var bool
+     */
+    protected $valueCanBeNull = true;
+    /**
+     * @var bool
+     */
+    protected $trimValue = false;
+    /**
+     * @var mixed
+     */
+    protected $defaultValue = self::DEFAULT_VALUE_NOT_SET;
+    /**
+     * @var bool
+     */
+    protected $convertEmptyValueToNull = false;
+    /**
+     * @var array
+     */
+    protected $allowedValues = [];
+    /**
+     * @var bool
+     */
+    protected $requireValue = false;
+    /**
+     * @var bool
+     */
+    protected $isPrimaryKey = false;
+    /**
+     * @var bool
+     */
+    protected $isValueMustBeUnique = false;
+    /**
+     * This column is private for the object and will be excluded from iteration, toArray(), etc.
+     * Access to this column's value is only by its name. For example $user->password
      * @var bool
      */
     protected $isPrivate = false;
     /**
-     * Value for this virtual column must be imported from another column if this option is string and already defined column
-     * @var bool|string - false: don't import
+     * Is this column exists in DB or not.
+     * If not - column valueGetter() must be provided to return a value of this column
+     * DbRecord will not save columns that does not exist in DB
+     * @var bool
      */
-    protected $importVirtualColumnValueFrom = false;
+    protected $existsInDb = false;
     /**
-     * Function to generate virual field value - function ($dbObjectField) { return 'some_value'; }
-     * @var bool|callable
-     */
-    protected $virtualColumnValueGenerator = false;
-    /**
-     * self::ON_NONE - forced skip disabled
-     * self::ON_ALL - forced skip enabled for any operation
-     * self::ON_CREATE - forced skip enabled for record creation only
-     * self::ON_UPDATE - forced skip enable for record update only
+     * Allow/disallow value setting and modification
+     * DbRecord will not save columns that cannot be set or modified
      * @var int
      */
-    protected $isExcluded = self::ON_NONE;
-    /** @var DbTableRelation[] */
-    protected $relations = array();
+    protected $isValueCanBeSetOrChanged = true;
+    /**
+     * Function to return column value. Useful for virtual columns
+     * function (array $values, DbRecord $record, DbTableColumn $column) { return 'some_value'; }
+     * @var null|\Closure
+     */
+    protected $valueGetter = null;
+    /**
+     * Function to process new column value
+     * function ($newValue, DbTableColumn $column, DbRecord $record) { return 'some_value'; }
+     * By default: DbTableColumnHelpers::getNewValueProcessorForType($this->getType())
+     * @var null|\Closure
+     */
+    protected $newValueProcessor = null;
+    /**
+     * Validate value for a column - function ($value, $isFromDb, DbTableColumn $column, DbRecord $record) { return true; }
+     * By default: DbTableColumnHelpers::getValueValidatorForType($this->getType()
+     * @var null|\Closure
+     */
+    protected $valueValidator = null;
 
     // calculated params (not allowed to be set directly)
-    /** @var bool */
+    /**
+     * @var bool
+     */
     protected $isFile = false;
-    /** @var bool */
+    /**
+     * @var bool
+     */
     protected $isImage = false;
-    /** @var bool */
-    protected $isFk = false;
-    /** @var array */
-    protected $customData = array();
-    /** @var array */
-    protected $customValidators = array();
+    /**
+     * @var bool
+     */
+    protected $isForeignKey = false;
 
     // service params
     static public $fileTypes = array(
@@ -163,21 +140,6 @@ class DbTableColumn {
 
     static public $imageFileTypes = array(
         self::TYPE_IMAGE,
-    );
-
-    static protected $valueLengthOptionsAllowedForDbTypes = array(
-        DbAdapter::ORM_DATA_TYPE_VARCHAR
-    );
-
-    static protected $valueMinMaxOptionsAllowedForDbTypes = array(
-        DbAdapter::ORM_DATA_TYPE_INT,
-        DbAdapter::ORM_DATA_TYPE_FLOAT
-    );
-
-    static protected $valueLengthOptionsNotAllowedForTypes = array(
-        self::TYPE_SHA1,
-        self::TYPE_MD5,
-        self::TYPE_IPV4_ADDRESS,
     );
 
     /**
@@ -191,21 +153,10 @@ class DbTableColumn {
     }
 
     /**
-     * Add custom column type
-     * @param string $type - name of type
-     * @param string $dbType - name of type in DB (usually one of DbTableColumn::DB_TYPE_*)
-     * @param $dbObjectFieldClass - full name of class that extends DbObjectFieldClass
-     */
-    static public function registerType($type, $dbType, $dbObjectFieldClass) {
-        $type = strtolower($type);
-        self::$typeToOrmDataType[$type] = strtolower($dbType);
-        self::$customValueProcessors[$type] = $dbObjectFieldClass;
-    }
-
-    /**
      * @param string $name
      * @param string $type
      * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
      */
     public function __construct($name, $type) {
         if (!empty($name)) {
@@ -256,7 +207,7 @@ class DbTableColumn {
      */
     public function setName($name) {
         if ($this->hasName()) {
-            throw new \BadMethodCallException('Clumn name alteration is forbidden');
+            throw new \BadMethodCallException('Column name alteration is forbidden');
         }
         if (!preg_match(static::NAME_VALIDATION_REGEXP, $name)) {
             throw new \InvalidArgumentException(
@@ -281,188 +232,46 @@ class DbTableColumn {
      */
     protected function setType($type) {
         $type = strtolower($type);
-        if (!array_key_exists($type, self::$typeToOrmDataType)) {
-            throw new \InvalidArgumentException("Unknown column type: '$type'");
-        }
         $this->type = $type;
-        $this->ormDataType = self::$typeToOrmDataType[$this->type];
         if (in_array($type, self::$fileTypes, true)) {
-            $this->setIsFile(true);
-            $this->setIsVirtual(true);
-            $this->setIsExcluded(true);
+            $this->itIsFile();
+            $this->itDoesNotExistInDb();
+            $this->valueCannotBeSetOrChanged();
             if (in_array($type, self::$imageFileTypes, true)) {
-                $this->setIsImage(true);
-            }
-        } else {
-            $this->setIsFile(false);
-            $this->setIsImage(false);
-        }
-        return $this;
-    }
-
-    /**
-     * @return string
-     */
-    public function getOrmDataType() {
-        return $this->ormDataType;
-    }
-
-    /**
-     * Get full name of class that extends DbObjectField class
-     * @param string $defaultNamespace - namespace for hardcoded column types
-     * @return string
-     */
-    public function getClassName($defaultNamespace) {
-        if (isset(self::$customValueProcessors[$this->getType()])) {
-            return self::$customValueProcessors[$this->getType()];
-        } else {
-            return rtrim($defaultNamespace, '\\') . '\\' . StringUtils::classify($this->getType()) . 'Field';
-        }
-    }
-
-    /**
-     * @return int
-     */
-    public function getMaxLength() {
-        return $this->maxLength;
-    }
-
-    /**
-     * @param int $maxLength - 0 = unlimited
-     * @return $this
-     * @throws DbColumnConfigException
-     */
-    public function setMaxLength($maxLength) {
-        if (!in_array($this->getOrmDataType(), self::$valueLengthOptionsAllowedForDbTypes)) {
-            throw new DbColumnConfigException($this, "Max length option cannot be applied to column with type [{$this->getType()}]");
-        }
-        if (in_array($this->getType(), self::$valueLengthOptionsNotAllowedForTypes)) {
-            throw new DbColumnConfigException($this, "Max length option value for column with type [{$this->getType()}] is fixed to [{$this->getMinLength()}]");
-        }
-        if (!ValidateValue::isInteger($maxLength, true) && $maxLength < 0) {
-            throw new DbColumnConfigException($this, "Invalid value provided for max length: {$maxLength}");
-        }
-        if ($this->getMinLength() > 0 && $maxLength < $this->getMinLength()) {
-            throw new DbColumnConfigException($this, "Max length [{$maxLength}] cannot be lower then min length [{$this->getMinLength()}]");
-        }
-        $this->maxLength = $maxLength;
-        return $this;
-    }
-
-    /**
-     * @return int
-     */
-    public function getMinLength() {
-        return $this->minLength;
-    }
-
-    /**
-     * @param int $minLength - 0 = unlimited
-     * @return $this
-     * @throws DbColumnConfigException
-     */
-    public function setMinLength($minLength) {
-        if (!in_array($this->getOrmDataType(), self::$valueLengthOptionsAllowedForDbTypes)) {
-            throw new DbColumnConfigException($this, "Min length option cannot be applied to column with type [{$this->getType()}]");
-        }
-        if (in_array($this->getType(), self::$valueLengthOptionsNotAllowedForTypes)) {
-            throw new DbColumnConfigException($this, "Min length option value for column with type [{$this->getType()}] is fixed to [{$this->getMaxLength()}]");
-        }
-        if (!ValidateValue::isInteger($minLength, true) || $minLength < 0) {
-            throw new DbColumnConfigException($this, "Invalid value provided for min length: {$minLength}");
-        }
-        if ($this->getMaxLength() > 0 && $minLength > $this->getMaxLength()) {
-            throw new DbColumnConfigException($this, "Min length [{$minLength}] cannot be higher then max length [{$this->getMaxLength()}]");
-        }
-        $this->minLength = $minLength;
-        return $this;
-    }
-
-    /**
-     * @param int|float|null $maxValue - null: no limit
-     * @return $this
-     * @throws DbColumnConfigException
-     */
-    public function setMaxValue($maxValue) {
-        if (!in_array($this->getOrmDataType(), self::$valueMinMaxOptionsAllowedForDbTypes)) {
-            throw new DbColumnConfigException($this, "Max value option cannot be applied to column with type [{$this->getType()}]");
-        }
-        if ($maxValue !== null) {
-            if (!ValidateValue::isFloat($maxValue, true)) {
-                throw new DbColumnConfigException($this, "Invalid value provided for max value option: {$maxValue}");
-            }
-            if ($this->getMinValue() != null && $maxValue < $this->getMinValue()) {
-                throw new DbColumnConfigException($this, "Max value [{$maxValue}] cannot be lower then min value [{$this->getMinValue()}]");
+                $this->itIsImage();
             }
         }
-        $this->maxValue = $maxValue;
         return $this;
-    }
-
-    /**
-     * @return int
-     */
-    public function getMaxValue() {
-        return $this->maxValue;
-    }
-
-    /**
-     * @param int|float|null $minValue - null: no limit
-     * @return $this
-     * @throws DbColumnConfigException
-     */
-    public function setMinValue($minValue) {
-        if (!in_array($this->getOrmDataType(), self::$valueMinMaxOptionsAllowedForDbTypes)) {
-            throw new DbColumnConfigException($this, "Min value option cannot be applied to column with type [{$this->getType()}]");
-        }
-        if ($minValue !== null) {
-            if (!ValidateValue::isFloat($minValue, true)) {
-                throw new DbColumnConfigException($this, "Invalid value provided for min value option: {$minValue}");
-            }
-            if ($this->getMaxValue() !== null && $minValue > $this->getMaxValue()) {
-                throw new DbColumnConfigException($this, "Min value [{$minValue}] cannot be higher then max value [{$this->getMaxValue()}]");
-            }
-        }
-        $this->minValue = $minValue;
-        return $this;
-    }
-
-    /**
-     * @return int
-     */
-    public function getMinValue() {
-        return $this->minValue;
     }
 
     /**
      * @return boolean
      */
-    public function isNullable() {
-        return $this->isNullable;
+    public function isValueCanBeNull() {
+        return $this->valueCanBeNull;
     }
 
     /**
      * @param boolean $isNullable
      * @return $this
      */
-    public function setIsNullable($isNullable) {
-        $this->isNullable = !!$isNullable;
+    public function valueCanBeNull($isNullable) {
+        $this->valueCanBeNull = (bool)$isNullable;
         return $this;
     }
 
     /**
-     * @param bool $trimValue
      * @return $this
      */
-    public function setTrimValue($trimValue = true) {
-        $this->trimValue = !!$trimValue;
+    public function mustTrimValue() {
+        $this->trimValue = true;
         return $this;
     }
 
     /**
      * @return bool
      */
-    public function isTrimValue() {
+    public function isValueTrimmingRequired() {
         return $this->trimValue;
     }
 
@@ -470,7 +279,7 @@ class DbTableColumn {
      * @return mixed
      */
     public function getDefaultValue() {
-        return $this->defaultValue;
+        return $this->defaultValue !== self::DEFAULT_VALUE_NOT_SET ? $this->defaultValue : null;
     }
 
     /**
@@ -492,16 +301,15 @@ class DbTableColumn {
     /**
      * @return boolean
      */
-    public function isConvertEmptyValueToNull() {
+    public function isEmptyValueMustBeConvertedToNull() {
         return $this->convertEmptyValueToNull;
     }
 
     /**
-     * @param boolean $convertEmptyValueToNull
      * @return $this
      */
-    public function setConvertEmptyValueToNull($convertEmptyValueToNull) {
-        $this->convertEmptyValueToNull = !!$convertEmptyValueToNull;
+    public function convertsEmptyValueToNull() {
+        $this->convertEmptyValueToNull = true;
         return $this;
     }
 
@@ -515,185 +323,108 @@ class DbTableColumn {
     /**
      * @param array $allowedValues
      * @return $this
-     * @throws DbColumnConfigException
+     * @throws \InvalidArgumentException
      */
-    public function setAllowedValues($allowedValues) {
+    public function setAllowedValues(array $allowedValues) {
         if (!is_array($allowedValues) || empty($allowedValues)) {
-            throw new DbColumnConfigException($this, 'Allowed values have to be not empty array');
+            throw new \InvalidArgumentException('$allowedValues argument cannot be empty');
         }
         $this->allowedValues = $allowedValues;
         return $this;
     }
 
     /**
-     * @param string $action - self::ON_UPDATE or self::ON_CREATE
-     * @return bool
-     * @throws DbColumnConfigException
-     */
-    public function isRequiredOn($action) {
-        if (!is_string($action) || !in_array(strtolower($action), array(self::ON_UPDATE, self::ON_CREATE))) {
-            throw new DbColumnConfigException($this, "Invalid argument \$forAction = [{$action}] passed to isRequired()");
-        }
-        return $this->isRequired === self::ON_ALL || $this->isRequired === strtolower($action);
-    }
-
-    /**
      * @return bool
      */
-    public function isRequiredOnAnyAction() {
-        return $this->isRequired !== self::ON_NONE;
+    public function isValueRequired() {
+        return $this->requireValue;
     }
 
     /**
-     * @return bool|string - one of self::ON_UPDATE, self::ON_CREATE, self::ON_ALL, self::ON_NONE
-     */
-    public function getIsRequired() {
-        return $this->isRequired;
-    }
-
-    /**
-     * @param int|bool $isRequired
      * @return $this
-     * @throws DbColumnConfigException
      */
-    public function setIsRequired($isRequired) {
-        if (is_bool($isRequired)) {
-            $this->isRequired = $isRequired;
-        } else if ($isRequired === 1 || $isRequired === '1' || $isRequired === 0 || $isRequired === '0') {
-            $this->isRequired = intval($isRequired) === 1;
-        } else if (in_array(strtolower($isRequired), array(self::ON_UPDATE, self::ON_CREATE))) {
-            $this->isRequired = strtolower($isRequired);
-        } else {
-            throw new DbColumnConfigException($this, "Invalid value [$isRequired] passed to [setIsRequired]");
-        }
+    public function valueIsRequired() {
+        $this->requireValue = true;
         return $this;
     }
 
     /**
      * @return boolean
      */
-    public function isPk() {
-        return $this->isPk;
+    public function isItPrimaryKey() {
+        return $this->isPrimaryKey;
     }
 
     /**
-     * @param boolean $isPk
      * @return $this
      */
-    public function setIsPk($isPk) {
-        $this->isPk = !!$isPk;
+    public function itIsPrimaryKey() {
+        $this->isPrimaryKey = true;
         return $this;
     }
 
     /**
      * @return boolean
      */
-    public function isUnique() {
-        return $this->isUnique;
+    public function isValueMustBeUnique() {
+        return $this->isValueMustBeUnique;
     }
 
     /**
      * @param boolean $isUnique
      * @return $this
      */
-    public function setIsUnique($isUnique) {
-        $this->isUnique = !!$isUnique;
+    public function valueMustBeUnique($isUnique) {
+        $this->isValueMustBeUnique = (bool)$isUnique;
         return $this;
-    }
-
-    /**
-     * @return boolean
-     */
-    public function isVirtual() {
-        return $this->isVirtual;
     }
 
     /**
      * @return bool|string - false: don't import
-     * @throws DbColumnConfigException
+     * @throws \BadMethodCallException
      */
-    public function importVirtualColumnValueFrom() {
-        if (!empty($this->importVirtualColumnValueFrom) && !$this->tableStructure->hasColumn($this->importVirtualColumnValueFrom)) {
-            throw new DbColumnConfigException($this, "Column [{$this->importVirtualColumnValueFrom}] is not defined");
+    public function getColumnNameToImportValueFrom() {
+        if (!empty($this->importValueFromColumn)) {
+            if (!$this->tableStructure->hasColumn($this->importValueFromColumn)) {
+                throw new \BadMethodCallException("Column '{$this->importValueFromColumn}' is not defined");
+            } else if ($this->getName() === $this->importValueFromColumn) {
+                throw new \BadMethodCallException(
+                    '$this->importVirtualColumnValueFrom is same as this column name: ' . $this->getName()
+                );
+            }
         }
-        return $this->importVirtualColumnValueFrom;
-    }
-
-    /**
-     * @param string $columnName
-     * @return $this
-     * @throws DbColumnConfigException
-     */
-    public function setImportVirtualColumnValueFrom($columnName) {
-        if (!is_string($columnName)) {
-            throw new DbColumnConfigException($this, "Argument \$columnName in setImportVirtualColumnValueFrom() must be a string. Passed value: [{$columnName}]");
-        }
-        if (!empty($this->tableStructure) && !$this->tableStructure->hasColumn($columnName)) {
-            throw new DbColumnConfigException($this, "Column [{$columnName}] is not defined");
-        }
-        $this->importVirtualColumnValueFrom = $columnName;
-        return $this;
+        return $this->importValueFromColumn;
     }
 
     /**
      * @return $this
      */
-    public function dontImportVirtualColumnValue() {
-        $this->importVirtualColumnValueFrom = false;
+    public function itDoesNotExistInDb() {
+        $this->existsInDb = false;
         return $this;
     }
 
     /**
-     * @param boolean $isVirtual
-     * @return $this
-     */
-    public function setIsVirtual($isVirtual) {
-        $this->isVirtual = !!$isVirtual;
-        return $this;
-    }
-
-    /**
-     * @param string $action - self::ON_UPDATE or self::ON_CREATE
-     * @return bool
-     * @throws DbColumnConfigException
-     */
-    public function isExcludedOn($action) {
-        if (!is_string($action) || !in_array(strtolower($action), array(self::ON_UPDATE, self::ON_CREATE))) {
-            throw new DbColumnConfigException($this, "Invalid argument \$forAction = [{$action}] passed to isExcluded()");
-        }
-        return $this->isExcluded === self::ON_ALL || $this->isExcluded === strtolower($action);
-    }
-
-    /**
+     * Is this column exists in DB?
      * @return bool
      */
-    public function isExcludedOnAnyAction() {
-        return $this->isExcluded !== self::ON_NONE;
+    public function isItExistsInDb() {
+        return $this->existsInDb;
+    }
+
+    /**
+     * @return $this
+     */
+    public function valueCannotBeSetOrChanged() {
+        $this->isValueCanBeSetOrChanged = true;
+        return $this;
     }
 
     /**
      * @return bool|string - one of self::ON_UPDATE, self::ON_CREATE, self::ON_ALL, self::ON_NONE
      */
-    public function getIsExcluded() {
-        return $this->isExcluded;
-    }
-
-    /**
-     * @param int|bool $isExcluded
-     * @return $this
-     * @throws DbColumnConfigException
-     */
-    public function setIsExcluded($isExcluded) {
-        if (is_bool($isExcluded)) {
-            $this->isExcluded = $isExcluded;
-        } else if ($isExcluded === 1 || $isExcluded === '1' || $isExcluded === 0 || $isExcluded === '0') {
-            $this->isExcluded = intval($isExcluded) === 1;
-        } else if (in_array(strtolower($isExcluded), array(self::ON_UPDATE, self::ON_CREATE))) {
-            $this->isExcluded = strtolower($isExcluded);
-        } else {
-            throw new DbColumnConfigException($this, "Invalid value [$isExcluded] passed to [setIsExcluded]");
-        }
-        return $this;
+    public function isValueCanBeSetOrChanged() {
+        return $this->isValueCanBeSetOrChanged;
     }
 
     /**
@@ -706,34 +437,40 @@ class DbTableColumn {
     /**
      * @param string $relationName
      * @return DbTableRelation
-     * @throws DbColumnConfigException
+     * @throws \InvalidArgumentException
      */
     public function getRelation($relationName) {
-        if (empty($this->relations[$relationName])) {
-            throw new DbColumnConfigException($this, "Relation $relationName not exists");
+        if (!$this->hasRelation($relationName)) {
+            throw new \InvalidArgumentException("Relation '$relationName' does not exist");
         }
         return $this->relations[$relationName];
     }
 
     /**
-     * @param DbTableRelation $relation
-     * @param null $relationAlias
-     * @return $this
-     * @throws DbColumnConfigException
+     * @param $relationName
+     * @return bool
      */
-    public function addRelation(DbTableRelation $relation, $relationAlias = null) {
+    public function hasRelation($relationName) {
+        return !empty($this->relations[$relationName]);
+    }
+
+    /**
+     * @param DbTableRelation $relation
+     * @return $this
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     */
+    public function addRelation(DbTableRelation $relation) {
+        $relationName = $relation->getName();
         if ($relation->getLocalColumn() !== $this->name && $relation->getForeignColumn() !== $this->name) {
-            throw new DbColumnConfigException($this, "Relation {$relation->getName()} is not connected to column {$this->name}");
+            throw new \InvalidArgumentException("Relation '{$relationName}' is not connected to column '{$this->name}'");
         }
-        if (empty($relationAlias)) {
-            $relationAlias = $relation->getName();
+        if (!empty($this->relations[$relationName])) {
+            throw new \InvalidArgumentException("Relation {$relationName} already defined");
         }
-        if (!empty($this->relations[$relation->getName()])) {
-            throw new DbColumnConfigException($this, "Relation {$relationAlias} already defined");
-        }
-        $this->relations[$relationAlias] = $relation;
+        $this->relations[$relationName] = $relation;
         if ($relation->getType() === DbTableRelation::BELONGS_TO) {
-            $this->setIsFk(true);
+            $this->itIsForeignKey();
         }
         return $this;
     }
@@ -741,161 +478,137 @@ class DbTableColumn {
     /**
      * @return boolean
      */
-    public function isFile() {
+    public function isItAFile() {
         return $this->isFile;
     }
 
     /**
-     * @param boolean $isFile
+     * @return $this
      */
-    protected function setIsFile($isFile) {
-        $this->isFile = $isFile;
+    protected function itIsFile() {
+        $this->isFile = true;
+        return $this;
     }
 
     /**
      * @return boolean
      */
-    public function isImage() {
+    public function isItAnImage() {
         return $this->isImage;
     }
 
     /**
-     * @param boolean $isImage
-     */
-    protected function setIsImage($isImage) {
-        $this->isImage = $isImage;
-    }
-
-    /**
-     * @return boolean
-     */
-    public function isFk() {
-        return $this->isFk;
-    }
-
-    /**
-     * @param boolean $isFk
-     */
-    protected function setIsFk($isFk) {
-        $this->isFk = $isFk;
-    }
-
-    /**
-     * Is this column exists in DB?
-     * @return bool
-     */
-    public function isExistsInDb() {
-        return !$this->isVirtual();
-    }
-
-    /**
-     * @param null|string $key
-     * @return array|null
-     */
-    public function getCustomData($key = null) {
-        if (empty($key)) {
-            return $this->customData;
-        } else if (is_array($this->customData) && array_key_exists($key, $this->customData)) {
-            return $this->customData[$key];
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * @param array $customData
      * @return $this
      */
-    public function customData($customData) {
-        $this->customData = $customData;
-        return $this;
-    }
-
-    /**
-     * @return array
-     */
-    public function getCustomValidators() {
-        return $this->customValidators;
-    }
-
-    /**
-     * @param array $customValidators - should contain only callable values.
-     * Callable:
-        function (DbObjectField $dbObjectField, $value) {
-            //$dbObjectField->setValidationError('Invalid value');
-            return true;
-        }
-     * @return $this
-     * @throws DbColumnConfigException
-     */
-    public function setCustomValidators($customValidators) {
-        if (!is_array($customValidators)) {
-            throw new DbColumnConfigException($this, '$customValidators arg should be an array');
-        }
-        foreach ($customValidators as $validator) {
-            if (is_string($validator) || !is_callable($validator)) {
-                throw new DbColumnConfigException($this, '$customValidators should contain only functions');
-            }
-        }
-        $this->customValidators = $customValidators;
-        return $this;
-    }
-
-    /**
-     * @return bool
-     */
-    public function hasCustomValidators() {
-        return !empty($this->customValidators);
-    }
-
-    /**
-     * @return bool|callable
-     */
-    public function getVirtualColumnValueGenerator() {
-        return $this->virtualColumnValueGenerator;
-    }
-
-    /**
-     * @param callable $virtualColumnValueGenerator
-     * @return $this
-     * @throws DbColumnConfigException
-     */
-    public function setVirtualColumnValueGenerator($virtualColumnValueGenerator) {
-        if (is_string($virtualColumnValueGenerator) || !is_callable($virtualColumnValueGenerator)) {
-            throw new DbColumnConfigException($this, '$virtualColumnValueGenerator should be a function');
-        }
-        $this->virtualColumnValueGenerator = $virtualColumnValueGenerator;
-        return $this;
-    }
-
-    /**
-     * @return bool
-     */
-    public function hasVirtualColumnValueGenerator() {
-        return !empty($this->virtualColumnValueGenerator);
-    }
-
-    /**
-     * @return $this
-     */
-    public function removeVirtualColumnValueGenerator() {
-        $this->virtualColumnValueGenerator = false;
+    protected function itIsImage() {
+        $this->isImage = true;
         return $this;
     }
 
     /**
      * @return boolean
      */
-    public function isPrivate() {
+    public function isItForeignKey() {
+        return $this->isForeignKey;
+    }
+
+    /**
+     * @return $this
+     */
+    protected function itIsForeignKey() {
+        $this->isForeignKey = true;
+        return $this;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function isValuePrivate() {
         return $this->isPrivate;
     }
 
     /**
-     * @param boolean $isPrivate
      * @return $this
      */
-    public function setIsPrivate($isPrivate) {
-        $this->isPrivate = (bool)$isPrivate;
+    public function valueIsPrivate() {
+        $this->isPrivate = true;
+        return $this;
+    }
+
+    /**
+     * @return callable|null
+     */
+    public function getNewValueProcessor() {
+        return $this->newValueProcessor;
+    }
+
+    /**
+     * @param \Closure $newValueProcessor
+     * @return $this
+     */
+    public function setNewValueProcessor(\Closure $newValueProcessor) {
+        $this->newValueProcessor = $newValueProcessor;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasNewValueProcessor() {
+        return !empty($this->newValueProcessor);
+    }
+
+    /**
+     * @return \Closure|null
+     * @throws \PeskyORM\ORM\Exception\ValueNotFoundException
+     * @throws \BadMethodCallException
+     */
+    public function getValueGetter() {
+        return $this->valueGetter ?: $this->getDefaultValueGetter();
+    }
+
+    /**
+     * @return \Closure
+     * @throws \PeskyORM\ORM\Exception\ValueNotFoundException
+     * @throws \BadMethodCallException
+     */
+    protected function getDefaultValueGetter() {
+        return function (array $values, DbRecord $record, DbTableColumn $column) {
+            if (array_key_exists($column->getName(), $values)) {
+                return $values[$column->getName()];
+            } else if ($column->hasDefaultValue()) {
+                return $column->getDefaultValue();
+            } else {
+                throw new ValueNotFoundException(
+                    "Record has no value for column {$column->getName()} and default value is not provided"
+                );
+            }
+        };
+    }
+
+    /**
+     * @param \Closure|null $valueGetter
+     * @return $this
+     */
+    public function setValueGetter($valueGetter) {
+        $this->valueGetter = $valueGetter;
+        return $this;
+    }
+
+    /**
+     * @return \Closure|null
+     */
+    public function getValueValidator() {
+        // todo: return some default value on $this->valueValidator === null
+        return $this->valueValidator;
+    }
+
+    /**
+     * @param \Closure|null $valueValidator
+     * @return $this
+     */
+    public function setValueValidator($valueValidator) {
+        $this->valueValidator = $valueValidator;
         return $this;
     }
 

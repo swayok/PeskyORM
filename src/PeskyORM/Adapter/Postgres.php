@@ -156,11 +156,4 @@ class Postgres extends DbAdapter {
         // todo: implement describeTable
     }
 
-    /**
-     * @param string $ormDataType - one of DbAdapter::ORM_DATA_TYPE_* if you use DbAdapter class
-     * @return string
-     */
-    public function convertOrmDataTypeToDbDataType($ormDataType) {
-        return $ormDataType;
-    }
 }

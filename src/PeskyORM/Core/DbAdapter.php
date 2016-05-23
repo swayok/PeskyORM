@@ -18,20 +18,6 @@ abstract class DbAdapter implements DbAdapterInterface {
     // db-specific value for unlimited amount of query results (ex: SELECT .. OFFSET 10 LIMIT 0)
     const NO_LIMIT = '0';
 
-    const ORM_DATA_TYPE_VARCHAR = 'varchar';
-    const ORM_DATA_TYPE_TEXT = 'text';
-    const ORM_DATA_TYPE_INT = 'integer';
-    const ORM_DATA_TYPE_SMALLINT = 'smallint';
-    const ORM_DATA_TYPE_BIGINT = 'bigint';
-    const ORM_DATA_TYPE_FLOAT = 'numeric';
-    const ORM_DATA_TYPE_BOOL = 'boolean';
-    const ORM_DATA_TYPE_JSON = 'json';
-    const ORM_DATA_TYPE_JSONB = 'jsonb';
-    const ORM_DATA_TYPE_TIMESTAMP = 'timestamp';
-    const ORM_DATA_TYPE_DATE = 'date';
-    const ORM_DATA_TYPE_TIME = 'time';
-    const ORM_DATA_TYPE_IP_ADDRESS = 'ip';
-
     /**
      * Traces of all transactions (required for debug)
      * @var array

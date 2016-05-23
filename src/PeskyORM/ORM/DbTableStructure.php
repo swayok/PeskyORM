@@ -171,7 +171,7 @@ abstract class DbTableStructure {
      * @throws \InvalidArgumentException
      */
     static public function hasFileColumn($colName) {
-        return static::_loadColumnConfig($colName)->isFile();
+        return static::_loadColumnConfig($colName)->isItAFile();
     }
 
     /**
@@ -244,7 +244,7 @@ abstract class DbTableStructure {
             }
             $config->setTableStructure($tableStruct);
             static::$columns[$config->getName()] = $config;
-            if ($config->isPk()) {
+            if ($config->isItPrimaryKey()) {
                 if (!empty(static::$pk)) {
                     throw new \InvalidArgumentException(
                         '2 primary keys in one table is forbidden: \'' . static::$pk->getName() . " and '{$config->getName()}'"
@@ -252,7 +252,7 @@ abstract class DbTableStructure {
                 }
                 static::$pk = $config;
             }
-            if ($config->isFile()) {
+            if ($config->isItAFile()) {
                 static::$fileColumns[$config->getName()] = $config;
             }
         }
@@ -308,11 +308,9 @@ abstract class DbTableStructure {
                     "Table has no column '{$config->getLocalColumn()}' or column not defined yet"
                 );
             }
-            if (empty($relationName)) {
-                $relationName = $config->getName();
-            }
+            $config->setName($relationName);
             static::$relations[$relationName] = $config;
-            static::_loadColumnConfig($config->getLocalColumn())->addRelation($config, $relationName);
+            static::_loadColumnConfig($config->getLocalColumn())->addRelation($config);
         }
         return static::$relations[$relationName];
     }
@@ -342,7 +340,7 @@ abstract class DbTableStructure {
     static protected function _findPkColumn($throwExceptionIfNotFound = true) {
         if (static::$pk === null) {
             foreach (static::$columns as $columnName => $column) {
-                if (!($column instanceof DbTableColumn) && static::_loadColumnConfig($columnName)->isPk()) {
+                if (!($column instanceof DbTableColumn) && static::_loadColumnConfig($columnName)->isItPrimaryKey()) {
                     return static::$pk;
                 }
             }

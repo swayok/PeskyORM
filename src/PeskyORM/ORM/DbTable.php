@@ -3,6 +3,7 @@
 namespace PeskyORM\ORM;
 
 use PeskyORM\Core\DbExpr;
+use PeskyORM\ORM\Exception\OrmException;
 use Swayok\Utils\StringUtils;
 
 abstract class DbTable implements DbTableInterface {
@@ -26,7 +27,7 @@ abstract class DbTable implements DbTableInterface {
 
     /**
      * @return $this
-     * @throws \PeskyORM\ORM\OrmException
+     * @throws OrmException
      */
     static public function getInstance() {
         if (static::$instance === null) {
@@ -44,7 +45,7 @@ abstract class DbTable implements DbTableInterface {
     /**
      * Shortcut for static::getInstance()
      * @return $this
-     * @throws \PeskyORM\ORM\OrmException
+     * @throws OrmException
      */
     static public function _() {
         return static::getInstance();
@@ -286,7 +287,7 @@ abstract class DbTable implements DbTableInterface {
      * @param array $data - key-value array where key = table column and value = value of associated column
      * @param array $conditions - WHERE conditions
      * @return int - number of modified rows
-     * @throws \PeskyORM\ORM\OrmException
+     * @throws OrmException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \PeskyORM\Core\DbException
@@ -307,7 +308,7 @@ abstract class DbTable implements DbTableInterface {
      *          - false: do not return anything
      *          - array: list of columns to return values for
      * @return int|array - int: number of deleted records | array: returned only if $returning is not empty
-     * @throws \PeskyORM\ORM\OrmException
+     * @throws OrmException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
@@ -371,7 +372,7 @@ abstract class DbTable implements DbTableInterface {
      * @param array $conditions
      * @param string $glue - 'AND' or 'OR'
      * @return string
-     * @throws \PeskyORM\ORM\OrmException
+     * @throws OrmException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
@@ -434,7 +435,7 @@ abstract class DbTable implements DbTableInterface {
     /**
      * @param string $column
      * @return string - quoted column
-     * @throws \PeskyORM\ORM\OrmException
+     * @throws OrmException
      * @throws \InvalidArgumentException
      */
     static protected function quoteConditionColumn($column) {
