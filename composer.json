@@ -31,5 +31,8 @@
     "require": {
         "php": ">=5.3",
         "swayok/utils": "master@dev"
+    },
+    "require-dev": {
+        "symfony/http-foundation": "~3.0"
     }
 }

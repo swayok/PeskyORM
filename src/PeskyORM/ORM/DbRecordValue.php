@@ -126,17 +126,18 @@ class DbRecordValue {
     }
 
     /**
-     * @param $rawValue
-     * @param $isFromDb
+     * @param mixed $rawValue
+     * @param mixed $preprocessedValue
+     * @param boolean $isFromDb
      * @return $this
      */
-    public function setRawValue($rawValue, $isFromDb) {
+    public function setRawValue($rawValue, $preprocessedValue, $isFromDb) {
         if ($this->hasValue) {
             $this->hasOldValue = true;
             $this->oldValue = $this->value;
         }
         $this->rawValue = $rawValue;
-        $this->value = $rawValue;
+        $this->value = $preprocessedValue;
         $this->hasValue = true;
         $this->isFromDb = (bool)$isFromDb;
         $this->customInfo = null;

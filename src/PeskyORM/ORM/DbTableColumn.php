@@ -2,6 +2,17 @@
 
 namespace PeskyORM\ORM;
 
+/**
+ * Value setter workflow:
+ * $this->valueSetter is called and it calls
+ * 1. $this->valuePreprocessor (result and original value saved to DbRecordValue object)
+ * 2. $this->valueValidator (validation errors saved to DbRecordValue->setRawValue(...))
+ * 2.1. $this->valueValidatorExtender (if $this->defaultValueValidator() is used and value is still valid)
+ * 3. (if value is valid) $this->valueNormalizer (processed value saved to DbRecordValue->setValidValue(....))
+ *
+ * Value getter workflow:
+ * $this->valueGetter is called and it will possibly call $this->valueFormatter
+ */
 class DbTableColumn {
 
     const TYPE_INT = 'integer';
@@ -40,7 +51,7 @@ class DbTableColumn {
     const VALUE_MUST_BE_TIME = 'value_must_be_time';
     const VALUE_MUST_BE_DATE = 'value_must_be_date';
     const VALUE_IS_NOT_ALLOWED = 'value_is_not_allowed';
-    const VALUE_MUST_BE_STRING = 'value_is_not_allowed';
+    const VALUE_MUST_BE_STRING = 'value_must_be_string';
     
     /**
      * @var array
@@ -89,6 +100,10 @@ class DbTableColumn {
      */
     protected $trimValue = false;
     /**
+     * @var bool
+     */
+    protected $lowercaseValue = false;
+    /**
      * @var mixed
      */
     protected $defaultValue = self::DEFAULT_VALUE_NOT_SET;
@@ -133,25 +148,32 @@ class DbTableColumn {
     protected $isValueCanBeSetOrChanged = true;
     /**
      * Function to return column value. Useful for virtual columns
-     * By default: $this->getDefaultValueGetter()
+     * By default: $this->defaultValueGetter()
      * @var null|\Closure
      */
     protected $valueGetter = null;
     /**
      * Function to set new column value
-     * By default: $this->getDefaultValueSetter()
+     * By default: $this->defaultValueSetter()
      * @var null|\Closure
      */
     protected $valueSetter = null;
     /**
+     * Function to preprocess raw value.
+     * Default: $this->defaultValuePreprocessor() - uses $this->convertEmptyValueToNull,
+     *      $this->trimValue, $this->lowercaseValue params to make value more reliable for validation
+     * @var null|\Closure
+     */
+    protected $valuePreprocessor = null;
+    /**
      * Function to normalize new validated column value
-     * By default: $this->getDefaultValueNormalizer()
+     * By default: $this->defaultValueNormalizer()
      * @var null|\Closure
      */
     protected $valueNormalizer = null;
     /**
      * Validate value for a column
-     * By default: $this->getDefaultValueValidator()
+     * By default: $this->defaultValueValidator()
      * @var null|\Closure
      */
     protected $valueValidator = null;
@@ -347,6 +369,21 @@ class DbTableColumn {
      */
     public function isValueTrimmingRequired() {
         return $this->trimValue;
+    }
+
+    /**
+     * @return $this
+     */
+    public function mustLowercaseValue() {
+        $this->lowercaseValue = true;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isValueLowercasingRequired() {
+        return $this->lowercaseValue;
     }
 
     /**
@@ -630,12 +667,13 @@ class DbTableColumn {
                 "Column '{$valueContainer->getColumn()->getName()}' restrits value setting adn modification"
             );
         }
-        $valueContainer->setRawValue($newValue, $isFromDb);
+        $preprocessedValue = call_user_func($valueContainer->getColumn()->getValuePreprocessor(), $newValue);
+        $valueContainer->setRawValue($newValue, $preprocessedValue, $isFromDb);
         $valueContainer->setValidationErrors(call_user_func($this->getValueValidator(), $valueContainer));
         if ($valueContainer->isValid()) {
             $processedValue = call_user_func(
                 $valueContainer->getColumn()->getValueNormalizer(),
-                $newValue
+                $preprocessedValue
             );
             $valueContainer->setValidValue($processedValue, $newValue);
         }
@@ -650,6 +688,45 @@ class DbTableColumn {
     public function setValueSetter(\Closure $valueSetter) {
         $this->valueSetter = $valueSetter;
         return $this;
+    }
+
+    /**
+     * @return \Closure
+     */
+    public function getValuePreprocessor() {
+        return $this->valuePreprocessor ?: function ($newValue, DbTableColumn $column) {
+            $this->defaultValuePreprocessor($newValue, $column);
+        };
+    }
+
+    /**
+     * Function to preprocess raw value for validation and normalization
+     * @param \Closure $valuePreprocessor = function ($value, DbTableColumn $column) { return $value }
+     * @return $this
+     */
+    public function setValuePreprocessor($valuePreprocessor) {
+        $this->valuePreprocessor = $valuePreprocessor;
+        return $this;
+    }
+
+    /**
+     * Uses $column->convertsEmptyValueToNull(), $column->mustTrimValue() and $column->mustLowercaseValue()
+     * @param mixed $value
+     * @param DbTableColumn $column
+     * @return mixed
+     */
+    public function defaultValuePreprocessor($value, DbTableColumn $column) {
+        if (empty($value) && $column->convertsEmptyValueToNull() && !DbRecordValueHelpers::isBoolean($value)) {
+            $value = null;
+        } else if (is_string($value)) {
+            if ($column->mustTrimValue()) {
+                $value = trim($value);
+            }
+            if ($column->mustLowercaseValue()) {
+                $value = mb_strtolower($value);
+            }
+        }
+        return $value;
     }
 
     /**
@@ -708,12 +785,12 @@ class DbTableColumn {
     /**
      * @param DbRecordValue $value
      * @return \Closure
+     * @throws \BadMethodCallException
      */
     public function defaultValueValidator(DbRecordValue $value) {
-        // todo: prepare value for validation (convert empty to null, trim, etc..)
         $isValid = DbRecordValueHelpers::isValidDbColumnValue(
             $value->getColumn(),
-            $value->getRawValue(),
+            $value->getValue(),
             static::getValidationErrorsLocalization()
         );
         if ($isValid && $this->hasValueValidatorExtender()) {

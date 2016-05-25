@@ -2,7 +2,9 @@
 
 namespace PeskyORM\ORM;
 
-abstract class DbRecordValueHelpers {
+use Swayok\Utils\ValidateValue;
+
+abstract class DbRecordValueHelpers extends ValidateValue {
 
     /**
      * @param $value
@@ -36,17 +38,17 @@ abstract class DbRecordValueHelpers {
                 }
                 break;
             case DbTableColumn::TYPE_DATE:
-                if (!static::isDate($value)) {
+                if (!static::isDateTime($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_DATE)];
                 }
                 break;
             case DbTableColumn::TYPE_TIME:
-                if (!static::isTime($value)) {
+                if (!static::isDateTime($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_TIME)];
                 }
                 break;
             case DbTableColumn::TYPE_TIMESTAMP:
-                if (!static::isTimestamp($value)) {
+                if (!static::isDateTime($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_TIMEZONE)];
                 }
                 break;
@@ -56,7 +58,7 @@ abstract class DbRecordValueHelpers {
                 }
                 break;
             case DbTableColumn::TYPE_IPV4_ADDRESS:
-                if (!static::isIpv4Address($value)) {
+                if (!static::isIpAddress($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_IPV4_ADDRESS)];
                 }
                 break;
@@ -67,12 +69,12 @@ abstract class DbRecordValueHelpers {
                 }
                 break;
             case DbTableColumn::TYPE_FILE:
-                if (!static::isFile($value)) {
+                if (!static::isUploadedFile($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_FILE)];
                 }
                 break;
             case DbTableColumn::TYPE_IMAGE:
-                if (!static::isImage($value)) {
+                if (!static::isUploadedImage($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_IMAGE)];
                 }
                 break;
@@ -114,7 +116,8 @@ abstract class DbRecordValueHelpers {
         }
     }
 
-    public static function getValueFormatterAndFormatsByType($type) {
+    static public function getValueFormatterAndFormatsByType($type) {
         return [null, []];
     }
+
 }
