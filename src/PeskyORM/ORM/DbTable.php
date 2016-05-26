@@ -27,6 +27,8 @@ abstract class DbTable implements DbTableInterface {
 
     /**
      * @return $this
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
      * @throws OrmException
      */
     static public function getInstance() {
@@ -45,21 +47,27 @@ abstract class DbTable implements DbTableInterface {
     /**
      * Shortcut for static::getInstance()
      * @return $this
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
      * @throws OrmException
      */
     static public function _() {
         return static::getInstance();
     }
-    
+
     /**
      * @return bool
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
      */
     static public function hasPkColumn() {
         return static::getStructure()->hasPkColumn();
     }
-    
+
     /**
      * @return bool
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
      */
     static public function getPkColumn() {
         return static::getStructure()->getPkColumn();
@@ -67,6 +75,8 @@ abstract class DbTable implements DbTableInterface {
 
     /**
      * @return string
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
      */
     static public function getPkColumnName() {
         return static::getStructure()->getPkColumnName();
@@ -74,10 +84,11 @@ abstract class DbTable implements DbTableInterface {
 
     /**
      * @return DbTableStructure
+     * @throws \BadMethodCallException
      */
     static public function getStructure() {
         if (static::$tableSchema === null) {
-            static::$tableSchema = DbClassesManager::getInstance()->getTableStructure(static::getTableName());
+            static::$tableSchema = DbClassesManager::i()->getTableStructure(static::getTableName());
         }
         return static::$tableSchema;
     }
@@ -85,6 +96,7 @@ abstract class DbTable implements DbTableInterface {
     /**
      * @param string $relationAlias - alias for relation defined in DbTableStructure
      * @return DbTable
+     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function getRelatedTable($relationAlias) {
@@ -94,6 +106,7 @@ abstract class DbTable implements DbTableInterface {
     /**
      * @param string $relationAlias - alias for relation defined in DbTableStructure
      * @return string
+     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function getRelatedTableName($relationAlias) {
@@ -103,6 +116,7 @@ abstract class DbTable implements DbTableInterface {
     /**
      * @param string $relationAlias - alias for relation defined in DbTableStructure
      * @return bool
+     * @throws \BadMethodCallException
      */
     static public function hasRelation($relationAlias) {
         return static::getStructure()->hasRelation($relationAlias);
@@ -110,9 +124,10 @@ abstract class DbTable implements DbTableInterface {
 
     /**
      * @return DbRecord
+     * @throws \BadMethodCallException
      */
     static public function newRecord() {
-        return DbClassesManager::newRecord(static::getTableName());
+        return DbClassesManager::i()->newRecord(static::getTableName());
     }
 
     /**
@@ -250,6 +265,7 @@ abstract class DbTable implements DbTableInterface {
      *          - false: do not return anything
      *          - array: list of columns to return values for
      * @return array|bool - array returned only if $returning is not empty
+     * @throws \BadMethodCallException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
@@ -270,6 +286,7 @@ abstract class DbTable implements DbTableInterface {
      *          - false: do not return anything
      *          - array: list of columns to return values for
      * @return array|bool - array returned only if $returning is not empty
+     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @throws \PDOException
      */
@@ -287,6 +304,7 @@ abstract class DbTable implements DbTableInterface {
      * @param array $data - key-value array where key = table column and value = value of associated column
      * @param array $conditions - WHERE conditions
      * @return int - number of modified rows
+     * @throws \BadMethodCallException
      * @throws OrmException
      * @throws \PDOException
      * @throws \InvalidArgumentException
@@ -308,6 +326,7 @@ abstract class DbTable implements DbTableInterface {
      *          - false: do not return anything
      *          - array: list of columns to return values for
      * @return int|array - int: number of deleted records | array: returned only if $returning is not empty
+     * @throws \BadMethodCallException
      * @throws OrmException
      * @throws \PDOException
      * @throws \InvalidArgumentException
@@ -324,6 +343,7 @@ abstract class DbTable implements DbTableInterface {
      * Get list of PDO data types for requested $columns
      * @param array $columns
      * @return array
+     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static protected function getPdoDataTypesForColumns(array $columns = []) {
@@ -333,14 +353,15 @@ abstract class DbTable implements DbTableInterface {
         }
         foreach ($columns as $columnName) {
             $columnInfo = static::getStructure()->getColumn($columnName);
-            switch ($columnInfo->getOrmDataType()) {
-                case $columnInfo::DB_TYPE_BOOL:
+            switch ($columnInfo->getType()) {
+                case $columnInfo::TYPE_BOOL:
                     $pdoDataTypes[$columnInfo->getName()] = \PDO::PARAM_BOOL;
                     break;
-                case $columnInfo::DB_TYPE_INT:
-                case $columnInfo::DB_TYPE_BIGINT:
-                case $columnInfo::DB_TYPE_SMALLINT:
+                case $columnInfo::TYPE_INT:
                     $pdoDataTypes[$columnInfo->getName()] = \PDO::PARAM_INT;
+                    break;
+                case $columnInfo::TYPE_BLOB:
+                    $pdoDataTypes[$columnInfo->getName()] = \PDO::PARAM_LOB;
                     break;
                 default:
                     $pdoDataTypes[$columnInfo->getName()] = \PDO::PARAM_STR;
@@ -372,6 +393,7 @@ abstract class DbTable implements DbTableInterface {
      * @param array $conditions
      * @param string $glue - 'AND' or 'OR'
      * @return string
+     * @throws \BadMethodCallException
      * @throws OrmException
      * @throws \PDOException
      * @throws \InvalidArgumentException
@@ -435,6 +457,7 @@ abstract class DbTable implements DbTableInterface {
     /**
      * @param string $column
      * @return string - quoted column
+     * @throws \BadMethodCallException
      * @throws OrmException
      * @throws \InvalidArgumentException
      */
@@ -450,6 +473,7 @@ abstract class DbTable implements DbTableInterface {
      *      - 'table_alias.column'
      *      - 'table_alias.column::data_type_convert'
      * @return array = [
+     * @throws \BadMethodCallException
      *      'raw' => string,
      *      'table_alias' => string,
      *      'column' => DbTableColumn,
@@ -484,7 +508,7 @@ abstract class DbTable implements DbTableInterface {
                 if (static::hasRelation($ret['table_alias'])) {
                     $ret['table'] = static::getRelatedTable($ret['table_alias']);
                 } else {
-                    $ret['table'] = DbClassesManager::getTableInstanceByAlias($ret['table_alias']);
+                    $ret['table'] = DbClassesManager::i()->getTableInstanceByAlias($ret['table_alias']);
                 }
             }
             $ret['column'] = $ret['table']->getStructure()->getColumn($ret['column']);

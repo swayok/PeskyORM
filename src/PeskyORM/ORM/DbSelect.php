@@ -41,7 +41,7 @@ class DbSelect {
             $this->tableStructure = $table->getStructure();
         } else {
             $this->tableName = $table;
-            $this->table = DbClassesManager::getTableInstance($table);
+            $this->table = DbClassesManager::i()->getTableInstance($table);
             $this->tableStructure = $this->table->getStructure();
         }
     }
@@ -77,7 +77,7 @@ class DbSelect {
      * @return DbRecord
      */
     public function fetchOneAsDbRecord() {
-        return DbClassesManager::newRecord($this->tableName)->fromDbData($this->fetchOne());
+        return DbClassesManager::i()->newRecord($this->tableName)->fromDbData($this->fetchOne());
     }
 
     /**

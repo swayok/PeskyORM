@@ -35,6 +35,7 @@ class DbTableColumn {
     const TYPE_IPV4_ADDRESS = 'ip';
     const TYPE_FILE = 'file';
     const TYPE_IMAGE = 'image';
+    const TYPE_BLOB = 'blob';
 
     const NAME_VALIDATION_REGEXP = '%^[a-z][a-z0-9_]*$%';
 
@@ -662,6 +663,16 @@ class DbTableColumn {
     }
 
     /**
+     * Sets ne value. Called after value validation
+     * @param \Closure $valueSetter = function ($newValue, $isFromDb, DbRecordValue $valueContainer) { modify $valueContainer }
+     * @return $this
+     */
+    public function setValueSetter(\Closure $valueSetter) {
+        $this->valueSetter = $valueSetter;
+        return $this;
+    }
+
+    /**
      * @param mixed $newValue
      * @param boolean $isFromDb
      * @param DbRecordValue $valueContainer
@@ -683,16 +694,6 @@ class DbTableColumn {
             $valueContainer->setValidValue($processedValue, $newValue);
         }
         return $valueContainer;
-    }
-
-    /**
-     * Sets ne value. Called after value validation
-     * @param \Closure $valueSetter = function ($newValue, $isFromDb, DbRecordValue $valueContainer) { modify $$valueContainer }
-     * @return $this
-     */
-    public function setValueSetter(\Closure $valueSetter) {
-        $this->valueSetter = $valueSetter;
-        return $this;
     }
 
     /**

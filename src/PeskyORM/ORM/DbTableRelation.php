@@ -158,10 +158,11 @@ class DbTableRelation {
 
     /**
      * @return DbTableInterface
+     * @throws \BadMethodCallException
      */
     public function getForeignTable() {
         if ($this->foreignTable === null) {
-            $this->foreignTable = DbClassesManager::getTableInstance($this->foreignTableName);
+            $this->foreignTable = DbClassesManager::i()->getTableInstance($this->foreignTableName);
         }
         return $this->foreignTable;
     }

@@ -2,8 +2,6 @@
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\DbExpr;
-
 class DbRecordsSet {
 
     /**
@@ -12,38 +10,45 @@ class DbRecordsSet {
     protected $table;
 
     /**
-     * @var DbExpr|DbSelect|string
+     * @var DbSelect
      */
-    protected $query;
+    protected $select;
+    /**
+     * @var array
+     */
+    protected $records = null;
 
     /**
-     * @param string|DbSelect|DbExpr $query
-     * @param string|DbTable|null $table - null: only allowed if $query is instance of  DbSelect
+     * @param DbTable $table
+     * @param DbSelect|array $records
      * @return static
      * @throws \InvalidArgumentException
      */
-    static public function create($query, $table = null) {
-        return new static($query, $table);
+    static public function createFromArray(DbTable $table, array $records) {
+        return new static($table, $records);
     }
 
     /**
-     * @param string|DbSelect|DbExpr $query
-     * @param string|DbTable|null $table - null: only allowed if $query is instance of  DbSelect
+     * @param DbSelect $dbSelect
+     * @return static
      * @throws \InvalidArgumentException
      */
-    public function __construct($query, $table = null) {
-        if (!is_string($query) && !($query instanceof DbSelect) && !($query instanceof DbExpr)) {
-            throw new \InvalidArgumentException('$query argument must be an array or instance of DbSelect class');
-        }
-        if ($query instanceof DbSelect) {
-            $table = $query->getTable();
-        } else if (empty($table) || (!is_string($table) && !($table instanceof DbTable))) {
-            throw new \InvalidArgumentException('$table argument must be a not empty string or instance of DbTable class');
-        } else if (is_string($table)) {
-            $table = DbClassesManager::getTableInstance($table);
-        }
-        $this->query = $query;
+    static public function createFromDbSelect(DbSelect $dbSelect) {
+        return new static($dbSelect->getTable(), $dbSelect);
+    }
+
+    /**
+     * @param DbTable $table
+     * @param DbSelect $dbSelectOrRecords
+     * @throws \InvalidArgumentException
+     */
+    protected function __construct(DbTable $table, $dbSelectOrRecords) {
         $this->table = $table;
+        if ($dbSelectOrRecords instanceof DbSelect) {
+            $this->select = $dbSelectOrRecords;
+        } else {
+            $this->records = $dbSelectOrRecords;
+        }
     }
 
 
