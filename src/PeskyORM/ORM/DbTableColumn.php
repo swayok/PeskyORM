@@ -1,6 +1,7 @@
 <?php
 
 namespace PeskyORM\ORM;
+use Swayok\Utils\ValidateValue;
 
 /**
  * Value setter workflow:
@@ -247,17 +248,20 @@ class DbTableColumn {
     }
 
     protected function setDefaultClosures() {
-        $this->setValueGetter(function (DbRecordValue $value, $format = null) {
-            return $this->defaultValueGetter($value, $format);
+        $this->setValueGetter(function (DbRecordValue $valueContainer, $format = null) {
+            return $valueContainer->getColumn()->defaultValueGetter($valueContainer, $format);
         });
         $this->setValueSetter(function ($newValue, $isFromDb, DbRecordValue $valueContainer) {
-            return $this->defaultValueSetter($newValue, $isFromDb, $valueContainer);
+            return $valueContainer->getColumn()->defaultValueSetter($newValue, $isFromDb, $valueContainer);
         });
-        $this->setValueValidator(function (DbRecordValue $value) {
-            return $this->defaultValueValidator($value);
+        $this->setValueValidator(function ($value, DbTableColumn $column) {
+            return $column->defaultValueValidator($value);
         });
-        $this->setValueNormalizer(function ($value, $type) {
-            return $this->defaultValueNormalizer($value, $type);
+        $this->setValueNormalizer(function ($value, DbTableColumn $column) {
+            return $column->defaultValueNormalizer($value);
+        });
+        $this->setValuePreprocessor(function ($newValue, DbTableColumn $column) {
+            $column->defaultValuePreprocessor($newValue);
         });
         list ($formatter, $formats) = DbRecordValueHelpers::getValueFormatterAndFormatsByType($this->getType());
         if (!empty($formatter)) {
@@ -666,19 +670,16 @@ class DbTableColumn {
      * @throws \InvalidArgumentException
      */
     public function defaultValueSetter($newValue, $isFromDb, DbRecordValue $valueContainer) {
-        if (!$valueContainer->getColumn()->isValueCanBeSetOrChanged()) {
+        if (!$this->isValueCanBeSetOrChanged()) {
             throw new \BadMethodCallException(
-                "Column '{$valueContainer->getColumn()->getName()}' restrits value setting adn modification"
+                "Column '{$this->getName()}' restricts value setting and modification"
             );
         }
-        $preprocessedValue = call_user_func($valueContainer->getColumn()->getValuePreprocessor(), $newValue);
+        $preprocessedValue = $this->preprocessValue($newValue);
         $valueContainer->setRawValue($newValue, $preprocessedValue, $isFromDb);
-        $valueContainer->setValidationErrors(call_user_func($this->getValueValidator(), $valueContainer));
+        $valueContainer->setValidationErrors($this->validateValue($valueContainer));
         if ($valueContainer->isValid()) {
-            $processedValue = call_user_func(
-                $valueContainer->getColumn()->getValueNormalizer(),
-                $preprocessedValue
-            );
+            $processedValue = call_user_func($this->getValueNormalizer(), $preprocessedValue, $this);
             $valueContainer->setValidValue($processedValue, $newValue);
         }
         return $valueContainer;
@@ -698,9 +699,7 @@ class DbTableColumn {
      * @return \Closure
      */
     public function getValuePreprocessor() {
-        return $this->valuePreprocessor ?: function ($newValue, DbTableColumn $column) {
-            $this->defaultValuePreprocessor($newValue, $column);
-        };
+        return $this->valuePreprocessor;
     }
 
     /**
@@ -716,21 +715,29 @@ class DbTableColumn {
     /**
      * Uses $column->convertsEmptyValueToNull(), $column->mustTrimValue() and $column->mustLowercaseValue()
      * @param mixed $value
-     * @param DbTableColumn $column
      * @return mixed
      */
-    public function defaultValuePreprocessor($value, DbTableColumn $column) {
-        if (empty($value) && $column->convertsEmptyValueToNull() && !DbRecordValueHelpers::isBoolean($value)) {
+    public function defaultValuePreprocessor($value) {
+        if (empty($value) && $this->convertsEmptyValueToNull() && !ValidateValue::isBoolean($value)) {
             $value = null;
         } else if (is_string($value)) {
-            if ($column->mustTrimValue()) {
+            if ($this->mustTrimValue()) {
                 $value = trim($value);
             }
-            if ($column->mustLowercaseValue()) {
+            if ($this->mustLowercaseValue()) {
                 $value = mb_strtolower($value);
             }
         }
         return $value;
+    }
+
+    /**
+     * Preprocess raw value for validation and normalization
+     * @param mixed $value
+     * @return mixed
+     */
+    public function preprocessValue($value) {
+        return call_user_func($this->getValuePreprocessor(), $value, $this);
     }
 
     /**
@@ -747,7 +754,7 @@ class DbTableColumn {
     /**
      * @param DbRecordValue $value
      * @param null|string $format
-     * @return \Closure
+     * @return mixed
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -787,24 +794,28 @@ class DbTableColumn {
     }
 
     /**
-     * @param DbRecordValue $value
-     * @return \Closure
+     * @param DbRecordValue|mixed $value
+     * @return array
      * @throws \BadMethodCallException
      */
-    public function defaultValueValidator(DbRecordValue $value) {
-        $isValid = DbRecordValueHelpers::isValidDbColumnValue(
-            $value->getColumn(),
-            $value->getValue(),
+    public function defaultValueValidator($value) {
+        if ($value instanceof DbRecordValue) {
+            $value = $value->getValue();
+        }
+        $errors = DbRecordValueHelpers::isValidDbColumnValue(
+            $this,
+            $value,
             static::getValidationErrorsLocalization()
         );
-        if ($isValid && $this->hasValueValidatorExtender()) {
-            $isValid = call_user_func($this->getValueValidatorExtender(), $value);
+        if (empty($errors) && $this->hasValueValidatorExtender()) {
+            $errors = call_user_func($this->getValueValidatorExtender(), $value, $this);
         }
-        return $isValid;
+        return $errors;
     }
 
     /**
-     * @param \Closure $validator = function (DbRecordValue $value) { return ['validation error 1', ...]; }
+     * @param \Closure $validator = function ($value, DbTableColumn $column) { return ['validation error 1', ...]; }
+     * Note: value is mixed or a DbRecordValue instance. If value is mixed - it should be preprocessed
      * @return $this
      */
     public function setValueValidator(\Closure $validator) {
@@ -822,7 +833,8 @@ class DbTableColumn {
 
     /**
      * Additional validation called after
-     * @param \Closure $extender - function (DbRecordValue $value) { return ['validation error 1', ...]; }
+     * @param \Closure $extender - function ($value, DbTableColumn $column) { return ['validation error 1', ...]; }
+     * Note: value has mixed type, not a DbRecordValue instance
      * @return $this
      */
     public function extendValueValidator(\Closure $extender) {
@@ -838,6 +850,18 @@ class DbTableColumn {
     }
 
     /**
+     * Validates a value
+     * @param mixed|DbRecordValue $value
+     * @return mixed
+     */
+    public function validateValue($value) {
+        if (!($value instanceof DbRecordValue)) {
+            $value = $this->preprocessValue($value);
+        }
+        return call_user_func($this->getValueValidator(), $value, $this);
+    }
+
+    /**
      * @return \Closure
      */
     protected function getValueNormalizer() {
@@ -846,16 +870,15 @@ class DbTableColumn {
 
     /**
      * @param mixed $value
-     * @param string $type
      * @return mixed
      */
-    public function defaultValueNormalizer($value, $type) {
-        return DbRecordValueHelpers::normalizeValue($value, $type);
+    public function defaultValueNormalizer($value) {
+        return DbRecordValueHelpers::normalizeValue($value, $this->getType());
     }
 
     /**
      * Function to process new value (for example: convert a value to proper data type)
-     * @param \Closure $normalizer - function ($value, $type) { return 'normalized value'; }
+     * @param \Closure $normalizer - function ($value, DbTableColumn $column) { return 'normalized value'; }
      * @return $this
      */
     public function setValueNormalizer(\Closure $normalizer) {
