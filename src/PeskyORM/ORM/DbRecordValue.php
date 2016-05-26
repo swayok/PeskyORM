@@ -203,19 +203,56 @@ class DbRecordValue {
     }
 
     /**
+     * @param null|string $key
+     * @param mixed|\Closure $default
+     * @param bool $useDefaultValueAsNewValue - if default value is used - save it to custom info as new value
      * @return mixed
+     * @throws \InvalidArgumentException
      */
-    public function getCustomInfo() {
-        return $this->customInfo;
+    public function getCustomInfo($key = null, $default = null, $useDefaultValueAsNewValue = false) {
+        if ($key === null) {
+            return $this->customInfo;
+        } else {
+            if (!is_string($key)) {
+                throw new \InvalidArgumentException('$key argument must be a string');
+            }
+            if (array_key_exists($key, $this->customInfo)) {
+                return $this->customInfo[$key];
+            } else {
+                if ($default instanceof \Closure) {
+                    $default = $default($this);
+                }
+                if ($useDefaultValueAsNewValue) {
+                    $this->customInfo[$key] = $default;
+                }
+                return $default;
+            }
+        }
     }
 
     /**
-     * @param mixed $customInfo
+     * @param string $key
+     * @param mixed $value
      * @return $this
      */
-    public function setCustomInfo($customInfo) {
-        $this->customInfo = $customInfo;
+    public function addCustomInfo($key, $value) {
+        $this->customInfo[$key] = $value;
         return $this;
+    }
+
+    /**
+     * @param null|string $key
+     * @throws \InvalidArgumentException
+     */
+    public function removeCustomInfo($key = null) {
+        if ($key === null) {
+            $this->customInfo = [];
+        } else {
+            if (!is_string($key)) {
+                throw new \InvalidArgumentException('$key argument must be a string');
+            }
+            unset($this->customInfo[$key]);
+        }
     }
 
 }

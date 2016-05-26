@@ -2,9 +2,11 @@
 
 namespace PeskyORM\ORM;
 
+use Swayok\Utils\NormalizeValue;
 use Swayok\Utils\ValidateValue;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
-abstract class DbRecordValueHelpers extends ValidateValue {
+abstract class DbRecordValueHelpers {
 
     /**
      * @param $value
@@ -23,63 +25,69 @@ abstract class DbRecordValueHelpers extends ValidateValue {
         // data type validation
         switch ($column->getType()) {
             case DbTableColumn::TYPE_BOOL:
-                if (!static::isBoolean($value)) {
+                if (!ValidateValue::isBoolean($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_BOOLEAN)];
                 }
                 break;
             case DbTableColumn::TYPE_INT:
-                if (!static::isInteger($value)) {
+                if (!ValidateValue::isInteger($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_INTEGER)];
                 }
                 break;
             case DbTableColumn::TYPE_FLOAT:
-                if (!static::isFloat($value)) {
+                if (!ValidateValue::isFloat($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_FLOAT)];
                 }
                 break;
             case DbTableColumn::TYPE_DATE:
-                if (!static::isDateTime($value)) {
+                if (!ValidateValue::isDateTime($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_DATE)];
                 }
                 break;
             case DbTableColumn::TYPE_TIME:
-                if (!static::isDateTime($value)) {
+                if (!ValidateValue::isDateTime($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_TIME)];
                 }
                 break;
             case DbTableColumn::TYPE_TIMESTAMP:
-                if (!static::isDateTime($value)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_TIMEZONE)];
+            case DbTableColumn::TYPE_UNIX_TIMESTAMP:
+                if (!ValidateValue::isDateTime($value)) {
+                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_TIMESTAMP)];
+                }
+                break;
+            case DbTableColumn::TYPE_TIMESTAMP_WITH_TZ:
+                if (!ValidateValue::isDateTimeWithTz($value)) {
+                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_TIMESTAMP_WITH_TZ)];
                 }
                 break;
             case DbTableColumn::TYPE_TIMEZONE_OFFSET:
-                if (!static::isTimezoneOffset($value)) {
+                if (!ValidateValue::isTimezoneOffset($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_TIMEZONE_OFFSET)];
                 }
                 break;
             case DbTableColumn::TYPE_IPV4_ADDRESS:
-                if (!static::isIpAddress($value)) {
+                if (!ValidateValue::isIpAddress($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_IPV4_ADDRESS)];
                 }
                 break;
             case DbTableColumn::TYPE_JSON:
             case DbTableColumn::TYPE_JSONB:
-                if (!static::isJson($value)) {
+                if (!ValidateValue::isJson($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_JSON)];
                 }
                 break;
             case DbTableColumn::TYPE_FILE:
-                if (!static::isUploadedFile($value)) {
+                if (!ValidateValue::isUploadedFile($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_FILE)];
                 }
                 break;
             case DbTableColumn::TYPE_IMAGE:
-                if (!static::isUploadedImage($value)) {
+                if (!ValidateValue::isUploadedImage($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_IMAGE)];
                 }
                 break;
             case DbTableColumn::TYPE_EMAIL:
-                if (!static::isEmail($value)) {
+                if (!ValidateValue::isEmail($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_EMAIL)];
                 }
                 break;
@@ -110,14 +118,130 @@ abstract class DbRecordValueHelpers extends ValidateValue {
     }
 
     static public function normalizeValue($value, $type) {
+        if ($value === null) {
+            return null;
+        }
         switch ($type) {
             case DbTableColumn::TYPE_BOOL:
-                return static::normalizeBool($value);
+                return NormalizeValue::normalizeBoolean($value);
+            case DbTableColumn::TYPE_INT:
+            case DbTableColumn::TYPE_UNIX_TIMESTAMP:
+                return NormalizeValue::normalizeInteger($value);
+            case DbTableColumn::TYPE_FLOAT:
+                return NormalizeValue::normalizeFloat($value);
+            case DbTableColumn::TYPE_DATE:
+                return NormalizeValue::normalizeDate($value);
+            case DbTableColumn::TYPE_TIME:
+                return NormalizeValue::normalizeTime($value);
+            case DbTableColumn::TYPE_TIMESTAMP:
+                return NormalizeValue::normalizeDateTime($value);
+            case DbTableColumn::TYPE_TIMEZONE_OFFSET:
+                return NormalizeValue::normalizeTimezoneOffset($value);
+            case DbTableColumn::TYPE_JSON:
+            case DbTableColumn::TYPE_JSONB:
+                return NormalizeValue::normalizeJson($value);
+            case DbTableColumn::TYPE_FILE:
+            case DbTableColumn::TYPE_IMAGE:
+                return static::normalizeFile($value);
+            default:
+                return $value;
+        }
+    }
+
+    static public function normalizeFile($value) {
+        if ($value instanceof UploadedFile) {
+            return $value;
+        } else {
+            return new UploadedFile(
+                $value['tmp_name'],
+                $value['name'],
+                $value['type'],
+                $value['size'],
+                $value['error']
+            );
         }
     }
 
     static public function getValueFormatterAndFormatsByType($type) {
-        return [null, []];
+        $formatter = null;
+        $formats = [];
+        switch ($type) {
+            case DbTableColumn::TYPE_UNIX_TIMESTAMP:
+            case DbTableColumn::TYPE_TIMESTAMP:
+            case DbTableColumn::TYPE_TIMESTAMP_WITH_TZ:
+                $formats = ['date', 'time', 'unix_ts'];
+                $formatter = function (DbRecordValue $valueContainer, $format) {
+                    static::formatTimestamp($valueContainer, $format);
+                };
+                break;
+            case DbTableColumn::TYPE_DATE:
+            case DbTableColumn::TYPE_TIME:
+                $formats = ['unix_ts'];
+                $formatter = function (DbRecordValue $valueContainer, $format) {
+                    static::formatDateOrTime($valueContainer, $format);
+                };
+                break;
+            case DbTableColumn::TYPE_JSON:
+            case DbTableColumn::TYPE_JSONB:
+                $formats = ['array', 'object'];
+                $formatter = function (DbRecordValue $valueContainer, $format) {
+                    static::formatJson($valueContainer, $format);
+                };
+                break;
+            case DbTableColumn::TYPE_FILE:
+            case DbTableColumn::TYPE_IMAGE:
+                // todo: implement formatters for file types
+                throw new \InvalidArgumentException("Formatters for type '$type' are not implemented yet"); 
+                break;
+        }
+        return [$formatter, $formats];
+    }
+
+    static public function formatTimestamp(DbRecordValue $valueContainer, $format) {
+        if (!is_string($format)) {
+            throw new \InvalidArgumentException('$format argument must be a string');
+        }
+        return $valueContainer->getCustomInfo('as_' . $format, function (DbRecordValue $valueContainer) use ($format) {
+            switch ($format) {
+                case 'date':
+                    return date(NormalizeValue::DATE_FORMAT, strtotime($valueContainer->getValue()));
+                case 'time':
+                    return date(NormalizeValue::TIME_FORMAT, strtotime($valueContainer->getValue()));
+                case 'unix_ts':
+                    return strtotime($valueContainer->getValue());
+                default:
+                    throw new \InvalidArgumentException("Requested value format '$format' is not implemented"); 
+            }
+        }, true);
+    }
+
+    static public function formatDateOrTime(DbRecordValue $valueContainer, $format) {
+        if (!is_string($format)) {
+            throw new \InvalidArgumentException('$format argument must be a string');
+        }
+        return $valueContainer->getCustomInfo('as_' . $format, function (DbRecordValue $valueContainer) use ($format) {
+            if ($format === 'unix_ts') {
+                return strtotime($valueContainer->getValue());
+            } else {
+                throw new \InvalidArgumentException("Requested value format '$format' is not implemented");
+            }
+        }, true);
+    }
+
+    static public function formatJson(DbRecordValue $valueContainer, $format) {
+        if (!is_string($format)) {
+            throw new \InvalidArgumentException('$format argument must be a string');
+        }
+        return $valueContainer->getCustomInfo('as_' . $format, function (DbRecordValue $valueContainer) use ($format) {
+            switch ($format) {
+                case 'array':
+                    return json_decode($valueContainer->getValue(), true);
+                case 'object':
+                    return json_decode($valueContainer->getValue());
+                default:
+                    throw new \InvalidArgumentException("Requested value format '$format' is not implemented");
+            }
+        }, true);
     }
 
 }

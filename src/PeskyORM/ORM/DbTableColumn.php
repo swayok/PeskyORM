@@ -25,6 +25,8 @@ class DbTableColumn {
     const TYPE_JSONB = 'jsonb';
     const TYPE_PASSWORD = 'password';
     const TYPE_TIMESTAMP = 'timestamp';
+    const TYPE_TIMESTAMP_WITH_TZ = 'timestamp_tz';
+    const TYPE_UNIX_TIMESTAMP = 'unix_timestamp';
     const TYPE_DATE = 'date';
     const TYPE_TIME = 'time';
     const TYPE_TIMEZONE_OFFSET = 'timezone_offset';
@@ -47,7 +49,8 @@ class DbTableColumn {
     const VALUE_MUST_BE_IPV4_ADDRESS = 'value_must_be_ipv4_address';
     const VALUE_MUST_BE_EMAIL = 'value_must_be_email';
     const VALUE_MUST_BE_TIMEZONE_OFFSET = 'value_must_be_timezone_offset';
-    const VALUE_MUST_BE_TIMEZONE = 'value_must_be_timezone';
+    const VALUE_MUST_BE_TIMESTAMP = 'value_must_be_timestamp';
+    const VALUE_MUST_BE_TIMESTAMP_WITH_TZ = 'value_must_be_timestamp_with_tz';
     const VALUE_MUST_BE_TIME = 'value_must_be_time';
     const VALUE_MUST_BE_DATE = 'value_must_be_date';
     const VALUE_IS_NOT_ALLOWED = 'value_is_not_allowed';
@@ -67,7 +70,8 @@ class DbTableColumn {
         self::VALUE_MUST_BE_IPV4_ADDRESS => 'Value must be an IPv4 address',
         self::VALUE_MUST_BE_EMAIL => 'Value must be an email',
         self::VALUE_MUST_BE_TIMEZONE_OFFSET => 'Value must be a valid timezone offset',
-        self::VALUE_MUST_BE_TIMEZONE => 'Value must be a valid timestamp',
+        self::VALUE_MUST_BE_TIMESTAMP => 'Value must be a valid timestamp',
+        self::VALUE_MUST_BE_TIMESTAMP_WITH_TZ => 'Value must be a valid timestamp with time zone',
         self::VALUE_MUST_BE_TIME => 'Value must be a valid time',
         self::VALUE_MUST_BE_DATE => 'Value must be a valid date',
         self::VALUE_IS_NOT_ALLOWED => 'Value is not allowed',
