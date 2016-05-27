@@ -26,6 +26,15 @@ abstract class DbRecord {
      * @var DbRecord[]
      */
     protected $relatedRecords = [];
+    /**
+     * @var bool
+     */
+    protected $isCollectingUpdates = false;
+    /**
+     * Collected when value is updated during $this->isCollectingUpdates === true
+     * @var DbRecordValue[]
+     */
+    protected $valuesBackup = [];
 
     /**
      * Create new record with values from $data array
@@ -108,6 +117,15 @@ abstract class DbRecord {
     }
 
     /**
+     * @return DbTableColumn[]
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    static public function getColumns() {
+        return static::getTableStructure()->getColumns();
+    }
+
+    /**
      * @param string $name
      * @return DbTableColumn
      * @throws \BadMethodCallException
@@ -171,12 +189,22 @@ abstract class DbRecord {
     protected function reset() {
         $this->values = [];
         $this->relatedRecords = [];
+        $this->cleanUpdates();
         foreach (static::getTableStructure()->getColumns() as $columnName => $column) {
             $this->values[$columnName] = DbRecordValue::create($column, $this);
         }
     }
 
     /**
+     * Clean properties related to updated columns
+     */
+    protected function cleanUpdates() {
+        $this->valuesBackup = [];
+        $this->isCollectingUpdates = false;
+    }
+
+    /**
+     * Warning: do not use it to get/set/check value!
      * @param string $columnName
      * @return DbRecordValue
      * @throws \BadMethodCallException
@@ -188,12 +216,17 @@ abstract class DbRecord {
 
     /**
      * @param string $columnName
+     * @param null $format
      * @return mixed
-     * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
      */
-    public function getColumnValue($columnName) {
-        return $this->getColumnValueObject($columnName)->getValue();
+    public function getColumnValue($columnName, $format = null) {
+        return call_user_func(
+            static::getColumn($columnName)->getValueGetter(),
+            $this->getColumnValueObject($columnName),
+            $format
+        );
     }
 
     /**
@@ -203,7 +236,10 @@ abstract class DbRecord {
      * @throws \InvalidArgumentException
      */
     public function hasColumnValue($columnName) {
-        return $this->getColumnValueObject($columnName)->hasValue();
+        return call_user_func(
+            static::getColumn($columnName)->getValueExistenceChecker(),
+            $this->getColumnValueObject($columnName)
+        );
     }
 
     /**
@@ -215,6 +251,14 @@ abstract class DbRecord {
      * @throws \InvalidArgumentException
      */
     public function setColumnValue($columnName, $value, $isFromDb) {
+        $valueContainer = $this->getColumnValueObject($columnName);
+        if (!$isFromDb && !$valueContainer->getColumn()->isValueCanBeSetOrChanged()) {
+            throw new \BadMethodCallException("It is forbidden to modify or set value of a '{$columnName}' column");
+        }
+        $isCollectingUpdates = $this->isCollectingUpdates && $valueContainer->getColumn()->isItExistsInDb();
+        if ($isCollectingUpdates && !array_key_exists($columnName, $this->valuesBackup)) {
+            $this->valuesBackup[$columnName] = clone $valueContainer;
+        }
         call_user_func(
             static::getColumn($columnName)->getValueSetter(),
             $value,
@@ -244,8 +288,8 @@ abstract class DbRecord {
 
     /**
      * @return bool
-     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
     public function existsInDb() {
         return (
@@ -292,8 +336,8 @@ abstract class DbRecord {
     /**
      * @param string $relationName
      * @return $this
-     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
     public function readRelatedRecord($relationName) {
         $relation = $this->getRelation($relationName);
@@ -334,17 +378,7 @@ abstract class DbRecord {
      */
     public function fromData(array $data, $isFromDb = false, $haltOnUnknownColumnNames = true) {
         $this->reset();
-        foreach ($data as $columnNameOreRelationName => $value) {
-            if (static::hasColumn($columnNameOreRelationName)) {
-                $this->setColumnValue($columnNameOreRelationName, $value, $isFromDb);
-            } else if (static::hasRelation($columnNameOreRelationName)) {
-                $this->setRelatedRecord($columnNameOreRelationName, $value, $isFromDb, $haltOnUnknownColumnNames);
-            } else if ($haltOnUnknownColumnNames) {
-                throw new \InvalidArgumentException(
-                    "\$data argument contains unknown column name or relation name: '$columnNameOreRelationName'"
-                );
-            }
-        }
+        $this->updateValues($data, $isFromDb, $haltOnUnknownColumnNames);
         return $this;
     }
 
@@ -364,10 +398,10 @@ abstract class DbRecord {
      * @param mixed $pkValue
      * @param array $readRelatedRecords - also read related records
      * @return $this
-     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
-    private function fromPrimaryKey($pkValue, array $readRelatedRecords = []) {
+    public function fromPrimaryKey($pkValue, array $readRelatedRecords = []) {
         $hasOneAndBelongsToRelations = [];
         $hasManyRelations = [];
         foreach ($readRelatedRecords as $relationName) {
@@ -395,15 +429,137 @@ abstract class DbRecord {
      * Note: relations can be loaded via 'CONTAIN' key in $conditionsAndOptions
      * @param array $conditionsAndOptions
      * @return $this
-     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
-    private function fromDb(array $conditionsAndOptions) {
+    public function fromDb(array $conditionsAndOptions) {
         $record = $this->getTable()->selectOne('*', $conditionsAndOptions);
         if (!empty($record)) {
             return $this->fromDbData($record);
         }
         return $this;
+    }
+
+    /**
+     * @param array $data
+     * @param bool $isFromDb - true: marks values as loaded from DB
+     * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
+     * @return $this
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     */
+    public function updateValues(array $data, $isFromDb = false, $haltOnUnknownColumnNames = true) {
+        foreach ($data as $columnNameOrRelationName => $value) {
+            if (static::hasColumn($columnNameOrRelationName)) {
+                $this->setColumnValue($columnNameOrRelationName, $value, $isFromDb);
+            } else if (static::hasRelation($columnNameOrRelationName)) {
+                $this->setRelatedRecord($columnNameOrRelationName, $value, $isFromDb, $haltOnUnknownColumnNames);
+            } else if ($haltOnUnknownColumnNames) {
+                throw new \InvalidArgumentException(
+                    "\$data argument contains unknown column name or relation name: '$columnNameOrRelationName'"
+                );
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * Start collecting column updates
+     * @throws \BadMethodCallException
+     */
+    public function begin() {
+        if ($this->isCollectingUpdates) {
+            throw new \BadMethodCallException('Attempt to begin collecting changes when already collecting changes');
+        }
+        $this->isCollectingUpdates = true;
+        $this->valuesBackup = [];
+    }
+
+    /**
+     * Restore values updated since $this->begin()
+     * @throws \BadMethodCallException
+     */
+    public function rollback() {
+        if (!$this->isCollectingUpdates) {
+            throw new \BadMethodCallException(
+                'It is impossible to rollback changed values: changes collecting was not started'
+            );
+        }
+        if (!empty($this->valuesBackup)) {
+            $this->values = array_replace($this->values, $this->valuesBackup);
+        }
+        $this->cleanUpdates();
+    }
+
+    /**
+     * Save changed values to DB
+     * @return bool
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    public function commit() {
+        if (!$this->isCollectingUpdates) {
+            throw new \BadMethodCallException(
+                'It is impossible to commit changed values: changes collecting was not started'
+            );
+        }
+        $columnsToSave = array_keys($this->valuesBackup);
+        $this->cleanUpdates();
+        return $this->saveToDb($columnsToSave);
+    }
+
+    /**
+     * @param array $relationsToSave
+     * @return bool
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     */
+    public function save(array $relationsToSave = []) {
+        return $this->saveToDb($this->getAllColumnsThatCanBeSavedToDb(), $relationsToSave);
+    }
+
+    /**
+     * Get names of all columns that can be saved to db
+     * @return array
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    protected function getAllColumnsThatCanBeSavedToDb() {
+        $columnsNames = [];
+        foreach ($this->getColumns() as $columnName => $column) {
+            if ($column->isValueCanBeSetOrChanged() && $this->existsInDb()) {
+                $columnsNames[] = $columnName;
+            }
+        }
+        return $columnsNames;
+    }
+
+    /**
+     * @param array $columnsToSave
+     * @param array $relationsToSave
+     * @return bool
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     */
+    protected function saveToDb(array $columnsToSave = [], array $relationsToSave = []) {
+        if (empty($columnsToSave) && empty($relationsToSave)) {
+            // nothing to save
+            return true;
+        }
+        $diff = array_diff(array_keys($this->values), $columnsToSave);
+        if (count($diff)) {
+            throw new \InvalidArgumentException(
+                '$columnsToSave argument contains unknown columns: ' . implode(', ', $diff)
+            );
+        }
+        $diff = array_diff($this->getAllColumnsThatCanBeSavedToDb(), $columnsToSave);
+        if (count($diff)) {
+            throw new \InvalidArgumentException(
+                '$columnsToSave argument contains columns that cannot be saved to DB: '  . implode(', ', $diff)
+            );
+        }
+        // todo: validate and save columns, update values returned after saving
+        return false;
     }
 
 }

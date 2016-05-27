@@ -19,7 +19,7 @@ interface DbTableInterface {
      * For example: if table name is 'user_actions' the alias might be 'UserActions'
      * @return string
      */
-    static public function getTableAlias();
+    static public function getAlias();
 
     /**
      * @return DbAdapterInterface

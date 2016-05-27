@@ -10,27 +10,32 @@ abstract class DbClassesManager implements DbClassesManagerInterface {
     static private $instance = null;
 
     /**
+     * Craeate class instance. Must be called from a child class
+     * @throws \BadMethodCallException
+     */
+    final static public function init() {
+        if (DbClassesManager::$instance !== null) {
+            throw new \BadMethodCallException('Class already initiated');
+        }
+        if (get_called_class() === __CLASS__) {
+            throw new \BadMethodCallException(
+                'Class ' . __CLASS__ . ' cannot be used directly. You need to extend it and call init() '
+                . ' method from child class. Note: only 1 child class can be used at once.'
+            );
+        }
+        DbClassesManager::$instance = new static();
+    }
+
+    /**
+     * Get instance of a manager
      * @return $this
      * @throws \BadMethodCallException
      */
     final static public function getInstance() {
         if (DbClassesManager::$instance === null) {
-            if (get_called_class() === __CLASS__) {
-                throw new \BadMethodCallException(
-                    'Class ' . __CLASS__ . ' cannot be used directly. You need to extend it and call getInstance() '
-                    . ' method from child class. Note: only 1 child class can be used at once.'
-                );
-            }
-            DbClassesManager::$instance = new static();
+            throw new \BadMethodCallException('Class must be initiated first');
         }
         return DbClassesManager::$instance;
-    }
-
-    /**
-     * Final constructor to be sure there is no other instances
-     */
-    final protected function __construct() {
-
     }
 
     /**
@@ -40,6 +45,10 @@ abstract class DbClassesManager implements DbClassesManagerInterface {
      */
     final static public function i() {
         return static::getInstance();
+    }
+
+    final protected function __construct() {
+
     }
 
 }

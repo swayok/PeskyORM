@@ -54,6 +54,23 @@ class DbRecordValue {
         $this->record = $record;
     }
 
+    public function __clone() {
+        if (is_object($this->value)) {
+            $this->value = clone $this->value;
+        }
+        if (is_object($this->rawValue)) {
+            $this->rawValue = clone $this->rawValue;
+        }
+        if (is_object($this->oldValue)) {
+            $this->oldValue = clone $this->oldValue;
+        }
+        foreach ($this->customInfo as $key => &$value) {
+            if (is_object($value)) {
+                $value = clone $value;
+            }
+        }
+    }
+
     /**
      * @return DbTableColumn
      */
@@ -179,6 +196,24 @@ class DbRecordValue {
     }
 
     /**
+     * @return bool
+     */
+    public function hasOldValue() {
+        return $this->hasOldValue;
+    }
+
+    /**
+     * @return mixed
+     * @throws \BadMethodCallException
+     */
+    public function getOldValue() {
+        if (!$this->hasOldValue()) {
+            throw new \BadMethodCallException('Old value is not set');
+        }
+        return $this->oldValue;
+    }
+
+    /**
      * @return array
      */
     public function getValidationErrors() {
@@ -228,6 +263,13 @@ class DbRecordValue {
                 return $default;
             }
         }
+    }
+
+    /**
+     * @param array $data
+     */
+    public function setCustomInfo(array $data) {
+        $this->customInfo = $data;
     }
 
     /**

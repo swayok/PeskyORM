@@ -159,6 +159,12 @@ class DbTableColumn {
      */
     protected $valueGetter = null;
     /**
+     * Function to check if column value is set
+     * By default: $this->defaultValueExistenceChecker()
+     * @var null|\Closure
+     */
+    protected $valueExistenceChecker = null;
+    /**
      * Function to set new column value
      * By default: $this->defaultValueSetter()
      * @var null|\Closure
@@ -237,8 +243,8 @@ class DbTableColumn {
     /**
      * @param string $name
      * @param string $type
-     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
     public function __construct($name, $type) {
         if (!empty($name)) {
@@ -251,6 +257,9 @@ class DbTableColumn {
     protected function setDefaultClosures() {
         $this->setValueGetter(function (DbRecordValue $valueContainer, $format = null) {
             return $valueContainer->getColumn()->defaultValueGetter($valueContainer, $format);
+        });
+        $this->setValueExistenceChecker(function (DbRecordValue $valueContainer) {
+            return $valueContainer->getColumn()->defaultValueExistenceChecker($valueContainer);
         });
         $this->setValueSetter(function ($newValue, $isFromDb, DbRecordValue $valueContainer) {
             return $valueContainer->getColumn()->defaultValueSetter($newValue, $isFromDb, $valueContainer);
@@ -307,8 +316,8 @@ class DbTableColumn {
     /**
      * @param string $name
      * @return $this
-     * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
      */
     public function setName($name) {
         if ($this->hasName()) {
@@ -333,7 +342,6 @@ class DbTableColumn {
     /**
      * @param string $type
      * @return $this
-     * @throws \InvalidArgumentException
      */
     protected function setType($type) {
         $type = strtolower($type);
@@ -655,8 +663,6 @@ class DbTableColumn {
 
     /**
      * @return callable|null
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
     public function getValueSetter() {
         return $this->valueSetter;
@@ -742,11 +748,8 @@ class DbTableColumn {
     }
 
     /**
-     * Returns a value
+     * Get function that returns a column value
      * @return \Closure
-     * @throws \InvalidArgumentException
-     * @throws \PeskyORM\ORM\Exception\ValueNotFoundException
-     * @throws \BadMethodCallException
      */
     public function getValueGetter() {
         return $this->valueGetter;
@@ -756,8 +759,8 @@ class DbTableColumn {
      * @param DbRecordValue $value
      * @param null|string $format
      * @return mixed
-     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
     public function defaultValueGetter(DbRecordValue $value, $format = null) {
         if ($format) {
@@ -784,6 +787,33 @@ class DbTableColumn {
      */
     public function setValueGetter(\Closure $valueGetter) {
         $this->valueGetter = $valueGetter;
+        return $this;
+    }
+
+    /**
+     * Get function that checks if column value is set
+     * @return \Closure
+     */
+    public function getValueExistenceChecker() {
+        return $this->valueExistenceChecker;
+    }
+
+    /**
+     * @param DbRecordValue $value
+     * @return mixed
+     */
+    public function defaultValueExistenceChecker(DbRecordValue $value) {
+        return $value->hasValue();
+    }
+
+    /**
+     * Set function that checks if column value is set and returns boolean value (true: value is set)
+     * Note: column value is set if it has any value (even null) or default value
+     * @param \Closure $valueChecker = function (DbRecordValue $value) { return true; }
+     * @return $this
+     */
+    public function setValueExistenceChecker(\Closure $valueChecker) {
+        $this->valueExistenceChecker = $valueChecker;
         return $this;
     }
 

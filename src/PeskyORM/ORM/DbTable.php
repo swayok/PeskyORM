@@ -13,17 +13,7 @@ abstract class DbTable implements DbTableInterface {
     /** @var string  */
     static protected $alias;
     /** @var DbTableStructure */
-    static protected $tableSchema;
-
-    /**
-     * @return string
-     */
-    static public function getTableAlias() {
-        if (static::$alias === null) {
-            static::$alias = StringUtils::classify(static::getTableName());
-        }
-        return static::$alias;
-    }
+    static protected $tableStructure;
 
     /**
      * @return $this
@@ -39,7 +29,9 @@ abstract class DbTable implements DbTableInterface {
                     OrmException::CODE_INVALID_TABLE_SCHEMA
                 );
             }
-            static::$instance = static();
+            static::$instance = new static();
+            static::$alias = StringUtils::classify(static::getTableName());
+            static::$tableStructure = DbClassesManager::i()->getTableStructure(static::getTableName());
         }
         return static::$instance;
     }
@@ -51,8 +43,23 @@ abstract class DbTable implements DbTableInterface {
      * @throws \InvalidArgumentException
      * @throws OrmException
      */
-    static public function _() {
+    static public function i() {
         return static::getInstance();
+    }
+
+    /**
+     * @return string
+     */
+    static public function getAlias() {
+        return static::$alias;
+    }
+
+    /**
+     * @return DbTableStructure
+     * @throws \BadMethodCallException
+     */
+    static public function getStructure() {
+        return static::$tableStructure;
     }
 
     /**
@@ -80,17 +87,6 @@ abstract class DbTable implements DbTableInterface {
      */
     static public function getPkColumnName() {
         return static::getStructure()->getPkColumnName();
-    }
-
-    /**
-     * @return DbTableStructure
-     * @throws \BadMethodCallException
-     */
-    static public function getStructure() {
-        if (static::$tableSchema === null) {
-            static::$tableSchema = DbClassesManager::i()->getTableStructure(static::getTableName());
-        }
-        return static::$tableSchema;
     }
 
     /**
@@ -501,7 +497,7 @@ abstract class DbTable implements DbTableInterface {
                 // $column = 'column'|'column::data_type_convert'
                 $ret['table'] = static::getInstance();
                 $ret['column'] = $columnParts[1];
-                $ret['table_alias'] = static::getTableAlias();
+                $ret['table_alias'] = static::getAlias();
             } else {
                 // $column = 'table_alias.column'|'table_alias.column::data_type_convert'
                 list(, $ret['table_alias'], $ret['column']) = $columnParts;
