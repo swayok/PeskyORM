@@ -5,6 +5,7 @@ namespace PeskyORM\Core;
 class DbException extends \PDOException {
 
     const CODE_ADAPTER_IMPLEMENTATION_PROBLEM = 13001;
+    const CODE_DB_DOES_NOT_SUPPORT_FEATURE = 13002;
 
     const CODE_INSERT_FAILED = 13401;
     const CODE_RETURNING_FAILED = 13402;

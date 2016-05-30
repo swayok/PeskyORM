@@ -337,18 +337,42 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
      *          Data type is one of \PDO::PARAM_* contants or null.
      *          If value is null or column not present - value quoter will autodetect column type (see quoteValue())
+     * @param bool|array $returning - return some data back after $data inserted to $table
+     *          - true: return values for all columns of inserted table row
+     *          - false: do not return anything
+     *          - array: list of columns to return values for
      * @return int - number of modified rows
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \PeskyORM\Core\DbException
      */
-    public function update($table, array $data, $conditions, array $dataTypes = []) {
+    public function update($table, array $data, $conditions, array $dataTypes = [], $returning = false) {
         $this->guardTableNameArg($table);
         $this->guardDataArg($data);
         $this->guardConditionsArg($conditions);
         $query = 'UPDATE ' . $this->quoteName($table)  . ' SET ' . $this->buildValuesListForUpdate($data, $dataTypes)
             . ' WHERE ' . ($conditions instanceof DbExpr ? $this->replaceDbExprQuotes($conditions) : $conditions);
-        return $this->exec($query);
+        if (empty($returning)) {
+            return $this->exec($query);
+        } else {
+            $records = $this->resolveQueryWithReturningColumns(
+                $query,
+                $table,
+                array_keys($data),
+                $data,
+                $dataTypes,
+                $returning,
+                null,
+                'update'
+            );
+            if (!is_array($records)) {
+                throw new DbException(
+                    'DB Adapter [' . get_class($this) . '] returned non-array from resolveQueryWithReturningColumns()',
+                    DbException::CODE_ADAPTER_IMPLEMENTATION_PROBLEM
+                );
+            }
+            return $records;
+        }
     }
 
     /**

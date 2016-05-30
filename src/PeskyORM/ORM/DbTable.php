@@ -119,6 +119,14 @@ abstract class DbTable implements DbTableInterface {
     }
 
     /**
+     * @return DbExpr
+     * @throws \PeskyORM\Core\DbException
+     */
+    static public function getExpressionToSetDefaultValueForAColumn() {
+        return static::getConnection()->getExpressionToSetDefaultValueForAColumn();
+    }
+
+    /**
      * @return DbRecord
      * @throws \BadMethodCallException
      */
@@ -299,19 +307,23 @@ abstract class DbTable implements DbTableInterface {
     /**
      * @param array $data - key-value array where key = table column and value = value of associated column
      * @param array $conditions - WHERE conditions
+     * @param bool|array $returning - return some data back after $data inserted to $table
+     *          - true: return values for all columns of inserted table row
+     *          - false: do not return anything
+     *          - array: list of columns to return values for
      * @return int - number of modified rows
-     * @throws \BadMethodCallException
-     * @throws OrmException
+     * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PDOException
+     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Core\DbException
      */
-    static public function update(array $data, array $conditions) {
+    static public function update(array $data, array $conditions, $returning = false) {
         return static::getConnection()->update(
             static::getTableName(),
             $data,
             static::assembleWhereConditionsFromArray($conditions),
-            static::getPdoDataTypesForColumns()
+            static::getPdoDataTypesForColumns(),
+            $returning
         );
     }
 

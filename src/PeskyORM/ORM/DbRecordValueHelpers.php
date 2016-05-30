@@ -9,18 +9,21 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 abstract class DbRecordValueHelpers {
 
     /**
-     * @param $value
+     * @param mixed $value
      * @param DbTableColumn $column
-     * @param $errorMessages
+     * @param array $errorMessages
      * @return array
      */
-    static public function isValidDbColumnValue($value, DbTableColumn $column, $errorMessages) {
+    static public function isValidDbColumnValue($value, DbTableColumn $column, array $errorMessages = []) {
         // null value validation
         if ($value === null) {
             if (!$column->isValueCanBeNull()) {
                 return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_CANNOT_BE_NULL)];
             }
             return [];
+        }
+        if ($value === null && $column->isValueRequired()) {
+            return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_REQUIRED)];
         }
         // data type validation
         switch ($column->getType()) {
@@ -113,7 +116,7 @@ abstract class DbRecordValueHelpers {
         return [];
     }
 
-    static protected function getErrorMessage(array $errorMessages, $key) {
+    static public function getErrorMessage(array $errorMessages, $key) {
         return array_key_exists($key, $errorMessages) ? $errorMessages[$key] : $key;
     }
 

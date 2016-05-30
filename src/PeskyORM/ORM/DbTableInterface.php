@@ -203,4 +203,11 @@ interface DbTableInterface {
      */
     static public function parseColumnRepresentation($column);
 
+    /**
+     * Return DbExpr to set default value for a column.
+     * Example for MySQL and PostgreSQL: DbExpr::create('DEFAULT')
+     * @return DbExpr
+     */
+    static public function getExpressionToSetDefaultValueForAColumn();
+
 }

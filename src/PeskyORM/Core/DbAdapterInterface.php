@@ -75,11 +75,15 @@ interface DbAdapterInterface {
      * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
      *          Data type is one of \PDO::PARAM_* contants or null.
      *          If value is null or column not present - value quoter will autodetect column type (see quoteValue())
+     * @param bool|array $returning - return some data back after $data inserted to $table
+     *          - true: return values for all columns of inserted table row
+     *          - false: do not return anything
+     *          - array: list of columns to return values for
      * @return int - number of modified rows
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function update($table, array $data, $conditions, array $dataTypes = []);
+    public function update($table, array $data, $conditions, array $dataTypes = [], $returning = false);
 
     /**
      * @param string $table
@@ -272,5 +276,14 @@ interface DbAdapterInterface {
      * @return array
      */
     public function describeTable($table);
+
+    /**
+     * Return DbExpr to set default value for a column.
+     * Example for MySQL and PostgreSQL: DbExpr::create('DEFAULT') and used for updates and inserts
+     * Note: throw exception if adapter does not support this feature
+     * @return DbExpr
+     * @throws DbException
+     */
+    public function getExpressionToSetDefaultValueForAColumn();
 
 }

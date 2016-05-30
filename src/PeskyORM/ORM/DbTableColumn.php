@@ -57,7 +57,8 @@ class DbTableColumn {
     const VALUE_MUST_BE_DATE = 'value_must_be_date';
     const VALUE_IS_NOT_ALLOWED = 'value_is_not_allowed';
     const VALUE_MUST_BE_STRING = 'value_must_be_string';
-    
+    const VALUE_IS_REQUIRED = 'value_is_required';
+
     /**
      * @var array
      */
@@ -78,6 +79,7 @@ class DbTableColumn {
         self::VALUE_MUST_BE_DATE => 'Value must be a valid date',
         self::VALUE_IS_NOT_ALLOWED => 'Value is not allowed',
         self::VALUE_MUST_BE_STRING => 'Value must be a string',
+        self::VALUE_IS_REQUIRED => 'Value is required',
     ];
 
     // params that can be set directly or calculated
@@ -195,6 +197,12 @@ class DbTableColumn {
      * @var null|\Closure
      */
     protected $valueValidatorExtender = null;
+    /**
+     * Saves value somewhere except DB. Used only with columns that are not present in DB
+     * For example: saves files and images to file system
+     * @var null|\Closure
+     */
+    protected $valueSaver = null;
     /**
      * Formats value. Used in default getter to add possibility to convert original value to specific format
      * For example: convert json to array, or timestamp like 2016-05-24 17:24:00 to unix timestamp
@@ -915,6 +923,35 @@ class DbTableColumn {
     public function setValueNormalizer(\Closure $normalizer) {
         $this->valueNormalizer = $normalizer;
         return $this;
+    }
+
+    /**
+     * @return \Closure|null
+     */
+    public function getValueSaver() {
+        return $this->valueSaver;
+    }
+
+    /**
+     * @param \Closure $valueSaver function (DbRecordValue $valueContainer) { save value somewhere }
+     * @return $this
+     * @throws \BadMethodCallException
+     */
+    public function setValueSaver(\Closure $valueSaver) {
+        if ($this->isItExistsInDb()) {
+            throw new \BadMethodCallException(
+                'Value saver function is not allowed for columns that are present in DB'
+            );
+        }
+        $this->valueSaver = $valueSaver;
+        return $this;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function hasValueSaver() {
+        return $this->valueSaver !== null;
     }
 
     /**

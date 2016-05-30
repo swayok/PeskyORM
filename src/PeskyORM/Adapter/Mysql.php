@@ -104,6 +104,8 @@ class Mysql extends DbAdapter {
                 );
             case 'delete':
                 return $this->resolveDeleteQueryWithReturningColumns($query, $table, $returning);
+            case 'update':
+                return $this->resolveUpdateQueryWithReturningColumns($query, $table, $returning);
             default:
                 throw new \InvalidArgumentException("\$operation '$operation' is not supported by " . __CLASS__);
         }
@@ -175,8 +177,30 @@ class Mysql extends DbAdapter {
             );
         } else if ($stmnt->rowCount() !== count($data)) {
             throw new DbException(
-                'Received amount of records (' . count($data) . ") differs from expected ({$stmnt->rowCount()})"
+                "Received amount of records ({$stmnt->rowCount()}) differs from expected (" . count($data) . ')'
                     . '. Insert: ' . $insertQuery . '. Select: ' . $this->getLastQuery(),
+                DbException::CODE_RETURNING_FAILED
+            );
+        }
+        return Utils::getDataFromStatement($stmnt, Utils::FETCH_ALL);
+    }
+
+    protected function resolveUpdateQueryWithReturningColumns(
+        $updateQuery,
+        $table,
+        $returning
+    ) {
+        $rowsUpdated = parent::exec($updateQuery);
+        if (empty($rowsUpdated)) {
+            return [];
+        }
+        $conditionsAndOptions = preg_replace('%^.*?WHERE\s*(.*)$%is', '$1', $updateQuery);
+        $selectQuery = DbExpr::create("SELECT {$returning} FROM {$table} WHERE {$conditionsAndOptions}");
+        $stmnt = $this->query($selectQuery, Utils::FETCH_ALL);
+        if ($stmnt->rowCount() !== $rowsUpdated) {
+            throw new DbException(
+                "Received amount of records ({$stmnt->rowCount()}) differs from expected ({$rowsUpdated})"
+                    . '. Update: ' . $updateQuery . '. Select: ' . $this->getLastQuery(),
                 DbException::CODE_RETURNING_FAILED
             );
         }
@@ -190,11 +214,11 @@ class Mysql extends DbAdapter {
     ) {
         $conditions = preg_replace('%^.*WHERE%i', '', $query);
         $stmnt = $this->query("SELECT {$returning} FROM {$table} WHERE {$conditions}");
-        if ($stmnt->rowCount()) {
-            $this->exec($query);
-            return Utils::getDataFromStatement($stmnt, Utils::FETCH_ALL);
+        if (!$stmnt->rowCount()) {
+            return [];
         }
-        return [];
+        $this->exec($query);
+        return Utils::getDataFromStatement($stmnt, Utils::FETCH_ALL);
     }
 
 
@@ -206,5 +230,13 @@ class Mysql extends DbAdapter {
     public function describeTable($table) {
         // todo: implement describeTable
     }
+
+    /**
+     * @return DbExpr
+     */
+    public function getExpressionToSetDefaultValueForAColumn() {
+        return DbExpr::create('DEFAULT');
+    }
+
 
 }

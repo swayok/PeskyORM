@@ -2,7 +2,10 @@
 
 namespace PeskyORM\ORM;
 
-abstract class DbRecord {
+use PeskyORM\ORM\Exception\InvalidDataException;
+use PeskyORM\ORM\Exception\InvalidTableColumnConfigException;
+
+abstract class DbRecord implements \ArrayAccess, \Iterator {
 
     /**
      * Full class name of a DbTable object for this record
@@ -17,13 +20,17 @@ abstract class DbRecord {
      * @var DbTableStructure
      */
     static protected $tableStructure = null;
+    /**
+     * @var array
+     */
+    static protected $fileColumnsNames = null;
 
     /**
      * @var DbRecordValue[]
      */
     protected $values = [];
     /**
-     * @var DbRecord[]
+     * @var DbRecord[]|DbRecordsSet[]
      */
     protected $relatedRecords = [];
     /**
@@ -35,6 +42,10 @@ abstract class DbRecord {
      * @var DbRecordValue[]
      */
     protected $valuesBackup = [];
+    /**
+     * @var int
+     */
+    protected $iteratorIdx = 0;
 
     /**
      * Create new record with values from $data array
@@ -163,6 +174,15 @@ abstract class DbRecord {
     }
 
     /**
+     * @return DbTableRelation[]
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     */
+    static public function getRelations() {
+        return static::getTableStructure()->getRelations();
+    }
+
+    /**
      * @param string $name
      * @return DbTableRelation
      * @throws \BadMethodCallException
@@ -179,6 +199,15 @@ abstract class DbRecord {
      */
     static public function hasRelation($name) {
         return static::getTableStructure()->hasRelation($name);
+    }
+
+    /**
+     * @return DbTableColumn[]
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    static public function getFileColumns() {
+        return static::getTableStructure()->getFileColumns();
     }
 
     /**
@@ -361,9 +390,32 @@ abstract class DbRecord {
     /**
      * @param string $relationName
      * @return bool
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
      */
     public function hasRelatedRecord($relationName) {
+        $this->getRelation($relationName);
         return array_key_exists($relationName, $this->relatedRecords);
+    }
+
+    /**
+     * @param $relationName
+     * @param bool $loadIfNotSet - true: read relation data if it is not set
+     * @return DbRecord|DbRecordsSet
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     */
+    public function getRelatedRecord($relationName, $loadIfNotSet = false) {
+        if (!$this->hasRelatedRecord($relationName)) {
+            if ($loadIfNotSet) {
+                $this->readRelatedRecord($relationName);
+            } else {
+                throw new \BadMethodCallException(
+                    "Related record with name '$relationName' is not set and autoloading is disabled"
+                );
+            }
+        }
+        return $this->relatedRecords[$relationName];
     }
 
     /**
@@ -465,6 +517,7 @@ abstract class DbRecord {
 
     /**
      * Start collecting column updates
+     * @return $this
      * @throws \BadMethodCallException
      */
     public function begin() {
@@ -473,10 +526,12 @@ abstract class DbRecord {
         }
         $this->isCollectingUpdates = true;
         $this->valuesBackup = [];
+        return $this;
     }
 
     /**
      * Restore values updated since $this->begin()
+     * @return $this
      * @throws \BadMethodCallException
      */
     public function rollback() {
@@ -489,11 +544,17 @@ abstract class DbRecord {
             $this->values = array_replace($this->values, $this->valuesBackup);
         }
         $this->cleanUpdates();
+        return $this;
     }
 
     /**
      * Save changed values to DB
-     * @return bool
+     * @return $this
+     * @throws \PeskyORM\ORM\Exception\InvalidTableColumnConfigException
+     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PDOException
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -505,17 +566,32 @@ abstract class DbRecord {
         }
         $columnsToSave = array_keys($this->valuesBackup);
         $this->cleanUpdates();
-        return $this->saveToDb($columnsToSave);
+        $this->saveToDb($columnsToSave);
+        return $this;
     }
 
     /**
      * @param array $relationsToSave
-     * @return bool
+     * @return $this
+     * @throws \PeskyORM\ORM\Exception\InvalidTableColumnConfigException
+     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PDOException
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     public function save(array $relationsToSave = []) {
-        return $this->saveToDb($this->getAllColumnsThatCanBeSavedToDb(), $relationsToSave);
+        if ($this->isCollectingUpdates) {
+            throw new \BadMethodCallException(
+                'Attempt to save data after begin(). You must call commit() or rollback()'
+            );
+        }
+        $this->saveToDb($this->getAllColumnsWithUpdatableValues());
+        if (!empty($relationsToSave)) {
+            $this->saveRelations($relationsToSave);
+        }
+        return $this;
     }
 
     /**
@@ -524,10 +600,10 @@ abstract class DbRecord {
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    protected function getAllColumnsThatCanBeSavedToDb() {
+    protected function getAllColumnsWithUpdatableValues() {
         $columnsNames = [];
         foreach ($this->getColumns() as $columnName => $column) {
-            if ($column->isValueCanBeSetOrChanged() && $this->existsInDb()) {
+            if ($column->isValueCanBeSetOrChanged() && ($column->isItExistsInDb() || $column->isItAFile())) {
                 $columnsNames[] = $columnName;
             }
         }
@@ -536,15 +612,18 @@ abstract class DbRecord {
 
     /**
      * @param array $columnsToSave
-     * @param array $relationsToSave
-     * @return bool
-     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws \PDOException
+     * @throws \BadMethodCallException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PeskyORM\ORM\Exception\InvalidTableColumnConfigException
      */
-    protected function saveToDb(array $columnsToSave = [], array $relationsToSave = []) {
+    protected function saveToDb(array $columnsToSave = []) {
         if (empty($columnsToSave) && empty($relationsToSave)) {
             // nothing to save
-            return true;
+            return;
         }
         $diff = array_diff(array_keys($this->values), $columnsToSave);
         if (count($diff)) {
@@ -552,14 +631,264 @@ abstract class DbRecord {
                 '$columnsToSave argument contains unknown columns: ' . implode(', ', $diff)
             );
         }
-        $diff = array_diff($this->getAllColumnsThatCanBeSavedToDb(), $columnsToSave);
+        $diff = array_diff($this->getAllColumnsWithUpdatableValues(), $columnsToSave);
         if (count($diff)) {
             throw new \InvalidArgumentException(
                 '$columnsToSave argument contains columns that cannot be saved to DB: '  . implode(', ', $diff)
             );
         }
-        // todo: validate and save columns, update values returned after saving
-        return false;
+        $isUpdate = $this->existsInDb();
+        if (!$isUpdate && $this->hasPrimaryKeyValue()) {
+            $columnsToSave[] = $this->getPrimaryKeyColumnName();
+        }
+        $data = [];
+        foreach ($columnsToSave as $colName) {
+            if ($this->hasColumnValue($colName)) {
+                $data[$colName] = $this->getColumnValue($colName);
+            }
+        }
+        $errors = $this->validateData($data, $columnsToSave);
+        if (!empty($errors)) {
+            throw new InvalidDataException($errors);
+        }
+        $filesColumns = $this->getFileColumns();
+        $files = array_intersect($data, $filesColumns);
+        $data = array_diff($data, $filesColumns);
+        if (empty($data) && !$isUpdate) {
+            $data = [
+                $this->getPrimaryKeyColumnName() => $this->getTable()->getExpressionToSetDefaultValueForAColumn()
+            ];
+        }
+        if (!empty($data)) {
+            if ($isUpdate) {
+                $newData = $this->getTable()->update(
+                    $data, 
+                    [$this->getPrimaryKeyColumnName() => $this->getPrimaryKeyValue()],
+                    true
+                );
+            } else {
+                $newData = $this->getTable()->insert($data, true);
+            }
+            $this->updateValues($newData, true);
+        }
+        if (!empty($files)) {
+            foreach ($files as $colName => $value) {
+                if (!$filesColumns[$colName]->hasValueSaver()) {
+                    throw new InvalidTableColumnConfigException("File column '$colName' must have a value saver");
+                }
+                call_user_func($filesColumns[$colName]->getValueSaver(), $this->getColumnValueObject($colName));
+            }
+        }
     }
+
+    /**
+     * Validate data
+     * @param array $data
+     * @param array $columnsNames - column names to validate. If col
+     * @return array
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     */
+    protected function validateData(array $data, array $columnsNames = []) {
+        if (!count($columnsNames)) {
+            $columnsNames = array_keys($data);
+        }
+        $errors = [];
+        foreach ($columnsNames as $columnName) {
+            $column = $this->getColumn($columnName);
+            if (array_key_exists($columnName, $data)) {
+                $colErrors = $column->validateValue($data[$columnName]);
+            } else if ($column->isValueRequired()) {
+                $colErrors = [
+                    DbRecordValueHelpers::getErrorMessage(
+                        $column->getValidationErrorsLocalization(),
+                        $column::VALUE_IS_REQUIRED
+                    )
+                ];
+            }
+            if (!empty($colErrors)) {
+                $errors[$columnName] = $colErrors;
+            }
+        }
+        return $errors;
+    }
+
+    /**
+     * @param array $relationsToSave
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     * @throws \PeskyORM\ORM\Exception\InvalidTableColumnConfigException
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PDOException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Core\DbException
+     */
+    public function saveRelations(array $relationsToSave = []) {
+        if (!$this->existsInDb()) {
+            throw new \BadMethodCallException(
+                'It is impossible to save related objects of a record that does not exist in DB'
+            );
+        }
+        $relations = $this->getRelations();
+        $diff = array_diff($relationsToSave, array_keys($relations));
+        if (count($diff)) {
+            throw new \InvalidArgumentException(
+                '$relationsToSave argument contains unknown relations: ' .implode(', ', $diff)
+            );
+        }
+        foreach ($relationsToSave as $relationName) {
+            if ($this->hasRelatedRecord($relationName)) {
+                $record = $this->getRelatedRecord($relationName);
+                if ($record instanceof DbRecord) {
+                    $record->setColumnValue(
+                        $relations[$relationName]->getForeignColumn(),
+                        $this->getColumnValue($relations[$relationName]->getLocalColumn()),
+                        false
+                    );
+                    $record->save();
+                } else {
+                    foreach ($record as $recordObj) {
+                        $recordObj->setColumnValue(
+                            $relations[$relationName]->getForeignColumn(),
+                            $this->getColumnValue($relations[$relationName]->getLocalColumn()),
+                            false
+                        );
+                        $recordObj->save();
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Return the current element
+     * @link http://php.net/manual/en/iterator.current.php
+     * @return mixed Can return any type.
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     * @since 5.0.0
+     */
+    public function current() {
+        $key = $this->key();
+        return $key!== null ? $this->getColumnValue($key) : null;
+    }
+
+    /**
+     * Move forward to next element
+     */
+    public function next() {
+        $this->iteratorIdx++;
+    }
+
+    /**
+     * Return the key of the current element
+     * @return mixed scalar on success, or null on failure.
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     */
+    public function key() {
+        if ($this->valid()) {
+            return array_keys($this->getColumns())[$this->iteratorIdx];
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Checks if current position is valid
+     * @return boolean
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     */
+    public function valid() {
+        return array_key_exists($this->iteratorIdx, array_keys($this->getColumns()));
+    }
+
+    /**
+     * Rewind the Iterator to the first element
+     */
+    public function rewind() {
+        $this->iteratorIdx = 0;
+    }
+
+    /**
+     * @param string $key
+     * @return boolean - true on success or false on failure.
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    public function offsetExists($key) {
+        return (
+            $this->hasColumn($key) && $this->hasColumnValue($key)
+            || $this->hasRelation($key) && $this->hasRelatedRecord($key)
+        );
+    }
+
+    /**
+     * @param mixed $key
+     * @return mixed
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     */
+    public function offsetGet($key) {
+        if ($this->hasRelation($key)) {
+            $this->getRelatedRecord($key);
+        } else {
+            $this->getColumnValue($key);
+        }
+    }
+
+    /**
+     * @param mixed $key
+     * @param mixed $value
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    public function offsetSet($key, $value) {
+        if ($this->hasRelation($key)) {
+            $this->setRelatedRecord($key, $value, false);
+        } else {
+            $this->setColumnValue($key, $value, false);
+        }
+    }
+
+    /**
+     * @param mixed $key
+     * @throws \BadMethodCallException
+     */
+    public function offsetUnset($key) {
+        throw new \BadMethodCallException('It is forbidden to unset a value');
+    }
+
+    public function __get($name) {
+        return $this->offsetGet($name);
+    }
+
+    public function __set($name, $value) {
+        return $this->offsetSet($name, $value);
+    }
+
+    public function __isset($name) {
+        return $this->offsetExists($name);
+    }
+
+    public function __call($name, $arguments) {
+        $validName = preg_match('%^set([A-Z][a-zA-Z0-9]*)$%', $name, $nameParts);
+        if (!$validName) {
+            throw new \BadMethodCallException(
+                "Magic method '{$name}()' is forbidden. You can magically call only methods starting with 'set', for example: setId(1)"
+            );
+        } else if (count($arguments) > 2) {
+            throw new \InvalidArgumentException(
+                "Magic method '{$name}()' accepts only 2 arguments, but " . count($arguments) . ' arguments passed'
+            );
+        } else if (array_key_exists(1, $arguments) && !is_bool($arguments[1])) {
+            throw new \InvalidArgumentException(
+                "2nd argument for magic method '{$name}()' must be a boolean and reflects if value received from DB"
+            );
+        }
+        // todo: finish this - $nameParts
+    }
+
 
 }
