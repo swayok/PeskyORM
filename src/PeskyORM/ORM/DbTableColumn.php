@@ -204,6 +204,12 @@ class DbTableColumn {
      */
     protected $valueSaver = null;
     /**
+     * Deletes value stored somewhere except DB. Used only with columns that are not present in DB
+     * For example: deletes files and images from file system
+     * @var null|\Closure
+     */
+    protected $valueDeleter = null;
+    /**
      * Formats value. Used in default getter to add possibility to convert original value to specific format
      * For example: convert json to array, or timestamp like 2016-05-24 17:24:00 to unix timestamp
      * @var null|\Closure
@@ -952,6 +958,35 @@ class DbTableColumn {
      */
     public function hasValueSaver() {
         return $this->valueSaver !== null;
+    }
+
+    /**
+     * @return \Closure|null
+     */
+    public function getValueDeleter() {
+        return $this->valueDeleter;
+    }
+
+    /**
+     * @param \Closure $valueDeleter function (DbRecordValue $valueContainer) { save value somewhere }
+     * @return $this
+     * @throws \BadMethodCallException
+     */
+    public function setValueDeleter(\Closure $valueDeleter) {
+        if ($this->isItExistsInDb()) {
+            throw new \BadMethodCallException(
+                'Value deleter function is not allowed for columns that are present in DB'
+            );
+        }
+        $this->valueDeleter = $valueDeleter;
+        return $this;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function hasValueDeleter() {
+        return $this->valueDeleter !== null;
     }
 
     /**

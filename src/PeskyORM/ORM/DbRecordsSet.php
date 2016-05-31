@@ -29,6 +29,18 @@ class DbRecordsSet implements \ArrayAccess, \Iterator {
      * @var bool
      */
     protected $isFromDb = false;
+    /**
+     * @var bool
+     */
+    protected $singleDbRecordIteration = false;
+    /**
+     * @var DbRecord
+     */
+    protected $dbRecordForIteration = null;
+    /**
+     * @var int
+     */
+    protected $currentDbRecordIndex = -1;
 
     /**
      * @param DbTable $table
@@ -72,11 +84,26 @@ class DbRecordsSet implements \ArrayAccess, \Iterator {
             }
             $this->records = array_values($dbSelectOrRecords);
             $this->isFromDb = $isFromDb;
+            $this->dbRecordForIteration = $this->table->newRecord();
         } else {
             throw new \InvalidArgumentException(
                 '$dbSelectOrRecords argument bust be an array or instance of DbSelect class'
             );
         }
+    }
+
+    /**
+     * @param bool $enable
+     */
+    public function setSingleDbRecordIterationMode($enable = true) {
+        $this->singleDbRecordIteration = (bool)$enable;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSingleRecordIterationModeEnabled() {
+        return $this->singleDbRecordIteration;
     }
 
     /**
@@ -118,7 +145,18 @@ class DbRecordsSet implements \ArrayAccess, \Iterator {
      * @throws \BadMethodCallException
      */
     public function current() {
-        return $this->offsetExists($this->position) ? $this->offsetGet($this->position) : null;
+        if (!$this->offsetExists($this->position)) {
+            return null;
+        }
+        if ($this->isSingleRecordIterationModeEnabled()) {
+            if ($this->position !== $this->currentDbRecordIndex) {
+                $data = $this->getRecordDataByIndex($this->position);
+                $this->dbRecordForIteration->fromData($data, $this->isRecordsFromDb());
+            }
+            return $this->dbRecordForIteration;
+        } else {
+            return $this->offsetGet($this->position);
+        }
     }
 
     /**
@@ -168,14 +206,24 @@ class DbRecordsSet implements \ArrayAccess, \Iterator {
      * @throws \InvalidArgumentException
      */
     public function offsetGet($index) {
+        if (empty($this->dbRecords[$index])) {
+            $data = $this->getRecordDataByIndex($index);
+            $this->dbRecords[$index] = $this->table->newRecord()
+                ->fromData($data, $this->isRecordsFromDb());
+        }
+        return $this->dbRecords[$index];
+    }
+
+    /**
+     * @param $index
+     * @return mixed
+     * @throws \InvalidArgumentException
+     */
+    protected function getRecordDataByIndex($index) {
         if (!$this->offsetExists($index)) {
             throw new \InvalidArgumentException("Array does not contain index '{$index}'");
         }
-        if (empty($this->dbRecords[$index])) {
-            $this->dbRecords[$index] = $this->table->newRecord()
-                ->fromData($this->records[$index], $this->isRecordsFromDb());
-        }
-        return $this->dbRecords[$index];
+        return $this->records[$index];
     }
 
     /**

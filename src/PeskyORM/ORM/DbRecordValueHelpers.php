@@ -22,6 +22,7 @@ abstract class DbRecordValueHelpers {
             }
             return [];
         }
+        // required value validation
         if ($value === null && $column->isValueRequired()) {
             return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_REQUIRED)];
         }
@@ -102,7 +103,6 @@ abstract class DbRecordValueHelpers {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_IMAGE)];
                 }
                 break;
-
         }
         // test if value is present in $column->getAllowedValues()
         $isEnum = $column->getType() === DbTableColumn::TYPE_ENUM;
