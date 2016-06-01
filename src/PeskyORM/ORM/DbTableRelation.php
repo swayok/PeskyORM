@@ -4,9 +4,9 @@ namespace PeskyORM\ORM;
 
 class DbTableRelation {
 
-    const HAS_ONE = DbJoinConfig::HAS_ONE;
-    const HAS_MANY = DbJoinConfig::HAS_MANY;
-    const BELONGS_TO = DbJoinConfig::BELONGS_TO;
+    const HAS_ONE = 'has_one';
+    const HAS_MANY = 'has_many';
+    const BELONGS_TO = 'belongs_to';
 
     const JOIN_LEFT = DbJoinConfig::JOIN_LEFT;
     const JOIN_RIGHT = DbJoinConfig::JOIN_RIGHT;
