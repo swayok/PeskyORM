@@ -4,10 +4,6 @@ namespace PeskyORM\ORM;
 
 class DbJoinConfig {
 
-    const HAS_ONE = 'has_one';
-    const HAS_MANY = 'has_many';
-    const BELONGS_TO = 'belongs_to';
-
     const JOIN_LEFT = 'left';
     const JOIN_RIGHT = 'right';
     const JOIN_INNER = 'inner';
