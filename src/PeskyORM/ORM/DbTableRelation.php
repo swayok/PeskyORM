@@ -2,6 +2,8 @@
 
 namespace PeskyORM\ORM;
 
+use PeskyORM\Core\DbJoinConfig;
+
 class DbTableRelation {
 
     const HAS_ONE = 'has_one';

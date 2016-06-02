@@ -3,6 +3,7 @@
 namespace PeskyORM\ORM;
 
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\Utils;
 use PeskyORM\ORM\Exception\OrmException;
 use Swayok\Utils\StringUtils;
 
@@ -138,23 +139,26 @@ abstract class DbTable implements DbTableInterface {
      * @param string|array $columns
      * @param array $conditionsAndOptions
      * @return DbRecordsSet
+     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function select($columns = '*', array $conditionsAndOptions = []) {
-        return DbSelect::from(static::getTableName())
+        return OrmSelect::from(static::getTableName())
             ->parseArray($conditionsAndOptions)
             ->columns($columns)
             ->fetchMany();
     }
-    
+
     /**
      * Selects only 1 column
      * @param string $column
      * @param array $conditionsAndOptions
      * @return array
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
      */
     static public function selectColumn($column, array $conditionsAndOptions = []) {
-        return DbSelect::from(static::getTableName())
+        return OrmSelect::from(static::getTableName())
             ->parseArray($conditionsAndOptions)
             ->columns(['value' => $column])
             ->fetchColumn();
@@ -167,9 +171,11 @@ abstract class DbTable implements DbTableInterface {
      * @param string $valuesColumn
      * @param array $conditionsAndOptions
      * @return array
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
      */
     static public function selectAssoc($keysColumn, $valuesColumn, array $conditionsAndOptions = []) {
-        return DbSelect::from(static::getTableName())
+        return OrmSelect::from(static::getTableName())
             ->parseArray($conditionsAndOptions)
             ->fetchAssoc($keysColumn, $valuesColumn);
     }
@@ -179,9 +185,11 @@ abstract class DbTable implements DbTableInterface {
      * @param string|array $columns
      * @param array $conditionsAndOptions
      * @return array
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
      */
     static public function selectOne($columns, array $conditionsAndOptions) {
-        return DbSelect::from(static::getTableName())
+        return OrmSelect::from(static::getTableName())
             ->parseArray($conditionsAndOptions)
             ->columns($columns)
             ->fetchOne();
@@ -192,10 +200,11 @@ abstract class DbTable implements DbTableInterface {
      * @param DbExpr $expression - example: DbExpr::create('COUNT(*)'), DbExpr::create('SUM(`field`)')
      * @param array $conditionsAndOptions
      * @return string
+     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function selectValue(DbExpr $expression, array $conditionsAndOptions = []) {
-        return DbSelect::from(static::getTableName())
+        return OrmSelect::from(static::getTableName())
             ->parseArray($conditionsAndOptions)
             ->fetchValue($expression);
     }
@@ -216,9 +225,11 @@ abstract class DbTable implements DbTableInterface {
      * @param array $conditionsAndOptions
      * @param bool $removeNotInnerJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
      * @return int
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
      */
     static public function count(array $conditionsAndOptions, $removeNotInnerJoins = false) {
-        return DbSelect::from(static::getTableName())
+        return OrmSelect::from(static::getTableName())
             ->parseArray($conditionsAndOptions)
             ->fetchCount($removeNotInnerJoins);
     }
@@ -395,8 +406,8 @@ abstract class DbTable implements DbTableInterface {
      *     (results in 'colname' IN (a,b,c) or 'colname' IN (SELECT '*' FROM ...))
      *
      * 3. $value === array()
-     * 3.1. $column !== 'OR' -> recursion: $this->assembleConditions($value))
-     * 3.2. $column === 'OR' -> recursion: $this->assembleConditions($value, 'OR'))
+     * 3.1. $column !== 'OR' -> recursion: static::assembleWhereConditionsFromArray($value))
+     * 3.2. $column === 'OR' -> recursion: static::assembleWhereConditionsFromArray($value, 'OR'))
      *
      * @param array $conditions
      * @param string $glue - 'AND' or 'OR'
@@ -407,59 +418,14 @@ abstract class DbTable implements DbTableInterface {
      * @throws \InvalidArgumentException
      */
     static public function assembleWhereConditionsFromArray(array $conditions, $glue = 'AND') {
-        $glue = strtoupper(trim($glue));
-        if (!in_array($glue, ['AND', 'OR'], true)) {
-            throw new \InvalidArgumentException('$glue argument must be "AND" or "OR"');
-        }
-        if (empty($conditions)) {
-            return '';
-        } else {
-            $assembled = [];
-            foreach ($conditions as $column => $value) {
-                if (is_object($value) && !($value instanceof DbExpr)) {
-                    throw new \InvalidArgumentException(
-                        '$conditions argument may contain objects of class DbExpr only. Other object are forbidden.'
-                    );
-                }
-                $valueIsDbExpr = is_object($value) && ($value instanceof DbExpr);
-                if (is_numeric($column) && $valueIsDbExpr) {
-                    // 1 - custom expressions
-                    $assembled[] = static::getConnection()->replaceDbExprQuotes($value);
-                    continue;
-                } else if (
-                    (is_numeric($column) && is_array($value))
-                    || in_array(strtolower(trim($column)), ['and', 'or'], true)
-                ) {
-                    // 3: 3.1 and 3.2 - recursion
-                    $subGlue = is_numeric($column) ? 'AND' : $column;
-                    $assembled[] = '(' . static::assembleWhereConditionsFromArray($value, $subGlue) . ')';
-                } else {
-                    $operator = '=';
-                    // find and prepare operator
-                    $operators = [
-                        '\s*(?:>|<|=|\!=|>=|<=)',   //< basic operators
-                        '\s+(?:.+?)\s*$',           //< other operators
-                    ];
-                    $operatorsRegexp = '%^' . implode('|', $operators) . '\s*$%i';
-                    //$operatorsRegexp = '%^\s*(.*?)(?:\s*(>|<|=|\!=|>=|<=|\s+LIKE|\s+NOT\s+LIKE|\~\*|\~|!\~\*|!\~|\s+SIMILAR\s+TO|\s+NOT\s+SIMILAR\s+TO|\s+IN|\s+NOT\s+IN|\s+BETWEEN|\s+NOT\s+BETWEEN))\s*$%is';
-                    if (preg_match($operatorsRegexp, $column, $matches)) {
-                        // 2.1
-                        if (trim($matches[1]) !== '') {
-                            throw new \InvalidArgumentException(
-                                "Empty column name detected in \$conditions argument: $column"
-                            );
-                        }
-                        $column = trim($matches[1]);
-                        $operator = strtoupper(preg_replace('%\s+%', ' ', trim($matches[2])));
-                    }
-                    $operator = static::getConnection()->convertConditionOperator($operator, $value);
-                    $column = static::quoteConditionColumn($column);
-                    $value = static::getConnection()->assembleConditionValue($value, $operator);
-                    $assembled[] = "{$column} {$operator} {$value}";
-                }
+        return Utils::assembleWhereConditionsFromArray(
+            static::getConnection(),
+            $conditions,
+            $glue,
+            function ($columnName) {
+                return static::quoteConditionColumn($columnName);
             }
-            return implode(" $glue ", $assembled);
-        }
+        );
     }
 
     /**

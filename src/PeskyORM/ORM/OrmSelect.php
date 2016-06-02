@@ -7,7 +7,7 @@ use PeskyORM\Core\Utils;
 use Swayok\Utils\StringUtils;
 use Swayok\Utils\ValidateValue;
 
-class DbSelect {
+class OrmSelect {
 
     /**
      * Main table name to select data from
