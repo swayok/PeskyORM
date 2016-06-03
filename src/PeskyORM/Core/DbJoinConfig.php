@@ -2,6 +2,8 @@
 
 namespace PeskyORM\Core;
 
+use Swayok\Utils\StringUtils;
+
 class DbJoinConfig {
 
     const JOIN_LEFT = 'left';
@@ -14,6 +16,8 @@ class DbJoinConfig {
     protected $tableName = null;
     /** @var string|null */
     protected $tableSchema = null;
+    /** @var string|null */
+    protected $tableAlias = null;
     /** @var string */
     protected $columnName = null;
     /** @var string */
@@ -224,6 +228,9 @@ class DbJoinConfig {
             throw new \InvalidArgumentException('$tableName argument must be a not-empty string');
         }
         $this->tableName = $tableName;
+        if ($this->tableAlias === null) {
+            $this->tableAlias = StringUtils::classify($this->tableName);
+        }
         return $this;
     }
 
@@ -244,6 +251,26 @@ class DbJoinConfig {
             throw new \InvalidArgumentException('$schema argument must be a not-empty string or null');
         }
         $this->tableSchema = $schema;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getTableAlias() {
+        return $this->tableAlias;
+    }
+
+    /**
+     * @param string $alias
+     * @return $this
+     * @throws \InvalidArgumentException
+     */
+    public function setTableAlias($alias) {
+        if (empty($alias) || !is_string($alias)) {
+            throw new \InvalidArgumentException('$alias argument must be a not-empty string');
+        }
+        $this->tableAlias = $alias;
         return $this;
     }
 

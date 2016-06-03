@@ -146,7 +146,7 @@ class DbSelect {
      * @throws \InvalidArgumentException
      */
     public function parseArray(array $conditionsAndOptions) {
-        $conditionsAndOptions = $this->normalizeArray($conditionsAndOptions);
+        $conditionsAndOptions = $this->normalizeConditionsAndOptionsArray($conditionsAndOptions);
         // COLUMNS
         if (!empty($conditionsAndOptions['COLUMNS'])) {
             if (!is_array($conditionsAndOptions['COLUMNS']) && $conditionsAndOptions['COLUMNS'] !== '*') {
@@ -231,6 +231,9 @@ class DbSelect {
 
     /**
      * @return array
+     * @throws \LengthException
+     * @throws \InvalidArgumentException
+     * @throws \PDOException
      * @throws \BadMethodCallException
      */
     public function fetchOne() {
@@ -239,6 +242,9 @@ class DbSelect {
 
     /**
      * @return array
+     * @throws \LengthException
+     * @throws \InvalidArgumentException
+     * @throws \PDOException
      */
     public function fetchMany() {
         return $this->_fetch(Utils::FETCH_ALL);
@@ -246,6 +252,8 @@ class DbSelect {
 
     /**
      * @return array
+     * @throws \LengthException
+     * @throws \PDOException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -260,6 +268,8 @@ class DbSelect {
     /**
      * @param bool $ignoreLeftJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
      * @return int
+     * @throws \InvalidArgumentException
+     * @throws \PDOException
      */
     public function fetchCount($ignoreLeftJoins = true) {
         return (int) $this->getConnection()->query($this->getCountQuery($ignoreLeftJoins), Utils::FETCH_VALUE);
@@ -267,6 +277,9 @@ class DbSelect {
 
     /**
      * @return array
+     * @throws \LengthException
+     * @throws \InvalidArgumentException
+     * @throws \PDOException
      */
     public function fetchColumn() {
         return $this->_fetch(Utils::FETCH_COLUMN);
@@ -276,6 +289,8 @@ class DbSelect {
      * @param string $keysColumn
      * @param string $valuesColumn
      * @return array
+     * @throws \LengthException
+     * @throws \PDOException
      * @throws \InvalidArgumentException
      */
     public function fetchAssoc($keysColumn, $valuesColumn) {
@@ -292,6 +307,8 @@ class DbSelect {
     /**
      * @param DbExpr $expression
      * @return string
+     * @throws \LengthException
+     * @throws \PDOException
      * @throws \InvalidArgumentException
      */
     public function fetchValue(DbExpr $expression) {
@@ -301,16 +318,46 @@ class DbSelect {
     /**
      * @param string $selectionType - one of PeskyORM\Core\Utils::FETCH_*
      * @return array|string
+     * @throws \LengthException
+     * @throws \InvalidArgumentException
+     * @throws \PDOException
      */
     protected function _fetch($selectionType) {
-        return $this->getConnection()->query($this->getQuery(), $selectionType);
+        $data = $this->getConnection()->query($this->getQuery(), $selectionType);
+        if (in_array($selectionType, [Utils::FETCH_COLUMN, Utils::FETCH_VALUE], true)) {
+            return $data;
+        } else if ($selectionType === Utils::FETCH_FIRST) {
+            return $this->normalizeRecord($data);
+        } else {
+            $records = [];
+            foreach ($data as $record) {
+                $records[] = $this->normalizeRecord($record);
+            }
+            return $records;
+        }
     }
 
     /**
      * @return string
+     * @throws \LengthException
+     * @throws \InvalidArgumentException
+     * @throws \PDOException
      */
     public function getQuery() {
-        $query = 'SELECT ';
+        $table = $this->makeTableNameWithAliasForQuery(
+            $this->getTableName(),
+            $this->getTableAlias(),
+            $this->getTableSchema()
+        );
+        $columns = $this->makeColumnsForQuery();
+        $conditions = $this->makeConditions();
+        $joins = $this->makeJoins(false);
+        $group = $this->makeGroupBy();
+        $order = $this->makeOrderBy();
+        $limit = $this->makeLimit();
+        $offset = $this->makeOffset();
+        $having = $this->makeHaving();
+        $query = "SELECT {$columns} FROM {$table} {$joins} {$conditions} {$group} {$having} {$order} {$limit} {$offset}";
         return $query;
     }
 
@@ -391,7 +438,7 @@ class DbSelect {
             $this->orderBy = [];
         }
         if (!is_string($columnName)) {
-            $this->orderBy[] = $columnName->get();
+            $this->orderBy[] = $columnName;
         } else {
             $this->orderBy[] = array_merge(
                 $this->analyzeColumnName($columnName),
@@ -403,9 +450,8 @@ class DbSelect {
 
     /**
      * Add GROUP BY
-     * @param array $columns - can contain 'col1' and 'ModelAlias.col1'
-     *      When ModelAlias omitted - $this->alias is used
-     * @param bool $append - true: add $orderBy to existing grouping | false: replace existsing grouping
+     * @param array $columns - can contain 'col1' and 'ModelAlias.col1', DbExpr::create('expression')
+     * @param bool $append - true: append to existing groups | false: replace existsing groups
      * @return $this
      * @throws \InvalidArgumentException
      */
@@ -600,8 +646,9 @@ class DbSelect {
     }
 
     /**
-     * @param null $tableName
-     * @param $tableSchema
+     * @param string $tableName
+     * @param string $tableAlias
+     * @param string|null $tableSchema
      * @return string
      */
     protected function makeTableNameWithAliasForQuery($tableName, $tableAlias, $tableSchema = null) {
@@ -614,13 +661,15 @@ class DbSelect {
 
     /**
      * @param array $columnInfo - return of $this->analyzeColumnName($columnName)
-     * @return string `ColumnAlias`::typecast
+     * @return string `TableAlias`.`column_name`::typecast
      */
-    protected function makeColumnAliasForQuery(array $columnInfo) {
+    protected function makeColumnNameForCondition(array $columnInfo) {
+        $tableAlias = $columnInfo['join_alias'] ?: $this->getTableAlias();
+        $columnName = "`{$this->getShortAlias($tableAlias)}`.`{$columnInfo['name']}`";
         if ($columnInfo['type_cast']) {
-            return $this->getConnection()->addDataTypeCastToExpression($columnInfo['type_cast'], $columnInfo['alias']);
+            return $this->getConnection()->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
         } else {
-            return "`{$columnInfo['alias']}`";
+            return $columnName;
         }
     }
 
@@ -629,7 +678,7 @@ class DbSelect {
      * @param mixed $options
      * @return array|mixed
      */
-    protected function normalizeArray($options) {
+    protected function normalizeConditionsAndOptionsArray($options) {
         if (!is_array($options)) {
             $options = (!empty($options) && is_string($options)) ? [$options] : [];
         }
@@ -707,7 +756,7 @@ class DbSelect {
      * @throws \InvalidArgumentException
      */
     protected function makeConditions() {
-        return Utils::assembleWhereConditionsFromArray(
+        $conditions = Utils::assembleWhereConditionsFromArray(
             $this->getConnection(),
             $this->where,
             'AND',
@@ -716,10 +765,12 @@ class DbSelect {
                     return $columnName->get();
                 } else {
                     $columnInfo = $this->analyzeColumnName($columnName);
-                    return $this->getConnection()->quoteName($columnInfo['alias']);
+                    return $this->getConnection()->quoteName($this->makeColumnNameForCondition($columnInfo));
                 }
             }
         );
+        $conditions = trim($conditions);
+        return empty($conditions) ? '' : 'WHERE ' . $conditions;
     }
 
     /**
@@ -738,12 +789,33 @@ class DbSelect {
             if ($column instanceof DbExpr) {
                 $groups[] = $column->get();
             } else {
-                $groups[] = $this->makeColumnAliasForQuery($column);
+                $groups[] = $this->makeColumnNameForCondition($column);
             }
         }
-        return 'GROUP BY ' . implode(',', $groups);
+        return count($groups) ? 'GROUP BY ' . implode(', ', $groups) : '';
     }
 
+    /**
+     * @return string
+     */
+    protected function makeOrderBy() {
+        $orders = [];
+        foreach ($this->orderBy as $columnInfo) {
+            if ($columnInfo instanceof DbExpr) {
+                $orders[] = $columnInfo->get();
+            } else {
+                $orders[] = $this->makeColumnNameForCondition($columnInfo) . ' ' . $columnInfo['direction'];
+            }
+        }
+        return count($orders) ? 'ORDER BY ' . implode(', ', $orders) : '';
+    }
+
+    /**
+     * @param bool $ignoreLeftJoins
+     * @return string
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
     protected function makeJoins($ignoreLeftJoins = false) {
         $joins = [];
         foreach ($this->joins as $joinConfig) {
@@ -762,8 +834,116 @@ class DbSelect {
         return implode(' ', $joins);
     }
 
+    /**
+     * @param DbJoinConfig $joinConfig
+     * @return string
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
     protected function makeJoinConditions(DbJoinConfig $joinConfig) {
-        // todo: finish this
+        $conditions = array_merge(
+            [
+                "{$joinConfig->getTableAlias()}.{$joinConfig->getTableName()}"
+                    => "{$joinConfig->getJoinName()}.{$joinConfig->getForeignColumnName()}"
+            ],
+            $joinConfig->getAdditionalJoinConditions()
+        );
+        return Utils::assembleWhereConditionsFromArray(
+            $this->getConnection(),
+            $conditions,
+            'AND',
+            function ($columnName) {
+                if ($columnName instanceof DbExpr) {
+                    return $columnName->get();
+                } else {
+                    $columnInfo = $this->analyzeColumnName($columnName);
+                    return $this->getConnection()->quoteName($this->makeColumnNameForCondition($columnInfo));
+                }
+            }
+        );
+    }
+
+    /**
+     * @return string
+     * @throws \InvalidArgumentException
+     * @throws \LengthException
+     */
+    protected function makeColumnsForQuery() {
+        $columns = [];
+        foreach ($this->columns as $columnInfo) {
+            if (is_string($columnInfo)) {
+                $columns[] = $columnInfo;
+            } else {
+                $columns[] = $this->makeColumnNameWithAliasForQuery($columnInfo);
+            }
+        }
+        foreach ($this->joins as $joinConfig) {
+            $joinColumns = $this->normalizeColumnsList(
+                $joinConfig->getForeignColumnsToSelect(),
+                $joinConfig->getJoinName()
+            );
+            foreach ($joinColumns as $columnInfo) {
+                if (is_string($columnInfo)) {
+                    $columns[] = $columnInfo;
+                } else {
+                    $columns[] = $this->makeColumnNameWithAliasForQuery($columnInfo);
+                }
+            }
+        }
+        if (empty($columns)) {
+            throw new \LengthException('There is no columns to select');
+        }
+        return implode(',', $columns);
+    }
+
+    /**
+     * @return string
+     */
+    protected function makeLimit() {
+        return $this->limit > 0 ? 'LIMIT ' . $this->limit : '';
+    }
+
+    /**
+     * @return string
+     */
+    protected function makeOffset() {
+        return $this->offset > 0 ? 'OFFSET ' . $this->offset : '';
+    }
+
+    /**
+     * Convert key-value array received from DB to nested array with joins data stored under join names inside
+     * main array. Also decodes columns aliases (keys in original array)
+     * @param array $record
+     * @return array - ['col1' => 'val1', 'col2' => 'val2', 'Join1Name' => ['jcol1' => 'jvalue1', ...], ...]
+     */
+    private function normalizeRecord(array $record) {
+        $dataBlocks = [];
+        // process record's column aliases and group column values by table alias
+        $shortAliasToAlias = array_flip($this->shortAliases);
+        foreach ($record as $columnAlias => $value) {
+            if (preg_match('%^_(.+?)__(.+?)$%', $columnAlias, $colInfo)) {
+                list(, $tableAlias, $column) = $colInfo;
+                if (array_key_exists($tableAlias, $shortAliasToAlias)) {
+                    $tableAlias = $shortAliasToAlias[$tableAlias];
+                }
+                if (empty($dataBlocks[$tableAlias])) {
+                    $dataBlocks[$tableAlias] = [];
+                }
+                $dataBlocks[$tableAlias][$column] = $value;
+            } else {
+                $dataBlocks[$columnAlias] = $value;
+            }
+        }
+        // make record nested + add missing child records
+        $nested = array_key_exists($this->getTableAlias(), $dataBlocks) ? $dataBlocks[$this->getTableAlias()] : [];
+        foreach ($this->joins as $joinConfig) {
+            if (!empty($dataBlocks[$joinConfig->getJoinName()])) {
+                $nested[$joinConfig->getJoinName()] = $dataBlocks[$joinConfig->getJoinName()];
+            } else {
+                $nested[$joinConfig->getJoinName()] = [];
+            }
+        }
+        return $nested;
     }
 
 

@@ -30,7 +30,7 @@ interface DbAdapterInterface {
     /**
      * @param string|DbExpr $query
      * @param string|null $fetchData - null: return PDOStatement; string: one of \PeskyORM\Core\Utils::FETCH_*
-     * @return \PDOStatement
+     * @return \PDOStatement|array
      */
     public function query($query, $fetchData = null);
 
