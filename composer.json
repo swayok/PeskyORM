@@ -1,33 +1,29 @@
 {
-  "name": "swayok/peskyorm",
-  "type": "library",
-  "description": "PeskyORM - annoying ORM that contains tons of exceptions and throws them when anything goes wrong",
-  "keywords": [
-    "php",
-    "orm",
-    "database",
-    "web"
-  ],
-  "authors": [
-    {
-      "name": "Alexander Filippov"
+    "name": "swayok/peskyorm",
+    "type": "library",
+    "description": "PeskyORM - annoying ORM that contains tons of exceptions and throws them when anything goes wrong",
+    "keywords": [
+        "php",
+        "orm",
+        "database",
+        "web"
+    ],
+    "authors": [
+        {
+            "name": "Alexander Filippov"
+        }
+    ],
+    "license": "MIT",
+    "support": {
+        "issues": "https://github.com/swayok/PeskyORM/issues"
+    },
+    "autoload": {
+        "psr-0": {
+            "PeskyORM": "src/"
+        }
+    },
+    "require": {
+        "php": ">=5.6",
+        "swayok/utils": "master@dev"
     }
-  ],
-  "license": "MIT",
-  "support": {
-    "issues": "https://github.com/swayok/PeskyORM/issues"
-  },
-  "autoload": {
-    "psr-0": {"PeskyORM": "/src"}
-  },
-  "repositories": [
-    {
-      "type": "vcs",
-      "url": "https://github.com/swayok/utils.git"
-    }
-  ],
-  "require": {
-    "php": ">=5.3",
-    "swayok/utils": "master@dev"
-  }
 }
