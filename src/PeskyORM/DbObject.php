@@ -204,8 +204,12 @@ class DbObject {
      * @return bool
      */
     protected function isSuffixedField($fieldName) {
-        $fieldName = $this->getSuffixedFieldName($fieldName);
-        return !empty($fieldName) && !empty($this->_fields[$fieldName]);
+        if (array_key_exists($fieldName, $this->_fields)) {
+            return false;
+        } else {
+            $fieldName = $this->getSuffixedFieldName($fieldName);
+            return !empty($fieldName) && !empty($this->_fields[$fieldName]);
+        }
     }
 
     /**
