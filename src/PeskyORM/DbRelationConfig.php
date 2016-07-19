@@ -2,8 +2,6 @@
 
 namespace PeskyORM;
 
-use PeskyORM\Exception\DbTableConfigException;
-
 class DbRelationConfig {
 
     const HAS_ONE = DbJoinConfig::HAS_ONE;
