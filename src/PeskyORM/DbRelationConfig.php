@@ -2,6 +2,8 @@
 
 namespace PeskyORM;
 
+use PeskyORM\Exception\DbTableConfigException;
+
 class DbRelationConfig {
 
     const HAS_ONE = DbJoinConfig::HAS_ONE;
@@ -35,7 +37,7 @@ class DbRelationConfig {
     /** @var string */
     protected $displayField;
 
-    /** @var array */
+    /** @var array|\Closure */
     protected $additionalJoinConditions = array();
 
     /** @var array */
@@ -161,16 +163,29 @@ class DbRelationConfig {
 
     /**
      * @return array
+     * @throws \BadFunctionCallException
      */
     public function getAdditionalJoinConditions() {
-        return $this->additionalJoinConditions;
+        if ($this->additionalJoinConditions instanceof \Closure) {
+            $conditions = call_user_func($this->additionalJoinConditions, $this->getDbTableConfig());
+            if (!is_array($conditions)) {
+                throw new \BadFunctionCallException('additionalJoinConditions Closure must return array');
+            }
+            return $conditions;
+        } else {
+            return $this->additionalJoinConditions;
+        }
     }
 
     /**
-     * @param array $additionalJoinConditions
+     * @param array|\Closure $additionalJoinConditions - \Closure = function (DbTableConfig $tableConfig) { return []; }
      * @return $this
+     * @throws \Doctrine\Instantiator\Exception\InvalidArgumentException
      */
     public function setAdditionalJoinConditions($additionalJoinConditions) {
+        if (!is_array($additionalJoinConditions) && !($additionalJoinConditions instanceof \Closure)) {
+            throw new \InvalidArgumentException('$additionalJoinConditions argument bust be an array or \Closure');
+        }
         $this->additionalJoinConditions = $additionalJoinConditions;
         return $this;
     }
