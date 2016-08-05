@@ -228,7 +228,7 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
      */
     public function testQuotingOfInvalidDbExpr() {
         $adapter = static::getValidAdapter();
-        $adapter->replaceDbExprQuotes('test');
+        $adapter->quoteDbExpr('test');
     }
 
     public function testQuoting() {
@@ -252,7 +252,7 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
         $this->assertEquals("'123'", $adapter->quoteValue(123, PDO::PARAM_INT));
         $this->assertEquals(
             'DELETE FROM "table1" WHERE "col1" = \'value1\'',
-            $adapter->replaceDbExprQuotes(DbExpr::create('DELETE FROM `table1` WHERE `col1` = ``value1``'))
+            $adapter->quoteDbExpr(DbExpr::create('DELETE FROM `table1` WHERE `col1` = ``value1``'))
         );
     }
     

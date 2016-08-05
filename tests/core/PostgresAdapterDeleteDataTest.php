@@ -43,7 +43,7 @@ class PostgresAdapterDeleteTest extends \PHPUnit_Framework_TestCase {
         $adapter->insertMany('settings', ['key', 'value'], $testData1);
         $rowsDeleted = $adapter->delete('settings', DbExpr::create("`key` = ``{$testData1[0]['key']}``"));
         $this->assertEquals(
-            $adapter->replaceDbExprQuotes(DbExpr::create(
+            $adapter->quoteDbExpr(DbExpr::create(
                 "DELETE FROM `settings` WHERE `key` = ``{$testData1[0]['key']}``"
             )),
             $adapter->getLastQuery()

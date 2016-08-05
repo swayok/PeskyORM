@@ -91,7 +91,7 @@ class Utils {
                 $valueIsDbExpr = is_object($value) && ($value instanceof DbExpr);
                 if (is_numeric($column) && $valueIsDbExpr) {
                     // 1 - custom expressions
-                    $assembled[] = $connection->replaceDbExprQuotes($value);
+                    $assembled[] = $connection->quoteDbExpr($value);
                     continue;
                 } else if (
                     (
@@ -128,7 +128,11 @@ class Utils {
                         $operator = strtoupper(preg_replace('%\s+%', ' ', trim($matches[2])));
                     }
                     $operator = $connection->convertConditionOperator($operator, $value);
-                    $column = $columnQuoter($column);
+                    if ($column instanceof DbExpr) {
+                        $column = $connection->quoteDbExpr($column);
+                    } else {
+                        $column = $columnQuoter($column);
+                    }
                     $value = $connection->assembleConditionValue($value, $operator);
                     $assembled[] = "{$column} {$operator} {$value}";
                 }

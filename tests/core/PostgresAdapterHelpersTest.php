@@ -417,7 +417,7 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
 
         $query = $adapter->makeSelectQuery('test_table', ['col1', DbExpr::create('`col2` as `col22`')]);
         $this->assertEquals(
-            $adapter->replaceDbExprQuotes(DbExpr::create(
+            $adapter->quoteDbExpr(DbExpr::create(
                 'SELECT `col1`,`col2` as `col22` FROM `test_table`'
             )),
             $query
@@ -425,7 +425,7 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
 
         $query = $adapter->makeSelectQuery('test_table', [], DbExpr::create('WHERE `col1` > ``0``'));
         $this->assertEquals(
-            $adapter->replaceDbExprQuotes(DbExpr::create(
+            $adapter->quoteDbExpr(DbExpr::create(
                 'SELECT `*` FROM `test_table` WHERE `col1` > ``0``'
             )),
             $query

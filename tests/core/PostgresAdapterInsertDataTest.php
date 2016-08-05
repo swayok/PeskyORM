@@ -176,7 +176,7 @@ class PostgresAdapterInsertDataTest extends \PHPUnit_Framework_TestCase {
         ];
         $adapter->insertMany('settings', ['key', 'value'], $testData1);
         $this->assertEquals(
-            $adapter->replaceDbExprQuotes(DbExpr::create(
+            $adapter->quoteDbExpr(DbExpr::create(
                 'INSERT INTO `settings` (`key`,`value`) VALUES '
                     . "(``{$testData1[0]['key']}``,``{$testData1[0]['value']}``),"
                     . "(``{$testData1[1]['key']}``,``{$testData1[1]['value']}``)"

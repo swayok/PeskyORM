@@ -49,9 +49,9 @@ class DbSelect {
      */
     protected $groupBy = [];
     /**
-     * @var DbExpr
+     * @var array
      */
-    protected $having = '';
+    protected $having = [];
     /**
      * @var int
      */
@@ -85,8 +85,12 @@ class DbSelect {
             throw new \InvalidArgumentException('$tableName argument must be a not-empty string');
         }
         $this->tableName = $tableName;
-        $this->tableAlias = StringUtils::classify($this->getTableAlias());
-        $this->adapter = $connection;
+        $this->tableAlias = StringUtils::classify($tableName);
+        $this->connection = $connection;
+        $this->init();
+    }
+
+    protected function init() {
         $this->columns([]);
     }
 
@@ -147,6 +151,16 @@ class DbSelect {
      */
     public function parseArray(array $conditionsAndOptions) {
         $conditionsAndOptions = $this->normalizeConditionsAndOptionsArray($conditionsAndOptions);
+        $this->parseNormalizedArray($conditionsAndOptions);
+        return $this;
+    }
+
+    /**
+     * @param array $conditionsAndOptions
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     */
+    protected function parseNormalizedArray(array $conditionsAndOptions) {
         // COLUMNS
         if (!empty($conditionsAndOptions['COLUMNS'])) {
             if (!is_array($conditionsAndOptions['COLUMNS']) && $conditionsAndOptions['COLUMNS'] !== '*') {
@@ -205,9 +219,9 @@ class DbSelect {
         }
         // HAVING
         if (!empty($conditionsAndOptions['HAVING'])) {
-            if (!($conditionsAndOptions['HAVING'] instanceof DbExpr)) {
+            if (!is_array($conditionsAndOptions['HAVING'])) {
                 throw new \InvalidArgumentException(
-                    'HAVING key in $conditionsAndOptions argument must be an instance of DbExpr class'
+                    'HAVING key in $conditionsAndOptions argument must be an must be an array like conditions'
                 );
             }
             $this->having($conditionsAndOptions['HAVING']);
@@ -226,7 +240,6 @@ class DbSelect {
         if (!empty($conditions)) {
             $this->where($conditions);
         }
-        return $this;
     }
 
     /**
@@ -299,7 +312,7 @@ class DbSelect {
         $records = $this->_fetch(Utils::FETCH_ALL);
         $assoc = [];
         foreach ($records as $data) {
-            $assoc[$data[$keysColumn]] = $data[$valuesColumn];
+            $assoc[$data['key']] = $data['value'];
         }
         return $assoc;
     }
@@ -317,7 +330,7 @@ class DbSelect {
 
     /**
      * @param string $selectionType - one of PeskyORM\Core\Utils::FETCH_*
-     * @return array|string
+     * @return mixed
      * @throws \LengthException
      * @throws \InvalidArgumentException
      * @throws \PDOException
@@ -350,15 +363,14 @@ class DbSelect {
             $this->getTableSchema()
         );
         $columns = $this->makeColumnsForQuery();
-        $conditions = $this->makeConditions();
+        $conditions = $this->makeConditions($this->where, 'WHERE');
         $joins = $this->makeJoins(false);
         $group = $this->makeGroupBy();
         $order = $this->makeOrderBy();
         $limit = $this->makeLimit();
         $offset = $this->makeOffset();
-        $having = $this->makeHaving();
-        $query = "SELECT {$columns} FROM {$table} {$joins} {$conditions} {$group} {$having} {$order} {$limit} {$offset}";
-        return $query;
+        $having = $this->makeConditions($this->having, 'HAVING');
+        return "SELECT {$columns} FROM {$table} {$joins} {$conditions} {$group} {$having} {$order} {$limit} {$offset}";
     }
 
     /**
@@ -373,12 +385,11 @@ class DbSelect {
             $this->getTableAlias(),
             $this->getTableSchema()
         );
-        $conditions = $this->makeConditions();
+        $conditions = $this->makeConditions($this->where, 'WHERE');
         $joins = $this->makeJoins($ignoreLeftJoins);
         $group = $this->makeGroupBy();
-        $having = $this->makeHaving();
-        $query = "SELECT `COUNT(*)` FROM {$table} {$joins} {$conditions} {$group} {$having}";
-        return $query;
+        $having = $this->makeConditions($this->having, 'HAVING');
+        return "SELECT COUNT(*) FROM {$table} {$joins} {$conditions} {$group} {$having}";
     }
 
     /**
@@ -395,7 +406,7 @@ class DbSelect {
      * @throws \InvalidArgumentException
      */
     public function columns(array $columns) {
-        $this->columns[] = $this->normalizeColumnsList($columns);
+        $this->columns = $this->normalizeColumnsList($columns);
         return $this;
     }
 
@@ -411,7 +422,17 @@ class DbSelect {
 
     /**
      * Set Conditions
-     * @param array $conditions
+     * @param array $conditions - may contain:
+     * - DbExpr instances
+     * - key-value pairs where key is column name with optional operator (ex: 'col_name !='), value may be
+     * any of DbExpr, int, float, string, array. Arrays used for operators like 'IN', 'BETWEEN', '=' and other that
+     * accept or require multiple values. Some operator are smart-converted to the ones that fit the value. For
+     * example '=' with array value will be converted to 'IN', '!=' with NULL value will be converted to 'IS NOT'
+     * You can group conditions inside 'AND' and 'OR' keys. ex: ['col3 => 0, 'OR' => ['col1' => 1, 'col2' => 2]]
+     * will be assembled into ("col3" = 0 AND ("col1" = 1 OR "col2" => 2)).
+     * By default - 'AND' is used if you group conditions into array without a key:
+     * ['col3 => 0, ['col1' => 1, 'col2' => 2]] will be assembled into ("col3" = 0 AND ("col1" = 1 AND "col2" => 2))
+     * @see Utils::assembleWhereConditionsFromArray() for more details about operators and features
      * @return $this
      */
     public function where(array $conditions) {
@@ -528,11 +549,11 @@ class DbSelect {
     }
 
     /**
-     * @param DbExpr $expression
+     * @param array $conditions
      * @return $this
      */
-    public function having(DbExpr $expression) {
-        $this->having = $expression;
+    public function having(array $conditions) {
+        $this->having = $conditions;
         return $this;
     }
 
@@ -638,11 +659,11 @@ class DbSelect {
      */
     protected function makeColumnNameWithAliasForQuery(array $columnInfo) {
         $tableAlias = $columnInfo['join_alias'] ?: $this->getShortAlias($this->getTableAlias());
-        $columnName = "`{$tableAlias}`.`{$columnInfo['name']}`";
+        $columnName = $this->quoteName($tableAlias) . '.' . $this->quoteName($columnInfo['name']);
         if ($columnInfo['type_cast']) {
             $columnName = $this->getConnection()->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
         }
-        return "{$columnName} AS `{$columnInfo['alias']}`";
+        return $columnName . ' AS ' . $this->quoteName($columnInfo['alias']);
     }
 
     /**
@@ -654,9 +675,9 @@ class DbSelect {
     protected function makeTableNameWithAliasForQuery($tableName, $tableAlias, $tableSchema = null) {
         $schema = '';
         if ($this->getConnection()->isDbSupportsTableSchemas()) {
-            $schema = '`' . ($tableSchema ?: $this->getConnection()->getDefaultTableSchema()) . '`.';
+            $schema = $this->quoteName($tableSchema ?: $this->getConnection()->getDefaultTableSchema()) . '.';
         }
-        return $schema . "`{$tableName}` AS `{$this->getShortAlias($tableAlias)}`";
+        return $schema . $this->quoteName($tableName) . ' AS ' . $this->quoteName($this->getShortAlias($tableAlias));
     }
 
     /**
@@ -665,28 +686,24 @@ class DbSelect {
      */
     protected function makeColumnNameForCondition(array $columnInfo) {
         $tableAlias = $columnInfo['join_alias'] ?: $this->getTableAlias();
-        $columnName = "`{$this->getShortAlias($tableAlias)}`.`{$columnInfo['name']}`";
+        $columnName = $this->quoteName($this->getShortAlias($tableAlias)) . '.' . $this->quoteName($columnInfo['name']);
         if ($columnInfo['type_cast']) {
-            return $this->getConnection()->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
-        } else {
-            return $columnName;
+            $columnName = $this->getConnection()->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
         }
+        return $columnName;
     }
 
     /**
      * Add columns into options and resolve contains
-     * @param mixed $options
+     * @param array $conditionsAndOptions
      * @return array|mixed
      */
-    protected function normalizeConditionsAndOptionsArray($options) {
-        if (!is_array($options)) {
-            $options = (!empty($options) && is_string($options)) ? [$options] : [];
+    protected function normalizeConditionsAndOptionsArray(array $conditionsAndOptions) {
+        if (array_key_exists('JOIN', $conditionsAndOptions)) {
+            $conditionsAndOptions['JOINS'] = $conditionsAndOptions['JOIN'];
+            unset($conditionsAndOptions['JOIN']);
         }
-        if (array_key_exists('JOIN', $options)) {
-            $options['JOINS'] = $options['JOIN'];
-            unset($options['JOIN']);
-        }
-        return $options;
+        return $conditionsAndOptions;
     }
 
     /**
@@ -710,8 +727,8 @@ class DbSelect {
      */
     protected function normalizeColumnsList(array $columns, $joinName = null) {
         if (empty($columns) || $columns === ['*']) {
-            $alias = $this->getShortAlias([$joinName ?: $this->getTableAlias()]);
-            return ["`$alias`.`*`"];
+            $alias = $this->getShortAlias($joinName ?: $this->getTableAlias());
+            return [$this->quoteName($alias) . '.' . $this->quoteName('*')];
         } else {
             $normalizedColumns = [];
             foreach ($columns as $columnAlias => $columnName) {
@@ -721,9 +738,9 @@ class DbSelect {
                     );
                 }
                 if ($columnName instanceof DbExpr) {
+                    $columnName = $this->quoteDbExpr($columnName);
                     if (!is_int($columnAlias)) {
-                        $columnAlias = $this->makeColumnAlias($columnAlias, $joinName);
-                        $columnName = $columnName->get() . " AS `{$columnAlias}`";
+                        $columnName .= ' AS ' . $this->quoteName($this->makeColumnAlias($columnAlias, $joinName));
                     }
                     $normalizedColumns[] = $columnName;
                 } else if (is_string($columnName)) {
@@ -751,33 +768,24 @@ class DbSelect {
     }
 
     /**
+     * @param array $conditions
+     * @param string $subject - can be 'WHERE' or 'HAVING'
      * @return string
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    protected function makeConditions() {
-        $conditions = Utils::assembleWhereConditionsFromArray(
+    protected function makeConditions(array $conditions, $subject = 'WHERE') {
+        $assembled = Utils::assembleWhereConditionsFromArray(
             $this->getConnection(),
-            $this->where,
+            $conditions,
             'AND',
             function ($columnName) {
-                if ($columnName instanceof DbExpr) {
-                    return $columnName->get();
-                } else {
-                    $columnInfo = $this->analyzeColumnName($columnName);
-                    return $this->getConnection()->quoteName($this->makeColumnNameForCondition($columnInfo));
-                }
+                $columnInfo = $this->analyzeColumnName($columnName);
+                return $this->quoteName($this->makeColumnNameForCondition($columnInfo));
             }
         );
-        $conditions = trim($conditions);
-        return empty($conditions) ? '' : 'WHERE ' . $conditions;
-    }
-
-    /**
-     * @return string
-     */
-    protected function makeHaving() {
-        return 'HAVING ' . $this->having->get();
+        $assembled = trim($assembled);
+        return empty($assembled) ? '' : $subject . ' ' . $assembled;
     }
 
     /**
@@ -787,7 +795,7 @@ class DbSelect {
         $groups = [];
         foreach ($this->groupBy as $column) {
             if ($column instanceof DbExpr) {
-                $groups[] = $column->get();
+                $groups[] = $this->quoteDbExpr($column);
             } else {
                 $groups[] = $this->makeColumnNameForCondition($column);
             }
@@ -917,7 +925,7 @@ class DbSelect {
      * @return array - ['col1' => 'val1', 'col2' => 'val2', 'Join1Name' => ['jcol1' => 'jvalue1', ...], ...]
      */
     private function normalizeRecord(array $record) {
-        $dataBlocks = [];
+        $dataBlocks = [$this->getTableAlias() => []];
         // process record's column aliases and group column values by table alias
         $shortAliasToAlias = array_flip($this->shortAliases);
         foreach ($record as $columnAlias => $value) {
@@ -931,7 +939,7 @@ class DbSelect {
                 }
                 $dataBlocks[$tableAlias][$column] = $value;
             } else {
-                $dataBlocks[$columnAlias] = $value;
+                $dataBlocks[$this->getTableAlias()][$columnAlias] = $value;
             }
         }
         // make record nested + add missing child records
@@ -944,6 +952,30 @@ class DbSelect {
             }
         }
         return $nested;
+    }
+
+    /**
+     * @param DbExpr $expr
+     * @return string
+     */
+    protected function quoteDbExpr(DbExpr $expr) {
+        return $this->getConnection()->quoteDbExpr($expr);
+    }
+
+    /**
+     * @param string $name
+     * @return string
+     */
+    protected function quoteName($name) {
+        return $this->getConnection()->quoteName($name);
+    }
+
+    /**
+     * @param string $value
+     * @return string
+     */
+    protected function quoteValue($value) {
+        return $this->getConnection()->quoteValue($value);
     }
 
 

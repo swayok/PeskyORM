@@ -154,7 +154,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      */
     public function query($query, $fetchData = null) {
         if ($query instanceof DbExpr) {
-            $query = $this->replaceDbExprQuotes($query);
+            $query = $this->quoteDbExpr($query);
         }
         $this->lastQuery = $query;
         try {
@@ -182,7 +182,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      */
     public function exec($query) {
         if ($query instanceof DbExpr) {
-            $query = $this->replaceDbExprQuotes($query);
+            $query = $this->quoteDbExpr($query);
         }
         $this->lastQuery = $query;
         try {
@@ -351,7 +351,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         $this->guardDataArg($data);
         $this->guardConditionsArg($conditions);
         $query = 'UPDATE ' . $this->quoteName($table)  . ' SET ' . $this->buildValuesListForUpdate($data, $dataTypes)
-            . ' WHERE ' . ($conditions instanceof DbExpr ? $this->replaceDbExprQuotes($conditions) : $conditions);
+            . ' WHERE ' . ($conditions instanceof DbExpr ? $this->quoteDbExpr($conditions) : $conditions);
         if (empty($returning)) {
             return $this->exec($query);
         } else {
@@ -392,7 +392,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         $this->guardConditionsArg($conditions);
         $this->guardReturningArg($returning);
         $query = 'DELETE FROM ' . $this->quoteName($table)
-            . ' WHERE ' . ($conditions instanceof DbExpr ? $this->replaceDbExprQuotes($conditions) : $conditions);
+            . ' WHERE ' . ($conditions instanceof DbExpr ? $this->quoteDbExpr($conditions) : $conditions);
         if (empty($returning)) {
             return $this->exec($query);
         } else {
@@ -481,7 +481,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      */
     protected function buildColumnsList(array $columns, $withBraces = true) {
         $quoted = implode(',', array_map(function ($column) {
-            return ($column instanceof DbExpr) ? $this->replaceDbExprQuotes($column) : $this->quoteName($column);
+            return ($column instanceof DbExpr) ? $this->quoteDbExpr($column) : $this->quoteName($column);
         }, $columns));
         return $withBraces ? '(' . $quoted . ')' : $quoted;
     }
@@ -739,7 +739,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      */
     public function quoteValue($value, $valueDataType = null) {
         if ($value instanceof DbExpr) {
-            return $this->replaceDbExprQuotes($value);
+            return $this->quoteDbExpr($value);
         } else {
             if ($value === null || $valueDataType === \PDO::PARAM_NULL) {
                 return 'NULL';
@@ -799,7 +799,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function replaceDbExprQuotes(DbExpr $expression) {
+    public function quoteDbExpr(DbExpr $expression) {
         $quoted = preg_replace_callback(
             '%``(.*?)``%s',
             function ($matches) {
@@ -874,7 +874,7 @@ abstract class DbAdapter implements DbAdapterInterface {
     public function assembleConditionValue($value, $operator) {
         // todo: think about possibility to validate value by means of DbTableStructure objects
         if ($value instanceof DbExpr) {
-            return '(' . $this->replaceDbExprQuotes($value) . ')';
+            return '(' . $this->quoteDbExpr($value) . ')';
         } else if (in_array($operator, ['BETWEEN', 'NOT BETWEEN'], true)) {
             // 2.3
             if (!is_array($value)) {
@@ -1035,7 +1035,7 @@ abstract class DbAdapter implements DbAdapterInterface {
             $this->guardColumnsArg($columns);
         }
         $this->guardConditionsAndOptionsArg($conditionsAndOptions);
-        $suffix = empty($conditionsAndOptions) ? '' : ' ' . $this->replaceDbExprQuotes($conditionsAndOptions);
+        $suffix = empty($conditionsAndOptions) ? '' : ' ' . $this->quoteDbExpr($conditionsAndOptions);
         return 'SELECT ' . $this->buildColumnsList($columns, false) . ' FROM ' . $this->quoteName($table) . $suffix;
     }
 

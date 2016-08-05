@@ -148,7 +148,7 @@ interface DbAdapterInterface {
      * @param DbExpr $expression
      * @return string
      */
-    public function replaceDbExprQuotes(DbExpr $expression);
+    public function quoteDbExpr(DbExpr $expression);
 
     /**
      * Does DB supports table schemas?

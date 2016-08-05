@@ -92,7 +92,7 @@ class PostgresAdapterUpdateDataTest extends \PHPUnit_Framework_TestCase {
         $update1 = ['value' => json_encode('test_value1.1')];
         $adapter->update('settings', $update1, DbExpr::create("`key` = ``{$testData1[0]['key']}``"));
         $this->assertEquals(
-            $adapter->replaceDbExprQuotes(DbExpr::create(
+            $adapter->quoteDbExpr(DbExpr::create(
                 "UPDATE `settings` SET `value`=``\"test_value1.1\"`` WHERE `key` = ``{$testData1[0]['key']}``"
             )),
             $adapter->getLastQuery()
