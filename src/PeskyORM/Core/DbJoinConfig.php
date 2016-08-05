@@ -306,4 +306,18 @@ class DbJoinConfig {
         return $this;
     }
 
+    /**
+     * @return bool
+     */
+    public function isValid() {
+        return (
+            !empty($this->getTableName())
+            && !empty($this->getColumnName())
+            && !empty($this->getForeignTableName())
+            && !empty($this->getForeignColumnName())
+            && !empty($this->getJoinType())
+            && !empty($this->getJoinName())
+        );
+    }
+
 }

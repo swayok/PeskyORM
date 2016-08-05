@@ -196,7 +196,6 @@ class OrmSelect extends DbSelect {
         $this->tableName = $table->getTableName();
         $this->table = $table;
         $this->tableStructure = $table->getStructure();
-        $this->getShortAlias($table->getAlias());
     }
 
     protected function addRelation(DbTableRelation $relation) {
@@ -204,7 +203,6 @@ class OrmSelect extends DbSelect {
             throw new \InvalidArgumentException("Relation with name '{$relation->getName()}' already defined");
         }
         $this->relations[$relation->getName()] = $relation;
-        $this->getShortAlias($relation->getName());
     }
 
 }
