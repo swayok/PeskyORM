@@ -125,7 +125,7 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Db entity name must be a string
+     * @expectedExceptionMessage Db entity name must be a not empty string
      */
     public function testQuotingOfInvalidDbEntity2() {
         $adapter = static::getValidAdapter();
@@ -134,7 +134,7 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Db entity name must be a string
+     * @expectedExceptionMessage Db entity name must be a not empty string
      */
     public function testQuotingOfInvalidDbEntity3() {
         $adapter = static::getValidAdapter();
@@ -143,7 +143,7 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Db entity name must be a string
+     * @expectedExceptionMessage Db entity name must be a not empty string
      */
     public function testQuotingOfInvalidDbEntity4() {
         $adapter = static::getValidAdapter();
@@ -152,7 +152,7 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Db entity name must be a string
+     * @expectedExceptionMessage Db entity name must be a not empty string
      */
     public function testQuotingOfInvalidDbEntity5() {
         $adapter = static::getValidAdapter();
@@ -175,6 +175,15 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
     public function testQuotingOfInvalidDbEntity7() {
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName('colname-> ->');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Db entity name must be a not empty string
+     */
+    public function testQuotingOfInvalidDbEntity8() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteDbEntityName('');
     }
 
     /**

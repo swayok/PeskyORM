@@ -125,7 +125,7 @@ class MysqlAdapterGeneralFunctionalityTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Db entity name must be a string
+     * @expectedExceptionMessage Db entity name must be a not empty string
      */
     public function testQuotingOfInvalidDbEntity2() {
         $adapter = static::getValidAdapter();
@@ -134,7 +134,7 @@ class MysqlAdapterGeneralFunctionalityTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Db entity name must be a string
+     * @expectedExceptionMessage Db entity name must be a not empty string
      */
     public function testQuotingOfInvalidDbEntity3() {
         $adapter = static::getValidAdapter();
@@ -143,7 +143,7 @@ class MysqlAdapterGeneralFunctionalityTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Db entity name must be a string
+     * @expectedExceptionMessage Db entity name must be a not empty string
      */
     public function testQuotingOfInvalidDbEntity4() {
         $adapter = static::getValidAdapter();
@@ -152,11 +152,38 @@ class MysqlAdapterGeneralFunctionalityTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Db entity name must be a string
+     * @expectedExceptionMessage Db entity name must be a not empty string
      */
     public function testQuotingOfInvalidDbEntity5() {
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName(false);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Invalid db entity name [colname->->]
+     */
+    public function testQuotingOfInvalidDbEntity6() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteDbEntityName('colname->->');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Invalid db entity name [colname-> ->]
+     */
+    public function testQuotingOfInvalidDbEntity7() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteDbEntityName('colname-> ->');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Db entity name must be a not empty string
+     */
+    public function testQuotingOfInvalidDbEntity8() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteDbEntityName('');
     }
 
     /**
