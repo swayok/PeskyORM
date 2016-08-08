@@ -82,21 +82,21 @@ class Utils {
             return '';
         } else {
             $assembled = [];
-            foreach ($conditions as $column => $value) {
-                if (is_object($value) && !($value instanceof DbExpr)) {
+            foreach ($conditions as $column => $rawValue) {
+                if (is_object($rawValue) && !($rawValue instanceof DbExpr)) {
                     throw new \InvalidArgumentException(
                         '$conditions argument may contain objects of class DbExpr only. Other object are forbidden.'
                     );
                 }
-                $valueIsDbExpr = is_object($value) && ($value instanceof DbExpr);
+                $valueIsDbExpr = is_object($rawValue) && ($rawValue instanceof DbExpr);
                 if (is_numeric($column) && $valueIsDbExpr) {
                     // 1 - custom expressions
-                    $assembled[] = $connection->quoteDbExpr($value);
+                    $assembled[] = $connection->quoteDbExpr($rawValue);
                     continue;
                 } else if (
                     (
                         is_numeric($column)
-                        && is_array($value)
+                        && is_array($rawValue)
                     )
                     || in_array(strtolower(trim($column)), ['and', 'or'], true)
                 ) {
@@ -104,7 +104,7 @@ class Utils {
                     $subGlue = is_numeric($column) ? 'AND' : $column;
                     $subConditons = static::assembleWhereConditionsFromArray(
                         $connection,
-                        $value,
+                        $rawValue,
                         $subGlue,
                         $columnQuoter
                     );
@@ -113,9 +113,10 @@ class Utils {
                     $operator = '=';
                     // find and prepare operator
                     $operators = [
-                        '\s*(?:>|<|=|\!=|>=|<=)',   //< basic operators
+                        '\s*(?:>|<|=|\!=|>=|<=|@>|<@|\?|\?\||\?\&)',   //< basic operators
                         '\s+(?:.+?)\s*$',           //< other operators
                     ];
+                    // todo: add support for json operators @>, <@, ?, ?|, ?&
                     $operatorsRegexp = '%^(.+?)\s*(' . implode('|', $operators) . ')\s*$%i';
                     if (preg_match($operatorsRegexp, $column, $matches)) {
                         // 2.1
@@ -127,14 +128,13 @@ class Utils {
                         $column = trim($matches[1]);
                         $operator = strtoupper(preg_replace('%\s+%', ' ', trim($matches[2])));
                     }
-                    $operator = $connection->convertConditionOperator($operator, $value);
+                    $operator = $connection->convertConditionOperator($operator, $rawValue);
                     if ($column instanceof DbExpr) {
                         $column = $connection->quoteDbExpr($column);
                     } else {
                         $column = $columnQuoter($column);
                     }
-                    $value = $connection->assembleConditionValue($value, $operator);
-                    $assembled[] = "{$column} {$operator} {$value}";
+                    $assembled[] = $connection->assembleCondition($column, $operator, $rawValue);
                 }
             }
             return implode(" $glue ", $assembled);

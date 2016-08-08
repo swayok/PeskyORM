@@ -134,8 +134,16 @@ interface DbAdapterInterface {
      *  2. 'TableAlias.column' - quoted like '`TableAlias`.`column`'
      * @return string
      */
-    public function quoteName($name);
-    
+    public function quoteDbEntityName($name);
+
+    /**
+     * Test if $name matches a DB entity naming rules or it is a JSON selector
+     * @param string $name
+     * @param bool $canBeAJsonSelector - test if $name contains a JSON selector like 'col_name -> json_key'
+     * @return bool
+     */
+    static public function isValidDbEntityName($name, $canBeAJsonSelector = true);
+
     /**
      * Quote passed value
      * @param mixed $value
@@ -179,6 +187,15 @@ interface DbAdapterInterface {
      * @throws \InvalidArgumentException
      */
     public function assembleConditionValue($value, $operator);
+
+    /**
+     * Assemble condition from prepared parts
+     * @param string $quotedColumn
+     * @param string $operator
+     * @param mixed $rawValue
+     * @return string
+     */
+    public function assembleCondition($quotedColumn, $operator, $rawValue);
 
     /**
      * Converts general representation of data type conversion to adapter's specific one

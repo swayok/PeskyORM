@@ -254,7 +254,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      */
     public function testInvalidAnalyzeColumnName11() {
         $dbSelect = static::getNewSelect();
-        static::callObjectMethod($dbSelect, 'analyzeColumnName', [null]);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', [null]);
     }
 
     /**
@@ -263,7 +263,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      */
     public function testInvalidAnalyzeColumnName12() {
         $dbSelect = static::getNewSelect();
-        static::callObjectMethod($dbSelect, 'analyzeColumnName', ['']);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['']);
     }
 
     /**
@@ -272,7 +272,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      */
     public function testInvalidAnalyzeColumnName13() {
         $dbSelect = static::getNewSelect();
-        static::callObjectMethod($dbSelect, 'analyzeColumnName', [[]]);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', [[]]);
     }
 
     /**
@@ -281,7 +281,34 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      */
     public function testInvalidAnalyzeColumnName14() {
         $dbSelect = static::getNewSelect();
-        static::callObjectMethod($dbSelect, 'analyzeColumnName', [false]);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', [false]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Invalid column name or json selector: [test test]
+     */
+    public function testInvalidAnalyzeColumnName15() {
+        $dbSelect = static::getNewSelect();
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test test']);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Invalid column name or json selector: [0test]
+     */
+    public function testInvalidAnalyzeColumnName16() {
+        $dbSelect = static::getNewSelect();
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['0test']);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Invalid column name or json selector: [test%test]
+     */
+    public function testInvalidAnalyzeColumnName17() {
+        $dbSelect = static::getNewSelect();
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test%test']);
     }
 
     /**
@@ -290,7 +317,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      */
     public function testInvalidAnalyzeColumnName21() {
         $dbSelect = static::getNewSelect();
-        static::callObjectMethod($dbSelect, 'analyzeColumnName', ['test', []]);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', []]);
     }
 
     /**
@@ -299,7 +326,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      */
     public function testInvalidAnalyzeColumnName22() {
         $dbSelect = static::getNewSelect();
-        static::callObjectMethod($dbSelect, 'analyzeColumnName', ['test', false]);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', false]);
     }
 
     /**
@@ -308,7 +335,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      */
     public function testInvalidAnalyzeColumnName23() {
         $dbSelect = static::getNewSelect();
-        static::callObjectMethod($dbSelect, 'analyzeColumnName', ['test', '']);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', '']);
     }
 
     /**
@@ -317,7 +344,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      */
     public function testInvalidAnalyzeColumnName31() {
         $dbSelect = static::getNewSelect();
-        static::callObjectMethod($dbSelect, 'analyzeColumnName', ['test', null, false]);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', null, false]);
     }
 
     /**
@@ -326,7 +353,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      */
     public function testInvalidAnalyzeColumnName32() {
         $dbSelect = static::getNewSelect();
-        static::callObjectMethod($dbSelect, 'analyzeColumnName', ['test', null, []]);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', null, []]);
     }
 
     /**
@@ -335,10 +362,8 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      */
     public function testInvalidAnalyzeColumnName33() {
         $dbSelect = static::getNewSelect();
-        static::callObjectMethod($dbSelect, 'analyzeColumnName', ['test', null, '']);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', null, '']);
     }
-
-    //todo add analyzeColumnName tests with invalid column names, column aliases and table aliases
 
     public function testAnalyzeColumnName() {
         $dbSelect = static::getNewSelect();
@@ -349,7 +374,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
                 'join_alias' => null,
                 'type_cast' => null,
             ],
-            static::callObjectMethod($dbSelect, 'analyzeColumnName', ['*', 'test'])
+            $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['*', 'test'])
         );
         static::assertEquals(
             [
@@ -358,7 +383,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
                 'join_alias' => 'JoinAlias',
                 'type_cast' => null,
             ],
-            static::callObjectMethod($dbSelect, 'analyzeColumnName', ['JoinAlias.*', 'test'])
+            $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['JoinAlias.*', 'test'])
         );
         static::assertEquals(
             [
@@ -367,7 +392,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
                 'join_alias' => null,
                 'type_cast' => null,
             ],
-            static::callObjectMethod($dbSelect, 'analyzeColumnName', ['id as not_id'])
+            $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['id as not_id'])
         );
         static::assertEquals(
             [
@@ -376,7 +401,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
                 'join_alias' => null,
                 'type_cast' => 'int',
             ],
-            static::callObjectMethod($dbSelect, 'analyzeColumnName', ['Admins.id::int'])
+            $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['Admins.id::int'])
         );
         static::assertEquals(
             [
@@ -385,10 +410,10 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
                 'join_alias' => 'Other',
                 'type_cast' => 'int',
             ],
-            static::callObjectMethod($dbSelect, 'analyzeColumnName', ['Other.id::int'])
+            $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['Other.id::int'])
         );
         $dbExpr = DbExpr::create('Other.id::int');
-        $columnInfo = static::callObjectMethod($dbSelect, 'analyzeColumnName', [$dbExpr]);
+        $columnInfo = $this->callObjectMethod($dbSelect, 'analyzeColumnName', [$dbExpr]);
         static::assertArraySubset(
             [
                 'alias' => null,
@@ -399,7 +424,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
         );
         static::assertInstanceOf(DbExpr::class, $columnInfo['name']);
         static::assertEquals($dbExpr->get(), $columnInfo['name']->get());
-        $columnInfo = static::callObjectMethod($dbSelect, 'analyzeColumnName', [$dbExpr, 'dbexpr']);
+        $columnInfo = $this->callObjectMethod($dbSelect, 'analyzeColumnName', [$dbExpr, 'dbexpr']);
         static::assertArraySubset(
             [
                 'alias' => 'dbexpr',

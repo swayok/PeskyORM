@@ -120,7 +120,7 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
      */
     public function testQuotingOfInvalidDbEntity() {
         $adapter = static::getValidAdapter();
-        $adapter->quoteName('";DROP table1;');
+        $adapter->quoteDbEntityName('";DROP table1;');
     }
 
     /**
@@ -129,7 +129,7 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
      */
     public function testQuotingOfInvalidDbEntity2() {
         $adapter = static::getValidAdapter();
-        $adapter->quoteName(['arrr']);
+        $adapter->quoteDbEntityName(['arrr']);
     }
 
     /**
@@ -138,7 +138,7 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
      */
     public function testQuotingOfInvalidDbEntity3() {
         $adapter = static::getValidAdapter();
-        $adapter->quoteName($adapter);
+        $adapter->quoteDbEntityName($adapter);
     }
 
     /**
@@ -147,7 +147,7 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
      */
     public function testQuotingOfInvalidDbEntity4() {
         $adapter = static::getValidAdapter();
-        $adapter->quoteName(true);
+        $adapter->quoteDbEntityName(true);
     }
 
     /**
@@ -156,7 +156,25 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
      */
     public function testQuotingOfInvalidDbEntity5() {
         $adapter = static::getValidAdapter();
-        $adapter->quoteName(false);
+        $adapter->quoteDbEntityName(false);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Invalid db entity name [colname->->]
+     */
+    public function testQuotingOfInvalidDbEntity6() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteDbEntityName('colname->->');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Invalid db entity name [colname-> ->]
+     */
+    public function testQuotingOfInvalidDbEntity7() {
+        $adapter = static::getValidAdapter();
+        $adapter->quoteDbEntityName('colname-> ->');
     }
 
     /**
@@ -233,8 +251,17 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
 
     public function testQuoting() {
         $adapter = static::getValidAdapter();
-        $this->assertEquals('"table1"', $adapter->quoteName('table1'));
-        $this->assertEquals('*', $adapter->quoteName('*'));
+        // names
+        $this->assertEquals('"table1"', $adapter->quoteDbEntityName('table1'));
+        $this->assertEquals('*', $adapter->quoteDbEntityName('*'));
+        $this->assertEquals('"table"."colname"', $adapter->quoteDbEntityName('table.colname'));
+        $this->assertEquals('"table"."colname"->\'jsonkey\'', $adapter->quoteDbEntityName('table.colname->jsonkey'));
+        $this->assertEquals('"table"."colname"#>\'jsonkey\'', $adapter->quoteDbEntityName('table.colname #> jsonkey'));
+        $this->assertEquals('"table"."colname"->>\'json key\'', $adapter->quoteDbEntityName('table.colname ->> json key'));
+        $this->assertEquals('"table"."colname"#>>\'json key\'', $adapter->quoteDbEntityName('table.colname #>> \'json key\''));
+        $this->assertEquals('"table"."colname"->\'json key\'', $adapter->quoteDbEntityName('table.colname -> "json key"'));
+        $this->assertEquals('"table"."colname"->\'json key\'->>\'json key 2\'', $adapter->quoteDbEntityName('table.colname -> "json key" ->> json key 2'));
+        // values
         $this->assertEquals("''';DROP table1;'", $adapter->quoteValue('\';DROP table1;'));
         $this->assertEquals('TRUE', $adapter->quoteValue(true));
         $this->assertEquals('TRUE', $adapter->quoteValue(1, PDO::PARAM_BOOL));
@@ -254,6 +281,11 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
             'DELETE FROM "table1" WHERE "col1" = \'value1\'',
             $adapter->quoteDbExpr(DbExpr::create('DELETE FROM `table1` WHERE `col1` = ``value1``'))
         );
+    }
+
+    public function testJsonSequenceQuoting() {
+        $adapter = static::getValidAdapter();
+
     }
     
     public function testBuildColumnsList() {

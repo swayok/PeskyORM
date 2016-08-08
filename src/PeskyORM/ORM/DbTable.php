@@ -257,8 +257,8 @@ abstract class DbTable implements DbTableInterface {
         static::getConnection()->rollBack();
     }
 
-    static public function quoteName($name) {
-        return static::getConnection()->quoteName($name);
+    static public function quoteDbEntityName($name) {
+        return static::getConnection()->quoteDbEntityName($name);
     }
 
     static public function quoteValue($value, $fieldInfoOrType = \PDO::PARAM_STR) {
@@ -487,7 +487,7 @@ abstract class DbTable implements DbTableInterface {
             }
             $ret['column'] = $ret['table']->getStructure()->getColumn($ret['column']);
             $ret['data_type_convert'] = !empty($columnParts[3]) ? $columnParts[3] : '';
-            $ret['quoted'] = static::quoteName($ret['table_alias']) . '.' . static::quoteName($ret['column']);
+            $ret['quoted'] = static::quoteDbEntityName($ret['table_alias']) . '.' . static::quoteDbEntityName($ret['column']);
             $ret['quoted'] = $ret['table']->getConnection()->addDataTypeCastToExpression(
                 $ret['data_type_convert'],
                 $ret['quoted']

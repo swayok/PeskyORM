@@ -683,7 +683,9 @@ class DbSelect {
                 // 'JoinName.column' or 'JoinName.*'
                 list(, $joinName, $columnName) = $columnParts;
             }
-            // todo validate column name, column alias and join name via regexp
+            if (!$this->getConnection()->isValidDbEntityName($columnName)) {
+                throw new \InvalidArgumentException("Invalid column name or json selector: [$columnName]");
+            }
             if ($columnName === '*') {
                 $typeCast = null;
                 $columnAlias = null;
@@ -720,7 +722,7 @@ class DbSelect {
         if ($isDbExpr) {
             $columnName = $this->quoteDbExpr($columnInfo['name']);
         } else {
-            $columnName = $this->quoteName($shortTableAlias) . '.' . $this->quoteName($columnInfo['name']);
+            $columnName = $this->quoteDbEntityName($shortTableAlias) . '.' . $this->quoteDbEntityName($columnInfo['name']);
         }
         if ($columnInfo['type_cast']) {
             $columnName = $this->getConnection()->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
@@ -728,7 +730,7 @@ class DbSelect {
         if ($columnInfo['name'] === '*' || ($isDbExpr && empty($columnInfo['alias']))) {
             return $columnName;
         } else {
-            $columnAlias = $this->quoteName($this->makeColumnAlias($columnInfo['alias'] ?: $columnInfo['name'], $tableAlias));
+            $columnAlias = $this->quoteDbEntityName($this->makeColumnAlias($columnInfo['alias'] ?: $columnInfo['name'], $tableAlias));
             return $columnName . ' AS ' . $columnAlias;
         }
     }
@@ -742,9 +744,9 @@ class DbSelect {
     protected function makeTableNameWithAliasForQuery($tableName, $tableAlias, $tableSchema = null) {
         $schema = '';
         if ($this->getConnection()->isDbSupportsTableSchemas()) {
-            $schema = $this->quoteName($tableSchema ?: $this->getConnection()->getDefaultTableSchema()) . '.';
+            $schema = $this->quoteDbEntityName($tableSchema ?: $this->getConnection()->getDefaultTableSchema()) . '.';
         }
-        return $schema . $this->quoteName($tableName) . ' AS ' . $this->quoteName($this->getShortAlias($tableAlias));
+        return $schema . $this->quoteDbEntityName($tableName) . ' AS ' . $this->quoteDbEntityName($this->getShortAlias($tableAlias));
     }
 
     /**
@@ -753,7 +755,7 @@ class DbSelect {
      */
     protected function makeColumnNameForCondition(array $columnInfo) {
         $tableAlias = $columnInfo['join_alias'] ?: $this->getTableAlias();
-        $columnName = $this->quoteName($this->getShortAlias($tableAlias)) . '.' . $this->quoteName($columnInfo['name']);
+        $columnName = $this->quoteDbEntityName($this->getShortAlias($tableAlias)) . '.' . $this->quoteDbEntityName($columnInfo['name']);
         if ($columnInfo['type_cast']) {
             $columnName = $this->getConnection()->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
         }
@@ -1028,8 +1030,8 @@ class DbSelect {
      * @param string $name
      * @return string
      */
-    protected function quoteName($name) {
-        return $this->getConnection()->quoteName($name);
+    protected function quoteDbEntityName($name) {
+        return $this->getConnection()->quoteDbEntityName($name);
     }
 
     /**

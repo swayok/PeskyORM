@@ -10,8 +10,7 @@ use PeskyORM\Core\Utils;
 
 class Mysql extends DbAdapter {
 
-    const VALUE_QUOTES = '"';
-    const NAME_QUOTES = '`';
+    const ENTITY_NAME_QUOTES = '`';
 
     static protected $dataTypesMap = [
         'bytea' => 'BINARY',
@@ -124,7 +123,7 @@ class Mysql extends DbAdapter {
             Utils::getDataFromStatement($this->query('SELECT LAST_INSERT_ID()'),
             Utils::FETCH_VALUE
         ));
-        $pkName = $this->quoteName($pkName);
+        $pkName = $this->quoteDbEntityName($pkName);
         $query = DbExpr::create("SELECT {$returning} FROM {$table} WHERE $pkName=$id");
         $stmnt = $this->query($query);
         if (!$stmnt->rowCount()) {
@@ -164,7 +163,7 @@ class Mysql extends DbAdapter {
             );
         }
         $id2 = $id1 + count($data) - 1;
-        $pkName = $this->quoteName($pkName);
+        $pkName = $this->quoteDbEntityName($pkName);
         $query = DbExpr::create(
             "SELECT {$returning} FROM {$table} WHERE {$pkName} BETWEEN {$id1} AND {$id2} ORDER BY {$pkName}"
         );
@@ -238,5 +237,88 @@ class Mysql extends DbAdapter {
         return DbExpr::create('DEFAULT');
     }
 
+    /**
+     * Quote a db entity name like 'table.col_name -> json_key1 ->> json_key2'
+     * @param array $sequence -
+     *      index 0: base entity name ('table.col_name' or 'col_name');
+     *      indexes 1, 3, 5, ...: selection operator (->, ->>, #>, #>>);
+     *      indexes 2, 4, 6, ...: json key name or other selector ('json_key1', 'json_key2')
+     * @return string - quoted entity name and json selector
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    protected function quoteJsonSelectorExpression(array $sequence) {
+        $sequence[0] = $this->quoteDbEntityName($sequence[0]);
+        $max = count($sequence);
+        // prepare keys
+        for ($i = 2; $i < $max; $i += 2) {
+            $sequence[$i] = $this->quoteJsonSelectorValue(trim($sequence[$i], '\'"` '));
+        }
+        // make selector
+        $result = $sequence[0];
+        for ($i = 1; $i < $max; $i += 2) {
+            switch ($sequence[$i]) {
+                case '->':
+                case '->>':
+                    $result .= $sequence[$i] . $sequence[$i + 1];
+                    break;
+                case '#>':
+                    $result = "JSON_EXTRACT({$result}, {$sequence[$i + 1]})";
+                    break;
+                case '#>>':
+                    $result = "JSON_UNQUOTE(JSON_EXTRACT({$result}, {$sequence[$i + 1]}))";
+                    break;
+                default:
+                    throw new \UnexpectedValueException("Unsopported json operator '{$sequence[$i]}' received");
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * @param string $key
+     * @return string
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    protected function quoteJsonSelectorValue($key) {
+        if ($key[0] === '[') {
+            $key = '$' . $key;
+        } else {
+            $key = '$.' . $key;
+        }
+        return $this->quoteValue($key, \PDO::PARAM_STR);
+    }
+
+    /**
+     * Assemble condition from prepared parts
+     * @param string $quotedColumn
+     * @param string $operator
+     * @param mixed $rawValue
+     * @return string
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    public function assembleCondition($quotedColumn, $operator, $rawValue) {
+        if (in_array($operator, ['?', '?|', '?&'], true)) {
+            if (!is_array($rawValue)) {
+                $rawValue = [$this->quoteJsonSelectorValue($rawValue)];
+            } else {
+                foreach ($rawValue as &$localValue) {
+                    $localValue = $this->quoteJsonSelectorValue($localValue);
+                }
+                unset($localValue);
+            }
+            $values = implode(', ', $rawValue);
+            $howMany = $this->quoteValue($operator === '?|' ? 'one' : 'many');
+            return "JSON_CONTAINS_PATH($quotedColumn, $howMany, $values)";
+        } else if (in_array($operator, ['@>', '<@'], true)) {
+            $value = $this->assembleConditionValue($rawValue, $operator);
+            return "JSON_CONTAINS($quotedColumn, $value)";
+        } else {
+            return parent::assembleCondition($quotedColumn, $operator, $rawValue);
+        }
+    }
 
 }

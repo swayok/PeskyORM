@@ -8,8 +8,7 @@ abstract class DbAdapter implements DbAdapterInterface {
 
     const DEFAULT_DB_PORT_NUMBER = '';
 
-    const VALUE_QUOTES = '';
-    const NAME_QUOTES = '';
+    const ENTITY_NAME_QUOTES = '';
 
     // db-specific values for bool data type
     const BOOL_TRUE = '1';
@@ -147,7 +146,7 @@ abstract class DbAdapter implements DbAdapterInterface {
     /**
      * @param string|DbExpr $query
      * @param string|null $fetchData - null: return PDOStatement; string: one of \PeskyORM\Core\Utils::FETCH_*
-     * @return \PDOStatement|array|string
+     * @return \PDOStatement|mixed
      * @throws \PeskyORM\Core\DbException
      * @throws \InvalidArgumentException
      * @throws \PDOException
@@ -227,7 +226,7 @@ abstract class DbAdapter implements DbAdapterInterface {
             $this->guardPkNameArg($pkName);
         }
         $columns = array_keys($data);
-        $query = 'INSERT INTO ' . $this->quoteName($table) . ' ' . $this->buildColumnsList($columns) 
+        $query = 'INSERT INTO ' . $this->quoteDbEntityName($table) . ' ' . $this->buildColumnsList($columns)
                  . ' VALUES ' . $this->buildValuesList($columns, $data, $dataTypes);
         if (empty($returning)) {
             $rowsAffected = $this->exec($query);
@@ -284,7 +283,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         if ($returning) {
             $this->guardPkNameArg($pkName);
         }
-        $query = 'INSERT INTO ' . $this->quoteName($table) . ' ' . $this->buildColumnsList($columns) . ' VALUES ';
+        $query = 'INSERT INTO ' . $this->quoteDbEntityName($table) . ' ' . $this->buildColumnsList($columns) . ' VALUES ';
         foreach ($data as $key => $record) {
             if (!is_array($record)) {
                 throw new \InvalidArgumentException(
@@ -350,7 +349,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         $this->guardTableNameArg($table);
         $this->guardDataArg($data);
         $this->guardConditionsArg($conditions);
-        $query = 'UPDATE ' . $this->quoteName($table)  . ' SET ' . $this->buildValuesListForUpdate($data, $dataTypes)
+        $query = 'UPDATE ' . $this->quoteDbEntityName($table)  . ' SET ' . $this->buildValuesListForUpdate($data, $dataTypes)
             . ' WHERE ' . ($conditions instanceof DbExpr ? $this->quoteDbExpr($conditions) : $conditions);
         if (empty($returning)) {
             return $this->exec($query);
@@ -391,7 +390,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         $this->guardTableNameArg($table);
         $this->guardConditionsArg($conditions);
         $this->guardReturningArg($returning);
-        $query = 'DELETE FROM ' . $this->quoteName($table)
+        $query = 'DELETE FROM ' . $this->quoteDbEntityName($table)
             . ' WHERE ' . ($conditions instanceof DbExpr ? $this->quoteDbExpr($conditions) : $conditions);
         if (empty($returning)) {
             return $this->exec($query);
@@ -450,7 +449,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         } else if (!is_string($pkName)) {
             throw new \InvalidArgumentException('$pkName argument must be a string');
         }
-        $this->quoteName($pkName);
+        $this->quoteDbEntityName($pkName);
     }
 
     private function guardDataArg(array $data) {
@@ -481,7 +480,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      */
     protected function buildColumnsList(array $columns, $withBraces = true) {
         $quoted = implode(',', array_map(function ($column) {
-            return ($column instanceof DbExpr) ? $this->quoteDbExpr($column) : $this->quoteName($column);
+            return ($column instanceof DbExpr) ? $this->quoteDbExpr($column) : $this->quoteDbEntityName($column);
         }, $columns));
         return $withBraces ? '(' . $quoted . ')' : $quoted;
     }
@@ -529,7 +528,7 @@ abstract class DbAdapter implements DbAdapterInterface {
                 $valuesAssoc[$column],
                 empty($dataTypes[$column]) ? null : $dataTypes[$column]
             );
-            $ret[] = $this->quoteName($column) . '=' . $quotedValue;
+            $ret[] = $this->quoteDbEntityName($column) . '=' . $quotedValue;
         }
         return implode(',', $ret);
     }
@@ -714,19 +713,69 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @return string
      * @throws \InvalidArgumentException
      */
-    public function quoteName($name) {
-        if (!is_string($name)) {
-            throw new \InvalidArgumentException('Db entity name must be a string');
+    public function quoteDbEntityName($name) {
+        if (!is_string($name) || trim($name) === '') {
+            throw new \InvalidArgumentException('Db entity name must be a not empty string');
         }
         if ($name === '*') {
             return '*';
         }
-        if (!preg_match('%^[a-zA-Z_][a-zA-Z_0-9]*(\.[a-zA-Z_0-9]+)?$%i', $name)) {
+        if (!static::isValidDbEntityName($name)) {
             throw new \InvalidArgumentException("Invalid db entity name [$name]");
         }
-        return static::NAME_QUOTES
-               . str_replace('.', static::NAME_QUOTES . '.' . static::NAME_QUOTES, $name)
-               . static::NAME_QUOTES;
+        if (preg_match('%[-#]>%', $name)) {
+            // we've got a json selector like 'Alias.col_name->json_key1' 'Alias.col_name ->>json_key1',
+            // 'Alias.col_name #> json_key1', 'Alias.col_name#>> json_key1', 'Alias.col_name->json_key1->>json_key2'
+            $parts = preg_split('%\s*([-#]>>?)\s*%', $name, -1, PREG_SPLIT_DELIM_CAPTURE);
+            return $this->quoteJsonSelectorExpression($parts);
+        } else {
+            return static::ENTITY_NAME_QUOTES
+                . str_replace('.', static::ENTITY_NAME_QUOTES . '.' . static::ENTITY_NAME_QUOTES, $name)
+                . static::ENTITY_NAME_QUOTES;
+        }
+    }
+
+    /**
+     * Quote a db entity name like 'table.col_name -> json_key1 ->> json_key2'
+     * @param array $sequence -
+     *      index 0: base entity name ('table.col_name' or 'col_name');
+     *      indexes 1, 3, 5, ...: selection operator (->, ->>, #>, #>>);
+     *      indexes 2, 4, 6, ...: json key name or other selector ('json_key1', 'json_key2')
+     * @return string - quoted entity name and json selecor
+     */
+    abstract protected function quoteJsonSelectorExpression(array $sequence);
+
+    /**
+     * @param string $name
+     * @param bool $canBeAJsonSelector
+     * @return bool
+     */
+    static public function isValidDbEntityName($name, $canBeAJsonSelector = true) {
+        return (
+            $name === '*'
+            || preg_match('%^[a-zA-Z_][a-zA-Z_0-9]*(\.[a-zA-Z_0-9]+|\.\*)?$%i', $name) > 0
+            || ($canBeAJsonSelector && static::isValidJsonSelector($name))
+        );
+    }
+
+    /**
+     * @param string $name
+     * @return bool
+     */
+    static public function isValidJsonSelector($name) {
+        $parts = preg_split('%\s*[-#]>>?\s*%', $name);
+        if (count($parts) < 1) {
+            return false;
+        }
+        if (!static::isValidDbEntityName($parts[0], false)) {
+            return false;
+        }
+        for ($i = 1, $max = count($parts); $i < $max; $i++) {
+            if (trim($parts[$i], ' "`\'') === '') {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -810,7 +859,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         $quoted = preg_replace_callback(
             '%`(.*?)`%s',
             function ($matches) {
-                return $this->quoteName($matches[1]);
+                return $this->quoteDbEntityName($matches[1]);
             },
             $quoted
         );
@@ -865,14 +914,13 @@ abstract class DbAdapter implements DbAdapterInterface {
     }
 
     /**
-     * @param array|float|int|string $value
+     * @param mixed $value
      * @param string $operator
      * @return string
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
     public function assembleConditionValue($value, $operator) {
-        // todo: think about possibility to validate value by means of DbTableStructure objects
         if ($value instanceof DbExpr) {
             return '(' . $this->quoteDbExpr($value) . ')';
         } else if (in_array($operator, ['BETWEEN', 'NOT BETWEEN'], true)) {
@@ -881,7 +929,7 @@ abstract class DbAdapter implements DbAdapterInterface {
                 throw new \InvalidArgumentException(
                     'Condition value for BETWEEN and NOT BETWEEN operator must be an array with 2 values: [min, max]'
                 );
-            } else if (count($value) !== 2){
+            } else if (count($value) !== 2) {
                 throw new \InvalidArgumentException(
                     'BETWEEN and NOT BETWEEN conditions require value to an array with 2 values: [min, max]'
                 );
@@ -898,12 +946,30 @@ abstract class DbAdapter implements DbAdapterInterface {
                 foreach ($value as $val) {
                     $quotedValues[] = $this->quoteValue($val);
                 }
-                return '(' . implode(',', $quotedValues) . ')';
+                if (in_array($operator, ['?&', '?|'], true)) {
+                    return $quotedValues;
+                } else {
+                    return '(' . implode(',', $quotedValues) . ')';
+                }
             }
         } else {
             // 2.1, 2.2
             return $this->quoteValue($value);
         }
+    }
+
+    /**
+     * Assemble condition from prepared parts
+     * @param string $quotedColumn
+     * @param string $operator
+     * @param mixed $rawValue
+     * @return string
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    public function assembleCondition($quotedColumn, $operator, $rawValue) {
+        $rawValue = $this->assembleConditionValue($rawValue, $operator);
+        return "{$quotedColumn} {$operator} {$rawValue}";
     }
 
     /**
@@ -1036,7 +1102,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         }
         $this->guardConditionsAndOptionsArg($conditionsAndOptions);
         $suffix = empty($conditionsAndOptions) ? '' : ' ' . $this->quoteDbExpr($conditionsAndOptions);
-        return 'SELECT ' . $this->buildColumnsList($columns, false) . ' FROM ' . $this->quoteName($table) . $suffix;
+        return 'SELECT ' . $this->buildColumnsList($columns, false) . ' FROM ' . $this->quoteDbEntityName($table) . $suffix;
     }
 
 }

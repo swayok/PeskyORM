@@ -21,8 +21,7 @@ class Postgres extends DbAdapter {
         self::TRANSACTION_TYPE_SERIALIZABLE
     ];
 
-    const VALUE_QUOTES = "'";
-    const NAME_QUOTES = '"';
+    const ENTITY_NAME_QUOTES = '"';
 
     const BOOL_TRUE = 'TRUE';
     const BOOL_FALSE = 'FALSE';
@@ -162,6 +161,76 @@ class Postgres extends DbAdapter {
      */
     public function getExpressionToSetDefaultValueForAColumn() {
         return DbExpr::create('DEFAULT');
+    }
+
+    /**
+     * Quote a db entity name like 'table.col_name -> json_key1 ->> json_key2'
+     * @param array $sequence -
+     *      index 0: base entity name ('table.col_name' or 'col_name');
+     *      indexes 1, 3, 5, ...: selection operator (->, ->>, #>, #>>);
+     *      indexes 2, 4, 6, ...: json key name or other selector ('json_key1', 'json_key2')
+     * @return string - quoted entity name and json selector
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    protected function quoteJsonSelectorExpression(array $sequence) {
+        $sequence[0] = $this->quoteDbEntityName($sequence[0]);
+        for ($i = 2, $max = count($sequence); $i < $max; $i += 2) {
+            $sequence[$i] = $this->quoteValue(trim($sequence[$i], '\'"` '), \PDO::PARAM_STR);
+        }
+        return implode('', $sequence);
+    }
+
+    /**
+     * @param mixed $value
+     * @param string $operator
+     * @return string
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    public function assembleConditionValue($value, $operator) {
+        if (is_array($value) && in_array($operator, ['@>', '<@'], true)) {
+            return $this->quoteValue(json_encode($value)) . '::jsonb';
+        } else {
+            return parent::assembleConditionValue($value, $operator);
+        }
+    }
+
+    /**
+     * Assemble condition from prepared parts
+     * @param string $quotedColumn
+     * @param string $operator
+     * @param mixed $rawValue
+     * @return string
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    public function assembleCondition($quotedColumn, $operator, $rawValue) {
+        // jsonb opertaors - '?', '?|' or '?&' interfere with prepared PDO statements that use '?' to insert values
+        // so it is impossible to use this operators directly. We need to use workarounds
+        if (in_array($operator, ['?', '?|', '?&'], true)) {
+            if ($operator === '?') {
+                $value = $this->assembleConditionValue($rawValue, $operator);
+                return "jsonb_exists($quotedColumn, $value)";
+            } else {
+                if (!is_array($rawValue)) {
+                    $rawValue = [$this->quoteValue($rawValue)];
+                } else {
+                    foreach ($rawValue as &$localValue) {
+                        $localValue = $this->quoteValue($localValue);
+                    }
+                    unset($localValue);
+                }
+                $values = implode(', ', $rawValue);
+                if ($operator === '?|') {
+                    return "jsonb_exists_any($quotedColumn, array[$values])";
+                } else {
+                    return "jsonb_exists_all($quotedColumn, array[$values])";
+                }
+            }
+        } else {
+            return parent::assembleCondition($quotedColumn, $operator, $rawValue);
+        }
     }
 
 }
