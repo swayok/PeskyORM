@@ -55,14 +55,14 @@ class OrmSelect extends DbSelect {
         $this->init();
     }
 
-    protected function parseNormalizedArray(array $conditionsAndOptions) {
+    protected function parseNormalizedConfigsArray(array $conditionsAndOptions) {
         if (!empty($conditionsAndOptions['CONTAINS'])) {
             foreach ($conditionsAndOptions['CONTAINS'] as $relation) {
                 $this->addRelation($relation);
             }
         }
         unset($conditionsAndOptions['CONTAINS']);
-        parent::parseNormalizedArray($conditionsAndOptions);
+        parent::parseNormalizedConfigsArray($conditionsAndOptions);
     }
 
     protected function normalizeConditionsAndOptionsArray(array $conditionsAndOptions) {

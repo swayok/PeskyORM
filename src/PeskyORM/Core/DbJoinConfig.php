@@ -298,10 +298,13 @@ class DbJoinConfig {
     }
 
     /**
-     * @param array $columns - use ['*'] to select all columns
+     * @param string[] $columns - use '*' or ['*'] to select all columns and empty array to select none
      * @return $this
      */
-    public function setForeignColumnsToSelect(array $columns = ['*']) {
+    public function setForeignColumnsToSelect(...$columns) {
+        if (count($columns) === 1 && is_array($columns[0])) {
+            $columns = $columns[0];
+        }
         $this->foreignColumnsToSelect = $columns;
         return $this;
     }

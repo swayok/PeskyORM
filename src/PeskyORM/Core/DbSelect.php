@@ -99,7 +99,7 @@ class DbSelect {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setDbSchemaName($schema) {
+    public function setTableSchemaName($schema) {
         if (!is_string($schema) || empty($schema)) {
             throw new \InvalidArgumentException('$schema argument must be a not-empty string');
         }
@@ -110,7 +110,7 @@ class DbSelect {
     /**
      * @return string
      */
-    public function getTableSchema() {
+    public function getTableSchemaName() {
         return $this->dbSchema;
     }
 
@@ -146,21 +146,19 @@ class DbSelect {
      *      'HAVING' - DbExpr,
      *      'JOINS' - array of DbJoinConfig
      * @return $this
-     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    public function parseArray(array $conditionsAndOptions) {
+    public function fromConfigsArray(array $conditionsAndOptions) {
         $conditionsAndOptions = $this->normalizeConditionsAndOptionsArray($conditionsAndOptions);
-        $this->parseNormalizedArray($conditionsAndOptions);
+        $this->parseNormalizedConfigsArray($conditionsAndOptions);
         return $this;
     }
 
     /**
      * @param array $conditionsAndOptions
-     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    protected function parseNormalizedArray(array $conditionsAndOptions) {
+    protected function parseNormalizedConfigsArray(array $conditionsAndOptions) {
         // COLUMNS
         if (!empty($conditionsAndOptions['COLUMNS'])) {
             if (!is_array($conditionsAndOptions['COLUMNS']) && $conditionsAndOptions['COLUMNS'] !== '*') {
@@ -208,7 +206,7 @@ class DbSelect {
                     'OFFSET key in $conditionsAndOptions argument must be an integer >= 0'
                 );
             }
-            $this->limit($conditionsAndOptions['OFFSET']);
+            $this->offset($conditionsAndOptions['OFFSET']);
         }
         // GROUP BY
         if (!empty($conditionsAndOptions['GROUP'])) {
@@ -232,11 +230,16 @@ class DbSelect {
                 throw new \InvalidArgumentException('JOINS key in $conditionsAndOptions argument must be an array');
             }
             foreach ($conditionsAndOptions['JOINS'] as $join) {
+                if (!($join instanceof DbJoinConfig)) {
+                    throw new \InvalidArgumentException(
+                        'JOINS key in $conditionsAndOptions argument must contain only instances of DbJoinConfig class'
+                    );
+                }
                 $this->join($join);
             }
         }
         // CONDITIONS
-        $conditions = array_diff($conditionsAndOptions, array_flip($this->getListOfSpecialKeysInConditionsAndOptions()));
+        $conditions = array_diff_key($conditionsAndOptions, array_flip($this->getListOfSpecialKeysInConditionsAndOptions()));
         if (!empty($conditions)) {
             $this->where($conditions);
         }
@@ -247,7 +250,6 @@ class DbSelect {
      * @throws \LengthException
      * @throws \InvalidArgumentException
      * @throws \PDOException
-     * @throws \BadMethodCallException
      */
     public function fetchOne() {
         return $this->_fetch(Utils::FETCH_FIRST);
@@ -362,7 +364,7 @@ class DbSelect {
         $table = $this->makeTableNameWithAliasForQuery(
             $this->getTableName(),
             $this->getTableAlias(),
-            $this->getTableSchema()
+            $this->getTableSchemaName()
         );
         $columns = $this->makeColumnsForQuery();
         $conditions = $this->makeConditions($this->where, 'WHERE');
@@ -388,7 +390,7 @@ class DbSelect {
         $table = $this->makeTableNameWithAliasForQuery(
             $this->getTableName(),
             $this->getTableAlias(),
-            $this->getTableSchema()
+            $this->getTableSchemaName()
         );
         $conditions = $this->makeConditions($this->where, 'WHERE');
         $joins = $this->makeJoins($ignoreLeftJoins);
@@ -399,7 +401,7 @@ class DbSelect {
     }
 
     /**
-     * @param array $columns -
+     * @param string[] $columns -
      *  - array === []: all columns
      *  - array === ['*']: all columns
      *  - array format: [
@@ -411,7 +413,10 @@ class DbSelect {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function columns(array $columns) {
+    public function columns(...$columns) {
+        if (count($columns) === 1 && is_array($columns[0])) {
+            $columns = $columns[0];
+        }
         $this->columns = $this->normalizeColumnsList($columns);
         return $this;
     }
@@ -572,14 +577,14 @@ class DbSelect {
      * @throws \InvalidArgumentException
      */
     public function join(DbJoinConfig $joinConfig, $append = true) {
-        if (array_key_exists($joinConfig->getJoinName(), $this->joins)) {
-            throw new \InvalidArgumentException("Join with name '{$joinConfig->getJoinName()}' already defined");
-        }
         if (!$joinConfig->isValid()) {
             throw new \InvalidArgumentException('Join config is not valid');
         }
         if (!$append) {
             $this->joins = [];
+        }
+        if (array_key_exists($joinConfig->getJoinName(), $this->joins)) {
+            throw new \InvalidArgumentException("Join with name '{$joinConfig->getJoinName()}' already defined");
         }
         $this->joins[$joinConfig->getJoinName()] = $joinConfig;
         return $this;
@@ -594,34 +599,52 @@ class DbSelect {
     /**
      * Analyze $columnName and return information about column
      * Examples:
-     *  1. 'column1' => [
+     *  1.1 'column1' => [
      *    'name' => 'column1',
-     *    'alias' => $this->makeColumnAlias($alias ?: 'column1'),
-     *    'realtion' => null,
-     *    'typecast' => null,
+     *    'alias' => null,
+     *    'join_alias' => null,
+     *    'type_cast' => null,
      *  ]
-     *  2.'column2 as alias1' => [
+     *  1.2 '*' => [
+     *    'name' => '*',
+     *    'alias' => null,
+     *    'join_alias' => null,
+     *    'type_cast' => null,
+     *  ]
+     *  2.1. 'TableAlias.column2 as alias1' => [
      *    'name' => 'column2',
-     *    'alias' => $this->makeColumnAlias($alias ?: 'alias1'),
-     *    'realtion' => null,
-     *    'typecast' => null,
+     *    'alias' => 'alias1',
+     *    'join_alias' => null, //< $this->getTableAlias() === 'TableAlias' - no join here
+     *    'type_cast' => null,
      *  ]
-     *  3. 'JoinName.column3' => [
+     *  2.2. 'TableAlias.* as alias1' => [
+     *    'name' => 'column2',
+     *    'alias' => null,
+     *    'join_alias' => null, //< $this->getTableAlias() === 'TableAlias' - no join here
+     *    'type_cast' => null,
+     *  ]
+     *  3.1. 'JoinName.column3' => [
      *    'name' => 'column3',
-     *    'alias' => $this->makeColumnAlias($alias ?: 'column3'),
-     *    'realtion' => 'JoinName',
-     *    'typecast' => null,
+     *    'alias' => null,
+     *    'join_alias' => 'JoinName',
+     *    'type_cast' => null,
+     *  ]
+     *  3.2. 'JoinName.column3' => [
+     *    'name' => 'column3',
+     *    'alias' => null,
+     *    'join_alias' => 'JoinName',
+     *    'type_cast' => null,
      *  ]
      *  4. 'JoinName.column4::varchar' => [
      *    'name' => 'column4',
-     *    'alias' => $this->makeColumnAlias($alias ?: 'column4'),
-     *    'realtion' => 'JoinName',
-     *    'typecast' => 'varchar',
+     *    'alias' => null,
+     *    'join_alias' => 'JoinName',
+     *    'type_cast' => 'varchar',
      *  ]
      * @param string|DbExpr $columnName
      * @param string|null $columnAlias
      * @param string|null $joinName
-     * @return array - contains keys: 'name', 'alias', 'joinName', 'typecast'. All keys are strings
+     * @return array - contains keys: 'name', 'alias', 'join_alias', 'type_cast'. All keys are strings or nulls (except 'name')
      * @throws \InvalidArgumentException
      */
     protected function analyzeColumnName($columnName, $columnAlias = null, $joinName = null) {
@@ -656,17 +679,22 @@ class DbSelect {
                 $columnName = $dataTypeMatches[1];
                 $typeCast = trim($dataTypeMatches[2]);
             }
-            if (preg_match('%^(\w+)\.(\w+)$%i', trim($columnName), $columnParts)) {
-                // JoinName.column or JoinName.column::datatype or
+            if (preg_match('%^(\w+)\.(\w+|\*)$%i', trim($columnName), $columnParts)) {
+                // 'JoinName.column' or 'JoinName.*'
                 list(, $joinName, $columnName) = $columnParts;
             }
-            if ($joinName === $this->getTableAlias()) {
-                $joinName = null;
+            // todo validate column name, column alias and join name via regexp
+            if ($columnName === '*') {
+                $typeCast = null;
+                $columnAlias = null;
             }
+        }
+        if ($joinName === $this->getTableAlias()) {
+            $joinName = null;
         }
         return [
             'name' => $columnName,
-            'alias' => $columnName === '*' ? null : $columnAlias,
+            'alias' => $columnAlias,
             'join_alias' => $joinName,
             'type_cast' => $typeCast,
         ];
@@ -674,16 +702,16 @@ class DbSelect {
 
     /**
      * @param string $columnName
-     * @param null|string $tableAlias
+     * @param null|string $joinAlias
      * @return string
      */
-    protected function makeColumnAlias($columnName, $tableAlias = null) {
-        return '_' . $this->getShortAlias($tableAlias ?: $this->getTableAlias()) . '__' . $columnName;
+    protected function makeColumnAlias($columnName, $joinAlias = null) {
+        return '_' . $this->getShortAlias($joinAlias ?: $this->getTableAlias()) . '__' . $columnName;
     }
 
     /**
      * @param array $columnInfo - return of $this->analyzeColumnName($columnName)
-     * @return string - something like: `JoinAlias`.`column_name`::typecast as `ColumnAlias`
+     * @return string - something like: "JoinAlias"."column_name"::typecast as "ColumnAlias"
      */
     protected function makeColumnNameWithAliasForQuery(array $columnInfo) {
         $tableAlias = $columnInfo['join_alias'] ?: $this->getTableAlias();
@@ -709,7 +737,7 @@ class DbSelect {
      * @param string $tableName
      * @param string $tableAlias
      * @param string|null $tableSchema
-     * @return string
+     * @return string - something like "public"."table_name" AS "ShortAlias"
      */
     protected function makeTableNameWithAliasForQuery($tableName, $tableAlias, $tableSchema = null) {
         $schema = '';
@@ -883,7 +911,7 @@ class DbSelect {
         $conditions = array_merge(
             [
                 "{$joinConfig->getTableAlias()}.{$joinConfig->getTableName()}"
-                    => "{$joinConfig->getJoinName()}.{$joinConfig->getForeignColumnName()}"
+                    => DbExpr::create("`{$joinConfig->getJoinName()}`.`{$joinConfig->getForeignColumnName()}`")
             ],
             $joinConfig->getAdditionalJoinConditions()
         );
@@ -891,12 +919,12 @@ class DbSelect {
             $this->getConnection(),
             $conditions,
             'AND',
-            function ($columnName) {
+            function ($columnName) use ($joinConfig) {
                 if ($columnName instanceof DbExpr) {
                     return $columnName->get();
                 } else {
-                    $columnInfo = $this->analyzeColumnName($columnName);
-                    return $this->getConnection()->quoteName($this->makeColumnNameForCondition($columnInfo));
+                    $columnInfo = $this->analyzeColumnName($columnName, null, $joinConfig->getJoinName());
+                    return $this->makeColumnNameForCondition($columnInfo);
                 }
             }
         );
@@ -917,6 +945,9 @@ class DbSelect {
             }
         }
         foreach ($this->joins as $joinConfig) {
+            if (empty($joinConfig->getForeignColumnsToSelect())) {
+                continue;
+            }
             $joinColumns = $this->normalizeColumnsList(
                 $joinConfig->getForeignColumnsToSelect(),
                 $joinConfig->getJoinName()

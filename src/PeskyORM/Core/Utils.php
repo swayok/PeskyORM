@@ -116,10 +116,10 @@ class Utils {
                         '\s*(?:>|<|=|\!=|>=|<=)',   //< basic operators
                         '\s+(?:.+?)\s*$',           //< other operators
                     ];
-                    $operatorsRegexp = '%^' . implode('|', $operators) . '\s*$%i';
+                    $operatorsRegexp = '%^(.+?)\s*(' . implode('|', $operators) . ')\s*$%i';
                     if (preg_match($operatorsRegexp, $column, $matches)) {
                         // 2.1
-                        if (trim($matches[1]) !== '') {
+                        if (trim($matches[1]) === '') {
                             throw new \InvalidArgumentException(
                                 "Empty column name detected in \$conditions argument: $column"
                             );

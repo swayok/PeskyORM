@@ -144,7 +144,7 @@ abstract class DbTable implements DbTableInterface {
      */
     static public function select($columns = '*', array $conditionsAndOptions = []) {
         return OrmSelect::from(static::getTableName())
-            ->parseArray($conditionsAndOptions)
+            ->fromConfigsArray($conditionsAndOptions)
             ->columns($columns)
             ->fetchMany();
     }
@@ -159,7 +159,7 @@ abstract class DbTable implements DbTableInterface {
      */
     static public function selectColumn($column, array $conditionsAndOptions = []) {
         return OrmSelect::from(static::getTableName())
-            ->parseArray($conditionsAndOptions)
+            ->fromConfigsArray($conditionsAndOptions)
             ->columns(['value' => $column])
             ->fetchColumn();
     }
@@ -176,7 +176,7 @@ abstract class DbTable implements DbTableInterface {
      */
     static public function selectAssoc($keysColumn, $valuesColumn, array $conditionsAndOptions = []) {
         return OrmSelect::from(static::getTableName())
-            ->parseArray($conditionsAndOptions)
+            ->fromConfigsArray($conditionsAndOptions)
             ->fetchAssoc($keysColumn, $valuesColumn);
     }
 
@@ -190,7 +190,7 @@ abstract class DbTable implements DbTableInterface {
      */
     static public function selectOne($columns, array $conditionsAndOptions) {
         return OrmSelect::from(static::getTableName())
-            ->parseArray($conditionsAndOptions)
+            ->fromConfigsArray($conditionsAndOptions)
             ->columns($columns)
             ->fetchOne();
     }
@@ -205,7 +205,7 @@ abstract class DbTable implements DbTableInterface {
      */
     static public function selectValue(DbExpr $expression, array $conditionsAndOptions = []) {
         return OrmSelect::from(static::getTableName())
-            ->parseArray($conditionsAndOptions)
+            ->fromConfigsArray($conditionsAndOptions)
             ->fetchValue($expression);
     }
 
@@ -230,7 +230,7 @@ abstract class DbTable implements DbTableInterface {
      */
     static public function count(array $conditionsAndOptions, $removeNotInnerJoins = false) {
         return OrmSelect::from(static::getTableName())
-            ->parseArray($conditionsAndOptions)
+            ->fromConfigsArray($conditionsAndOptions)
             ->fetchCount($removeNotInnerJoins);
     }
 

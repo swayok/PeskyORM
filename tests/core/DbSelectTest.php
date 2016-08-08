@@ -193,24 +193,16 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @expectedException PHPUnit_Framework_Error
-     * @expectedExceptionMessage columns() must be of the type array
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $columns argument must contain only strings and instances of DbExpr class
      */
     public function testInvalidColumns1() {
         static::getNewSelect()->columns(null);
     }
 
     /**
-     * @expectedException PHPUnit_Framework_Error
-     * @expectedExceptionMessage columns() must be of the type array
-     */
-    public function testInvalidColumns2() {
-        static::getNewSelect()->columns('string');
-    }
-
-    /**
-     * @expectedException PHPUnit_Framework_Error
-     * @expectedExceptionMessage columns() must be of the type array
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $columns argument must contain only strings and instances of DbExpr class
      */
     public function testInvalidColumns3() {
         static::getNewSelect()->columns(1);
@@ -346,6 +338,8 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
         static::callObjectMethod($dbSelect, 'analyzeColumnName', ['test', null, '']);
     }
 
+    //todo add analyzeColumnName tests with invalid column names, column aliases and table aliases
+
     public function testAnalyzeColumnName() {
         $dbSelect = static::getNewSelect();
         static::assertEquals(
@@ -356,6 +350,15 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
                 'type_cast' => null,
             ],
             static::callObjectMethod($dbSelect, 'analyzeColumnName', ['*', 'test'])
+        );
+        static::assertEquals(
+            [
+                'name' => '*',
+                'alias' => null,
+                'join_alias' => 'JoinAlias',
+                'type_cast' => null,
+            ],
+            static::callObjectMethod($dbSelect, 'analyzeColumnName', ['JoinAlias.*', 'test'])
         );
         static::assertEquals(
             [
@@ -444,7 +447,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
         );
         static::assertEquals(
             'SELECT "Admins"."id"::int AS "_Admins__id", "Admins"."login" AS "_Admins__login" FROM "public"."admins" AS "Admins"',
-            rtrim($dbSelect->columns(['id::int', 'login'])->getQuery())
+            rtrim($dbSelect->columns('id::int', 'login')->getQuery())
         );
         static::assertEquals(
             'SELECT "Admins"."id" AS "_Admins__id", SUM("id") FROM "public"."admins" AS "Admins"',
@@ -783,39 +786,431 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
         $joinConfig = DbJoinConfig::create('Test')
             ->setConfigForLocalTable('admins', 'id')
             ->setConfigForForeignTable('settings', 'id')
-            ->setJoinType(DbJoinConfig::JOIN_INNER);
-
+            ->setJoinType(DbJoinConfig::JOIN_INNER)
+            ->setForeignColumnsToSelect('key', 'value');
+        static::assertEquals(
+            'SELECT "Admins".*, "Test"."key" AS "_Test__key", "Test"."value" AS "_Test__value" FROM "public"."admins" AS "Admins" INNER JOIN "public"."settings" AS "Test" ON ("Admins"."admins" = ("Test"."id"))',
+            $dbSelect->join($joinConfig)->getQuery()
+        );
+        $joinConfig
+            ->setJoinType(DbJoinConfig::JOIN_LEFT)
+            ->setForeignColumnsToSelect('*')
+            ->setAdditionalJoinConditions([
+                'key' => 'name'
+            ]);
+        static::assertEquals(
+            'SELECT "Admins".*, "Test".* FROM "public"."admins" AS "Admins" LEFT JOIN "public"."settings" AS "Test" ON ("Admins"."admins" = ("Test"."id") AND "Test"."key" = \'name\')',
+            $dbSelect->join($joinConfig, false)->getQuery()
+        );
+        $joinConfig
+            ->setJoinType(DbJoinConfig::JOIN_RIGHT)
+            ->setForeignColumnsToSelect(['value']);
+        static::assertEquals(
+            'SELECT "Admins".*, "Test"."value" AS "_Test__value" FROM "public"."admins" AS "Admins" RIGHT JOIN "public"."settings" AS "Test" ON ("Admins"."admins" = ("Test"."id") AND "Test"."key" = \'name\')',
+            $dbSelect->join($joinConfig, false)->getQuery()
+        );
+        $joinConfig
+            ->setJoinType(DbJoinConfig::JOIN_RIGHT)
+            ->setAdditionalJoinConditions([])
+            ->setForeignColumnsToSelect([]);
+        static::assertEquals(
+            'SELECT "Admins".* FROM "public"."admins" AS "Admins" RIGHT JOIN "public"."settings" AS "Test" ON ("Admins"."admins" = ("Test"."id"))',
+            $dbSelect->join($joinConfig, false)->getQuery()
+        );
     }
 
     public function testMakeColumnAlias() {
-
+        $dbSelect = static::getNewSelect();
+        static::assertEquals(
+            '_Admins__colname',
+            $this->callObjectMethod($dbSelect, 'makeColumnAlias', ['colname'])
+        );
+        static::assertEquals(
+            '_JoinAlias__colname',
+            $this->callObjectMethod($dbSelect, 'makeColumnAlias', ['colname', 'JoinAlias'])
+        );
     }
 
     public function testMakeColumnNameWithAliasForQuery() {
-
+        $dbSelect = static::getNewSelect();
+        static::assertEquals(
+            '"Admins"."colname" AS "_Admins__colname"',
+            $this->callObjectMethod($dbSelect, 'makeColumnNameWithAliasForQuery', [[
+                'name' => 'colname',
+                'alias' => null,
+                'join_alias' => null,
+                'type_cast' => null
+            ]])
+        );
+        static::assertEquals(
+            '"JoinAlias"."colname"::int AS "_JoinAlias__colname"',
+            $this->callObjectMethod($dbSelect, 'makeColumnNameWithAliasForQuery', [[
+                'name' => 'colname',
+                'alias' => null,
+                'join_alias' => 'JoinAlias',
+                'type_cast' => 'int'
+            ]])
+        );
+        static::assertEquals(
+            '"JoinAlias"."colname"::int AS "_JoinAlias__colalias"',
+            $this->callObjectMethod($dbSelect, 'makeColumnNameWithAliasForQuery', [[
+                'name' => 'colname',
+                'alias' => 'colalias',
+                'join_alias' => 'JoinAlias',
+                'type_cast' => 'int'
+            ]])
+        );
     }
 
     public function testMakeTableNameWithAliasForQuery() {
-
+        $dbSelect = static::getNewSelect();
+        static::assertEquals(
+            '"public"."admins" AS "Admins"',
+            $this->callObjectMethod($dbSelect, 'makeTableNameWithAliasForQuery', ['admins', 'Admins'])
+        );
+        $expr = $this->callObjectMethod(
+            $dbSelect,
+            'makeTableNameWithAliasForQuery',
+            ['admins', 'SomeTooLongTableAliasToMakeSystemShortenIt', 'other']
+        );
+        static::assertRegExp('%"other"\."admins" AS "[a-z][a-z0-9]+"%', $expr);
+        static::assertNotEquals('"other"."admins" AS "SomeTooLongTableAliasToMakeSystemShortenIt"', $expr);
     }
 
     public function testMakeColumnNameForCondition() {
-
+        $dbSelect = static::getNewSelect();
+        static::assertEquals(
+            '"Admins"."colname"',
+            $this->callObjectMethod($dbSelect, 'makeColumnNameForCondition', [[
+                'name' => 'colname',
+                'alias' => null,
+                'join_alias' => null,
+                'type_cast' => null
+            ]])
+        );
+        static::assertEquals(
+            '"Admins"."colname"::int',
+            $this->callObjectMethod($dbSelect, 'makeColumnNameForCondition', [[
+                'name' => 'colname',
+                'alias' => 'colalias',
+                'join_alias' => null,
+                'type_cast' => 'int'
+            ]])
+        );
+        static::assertEquals(
+            '"JoinAlias"."colname"::int',
+            $this->callObjectMethod($dbSelect, 'makeColumnNameForCondition', [[
+                'name' => 'colname',
+                'alias' => 'colalias',
+                'join_alias' => 'JoinAlias',
+                'type_cast' => 'int'
+            ]])
+        );
     }
 
     public function testGetShortAlias() {
-
+        $dbSelect = static::getNewSelect();
+        static::assertEquals(
+            'Admins',
+            $this->callObjectMethod($dbSelect, 'getShortAlias', ['Admins'])
+        );
+        for ($i = 0; $i < 30; $i++) {
+            // it uses rand so it will be better to test it many times
+            $alias = $this->callObjectMethod($dbSelect, 'getShortAlias', ['SomeTooLongTableAliasToMakeSystemShortenIt']);
+            static::assertNotEquals('Admins', $alias);
+            static::assertRegExp('%^[a-z][a-z0-9]+$%', $alias);
+        }
     }
 
-    public function testNormalizeColumnsList() {
-
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $schema argument must be a not-empty string
+     */
+    public function testInvalidSetDbSchemaName1() {
+        static::getNewSelect()->setTableSchemaName(null);
     }
 
-    public function testParseArray() {
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $schema argument must be a not-empty string
+     */
+    public function testInvalidSetDbSchemaName2() {
+        static::getNewSelect()->setTableSchemaName('');
+    }
 
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $schema argument must be a not-empty string
+     */
+    public function testInvalidSetDbSchemaName3() {
+        static::getNewSelect()->setTableSchemaName(true);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $schema argument must be a not-empty string
+     */
+    public function testInvalidSetDbSchemaName4() {
+        static::getNewSelect()->setTableSchemaName(false);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $schema argument must be a not-empty string
+     */
+    public function testInvalidSetDbSchemaName5() {
+        static::getNewSelect()->setTableSchemaName(['arr']);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $schema argument must be a not-empty string
+     */
+    public function testInvalidSetDbSchemaName6() {
+        static::getNewSelect()->setTableSchemaName($this);
     }
 
     public function testSetDbSchemaName() {
+        $dbSelect = static::getNewSelect();
+        static::assertEquals('test_schema', $dbSelect->setTableSchemaName('test_schema')->getTableSchemaName());
+        static::assertEquals('SELECT "Admins".* FROM "test_schema"."admins" AS "Admins"', $dbSelect->getQuery());
+    }
 
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage COLUMNS key in $conditionsAndOptions argument must be an array or '*'
+     */
+    public function testInvalidFromConfigsArrayColumns1() {
+        static::getNewSelect()->fromConfigsArray([
+            'COLUMNS' => $this
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage COLUMNS key in $conditionsAndOptions argument must be an array or '*'
+     */
+    public function testInvalidFromConfigsArrayColumns2() {
+        static::getNewSelect()->fromConfigsArray([
+            'COLUMNS' => true
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage ORDER key in $conditionsAndOptions argument must be an array
+     */
+    public function testInvalidFromConfigsArrayOrder1() {
+        static::getNewSelect()->fromConfigsArray([
+            'ORDER' => $this
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage ORDER key in $conditionsAndOptions argument must be an array
+     */
+    public function testInvalidFromConfigsArrayOrder2() {
+        static::getNewSelect()->fromConfigsArray([
+            'ORDER' => true
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage ORDER key in $conditionsAndOptions argument must be an array
+     */
+    public function testInvalidFromConfigsArrayOrder3() {
+        static::getNewSelect()->fromConfigsArray([
+            'ORDER' => 'colname ASC'
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage ORDER key contains invalid direction 'NONE' for a column 'colname'
+     */
+    public function testInvalidFromConfigsArrayOrder4() {
+        static::getNewSelect()->fromConfigsArray([
+            'ORDER' => ['colname' => 'NONE']
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage GROUP key in $conditionsAndOptions argument must be an array
+     */
+    public function testInvalidFromConfigsArrayGroup1() {
+        static::getNewSelect()->fromConfigsArray([
+            'GROUP' => $this
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage GROUP key in $conditionsAndOptions argument must be an array
+     */
+    public function testInvalidFromConfigsArrayGroup2() {
+        static::getNewSelect()->fromConfigsArray([
+            'GROUP' => true
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage HAVING key in $conditionsAndOptions argument must be an must be an array like conditions
+     */
+    public function testInvalidFromConfigsArrayHaving1() {
+        static::getNewSelect()->fromConfigsArray([
+            'HAVING' => $this
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage HAVING key in $conditionsAndOptions argument must be an must be an array like conditions
+     */
+    public function testInvalidFromConfigsArrayHaving2() {
+        static::getNewSelect()->fromConfigsArray([
+            'HAVING' => true
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage JOINS key in $conditionsAndOptions argument must be an array
+     */
+    public function testInvalidFromConfigsArrayJoins1() {
+        static::getNewSelect()->fromConfigsArray([
+            'JOINS' => $this
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage JOINS key in $conditionsAndOptions argument must be an array
+     */
+    public function testInvalidFromConfigsArrayJoins2() {
+        static::getNewSelect()->fromConfigsArray([
+            'JOINS' => true
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage JOINS key in $conditionsAndOptions argument must contain only instances of DbJoinConfig class
+     */
+    public function testInvalidFromConfigsArrayJoins3() {
+        static::getNewSelect()->fromConfigsArray([
+            'JOINS' => ['string']
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage JOINS key in $conditionsAndOptions argument must contain only instances of DbJoinConfig class
+     */
+    public function testInvalidFromConfigsArrayJoins4() {
+        static::getNewSelect()->fromConfigsArray([
+            'JOINS' => [$this]
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage LIMIT key in $conditionsAndOptions argument must be an integer >= 0
+     */
+    public function testInvalidFromConfigsArrayLimit1() {
+        static::getNewSelect()->fromConfigsArray([
+            'LIMIT' => $this
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage LIMIT key in $conditionsAndOptions argument must be an integer >= 0
+     */
+    public function testInvalidFromConfigsArrayLimit2() {
+        static::getNewSelect()->fromConfigsArray([
+            'LIMIT' => true
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage LIMIT key in $conditionsAndOptions argument must be an integer >= 0
+     */
+    public function testInvalidFromConfigsArrayLimit3() {
+        static::getNewSelect()->fromConfigsArray([
+            'LIMIT' => -1
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage OFFSET key in $conditionsAndOptions argument must be an integer >= 0
+     */
+    public function testInvalidFromConfigsArrayOffset1() {
+        static::getNewSelect()->fromConfigsArray([
+            'OFFSET' => $this
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage OFFSET key in $conditionsAndOptions argument must be an integer >= 0
+     */
+    public function testInvalidFromConfigsArrayOffset2() {
+        static::getNewSelect()->fromConfigsArray([
+            'OFFSET' => true
+        ]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage OFFSET key in $conditionsAndOptions argument must be an integer >= 0
+     */
+    public function testInvalidFromConfigsArrayOffset3() {
+        static::getNewSelect()->fromConfigsArray([
+            'OFFSET' => -1
+        ]);
+    }
+
+    public function testFromConfigsArray() {
+        static::assertEquals(
+            'SELECT "Admins".* FROM "public"."admins" AS "Admins"',
+            static::getNewSelect()->fromConfigsArray([])->getQuery()
+        );
+        static::assertEquals(
+            'SELECT "Admins".* FROM "public"."admins" AS "Admins" WHERE "Admins"."colname" = \'value\'',
+            static::getNewSelect()->fromConfigsArray(['colname' => 'value'])->getQuery()
+        );
+        $configs = [
+            'colname' => 'value',
+            'OR' => [
+                'colname2' => 'value2',
+                'colname3' => 'value3',
+            ],
+            'COLUMNS' => ['colname', 'colname2', 'colname3', 'setting_value' => 'Test.value', '*'],
+            'ORDER' => ['colname', 'Test.admin_id' => 'desc'],
+            'LIMIT' => 10,
+            'OFFSET' => 20,
+            'GROUP' => ['colname', 'Test.admin_id'],
+            'HAVING' => [
+                'colname3' => 'value',
+                'Test.admin_id >' => '1',
+            ],
+            'JOIN' => [
+                DbJoinConfig::create('Test')
+                    ->setConfigForLocalTable('admins', 'id')
+                    ->setJoinType(DbJoinConfig::JOIN_LEFT)
+                    ->setConfigForForeignTable('settings', 'admin_id')
+                    ->setForeignColumnsToSelect('admin_id')
+            ]
+        ];
+        static::assertEquals(
+            'SELECT "Admins"."colname" AS "_Admins__colname", "Admins"."colname2" AS "_Admins__colname2", "Admins"."colname3" AS "_Admins__colname3", "Test"."value" AS "_Test__setting_value", "Admins".*, "Test"."admin_id" AS "_Test__admin_id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."settings" AS "Test" ON ("Admins"."admins" = ("Test"."admin_id")) WHERE "Admins"."colname" = \'value\' AND ("Admins"."colname2" = \'value2\' OR "Admins"."colname3" = \'value3\') GROUP BY "Admins"."colname", "Test"."admin_id" HAVING "Admins"."colname3" = \'value\' AND "Test"."admin_id" > \'1\' ORDER BY "Admins"."colname" ASC, "Test"."admin_id" DESC LIMIT 10 OFFSET 20',
+            static::getNewSelect()->fromConfigsArray($configs)->getQuery()
+        );
     }
 }
