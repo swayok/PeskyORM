@@ -66,7 +66,6 @@ class DbTableRelation {
      * @param string $type
      * @param string $foreignTableName
      * @param string $foreignColumn
-     * @return DbTableRelation
      */
     public function __construct(
         DbTableStructure $localTableStructure,
@@ -86,10 +85,11 @@ class DbTableRelation {
 
     /**
      * @param string $name
-     * @return string
+     * @return $this
      */
     public function setName($name) {
         $this->name = $name;
+        return $this;
     }
 
     /**
