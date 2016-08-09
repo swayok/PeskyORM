@@ -19,7 +19,8 @@
     },
     "autoload": {
         "psr-0": {
-            "PeskyORM": "src/"
+            "PeskyORM": "src/",
+            "PeskyORMTest": "tests/classes"
         }
     },
     "require": {

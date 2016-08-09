@@ -45,6 +45,13 @@ abstract class DbTableStructure {
         return static::$instance;
     }
 
+    /**
+     * @return $this
+     */
+    static public function i() {
+        return static::getInstance();
+    }
+
     protected function __construct() {
         $this->loadColumnConfigsFromPrivateMethods();
         if (static::$autodetectColumnConfigs) {
