@@ -12,7 +12,7 @@ class TestingDbClassesManager extends DbClassesManager {
 
     protected function makeFullClassName($tableNameOrAlias, $suffix) {
         $baseClassName = StringUtils::classify($tableNameOrAlias);
-        return __NAMESPACE__ . '\\' . $baseClassName . '\\' . $baseClassName . $suffix;
+        return __NAMESPACE__ . '\\Testing' . $baseClassName . '\\Testing' . $baseClassName . $suffix;
     }
 
     /**

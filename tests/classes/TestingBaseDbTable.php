@@ -12,7 +12,7 @@ abstract class TestingBaseDbTable extends DbTable {
      * @throws \InvalidArgumentException
      */
     static public function getConnection() {
-        return TestApp::getDefautConnection();
+        return TestingApp::getDefautConnection();
     }
 
 }
