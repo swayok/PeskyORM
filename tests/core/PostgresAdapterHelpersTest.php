@@ -20,7 +20,7 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
 
     static protected function getValidAdapter() {
         $adapter = new Postgres(static::$dbConnectionConfig);
-        $adapter->writeTransactionQueriesToLastQuery = false;
+        $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
 
@@ -304,12 +304,20 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
         $operator = $adapter->convertConditionOperator('OPER', null);
         static::assertEquals('IS', $operator);
 
+        $operator = $adapter->convertConditionOperator('IS', '1');
+        static::assertEquals('=', $operator);
+
         $operator = $adapter->convertConditionOperator('!=', null);
         static::assertEquals('IS NOT', $operator);
         $operator = $adapter->convertConditionOperator('NOT', null);
         static::assertEquals('IS NOT', $operator);
         $operator = $adapter->convertConditionOperator('IS NOT', null);
         static::assertEquals('IS NOT', $operator);
+
+        $operator = $adapter->convertConditionOperator('NOT', '1');
+        static::assertEquals('!=', $operator);
+        $operator = $adapter->convertConditionOperator('IS NOT', '1');
+        static::assertEquals('!=', $operator);
     }
 
     public function testConvertConditionOperatorForArrayValue() {
@@ -441,6 +449,12 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
                 'table.col_name', '->', 'key1', '->>', '"key 2"', '#>', '`key 3`', '#>>', "'key 4'"
             ])
         );
+        static::assertEquals(
+            '"table"."col_name"->2',
+            $this->invokePrivateAdapterMethod('quoteJsonSelectorExpression', [
+                'table.col_name', '->', '2'
+            ])
+        );
     }
 
     public function testIsValidDbEntityNameAndJsonSelector() {
@@ -567,7 +581,7 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
         $adapter = static::getValidAdapter();
         $dbexpr = DbExpr::create('``test`` = `expr`');
         static::assertEquals(
-            '(' . $adapter->quoteDbExpr($dbexpr) . ')',
+            $adapter->quoteDbExpr($dbexpr),
             $adapter->assembleConditionValue($dbexpr, 'doesnt matter')
         );
         static::assertEquals(

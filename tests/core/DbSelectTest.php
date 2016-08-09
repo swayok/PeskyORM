@@ -41,7 +41,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
 
     static protected function getValidAdapter() {
         $adapter = new Postgres(static::$dbConnectionConfig);
-        $adapter->writeTransactionQueriesToLastQuery = false;
+        $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
 
@@ -814,7 +814,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             ->setJoinType(DbJoinConfig::JOIN_INNER)
             ->setForeignColumnsToSelect('key', 'value');
         static::assertEquals(
-            'SELECT "Admins".*, "Test"."key" AS "_Test__key", "Test"."value" AS "_Test__value" FROM "public"."admins" AS "Admins" INNER JOIN "public"."settings" AS "Test" ON ("Admins"."admins" = ("Test"."id"))',
+            'SELECT "Admins".*, "Test"."key" AS "_Test__key", "Test"."value" AS "_Test__value" FROM "public"."admins" AS "Admins" INNER JOIN "public"."settings" AS "Test" ON ("Admins"."admins" = "Test"."id")',
             $dbSelect->join($joinConfig)->getQuery()
         );
         $joinConfig
@@ -824,14 +824,14 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
                 'key' => 'name'
             ]);
         static::assertEquals(
-            'SELECT "Admins".*, "Test".* FROM "public"."admins" AS "Admins" LEFT JOIN "public"."settings" AS "Test" ON ("Admins"."admins" = ("Test"."id") AND "Test"."key" = \'name\')',
+            'SELECT "Admins".*, "Test".* FROM "public"."admins" AS "Admins" LEFT JOIN "public"."settings" AS "Test" ON ("Admins"."admins" = "Test"."id" AND "Test"."key" = \'name\')',
             $dbSelect->join($joinConfig, false)->getQuery()
         );
         $joinConfig
             ->setJoinType(DbJoinConfig::JOIN_RIGHT)
             ->setForeignColumnsToSelect(['value']);
         static::assertEquals(
-            'SELECT "Admins".*, "Test"."value" AS "_Test__value" FROM "public"."admins" AS "Admins" RIGHT JOIN "public"."settings" AS "Test" ON ("Admins"."admins" = ("Test"."id") AND "Test"."key" = \'name\')',
+            'SELECT "Admins".*, "Test"."value" AS "_Test__value" FROM "public"."admins" AS "Admins" RIGHT JOIN "public"."settings" AS "Test" ON ("Admins"."admins" = "Test"."id" AND "Test"."key" = \'name\')',
             $dbSelect->join($joinConfig, false)->getQuery()
         );
         $joinConfig
@@ -839,7 +839,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             ->setAdditionalJoinConditions([])
             ->setForeignColumnsToSelect([]);
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" RIGHT JOIN "public"."settings" AS "Test" ON ("Admins"."admins" = ("Test"."id"))',
+            'SELECT "Admins".* FROM "public"."admins" AS "Admins" RIGHT JOIN "public"."settings" AS "Test" ON ("Admins"."admins" = "Test"."id")',
             $dbSelect->join($joinConfig, false)->getQuery()
         );
     }
@@ -1234,7 +1234,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             ]
         ];
         static::assertEquals(
-            'SELECT "Admins"."colname" AS "_Admins__colname", "Admins"."colname2" AS "_Admins__colname2", "Admins"."colname3" AS "_Admins__colname3", "Test"."value" AS "_Test__setting_value", "Admins".*, "Test"."admin_id" AS "_Test__admin_id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."settings" AS "Test" ON ("Admins"."admins" = ("Test"."admin_id")) WHERE "Admins"."colname" = \'value\' AND ("Admins"."colname2" = \'value2\' OR "Admins"."colname3" = \'value3\') GROUP BY "Admins"."colname", "Test"."admin_id" HAVING "Admins"."colname3" = \'value\' AND "Test"."admin_id" > \'1\' ORDER BY "Admins"."colname" ASC, "Test"."admin_id" DESC LIMIT 10 OFFSET 20',
+            'SELECT "Admins"."colname" AS "_Admins__colname", "Admins"."colname2" AS "_Admins__colname2", "Admins"."colname3" AS "_Admins__colname3", "Test"."value" AS "_Test__setting_value", "Admins".*, "Test"."admin_id" AS "_Test__admin_id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."settings" AS "Test" ON ("Admins"."admins" = "Test"."admin_id") WHERE "Admins"."colname" = \'value\' AND ("Admins"."colname2" = \'value2\' OR "Admins"."colname3" = \'value3\') GROUP BY "Admins"."colname", "Test"."admin_id" HAVING "Admins"."colname3" = \'value\' AND "Test"."admin_id" > \'1\' ORDER BY "Admins"."colname" ASC, "Test"."admin_id" DESC LIMIT 10 OFFSET 20',
             static::getNewSelect()->fromConfigsArray($configs)->getQuery()
         );
     }

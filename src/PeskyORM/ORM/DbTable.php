@@ -421,10 +421,10 @@ abstract class DbTable implements DbTableInterface {
         return Utils::assembleWhereConditionsFromArray(
             static::getConnection(),
             $conditions,
-            $glue,
             function ($columnName) {
                 return static::quoteConditionColumn($columnName);
-            }
+            },
+            $glue
         );
     }
 

@@ -28,7 +28,11 @@ class Postgres extends DbAdapter {
 
     const NO_LIMIT = 'ALL';
 
-    public $writeTransactionQueriesToLastQuery = true;
+    /**
+     * @var bool - false: transaction queries like BEGIN TRANSACTION, COMMIT and ROLLBACK will not be remembered
+     * into $this->lastQuery
+     */
+    public $rememberTransactionQueries = true;
 
     /**
      * @var bool
@@ -78,7 +82,7 @@ class Postgres extends DbAdapter {
             $lastQuery = $this->getLastQuery();
             $this->exec('BEGIN ISOLATION LEVEL ' . $transactionType . ' ' . ($readOnly ? 'READ ONLY' : ''));
             $this->inTransaction = true;
-            if (!$this->writeTransactionQueriesToLastQuery) {
+            if (!$this->rememberTransactionQueries) {
                 $this->lastQuery = $lastQuery;
             }
             static::rememberTransactionTrace();
@@ -93,7 +97,7 @@ class Postgres extends DbAdapter {
         $this->guardTransaction('commit');
         $lastQuery = $this->getLastQuery();
         $this->exec('COMMIT');
-        if (!$this->writeTransactionQueriesToLastQuery) {
+        if (!$this->rememberTransactionQueries) {
             $this->lastQuery = $lastQuery;
         }
         $this->inTransaction = false;
@@ -103,7 +107,7 @@ class Postgres extends DbAdapter {
         $this->guardTransaction('rollback');
         $lastQuery = $this->getLastQuery();
         $this->exec('ROLLBACK');
-        if (!$this->writeTransactionQueriesToLastQuery) {
+        if (!$this->rememberTransactionQueries) {
             $this->lastQuery = $lastQuery;
         }
         $this->inTransaction = false;
@@ -176,7 +180,8 @@ class Postgres extends DbAdapter {
     protected function quoteJsonSelectorExpression(array $sequence) {
         $sequence[0] = $this->quoteDbEntityName($sequence[0]);
         for ($i = 2, $max = count($sequence); $i < $max; $i += 2) {
-            $sequence[$i] = $this->quoteValue(trim($sequence[$i], '\'"` '), \PDO::PARAM_STR);
+            $value = trim($sequence[$i], '\'"` ');
+            $sequence[$i] = ctype_digit($value) ? $value : $this->quoteValue($value, \PDO::PARAM_STR);
         }
         return implode('', $sequence);
     }

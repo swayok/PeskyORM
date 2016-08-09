@@ -839,11 +839,11 @@ class DbSelect {
         $assembled = Utils::assembleWhereConditionsFromArray(
             $this->getConnection(),
             $conditions,
-            'AND',
             function ($columnName) {
                 $columnInfo = $this->analyzeColumnName($columnName);
                 return $this->makeColumnNameForCondition($columnInfo);
-            }
+            },
+            'AND'
         );
         $assembled = trim($assembled);
         return empty($assembled) ? '' : " {$subject} {$assembled}";
@@ -920,7 +920,6 @@ class DbSelect {
         return Utils::assembleWhereConditionsFromArray(
             $this->getConnection(),
             $conditions,
-            'AND',
             function ($columnName) use ($joinConfig) {
                 if ($columnName instanceof DbExpr) {
                     return $columnName->get();
@@ -928,7 +927,8 @@ class DbSelect {
                     $columnInfo = $this->analyzeColumnName($columnName, null, $joinConfig->getJoinName());
                     return $this->makeColumnNameForCondition($columnInfo);
                 }
-            }
+            },
+            'AND'
         );
     }
 

@@ -253,7 +253,11 @@ class Mysql extends DbAdapter {
         $max = count($sequence);
         // prepare keys
         for ($i = 2; $i < $max; $i += 2) {
-            $sequence[$i] = $this->quoteJsonSelectorValue(trim($sequence[$i], '\'"` '));
+            $value = trim($sequence[$i], '\'"` ');
+            if (ctype_digit($value)) {
+                $value = '[' . $value . ']';
+            }
+            $sequence[$i] = $this->quoteJsonSelectorValue($value);
         }
         // make selector
         $result = $sequence[0];

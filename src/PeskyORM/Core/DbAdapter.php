@@ -889,6 +889,11 @@ abstract class DbAdapter implements DbAdapterInterface {
                 case 'BETWEEN':
                 case 'NOT BETWEEN':
                     return $operator;
+                case '?|':
+                case '?&':
+                case '@>':
+                case '<@':
+                    return $operator;
                 default:
                     throw new \InvalidArgumentException(
                         "Condition operator [$operator] does not support list of values"
@@ -900,6 +905,8 @@ abstract class DbAdapter implements DbAdapterInterface {
         } else if (in_array($operator, ['NOT', 'IS NOT'], true)) {
             // NOT and IS NOT cannot be used for non-null values and for comparison of single value
             return '!=';
+        } else if ($operator === 'IS') {
+            return '=';
         } else {
             $map = $this->getConditionOperatorsMap();
             return isset($map[$operator]) ? $map[$operator] : $operator;
@@ -923,7 +930,7 @@ abstract class DbAdapter implements DbAdapterInterface {
     public function assembleConditionValue($value, $operator) {
         $operator = mb_strtoupper($operator);
         if ($value instanceof DbExpr) {
-            return '(' . $this->quoteDbExpr($value) . ')';
+            return $this->quoteDbExpr($value);
         } else if (in_array($operator, ['BETWEEN', 'NOT BETWEEN'], true)) {
             // 2.3
             if (!is_array($value)) {

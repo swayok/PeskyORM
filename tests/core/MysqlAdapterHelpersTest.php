@@ -74,6 +74,12 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest {
                 'table.col_name', '->', 'key1', '->>', '"key 2"', '#>', '`key 3`', '#>>', "'key 4'"
             ])
         );
+        static::assertEquals(
+            '`table`.`col_name`->\'$[2]\'',
+            $this->invokePrivateAdapterMethod('quoteJsonSelectorExpression', [
+                'table.col_name', '->', '2'
+            ])
+        );
     }
 
     public function testAssembleConditionValueAdapterSpecific() {

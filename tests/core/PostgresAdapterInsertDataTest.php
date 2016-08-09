@@ -29,7 +29,7 @@ class PostgresAdapterInsertDataTest extends \PHPUnit_Framework_TestCase {
 
     static protected function getValidAdapter() {
         $adapter = new Postgres(static::$dbConnectionConfig);
-        $adapter->writeTransactionQueriesToLastQuery = false;
+        $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
 

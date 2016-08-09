@@ -36,7 +36,7 @@ class Utils {
         } else if ($type === self::FETCH_VALUE) {
             return null;
         } else {
-            return array();
+            return [];
         }
     }
 
@@ -71,12 +71,12 @@ class Utils {
     static public function assembleWhereConditionsFromArray(
         DbAdapterInterface $connection,
         array $conditions,
-        $glue = 'AND',
-        \Closure $columnQuoter
+        \Closure $columnQuoter,
+        $glue = 'AND'
     ) {
         $glue = strtoupper(trim($glue));
         if (!in_array($glue, ['AND', 'OR'], true)) {
-            throw new \InvalidArgumentException('$glue argument must be "AND" or "OR"');
+            throw new \InvalidArgumentException('$glue argument must be "AND" or "OR" (only in upper case)');
         }
         if (empty($conditions)) {
             return '';
@@ -85,8 +85,11 @@ class Utils {
             foreach ($conditions as $column => $rawValue) {
                 if (is_object($rawValue) && !($rawValue instanceof DbExpr)) {
                     throw new \InvalidArgumentException(
-                        '$conditions argument may contain objects of class DbExpr only. Other object are forbidden.'
+                        '$conditions argument may contain only objects of class DbExpr. Other objects are forbidden.'
                     );
+                }
+                if (!is_numeric($column) && empty($column)) {
+                    throw new \InvalidArgumentException('Empty column name detected in $conditions argument');
                 }
                 $valueIsDbExpr = is_object($rawValue) && ($rawValue instanceof DbExpr);
                 if (is_numeric($column) && $valueIsDbExpr) {
@@ -105,19 +108,18 @@ class Utils {
                     $subConditons = static::assembleWhereConditionsFromArray(
                         $connection,
                         $rawValue,
-                        $subGlue,
-                        $columnQuoter
+                        $columnQuoter,
+                        $subGlue
                     );
                     $assembled[] = '(' . $subConditons . ')';
                 } else {
                     $operator = '=';
                     // find and prepare operator
                     $operators = [
-                        '\s*(?:>|<|=|\!=|>=|<=|@>|<@|\?|\?\||\?\&)',   //< basic operators
-                        '\s+(?:.+?)\s*$',           //< other operators
+                        '\s*(?:>|<|=|\!=|>=|<=|@>|<@|\?|\?\||\?\&|~|~\*|!~|!~*)',   //< basic operators
+                        '\s+(?:.+?)$',           //< other operators
                     ];
-                    // todo: add support for json operators @>, <@, ?, ?|, ?&
-                    $operatorsRegexp = '%^(.+?)\s*(' . implode('|', $operators) . ')\s*$%i';
+                    $operatorsRegexp = '%^(.*?)(' . implode('|', $operators) . ')\s*$%i';
                     if (preg_match($operatorsRegexp, $column, $matches)) {
                         // 2.1
                         if (trim($matches[1]) === '') {
@@ -129,12 +131,7 @@ class Utils {
                         $operator = strtoupper(preg_replace('%\s+%', ' ', trim($matches[2])));
                     }
                     $operator = $connection->convertConditionOperator($operator, $rawValue);
-                    if ($column instanceof DbExpr) {
-                        $column = $connection->quoteDbExpr($column);
-                    } else {
-                        $column = $columnQuoter($column);
-                    }
-                    $assembled[] = $connection->assembleCondition($column, $operator, $rawValue);
+                    $assembled[] = $connection->assembleCondition($columnQuoter($column), $operator, $rawValue);
                 }
             }
             return implode(" $glue ", $assembled);
