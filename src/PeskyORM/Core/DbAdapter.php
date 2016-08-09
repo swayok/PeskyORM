@@ -153,7 +153,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      */
     public function query($query, $fetchData = null) {
         if ($query instanceof DbExpr) {
-            $query = $this->quoteDbExpr($query);
+            $query = $this->quoteDbExpr($query->setWrapInBrackets(false));
         }
         $this->lastQuery = $query;
         try {
@@ -181,7 +181,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      */
     public function exec($query) {
         if ($query instanceof DbExpr) {
-            $query = $this->quoteDbExpr($query);
+            $query = $this->quoteDbExpr($query->setWrapInBrackets(false));
         }
         $this->lastQuery = $query;
         try {
@@ -764,7 +764,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      */
     static public function isValidJsonSelector($name) {
         $parts = preg_split('%\s*[-#]>>?\s*%', $name);
-        if (count($parts) < 1) {
+        if (count($parts) < 2) {
             return false;
         }
         if (!static::isValidDbEntityName($parts[0], false)) {
@@ -921,6 +921,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @throws \InvalidArgumentException
      */
     public function assembleConditionValue($value, $operator) {
+        $operator = mb_strtoupper($operator);
         if ($value instanceof DbExpr) {
             return '(' . $this->quoteDbExpr($value) . ')';
         } else if (in_array($operator, ['BETWEEN', 'NOT BETWEEN'], true)) {
@@ -936,6 +937,11 @@ abstract class DbAdapter implements DbAdapterInterface {
             }
             /** @var array $value */
             $value = array_values($value);
+            if ($value[0] === null || $value[1] === null || is_bool($value[0]) || is_bool($value[1])) {
+                throw new \InvalidArgumentException(
+                    'BETWEEN and NOT BETWEEN conditions does not allow min or max values to be null or boolean'
+                );
+            }
             return $this->quoteValue($value[0]) . ' AND ' . $this->quoteValue($value[1]);
         } else if (is_array($value)) {
             // 2.4
@@ -946,11 +952,7 @@ abstract class DbAdapter implements DbAdapterInterface {
                 foreach ($value as $val) {
                     $quotedValues[] = $this->quoteValue($val);
                 }
-                if (in_array($operator, ['?&', '?|'], true)) {
-                    return $quotedValues;
-                } else {
-                    return '(' . implode(',', $quotedValues) . ')';
-                }
+                return '(' . implode(',', $quotedValues) . ')';
             }
         } else {
             // 2.1, 2.2

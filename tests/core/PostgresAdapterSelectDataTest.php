@@ -87,13 +87,13 @@ class PostgresAdapterSelectDataTest extends \PHPUnit_Framework_TestCase {
         $dataForAssert = $this->convertTestDataForAdminsTableAssert($testData);
         $adapter->insertMany('admins', array_keys($testData[0]), $testData);
 
-        $data = $adapter->select('admins', [], DbExpr::create('ORDER BY `id`'));
+        $data = $adapter->select('admins', [], DbExpr::create('ORDER BY `id`', false));
         $this->assertEquals($dataForAssert[0], $data[0]);
         $this->assertEquals($dataForAssert[1], $data[1]);
 
         $data = $adapter->select('admins', ['id', 'parent_id'], DbExpr::create(
             "WHERE `id` IN (``{$testData[0]['id']}``)"
-        ));
+        ), false);
         $this->assertCount(1, $data);
         $this->assertCount(2, $data[0]);
         $this->assertArrayHasKey('id', $data[0]);

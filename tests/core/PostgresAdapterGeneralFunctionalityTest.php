@@ -292,11 +292,6 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
         );
     }
 
-    public function testJsonSequenceQuoting() {
-        $adapter = static::getValidAdapter();
-
-    }
-    
     public function testBuildColumnsList() {
         $adapter = static::getValidAdapter();
         $method = (new ReflectionClass($adapter))->getMethod('buildColumnsList');

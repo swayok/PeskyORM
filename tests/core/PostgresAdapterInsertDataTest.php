@@ -179,13 +179,15 @@ class PostgresAdapterInsertDataTest extends \PHPUnit_Framework_TestCase {
             $adapter->quoteDbExpr(DbExpr::create(
                 'INSERT INTO `settings` (`key`,`value`) VALUES '
                     . "(``{$testData1[0]['key']}``,``{$testData1[0]['value']}``),"
-                    . "(``{$testData1[1]['key']}``,``{$testData1[1]['value']}``)"
+                    . "(``{$testData1[1]['key']}``,``{$testData1[1]['value']}``)",
+                false
             )),
             $adapter->getLastQuery()
         );
         $data = Utils::getDataFromStatement(
             $adapter->query(DbExpr::create(
-                "SELECT * FROM `settings` WHERE `key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``) ORDER BY `key`"
+                "SELECT * FROM `settings` WHERE (`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)) ORDER BY `key`",
+                false
             )),
             Utils::FETCH_ALL
         );
@@ -193,7 +195,8 @@ class PostgresAdapterInsertDataTest extends \PHPUnit_Framework_TestCase {
         $this->assertArraySubset($testData1[1], $data[1]);
         $data = $adapter->query(
             DbExpr::create(
-                "SELECT * FROM `settings` WHERE `key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``) ORDER BY `key`"
+                "SELECT * FROM `settings` WHERE (`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)) ORDER BY `key`",
+                false
             ),
             Utils::FETCH_ALL
         );

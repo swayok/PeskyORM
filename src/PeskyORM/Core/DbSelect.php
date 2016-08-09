@@ -913,7 +913,7 @@ class DbSelect {
         $conditions = array_merge(
             [
                 "{$joinConfig->getTableAlias()}.{$joinConfig->getTableName()}"
-                    => DbExpr::create("`{$joinConfig->getJoinName()}`.`{$joinConfig->getForeignColumnName()}`")
+                    => DbExpr::create("`{$joinConfig->getJoinName()}`.`{$joinConfig->getForeignColumnName()}`", false)
             ],
             $joinConfig->getAdditionalJoinConditions()
         );

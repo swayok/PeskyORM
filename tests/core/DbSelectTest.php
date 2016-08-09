@@ -475,15 +475,15 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             rtrim($dbSelect->columns('id::int', 'login')->getQuery())
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id", SUM("id") FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins"."id" AS "_Admins__id", (SUM("id")) FROM "public"."admins" AS "Admins"',
             rtrim($dbSelect->columns(['id', DbExpr::create('SUM(`id`)')])->getQuery())
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__not_id", SUM("id") AS "_Admins__sum" FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins"."id" AS "_Admins__not_id", (SUM("id")) AS "_Admins__sum" FROM "public"."admins" AS "Admins"',
             rtrim($dbSelect->columns(['not_id' => 'id', 'sum' => DbExpr::create('SUM(`id`)')])->getQuery())
         );
         static::assertEquals(
-            'SELECT "Admins".*, SUM("id") AS "_Admins__sum" FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins".*, (SUM("id")) AS "_Admins__sum" FROM "public"."admins" AS "Admins"',
             rtrim($dbSelect->columns(['*', 'sum' => DbExpr::create('SUM(`id`)')])->getQuery())
         );
     }
@@ -559,7 +559,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             $dbSelect->orderBy('email', false)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" ORDER BY RANDOM()',
+            'SELECT "Admins".* FROM "public"."admins" AS "Admins" ORDER BY (RANDOM())',
             $dbSelect->orderBy(DbExpr::create('RANDOM()'), null, false)->getQuery()
         );
     }
@@ -627,7 +627,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             $dbSelect->groupBy(['email'])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" GROUP BY RANDOM()',
+            'SELECT "Admins".* FROM "public"."admins" AS "Admins" GROUP BY (RANDOM())',
             $dbSelect->groupBy([DbExpr::create('RANDOM()')], false)->getQuery()
         );
     }
@@ -779,7 +779,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             $dbSelect->where(['id::int' => '1', 'login' => '3'])->having(['login::varchar' => '2', 'email' => '3'])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" WHERE SUM("id") > \'1\' HAVING SUM("id") > \'2\'',
+            'SELECT "Admins".* FROM "public"."admins" AS "Admins" WHERE (SUM("id") > \'1\') HAVING (SUM("id") > \'2\')',
             $dbSelect->where([DbExpr::create('SUM(`id`) > ``1``')])->having([DbExpr::create('SUM(`id`) > ``2``')])->getQuery()
         );
         // conditions assembling tests are in Utils::assembleWhereConditionsFromArray()

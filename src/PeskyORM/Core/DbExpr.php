@@ -19,27 +19,46 @@ class DbExpr {
      * @var string
      */
     protected $expression = '';
+    protected $wrapInBrackets = true;
 
     /**
      * @param string $expression
+     * @param bool|null $wrapInBrackets - true: wrap expression in round brackets; null: autodetect;
      * @return DbExpr
      */
-    static public function create($expression) {
-        return new DbExpr($expression);
+    static public function create($expression, $wrapInBrackets = null) {
+        return new DbExpr($expression, $wrapInBrackets);
     }
 
     /**
      * DbExpr constructor.
+     * @param bool|null $wrapInBrackets - true: wrap expression in round brackets; null: autodetect;
      * @param string $expression
      */
-    public function __construct($expression) {
+    public function __construct($expression, $wrapInBrackets = null) {
         $this->expression = $expression;
+        if ($wrapInBrackets === null) {
+            $wrapInBrackets = !preg_match(
+                '%^\s*(SELECT|INSERT|WITH|UPDATE|DELETE|DROP|ALTER|ORDER|GROUP|HAVING|LIMIT|OFFSET|WHERE)\s%i',
+                $expression
+            );
+        }
+        $this->setWrapInBrackets($wrapInBrackets);
+    }
+
+    /**
+     * @param bool $wrapInBrackets
+     * @return $this
+     */
+    public function setWrapInBrackets($wrapInBrackets) {
+        $this->wrapInBrackets = (bool)$wrapInBrackets;
+        return $this;
     }
 
     /**
      * @return string
      */
     public function get() {
-        return $this->expression;
+        return $this->wrapInBrackets ? "({$this->expression})" : $this->expression;
     }
 }

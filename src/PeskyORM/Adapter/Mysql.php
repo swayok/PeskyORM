@@ -292,6 +292,22 @@ class Mysql extends DbAdapter {
     }
 
     /**
+     * @param mixed $value
+     * @param string $operator
+     * @return string
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    public function assembleConditionValue($value, $operator) {
+        if (in_array($operator, ['@>', '<@'], true)) {
+            $value = is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : $value;
+            return $this->quoteValue($value);
+        } else {
+            return parent::assembleConditionValue($value, $operator);
+        }
+    }
+
+    /**
      * Assemble condition from prepared parts
      * @param string $quotedColumn
      * @param string $operator

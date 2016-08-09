@@ -189,8 +189,9 @@ class Postgres extends DbAdapter {
      * @throws \InvalidArgumentException
      */
     public function assembleConditionValue($value, $operator) {
-        if (is_array($value) && in_array($operator, ['@>', '<@'], true)) {
-            return $this->quoteValue(json_encode($value)) . '::jsonb';
+        if (in_array($operator, ['@>', '<@'], true)) {
+            $value = is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : $value;
+            return $this->quoteValue($value) . '::jsonb';
         } else {
             return parent::assembleConditionValue($value, $operator);
         }

@@ -44,14 +44,16 @@ class PostgresAdapterDeleteTest extends \PHPUnit_Framework_TestCase {
         $rowsDeleted = $adapter->delete('settings', DbExpr::create("`key` = ``{$testData1[0]['key']}``"));
         $this->assertEquals(
             $adapter->quoteDbExpr(DbExpr::create(
-                "DELETE FROM `settings` WHERE `key` = ``{$testData1[0]['key']}``"
+                "DELETE FROM `settings` WHERE (`key` = ``{$testData1[0]['key']}``)",
+                false
             )),
             $adapter->getLastQuery()
         );
         $this->assertEquals(1, $rowsDeleted);
         $count = Utils::getDataFromStatement(
             $adapter->query(DbExpr::create(
-                "SELECT COUNT(*) FROM `settings` WHERE `key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``) GROUP BY `key`"
+                "SELECT COUNT(*) FROM `settings` WHERE `key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``) GROUP BY `key`",
+                false
             )),
             Utils::FETCH_VALUE
         );

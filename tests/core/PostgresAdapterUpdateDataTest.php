@@ -93,13 +93,15 @@ class PostgresAdapterUpdateDataTest extends \PHPUnit_Framework_TestCase {
         $adapter->update('settings', $update1, DbExpr::create("`key` = ``{$testData1[0]['key']}``"));
         $this->assertEquals(
             $adapter->quoteDbExpr(DbExpr::create(
-                "UPDATE `settings` SET `value`=``\"test_value1.1\"`` WHERE `key` = ``{$testData1[0]['key']}``"
+                "UPDATE `settings` SET `value`=``\"test_value1.1\"`` WHERE (`key` = ``{$testData1[0]['key']}``)",
+                false
             )),
             $adapter->getLastQuery()
         );
         $data = Utils::getDataFromStatement(
             $adapter->query(DbExpr::create(
-                "SELECT * FROM `settings` WHERE `key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``) ORDER BY `key`"
+                "SELECT * FROM `settings` WHERE (`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)) ORDER BY `key`",
+                false
             )),
             Utils::FETCH_ALL
         );

@@ -296,93 +296,93 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
         $adapter = $this->getValidAdapter();
 
         $operator = $adapter->convertConditionOperator('=', null);
-        $this->assertEquals('IS', $operator);
+        static::assertEquals('IS', $operator);
         $operator = $adapter->convertConditionOperator('IS', null);
-        $this->assertEquals('IS', $operator);
+        static::assertEquals('IS', $operator);
         $operator = $adapter->convertConditionOperator('>=', null);
-        $this->assertEquals('IS', $operator);
+        static::assertEquals('IS', $operator);
         $operator = $adapter->convertConditionOperator('OPER', null);
-        $this->assertEquals('IS', $operator);
+        static::assertEquals('IS', $operator);
 
         $operator = $adapter->convertConditionOperator('!=', null);
-        $this->assertEquals('IS NOT', $operator);
+        static::assertEquals('IS NOT', $operator);
         $operator = $adapter->convertConditionOperator('NOT', null);
-        $this->assertEquals('IS NOT', $operator);
+        static::assertEquals('IS NOT', $operator);
         $operator = $adapter->convertConditionOperator('IS NOT', null);
-        $this->assertEquals('IS NOT', $operator);
+        static::assertEquals('IS NOT', $operator);
     }
 
     public function testConvertConditionOperatorForArrayValue() {
         $adapter = $this->getValidAdapter();
 
         $operator = $adapter->convertConditionOperator('=', [1, 2, 3]);
-        $this->assertEquals('IN', $operator);
+        static::assertEquals('IN', $operator);
         $operator = $adapter->convertConditionOperator('!=', [1, 2, 3]);
-        $this->assertEquals('NOT IN', $operator);
+        static::assertEquals('NOT IN', $operator);
 
         $operator = $adapter->convertConditionOperator('IN', 1);
-        $this->assertEquals('=', $operator);
+        static::assertEquals('=', $operator);
         $operator = $adapter->convertConditionOperator('NOT IN', 1);
-        $this->assertEquals('!=', $operator);
+        static::assertEquals('!=', $operator);
 
         $operator = $adapter->convertConditionOperator('IN', [1, 2, 3]);
-        $this->assertEquals('IN', $operator);
+        static::assertEquals('IN', $operator);
         $operator = $adapter->convertConditionOperator('NOT IN', [1, 2, 3]);
-        $this->assertEquals('NOT IN', $operator);
+        static::assertEquals('NOT IN', $operator);
 
         $operator = $adapter->convertConditionOperator('IN', DbExpr::create('SELECT'));
-        $this->assertEquals('IN', $operator);
+        static::assertEquals('IN', $operator);
         $operator = $adapter->convertConditionOperator('NOT IN', DbExpr::create('SELECT'));
-        $this->assertEquals('NOT IN', $operator);
+        static::assertEquals('NOT IN', $operator);
     }
 
     public function testConvertConditionOperator() {
         $adapter = $this->getValidAdapter();
 
         $operator = $adapter->convertConditionOperator('BETWEEN', [1, 2, 3]);
-        $this->assertEquals('BETWEEN', $operator);
+        static::assertEquals('BETWEEN', $operator);
         $operator = $adapter->convertConditionOperator('NOT BETWEEN', 'oo');
-        $this->assertEquals('NOT BETWEEN', $operator);
+        static::assertEquals('NOT BETWEEN', $operator);
 
         $operator = $adapter->convertConditionOperator('>', 1);
-        $this->assertEquals('>', $operator);
+        static::assertEquals('>', $operator);
         $operator = $adapter->convertConditionOperator('<', 'a');
-        $this->assertEquals('<', $operator);
+        static::assertEquals('<', $operator);
         $operator = $adapter->convertConditionOperator('CUSTOM', 'qwe');
-        $this->assertEquals('CUSTOM', $operator);
+        static::assertEquals('CUSTOM', $operator);
         $operator = $adapter->convertConditionOperator('LIKE', 'weqwe');
-        $this->assertEquals('LIKE', $operator);
+        static::assertEquals('LIKE', $operator);
         $operator = $adapter->convertConditionOperator('NOT LIKE', 'ewqewqe');
-        $this->assertEquals('NOT LIKE', $operator);
+        static::assertEquals('NOT LIKE', $operator);
     }
 
     public function testConvertConditionOperatorForStringComparison() {
         $adapter = $this->getValidAdapter();
 
         $operator = $adapter->convertConditionOperator('SIMILAR TO', 'qwe');
-        $this->assertEquals('SIMILAR TO', $operator);
+        static::assertEquals('SIMILAR TO', $operator);
         $operator = $adapter->convertConditionOperator('NOT SIMILAR TO', 'qwe');
-        $this->assertEquals('NOT SIMILAR TO', $operator);
+        static::assertEquals('NOT SIMILAR TO', $operator);
 
         $operator = $adapter->convertConditionOperator('REGEXP', 'wqe');
-        $this->assertEquals('~*', $operator);
+        static::assertEquals('~*', $operator);
         $operator = $adapter->convertConditionOperator('NOT REGEXP', 'ewqe');
-        $this->assertEquals('!~*', $operator);
+        static::assertEquals('!~*', $operator);
 
         $operator = $adapter->convertConditionOperator('REGEX', 'weq');
-        $this->assertEquals('~*', $operator);
+        static::assertEquals('~*', $operator);
         $operator = $adapter->convertConditionOperator('NOT REGEX', 'qwe');
-        $this->assertEquals('!~*', $operator);
+        static::assertEquals('!~*', $operator);
 
         $operator = $adapter->convertConditionOperator('~', 'ewq');
-        $this->assertEquals('~', $operator);
+        static::assertEquals('~', $operator);
         $operator = $adapter->convertConditionOperator('!~', 'ewqe');
-        $this->assertEquals('!~', $operator);
+        static::assertEquals('!~', $operator);
 
         $operator = $adapter->convertConditionOperator('~*', 'ewqe');
-        $this->assertEquals('~*', $operator);
+        static::assertEquals('~*', $operator);
         $operator = $adapter->convertConditionOperator('!~*', 'ewqe');
-        $this->assertEquals('!~*', $operator);
+        static::assertEquals('!~*', $operator);
     }
 
     /**
@@ -416,21 +416,242 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
         $adapter = $this->getValidAdapter();
 
         $query = $adapter->makeSelectQuery('test_table', ['col1', DbExpr::create('`col2` as `col22`')]);
-        $this->assertEquals(
+        static::assertEquals(
             $adapter->quoteDbExpr(DbExpr::create(
-                'SELECT `col1`,`col2` as `col22` FROM `test_table`'
+                'SELECT `col1`,(`col2` as `col22`) FROM `test_table`',
+                false
             )),
             $query
         );
 
-        $query = $adapter->makeSelectQuery('test_table', [], DbExpr::create('WHERE `col1` > ``0``'));
-        $this->assertEquals(
+        $query = $adapter->makeSelectQuery('test_table', [], DbExpr::create('WHERE `col1` > ``0``', false));
+        static::assertEquals(
             $adapter->quoteDbExpr(DbExpr::create(
-                'SELECT `*` FROM `test_table` WHERE `col1` > ``0``'
+                'SELECT `*` FROM `test_table` WHERE `col1` > ``0``',
+                false
             )),
             $query
         );
     }
 
+    public function testQuoteJsonSelectorExpression() {
+        static::assertEquals(
+            '"table"."col_name"->\'key1\'->>\'key 2\'#>\'key 3\'#>>\'key 4\'',
+            $this->invokePrivateAdapterMethod('quoteJsonSelectorExpression', [
+                'table.col_name', '->', 'key1', '->>', '"key 2"', '#>', '`key 3`', '#>>', "'key 4'"
+            ])
+        );
+    }
+
+    public function testIsValidDbEntityNameAndJsonSelector() {
+        static::assertTrue($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test->test'));
+        static::assertTrue($this->invokePrivateAdapterMethod('isValidJsonSelector', '_test #> `test`'));
+        static::assertTrue($this->invokePrivateAdapterMethod('isValidJsonSelector', 't2est ->>"test"'));
+        static::assertTrue($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test->> \'test\''));
+        static::assertTrue($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test->test->>test#>test#>>test'));
+
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', ''));
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test->'));
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', '->test'));
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test->""->test'));
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test->\'->test'));
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test->```->test'));
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test test->test'));
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', '0test test->test'));
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', '$test test->test'));
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test#test->test'));
+
+        static::assertTrue($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test'));
+        static::assertTrue($this->invokePrivateAdapterMethod('isValidDbEntityName', '_test._test2'));
+        static::assertTrue($this->invokePrivateAdapterMethod('isValidDbEntityName', 't2est.*'));
+        static::assertTrue($this->invokePrivateAdapterMethod('isValidDbEntityName', '*'));
+        static::assertTrue($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test->test'));
+
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test test'));
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', '0test'));
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', '$test'));
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test$test'));
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', ''));
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test->test', false));
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Condition value for BETWEEN and NOT BETWEEN operator must be an array with 2 values: [min, max]
+     */
+    public function testInvalidAssembleConditionValue11() {
+        static::getValidAdapter()->assembleConditionValue(null, 'BETWEEN');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Condition value for BETWEEN and NOT BETWEEN operator must be an array with 2 values: [min, max]
+     */
+    public function testInvalidAssembleConditionValue12() {
+        static::getValidAdapter()->assembleConditionValue(1, 'NOT BETWEEN');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Condition value for BETWEEN and NOT BETWEEN operator must be an array with 2 values: [min, max]
+     */
+    public function testInvalidAssembleConditionValue13() {
+        static::getValidAdapter()->assembleConditionValue(false, 'BETWEEN');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Condition value for BETWEEN and NOT BETWEEN operator must be an array with 2 values: [min, max]
+     */
+    public function testInvalidAssembleConditionValue14() {
+        static::getValidAdapter()->assembleConditionValue(true, 'BETWEEN');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage BETWEEN and NOT BETWEEN conditions require value to an array with 2 values: [min, max]
+     */
+    public function testInvalidAssembleConditionValue15() {
+        static::getValidAdapter()->assembleConditionValue([], 'BETWEEN');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage BETWEEN and NOT BETWEEN conditions require value to an array with 2 values: [min, max]
+     */
+    public function testInvalidAssembleConditionValue16() {
+        static::getValidAdapter()->assembleConditionValue([true], 'BETWEEN');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage BETWEEN and NOT BETWEEN conditions require value to an array with 2 values: [min, max]
+     */
+    public function testInvalidAssembleConditionValue17() {
+        static::getValidAdapter()->assembleConditionValue([1, 2, 3], 'BETWEEN');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage BETWEEN and NOT BETWEEN conditions does not allow min or max values to be null or boolean
+     */
+    public function testInvalidAssembleConditionValue18() {
+        static::getValidAdapter()->assembleConditionValue([true, false], 'BETWEEN');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage BETWEEN and NOT BETWEEN conditions does not allow min or max values to be null or boolean
+     */
+    public function testInvalidAssembleConditionValue19() {
+        static::getValidAdapter()->assembleConditionValue([null, 1], 'BETWEEN');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage BETWEEN and NOT BETWEEN conditions does not allow min or max values to be null or boolean
+     */
+    public function testInvalidAssembleConditionValue110() {
+        static::getValidAdapter()->assembleConditionValue([1, null], 'BETWEEN');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Empty array is not allowed as condition value
+     */
+    public function testInvalidAssembleConditionValue21() {
+        static::getValidAdapter()->assembleConditionValue([], '=');
+    }
+
+    public function testAssembleConditionValue() {
+        $adapter = static::getValidAdapter();
+        $dbexpr = DbExpr::create('``test`` = `expr`');
+        static::assertEquals(
+            '(' . $adapter->quoteDbExpr($dbexpr) . ')',
+            $adapter->assembleConditionValue($dbexpr, 'doesnt matter')
+        );
+        static::assertEquals(
+            $adapter->quoteValue(10) . ' AND ' . $adapter->quoteValue(20),
+            $adapter->assembleConditionValue([10, 20], 'BETWEEN')
+        );
+        static::assertEquals(
+            $adapter->quoteValue(DbExpr::create('11')) . ' AND ' . $adapter->quoteValue(DbExpr::create('21')),
+            $adapter->assembleConditionValue([DbExpr::create('11'), DbExpr::create('21')], 'NOT BETWEEN')
+        );
+        static::assertEquals(
+            '(' . $adapter->quoteValue(11) . ',' . $adapter->quoteValue(12) . ',' . $adapter->quoteValue(DbExpr::create('13')) . ')',
+            $adapter->assembleConditionValue([11, 12, DbExpr::create('13')], '=')
+        );
+        static::assertEquals(
+            $adapter->quoteValue('string'),
+            $adapter->assembleConditionValue('string', '=')
+        );
+    }
+
+    public function testAssembleConditionValueAdapterSpecific() {
+        $adapter = static::getValidAdapter();
+        static::assertEquals(
+            $adapter->quoteValue('string') . '::jsonb',
+            $adapter->assembleConditionValue('string', '@>')
+        );
+        static::assertEquals(
+            $adapter->quoteValue(json_encode(['key' => 'value'])) . '::jsonb',
+            $adapter->assembleConditionValue(['key' => 'value'], '@>')
+        );
+        static::assertEquals(
+            $adapter->quoteValue(json_encode([1, 2, 3])) . '::jsonb',
+            $adapter->assembleConditionValue([1, 2, 3], '<@')
+        );
+    }
+
+    public function testAssembleCondition() {
+        $adapter = static::getValidAdapter();
+        $column = $adapter->quoteDbEntityName('colname');
+        static::assertEquals(
+            $column . ' = ' . $adapter->assembleConditionValue('test', '='),
+            $adapter->assembleCondition($column, '=', 'test')
+        );
+        static::assertEquals(
+            $column . ' IN ' . $adapter->assembleConditionValue([1, 2], 'IN'),
+            $adapter->assembleCondition($column, 'IN', [1, 2])
+        );
+        static::assertEquals(
+            $column . ' BETWEEN ' . $adapter->assembleConditionValue([1, 2], 'BETWEEN'),
+            $adapter->assembleCondition($column, 'BETWEEN', [1, 2])
+        );
+    }
+
+    public function testAssembleConditionAdapterSpecific() {
+        $adapter = static::getValidAdapter();
+        $column = $adapter->quoteDbEntityName('colname');
+        static::assertEquals(
+            $column . ' @> ' . $adapter->assembleConditionValue('test', '@>'),
+            $adapter->assembleCondition($column, '@>', 'test')
+        );
+        static::assertEquals(
+            $column . ' <@ ' . $adapter->assembleConditionValue('test', '<@'),
+            $adapter->assembleCondition($column, '<@', 'test')
+        );
+        static::assertEquals(
+            "jsonb_exists({$column}, " . $adapter->assembleConditionValue('test', '?') . ')',
+            $adapter->assembleCondition($column, '?', 'test')
+        );
+        static::assertEquals(
+            "jsonb_exists_any({$column}, array[" . $adapter->quoteValue('test') . '])',
+            $adapter->assembleCondition($column, '?|', 'test')
+        );
+        static::assertEquals(
+            "jsonb_exists_any({$column}, array[" . $adapter->quoteValue('test1') . ', ' . $adapter->quoteValue('test2') . '])',
+            $adapter->assembleCondition($column, '?|', ['test1', 'test2'])
+        );
+        static::assertEquals(
+            "jsonb_exists_all({$column}, array[" . $adapter->quoteValue('test') . '])',
+            $adapter->assembleCondition($column, '?&', 'test')
+        );
+        static::assertEquals(
+            "jsonb_exists_all({$column}, array[" . $adapter->quoteValue('test1') . ', ' . $adapter->quoteValue('test2') . '])',
+            $adapter->assembleCondition($column, '?&', ['test1', 'test2'])
+        );
+    }
 
 }
