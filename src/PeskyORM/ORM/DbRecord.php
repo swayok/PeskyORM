@@ -685,6 +685,22 @@ abstract class DbRecord implements \ArrayAccess, \Iterator {
     }
 
     /**
+     * Get names of all columns that should automatically update values on each save
+     * @return array
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    protected function getAllAutoUpdatingColumns() {
+        $columnsNames = [];
+        foreach ($this->getColumns() as $columnName => $column) {
+            if ($column->isAutoUpdatingValue()) {
+                $columnsNames[] = $columnName;
+            }
+        }
+        return $columnsNames;
+    }
+
+    /**
      * @param array $columnsToSave
      * @throws \InvalidArgumentException
      * @throws \PDOException
@@ -717,16 +733,23 @@ abstract class DbRecord implements \ArrayAccess, \Iterator {
         }
         $data = [];
         $columnsThatDoNotExistInDb = [];
+        // collect values that are not from DB
         foreach ($columnsToSave as $columnName) {
             if ($this->getColumn($columnName)->isItExistsInDb()) {
-                if ($this->hasColumnValue($columnName)) {
+                $valueObject = $this->getColumnValueObject($columnName);
+                if ($valueObject->hasValue() && !$valueObject->isItFromDb()) {
                     $data[$columnName] = $this->getColumnValue($columnName);
                 }
             } else {
                 $columnsThatDoNotExistInDb[$columnName] = $columnName;
             }
         }
-        $errors = $this->validateData($data, $columnsToSave);
+        // collect auto updates
+        $autoUpdatingColumns = $this->getAllAutoUpdatingColumns();
+        foreach ($autoUpdatingColumns as $columnName) {
+            $data[$columnName] = static::getColumn($columnName)->getAutoUpdateForAValue();
+        }
+        $errors = $this->validateNewData($data, $columnsToSave);
         if (!empty($errors)) {
             throw new InvalidDataException($errors);
         }
@@ -789,7 +812,7 @@ abstract class DbRecord implements \ArrayAccess, \Iterator {
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    protected function validateData(array $data, array $columnsNames = []) {
+    protected function validateNewData(array $data, array $columnsNames = []) {
         if (!count($columnsNames)) {
             $columnsNames = array_keys($data);
         }
@@ -797,7 +820,7 @@ abstract class DbRecord implements \ArrayAccess, \Iterator {
         foreach ($columnsNames as $columnName) {
             $column = $this->getColumn($columnName);
             $value = array_key_exists($columnName, $data) ? $data[$columnName] : null;
-            $columnErrors = $column->validateValue($value);
+            $columnErrors = $column->validateNewValue($value);
             if (!empty($columnErrors)) {
                 $errors[$columnName] = $columnErrors;
             }
