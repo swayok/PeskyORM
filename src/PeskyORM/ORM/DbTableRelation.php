@@ -32,7 +32,7 @@ class DbTableRelation {
     /** @var DbTable */
     protected $foreignTable;
     /** @var string */
-    protected $foreignTableName;
+    protected $foreignTableClass;
     /** @var string */
     protected $foreignColumn;
 
@@ -46,7 +46,7 @@ class DbTableRelation {
      * @param DbTableStructure $localTableStructure
      * @param string $localColumn
      * @param string $type
-     * @param string $foreignTableName
+     * @param string $foreignTableClass
      * @param string $foreignColumn
      * @return DbTableRelation
      */
@@ -54,31 +54,31 @@ class DbTableRelation {
         DbTableStructure $localTableStructure,
         $localColumn,
         $type,
-        $foreignTableName,
+        $foreignTableClass,
         $foreignColumn
     ) {
-        return new DbTableRelation($localTableStructure, $localColumn, $type, $foreignTableName, $foreignColumn);
+        return new DbTableRelation($localTableStructure, $localColumn, $type, $foreignTableClass, $foreignColumn);
     }
 
     /**
      * @param DbTableStructure $localTableStructure
      * @param string $localColumn
      * @param string $type
-     * @param string $foreignTableName
+     * @param string $foreignTableClass
      * @param string $foreignColumn
      */
     public function __construct(
         DbTableStructure $localTableStructure,
         $localColumn,
         $type,
-        $foreignTableName,
+        $foreignTableClass,
         $foreignColumn
     ) {
         $this->localTableStructure = $localTableStructure;
         $this->localTableName = $localTableStructure->getName();
         $this->localColumn = $localColumn;
         $this->type = $type;
-        $this->foreignTableName = $foreignTableName;
+        $this->foreignTableClass = $foreignTableClass;
         $this->foreignColumn = $foreignColumn;
         $this->displayColumnName = $localColumn;
     }
@@ -145,16 +145,16 @@ class DbTableRelation {
     /**
      * @return string
      */
-    public function getForeignTableName() {
-        return $this->foreignTableName;
+    public function getForeignTableClass() {
+        return $this->foreignTableClass;
     }
 
     /**
-     * @param string $foreignTableName
+     * @param string $foreignTableClass
      * @return $this
      */
-    public function setForeignTableName($foreignTableName) {
-        $this->foreignTableName = $foreignTableName;
+    public function setForeignTableClass($foreignTableClass) {
+        $this->foreignTableClass = $foreignTableClass;
         return $this;
     }
 
@@ -164,7 +164,7 @@ class DbTableRelation {
      */
     public function getForeignTable() {
         if ($this->foreignTable === null) {
-            $this->foreignTable = DbClassesManager::i()->getTableInstance($this->foreignTableName);
+            $this->foreignTable = call_user_func([$this->foreignTableClass, 'getInstance']);
         }
         return $this->foreignTable;
     }

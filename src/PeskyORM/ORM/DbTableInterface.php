@@ -4,7 +4,6 @@ namespace PeskyORM\ORM;
 
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\ORM\Exception\OrmException;
 
 interface DbTableInterface {
 
@@ -13,7 +12,7 @@ interface DbTableInterface {
      * @return string
      */
     static public function getTableName();
-    
+
     /**
      * Table alias.
      * For example: if table name is 'user_actions' the alias might be 'UserActions'
@@ -55,14 +54,14 @@ interface DbTableInterface {
     /**
      * @return DbRecord
      */
-     static public function newRecord();
+    static public function newRecord();
 
-     /**
+    /**
      * @return null|string
      */
     static public function getLastQuery();
 
-     /**
+    /**
      * @param string|array $columns
      * @param array $conditionsAndOptions
      * @return DbRecordsSet
@@ -173,35 +172,6 @@ interface DbTableInterface {
      * @throws \InvalidArgumentException
      */
     static public function delete(array $conditions = [], $returning = false);
-
-    /**
-     * @param array $conditions
-     * @param string $glue - 'AND' or 'OR'
-     * @return string
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
-     */
-    static public function assembleWhereConditionsFromArray(array $conditions, $glue = 'AND');
-
-    /**
-     * Parse $column and collect information about it
-     * @param string $column - supported formats:
-     *      - 'column'
-     *      - 'column::data_type_convert'
-     *      - 'table_alias.column'
-     *      - 'table_alias.column::data_type_convert'
-     * @return array = [
-     *      'raw' => string,
-     *      'table_alias' => string,
-     *      'column' => DbTableColumn,
-     *      'table' => DbTable,
-     *      'data_type_convert' => string,
-     *      'quoted' => string
-     *  ]
-     * @throws \InvalidArgumentException
-     * @throws OrmException
-     */
-    static public function parseColumnRepresentation($column);
 
     /**
      * Return DbExpr to set default value for a column.

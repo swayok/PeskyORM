@@ -89,7 +89,7 @@ class OrmSelect extends DbSelect {
      * @throws \InvalidArgumentException
      */
     public function fetchOneAsDbRecord() {
-        return DbClassesManager::i()->newRecord($this->tableName)->fromDbData($this->fetchOne());
+        return $this->table->newRecord()->fromDbData($this->fetchOne());
     }
 
     /**

@@ -3,7 +3,9 @@
 namespace PeskyORMTest\TestingAdmin;
 
 use PeskyORM\Core\DbExpr;
+use PeskyORM\ORM\DbTable;
 use PeskyORM\ORM\DbTableColumn;
+use PeskyORM\ORM\DbTableRelation;
 use PeskyORM\ORM\DbTableStructure;
 
 class TestingAdminsTableStructure extends DbTableStructure {
@@ -13,7 +15,7 @@ class TestingAdminsTableStructure extends DbTableStructure {
             ->itIsPrimaryKey()
             ->convertsEmptyStringToNull()
             ->valueIsNotNullable()
-            ->setDefaultValue(DbExpr::create('DEFAULT'))
+            ->setDefaultValue(DbTable::getExpressionToSetDefaultValueForAColumn())
         ;
     }
 
@@ -34,7 +36,7 @@ class TestingAdminsTableStructure extends DbTableStructure {
     }
 
     private function password() {
-        return DbTableColumn::create(DbTableColumn::TYPE_STRING)
+        return DbTableColumn::create(DbTableColumn::TYPE_PASSWORD)
             ->convertsEmptyStringToNull()
             ->valueIsNotNullable()
             ->mustTrimValue()
@@ -136,6 +138,10 @@ class TestingAdminsTableStructure extends DbTableStructure {
             ->convertsEmptyStringToNull()
             ->valueIsNotNullable()
             ->setDefaultValue('UTC');
+    }
+
+    private function Parent() {
+        return DbTableRelation::create($this, 'parent_id', DbTableRelation::BELONGS_TO, TestingAdminsTable::class, 'id');
     }
 
 

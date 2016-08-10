@@ -147,14 +147,6 @@ class UtilsTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @expectedException \PHPUnit_Framework_Error
-     * @expectedExceptionMessageRegExp %^Argument 3 passed.*must be an instance of Closure%
-     */
-    public function testInvalidAssembleWhereConditionsFromArray2() {
-        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), [], null);
-    }
-
-    /**
      * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage $conditions argument may contain only objects of class DbExpr. Other objects are forbidden.
      */

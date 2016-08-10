@@ -362,26 +362,23 @@ abstract class DbRecord implements \ArrayAccess, \Iterator {
      */
     protected function setRelatedRecord($relationName, $relatedRecord, $isFromDb, $haltOnUnknownColumnNames = true) {
         $relation = $this->getRelation($relationName);
-        $relationTableName = $relation->getForeignTableName();
+        $relationTable = $relation->getForeignTable();
         if ($relation->getType() === DbTableRelation::HAS_MANY) {
             if (is_array($relatedRecord)) {
-                $relatedRecord = DbRecordsSet::createFromArray(
-                    DbClassesManager::i()->getTableInstance($relationTableName),
-                    $relatedRecord
-                );
+                $relatedRecord = DbRecordsSet::createFromArray($relationTable, $relatedRecord);
             }
         } else if (is_array($relatedRecord)) {
-            $relatedRecord = DbClassesManager::i()->newRecord($relationTableName)
+            $relatedRecord = $relationTable->newRecord()
                 ->fromData($relatedRecord, $isFromDb, $haltOnUnknownColumnNames);
         } else if ($relatedRecord instanceof DbRecord) {
-            if ($relatedRecord->getTable()->getTableName() !== $relationTableName) {
+            if ($relatedRecord->getTable()->getTableName() !== $relationTable) {
                 throw new \InvalidArgumentException(
-                    "\$relatedRecord argument must be an instance of DbRecord class for a '$relationTableName' DB table"
+                    "\$relatedRecord argument must be an instance of DbRecord class for a '{$relationTable->getTableName()}' DB table"
                 );
             }
         } else {
             throw new \InvalidArgumentException(
-                "\$relatedRecord argument must be an array or instance of DbRecord class for a '$relationTableName' DB table"
+                "\$relatedRecord argument must be an array or instance of DbRecord class for a '{$relationTable->getTableName()}' DB table"
             );
         }
         $this->relatedRecords[$relationName] = $relatedRecord;
@@ -395,7 +392,7 @@ abstract class DbRecord implements \ArrayAccess, \Iterator {
      */
     public function readRelatedRecord($relationName) {
         $relation = $this->getRelation($relationName);
-        $relatedTable = DbClassesManager::i()->getTableInstance($relation->getForeignTableName());
+        $relatedTable = $relation->getForeignTable();
         $conditions = array_merge(
             [$relation->getForeignColumn() => $this->getColumnValue($relation->getLocalColumn())],
             $relation->getAdditionalJoinConditions()
@@ -403,7 +400,7 @@ abstract class DbRecord implements \ArrayAccess, \Iterator {
         if ($relation->getType() === DbTableRelation::HAS_MANY) {
             $this->relatedRecords[$relationName] = $relatedTable->select('*', $conditions);
         } else {
-            $this->relatedRecords[$relationName] = DbClassesManager::i()->newRecord($relation->getForeignTableName());
+            $this->relatedRecords[$relationName] = $relatedTable->newRecord();
             $data = $relatedTable->selectOne('*', $conditions);
             if (!empty($data)) {
                 $this->relatedRecords[$relationName]->fromData($data, true, true);

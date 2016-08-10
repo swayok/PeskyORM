@@ -43,7 +43,7 @@ class DbRecordsSet implements \ArrayAccess, \Iterator {
     protected $currentDbRecordIndex = -1;
 
     /**
-     * @param DbTable $table
+     * @param DbTableInterface $table
      * @param array $records
      * @param boolean $isFromDb
      * @return static

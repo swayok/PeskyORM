@@ -2,17 +2,31 @@
 
 namespace PeskyORMTest;
 
-use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\ORM\DbTable;
+use PeskyORM\ORM\DbTableStructure;
+use Swayok\Utils\StringUtils;
 
 abstract class TestingBaseDbTable extends DbTable {
 
-    /**
-     * @return DbAdapterInterface
-     * @throws \InvalidArgumentException
-     */
-    static public function getConnection() {
-        return TestingApp::getDefautConnection();
+    /** @var null|string */
+    static private $recordClass = null;
+    /** @var DbTableStructure */
+    static protected $tableStructure;
+
+    static public function newRecord() {
+        if (!static::$recordClass) {
+            $shortClassName = StringUtils::classify(StringUtils::singularize(static::getTableName()));
+            static::$recordClass = preg_replace('%\\[^\\]+$%', '', get_called_class()) . '\\' . $shortClassName;
+        }
+        return call_user_func([static::$recordClass, 'create']);
     }
+
+    static public function getStructure() {
+        if (!static::$tableStructure) {
+            static::$tableStructure = call_user_func([get_called_class() . 'Structure', 'getInstance']);
+        }
+        return static::$tableStructure;
+    }
+
 
 }

@@ -63,7 +63,9 @@ class Utils {
      * @param DbAdapterInterface $connection
      * @param array $conditions
      * @param string $glue - 'AND' or 'OR'
-     * @param \Closure $columnQuoter
+     * @param \Closure|null $columnQuoter - default: function ($columnName, DbAdapterInterface $connection) {
+     *      return $connection->quoteDbEntityName($columnName);
+     *  }
      * @return string
      * @throws \PDOException
      * @throws \InvalidArgumentException
@@ -71,12 +73,17 @@ class Utils {
     static public function assembleWhereConditionsFromArray(
         DbAdapterInterface $connection,
         array $conditions,
-        \Closure $columnQuoter,
+        \Closure $columnQuoter = null,
         $glue = 'AND'
     ) {
         $glue = strtoupper(trim($glue));
         if (!in_array($glue, ['AND', 'OR'], true)) {
             throw new \InvalidArgumentException('$glue argument must be "AND" or "OR" (only in upper case)');
+        }
+        if (!$columnQuoter) {
+            $columnQuoter = function ($columnName, DbAdapterInterface $connection) {
+                return $connection->quoteDbEntityName($columnName);
+            };
         }
         if (empty($conditions)) {
             return '';
@@ -131,7 +138,11 @@ class Utils {
                         $operator = strtoupper(preg_replace('%\s+%', ' ', trim($matches[2])));
                     }
                     $operator = $connection->convertConditionOperator($operator, $rawValue);
-                    $assembled[] = $connection->assembleCondition($columnQuoter($column), $operator, $rawValue);
+                    $assembled[] = $connection->assembleCondition(
+                        $columnQuoter($column, $connection),
+                        $operator,
+                        $rawValue
+                    );
                 }
             }
             return implode(" $glue ", $assembled);

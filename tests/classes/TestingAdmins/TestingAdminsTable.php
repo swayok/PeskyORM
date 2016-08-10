@@ -4,7 +4,7 @@ namespace PeskyORMTest\TestingAdmin;
 
 use PeskyORMTest\TestingBaseDbTable;
 
-class TestingAdminsTableTesting extends TestingBaseDbTable  {
+class TestingAdminsTable extends TestingBaseDbTable  {
 
     /**
      * Table Name

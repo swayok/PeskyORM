@@ -13,30 +13,27 @@ class TestingApp {
      */
     static protected $dbConnection;
 
-    static public function getDefautConnection() {
-        if (!static::$dbConnection) {
-            $data = include __DIR__ . '/../configs/global.php';
-            static::$dbConnection = DbConnectionsManager::createConnection(
-                'default',
-                DbConnectionsManager::ADAPTER_POSTGRES,
-                PostgresConfig::fromArray($data['pgsql'])
-            );
-        }
-        return static::$dbConnection;
+    static public function init() {
+        $data = include __DIR__ . '/../configs/global.php';
+        static::$dbConnection = DbConnectionsManager::createConnection(
+            'default',
+            DbConnectionsManager::ADAPTER_POSTGRES,
+            PostgresConfig::fromArray($data['pgsql'])
+        );
     }
 
     static public function fillAdminsTable() {
         $data = include __DIR__ . '/../configs/base_db_contents.php';
-        static::getDefautConnection()->insertMany('admins', array_keys($data['admins'][0]), $data['admins']);
+        static::$dbConnection->insertMany('admins', array_keys($data['admins'][0]), $data['admins']);
     }
 
     static public function fillSettingsTable() {
         $data = include __DIR__ . '/../configs/base_db_contents.php';
-        static::getDefautConnection()->insertMany('admins', array_keys($data['settings'][0]), $data['settings']);
+        static::$dbConnection->insertMany('admins', array_keys($data['settings'][0]), $data['settings']);
     }
 
     static public function clearTables() {
-        static::getDefautConnection()->exec('TRUNCATE TABLE settings');
-        static::getDefautConnection()->exec('TRUNCATE TABLE admins');
+        static::$dbConnection->exec('TRUNCATE TABLE settings');
+        static::$dbConnection->exec('TRUNCATE TABLE admins');
     }
 }

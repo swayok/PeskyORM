@@ -100,7 +100,7 @@ abstract class DbRecordValueHelpers {
             case DbTableColumn::TYPE_TEXT:
             case DbTableColumn::TYPE_STRING:
                 if (!is_string($value)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_IMAGE)];
+                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_STRING)];
                 }
                 break;
         }

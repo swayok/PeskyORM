@@ -2,6 +2,8 @@
 
 namespace PeskyORM\ORM;
 
+use PeskyORM\Core\DbAdapterInterface;
+use PeskyORM\Core\DbConnectionsManager;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
 use PeskyORM\ORM\Exception\OrmException;
@@ -9,12 +11,10 @@ use Swayok\Utils\StringUtils;
 
 abstract class DbTable implements DbTableInterface {
 
-    /** @var $this */
+    /** @var DbTable */
     static protected $instance;
     /** @var string  */
     static protected $alias;
-    /** @var DbTableStructure */
-    static protected $tableStructure;
 
     /**
      * @return $this
@@ -32,7 +32,6 @@ abstract class DbTable implements DbTableInterface {
             }
             static::$instance = new static();
             static::$alias = StringUtils::classify(static::getTableName());
-            static::$tableStructure = DbClassesManager::i()->getTableStructure(static::getTableName());
         }
         return static::$instance;
     }
@@ -49,18 +48,18 @@ abstract class DbTable implements DbTableInterface {
     }
 
     /**
+     * @return DbAdapterInterface
+     * @throws \InvalidArgumentException
+     */
+    static public function getConnection() {
+        return DbConnectionsManager::getConnection(static::getStructure()->getConnectionName());
+    }
+
+    /**
      * @return string
      */
     static public function getAlias() {
         return static::$alias;
-    }
-
-    /**
-     * @return DbTableStructure
-     * @throws \BadMethodCallException
-     */
-    static public function getStructure() {
-        return static::$tableStructure;
     }
 
     /**
@@ -73,7 +72,7 @@ abstract class DbTable implements DbTableInterface {
     }
 
     /**
-     * @return bool
+     * @return DbTableColumn
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -92,22 +91,12 @@ abstract class DbTable implements DbTableInterface {
 
     /**
      * @param string $relationAlias - alias for relation defined in DbTableStructure
-     * @return DbTable
+     * @return DbTableInterface
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function getRelatedTable($relationAlias) {
         return static::getStructure()->getRelation($relationAlias)->getForeignTable();
-    }
-
-    /**
-     * @param string $relationAlias - alias for relation defined in DbTableStructure
-     * @return string
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     */
-    static public function getRelatedTableName($relationAlias) {
-        return static::getStructure()->getRelation($relationAlias)->getForeignTableName();
     }
 
     /**
@@ -128,17 +117,11 @@ abstract class DbTable implements DbTableInterface {
     }
 
     /**
-     * @return DbRecord
-     * @throws \BadMethodCallException
-     */
-    static public function newRecord() {
-        return DbClassesManager::i()->newRecord(static::getTableName());
-    }
-
-    /**
      * @param string|array $columns
      * @param array $conditionsAndOptions
      * @return DbRecordsSet
+     * @throws \PDOException
+     * @throws \LengthException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -154,6 +137,8 @@ abstract class DbTable implements DbTableInterface {
      * @param string $column
      * @param array $conditionsAndOptions
      * @return array
+     * @throws \PDOException
+     * @throws \LengthException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -171,6 +156,8 @@ abstract class DbTable implements DbTableInterface {
      * @param string $valuesColumn
      * @param array $conditionsAndOptions
      * @return array
+     * @throws \PDOException
+     * @throws \LengthException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -185,6 +172,8 @@ abstract class DbTable implements DbTableInterface {
      * @param string|array $columns
      * @param array $conditionsAndOptions
      * @return array
+     * @throws \PDOException
+     * @throws \LengthException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -200,6 +189,8 @@ abstract class DbTable implements DbTableInterface {
      * @param DbExpr $expression - example: DbExpr::create('COUNT(*)'), DbExpr::create('SUM(`field`)')
      * @param array $conditionsAndOptions
      * @return string
+     * @throws \PDOException
+     * @throws \LengthException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -213,6 +204,9 @@ abstract class DbTable implements DbTableInterface {
      * Does table contain any record matching provided condition
      * @param array $conditionsAndOptions
      * @return bool
+     * @throws \PDOException
+     * @throws \LengthException
+     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function hasMatchingRecord(array $conditionsAndOptions) {
@@ -225,6 +219,7 @@ abstract class DbTable implements DbTableInterface {
      * @param array $conditionsAndOptions
      * @param bool $removeNotInnerJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
      * @return int
+     * @throws \PDOException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -332,7 +327,7 @@ abstract class DbTable implements DbTableInterface {
         return static::getConnection()->update(
             static::getTableName(),
             $data,
-            static::assembleWhereConditionsFromArray($conditions),
+            Utils::assembleWhereConditionsFromArray(static::getConnection(), $conditions),
             static::getPdoDataTypesForColumns(),
             $returning
         );
@@ -345,15 +340,13 @@ abstract class DbTable implements DbTableInterface {
      *          - false: do not return anything
      *          - array: list of columns to return values for
      * @return int|array - int: number of deleted records | array: returned only if $returning is not empty
-     * @throws \BadMethodCallException
-     * @throws OrmException
-     * @throws \PDOException
      * @throws \InvalidArgumentException
+     * @throws \PDOException
      */
     static public function delete(array $conditions = [], $returning = false) {
         return static::getConnection()->delete(
             static::getTableName(),
-            static::assembleWhereConditionsFromArray($conditions),
+            Utils::assembleWhereConditionsFromArray(static::getConnection(), $conditions),
             $returning
         );
     }
@@ -388,118 +381,5 @@ abstract class DbTable implements DbTableInterface {
         }
         return $pdoDataTypes;
     }
-
-    /**
-     * we have next cases:
-     * 1. $value is instance of DbExpr (converted to quoted string), $column - index
-     *
-     * 2. $column is string
-     *     (results in 'colname' <operator> 'value')
-     * 2.1 $column contains equation sign (for example 'colname >', results in 'colname' > 'value')
-     *     Short list of equations:
-     *          >, <, =, !=, >=, <=, LIKE, ~, ~*, !~, !~*, SIMILAR TO, IN; NOT; NOT IN; IS; IS NOT
-     * 2.2 $value === null, $column may contain: 'NOT', '!=', '=', 'IS', 'IS NOT'
-     *     (results in 'colname' IS NULL or 'colname' IS NOT NULL)
-     * 2.3 $column contains 'BETWEEN' or 'NOT BETWEEN' and $value is array or string like 'val1 and val2'
-     *     (results in 'colname' BETWEEN a and b)
-     * 2.4 $column contains no equation sign or contains '!=' or 'NOT', $value is array or DbExpr
-     *     (results in 'colname' IN (a,b,c) or 'colname' IN (SELECT '*' FROM ...))
-     *
-     * 3. $value === array()
-     * 3.1. $column !== 'OR' -> recursion: static::assembleWhereConditionsFromArray($value))
-     * 3.2. $column === 'OR' -> recursion: static::assembleWhereConditionsFromArray($value, 'OR'))
-     *
-     * @param array $conditions
-     * @param string $glue - 'AND' or 'OR'
-     * @return string
-     * @throws \BadMethodCallException
-     * @throws OrmException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
-     */
-    static public function assembleWhereConditionsFromArray(array $conditions, $glue = 'AND') {
-        return Utils::assembleWhereConditionsFromArray(
-            static::getConnection(),
-            $conditions,
-            function ($columnName) {
-                return static::quoteConditionColumn($columnName);
-            },
-            $glue
-        );
-    }
-
-    /**
-     * @param string $column
-     * @return string - quoted column
-     * @throws \BadMethodCallException
-     * @throws OrmException
-     * @throws \InvalidArgumentException
-     */
-    static protected function quoteConditionColumn($column) {
-        return static::parseColumnRepresentation($column)['quoted'];
-    }
-
-    /**
-     * Parse $column and collect information about it
-     * @param string $column - supported formats:
-     *      - 'column'
-     *      - 'column::data_type_convert'
-     *      - 'table_alias.column'
-     *      - 'table_alias.column::data_type_convert'
-     * @return array = [
-     * @throws \BadMethodCallException
-     *      'raw' => string,
-     *      'table_alias' => string,
-     *      'column' => DbTableColumn,
-     *      'table' => DbTable,
-     *      'data_type_convert' => string,
-     *      'quoted' => string
-     *  ]
-     * @throws \InvalidArgumentException
-     * @throws OrmException
-     */
-    static public function parseColumnRepresentation($column) {
-        if (!is_string($column)) {
-            throw new \InvalidArgumentException('$column argument must be a string');
-        }
-        $ret = [
-            'raw' => $column,
-            'table_alias' => '',
-            'column' => '',
-            'table' => '',
-            'data_type_convert' => '',
-            'quoted' => ''
-        ];
-        if (preg_match('%^\s*(\w+)(?:\.(\w+))?(?:::([a-zA-Z0-9 _]+))?\s*$%i', $column, $columnParts)) {
-            if (empty($columnParts[2])) {
-                // $column = 'column'|'column::data_type_convert'
-                $ret['table'] = static::getInstance();
-                $ret['column'] = $columnParts[1];
-                $ret['table_alias'] = static::getAlias();
-            } else {
-                // $column = 'table_alias.column'|'table_alias.column::data_type_convert'
-                list(, $ret['table_alias'], $ret['column']) = $columnParts;
-                if (static::hasRelation($ret['table_alias'])) {
-                    $ret['table'] = static::getRelatedTable($ret['table_alias']);
-                } else {
-                    $ret['table'] = DbClassesManager::i()->getTableInstanceByAlias($ret['table_alias']);
-                }
-            }
-            $ret['column'] = $ret['table']->getStructure()->getColumn($ret['column']);
-            $ret['data_type_convert'] = !empty($columnParts[3]) ? $columnParts[3] : '';
-            $ret['quoted'] = static::quoteDbEntityName($ret['table_alias']) . '.' . static::quoteDbEntityName($ret['column']);
-            $ret['quoted'] = $ret['table']->getConnection()->addDataTypeCastToExpression(
-                $ret['data_type_convert'],
-                $ret['quoted']
-            );
-        } else {
-            throw new \InvalidArgumentException(
-                "Cannot parse $column argument. Maybe its format is wrong. \$column = '$column'"
-            );
-        }
-        
-        return $ret;
-    }
-
 
 }
