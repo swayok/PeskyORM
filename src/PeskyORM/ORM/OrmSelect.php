@@ -193,7 +193,7 @@ class OrmSelect extends DbSelect {
      * @throws \BadMethodCallException
      */
     protected function setTable(DbTable $table) {
-        $this->tableName = $table->getTableName();
+        $this->tableName = $table->getName();
         $this->table = $table;
         $this->tableStructure = $table->getStructure();
     }

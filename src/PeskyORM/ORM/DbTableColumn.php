@@ -36,7 +36,7 @@ class DbTableColumn {
     const TYPE_IMAGE = 'image';
     const TYPE_BLOB = 'blob';
 
-    const NAME_VALIDATION_REGEXP = '%^[a-z][a-z0-9_]*$%';
+    const NAME_VALIDATION_REGEXP = '%^[a-z][a-z0-9_]*$%';    //< snake_case
 
     const DEFAULT_VALUE_NOT_SET = '___NOT_SET___';
 
@@ -335,11 +335,11 @@ class DbTableColumn {
 
     /**
      * @return string
-     * @throws \BadMethodCallException
+     * @throws \UnexpectedValueException
      */
     public function getName() {
         if (empty($this->name)) {
-            throw new \BadMethodCallException('DB column name is not provided');
+            throw new \UnexpectedValueException('DB column name is not provided');
         }
         return $this->name;
     }
@@ -363,7 +363,7 @@ class DbTableColumn {
         }
         if (!preg_match(static::NAME_VALIDATION_REGEXP, $name)) {
             throw new \InvalidArgumentException(
-                "\$name argument contains invalid value: '$name'. Pattern: " . static::NAME_VALIDATION_REGEXP
+                "\$name argument contains invalid value: '$name'. Pattern: " . static::NAME_VALIDATION_REGEXP  . '. Example: snake_case1'
             );
         }
         $this->name = $name;
@@ -618,7 +618,7 @@ class DbTableColumn {
      */
     public function addRelation(DbTableRelation $relation) {
         $relationName = $relation->getName();
-        if ($relation->getLocalColumn() !== $this->name && $relation->getForeignColumn() !== $this->name) {
+        if ($relation->getLocalColumnName() !== $this->name && $relation->getForeignColumnName() !== $this->name) {
             throw new \InvalidArgumentException("Relation '{$relationName}' is not connected to column '{$this->name}'");
         }
         if (!empty($this->relations[$relationName])) {
@@ -664,7 +664,7 @@ class DbTableColumn {
     /**
      * @return boolean
      */
-    public function isItForeignKey() {
+    public function isItAForeignKey() {
         return $this->isForeignKey;
     }
 
@@ -728,12 +728,12 @@ class DbTableColumn {
      * @param boolean $isFromDb
      * @param DbRecordValue $valueContainer
      * @return DbRecordValue
-     * @throws \BadMethodCallException
+     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      */
     public function defaultValueSetter($newValue, $isFromDb, DbRecordValue $valueContainer) {
         if (!$this->isValueCanBeSetOrChanged()) {
-            throw new \BadMethodCallException(
+            throw new \UnexpectedValueException(
                 "Column '{$this->getName()}' restricts value setting and modification"
             );
         }
@@ -836,8 +836,8 @@ class DbTableColumn {
      * @param DbRecordValue $value
      * @param null|string $format
      * @return mixed
-     * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
      */
     public function defaultValueGetter(DbRecordValue $value, $format = null) {
         if ($format) {
@@ -1052,11 +1052,11 @@ class DbTableColumn {
     /**
      * @param \Closure $valueSaver function (DbRecordValue $valueContainer) { save value somewhere }
      * @return $this
-     * @throws \BadMethodCallException
+     * @throws \UnexpectedValueException
      */
     public function setValueSaver(\Closure $valueSaver) {
         if ($this->isItExistsInDb()) {
-            throw new \BadMethodCallException(
+            throw new \UnexpectedValueException(
                 'Value saver function is not allowed for columns that are present in DB'
             );
         }
@@ -1081,11 +1081,11 @@ class DbTableColumn {
     /**
      * @param \Closure $valueDeleter function (DbRecordValue $valueContainer) { save value somewhere }
      * @return $this
-     * @throws \BadMethodCallException
+     * @throws \UnexpectedValueException
      */
     public function setValueDeleter(\Closure $valueDeleter) {
         if ($this->isItExistsInDb()) {
-            throw new \BadMethodCallException(
+            throw new \UnexpectedValueException(
                 'Value deleter function is not allowed for columns that are present in DB'
             );
         }
@@ -1139,11 +1139,11 @@ class DbTableColumn {
 
     /**
      * @return \Closure|null
-     * @throws \BadMethodCallException
+     * @throws \UnexpectedValueException
      */
     public function getAutoUpdateForAValue() {
         if (empty($this->valueAutoUpdater)) {
-            throw new \BadMethodCallException('Value auto updater function is not set');
+            throw new \UnexpectedValueException('Value auto updater function is not set');
         }
         return call_user_func($this->valueAutoUpdater);
     }

@@ -1,6 +1,6 @@
 <?php
 
-namespace PeskyORMTest\TestingAdmin;
+namespace PeskyORMTest\TestingAdmins;
 
 use PeskyORM\ORM\DbRecord;
 

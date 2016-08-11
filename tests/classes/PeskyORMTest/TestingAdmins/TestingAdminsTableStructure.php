@@ -1,21 +1,24 @@
 <?php
 
-namespace PeskyORMTest\TestingAdmin;
+namespace PeskyORMTest\TestingAdmins;
 
 use PeskyORM\Core\DbExpr;
-use PeskyORM\ORM\DbTable;
 use PeskyORM\ORM\DbTableColumn;
 use PeskyORM\ORM\DbTableRelation;
 use PeskyORM\ORM\DbTableStructure;
 
 class TestingAdminsTableStructure extends DbTableStructure {
 
+    static public function getTableName() {
+        return 'admins';
+    }
+
     private function id() {
         return DbTableColumn::create(DbTableColumn::TYPE_INT)
             ->itIsPrimaryKey()
             ->convertsEmptyStringToNull()
             ->valueIsNotNullable()
-            ->setDefaultValue(DbTable::getExpressionToSetDefaultValueForAColumn())
+            ->setDefaultValue(TestingAdminsTable::getExpressionToSetDefaultValueForAColumn())
         ;
     }
 
@@ -140,8 +143,23 @@ class TestingAdminsTableStructure extends DbTableStructure {
             ->setDefaultValue('UTC');
     }
 
+    private function avatar() {
+        return DbTableColumn::create(DbTableColumn::TYPE_IMAGE)
+            ->itDoesNotExistInDb()
+            ->valueIsNullable()
+            ->setValueFormatter(function () {
+                return 'not implemented';
+            });
+    }
+
+    private function some_file() {
+        return DbTableColumn::create(DbTableColumn::TYPE_FILE)
+            ->itDoesNotExistInDb()
+            ->valueIsNullable();
+    }
+
     private function Parent() {
-        return DbTableRelation::create($this, 'parent_id', DbTableRelation::BELONGS_TO, TestingAdminsTable::class, 'id');
+        return DbTableRelation::create('parent_id', DbTableRelation::BELONGS_TO, TestingAdminsTable::class, 'id');
     }
 
 

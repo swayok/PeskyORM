@@ -371,14 +371,14 @@ abstract class DbRecord implements \ArrayAccess, \Iterator {
             $relatedRecord = $relationTable->newRecord()
                 ->fromData($relatedRecord, $isFromDb, $haltOnUnknownColumnNames);
         } else if ($relatedRecord instanceof DbRecord) {
-            if ($relatedRecord->getTable()->getTableName() !== $relationTable) {
+            if ($relatedRecord->getTable()->getName() !== $relationTable) {
                 throw new \InvalidArgumentException(
-                    "\$relatedRecord argument must be an instance of DbRecord class for a '{$relationTable->getTableName()}' DB table"
+                    "\$relatedRecord argument must be an instance of DbRecord class for a '{$relationTable->getName()}' DB table"
                 );
             }
         } else {
             throw new \InvalidArgumentException(
-                "\$relatedRecord argument must be an array or instance of DbRecord class for a '{$relationTable->getTableName()}' DB table"
+                "\$relatedRecord argument must be an array or instance of DbRecord class for a '{$relationTable->getName()}' DB table"
             );
         }
         $this->relatedRecords[$relationName] = $relatedRecord;
@@ -394,7 +394,7 @@ abstract class DbRecord implements \ArrayAccess, \Iterator {
         $relation = $this->getRelation($relationName);
         $relatedTable = $relation->getForeignTable();
         $conditions = array_merge(
-            [$relation->getForeignColumn() => $this->getColumnValue($relation->getLocalColumn())],
+            [$relation->getForeignColumnName() => $this->getColumnValue($relation->getLocalColumnName())],
             $relation->getAdditionalJoinConditions()
         );
         if ($relation->getType() === DbTableRelation::HAS_MANY) {
@@ -853,16 +853,16 @@ abstract class DbRecord implements \ArrayAccess, \Iterator {
                 $record = $this->getRelatedRecord($relationName);
                 if ($record instanceof DbRecord) {
                     $record->setColumnValue(
-                        $relations[$relationName]->getForeignColumn(),
-                        $this->getColumnValue($relations[$relationName]->getLocalColumn()),
+                        $relations[$relationName]->getForeignColumnName(),
+                        $this->getColumnValue($relations[$relationName]->getLocalColumnName()),
                         false
                     );
                     $record->save();
                 } else {
                     foreach ($record as $recordObj) {
                         $recordObj->setColumnValue(
-                            $relations[$relationName]->getForeignColumn(),
-                            $this->getColumnValue($relations[$relationName]->getLocalColumn()),
+                            $relations[$relationName]->getForeignColumnName(),
+                            $this->getColumnValue($relations[$relationName]->getLocalColumnName()),
                             false
                         );
                         $recordObj->save();

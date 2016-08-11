@@ -11,7 +11,7 @@ interface DbTableInterface {
      * Table Name
      * @return string
      */
-    static public function getTableName();
+    static public function getName();
 
     /**
      * Table alias.

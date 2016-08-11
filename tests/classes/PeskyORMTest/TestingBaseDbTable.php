@@ -9,13 +9,13 @@ use Swayok\Utils\StringUtils;
 abstract class TestingBaseDbTable extends DbTable {
 
     /** @var null|string */
-    static private $recordClass = null;
+    static protected $recordClass = null;
     /** @var DbTableStructure */
     static protected $tableStructure;
 
     static public function newRecord() {
         if (!static::$recordClass) {
-            $shortClassName = StringUtils::classify(StringUtils::singularize(static::getTableName()));
+            $shortClassName = StringUtils::classify(StringUtils::singularize(static::getName()));
             static::$recordClass = preg_replace('%\\[^\\]+$%', '', get_called_class()) . '\\' . $shortClassName;
         }
         return call_user_func([static::$recordClass, 'create']);

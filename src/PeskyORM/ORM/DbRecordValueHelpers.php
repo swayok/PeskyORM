@@ -194,7 +194,9 @@ abstract class DbRecordValueHelpers {
             case DbTableColumn::TYPE_FILE:
             case DbTableColumn::TYPE_IMAGE:
                 // todo: implement formatters for file types
-                throw new \InvalidArgumentException("Formatters for type '$type' are not implemented yet"); 
+                $formatter = function (DbRecordValue $valueContainer, $format) use ($type) {
+                    throw new \InvalidArgumentException("Formatters for type '$type' are not implemented yet");
+                };
                 break;
         }
         return [$formatter, $formats];

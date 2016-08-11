@@ -14,8 +14,7 @@ class DbTableRelation {
     const JOIN_RIGHT = DbJoinConfig::JOIN_RIGHT;
     const JOIN_INNER = DbJoinConfig::JOIN_INNER;
 
-    /** @var DbTableStructure */
-    protected $localTableStructure;
+    const NAME_VALIDATION_REGEXP = '%^[A-Z][a-zA-Z0-9]*$%';   //< CamelCase
 
     /** @var string */
     protected $name;
@@ -25,16 +24,14 @@ class DbTableRelation {
     protected $joinType = self::JOIN_LEFT;
 
     /** @var string */
-    protected $localTableName;
-    /** @var string */
-    protected $localColumn;
+    protected $localColumnName;
 
     /** @var DbTable */
     protected $foreignTable;
     /** @var string */
     protected $foreignTableClass;
     /** @var string */
-    protected $foreignColumn;
+    protected $foreignColumnName;
 
     /** @var string */
     protected $displayColumnName;
@@ -43,51 +40,66 @@ class DbTableRelation {
     protected $additionalJoinConditions = [];
 
     /**
-     * @param DbTableStructure $localTableStructure
-     * @param string $localColumn
+     * @param string $localColumnName
      * @param string $type
      * @param string $foreignTableClass
-     * @param string $foreignColumn
+     * @param string $foreignColumnName
      * @return DbTableRelation
+     * @throws \InvalidArgumentException
      */
     static public function create(
-        DbTableStructure $localTableStructure,
-        $localColumn,
+        $localColumnName,
         $type,
         $foreignTableClass,
-        $foreignColumn
+        $foreignColumnName
     ) {
-        return new DbTableRelation($localTableStructure, $localColumn, $type, $foreignTableClass, $foreignColumn);
+        return new DbTableRelation($localColumnName, $type, $foreignTableClass, $foreignColumnName);
     }
 
     /**
-     * @param DbTableStructure $localTableStructure
-     * @param string $localColumn
+     * @param string $localColumnName
      * @param string $type
      * @param string $foreignTableClass
-     * @param string $foreignColumn
+     * @param string $foreignColumnName
+     * @throws \InvalidArgumentException
      */
     public function __construct(
-        DbTableStructure $localTableStructure,
-        $localColumn,
+        $localColumnName,
         $type,
         $foreignTableClass,
-        $foreignColumn
+        $foreignColumnName
     ) {
-        $this->localTableStructure = $localTableStructure;
-        $this->localTableName = $localTableStructure->getName();
-        $this->localColumn = $localColumn;
-        $this->type = $type;
-        $this->foreignTableClass = $foreignTableClass;
-        $this->foreignColumn = $foreignColumn;
-        $this->displayColumnName = $localColumn;
+        $this
+            ->setLocalColumnName($localColumnName)
+            ->setDisplayColumnName($localColumnName)
+            ->setType($type)
+            ->setForeignTableClass($foreignTableClass)
+            ->setForeignColumnName($foreignColumnName)
+            ;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasName() {
+        return !empty($this->name);
     }
 
     /**
      * @param string $name
      * @return $this
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
      */
     public function setName($name) {
+        if ($this->hasName()) {
+            throw new \BadMethodCallException('Relation name alteration is forbidden');
+        }
+        if (!preg_match(static::NAME_VALIDATION_REGEXP, $name)) {
+            throw new \InvalidArgumentException(
+                "\$name argument contains invalid value: '$name'. Pattern: " . static::NAME_VALIDATION_REGEXP . '. Example: CamelCase1'
+            );
+        }
         $this->name = $name;
         return $this;
     }
@@ -98,7 +110,7 @@ class DbTableRelation {
      */
     public function getName() {
         if (empty($this->name)) {
-            throw new \BadMethodCallException('Relation name is not set');
+            throw new \BadMethodCallException('Relation name is not provided');
         }
         return $this->name;
     }
@@ -113,8 +125,16 @@ class DbTableRelation {
     /**
      * @param string $type
      * @return $this
+     * @throws \InvalidArgumentException
      */
     public function setType($type) {
+        if (!is_string($type)) {
+            throw new \InvalidArgumentException('$type argument must be a string');
+        }
+        $types = [static::BELONGS_TO, static::HAS_MANY, static::HAS_ONE];
+        if (!in_array($type, $types, true)) {
+            throw new \InvalidArgumentException('$type argument must be one of: ' . implode(',', $types));
+        }
         $this->type = $type;
         return $this;
     }
@@ -122,23 +142,20 @@ class DbTableRelation {
     /**
      * @return string
      */
-    public function getLocalTableName() {
-        return $this->localTableName;
+    public function getLocalColumnName() {
+        return $this->localColumnName;
     }
 
     /**
-     * @return string
-     */
-    public function getLocalColumn() {
-        return $this->localColumn;
-    }
-
-    /**
-     * @param string $localColumn
+     * @param string $localColumnName
      * @return $this
+     * @throws \InvalidArgumentException
      */
-    public function setLocalColumn($localColumn) {
-        $this->localColumn = $localColumn;
+    public function setLocalColumnName($localColumnName) {
+        if (!is_string($localColumnName)) {
+            throw new \InvalidArgumentException('$localColumnName argument must be a string');
+        }
+        $this->localColumnName = $localColumnName;
         return $this;
     }
 
@@ -152,8 +169,17 @@ class DbTableRelation {
     /**
      * @param string $foreignTableClass
      * @return $this
+     * @throws \InvalidArgumentException
      */
     public function setForeignTableClass($foreignTableClass) {
+        if (!is_string($foreignTableClass)) {
+            throw new \InvalidArgumentException('$foreignTableClass argument must be a string');
+        }
+        if (!class_exists($foreignTableClass)) {
+            throw new \InvalidArgumentException(
+                "\$foreignTableClass argument contains invalid value: class '$foreignTableClass' does not exist"
+            );
+        }
         $this->foreignTableClass = $foreignTableClass;
         return $this;
     }
@@ -172,16 +198,20 @@ class DbTableRelation {
     /**
      * @return string
      */
-    public function getForeignColumn() {
-        return $this->foreignColumn;
+    public function getForeignColumnName() {
+        return $this->foreignColumnName;
     }
 
     /**
-     * @param string $foreignColumn
+     * @param string $foreignColumnName
      * @return $this
+     * @throws \InvalidArgumentException
      */
-    public function setForeignColumn($foreignColumn) {
-        $this->foreignColumn = $foreignColumn;
+    public function setForeignColumnName($foreignColumnName) {
+        if (!is_string($foreignColumnName)) {
+            throw new \InvalidArgumentException('$foreignColumnName argument must be a string');
+        }
+        $this->foreignColumnName = $foreignColumnName;
         return $this;
     }
 
@@ -196,16 +226,9 @@ class DbTableRelation {
      * @param array $additionalJoinConditions
      * @return $this
      */
-    public function setAdditionalJoinConditions($additionalJoinConditions) {
+    public function setAdditionalJoinConditions(array $additionalJoinConditions) {
         $this->additionalJoinConditions = $additionalJoinConditions;
         return $this;
-    }
-
-    /**
-     * @return DbTableStructure
-     */
-    public function getDbTableStructure() {
-        return $this->localTableStructure;
     }
 
     /**
@@ -216,11 +239,15 @@ class DbTableRelation {
     }
 
     /**
-     * @param string $columnName
+     * @param string $displayColumnName
      * @return $this
+     * @throws \InvalidArgumentException
      */
-    public function setDisplayColumnName($columnName) {
-        $this->displayColumnName = $columnName;
+    public function setDisplayColumnName($displayColumnName) {
+        if (!is_string($displayColumnName)) {
+            throw new \InvalidArgumentException('$displayColumnName argument must be a string');
+        }
+        $this->displayColumnName = $displayColumnName;
         return $this;
     }
 
@@ -234,8 +261,16 @@ class DbTableRelation {
     /**
      * @param mixed $joinType
      * @return $this
+     * @throws \InvalidArgumentException
      */
     public function setJoinType($joinType) {
+        if (!is_string($joinType)) {
+            throw new \InvalidArgumentException('$joinType argument must be a string');
+        }
+        $types = [static::JOIN_INNER, static::JOIN_LEFT, static::JOIN_RIGHT];
+        if (!in_array($joinType, $types, true)) {
+            throw new \InvalidArgumentException('$joinType argument must be one of: ' . implode(',', $types));
+        }
         $this->joinType = $joinType;
         return $this;
     }

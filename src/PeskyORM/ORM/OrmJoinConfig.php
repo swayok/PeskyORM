@@ -70,7 +70,7 @@ class OrmJoinConfig extends DbJoinConfig {
      */
     public function setForeignDbTable(DbTable $foreignDbTable) {
         $this->foreignDbTable = $foreignDbTable;
-        $this->foreignTableName = $foreignDbTable->getTableName();
+        $this->foreignTableName = $foreignDbTable->getName();
         return $this;
     }
 
@@ -82,7 +82,7 @@ class OrmJoinConfig extends DbJoinConfig {
      */
     public function setForeignTableName($foreignTableName) {
         $foreignDbTable = $this->getForeignDbTable();
-        if (!$foreignDbTable || $foreignDbTable->getTableName() !== $foreignTableName) {
+        if (!$foreignDbTable || $foreignDbTable->getName() !== $foreignTableName) {
             $this->setForeignDbTable(DbClassesManager::i()->getTableInstance($foreignTableName));
         } else {
             parent::setForeignTableName($foreignTableName);
@@ -105,7 +105,7 @@ class OrmJoinConfig extends DbJoinConfig {
      */
     public function setTableName($tableName) {
         $dbTable = $this->getDbTable();
-        if (!$dbTable || $dbTable->getTableName() !== $tableName) {
+        if (!$dbTable || $dbTable->getName() !== $tableName) {
             $this->setDbTable(DbClassesManager::i()->getTableInstance($tableName));
         } else {
             parent::setTableName($tableName);

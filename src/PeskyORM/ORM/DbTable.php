@@ -31,9 +31,13 @@ abstract class DbTable implements DbTableInterface {
                 );
             }
             static::$instance = new static();
-            static::$alias = StringUtils::classify(static::getTableName());
+            static::$alias = StringUtils::classify(static::getName());
         }
         return static::$instance;
+    }
+
+    static public function getName() {
+        return static::getStructure()->getTableName();
     }
 
     /**
@@ -64,6 +68,7 @@ abstract class DbTable implements DbTableInterface {
 
     /**
      * @return bool
+     * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -73,6 +78,7 @@ abstract class DbTable implements DbTableInterface {
 
     /**
      * @return DbTableColumn
+     * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -82,6 +88,7 @@ abstract class DbTable implements DbTableInterface {
 
     /**
      * @return string
+     * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -92,6 +99,7 @@ abstract class DbTable implements DbTableInterface {
     /**
      * @param string $relationAlias - alias for relation defined in DbTableStructure
      * @return DbTableInterface
+     * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -110,9 +118,16 @@ abstract class DbTable implements DbTableInterface {
 
     /**
      * @return DbExpr
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
      * @throws \PeskyORM\Core\DbException
      */
     static public function getExpressionToSetDefaultValueForAColumn() {
+        if (get_called_class() === __CLASS__) {
+            throw new \BadMethodCallException(
+                'Trying to call abstract method ' . __CLASS__ . '::getConnection(). Use child classes to do that'
+            );
+        }
         return static::getConnection()->getExpressionToSetDefaultValueForAColumn();
     }
 
@@ -126,7 +141,7 @@ abstract class DbTable implements DbTableInterface {
      * @throws \InvalidArgumentException
      */
     static public function select($columns = '*', array $conditionsAndOptions = []) {
-        return OrmSelect::from(static::getTableName())
+        return OrmSelect::from(static::getName())
             ->fromConfigsArray($conditionsAndOptions)
             ->columns($columns)
             ->fetchMany();
@@ -143,7 +158,7 @@ abstract class DbTable implements DbTableInterface {
      * @throws \InvalidArgumentException
      */
     static public function selectColumn($column, array $conditionsAndOptions = []) {
-        return OrmSelect::from(static::getTableName())
+        return OrmSelect::from(static::getName())
             ->fromConfigsArray($conditionsAndOptions)
             ->columns(['value' => $column])
             ->fetchColumn();
@@ -162,7 +177,7 @@ abstract class DbTable implements DbTableInterface {
      * @throws \InvalidArgumentException
      */
     static public function selectAssoc($keysColumn, $valuesColumn, array $conditionsAndOptions = []) {
-        return OrmSelect::from(static::getTableName())
+        return OrmSelect::from(static::getName())
             ->fromConfigsArray($conditionsAndOptions)
             ->fetchAssoc($keysColumn, $valuesColumn);
     }
@@ -178,7 +193,7 @@ abstract class DbTable implements DbTableInterface {
      * @throws \InvalidArgumentException
      */
     static public function selectOne($columns, array $conditionsAndOptions) {
-        return OrmSelect::from(static::getTableName())
+        return OrmSelect::from(static::getName())
             ->fromConfigsArray($conditionsAndOptions)
             ->columns($columns)
             ->fetchOne();
@@ -195,7 +210,7 @@ abstract class DbTable implements DbTableInterface {
      * @throws \InvalidArgumentException
      */
     static public function selectValue(DbExpr $expression, array $conditionsAndOptions = []) {
-        return OrmSelect::from(static::getTableName())
+        return OrmSelect::from(static::getName())
             ->fromConfigsArray($conditionsAndOptions)
             ->fetchValue($expression);
     }
@@ -224,13 +239,14 @@ abstract class DbTable implements DbTableInterface {
      * @throws \InvalidArgumentException
      */
     static public function count(array $conditionsAndOptions, $removeNotInnerJoins = false) {
-        return OrmSelect::from(static::getTableName())
+        return OrmSelect::from(static::getName())
             ->fromConfigsArray($conditionsAndOptions)
             ->fetchCount($removeNotInnerJoins);
     }
 
     /**
      * @return null|string
+     * @throws \InvalidArgumentException
      */
     static public function getLastQuery() {
         return static::getConnection()->getLastQuery();
@@ -281,7 +297,7 @@ abstract class DbTable implements DbTableInterface {
      */
     static public function insert(array $data, $returning = false) {
         return static::getConnection()->insert(
-            static::getTableName(),
+            static::getName(),
             $data,
             static::getPdoDataTypesForColumns(),
             $returning
@@ -302,7 +318,7 @@ abstract class DbTable implements DbTableInterface {
      */
     static public function insertMany(array $columns, array $rows, $returning = false) {
         return static::getConnection()->insertMany(
-            static::getTableName(),
+            static::getName(),
             $columns,
             $rows,
             static::getPdoDataTypesForColumns($columns),
@@ -325,7 +341,7 @@ abstract class DbTable implements DbTableInterface {
      */
     static public function update(array $data, array $conditions, $returning = false) {
         return static::getConnection()->update(
-            static::getTableName(),
+            static::getName(),
             $data,
             Utils::assembleWhereConditionsFromArray(static::getConnection(), $conditions),
             static::getPdoDataTypesForColumns(),
@@ -345,7 +361,7 @@ abstract class DbTable implements DbTableInterface {
      */
     static public function delete(array $conditions = [], $returning = false) {
         return static::getConnection()->delete(
-            static::getTableName(),
+            static::getName(),
             Utils::assembleWhereConditionsFromArray(static::getConnection(), $conditions),
             $returning
         );
@@ -355,6 +371,7 @@ abstract class DbTable implements DbTableInterface {
      * Get list of PDO data types for requested $columns
      * @param array $columns
      * @return array
+     * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */

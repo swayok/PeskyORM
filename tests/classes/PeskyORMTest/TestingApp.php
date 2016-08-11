@@ -14,22 +14,31 @@ class TestingApp {
     static protected $dbConnection;
 
     static public function init() {
-        $data = include __DIR__ . '/../configs/global.php';
+
         static::$dbConnection = DbConnectionsManager::createConnection(
             'default',
             DbConnectionsManager::ADAPTER_POSTGRES,
-            PostgresConfig::fromArray($data['pgsql'])
+            PostgresConfig::fromArray(static::getGlobalConfigs()['pgsql'])
         );
     }
 
+    static protected function getGlobalConfigs() {
+        return include __DIR__ . '/../../configs/global.php';
+    }
+
+    static protected function getRecordsForDb($table) {
+        $data = include __DIR__ . '/../../configs/base_db_contents.php';
+        return $data[$table];
+    }
+
     static public function fillAdminsTable() {
-        $data = include __DIR__ . '/../configs/base_db_contents.php';
-        static::$dbConnection->insertMany('admins', array_keys($data['admins'][0]), $data['admins']);
+        $data = static::getRecordsForDb('admins');
+        static::$dbConnection->insertMany('admins', array_keys($data[0]), $data);
     }
 
     static public function fillSettingsTable() {
-        $data = include __DIR__ . '/../configs/base_db_contents.php';
-        static::$dbConnection->insertMany('admins', array_keys($data['settings'][0]), $data['settings']);
+        $data = static::getRecordsForDb('settings');
+        static::$dbConnection->insertMany('admins', array_keys($data[0]), $data);
     }
 
     static public function clearTables() {
