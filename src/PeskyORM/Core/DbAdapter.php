@@ -174,19 +174,20 @@ abstract class DbAdapter implements DbAdapterInterface {
 
     /**
      * @param string|DbExpr $query
-     * @return int|array = array: returned if $returning argument is not empty
+     * @param bool $ignoreZeroModifiedRows - true: will not try to additionally validate if query failed
+     * @return array|int = array: returned if $returning argument is not empty
      * @throws \PeskyORM\Core\DbException
-     * @throws \PDOException
      * @throws \InvalidArgumentException
+     * @throws \PDOException
      */
-    public function exec($query) {
+    protected function _exec($query, $ignoreZeroModifiedRows = false) {
         if ($query instanceof DbExpr) {
             $query = $this->quoteDbExpr($query->setWrapInBrackets(false));
         }
         $this->lastQuery = $query;
         try {
             $affectedRowsCount = $this->getConnection()->exec($query);
-            if (!$affectedRowsCount || !is_int($affectedRowsCount)) {
+            if (!$ignoreZeroModifiedRows && !$affectedRowsCount && !is_int($affectedRowsCount)) {
                 $exc = $this->getDetailedException($query);
                 if ($exc !== null) {
                     throw $exc;
@@ -195,11 +196,22 @@ abstract class DbAdapter implements DbAdapterInterface {
             return $affectedRowsCount;
         } catch (\PDOException $exc) {
             $exc = $this->getDetailedException($query, null, $exc);
-            if ($this->inTransaction()) {
+            if ($this->inTransaction() && stripos($query, 'ROLLBACK') !== 0) {
                 $this->rollBack(); //< error within transactions makes it broken in postgresql
             }
             throw $exc;
         }
+    }
+
+    /**
+     * @param string|DbExpr $query
+     * @return int|array = array: returned if $returning argument is not empty
+     * @throws \PeskyORM\Core\DbException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    public function exec($query) {
+        return $this->_exec($query);
     }
 
     /**

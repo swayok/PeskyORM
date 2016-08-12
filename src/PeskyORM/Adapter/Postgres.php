@@ -106,11 +106,11 @@ class Postgres extends DbAdapter {
     public function rollBack() {
         $this->guardTransaction('rollback');
         $lastQuery = $this->getLastQuery();
-        $this->exec('ROLLBACK');
+        $this->inTransaction = false;
+        $this->_exec('ROLLBACK', true);
         if (!$this->rememberTransactionQueries) {
             $this->lastQuery = $lastQuery;
         }
-        $this->inTransaction = false;
     }
     
     protected function resolveQueryWithReturningColumns(

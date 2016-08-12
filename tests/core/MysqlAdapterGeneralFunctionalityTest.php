@@ -54,7 +54,7 @@ class MysqlAdapterGeneralFunctionalityTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException PDOException
-     * @expectedExceptionMessage Unknown database
+     * @expectedExceptionMessage Access denied for user
      */
     public function testConnectionWithInvalidDbName() {
         $config = MysqlConfig::fromArray([
