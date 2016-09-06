@@ -817,7 +817,7 @@ abstract class DbRecord implements \ArrayAccess, \Iterator {
         foreach ($columnsNames as $columnName) {
             $column = $this->getColumn($columnName);
             $value = array_key_exists($columnName, $data) ? $data[$columnName] : null;
-            $columnErrors = $column->validateNewValue($value);
+            $columnErrors = $column->validateValue($value);
             if (!empty($columnErrors)) {
                 $errors[$columnName] = $columnErrors;
             }

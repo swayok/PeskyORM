@@ -44,15 +44,16 @@ class TestingAdminsTableStructure extends DbTableStructure {
             ->valueIsNotNullable()
             ->mustTrimValue()
             ->valueIsRequired()
-            ->setNewValuePreprocessor(function ($value, DbTableColumn $column) {
-                $value = $column->defaultNewValuePreprocessor($value);
-                if (!empty($value)) {
-                    return password_hash($value, PASSWORD_BCRYPT);
+            ->setValuePreprocessor(function ($value, $isDbValue, DbTableColumn $column) {
+                if ($isDbValue) {
+                    return $column->defaultValuePreprocessor($value);
+                } else {
+                    $value = $column->defaultValuePreprocessor($value);
+                    if (!empty($value)) {
+                        return password_hash($value, PASSWORD_BCRYPT);
+                    }
+                    return $value;
                 }
-                return $value;
-            })
-            ->setDbValuePreprocessor(function ($value, DbTableColumn $column) {
-                return $column->defaultNewValuePreprocessor($value);
             })
             ->extendValueValidator(function ($value) {
                 if (mb_strlen($value) !== 60) {

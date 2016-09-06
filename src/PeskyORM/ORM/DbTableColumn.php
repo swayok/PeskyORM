@@ -172,43 +172,24 @@ class DbTableColumn {
      */
     protected $valueSetter = null;
     /**
-     * Function to preprocess raw value.
+     * Function to preprocess value.
      * Default: $this->defaultNewValuePreprocessor() - uses $this->convertEmptyValueToNull,
      *      $this->trimValue, $this->lowercaseValue params to make value more reliable for validation
      * @var null|\Closure
      */
-    protected $newValuePreprocessor = null;
-    /**
-     * Function to preprocess value received from DB.
-     * Default: $this->getNewValuePreprocessor() - uses $this->convertEmptyValueToNull,
-     *      $this->trimValue, $this->lowercaseValue params to make value more reliable for validation
-     * @var null|\Closure
-     */
-    protected $dbValuePreprocessor = null;
+    protected $valuePreprocessor = null;
     /**
      * Function to normalize new validated column value
      * By default: $this->defaultNewValueNormalizer()
      * @var null|\Closure
      */
-    protected $newValueNormalizer = null;
+    protected $valueNormalizer = null;
     /**
-     * Function to normalize column value received for DB
-     * By default: $this->getNewValueNormalizer()
-     * @var null|\Closure
-     */
-    protected $dbValueNormalizer = null;
-    /**
-     * Validate new column value
+     * Validate column value
      * By default: $this->defaultNewValueValidator()
      * @var null|\Closure
      */
-    protected $newValueValidator = null;
-    /**
-     * Validate column value received from DB
-     * By default: $this->getNewValueValidator()
-     * @var null|\Closure
-     */
-    protected $dbValueValidator = null;
+    protected $valueValidator = null;
     /**
      * Extends default value validator.
      * Useful for additional validation like min/max length, min/max value, regex, etc
@@ -302,14 +283,14 @@ class DbTableColumn {
         $this->setValueSetter(function ($newValue, $isFromDb, DbRecordValue $valueContainer) {
             return $valueContainer->getColumn()->defaultValueSetter($newValue, $isFromDb, $valueContainer);
         });
-        $this->setNewValueValidator(function ($value, DbTableColumn $column) {
-            return $column->defaultNewValueValidator($value);
+        $this->setValueValidator(function ($value, DbTableColumn $column) {
+            return $column->defaultValueValidator($value);
         });
-        $this->setNewValueNormalizer(function ($value, DbTableColumn $column) {
-            return $column->defaultNewValueNormalizer($value);
+        $this->setValueNormalizer(function ($value, DbTableColumn $column) {
+            return $column->defaultValueNormalizer($value);
         });
-        $this->setNewValuePreprocessor(function ($newValue, DbTableColumn $column) {
-            $column->defaultNewValuePreprocessor($newValue);
+        $this->setValuePreprocessor(function ($newValue, DbTableColumn $column) {
+            $column->defaultValuePreprocessor($newValue);
         });
         list ($formatter, $formats) = DbRecordValueHelpers::getValueFormatterAndFormatsByType($this->getType());
         if (!empty($formatter)) {
@@ -737,14 +718,15 @@ class DbTableColumn {
                 "Column '{$this->getName()}' restricts value setting and modification"
             );
         }
-        $preprocessedValue = $isFromDb ? $this->preprocessDbValue($newValue) : $this->preprocessNewValue($newValue);
+        $preprocessedValue = $this->preprocessValue($newValue, $isFromDb);
         $valueContainer->setRawValue($newValue, $preprocessedValue, $isFromDb);
-        $errors = $isFromDb ? $this->validateDbValue($valueContainer) : $this->validateNewValue($valueContainer);
+        $errors = $this->validateValue($valueContainer, $isFromDb);
         $valueContainer->setValidationErrors($errors);
         if ($valueContainer->isValid()) {
-            $processedValue = call_user_func(+
-                $isFromDb ? $this->getDbValueNormalizer() : $this->getNewValueNormalizer(),
+            $processedValue = call_user_func(
+                $this->getValueNormalizer(),
                 $preprocessedValue,
+                $isFromDb,
                 $this
             );
             $valueContainer->setValidValue($processedValue, $newValue);
@@ -755,17 +737,17 @@ class DbTableColumn {
     /**
      * @return \Closure
      */
-    public function getNewValuePreprocessor() {
-        return $this->newValuePreprocessor;
+    public function getValuePreprocessor() {
+        return $this->valuePreprocessor;
     }
 
     /**
      * Function to preprocess raw value for validation and normalization
-     * @param \Closure $newValuePreprocessor = function ($value, DbTableColumn $column) { return $value }
+     * @param \Closure $newValuePreprocessor = function ($value, $isFromDb, DbTableColumn $column, $defaultProcessor) { return $value }
      * @return $this
      */
-    public function setNewValuePreprocessor($newValuePreprocessor) {
-        $this->newValuePreprocessor = $newValuePreprocessor;
+    public function setValuePreprocessor($newValuePreprocessor) {
+        $this->valuePreprocessor = $newValuePreprocessor;
         return $this;
     }
 
@@ -774,7 +756,7 @@ class DbTableColumn {
      * @param mixed $value
      * @return mixed
      */
-    public function defaultNewValuePreprocessor($value) {
+    public function defaultValuePreprocessor($value) {
         if (is_string($value)) {
             if ($this->mustTrimValue()) {
                 $value = trim($value);
@@ -792,36 +774,11 @@ class DbTableColumn {
     /**
      * Preprocess raw value for validation and normalization
      * @param mixed $value
+     * @param bool $isFromDb
      * @return mixed
      */
-    private function preprocessNewValue($value) {
-        return call_user_func($this->getNewValuePreprocessor(), $value, $this);
-    }
-
-    /**
-     * @return \Closure
-     */
-    public function getDbValuePreprocessor() {
-        return $this->dbValuePreprocessor ?: $this->getNewValuePreprocessor();
-    }
-
-    /**
-     * Function to preprocess DB value for validation and normalization
-     * @param \Closure $dbValuePreprocessor = function ($value, DbTableColumn $column) { return $value }
-     * @return $this
-     */
-    public function setDbValuePreprocessor($dbValuePreprocessor) {
-        $this->dbValuePreprocessor = $dbValuePreprocessor;
-        return $this;
-    }
-
-    /**
-     * Preprocess raw value for validation and normalization
-     * @param mixed $value
-     * @return mixed
-     */
-    private function preprocessDbValue($value) {
-        return call_user_func($this->getDbValuePreprocessor(), $value, $this);
+    private function preprocessValue($value, $isFromDb) {
+        return call_user_func($this->getValuePreprocessor(), $value, $isFromDb, $this);
     }
 
     /**
@@ -897,8 +854,8 @@ class DbTableColumn {
     /**
      * @return \Closure
      */
-    public function getNewValueValidator() {
-        return $this->newValueValidator;
+    public function getValueValidator() {
+        return $this->valueValidator;
     }
 
     /**
@@ -906,7 +863,7 @@ class DbTableColumn {
      * @return array
      * @throws \BadMethodCallException
      */
-    public function defaultNewValueValidator($value) {
+    public function defaultValueValidator($value) {
         if ($value instanceof DbRecordValue) {
             $value = $value->getValue();
         }
@@ -922,29 +879,12 @@ class DbTableColumn {
     }
 
     /**
-     * @param \Closure $validator = function ($value, DbTableColumn $column) { return ['validation error 1', ...]; }
+     * @param \Closure $validator = function ($value, $isFromDb, DbTableColumn $column) { return ['validation error 1', ...]; }
      * Note: value is mixed or a DbRecordValue instance. If value is mixed - it should be preprocessed
      * @return $this
      */
-    public function setNewValueValidator(\Closure $validator) {
-        $this->newValueValidator = $validator;
-        return $this;
-    }
-
-    /**
-     * @return \Closure
-     */
-    public function getDbValueValidator() {
-        return $this->dbValueValidator ?: $this->getNewValueValidator();
-    }
-
-    /**
-     * @param \Closure $validator = function ($value, DbTableColumn $column) { return ['validation error 1', ...]; }
-     * Note: value is mixed or a DbRecordValue instance. If value is mixed - it should be preprocessed
-     * @return $this
-     */
-    public function setDbValueValidator(\Closure $validator) {
-        $this->dbValueValidator = $validator;
+    public function setValueValidator(\Closure $validator) {
+        $this->valueValidator = $validator;
         return $this;
     }
 
@@ -979,66 +919,38 @@ class DbTableColumn {
     /**
      * Validates a new value
      * @param mixed|DbRecordValue $value
+     * @param bool $isFromDb - true: value received from DB
      * @return mixed
      */
-    public function validateNewValue($value) {
+    public function validateValue($value, $isFromDb = false) {
         if (!($value instanceof DbRecordValue)) {
-            $value = $this->preprocessNewValue($value);
+            $value = $this->preprocessValue($value, $isFromDb);
         }
-        return call_user_func($this->getNewValueValidator(), $value, $this);
-    }
-
-    /**
-     * Validates a value received form DB
-     * @param mixed|DbRecordValue $value
-     * @return mixed
-     */
-    public function validateDbValue($value) {
-        if (!($value instanceof DbRecordValue)) {
-            $value = $this->preprocessDbValue($value);
-        }
-        return call_user_func($this->getDbValueValidator(), $value, $this);
+        return call_user_func($this->getValueValidator(), $value, $isFromDb, $this);
     }
 
     /**
      * @return \Closure
      */
-    protected function getNewValueNormalizer() {
-        return $this->newValueNormalizer;
+    protected function getValueNormalizer() {
+        return $this->valueNormalizer;
     }
 
     /**
      * @param mixed $value
      * @return mixed
      */
-    public function defaultNewValueNormalizer($value) {
+    public function defaultValueNormalizer($value) {
         return DbRecordValueHelpers::normalizeValue($value, $this->getType());
     }
 
     /**
      * Function to process new value (for example: convert a value to proper data type)
-     * @param \Closure $normalizer - function ($value, DbTableColumn $column) { return 'normalized value'; }
+     * @param \Closure $normalizer - function ($value, $isFromDb, DbTableColumn $column) { return 'normalized value'; }
      * @return $this
      */
-    public function setNewValueNormalizer(\Closure $normalizer) {
-        $this->newValueNormalizer = $normalizer;
-        return $this;
-    }
-
-    /**
-     * @return \Closure
-     */
-    protected function getDbValueNormalizer() {
-        return $this->dbValueNormalizer ?: $this->getNewValueNormalizer();
-    }
-
-    /**
-     * Function to process new value (for example: convert a value to proper data type)
-     * @param \Closure $normalizer - function ($value, DbTableColumn $column) { return 'normalized value'; }
-     * @return $this
-     */
-    public function setDbValueNormalizer(\Closure $normalizer) {
-        $this->dbValueNormalizer = $normalizer;
+    public function setValueNormalizer(\Closure $normalizer) {
+        $this->valueNormalizer = $normalizer;
         return $this;
     }
 

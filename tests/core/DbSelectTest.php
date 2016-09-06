@@ -23,10 +23,6 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
         static::$dbConnectionConfig = null;
     }
 
-    protected function tearDown() {
-        static::cleanTables();
-    }
-
     static protected function cleanTables() {
         $adapter = static::getValidAdapter();
         $adapter->exec('TRUNCATE TABLE settings');
@@ -34,6 +30,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
     }
 
     static protected function fillTables() {
+        static::cleanTables();
         $data = static::getTestDataForAdminsTableInsert();
         static::getValidAdapter()->insertMany('admins', array_keys($data[0]), $data);
         return ['admins' => $data];
