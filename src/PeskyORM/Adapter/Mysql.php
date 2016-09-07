@@ -231,13 +231,6 @@ class Mysql extends DbAdapter {
     }
 
     /**
-     * @return DbExpr
-     */
-    public function getExpressionToSetDefaultValueForAColumn() {
-        return DbExpr::create('DEFAULT');
-    }
-
-    /**
      * Quote a db entity name like 'table.col_name -> json_key1 ->> json_key2'
      * @param array $sequence -
      *      index 0: base entity name ('table.col_name' or 'col_name');

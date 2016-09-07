@@ -120,14 +120,21 @@ class DbRecordValue {
      * @throws \BadMethodCallException
      */
     public function getDefaultValue() {
-        if (!$this->hasDefaultValue()) {
-            throw new \BadMethodCallException("Column '{$this->getColumn()->getName()}' has no default value");
+        $defaultValue = $this->getColumn()->getDefaultValue(function (DbRecord $record) {
+            /** @noinspection ExceptionsAnnotatingAndHandlingInspection */
+            return $record->getTable()->getConnection()->getExpressionToSetDefaultValueForAColumn();
+        });
+        if ($defaultValue instanceof \Closure) {
+            $defaultValue = $defaultValue($this->getRecord());
         }
-        return $this->getColumn()->getDefaultValue();
+        return $defaultValue;
     }
 
     /**
      * @return boolean
+     * @throws \BadMethodCallException
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
      */
     public function isDefaultValueCanBeSet() {
         return $this->hasDefaultValue()
@@ -165,6 +172,7 @@ class DbRecordValue {
 
     /**
      * @return mixed
+     * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      */
     public function getValue() {
@@ -172,8 +180,8 @@ class DbRecordValue {
             return $this->hasValue ? $this->value : $this->getDefaultValue();
         } else {
             throw new \BadMethodCallException(
-                "Value for column '{$this->getColumn()->getName()}' is not set and default value "
-                . (!$this->hasDefaultValue() ? 'is not provided' : 'cannot be set because record exists in DB')
+                "Value for column '{$this->getColumn()->getName()}' is not set and default value cannot be set because"
+                    . ' record already exists in DB and there is danger of unintended value overwriting'
             );
         }
     }

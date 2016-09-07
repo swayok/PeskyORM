@@ -137,10 +137,16 @@ abstract class DbAdapter implements DbAdapterInterface {
      * Enable/disable tracing of transactions
      * Use when you have problems related to transactions
      * @param bool $enable = true: enable; false: disable
-     * @return $this
      */
     static public function enableTransactionTraces($enable = true) {
         static::$isTransactionTracesEnabled = $enable;
+    }
+
+    /**
+     * @return DbExpr
+     */
+    static public function getExpressionToSetDefaultValueForAColumn() {
+        return DbExpr::create('DEFAULT');
     }
 
     /**

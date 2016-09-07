@@ -13,6 +13,7 @@ abstract class DbRecordValueHelpers {
      * @param DbTableColumn $column
      * @param array $errorMessages
      * @return array
+     * @throws \UnexpectedValueException
      */
     static public function isValidDbColumnValue($value, DbTableColumn $column, array $errorMessages = []) {
         // null value validation
@@ -106,10 +107,24 @@ abstract class DbRecordValueHelpers {
         }
         // test if value is present in $column->getAllowedValues()
         $isEnum = $column->getType() === DbTableColumn::TYPE_ENUM;
-        if (is_string($value) || $isEnum) {
-            $allowedValues = $column->getAllowedValues();
-            if (($isEnum || !empty($allowedValues)) && !in_array($value, $allowedValues, true)) {
+        $allowedValues = $column->getAllowedValues();
+        if ($isEnum) {
+            if (!in_array($value, $allowedValues, true)) {
                 return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_NOT_ALLOWED)];
+            }
+        } else if (!empty($allowedValues) && (!empty($value) || $column->isValueCanBeNull())) {
+            if (is_string($value) || is_numeric($value)) {
+                if (!in_array($value, $allowedValues, true)) {
+                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_NOT_ALLOWED)];
+                }
+            } else if (is_array($value)) {
+                if (count(array_diff($value, $allowedValues)) > 0) {
+                    return [static::getErrorMessage($errorMessages, DbTableColumn::ONE_OF_VALUES_IS_NOT_ALLOWED)];
+                }
+            } else {
+                throw new \UnexpectedValueException(
+                    'Value type must be a string, integer, float or array to be able to validate if it is within allowed values'
+                );
             }
         }
 
@@ -191,9 +206,12 @@ abstract class DbRecordValueHelpers {
                     static::formatJson($valueContainer, $format);
                 };
                 break;
+            /*
             case DbTableColumn::TYPE_FILE:
             case DbTableColumn::TYPE_IMAGE:
                 // todo: implement formatters for file types
+            */
+            default:
                 $formatter = function (DbRecordValue $valueContainer, $format) use ($type) {
                     throw new \InvalidArgumentException("Formatters for type '$type' are not implemented yet");
                 };

@@ -5,7 +5,6 @@ namespace PeskyORM\Adapter;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbException;
-use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
 
 class Postgres extends DbAdapter {
@@ -158,13 +157,6 @@ class Postgres extends DbAdapter {
      */
     public function describeTable($table) {
         // todo: implement describeTable
-    }
-
-    /**
-     * @return DbExpr
-     */
-    public function getExpressionToSetDefaultValueForAColumn() {
-        return DbExpr::create('DEFAULT');
     }
 
     /**

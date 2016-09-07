@@ -299,8 +299,7 @@ interface DbAdapterInterface {
      * Example for MySQL and PostgreSQL: DbExpr::create('DEFAULT') and used for updates and inserts
      * Note: throw exception if adapter does not support this feature
      * @return DbExpr
-     * @throws DbException
      */
-    public function getExpressionToSetDefaultValueForAColumn();
+    static public function getExpressionToSetDefaultValueForAColumn();
 
 }
