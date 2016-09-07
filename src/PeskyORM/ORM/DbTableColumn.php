@@ -354,6 +354,9 @@ class DbTableColumn {
         if ($this->hasName()) {
             throw new \BadMethodCallException('Column name alteration is forbidden');
         }
+        if (!is_string($name)) {
+            throw new \InvalidArgumentException('$name argument must be a string');
+        }
         if (!preg_match(static::NAME_VALIDATION_REGEXP, $name)) {
             throw new \InvalidArgumentException(
                 "\$name argument contains invalid value: '$name'. Pattern: " . static::NAME_VALIDATION_REGEXP  . '. Example: snake_case1'
@@ -373,14 +376,18 @@ class DbTableColumn {
     /**
      * @param string $type
      * @return $this
+     * @throws \InvalidArgumentException
      */
     protected function setType($type) {
-        $type = strtolower($type);
+        if (!is_string($type) && !is_numeric($type)) {
+            throw new \InvalidArgumentException('$type argument must be a string, integer or float');
+        }
+        if (is_string($type)) {
+            $type = strtolower($type);
+        }
         $this->type = $type;
         if (in_array($type, self::$fileTypes, true)) {
             $this->itIsFile();
-            $this->itDoesNotExistInDb();
-            $this->valueCannotBeSetOrChanged();
             if (in_array($type, self::$imageFileTypes, true)) {
                 $this->itIsImage();
             }
@@ -815,6 +822,7 @@ class DbTableColumn {
      * @param DbRecordValue $value
      * @param null|string $format
      * @return mixed
+     * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */

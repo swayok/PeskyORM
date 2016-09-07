@@ -99,7 +99,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @param string $propertyName
      * @return mixed
      */
-    public function getObjectPropertyValue($object, $propertyName) {
+    private function getObjectPropertyValue($object, $propertyName) {
         $reflection = new ReflectionClass($object);
         $prop = $reflection->getProperty($propertyName);
         $prop->setAccessible(true);
@@ -112,7 +112,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @param array $args
      * @return mixed
      */
-    public function callObjectMethod($object, $methodName, array $args = []) {
+    private function callObjectMethod($object, $methodName, array $args = []) {
         $reflection = new ReflectionClass($object);
         $method = $reflection->getMethod($methodName);
         $method->setAccessible(true);

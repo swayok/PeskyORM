@@ -7,7 +7,7 @@ use PeskyORMTest\TestingApp;
 use PeskyORMTest\TestingInvalidClasses\TestingInvalidColumnsInTableStructure;
 use PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure;
 
-class TableStructureTest extends \PHPUnit_Framework_TestCase {
+class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
 
     public static function setUpBeforeClass() {
         TestingApp::init();
