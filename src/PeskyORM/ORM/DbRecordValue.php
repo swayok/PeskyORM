@@ -127,6 +127,9 @@ class DbRecordValue {
         if ($defaultValue instanceof \Closure) {
             $defaultValue = $defaultValue($this->getRecord());
         }
+        if (!$this->getColumn()->validateValue($defaultValue, false)) {
+            throw new \UnexpectedValueException('Default column value is not valid');
+        }
         return $defaultValue;
     }
 

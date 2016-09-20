@@ -106,11 +106,11 @@ class DbTableRelation {
 
     /**
      * @return string
-     * @throws \BadMethodCallException
+     * @throws \UnexpectedValueException
      */
     public function getName() {
         if (empty($this->name)) {
-            throw new \BadMethodCallException('Relation name is not provided');
+            throw new \UnexpectedValueException('Relation name is not provided');
         }
         return $this->name;
     }

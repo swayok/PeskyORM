@@ -2,6 +2,7 @@
 
 namespace PeskyORM\ORM;
 
+use PeskyORM\DbColumnConfig;
 use Swayok\Utils\NormalizeValue;
 use Swayok\Utils\ValidateValue;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -109,7 +110,10 @@ abstract class DbRecordValueHelpers {
         $isEnum = $column->getType() === DbTableColumn::TYPE_ENUM;
         $allowedValues = $column->getAllowedValues();
         if ($isEnum) {
-            if (!in_array($value, $allowedValues, true)) {
+            if (empty($allowedValues)) {
+                throw new \UnexpectedValueException('Enum column is required to have a list of allowed values');
+            }
+            if (!$allowedValues || !in_array($value, $allowedValues, true)) {
                 return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_NOT_ALLOWED)];
             }
         } else if (!empty($allowedValues) && (!empty($value) || $column->isValueCanBeNull())) {
@@ -204,16 +208,6 @@ abstract class DbRecordValueHelpers {
                 $formats = ['array', 'object'];
                 $formatter = function (DbRecordValue $valueContainer, $format) {
                     static::formatJson($valueContainer, $format);
-                };
-                break;
-            /*
-            case DbTableColumn::TYPE_FILE:
-            case DbTableColumn::TYPE_IMAGE:
-                // todo: implement formatters for file types
-            */
-            default:
-                $formatter = function (DbRecordValue $valueContainer, $format) use ($type) {
-                    throw new \InvalidArgumentException("Formatters for type '$type' are not implemented yet");
                 };
                 break;
         }

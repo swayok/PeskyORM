@@ -494,8 +494,8 @@ class DbTableColumn {
     public function getAllowedValues() {
         if ($this->allowedValues instanceof \Closure) {
             $allowedValues = call_user_func($this->allowedValues);
-            if (!is_array($allowedValues)) {
-                throw new \UnexpectedValueException('Allowed values closure must return an array');
+            if (!is_array($allowedValues) || empty($allowedValues)) {
+                throw new \UnexpectedValueException('Allowed values closure must return a not-empty array');
             }
             $this->allowedValues = $allowedValues;
         }
@@ -606,7 +606,7 @@ class DbTableColumn {
      */
     public function getRelation($relationName) {
         if (!$this->hasRelation($relationName)) {
-            throw new \InvalidArgumentException("Relation '$relationName' does not exist");
+            throw new \InvalidArgumentException("Relation '{$relationName}' does not exist");
         }
         return $this->relations[$relationName];
     }
@@ -624,14 +624,16 @@ class DbTableColumn {
      * @return $this
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
      */
     public function addRelation(DbTableRelation $relation) {
+        $colName = $this->getName();
         $relationName = $relation->getName();
-        if ($relation->getLocalColumnName() !== $this->name && $relation->getForeignColumnName() !== $this->name) {
-            throw new \InvalidArgumentException("Relation '{$relationName}' is not connected to column '{$this->name}'");
+        if ($relation->getLocalColumnName() !== $colName) {
+            throw new \InvalidArgumentException("Relation '{$relationName}' is not connected to column '{$colName}'");
         }
         if (!empty($this->relations[$relationName])) {
-            throw new \InvalidArgumentException("Relation {$relationName} already defined");
+            throw new \InvalidArgumentException("Relation '{$relationName}' already defined for column '{$colName}'");
         }
         $this->relations[$relationName] = $relation;
         if ($relation->getType() === DbTableRelation::BELONGS_TO) {
