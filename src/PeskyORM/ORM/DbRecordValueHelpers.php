@@ -2,7 +2,6 @@
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\DbColumnConfig;
 use Swayok\Utils\NormalizeValue;
 use Swayok\Utils\ValidateValue;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -29,7 +28,47 @@ abstract class DbRecordValueHelpers {
             return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_REQUIRED)];
         }
         // data type validation
-        switch ($column->getType()) {
+        $errors = static::validateIfValueFitsDataType($value, $column->getType(), $errorMessages);
+        if (!empty($errors)) {
+            return $errors;
+        }
+        // test if value is present in $column->getAllowedValues()
+        $isEnum = $column->getType() === DbTableColumn::TYPE_ENUM;
+        $allowedValues = $column->getAllowedValues();
+        if ($isEnum) {
+            if (empty($allowedValues)) {
+                throw new \UnexpectedValueException('Enum column is required to have a list of allowed values');
+            }
+            if (!$allowedValues || !in_array($value, $allowedValues, true)) {
+                return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_NOT_ALLOWED)];
+            }
+        } else if (!empty($allowedValues) && (!empty($value) || $column->isValueCanBeNull())) {
+            if (is_string($value) || is_numeric($value)) {
+                if (!in_array($value, $allowedValues, true)) {
+                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_NOT_ALLOWED)];
+                }
+            } else if (is_array($value)) {
+                if (count(array_diff($value, $allowedValues)) > 0) {
+                    return [static::getErrorMessage($errorMessages, DbTableColumn::ONE_OF_VALUES_IS_NOT_ALLOWED)];
+                }
+            } else {
+                throw new \UnexpectedValueException(
+                    'Value type must be a string, integer, float or array to be able to validate if it is within allowed values'
+                );
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * @param mixed $value
+     * @param string $type
+     * @param array $errorMessages
+     * @return array
+     */
+    static public function validateIfValueFitsDataType($value, $type, array $errorMessages = []) {
+        switch ($type) {
             case DbTableColumn::TYPE_BOOL:
                 if (!ValidateValue::isBoolean($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_BOOLEAN)];
@@ -106,32 +145,6 @@ abstract class DbRecordValueHelpers {
                 }
                 break;
         }
-        // test if value is present in $column->getAllowedValues()
-        $isEnum = $column->getType() === DbTableColumn::TYPE_ENUM;
-        $allowedValues = $column->getAllowedValues();
-        if ($isEnum) {
-            if (empty($allowedValues)) {
-                throw new \UnexpectedValueException('Enum column is required to have a list of allowed values');
-            }
-            if (!$allowedValues || !in_array($value, $allowedValues, true)) {
-                return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_NOT_ALLOWED)];
-            }
-        } else if (!empty($allowedValues) && (!empty($value) || $column->isValueCanBeNull())) {
-            if (is_string($value) || is_numeric($value)) {
-                if (!in_array($value, $allowedValues, true)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_NOT_ALLOWED)];
-                }
-            } else if (is_array($value)) {
-                if (count(array_diff($value, $allowedValues)) > 0) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::ONE_OF_VALUES_IS_NOT_ALLOWED)];
-                }
-            } else {
-                throw new \UnexpectedValueException(
-                    'Value type must be a string, integer, float or array to be able to validate if it is within allowed values'
-                );
-            }
-        }
-
         return [];
     }
 

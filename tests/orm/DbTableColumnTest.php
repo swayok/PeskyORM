@@ -6,10 +6,6 @@ use PeskyORMTest\TestingAdmins\TestingAdminsTable;
 
 class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
 
-    public static function setUpBeforeClass() {
-        //\PeskyORMTest\TestingApp::init();
-    }
-
     /**
      * @param object $object
      * @param string $propertyName

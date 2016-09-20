@@ -24,9 +24,9 @@ class DbRecordValue {
     protected $validationErrors = [];
 
     /**
-     * @var mixed
+     * @var array
      */
-    protected $customInfo = null;
+    protected $customInfo = [];
     /**
      * @var DbTableColumn
      */
@@ -103,6 +103,9 @@ class DbRecordValue {
 
     /**
      * @return boolean
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
      */
     public function hasValue() {
         return $this->hasValue || $this->isDefaultValueCanBeSet();
@@ -117,12 +120,12 @@ class DbRecordValue {
 
     /**
      * @return mixed
-     * @throws \BadMethodCallException
+     * @throws \UnexpectedValueException
      */
     public function getDefaultValue() {
         $defaultValue = $this->getColumn()->getDefaultValue(function (DbRecord $record) {
             /** @noinspection ExceptionsAnnotatingAndHandlingInspection */
-            return $record->getTable()->getConnection()->getExpressionToSetDefaultValueForAColumn();
+            return $record::getTable()->getConnection()->getExpressionToSetDefaultValueForAColumn();
         });
         if ($defaultValue instanceof \Closure) {
             $defaultValue = $defaultValue($this->getRecord());
@@ -167,7 +170,7 @@ class DbRecordValue {
         $this->value = $preprocessedValue;
         $this->hasValue = true;
         $this->isFromDb = (bool)$isFromDb;
-        $this->customInfo = null;
+        $this->customInfo = [];
         $this->validationErrors = [];
         $this->isValidated = false;
         return $this;
@@ -175,8 +178,9 @@ class DbRecordValue {
 
     /**
      * @return mixed
-     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
+     * @throws \UnexpectedValueException
      */
     public function getValue() {
         if ($this->hasValue()) {

@@ -20,6 +20,7 @@ abstract class DbTable implements DbTableInterface {
      * @return $this
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
      * @throws OrmException
      */
     static public function getInstance() {
@@ -45,6 +46,7 @@ abstract class DbTable implements DbTableInterface {
      * @return $this
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
      * @throws OrmException
      */
     static public function i() {
@@ -291,6 +293,7 @@ abstract class DbTable implements DbTableInterface {
      *          - false: do not return anything
      *          - array: list of columns to return values for
      * @return array|bool - array returned only if $returning is not empty
+     * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \PDOException
      * @throws \InvalidArgumentException
@@ -312,6 +315,7 @@ abstract class DbTable implements DbTableInterface {
      *          - false: do not return anything
      *          - array: list of columns to return values for
      * @return array|bool - array returned only if $returning is not empty
+     * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @throws \PDOException
@@ -334,6 +338,7 @@ abstract class DbTable implements DbTableInterface {
      *          - false: do not return anything
      *          - array: list of columns to return values for
      * @return int - number of modified rows
+     * @throws \UnexpectedValueException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PDOException
      * @throws \BadMethodCallException

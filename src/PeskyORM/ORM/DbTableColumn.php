@@ -867,6 +867,9 @@ class DbTableColumn {
     /**
      * @param DbRecordValue $value
      * @return mixed
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
      */
     public function defaultValueExistenceChecker(DbRecordValue $value) {
         return $value->hasValue();
@@ -894,6 +897,7 @@ class DbTableColumn {
      * @param DbRecordValue|mixed $value
      * @param bool $isFromDb
      * @return array
+     * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      */
