@@ -11,11 +11,11 @@ use PeskyORM\Exception\DbObjectFieldException;
 class IntegerField extends DbObjectField {
 
     protected function doBasicValueValidationAndConvertion($value) {
-        if ($value === '') {
+        if ($value === '' || $value === null) {
             return null;
         }
         $this->isValidValueFormat($value, false);
-        return $value;
+        return (int)$value;
     }
 
     public function isValidValueFormat($value, $silent = true) {
