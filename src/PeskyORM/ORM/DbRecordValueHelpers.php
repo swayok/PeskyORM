@@ -28,34 +28,13 @@ abstract class DbRecordValueHelpers {
             return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_REQUIRED)];
         }
         // data type validation
-        $errors = static::validateIfValueFitsDataType($value, $column->getType(), $errorMessages);
+        $errors = static::isValueFitsDataType($value, $column->getType(), $errorMessages);
         if (!empty($errors)) {
             return $errors;
         }
-        // test if value is present in $column->getAllowedValues()
-        $isEnum = $column->getType() === DbTableColumn::TYPE_ENUM;
-        $allowedValues = $column->getAllowedValues();
-        if ($isEnum) {
-            if (empty($allowedValues)) {
-                throw new \UnexpectedValueException('Enum column is required to have a list of allowed values');
-            }
-            if (!$allowedValues || !in_array($value, $allowedValues, true)) {
-                return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_NOT_ALLOWED)];
-            }
-        } else if (!empty($allowedValues) && (!empty($value) || $column->isValueCanBeNull())) {
-            if (is_string($value) || is_numeric($value)) {
-                if (!in_array($value, $allowedValues, true)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_NOT_ALLOWED)];
-                }
-            } else if (is_array($value)) {
-                if (count(array_diff($value, $allowedValues)) > 0) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::ONE_OF_VALUES_IS_NOT_ALLOWED)];
-                }
-            } else {
-                throw new \UnexpectedValueException(
-                    'Value type must be a string, integer, float or array to be able to validate if it is within allowed values'
-                );
-            }
+        $errors = static::isValueWithinTheAllowedValuesOfTheColumn($value, $column);
+        if (!empty($errors)) {
+            return $errors;
         }
 
         return [];
@@ -67,7 +46,7 @@ abstract class DbRecordValueHelpers {
      * @param array $errorMessages
      * @return array
      */
-    static public function validateIfValueFitsDataType($value, $type, array $errorMessages = []) {
+    static public function isValueFitsDataType($value, $type, array $errorMessages = []) {
         switch ($type) {
             case DbTableColumn::TYPE_BOOL:
                 if (!ValidateValue::isBoolean($value)) {
@@ -136,7 +115,6 @@ abstract class DbRecordValueHelpers {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_EMAIL)];
                 }
                 break;
-            case DbTableColumn::TYPE_ENUM:
             case DbTableColumn::TYPE_PASSWORD:
             case DbTableColumn::TYPE_TEXT:
             case DbTableColumn::TYPE_STRING:
@@ -144,6 +122,35 @@ abstract class DbRecordValueHelpers {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_STRING)];
                 }
                 break;
+        }
+        return [];
+    }
+
+    static public function isValueWithinTheAllowedValuesOfTheColumn($value, DbTableColumn $column, array $errorMessages = []) {
+        // test if value is present in $column->getAllowedValues()
+        $isEnum = $column->getType() === DbTableColumn::TYPE_ENUM;
+        $allowedValues = $column->getAllowedValues();
+        if ($isEnum) {
+            if (empty($allowedValues)) {
+                throw new \UnexpectedValueException('Enum column is required to have a list of allowed values');
+            }
+            if (!$allowedValues || !in_array($value, $allowedValues, true)) {
+                return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_NOT_ALLOWED)];
+            }
+        } else if (!empty($allowedValues) && (!empty($value) || $column->isValueCanBeNull())) {
+            if (is_string($value) || is_numeric($value)) {
+                if (!in_array($value, $allowedValues, true)) {
+                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_NOT_ALLOWED)];
+                }
+            } else if (is_array($value)) {
+                if (count(array_diff($value, $allowedValues)) > 0) {
+                    return [static::getErrorMessage($errorMessages, DbTableColumn::ONE_OF_VALUES_IS_NOT_ALLOWED)];
+                }
+            } else {
+                throw new \UnexpectedValueException(
+                    'Value type must be a string, integer, float or array to be able to validate if it is within allowed values'
+                );
+            }
         }
         return [];
     }
@@ -167,17 +174,24 @@ abstract class DbRecordValueHelpers {
             case DbTableColumn::TYPE_DATE:
                 return NormalizeValue::normalizeDate($value);
             case DbTableColumn::TYPE_TIME:
+            case DbTableColumn::TYPE_TIMEZONE_OFFSET:
                 return NormalizeValue::normalizeTime($value);
             case DbTableColumn::TYPE_TIMESTAMP:
                 return NormalizeValue::normalizeDateTime($value);
-            case DbTableColumn::TYPE_TIMEZONE_OFFSET:
-                return NormalizeValue::normalizeTimezoneOffset($value);
+            case DbTableColumn::TYPE_TIMESTAMP_WITH_TZ:
+                return NormalizeValue::normalizeDateTimeWithTz($value);
             case DbTableColumn::TYPE_JSON:
             case DbTableColumn::TYPE_JSONB:
                 return NormalizeValue::normalizeJson($value);
             case DbTableColumn::TYPE_FILE:
             case DbTableColumn::TYPE_IMAGE:
                 return static::normalizeFile($value);
+            case DbTableColumn::TYPE_STRING:
+            case DbTableColumn::TYPE_IPV4_ADDRESS:
+            case DbTableColumn::TYPE_EMAIL:
+            case DbTableColumn::TYPE_PASSWORD:
+            case DbTableColumn::TYPE_TEXT:
+                return (string)$value;
             default:
                 return $value;
         }
@@ -206,21 +220,21 @@ abstract class DbRecordValueHelpers {
             case DbTableColumn::TYPE_TIMESTAMP_WITH_TZ:
                 $formats = ['date', 'time', 'unix_ts'];
                 $formatter = function (DbRecordValue $valueContainer, $format) {
-                    static::formatTimestamp($valueContainer, $format);
+                    return static::formatTimestamp($valueContainer, $format);
                 };
                 break;
             case DbTableColumn::TYPE_DATE:
             case DbTableColumn::TYPE_TIME:
                 $formats = ['unix_ts'];
                 $formatter = function (DbRecordValue $valueContainer, $format) {
-                    static::formatDateOrTime($valueContainer, $format);
+                    return static::formatDateOrTime($valueContainer, $format);
                 };
                 break;
             case DbTableColumn::TYPE_JSON:
             case DbTableColumn::TYPE_JSONB:
                 $formats = ['array', 'object'];
                 $formatter = function (DbRecordValue $valueContainer, $format) {
-                    static::formatJson($valueContainer, $format);
+                    return static::formatJson($valueContainer, $format);
                 };
                 break;
         }
