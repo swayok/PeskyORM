@@ -4,6 +4,7 @@
 namespace PeskyORM\DbObjectField;
 
 use Swayok\Utils\Utils;
+use Swayok\Utils\ValidateValue;
 
 class JsonField extends TextField {
 
@@ -15,7 +16,7 @@ class JsonField extends TextField {
     }
 
     public function isValidValueFormat($value, $silent = true) {
-        if (empty($value) || json_decode($value, true) !== false || $value === 'false') {
+        if (empty($value) || ValidateValue::isJson($value)) {
             return true;
         }
         $this->setValidationError('Value is not JSON', !$silent);
