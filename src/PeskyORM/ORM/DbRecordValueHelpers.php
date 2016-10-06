@@ -101,12 +101,12 @@ abstract class DbRecordValueHelpers {
                 }
                 break;
             case DbTableColumn::TYPE_FILE:
-                if (!ValidateValue::isUploadedFile($value)) {
+                if (!ValidateValue::isUploadedFile($value, true)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_FILE)];
                 }
                 break;
             case DbTableColumn::TYPE_IMAGE:
-                if (!ValidateValue::isUploadedImage($value)) {
+                if (!ValidateValue::isUploadedImage($value, true)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_IMAGE)];
                 }
                 break;
@@ -206,7 +206,8 @@ abstract class DbRecordValueHelpers {
                 $value['name'],
                 $value['type'],
                 $value['size'],
-                $value['error']
+                $value['error'],
+                !is_uploaded_file($value['tmp_name'])
             );
         }
     }

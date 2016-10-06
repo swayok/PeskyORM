@@ -475,8 +475,10 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_BOOL));
         self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('0', DbTableColumn::TYPE_BOOL));
         self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(0, DbTableColumn::TYPE_BOOL));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('', DbTableColumn::TYPE_BOOL));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_BOOL));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_BOOL));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_BOOL));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_BOOL));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_BOOL));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_BOOL));
@@ -498,14 +500,18 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1.0000, DbTableColumn::TYPE_INT));
         self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1.0', DbTableColumn::TYPE_INT));
         self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1.0000', DbTableColumn::TYPE_INT));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('', DbTableColumn::TYPE_INT));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0.1, DbTableColumn::TYPE_INT));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.1', DbTableColumn::TYPE_INT));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('str', DbTableColumn::TYPE_INT));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('a1', DbTableColumn::TYPE_INT));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1a', DbTableColumn::TYPE_INT));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(true, DbTableColumn::TYPE_INT));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_INT));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_INT));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_INT));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_INT));
-        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_INT));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_INT));
     }
 
     public function testIsValueFitsDataTypeFloat() {
@@ -524,203 +530,343 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1.01, DbTableColumn::TYPE_FLOAT));
         self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1.01', DbTableColumn::TYPE_FLOAT));
         self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1.001', DbTableColumn::TYPE_FLOAT));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('', DbTableColumn::TYPE_FLOAT));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('str', DbTableColumn::TYPE_FLOAT));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('a1', DbTableColumn::TYPE_FLOAT));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1a', DbTableColumn::TYPE_FLOAT));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(true, DbTableColumn::TYPE_FLOAT));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_FLOAT));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_FLOAT));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_FLOAT));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_FLOAT));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_FLOAT));
     }
 
-//    public function testIsValueFitsDataTypeDate() {
-//        $message = ['value_must_be_boolean'];
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(true, DbTableColumn::TYPE_DATE));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_DATE));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_DATE));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_DATE));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('0', DbTableColumn::TYPE_DATE));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(0, DbTableColumn::TYPE_DATE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_DATE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_DATE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_DATE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_DATE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_DATE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.0, DbTableColumn::TYPE_DATE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1.0', DbTableColumn::TYPE_DATE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0.0, DbTableColumn::TYPE_DATE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0', DbTableColumn::TYPE_DATE));
-//    }
-//
-//    public function testIsValueFitsDataTypeTime() {
-//        $message = ['value_must_be_boolean'];
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(true, DbTableColumn::TYPE_TIME));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_TIME));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_TIME));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_TIME));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('0', DbTableColumn::TYPE_TIME));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(0, DbTableColumn::TYPE_TIME));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_TIME));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_TIME));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_TIME));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_TIME));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_TIME));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.0, DbTableColumn::TYPE_TIME));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1.0', DbTableColumn::TYPE_TIME));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0.0, DbTableColumn::TYPE_TIME));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0', DbTableColumn::TYPE_TIME));
-//    }
-//
-//    public function testIsValueFitsDataTypeTimestamp() {
-//        $message = ['value_must_be_boolean'];
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(true, DbTableColumn::TYPE_TIMESTAMP));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_TIMESTAMP));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_TIMESTAMP));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_TIMESTAMP));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('0', DbTableColumn::TYPE_TIMESTAMP));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(0, DbTableColumn::TYPE_TIMESTAMP));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_TIMESTAMP));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_TIMESTAMP));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_TIMESTAMP));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_TIMESTAMP));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_TIMESTAMP));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.0, DbTableColumn::TYPE_TIMESTAMP));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1.0', DbTableColumn::TYPE_TIMESTAMP));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0.0, DbTableColumn::TYPE_TIMESTAMP));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0', DbTableColumn::TYPE_TIMESTAMP));
-//    }
-//
-//    public function testIsValueFitsDataTypeTimezoneOffset() {
-//        $message = ['value_must_be_boolean'];
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(true, DbTableColumn::TYPE_TIMEZONE_OFFSET));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_TIMEZONE_OFFSET));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_TIMEZONE_OFFSET));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_TIMEZONE_OFFSET));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('0', DbTableColumn::TYPE_TIMEZONE_OFFSET));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(0, DbTableColumn::TYPE_TIMEZONE_OFFSET));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_TIMEZONE_OFFSET));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_TIMEZONE_OFFSET));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_TIMEZONE_OFFSET));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_TIMEZONE_OFFSET));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_TIMEZONE_OFFSET));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.0, DbTableColumn::TYPE_TIMEZONE_OFFSET));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1.0', DbTableColumn::TYPE_TIMEZONE_OFFSET));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0.0, DbTableColumn::TYPE_TIMEZONE_OFFSET));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0', DbTableColumn::TYPE_TIMEZONE_OFFSET));
-//    }
-//
-//    public function testIsValueFitsDataTypeIpV4Address() {
-//        $message = ['value_must_be_boolean'];
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(true, DbTableColumn::TYPE_IPV4_ADDRESS));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_IPV4_ADDRESS));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_IPV4_ADDRESS));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_IPV4_ADDRESS));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('0', DbTableColumn::TYPE_IPV4_ADDRESS));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(0, DbTableColumn::TYPE_IPV4_ADDRESS));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_IPV4_ADDRESS));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_IPV4_ADDRESS));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_IPV4_ADDRESS));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_IPV4_ADDRESS));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_IPV4_ADDRESS));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.0, DbTableColumn::TYPE_IPV4_ADDRESS));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1.0', DbTableColumn::TYPE_IPV4_ADDRESS));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0.0, DbTableColumn::TYPE_IPV4_ADDRESS));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0', DbTableColumn::TYPE_IPV4_ADDRESS));
-//    }
-//
-//    public function testIsValueFitsDataTypeJson() {
-//        $message = ['value_must_be_boolean'];
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(true, DbTableColumn::TYPE_JSON));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_JSON));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_JSON));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_JSON));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('0', DbTableColumn::TYPE_JSON));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(0, DbTableColumn::TYPE_JSON));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_JSON));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_JSON));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_JSON));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_JSON));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_JSON));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.0, DbTableColumn::TYPE_JSON));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1.0', DbTableColumn::TYPE_JSON));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0.0, DbTableColumn::TYPE_JSON));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0', DbTableColumn::TYPE_JSON));
-//    }
-//
-//    public function testIsValueFitsDataTypeEmail() {
-//        $message = ['value_must_be_boolean'];
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(true, DbTableColumn::TYPE_FILE));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_FILE));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_FILE));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_FILE));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('0', DbTableColumn::TYPE_FILE));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(0, DbTableColumn::TYPE_FILE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_FILE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_FILE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_FILE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_FILE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_FILE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.0, DbTableColumn::TYPE_FILE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1.0', DbTableColumn::TYPE_FILE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0.0, DbTableColumn::TYPE_FILE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0', DbTableColumn::TYPE_FILE));
-//    }
-//
-//    public function testIsValueFitsDataTypeString() {
-//        $message = ['value_must_be_boolean'];
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(true, DbTableColumn::TYPE_IMAGE));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_IMAGE));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_IMAGE));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_IMAGE));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('0', DbTableColumn::TYPE_IMAGE));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(0, DbTableColumn::TYPE_IMAGE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_IMAGE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_IMAGE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_IMAGE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_IMAGE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_IMAGE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.0, DbTableColumn::TYPE_IMAGE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1.0', DbTableColumn::TYPE_IMAGE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0.0, DbTableColumn::TYPE_IMAGE));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0', DbTableColumn::TYPE_IMAGE));
-//    }
-//
-//    public function testIsValueFitsDataTypeUploadedFile() {
-//        $message = ['value_must_be_boolean'];
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(true, DbTableColumn::TYPE_EMAIL));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_EMAIL));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_EMAIL));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_EMAIL));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('0', DbTableColumn::TYPE_EMAIL));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(0, DbTableColumn::TYPE_EMAIL));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_EMAIL));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_EMAIL));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_EMAIL));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_EMAIL));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_EMAIL));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.0, DbTableColumn::TYPE_EMAIL));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1.0', DbTableColumn::TYPE_EMAIL));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0.0, DbTableColumn::TYPE_EMAIL));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0', DbTableColumn::TYPE_EMAIL));
-//    }
-//
-//    public function testIsValueFitsDataTypeUploadedImage() {
-//        $message = ['value_must_be_boolean'];
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(true, DbTableColumn::TYPE_STRING));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_STRING));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_STRING));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_STRING));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('0', DbTableColumn::TYPE_STRING));
-//        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(0, DbTableColumn::TYPE_STRING));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_STRING));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_STRING));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_STRING));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_STRING));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_STRING));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.0, DbTableColumn::TYPE_STRING));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1.0', DbTableColumn::TYPE_STRING));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0.0, DbTableColumn::TYPE_STRING));
-//        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0', DbTableColumn::TYPE_STRING));
-//    }
+    public function testIsValueFitsDataTypeDate() {
+        $message = ['value_must_be_date'];
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(time(), DbTableColumn::TYPE_DATE));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('+1 day', DbTableColumn::TYPE_DATE));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('now', DbTableColumn::TYPE_DATE));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('2016-09-01', DbTableColumn::TYPE_DATE));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', DbTableColumn::TYPE_DATE));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('01-09-2016 11:22', DbTableColumn::TYPE_DATE));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33 +03:00', DbTableColumn::TYPE_DATE));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_DATE));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_DATE));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('01092016', DbTableColumn::TYPE_DATE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('', DbTableColumn::TYPE_DATE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0, DbTableColumn::TYPE_DATE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0', DbTableColumn::TYPE_DATE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_DATE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_DATE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_DATE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_DATE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_DATE));
+    }
+
+    public function testIsValueFitsDataTypeTime() {
+        $message = ['value_must_be_time'];
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(time(), DbTableColumn::TYPE_TIME));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('+1 hour', DbTableColumn::TYPE_TIME));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('now', DbTableColumn::TYPE_TIME));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('2016-09-01', DbTableColumn::TYPE_TIME));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('11:22:33', DbTableColumn::TYPE_TIME));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('11:22', DbTableColumn::TYPE_TIME));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', DbTableColumn::TYPE_TIME));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33 +03:00', DbTableColumn::TYPE_TIME));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_TIME));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_TIME));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('01092016', DbTableColumn::TYPE_TIME));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('', DbTableColumn::TYPE_TIME));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0, DbTableColumn::TYPE_TIME));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0', DbTableColumn::TYPE_TIME));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_TIME));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_TIME));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_TIME));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_TIME));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_TIME));
+    }
+
+    public function testIsValueFitsDataTypeTimestamp() {
+        $message = ['value_must_be_timestamp'];
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(time(), DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('+1 hour', DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('now', DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('2016-09-01', DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('11:22:33', DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('11:22', DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33 +03:00', DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('01092016', DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('', DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0, DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0', DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_TIMESTAMP));
+    }
+
+    public function testIsValueFitsDataTypeTimestampWithTz() {
+        $message = ['value_must_be_timestamp_with_tz'];
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('+1 hour', DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('now', DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('2016-09-01', DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('11:22:33', DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('11:22', DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33 +03:00', DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('', DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(time(), DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('01092016', DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0, DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0', DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+    }
+
+    public function testIsValueFitsDataTypeTimezoneOffset() {
+        $message = ['value_must_be_timezone_offset'];
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('11:22:33', DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('11:22', DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('+18:00', DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(44200, DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('44200', DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('-18:00', DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(-44200, DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('-44200', DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(0, DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('0', DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('-1', DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('', DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(90000, DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('+1 hour', DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('now', DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('2016-09-01', DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_TIMEZONE_OFFSET));
+    }
+
+    public function testIsValueFitsDataTypeIpV4Address() {
+        $message = ['value_must_be_ipv4_address'];
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('192.168.0.0', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('0.0.0.0', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('255.255.255.255', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1.1.1.1/24', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('-1.0.0.1', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.-1.0.1', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0.-1.1', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0.0.-1', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('255.255.255.256', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('255.255.256.255', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('255.256.255.255', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('256.255.255.255', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('*.*.*.*', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('a.0.0.0', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.a.0.0', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0.a.0', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0.0.a', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(true, DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.0, DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1.0', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0.0, DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0', DbTableColumn::TYPE_IPV4_ADDRESS));
+    }
+
+    public function testIsValueFitsDataTypeJson() {
+        $message = ['value_must_be_json'];
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(['a' => 'b'], DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(true, DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1.11, DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(-1.11, DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('-1', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1.11', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('-1.11', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('"-1.11"', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('"1.11"', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('[]', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('["a"]', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('[1]', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('["a","b"]', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('["a", "b"]', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('["a", "b" ]', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('[ "a", "b" ]', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('{}', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('{"a":1.11}', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('{ "a":1.11}', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('{ "a":1.11 }', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('{ "a" :1.11 }', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('{ "a" : 1.11 }', DbTableColumn::TYPE_JSON));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_JSON));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('', DbTableColumn::TYPE_JSON));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('{1:1.11}', DbTableColumn::TYPE_JSON));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('{"a":}', DbTableColumn::TYPE_JSON));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('{"a":"b",}', DbTableColumn::TYPE_JSON));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('{:"a"}', DbTableColumn::TYPE_JSON));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('[a]', DbTableColumn::TYPE_JSON));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('["a",]', DbTableColumn::TYPE_JSON));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('["a":"b"]', DbTableColumn::TYPE_JSON));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('["a":]', DbTableColumn::TYPE_JSON));
+    }
+
+    public function testIsValueFitsDataTypeEmail() {
+        $message = ['value_must_be_email'];
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('test@email.ru', DbTableColumn::TYPE_EMAIL));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('test.test@email.ru', DbTableColumn::TYPE_EMAIL));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('+test.test@email.ru', DbTableColumn::TYPE_EMAIL));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('-test.test@email.ru', DbTableColumn::TYPE_EMAIL));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('`test.test@email.ru', DbTableColumn::TYPE_EMAIL));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('.test@email.ru', DbTableColumn::TYPE_EMAIL));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('[test@email.ru', DbTableColumn::TYPE_EMAIL));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(']test@email.ru', DbTableColumn::TYPE_EMAIL));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('', DbTableColumn::TYPE_EMAIL));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_EMAIL));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(true, DbTableColumn::TYPE_EMAIL));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_EMAIL));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_EMAIL));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_EMAIL));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_EMAIL));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_EMAIL));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_EMAIL));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_EMAIL));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1.0', DbTableColumn::TYPE_EMAIL));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0.0, DbTableColumn::TYPE_EMAIL));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0', DbTableColumn::TYPE_EMAIL));
+    }
+
+    public function testIsValueFitsDataTypeString() {
+        $message = ['value_must_be_string'];
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('str', DbTableColumn::TYPE_STRING));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('', DbTableColumn::TYPE_STRING));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_STRING));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('0', DbTableColumn::TYPE_STRING));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(true, DbTableColumn::TYPE_STRING));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_STRING));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_STRING));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_STRING));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_STRING));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_STRING));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_STRING));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1.25, DbTableColumn::TYPE_STRING));
+    }
+
+    public function testIsValueFitsDataTypeUploadedFile() {
+        $message = ['value_must_be_file'];
+        $file = [
+            'tmp_name' => __DIR__ . '/files/test_file.jpg',
+            'name' => 'image.jpg',
+            'type' => 'image/jpeg',
+            'size' => filesize(__DIR__ . '/files/test_file.jpg'),
+            'error' => 0,
+        ];
+        $fileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['size'], $file['error']);
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType($file, DbTableColumn::TYPE_FILE));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType($fileObj, DbTableColumn::TYPE_FILE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('', DbTableColumn::TYPE_FILE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_FILE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_FILE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(true, DbTableColumn::TYPE_FILE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_FILE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_FILE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_FILE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_FILE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_FILE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_FILE));
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1.0, DbTableColumn::TYPE_FILE));
+
+        $badFile = $file;
+        unset($badFile['tmp_name']);
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType($badFile, DbTableColumn::TYPE_FILE));
+
+        $badFile = $file;
+        unset($badFile['name']);
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType($badFile, DbTableColumn::TYPE_FILE));
+
+        $badFile = $file;
+        unset($badFile['type']);
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType($badFile, DbTableColumn::TYPE_FILE));
+
+        $badFile = $file;
+        unset($badFile['size']);
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType($badFile, DbTableColumn::TYPE_FILE));
+
+        $badFile = $file;
+        unset($badFile['error']);
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType($badFile, DbTableColumn::TYPE_FILE));
+
+        $badFile = $file;
+        $badFile['size'] = 0;
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType($badFile, DbTableColumn::TYPE_FILE));
+
+        $badFile = $file;
+        $badFile['size'] = -1;
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType($badFile, DbTableColumn::TYPE_FILE));
+
+        $badFile = $file;
+        $badFile['error'] = 1;
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType($badFile, DbTableColumn::TYPE_FILE));
+        $badFileObj = new UploadedFile($badFile['tmp_name'] . 'asd', $badFile['name'], $badFile['type'], $badFile['size'], $badFile['error']);
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType($badFileObj, DbTableColumn::TYPE_FILE));
+    }
+
+    public function testIsValueFitsDataTypeUploadedImage() {
+        $message = ['value_must_be_image'];
+        $file = [
+            'tmp_name' => __DIR__ . '/files/test_file.jpg',
+            'name' => 'image.jpg',
+            'type' => 'image/jpeg',
+            'size' => filesize(__DIR__ . '/files/test_file.jpg'),
+            'error' => 0,
+        ];
+        $fileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['size'], $file['error']);
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType($file, DbTableColumn::TYPE_FILE));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType($file, DbTableColumn::TYPE_IMAGE));
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType($fileObj, DbTableColumn::TYPE_IMAGE));
+        $file['name'] = 'image_jpg';
+        $file['type'] = 'image/jpeg';
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType($file, DbTableColumn::TYPE_IMAGE));
+        $file['type'] = 'image/png';
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType($file, DbTableColumn::TYPE_IMAGE));
+        $file['type'] = 'image/gif';
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType($file, DbTableColumn::TYPE_IMAGE));
+        $file['type'] = 'image/svg';
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType($file, DbTableColumn::TYPE_IMAGE));
+
+        $file['type'] = 'text/plain';
+        $file['tmp_name'] = __DIR__ . '/files/test_file_jpg';
+        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType($file, DbTableColumn::TYPE_IMAGE));
+        $fileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['size'], $file['error']);
+        self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType($fileObj, DbTableColumn::TYPE_IMAGE));
+    }
 
     public function testIsValueWithinTheAllowedValuesOfTheColumn() {
 
