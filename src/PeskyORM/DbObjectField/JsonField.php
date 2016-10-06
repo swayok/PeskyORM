@@ -15,7 +15,7 @@ class JsonField extends TextField {
     }
 
     public function isValidValueFormat($value, $silent = true) {
-        if (empty($value) || json_decode($value, true) !== false) {
+        if (empty($value) || json_decode($value, true) !== false || $value === 'false') {
             return true;
         }
         $this->setValidationError('Value is not JSON', !$silent);
