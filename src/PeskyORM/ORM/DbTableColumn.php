@@ -58,7 +58,6 @@ class DbTableColumn {
     const VALUE_IS_NOT_ALLOWED = 'value_is_not_allowed';
     const ONE_OF_VALUES_IS_NOT_ALLOWED = 'one_of_values_is_not_allowed';
     const VALUE_MUST_BE_STRING = 'value_must_be_string';
-    const VALUE_IS_REQUIRED = 'value_is_required';
 
     /**
      * @var array
@@ -81,7 +80,6 @@ class DbTableColumn {
         self::VALUE_IS_NOT_ALLOWED => 'Value is not allowed',
         self::ONE_OF_VALUES_IS_NOT_ALLOWED => 'One of values in the received array is not allowed',
         self::VALUE_MUST_BE_STRING => 'Value must be a string',
-        self::VALUE_IS_REQUIRED => 'Value is required',
     ];
 
     // params that can be set directly or calculated
@@ -188,11 +186,17 @@ class DbTableColumn {
      */
     protected $valueNormalizer = null;
     /**
-     * Validate column value
-     * By default: $this->defaultNewValueValidator()
+     * Validates column value
+     * By default: $this->defaultValueValidator()
      * @var null|\Closure
      */
     protected $valueValidator = null;
+    /**
+     * Validates if column value is within $this->allowedValues (if any)
+     * By default: $this->defaultAllowedValuesValidator()
+     * @var null|\Closure
+     */
+    protected $allowedValueValidator = null;
     /**
      * Extends default value validator.
      * Useful for additional validation like min/max length, min/max value, regex, etc
@@ -289,6 +293,9 @@ class DbTableColumn {
         $this->setValueValidator(function ($value, $isFromDb, DbTableColumn $column) {
             return $column->defaultValueValidator($value, $isFromDb);
         });
+        $this->setAllowedValueValidator(function ($value, $isFromDb, DbTableColumn $column) {
+            return $column->defaultAllowedValueValidator($value, $isFromDb);
+        });
         $this->setValueValidatorExtender(function ($value, $isFromDb, DbTableColumn $column) {
             return $column->defaultValueValidatorExtender($value, $isFromDb);
         });
@@ -374,6 +381,13 @@ class DbTableColumn {
     }
 
     /**
+     * @return bool
+     */
+    public function isEnum() {
+        return $this->getType() === static::TYPE_ENUM;
+    }
+
+    /**
      * @param string $type
      * @return $this
      * @throws \InvalidArgumentException
@@ -415,6 +429,15 @@ class DbTableColumn {
      */
     public function valueIsNotNullable() {
         $this->valueCanBeNull = false;
+        return $this;
+    }
+
+    /**
+     * @param bool $bool
+     * @return $this
+     */
+    public function setIsNullable($bool) {
+        $this->valueCanBeNull = (bool)$bool;
         return $this;
     }
 
@@ -512,21 +535,6 @@ class DbTableColumn {
             throw new \InvalidArgumentException('$allowedValues argument cannot be empty');
         }
         $this->allowedValues = $allowedValues;
-        return $this;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isValueRequired() {
-        return $this->requireValue;
-    }
-
-    /**
-     * @return $this
-     */
-    public function valueIsRequired() {
-        $this->requireValue = true;
         return $this;
     }
 
@@ -748,7 +756,7 @@ class DbTableColumn {
                 "Column '{$this->getName()}' restricts value setting and modification"
             );
         }
-        $preprocessedValue = $this->preprocessValue($newValue, $isFromDb);
+        $preprocessedValue = call_user_func($this->getValuePreprocessor(), $newValue, $isFromDb, $this);
         $valueContainer->setRawValue($newValue, $preprocessedValue, $isFromDb);
         $errors = $this->validateValue($valueContainer, $isFromDb);
         $valueContainer->setValidationErrors($errors);
@@ -789,27 +797,17 @@ class DbTableColumn {
      */
     public function defaultValuePreprocessor($value, $isFromDb) {
         if (is_string($value)) {
-            if ($this->mustTrimValue()) {
+            if ($this->isValueTrimmingRequired()) {
                 $value = trim($value);
             }
-            if ($this->mustLowercaseValue()) {
-                $value = mb_strtolower($value);
+            if ($value === '' && $this->isEmptyStringMustBeConvertedToNull()) {
+                return null;
             }
-            if (empty($value) && $this->isEmptyStringMustBeConvertedToNull()) {
-                $value = null;
+            if ($this->isValueLowercasingRequired()) {
+                $value = mb_strtolower($value);
             }
         }
         return $value;
-    }
-
-    /**
-     * Preprocess raw value for validation and normalization
-     * @param mixed $value
-     * @param bool $isFromDb
-     * @return mixed
-     */
-    private function preprocessValue($value, $isFromDb) {
-        return call_user_func($this->getValuePreprocessor(), $value, $isFromDb, $this);
     }
 
     /**
@@ -910,18 +908,26 @@ class DbTableColumn {
             $value,
             static::getValidationErrorsLocalization()
         );
-        if (empty($errors)) {
-            $errors = call_user_func($this->getValueValidatorExtender(), $value, $isFromDb, $this);
-            if (!is_array($errors)) {
-                throw new \UnexpectedValueException('Value validator extender closure must return an array');
-            }
+        if (!empty($errors)) {
+            return $errors;
+        }
+        $errors = call_user_func($this->getAllowedValueValidator(), $value, $isFromDb, $this);
+        if (!is_array($errors)) {
+            throw new \UnexpectedValueException('Allowed value validator closure must return an array');
+        }
+        $errors = call_user_func($this->getValueValidatorExtender(), $value, $isFromDb, $this);
+        if (!is_array($errors)) {
+            throw new \UnexpectedValueException('Value validator extender closure must return an array');
         }
         return $errors;
     }
 
     /**
      * @param \Closure $validator = function ($value, $isFromDb, DbTableColumn $column) { return ['validation error 1', ...]; }
-     * Note: value is mixed or a DbRecordValue instance. If value is mixed - it should be preprocessed
+     * Notes:
+     * - value is mixed or a DbRecordValue instance. If value is mixed - it should be preprocessed
+     * - defalut validator uses $this->getAllowedValueValidator() and  $this->getValueValidatorExtender(). Make sure
+     * to use that additional validators if needed
      * @return $this
      */
     public function setValueValidator(\Closure $validator) {
@@ -930,10 +936,43 @@ class DbTableColumn {
     }
 
     /**
+     * @return \Closure
+     */
+    public function getAllowedValueValidator() {
+        return $this->allowedValueValidator;
+    }
+
+    /**
+     * @param DbRecordValue|mixed $value
+     * @param bool $isFromDb
+     * @return array
+     * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
+     */
+    public function defaultAllowedValueValidator($value, $isFromDb) {
+        return DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn(
+            $this,
+            $value,
+            static::getValidationErrorsLocalization()
+        );
+    }
+
+    /**
+     * @param \Closure $validator = function ($value, $isFromDb, DbTableColumn $column) { return ['validation error 1', ...]; }
+     * Notes:
+     * - If you do not use not default value validator - you'll need to call this one manually
+     * @return $this
+     */
+    public function setAllowedValueValidator(\Closure $validator) {
+        $this->allowedValueValidator = $validator;
+        return $this;
+    }
+
+    /**
      * Note: it should not be used as public. Better use setValueValidator() method
      * @return \Closure
      */
-    protected function getValueValidatorExtender() {
+    public function getValueValidatorExtender() {
         return $this->valueValidatorExtender;
     }
 
@@ -976,16 +1015,13 @@ class DbTableColumn {
      * @return mixed
      */
     public function validateValue($value, $isFromDb = false) {
-        if (!($value instanceof DbRecordValue)) {
-            $value = $this->preprocessValue($value, $isFromDb);
-        }
         return call_user_func($this->getValueValidator(), $value, $isFromDb, $this);
     }
 
     /**
      * @return \Closure
      */
-    protected function getValueNormalizer() {
+    public function getValueNormalizer() {
         return $this->valueNormalizer;
     }
 

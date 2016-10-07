@@ -82,9 +82,10 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
         static::assertInstanceOf(\Closure::class, $obj->getValueExistenceChecker());
         static::assertInstanceOf(\Closure::class, $obj->getValueSetter());
         static::assertInstanceOf(\Closure::class, $obj->getValueValidator());
-        static::assertInstanceOf(\Closure::class, $this->callObjectMethod($obj, 'getValueValidatorExtender'));
-        static::assertInstanceOf(\Closure::class, $this->callObjectMethod($obj, 'getValueNormalizer'));
-        static::assertInstanceOf(\Closure::class, $this->callObjectMethod($obj, 'getValuePreprocessor'));
+        static::assertInstanceOf(\Closure::class, $obj->getAllowedValueValidator());
+        static::assertInstanceOf(\Closure::class, $obj->getValueValidatorExtender());
+        static::assertInstanceOf(\Closure::class, $obj->getValueNormalizer());
+        static::assertInstanceOf(\Closure::class, $obj->getValuePreprocessor());
         static::assertInstanceOf(\Closure::class, $obj->getValueSavingExtender());
         static::assertInstanceOf(\Closure::class, $obj->getValueDeleteExtender());
         static::assertFalse($obj->hasValueFormatter());
@@ -181,6 +182,12 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
         static::assertTrue($obj->isItAFile());
         static::assertTrue($obj->isItAnImage());
         static::assertFalse($obj->hasValueFormatter());
+    }
+
+    public function testEnumType() {
+        $obj = DbTableColumn::create(DbTableColumn::TYPE_ENUM);
+        static::assertEquals($obj->getType(), DbTableColumn::TYPE_ENUM);
+        static::assertTrue($obj->isEnum());
     }
 
     public function testFormattersDetectedByType() {
@@ -355,5 +362,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
         static::assertTrue($obj->hasRelation('Test2'));
         static::assertTrue($obj->isItAForeignKey());
     }
+
+    // todo: test default closures
 
 }

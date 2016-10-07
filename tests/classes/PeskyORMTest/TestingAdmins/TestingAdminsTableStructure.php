@@ -34,7 +34,6 @@ class TestingAdminsTableStructure extends DbTableStructure {
             ->convertsEmptyStringToNull()
             ->valueIsNotNullable()
             ->mustTrimValue()
-            ->valueIsRequired()
         ;
     }
 
@@ -43,12 +42,11 @@ class TestingAdminsTableStructure extends DbTableStructure {
             ->convertsEmptyStringToNull()
             ->valueIsNotNullable()
             ->mustTrimValue()
-            ->valueIsRequired()
             ->setValuePreprocessor(function ($value, $isDbValue, DbTableColumn $column) {
                 if ($isDbValue) {
-                    return $column->defaultValuePreprocessor($value);
+                    return $column->defaultValuePreprocessor($value, $isDbValue);
                 } else {
-                    $value = $column->defaultValuePreprocessor($value);
+                    $value = $column->defaultValuePreprocessor($value, $isDbValue);
                     if (!empty($value)) {
                         return password_hash($value, PASSWORD_BCRYPT);
                     }
@@ -67,14 +65,12 @@ class TestingAdminsTableStructure extends DbTableStructure {
     private function created_at() {
         return DbTableColumn::create(DbTableColumn::TYPE_TIMESTAMP)
             ->valueIsNotNullable()
-            ->valueIsRequired()
             ->setDefaultValue(DbExpr::create('NOW()'));
     }
 
     private function updated_at() {
         return DbTableColumn::create(DbTableColumn::TYPE_TIMESTAMP)
             ->valueIsNotNullable()
-            ->valueIsRequired()
             ->autoUpdateValueOnEachSaveWith(function () {
                 return DbExpr::create('NOW()');
             });
@@ -91,7 +87,6 @@ class TestingAdminsTableStructure extends DbTableStructure {
         return DbTableColumn::create(DbTableColumn::TYPE_BOOL)
             ->convertsEmptyStringToNull()
             ->valueIsNotNullable()
-            ->valueIsRequired()
             ->setDefaultValue(false);
     }
 
@@ -114,7 +109,6 @@ class TestingAdminsTableStructure extends DbTableStructure {
             ->setAllowedValues(['admin', 'manager', 'guest'])
             ->convertsEmptyStringToNull()
             ->valueIsNotNullable()
-            ->valueIsRequired()
             ->setDefaultValue('guest');
     }
 

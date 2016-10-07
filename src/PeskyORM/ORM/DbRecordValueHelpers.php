@@ -9,40 +9,43 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 abstract class DbRecordValueHelpers {
 
     /**
-     * @param mixed $value
      * @param DbTableColumn $column
+     * @param mixed $value
      * @param array $errorMessages
      * @return array
-     * @throws \UnexpectedValueException
      */
-    static public function isValidDbColumnValue($value, DbTableColumn $column, array $errorMessages = []) {
-        // null value validation
+    static public function isValidDbColumnValue(DbTableColumn $column, $value, array $errorMessages = []) {
+        $value = static::preprocessColumnValue($column, $value);
+        // null value?
         if ($value === null) {
-            if (!$column->isValueCanBeNull()) {
-                return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_CANNOT_BE_NULL)];
-            }
-            return [];
-        }
-        // required value validation
-        if ($value === null && $column->isValueRequired()) {
-            return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_REQUIRED)];
+            return $column->isValueCanBeNull()
+                ? []
+                : [static::getErrorMessage($errorMessages, $column::VALUE_CANNOT_BE_NULL)];
         }
         // data type validation
         $errors = static::isValueFitsDataType($value, $column->getType(), $errorMessages);
         if (!empty($errors)) {
             return $errors;
         }
-        $errors = static::isValueWithinTheAllowedValuesOfTheColumn($value, $column);
-        if (!empty($errors)) {
-            return $errors;
-        }
-
         return [];
     }
 
     /**
+     * Preprocess value using $column->getValuePreprocessor(). This will perform basic processing like
+     * converting empty string to null, trimming and lowercasing if any required
+     * @param DbTableColumn $column
      * @param mixed $value
-     * @param string $type
+     * @param bool $isDbValue
+     * @return mixed
+     */
+    static public function preprocessColumnValue(DbTableColumn $column, $value, $isDbValue = false) {
+        return call_user_func($column->getValuePreprocessor(), $value, $isDbValue, $column);
+    }
+
+    /**
+     * Test if $value fits data type ($type)
+     * @param mixed $value
+     * @param string $type - one of DbTableColumn::TYPE_*
      * @param array $errorMessages
      * @return array
      */
@@ -126,39 +129,82 @@ abstract class DbRecordValueHelpers {
         return [];
     }
 
-    static public function isValueWithinTheAllowedValuesOfTheColumn($value, DbTableColumn $column, array $errorMessages = []) {
-        // test if value is present in $column->getAllowedValues()
-        $isEnum = $column->getType() === DbTableColumn::TYPE_ENUM;
+    /**
+     * Test if value is present in $column->getAllowedValues() (if any)
+     * Notes:
+     * - $value is not allowed be an object or resouce
+     * - if $value is array - all entries of this array will be validated to be contained in $column->getAllowedValues();
+     * > if $column->isEnum() === true
+     *   - it is expected to have not empty $column->getAllowedValues()
+     *   - empty string $value when $column->isEmptyStringMustBeConvertedToNull() === true will be treated as null
+     *   - null $value is allowed only when $column->isValueCanBeNull() === true
+     *   - in other cases empty string $value will be validated to be contained in $column->getAllowedValues()
+     * > if $column->isEnum() === false
+     *   - validation will be ignored when $column->getAllowedValues() is empty
+     *   - validation will be ignored when $column->isValueCanBeNull() === true and value is null or
+     *     empty string with option $column->isEmptyStringMustBeConvertedToNull() === true;
+     *
+     * @param string|int|float|array $value
+     * @param DbTableColumn $column
+     * @param array $errorMessages
+     * @return array
+     * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
+     */
+    static public function isValueWithinTheAllowedValuesOfTheColumn(
+        DbTableColumn $column,
+        $value,
+        array $errorMessages = []
+    ) {
         $allowedValues = $column->getAllowedValues();
-        if ($isEnum) {
-            if (empty($allowedValues)) {
-                throw new \UnexpectedValueException('Enum column is required to have a list of allowed values');
-            }
-            if (!$allowedValues || !in_array($value, $allowedValues, true)) {
-                return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_NOT_ALLOWED)];
-            }
-        } else if (!empty($allowedValues) && (!empty($value) || $column->isValueCanBeNull())) {
-            if (is_string($value) || is_numeric($value)) {
-                if (!in_array($value, $allowedValues, true)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_NOT_ALLOWED)];
-                }
-            } else if (is_array($value)) {
-                if (count(array_diff($value, $allowedValues)) > 0) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::ONE_OF_VALUES_IS_NOT_ALLOWED)];
-                }
-            } else {
+        $isEnum = $column->isEnum();
+        if (count($allowedValues) === 0) {
+            if ($isEnum) {
                 throw new \UnexpectedValueException(
-                    'Value type must be a string, integer, float or array to be able to validate if it is within allowed values'
+                    "Enum column [{$column->getName()}] is required to have a list of allowed values"
                 );
+            } else {
+                return [];
             }
+        }
+        $value = static::preprocessColumnValue($column, $value);
+        // column is nullable and value is null or should be converted to null
+        if ($value === null && $column->isValueCanBeNull()) {
+            return [];
+        }
+        // can value be used?
+        if (!is_scalar($value) && !is_array($value)) {
+            throw new \InvalidArgumentException(
+                '$value argument must be a string, integer, float or array to be able to validate if it is within allowed values'
+            );
+        }
+        // validate
+        if (is_array($value)) {
+            // compare if $value array is contained inside $allowedValues array
+            if (count(array_diff($value, $allowedValues)) > 0) {
+                return [static::getErrorMessage($errorMessages, DbTableColumn::ONE_OF_VALUES_IS_NOT_ALLOWED)];
+            }
+        } else if (!in_array($value, $allowedValues, true)) {
+            return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_NOT_ALLOWED)];
         }
         return [];
     }
 
+    /**
+     * @param array $errorMessages
+     * @param string $key
+     * @return string
+     */
     static public function getErrorMessage(array $errorMessages, $key) {
         return array_key_exists($key, $errorMessages) ? $errorMessages[$key] : $key;
     }
 
+    /**
+     * Normalize $value according to expected data type ($type)
+     * @param mixed $value
+     * @param string $type - one of DbTableColumn::TYPE_*
+     * @return null|string|UploadedFile
+     */
     static public function normalizeValue($value, $type) {
         if ($value === null) {
             return null;

@@ -16,19 +16,6 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @param object $object
-     * @param string $methodName
-     * @param array $args
-     * @return mixed
-     */
-    private function callObjectMethod($object, $methodName, array $args = []) {
-        $reflection = new ReflectionClass($object);
-        $method = $reflection->getMethod($methodName);
-        $method->setAccessible(true);
-        return $method->invokeArgs($object, $args);
-    }
-
-    /**
      * @param string $type
      * @param mixed $value
      * @return DbRecordValue
@@ -43,6 +30,26 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
     public function testGetErrorMessage() {
         static::assertEquals('test', DbRecordValueHelpers::getErrorMessage([], 'test'));
         static::assertEquals('not-a-test', DbRecordValueHelpers::getErrorMessage(['test' => 'not-a-test'], 'test'));
+    }
+
+    public function testPreprocessValue() {
+        $column = DbTableColumn::create(DbTableColumn::TYPE_STRING, 'test');
+        static::assertFalse($column->isValueTrimmingRequired());
+        static::assertFalse($column->isEmptyStringMustBeConvertedToNull());
+        static::assertFalse($column->isValueLowercasingRequired());
+        static::assertEquals(' ', DbRecordValueHelpers::preprocessColumnValue($column, ' '));
+        $column->mustTrimValue();
+        static::assertTrue($column->isValueTrimmingRequired());
+        static::assertEquals('', DbRecordValueHelpers::preprocessColumnValue($column, ' '));
+        static::assertEquals('A', DbRecordValueHelpers::preprocessColumnValue($column, ' A '));
+        $column->convertsEmptyStringToNull();
+        static::assertTrue($column->isEmptyStringMustBeConvertedToNull());
+        static::assertEquals(null, DbRecordValueHelpers::preprocessColumnValue($column, null));
+        static::assertEquals(null, DbRecordValueHelpers::preprocessColumnValue($column, ' '));
+        static::assertEquals('A', DbRecordValueHelpers::preprocessColumnValue($column, ' A '));
+        $column->mustLowercaseValue();
+        static::assertTrue($column->isValueLowercasingRequired());
+        static::assertEquals('upper', DbRecordValueHelpers::preprocessColumnValue($column, 'UPPER'));
     }
 
     public function testNormalizeBoolValue() {
@@ -485,7 +492,7 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.0, DbTableColumn::TYPE_BOOL));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1.0', DbTableColumn::TYPE_BOOL));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0.0, DbTableColumn::TYPE_BOOL));
-        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0', DbTableColumn::TYPE_BOOL));
+        self::assertEquals(['bool'], DbRecordValueHelpers::isValueFitsDataType('0.0', DbTableColumn::TYPE_BOOL, ['value_must_be_boolean' => 'bool']));
     }
 
     public function testIsValueFitsDataTypeInt() {
@@ -512,6 +519,7 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_INT));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_INT));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_INT));
+        self::assertEquals(['int'], DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_INT, ['value_must_be_integer' => 'int']));
     }
 
     public function testIsValueFitsDataTypeFloat() {
@@ -539,7 +547,7 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_FLOAT));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_FLOAT));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_FLOAT));
-        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_FLOAT));
+        self::assertEquals(['float'], DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_FLOAT, ['value_must_be_float' => 'float']));
     }
 
     public function testIsValueFitsDataTypeDate() {
@@ -561,7 +569,7 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_DATE));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_DATE));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_DATE));
-        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_DATE));
+        self::assertEquals(['date'], DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_DATE, ['value_must_be_date' => 'date']));
     }
 
     public function testIsValueFitsDataTypeTime() {
@@ -584,7 +592,7 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_TIME));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_TIME));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_TIME));
-        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_TIME));
+        self::assertEquals(['time'], DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_TIME, ['value_must_be_time' => 'time']));
     }
 
     public function testIsValueFitsDataTypeTimestamp() {
@@ -607,7 +615,7 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_TIMESTAMP));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_TIMESTAMP));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_TIMESTAMP));
-        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_TIMESTAMP));
+        self::assertEquals(['timestamp'], DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_TIMESTAMP, ['value_must_be_timestamp' => 'timestamp']));
     }
 
     public function testIsValueFitsDataTypeTimestampWithTz() {
@@ -630,7 +638,10 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
-        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_TIMESTAMP_WITH_TZ));
+        self::assertEquals(
+            ['wtz'],
+            DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_TIMESTAMP_WITH_TZ, ['value_must_be_timestamp_with_tz' => 'wtz'])
+        );
     }
 
     public function testIsValueFitsDataTypeTimezoneOffset() {
@@ -658,7 +669,10 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('true', DbTableColumn::TYPE_TIMEZONE_OFFSET));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('false', DbTableColumn::TYPE_TIMEZONE_OFFSET));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_TIMEZONE_OFFSET));
-        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_TIMEZONE_OFFSET));
+        self::assertEquals(
+            ['offset'],
+            DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_TIMEZONE_OFFSET, ['value_must_be_timezone_offset' => 'offset'])
+        );
     }
 
     public function testIsValueFitsDataTypeIpV4Address() {
@@ -692,7 +706,7 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.0, DbTableColumn::TYPE_IPV4_ADDRESS));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1.0', DbTableColumn::TYPE_IPV4_ADDRESS));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0.0, DbTableColumn::TYPE_IPV4_ADDRESS));
-        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0', DbTableColumn::TYPE_IPV4_ADDRESS));
+        self::assertEquals(['ip'], DbRecordValueHelpers::isValueFitsDataType('0.0', DbTableColumn::TYPE_IPV4_ADDRESS, ['value_must_be_ipv4_address' => 'ip']));
     }
 
     public function testIsValueFitsDataTypeJson() {
@@ -735,7 +749,7 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('[a]', DbTableColumn::TYPE_JSON));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('["a",]', DbTableColumn::TYPE_JSON));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('["a":"b"]', DbTableColumn::TYPE_JSON));
-        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('["a":]', DbTableColumn::TYPE_JSON));
+        self::assertEquals(['json'], DbRecordValueHelpers::isValueFitsDataType('["a":]', DbTableColumn::TYPE_JSON, ['value_must_be_json' => 'json']));
     }
 
     public function testIsValueFitsDataTypeEmail() {
@@ -760,7 +774,7 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_EMAIL));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('1.0', DbTableColumn::TYPE_EMAIL));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(0.0, DbTableColumn::TYPE_EMAIL));
-        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType('0.0', DbTableColumn::TYPE_EMAIL));
+        self::assertEquals(['email'], DbRecordValueHelpers::isValueFitsDataType('0.0', DbTableColumn::TYPE_EMAIL, ['value_must_be_email' => 'email']));
     }
 
     public function testIsValueFitsDataTypeString() {
@@ -776,7 +790,7 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_STRING));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_STRING));
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_STRING));
-        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(-1.25, DbTableColumn::TYPE_STRING));
+        self::assertEquals(['string'], DbRecordValueHelpers::isValueFitsDataType(-1.25, DbTableColumn::TYPE_STRING, ['value_must_be_string' => 'string']));
     }
 
     public function testIsValueFitsDataTypeUploadedFile() {
@@ -835,11 +849,10 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         $badFile['error'] = 1;
         self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType($badFile, DbTableColumn::TYPE_FILE));
         $badFileObj = new UploadedFile($badFile['tmp_name'] . 'asd', $badFile['name'], $badFile['type'], $badFile['size'], $badFile['error']);
-        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType($badFileObj, DbTableColumn::TYPE_FILE));
+        self::assertEquals(['file'], DbRecordValueHelpers::isValueFitsDataType($badFileObj, DbTableColumn::TYPE_FILE, ['value_must_be_file' => 'file']));
     }
 
     public function testIsValueFitsDataTypeUploadedImage() {
-        $message = ['value_must_be_image'];
         $file = [
             'tmp_name' => __DIR__ . '/files/test_file.jpg',
             'name' => 'image.jpg',
@@ -863,17 +876,136 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
 
         $file['type'] = 'text/plain';
         $file['tmp_name'] = __DIR__ . '/files/test_file_jpg';
-        self::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType($file, DbTableColumn::TYPE_IMAGE));
+        self::assertEquals(['image'], DbRecordValueHelpers::isValueFitsDataType($file, DbTableColumn::TYPE_IMAGE, ['value_must_be_image' => 'image']));
         $fileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['size'], $file['error']);
         self::assertEquals([], DbRecordValueHelpers::isValueFitsDataType($fileObj, DbTableColumn::TYPE_IMAGE));
     }
 
-    public function testIsValueWithinTheAllowedValuesOfTheColumn() {
-
+    public function testIsValidDbColumnValue() {
+        $column = DbTableColumn::create(DbTableColumn::TYPE_STRING, 'test')
+            ->valueIsNotNullable()
+            ->setAllowedValues(['abrakadabra']);
+        self::assertEquals([], DbRecordValueHelpers::isValidDbColumnValue($column, 'test'));
+        self::assertEquals([], DbRecordValueHelpers::isValidDbColumnValue($column, ''));
+        self::assertEquals(
+            ['not null'],
+            DbRecordValueHelpers::isValidDbColumnValue($column, null, ['value_cannot_be_null' => 'not null'])
+        );
+        $column->convertsEmptyStringToNull();
+        self::assertEquals(['value_cannot_be_null'], DbRecordValueHelpers::isValidDbColumnValue($column, ''));
+        $column->valueIsNullable();
+        self::assertEquals([], DbRecordValueHelpers::isValidDbColumnValue($column, null));
+        self::assertEquals([], DbRecordValueHelpers::isValidDbColumnValue($column, ''));
+        // invalid valie
+        $column = DbTableColumn::create(DbTableColumn::TYPE_INT, 'test')
+            ->valueIsNotNullable()
+            ->setAllowedValues(['abrakadabra']);
+        self::assertEquals(['value_must_be_integer'], DbRecordValueHelpers::isValidDbColumnValue($column, 'not_int'));
     }
 
-    public function testIsValidDbColumnValue() {
+    /**
+     * @expectedException \UnexpectedValueException
+     * @expectedExceptionMessage Enum column [test] is required to have a list of allowed values
+     */
+    public function testInvalidColumnAllowedValuesForEnum() {
+        $column = DbTableColumn::create(DbTableColumn::TYPE_ENUM, 'test');
+        DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test');
+    }
 
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage $value argument must be a string, integer, float or array to be able to validate if it is within allowed values
+     */
+    public function testInvalidValueForAllowedValues() {
+        $column = DbTableColumn::create(DbTableColumn::TYPE_ENUM, 'test')
+            ->setAllowedValues(['test']);
+        DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, $column);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage $value argument must be a string, integer, float or array to be able to validate if it is within allowed values
+     */
+    public function testInvalidValueForAllowedValues2() {
+        $column = DbTableColumn::create(DbTableColumn::TYPE_STRING, 'test')
+            ->setAllowedValues(['test']);
+        DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, $column);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage $value argument must be a string, integer, float or array to be able to validate if it is within allowed values
+     */
+    public function testInvalidValueForAllowedValues3() {
+        $column = DbTableColumn::create(DbTableColumn::TYPE_ENUM, 'test')
+            ->setAllowedValues(['test'])
+            ->valueIsNotNullable();
+        DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, null);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage $value argument must be a string, integer, float or array to be able to validate if it is within allowed values
+     */
+    public function testInvalidValueForAllowedValues4() {
+        $column = DbTableColumn::create(DbTableColumn::TYPE_STRING, 'test')
+            ->valueIsNotNullable()
+            ->setAllowedValues(['test']);
+        DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, null);
+    }
+
+    public function testIsValueWithinTheAllowedValuesOfTheEnumColumn() {
+        $message1 = ['value_is_not_allowed'];
+        $message2 = ['one_of_values_is_not_allowed'];
+        $column = DbTableColumn::create(DbTableColumn::TYPE_ENUM, 'test')
+            ->valueIsNullable()
+            ->setAllowedValues(['test' , 'test2']);
+        self::assertEquals([], DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test'));
+        self::assertEquals([], DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test2'));
+        self::assertEquals([], DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test']));
+        self::assertEquals([], DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test2']));
+        self::assertEquals([], DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'test2']));
+        self::assertEquals([], DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'test']));
+        self::assertEquals([], DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, null));
+        self::assertEquals($message1, DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'ups'));
+        self::assertEquals($message1, DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ''));
+        self::assertEquals($message2, DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['ups']));
+        self::assertEquals($message2, DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'ups']));
+    }
+
+    public function testIsValueWithinTheAllowedValuesOfTheNotEnumColumn() {
+        $column = DbTableColumn::create(DbTableColumn::TYPE_STRING, 'test')
+            ->valueIsNullable()
+            ->setAllowedValues(['test' , 'test2']);
+        self::assertEquals([], DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test'));
+        self::assertEquals([], DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test2'));
+        self::assertEquals([], DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test']));
+        self::assertEquals([], DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test2']));
+        self::assertEquals([], DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'test2']));
+        self::assertEquals([], DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'test']));
+        self::assertEquals([], DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, null));
+        self::assertEquals(
+            ['value_is_not_allowed'],
+            DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'ups')
+        );
+        self::assertEquals(
+            ['one_of_values_is_not_allowed'],
+            DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['ups'])
+        );
+        self::assertEquals(
+            ['bad value'],
+            DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn(
+                $column,
+                ['test', 'ups'],
+                ['one_of_values_is_not_allowed' => 'bad value']
+            )
+        );
+        self::assertEquals(
+            ['no-no!'],
+            DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, '', ['value_is_not_allowed' => 'no-no!'])
+        );
+        $column->convertsEmptyStringToNull();
+        self::assertEquals([], DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ''));
     }
 
 }
