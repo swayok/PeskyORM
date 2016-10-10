@@ -44,7 +44,10 @@ class DbTableRelation {
      * @param string $type
      * @param string $foreignTableClass
      * @param string $foreignColumnName
-     * @return DbTableRelation
+     * @return static
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function create(
@@ -53,7 +56,7 @@ class DbTableRelation {
         $foreignTableClass,
         $foreignColumnName
     ) {
-        return new DbTableRelation($localColumnName, $type, $foreignTableClass, $foreignColumnName);
+        return new static($localColumnName, $type, $foreignTableClass, $foreignColumnName);
     }
 
     /**
@@ -62,6 +65,9 @@ class DbTableRelation {
      * @param string $foreignTableClass
      * @param string $foreignColumnName
      * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \UnexpectedValueException
      */
     public function __construct(
         $localColumnName,
@@ -169,6 +175,9 @@ class DbTableRelation {
     /**
      * @param string $foreignTableClass
      * @return $this
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     public function setForeignTableClass($foreignTableClass) {
@@ -181,6 +190,8 @@ class DbTableRelation {
             );
         }
         $this->foreignTableClass = $foreignTableClass;
+        /** @var DbTable $foreignTableClass */
+        $this->foreignTable = $foreignTableClass::getInstance();
         return $this;
     }
 
@@ -189,8 +200,8 @@ class DbTableRelation {
      * @throws \BadMethodCallException
      */
     public function getForeignTable() {
-        if ($this->foreignTable === null) {
-            $this->foreignTable = call_user_func([$this->foreignTableClass, 'getInstance']);
+        if (!$this->foreignTable) {
+            throw new \BadMethodCallException('You need to provide foreign table class via setForeignTableClass()');
         }
         return $this->foreignTable;
     }

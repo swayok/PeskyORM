@@ -37,6 +37,12 @@ interface DbTableInterface {
     static public function getStructure();
 
     /**
+     * Table schema description
+     * @return DbTableStructure
+     */
+    public function getTableStructure();
+
+    /**
      * @return bool
      */
     static public function hasPkColumn();
@@ -54,7 +60,7 @@ interface DbTableInterface {
     /**
      * @return DbRecord
      */
-    static public function newRecord();
+    public function newRecord();
 
     /**
      * @return null|string

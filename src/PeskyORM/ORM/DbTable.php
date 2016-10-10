@@ -11,10 +11,10 @@ use Swayok\Utils\StringUtils;
 
 abstract class DbTable implements DbTableInterface {
 
-    /** @var DbTable */
-    static protected $instance;
-    /** @var string  */
-    static protected $alias;
+    /** @var DbTable[] */
+    static private $instances = [];
+    /** @var string */
+    protected $alias;
 
     /**
      * @return $this
@@ -23,18 +23,12 @@ abstract class DbTable implements DbTableInterface {
      * @throws \UnexpectedValueException
      * @throws OrmException
      */
-    static public function getInstance() {
-        if (static::$instance === null) {
-            if (!static::hasPkColumn()) {
-                throw new OrmException(
-                    'Table schema must contain primary key',
-                    OrmException::CODE_INVALID_TABLE_SCHEMA
-                );
-            }
-            static::$instance = new static();
-            static::$alias = StringUtils::classify(static::getName());
+    final static public function getInstance() {
+        $class = get_called_class();
+        if (!array_key_exists($class, self::$instances)) {
+            self::$instances[$class] = new static();
         }
-        return static::$instance;
+        return self::$instances[$class];
     }
 
     static public function getName() {
@@ -49,12 +43,13 @@ abstract class DbTable implements DbTableInterface {
      * @throws \UnexpectedValueException
      * @throws OrmException
      */
-    static public function i() {
+    final static public function i() {
         return static::getInstance();
     }
 
     /**
      * @return DbAdapterInterface
+     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function getConnection() {
@@ -62,10 +57,35 @@ abstract class DbTable implements DbTableInterface {
     }
 
     /**
+     * @return DbTableStructure
+     * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \BadMethodCallException
+     */
+    static public function getStructure() {
+        return static::getInstance()->getTableStructure();
+    }
+
+    /**
      * @return string
+     * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \BadMethodCallException
      */
     static public function getAlias() {
-        return static::$alias;
+        return static::getInstance()->getTableAlias();
+    }
+
+    /**
+     * @return string
+     */
+    public function getTableAlias() {
+        if (!$this->alias || !is_string($this->alias)) {
+            $this->alias = StringUtils::classify(static::getName());
+        }
+        return $this->alias;
     }
 
     /**

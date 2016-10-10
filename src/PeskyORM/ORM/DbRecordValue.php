@@ -103,6 +103,7 @@ class DbRecordValue {
 
     /**
      * @return boolean
+     * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
@@ -138,6 +139,7 @@ class DbRecordValue {
 
     /**
      * @return boolean
+     * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -178,6 +180,7 @@ class DbRecordValue {
 
     /**
      * @return mixed
+     * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException

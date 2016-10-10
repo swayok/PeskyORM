@@ -2,6 +2,7 @@
 
 namespace PeskyORM\ORM;
 use PeskyORM\Core\DbConnectionsManager;
+use PeskyORM\ORM\Exception\OrmException;
 
 abstract class DbTableStructure implements DbTableStructureInterface {
 
@@ -40,14 +41,13 @@ abstract class DbTableStructure implements DbTableStructureInterface {
     /** @var DbTableStructure[]  */
     static private $instances = [];
 
-
     /**
      * @return $this
      */
     static public function getInstance() {
         $class = get_called_class();
         if (!array_key_exists($class, self::$instances)) {
-            self::$instances[$class] = new static();
+            new static();
         }
         return self::$instances[$class];
     }
@@ -57,6 +57,21 @@ abstract class DbTableStructure implements DbTableStructureInterface {
      */
     static public function i() {
         return static::getInstance();
+    }
+
+    protected function __construct() {
+        $class = get_class($this);
+        if (array_key_exists($class, self::$instances)) {
+            throw new \BadMethodCallException('Attempt to create 2nd instance of class ' . __CLASS__);
+        }
+        self::$instances[$class] = $this;
+        $this->loadColumnConfigsFromPrivateMethods();
+        if (static::$autodetectColumnConfigs) {
+            $this->createMissingColumnConfigsFromDbTableDescription();
+        }
+        if (!$this->_findPkColumn(false)) {
+            throw new OrmException('Table schema must contain primary key', OrmException::CODE_INVALID_TABLE_SCHEMA);
+        }
     }
 
     /**
@@ -71,13 +86,6 @@ abstract class DbTableStructure implements DbTableStructureInterface {
      */
     static public function getSchema() {
         return 'public';
-    }
-
-    protected function __construct() {
-        $this->loadColumnConfigsFromPrivateMethods();
-        if (static::$autodetectColumnConfigs) {
-            $this->createMissingColumnConfigsFromDbTableDescription();
-        }
     }
 
     /**
@@ -246,11 +254,10 @@ abstract class DbTableStructure implements DbTableStructureInterface {
             throw new \InvalidArgumentException("Table does not contain column named '{$colName}'");
         }
         if ($this->columns[$colName] instanceof \ReflectionMethod) {
-            $tableStruct = static::getInstance();
             /** @var \ReflectionMethod $method */
             $method = $this->columns[$colName];
             $method->setAccessible(true);
-            $config = $method->invoke($tableStruct);
+            $config = $method->invoke($this);
             $method->setAccessible(false);
             if (!($config instanceof DbTableColumn)) {
                 throw new \UnexpectedValueException(
@@ -261,7 +268,7 @@ abstract class DbTableStructure implements DbTableStructureInterface {
                 $config->setName($method->getName());
             }
             /** @var DbTableColumn $config */
-            $config->setTableStructure($tableStruct);
+            $config->setTableStructure($this);
             unset($method, $this->columns[$colName]);
             $this->columns[$config->getName()] = $config;
             if ($config->isItPrimaryKey()) {
@@ -288,7 +295,6 @@ abstract class DbTableStructure implements DbTableStructureInterface {
      */
     protected function _loadAllColumnsConfigs() {
         if (!$this->allColumnsProcessed) {
-            static::getInstance(); //< read configs if not read yet
             foreach ($this->columns as $columnName => $column) {
                 if (!($column instanceof DbTableColumn)) {
                     $this->_loadColumnConfig($columnName);
@@ -312,11 +318,10 @@ abstract class DbTableStructure implements DbTableStructureInterface {
             throw new \InvalidArgumentException("Table has no relation named '{$relationName}'");
         }
         if ($this->relations[$relationName] instanceof \ReflectionMethod) {
-            $tableStruct = static::getInstance();
             /** @var \ReflectionMethod $method */
             $method = $this->relations[$relationName];
             $method->setAccessible(true);
-            $config = $method->invoke($tableStruct);
+            $config = $method->invoke($this);
             $method->setAccessible(false);
             if (!($config instanceof DbTableRelation)) {
                 throw new \UnexpectedValueException(
@@ -352,7 +357,6 @@ abstract class DbTableStructure implements DbTableStructureInterface {
     protected function _loadAllRelationsConfigs() {
         if (!$this->allRelationsProcessed) {
             foreach ($this->relations as $relationName => $relation) {
-                static::getInstance(); //< read configs if not read yet
                 if (!($relation instanceof DbTableRelation)) {
                     $this->_loadRelationConfig($relationName);
                 }

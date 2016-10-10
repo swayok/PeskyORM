@@ -14,11 +14,13 @@ class TestingApp {
     static protected $dbConnection;
 
     static public function init() {
-        static::$dbConnection = DbConnectionsManager::createConnection(
-            'default',
-            DbConnectionsManager::ADAPTER_POSTGRES,
-            PostgresConfig::fromArray(static::getGlobalConfigs()['pgsql'])
-        );
+        if (!static::$dbConnection) {
+            static::$dbConnection = DbConnectionsManager::createConnection(
+                'default',
+                DbConnectionsManager::ADAPTER_POSTGRES,
+                PostgresConfig::fromArray(static::getGlobalConfigs()['pgsql'])
+            );
+        }
     }
 
     static protected function getGlobalConfigs() {

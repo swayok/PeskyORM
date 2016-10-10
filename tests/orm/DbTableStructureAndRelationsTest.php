@@ -6,6 +6,8 @@ use PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use PeskyORMTest\TestingApp;
 use PeskyORMTest\TestingInvalidClasses\TestingInvalidColumnsInTableStructure;
 use PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure;
+use PeskyORMTest\TestingInvalidClasses\TestingNoPkColumnInTableStructure;
+use PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 
 class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
 
@@ -17,6 +19,33 @@ class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
         static::assertEquals('default', TestingAdminsTableStructure::getConnectionName());
         static::assertEquals('public', TestingAdminsTableStructure::getSchema());
         static::assertEquals('admins', TestingAdminsTableStructure::getTableName());
+    }
+
+    /**
+     * @expectedException \PeskyORM\ORM\Exception\OrmException
+     * @expectedExceptionMessage Table schema must contain primary key
+     */
+    public function testAbsentPkColumn() {
+        TestingNoPkColumnInTableStructure::getInstance();
+    }
+
+    /**
+     * @expectedException \BadMethodCallException
+     * @expectedExceptionMessage Attempt to create 2nd instance of class PeskyORM\ORM\DbTableStructure
+     */
+    public function testDuplicateConstruct() {
+        $class = new ReflectionClass(TestingAdminsTableStructure::class);
+        $method = $class->getConstructor();
+        $method->setAccessible(true);
+        $method->invoke(TestingAdminsTableStructure::getInstance());
+    }
+
+    public function testStaticMethodsInDbTableConfigs() {
+        static::assertInstanceOf(TestingSettingsTableStructure::class, TestingSettingsTableStructure::getInstance());
+        static::assertInstanceOf(TestingAdminsTableStructure::class, TestingAdminsTableStructure::getInstance());
+
+        static::assertInstanceOf(TestingSettingsTableStructure::class, TestingSettingsTableStructure::i());
+        static::assertInstanceOf(TestingAdminsTableStructure::class, TestingAdminsTableStructure::i());
     }
 
     public function testTableStructureColumns() {
