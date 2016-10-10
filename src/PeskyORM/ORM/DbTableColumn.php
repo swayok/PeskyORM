@@ -822,6 +822,7 @@ class DbTableColumn {
      * @param DbRecordValue $value
      * @param null|string $format
      * @return mixed
+     * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -865,6 +866,7 @@ class DbTableColumn {
     /**
      * @param DbRecordValue $value
      * @return mixed
+     * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
@@ -895,6 +897,7 @@ class DbTableColumn {
      * @param DbRecordValue|mixed $value
      * @param bool $isFromDb
      * @return array
+     * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -1012,10 +1015,15 @@ class DbTableColumn {
      * Validates a new value
      * @param mixed|DbRecordValue $value
      * @param bool $isFromDb - true: value received from DB
-     * @return mixed
+     * @return array
+     * @throws \UnexpectedValueException
      */
     public function validateValue($value, $isFromDb = false) {
-        return call_user_func($this->getValueValidator(), $value, $isFromDb, $this);
+        $errors = call_user_func($this->getValueValidator(), $value, $isFromDb, $this);
+        if (!is_array($errors)) {
+            throw new \UnexpectedValueException('Validator closure must return an array');
+        }
+        return $errors;
     }
 
     /**

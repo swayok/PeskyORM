@@ -2,6 +2,8 @@
 
 namespace PeskyORM\ORM;
 
+use PeskyORM\Core\DbExpr;
+
 class DbRecordValue {
 
     /**
@@ -131,7 +133,7 @@ class DbRecordValue {
         if ($defaultValue instanceof \Closure) {
             $defaultValue = $defaultValue($this->getRecord());
         }
-        if (!$this->getColumn()->validateValue($defaultValue, false)) {
+        if (!($defaultValue instanceof DbExpr) && count($this->getColumn()->validateValue($defaultValue, false)) > 0) {
             throw new \UnexpectedValueException('Default column value is not valid');
         }
         return $defaultValue;
@@ -145,9 +147,14 @@ class DbRecordValue {
      * @throws \InvalidArgumentException
      */
     public function isDefaultValueCanBeSet() {
-        return $this->hasDefaultValue()
-            && !$this->getColumn()->isItPrimaryKey()
-            && !$this->getRecord()->existsInDb();
+        if (!$this->hasDefaultValue()) {
+            return false;
+        }
+        if ($this->getColumn()->isItPrimaryKey()) {
+            return $this->getDefaultValue() instanceof DbExpr;
+        } else {
+            return !$this->getRecord()->existsInDb();
+        }
     }
 
     /**
@@ -258,11 +265,11 @@ class DbRecordValue {
     /**
      * @param null|string $key
      * @param mixed|\Closure $default
-     * @param bool $useDefaultValueAsNewValue - if default value is used - save it to custom info as new value
+     * @param bool $storeDefaultValueIfUsed - if default value is used - save it to custom info as new value
      * @return mixed
      * @throws \InvalidArgumentException
      */
-    public function getCustomInfo($key = null, $default = null, $useDefaultValueAsNewValue = false) {
+    public function getCustomInfo($key = null, $default = null, $storeDefaultValueIfUsed = false) {
         if ($key === null) {
             return $this->customInfo;
         } else {
@@ -275,7 +282,7 @@ class DbRecordValue {
                 if ($default instanceof \Closure) {
                     $default = $default($this);
                 }
-                if ($useDefaultValueAsNewValue) {
+                if ($storeDefaultValueIfUsed) {
                     $this->customInfo[$key] = $default;
                 }
                 return $default;
@@ -285,9 +292,11 @@ class DbRecordValue {
 
     /**
      * @param array $data
+     * @return $this
      */
     public function setCustomInfo(array $data) {
         $this->customInfo = $data;
+        return $this;
     }
 
     /**
@@ -302,6 +311,7 @@ class DbRecordValue {
 
     /**
      * @param null|string $key
+     * @return $this
      * @throws \InvalidArgumentException
      */
     public function removeCustomInfo($key = null) {
@@ -313,6 +323,7 @@ class DbRecordValue {
             }
             unset($this->customInfo[$key]);
         }
+        return $this;
     }
 
 }
