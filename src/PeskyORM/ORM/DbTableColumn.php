@@ -911,12 +911,14 @@ class DbTableColumn {
             $value,
             static::getValidationErrorsLocalization()
         );
-        if (!empty($errors)) {
+        if (count($errors) > 0) {
             return $errors;
         }
         $errors = call_user_func($this->getAllowedValueValidator(), $value, $isFromDb, $this);
         if (!is_array($errors)) {
             throw new \UnexpectedValueException('Allowed value validator closure must return an array');
+        } else if (count($errors) > 0) {
+            return $errors;
         }
         $errors = call_user_func($this->getValueValidatorExtender(), $value, $isFromDb, $this);
         if (!is_array($errors)) {

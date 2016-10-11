@@ -18,6 +18,10 @@ class DbRecordValue {
      * @var mixed
      */
     protected $oldValue = null;
+    /**
+     * @var bool
+     */
+    protected $oldValueIsFromDb = false;
 
     protected $isFromDb = false;
     protected $hasValue = false;
@@ -134,7 +138,9 @@ class DbRecordValue {
             $defaultValue = $defaultValue($this->getRecord());
         }
         if (!($defaultValue instanceof DbExpr) && count($this->getColumn()->validateValue($defaultValue, false)) > 0) {
-            throw new \UnexpectedValueException('Default column value is not valid');
+            throw new \UnexpectedValueException(
+                "Default value for column '{$this->getColumn()->getName()}' is not valid"
+            );
         }
         return $defaultValue;
     }
@@ -151,7 +157,7 @@ class DbRecordValue {
             return false;
         }
         if ($this->getColumn()->isItPrimaryKey()) {
-            return $this->getDefaultValue() instanceof DbExpr;
+            return $this->hasValue ? false : ($this->getDefaultValue() instanceof DbExpr);
         } else {
             return !$this->getRecord()->existsInDb();
         }
@@ -174,6 +180,7 @@ class DbRecordValue {
         if ($this->hasValue) {
             $this->hasOldValue = true;
             $this->oldValue = $this->value;
+            $this->oldValueIsFromDb = $this->isFromDb;
         }
         $this->rawValue = $rawValue;
         $this->value = $preprocessedValue;
@@ -193,8 +200,10 @@ class DbRecordValue {
      * @throws \UnexpectedValueException
      */
     public function getValue() {
-        if ($this->hasValue()) {
-            return $this->hasValue ? $this->value : $this->getDefaultValue();
+        if ($this->hasValue) {
+            return $this->value;
+        } else if ($this->isDefaultValueCanBeSet()) {
+            return $this->getDefaultValue();
         } else {
             throw new \BadMethodCallException(
                 "Value for column '{$this->getColumn()->getName()}' is not set and default value cannot be set because"
@@ -207,16 +216,18 @@ class DbRecordValue {
      * @param mixed $value
      * @param mixed $rawValue - needed to verify that valid value once was same as raw value
      * @return $this
+     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      */
     public function setValidValue($value, $rawValue) {
-        if (!$this->hasValue || $rawValue !== $this->rawValue) {
+        if ($rawValue !== $this->rawValue) {
             throw new \InvalidArgumentException(
-                "$rawValue argument must be same as current raw value: '{$this->rawValue}'"
+                "\$rawValue argument for column '{$this->getColumn()->getName()}'"
+                    . ' must be same as current raw value: ' . var_export($this->rawValue, true)
             );
         }
         $this->value = $value;
-        $this->validationErrors = [];
+        $this->setValidationErrors([]);
         return $this;
     }
 
@@ -229,13 +240,26 @@ class DbRecordValue {
 
     /**
      * @return mixed
+     * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      */
     public function getOldValue() {
         if (!$this->hasOldValue()) {
-            throw new \BadMethodCallException('Old value is not set');
+            throw new \BadMethodCallException("Old value is not set for column '{$this->getColumn()->getName()}'");
         }
         return $this->oldValue;
+    }
+
+    /**
+     * @return bool
+     * @throws \BadMethodCallException
+     * @throws \UnexpectedValueException
+     */
+    public function isOldValueWasFromDb() {
+        if (!$this->hasOldValue()) {
+            throw new \BadMethodCallException("Old value is not set for column '{$this->getColumn()->getName()}'");
+        }
+        return $this->oldValueIsFromDb;
     }
 
     /**
@@ -258,7 +282,19 @@ class DbRecordValue {
     /**
      * @return bool
      */
+    public function isValidated() {
+        return $this->isValidated;
+    }
+
+    /**
+     * @return bool
+     * @throws \UnexpectedValueException
+     * @throws \BadMethodCallException
+     */
     public function isValid() {
+        if (!$this->isValidated()) {
+            throw new \BadMethodCallException("Value was not validated for column '{$this->getColumn()->getName()}'");
+        }
         return empty($this->validationErrors);
     }
 
@@ -267,14 +303,18 @@ class DbRecordValue {
      * @param mixed|\Closure $default
      * @param bool $storeDefaultValueIfUsed - if default value is used - save it to custom info as new value
      * @return mixed
+     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      */
     public function getCustomInfo($key = null, $default = null, $storeDefaultValueIfUsed = false) {
         if ($key === null) {
             return $this->customInfo;
         } else {
-            if (!is_string($key)) {
-                throw new \InvalidArgumentException('$key argument must be a string');
+            if (!is_string($key) && !is_numeric($key)) {
+                throw new \InvalidArgumentException(
+                    "\$key argument for custom info must be a string or number but " . gettype($key) . ' received'
+                        . " (column: '{$this->getColumn()->getName()}')"
+                );
             }
             if (array_key_exists($key, $this->customInfo)) {
                 return $this->customInfo[$key];
@@ -303,8 +343,16 @@ class DbRecordValue {
      * @param string $key
      * @param mixed $value
      * @return $this
+     * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
      */
     public function addCustomInfo($key, $value) {
+        if (!is_string($key) && !is_numeric($key)) {
+            throw new \InvalidArgumentException(
+                "\$key argument for custom info must be a string or number but " . gettype($key) . ' received'
+                    . " (column: '{$this->getColumn()->getName()}')"
+            );
+        }
         $this->customInfo[$key] = $value;
         return $this;
     }
@@ -312,14 +360,18 @@ class DbRecordValue {
     /**
      * @param null|string $key
      * @return $this
+     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      */
     public function removeCustomInfo($key = null) {
         if ($key === null) {
             $this->customInfo = [];
         } else {
-            if (!is_string($key)) {
-                throw new \InvalidArgumentException('$key argument must be a string');
+            if (!is_string($key) && !is_numeric($key)) {
+                throw new \InvalidArgumentException(
+                    "\$key argument for custom info must be a string or number but " . gettype($key) . ' received'
+                        . " (column: '{$this->getColumn()->getName()}')"
+                );
             }
             unset($this->customInfo[$key]);
         }

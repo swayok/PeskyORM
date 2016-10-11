@@ -92,7 +92,7 @@ class TestingAdminsTableStructure extends DbTableStructure {
 
     private function language() {
         return DbTableColumn::create(DbTableColumn::TYPE_ENUM)
-            ->setAllowedValues(['en', 'ru'])
+            ->setAllowedValues(['en', 'ru', 'de'])
             ->convertsEmptyStringToNull()
             ->valueIsNotNullable()
             ->setDefaultValue('en');

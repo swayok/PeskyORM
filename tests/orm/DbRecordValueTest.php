@@ -65,6 +65,24 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         static::assertEquals($clone->getRecord(), $valueObj->getRecord());
     }
 
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage $key argument for custom info must be a string or number but object received (column: 'id')
+     */
+    public function testInvalidGetCustomInfo() {
+        $valueObj = DbRecordValue::create(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
+        $valueObj->getCustomInfo($this);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage $key argument for custom info must be a string or number but object received (column: 'id')
+     */
+    public function testInvalidRemoveCustomInfo() {
+        $valueObj = DbRecordValue::create(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
+        $valueObj->removeCustomInfo($this);
+    }
+
     public function testCustomInfo() {
         $valueObj = DbRecordValue::create(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
         $valueObj->setCustomInfo(['test'=> 'i']);
@@ -89,13 +107,15 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
 
     public function testValidationErrors() {
         $valueObj = DbRecordValue::create(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
-        static::assertTrue($valueObj->isValid());
+        static::assertFalse($valueObj->isValidated());
         $valueObj->setValidationErrors(['fail!!!']);
         static::assertEquals(['fail!!!'], $valueObj->getValidationErrors());
+        static::assertTrue($valueObj->isValidated());
         static::assertFalse($valueObj->isValid());
         $valueObj->setValidationErrors([]);
         static::assertEquals([], $valueObj->getValidationErrors());
         static::assertTrue($valueObj->isValid());
+        static::assertTrue($valueObj->isValidated());
     }
 
     public function testIsFromDb() {
@@ -111,6 +131,8 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($valueObj->hasDefaultValue());
         static::assertFalse($valueObj->isDefaultValueCanBeSet());
         static::assertFalse($valueObj->hasValue());
+        static::assertInstanceOf(DbExpr::class, $valueObj->getDefaultValue());
+        $record::getTable()->getConnection()->getExpressionToSetDefaultValueForAColumn();
 
         $langCol = TestingAdminsTableStructure::getColumn('language');
         $valueObj = DbRecordValue::create($langCol, $record);
@@ -121,13 +143,13 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         static::assertEquals($langCol->getDefaultValue(), $valueObj->getValue());
 
         $langCol->setDefaultValue(function () {
-            return 'test';
+            return 'de';
         });
         static::assertTrue($valueObj->hasDefaultValue());
         static::assertTrue($valueObj->isDefaultValueCanBeSet());
         static::assertTrue($valueObj->hasValue());
-        static::assertEquals('test', $valueObj->getDefaultValue());
-        static::assertEquals('test', $valueObj->getValue());
+        static::assertEquals('de', $valueObj->getDefaultValue());
+        static::assertEquals('de', $valueObj->getValue());
 
         $langCol->setDefaultValue(DbExpr::create('test2'));
         static::assertTrue($valueObj->hasDefaultValue());
@@ -136,21 +158,21 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         static::assertInstanceOf(DbExpr::class, $valueObj->getDefaultValue());
         static::assertInstanceOf(DbExpr::class, $valueObj->getValue());
 
-        $record->setColumnValue($langCol->getName(), 'ru', false);
+        $valueObj->setRawValue('ru', 'ru', false)->setValidValue('ru', 'ru');
         static::assertEquals('ru', $valueObj->getValue());
 
         $idColValueObj = DbRecordValue::create(TestingAdminsTableStructure::getPkColumn(), $record);
+        static::assertTrue($idColValueObj->isDefaultValueCanBeSet());
         $langColValueObj = DbRecordValue::create($langCol, $record);
         $record->reset()->setColumnValue('id', 1, true);
-        static::assertTrue($idColValueObj->isDefaultValueCanBeSet());
         static::assertFalse($langColValueObj->isDefaultValueCanBeSet());
-
-        // todo: finish this (note: $record->setColumnValue() does not affect $idColValueObj)
+        $idColValueObj->setRawValue(2, 2, false)->setValidValue(2, 2);
+        static::assertFalse($idColValueObj->isDefaultValueCanBeSet());
     }
 
     /**
      * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Default column value is not valid
+     * @expectedExceptionMessage Default value for column 'language' is not valid
      */
     public function testInvalidDefaultValue() {
         $col = TestingAdminsTableStructure::getColumn('language')->setDefaultValue('invalid');
@@ -158,5 +180,91 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         $valueObj->getDefaultValue();
     }
 
-    // todo: test old/new/raw value set/get
+    /**
+     * @expectedException \BadMethodCallException
+     * @expectedExceptionMessage Value for column 'parent_id' is not set and default value cannot be set because
+     */
+    public function testInvalidGetValue() {
+        $valueObj = DbRecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_()->setId(1));
+        $valueObj->getValue();
+    }
+
+    /**
+     * @expectedException \BadMethodCallException
+     * @expectedExceptionMessage Old value is not set
+     */
+    public function testInvalidGetOldValue() {
+        $valueObj = DbRecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
+        $valueObj->getOldValue();
+    }
+
+    /**
+     * @expectedException \BadMethodCallException
+     * @expectedExceptionMessage Old value is not set
+     */
+    public function testInvalidIsOldValueWasFromDb() {
+        $valueObj = DbRecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
+        $valueObj->isOldValueWasFromDb();
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage $rawValue argument for column 'parent_id' must be same as current raw value: NULL
+     */
+    public function testInvalidSetValidValue1() {
+        $valueObj = DbRecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
+        $valueObj->setValidValue(1, 1);
+    }
+
+    public function testRawValueAndValidValue() {
+        $record = TestingAdmin::_();
+        $valueObj = DbRecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), $record);
+
+        $valueObj
+            ->setCustomInfo(['1'])
+            ->setValidationErrors(['1']);
+        static::assertEquals(['1'], $valueObj->getCustomInfo());
+        static::assertEquals(['1'], $valueObj->getValidationErrors());
+        static::assertFalse($valueObj->isValid());
+        static::assertTrue($valueObj->isValidated());
+
+        $valueObj->setRawValue('1', '1', true);
+        static::assertTrue($valueObj->hasValue());
+        static::assertTrue($valueObj->isItFromDb());
+        static::assertFalse($valueObj->hasOldValue());
+        static::assertEquals('1', $valueObj->getRawValue());
+        static::assertEquals('1', $valueObj->getValue());
+        static::assertEquals([], $valueObj->getCustomInfo());
+        static::assertEquals([], $valueObj->getValidationErrors());
+        static::assertFalse($valueObj->isValidated());
+
+        $valueObj->setValidationErrors(['test']);
+        static::assertTrue($valueObj->isValidated());
+        static::assertFalse($valueObj->isValid());
+        static::assertEquals(['test'], $valueObj->getValidationErrors());
+
+        $valueObj->setValidValue(1, '1');
+        static::assertTrue($valueObj->hasValue());
+        static::assertFalse($valueObj->hasOldValue());
+        static::assertTrue($valueObj->isItFromDb());
+        static::assertEquals(1, $valueObj->getValue());
+        static::assertEquals('1', $valueObj->getRawValue());
+        static::assertEquals([], $valueObj->getValidationErrors());
+        static::assertTrue($valueObj->isValidated());
+        static::assertTrue($valueObj->isValid());
+
+        $valueObj->setRawValue('2', '2', false);
+        static::assertTrue($valueObj->hasValue());
+        static::assertFalse($valueObj->isItFromDb());
+        static::assertTrue($valueObj->hasOldValue());
+        static::assertTrue($valueObj->isOldValueWasFromDb());
+        static::assertEquals(1, $valueObj->getOldValue());
+        static::assertEquals('2', $valueObj->getRawValue());
+        static::assertEquals('2', $valueObj->getValue());
+        static::assertEquals([], $valueObj->getCustomInfo());
+        static::assertEquals([], $valueObj->getValidationErrors());
+        static::assertFalse($valueObj->isValidated());
+
+    }
+
 }
