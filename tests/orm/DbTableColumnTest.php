@@ -19,19 +19,6 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @param object $object
-     * @param string $methodName
-     * @param array $args
-     * @return mixed
-     */
-    private function callObjectMethod($object, $methodName, array $args = []) {
-        $reflection = new ReflectionClass($object);
-        $method = $reflection->getMethod($methodName);
-        $method->setAccessible(true);
-        return $method->invokeArgs($object, $args);
-    }
-
-    /**
      * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage $type argument must be a string, integer or float
      */
@@ -82,7 +69,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
         static::assertInstanceOf(\Closure::class, $obj->getValueExistenceChecker());
         static::assertInstanceOf(\Closure::class, $obj->getValueSetter());
         static::assertInstanceOf(\Closure::class, $obj->getValueValidator());
-        static::assertInstanceOf(\Closure::class, $obj->getAllowedValueValidator());
+        static::assertInstanceOf(\Closure::class, $obj->getValueIsAllowedValidator());
         static::assertInstanceOf(\Closure::class, $obj->getValueValidatorExtender());
         static::assertInstanceOf(\Closure::class, $obj->getValueNormalizer());
         static::assertInstanceOf(\Closure::class, $obj->getValuePreprocessor());
@@ -195,6 +182,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
         static::assertEquals($obj->getType(), DbTableColumn::TYPE_TIMESTAMP);
         static::assertTrue($obj->hasValueFormatter());
         static::assertInstanceOf(\Closure::class, $obj->getValueFormatter());
+        static::assertTrue(count($obj->getValueFormats()) > 0);
         static::assertNotEmpty($this->getObjectPropertyValue($obj, 'valueFormatterFormats'));
     }
 

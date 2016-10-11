@@ -66,6 +66,11 @@ abstract class DbRecordValueHelpers {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_FLOAT)];
                 }
                 break;
+            case DbTableColumn::TYPE_ENUM:
+                if (!is_string($value) && !is_numeric($value)) {
+                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_STRING_OR_NUMERIC)];
+                }
+                break;
             case DbTableColumn::TYPE_DATE:
                 if (!ValidateValue::isDateTime($value)) {
                     return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_DATE)];

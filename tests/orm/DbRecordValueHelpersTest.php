@@ -793,6 +793,22 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         static::assertEquals(['string'], DbRecordValueHelpers::isValueFitsDataType(-1.25, DbTableColumn::TYPE_STRING, ['value_must_be_string' => 'string']));
     }
 
+    public function testIsValueFitsDataTypeEnum() {
+        $message = ['value_must_be_string_or_numeric'];
+        static::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('str', DbTableColumn::TYPE_ENUM));
+        static::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('', DbTableColumn::TYPE_ENUM));
+        static::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('1', DbTableColumn::TYPE_ENUM));
+        static::assertEquals([], DbRecordValueHelpers::isValueFitsDataType('0', DbTableColumn::TYPE_ENUM));
+        static::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(-1, DbTableColumn::TYPE_ENUM));
+        static::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1, DbTableColumn::TYPE_ENUM));
+        static::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(1.25, DbTableColumn::TYPE_ENUM));
+        static::assertEquals([], DbRecordValueHelpers::isValueFitsDataType(-1.25, DbTableColumn::TYPE_ENUM));
+        static::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType([], DbTableColumn::TYPE_ENUM));
+        static::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(null, DbTableColumn::TYPE_ENUM));
+        static::assertEquals($message, DbRecordValueHelpers::isValueFitsDataType(false, DbTableColumn::TYPE_ENUM));
+        static::assertEquals(['enum'], DbRecordValueHelpers::isValueFitsDataType(true, DbTableColumn::TYPE_ENUM, ['value_must_be_string_or_numeric' => 'enum']));
+    }
+
     public function testIsValueFitsDataTypeUploadedFile() {
         $message = ['value_must_be_file'];
         $file = [
