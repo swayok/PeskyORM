@@ -9,6 +9,7 @@ class DbTableColumnDefaultClosures {
      * @param boolean $isFromDb
      * @param DbRecordValue $valueContainer
      * @return DbRecordValue
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -78,6 +79,7 @@ class DbTableColumnDefaultClosures {
      * @param DbRecordValue $value
      * @param null|string $format
      * @return mixed
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -106,20 +108,22 @@ class DbTableColumnDefaultClosures {
                 );
             }
         } else {
-            return $value->getValue();
+            return $value->getValueOrDefault();
         }
     }
 
     /**
      * @param DbRecordValue $value
-     * @return mixed
+     * @param bool $checkDefaultValue
+     * @return bool
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      */
-    static public function valueExistenceChecker(DbRecordValue $value) {
-        return $value->hasValue();
+    static public function valueExistenceChecker(DbRecordValue $value, $checkDefaultValue = false) {
+        return $checkDefaultValue ? $value->hasValueOrDefault() : $value->hasValue();
     }
 
     /**
@@ -127,6 +131,7 @@ class DbTableColumnDefaultClosures {
      * @param bool $isFromDb
      * @param DbTableColumn $column
      * @return array
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException

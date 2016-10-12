@@ -286,8 +286,8 @@ class DbTableColumn {
         $this->setValueGetter(function (DbRecordValue $valueContainer, $format = null) {
             return DbTableColumnDefaultClosures::valueGetter($valueContainer, $format);
         });
-        $this->setValueExistenceChecker(function (DbRecordValue $valueContainer) {
-            return DbTableColumnDefaultClosures::valueExistenceChecker($valueContainer);
+        $this->setValueExistenceChecker(function (DbRecordValue $valueContainer, $checkDefaultValue = false) {
+            return DbTableColumnDefaultClosures::valueExistenceChecker($valueContainer, $checkDefaultValue);
         });
         $this->setValueSetter(function ($newValue, $isFromDb, DbRecordValue $valueContainer) {
             return DbTableColumnDefaultClosures::valueSetter($newValue, $isFromDb, $valueContainer);
@@ -793,7 +793,7 @@ class DbTableColumn {
     /**
      * Set function that checks if column value is set and returns boolean value (true: value is set)
      * Note: column value is set if it has any value (even null) or default value
-     * @param \Closure $valueChecker = function (DbRecordValue $value) { return true; }
+     * @param \Closure $valueChecker = function (DbRecordValue $value, $checkDefaultValue = false) { return true; }
      * @return $this
      */
     public function setValueExistenceChecker(\Closure $valueChecker) {

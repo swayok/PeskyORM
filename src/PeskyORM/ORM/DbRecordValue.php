@@ -108,14 +108,26 @@ class DbRecordValue {
     }
 
     /**
-     * @return boolean
+     * @return bool
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      */
     public function hasValue() {
-        return $this->hasValue || $this->isDefaultValueCanBeSet();
+        return $this->hasValue;
+    }
+
+    /**
+     * @return bool
+     * @throws \PDOException
+     * @throws \BadMethodCallException
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     */
+    public function hasValueOrDefault() {
+        return $this->hasValue() || $this->isDefaultValueCanBeSet();
     }
 
     /**
@@ -147,6 +159,7 @@ class DbRecordValue {
 
     /**
      * @return boolean
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
@@ -194,21 +207,43 @@ class DbRecordValue {
 
     /**
      * @return mixed
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      */
     public function getValue() {
-        if ($this->hasValue) {
+        if (!$this->hasValue) {
+            throw new \BadMethodCallException("Value for column '{$this->getColumn()->getName()}' is not set");
+        }
+        return $this->value;
+    }
+
+    /**
+     * @return mixed
+     * @throws \InvalidArgumentException
+     * @throws \PDOException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \BadMethodCallException
+     * @throws \UnexpectedValueException
+     */
+    public function getValueOrDefault() {
+        if ($this->hasValue()) {
             return $this->value;
         } else if ($this->isDefaultValueCanBeSet()) {
             return $this->getDefaultValue();
         } else {
-            throw new \BadMethodCallException(
-                "Value for column '{$this->getColumn()->getName()}' is not set and default value cannot be set because"
-                    . ' record already exists in DB and there is danger of unintended value overwriting'
-            );
+            if ($this->hasDefaultValue()) {
+                throw new \BadMethodCallException(
+                    "Value for column '{$this->getColumn()->getName()}' is not set and default value cannot be set because"
+                        . ' record already exists in DB and there is danger of unintended value overwriting'
+                );
+            } else {
+                throw new \BadMethodCallException(
+                    "Value for column '{$this->getColumn()->getName()}' is not set and default value is not provided"
+                );
+            }
         }
     }
 

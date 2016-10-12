@@ -19,10 +19,18 @@ class DbTableColumnDefaultClosuresTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testValueExistenceChecker() {
-        $valueObj = DbRecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
-        static::assertFalse(DbTableColumnDefaultClosures::valueExistenceChecker($valueObj));
+        $column = TestingAdminsTableStructure::getColumn('parent_id');
+        $valueObj = DbRecordValue::create($column, TestingAdmin::_());
+        static::assertFalse(DbTableColumnDefaultClosures::valueExistenceChecker($valueObj, false));
+        static::assertFalse(DbTableColumnDefaultClosures::valueExistenceChecker($valueObj, true));
+
+        $column->setDefaultValue(1);
+        static::assertFalse(DbTableColumnDefaultClosures::valueExistenceChecker($valueObj, false));
+        static::assertTrue(DbTableColumnDefaultClosures::valueExistenceChecker($valueObj, true));
+
         $valueObj->setRawValue(1, 1, true)->setValidValue(1, 1);
-        static::assertTrue(DbTableColumnDefaultClosures::valueExistenceChecker($valueObj));
+        static::assertTrue(DbTableColumnDefaultClosures::valueExistenceChecker($valueObj, false));
+        static::assertTrue(DbTableColumnDefaultClosures::valueExistenceChecker($valueObj, true));
     }
 
     public function testValuePreprocessor() {

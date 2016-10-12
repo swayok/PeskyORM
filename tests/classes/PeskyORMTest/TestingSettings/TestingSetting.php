@@ -6,5 +6,10 @@ use PeskyORM\ORM\DbRecord;
 
 class TestingSetting extends DbRecord {
 
-    static protected $tableClass = TestingSettingsTable::class;
+    /**
+     * @return TestingSettingsTable
+     */
+    static public function getTable() {
+        return TestingSettingsTable::getInstance();
+    }
 }

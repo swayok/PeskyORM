@@ -131,6 +131,7 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($valueObj->hasDefaultValue());
         static::assertFalse($valueObj->isDefaultValueCanBeSet());
         static::assertFalse($valueObj->hasValue());
+        static::assertFalse($valueObj->hasValueOrDefault());
         static::assertInstanceOf(DbExpr::class, $valueObj->getDefaultValue());
         $record::getTable()->getConnection()->getExpressionToSetDefaultValueForAColumn();
 
@@ -138,7 +139,8 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         $valueObj = DbRecordValue::create($langCol, $record);
         static::assertTrue($valueObj->hasDefaultValue());
         static::assertTrue($valueObj->isDefaultValueCanBeSet());
-        static::assertTrue($valueObj->hasValue());
+        static::assertFalse($valueObj->hasValue());
+        static::assertTrue($valueObj->hasValueOrDefault());
         static::assertEquals($langCol->getDefaultValue(), $valueObj->getDefaultValue());
         static::assertEquals($langCol->getDefaultValue(), $valueObj->getValue());
 
@@ -147,14 +149,16 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         });
         static::assertTrue($valueObj->hasDefaultValue());
         static::assertTrue($valueObj->isDefaultValueCanBeSet());
-        static::assertTrue($valueObj->hasValue());
+        static::assertFalse($valueObj->hasValue());
+        static::assertTrue($valueObj->hasValueOrDefault());
         static::assertEquals('de', $valueObj->getDefaultValue());
         static::assertEquals('de', $valueObj->getValue());
 
         $langCol->setDefaultValue(DbExpr::create('test2'));
         static::assertTrue($valueObj->hasDefaultValue());
         static::assertTrue($valueObj->isDefaultValueCanBeSet());
-        static::assertTrue($valueObj->hasValue());
+        static::assertFalse($valueObj->hasValue());
+        static::assertTrue($valueObj->hasValueOrDefault());
         static::assertInstanceOf(DbExpr::class, $valueObj->getDefaultValue());
         static::assertInstanceOf(DbExpr::class, $valueObj->getValue());
 
@@ -164,7 +168,7 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         $idColValueObj = DbRecordValue::create(TestingAdminsTableStructure::getPkColumn(), $record);
         static::assertTrue($idColValueObj->isDefaultValueCanBeSet());
         $langColValueObj = DbRecordValue::create($langCol, $record);
-        $record->reset()->setColumnValue('id', 1, true);
+        $record->reset()->setValue('id', 1, true);
         static::assertFalse($langColValueObj->isDefaultValueCanBeSet());
         $idColValueObj->setRawValue(2, 2, false)->setValidValue(2, 2);
         static::assertFalse($idColValueObj->isDefaultValueCanBeSet());
@@ -230,6 +234,7 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
 
         $valueObj->setRawValue('1', '1', true);
         static::assertTrue($valueObj->hasValue());
+        static::assertTrue($valueObj->hasValueOrDefault());
         static::assertTrue($valueObj->isItFromDb());
         static::assertFalse($valueObj->hasOldValue());
         static::assertEquals('1', $valueObj->getRawValue());
@@ -245,6 +250,7 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
 
         $valueObj->setValidValue(1, '1');
         static::assertTrue($valueObj->hasValue());
+        static::assertTrue($valueObj->hasValueOrDefault());
         static::assertFalse($valueObj->hasOldValue());
         static::assertTrue($valueObj->isItFromDb());
         static::assertEquals(1, $valueObj->getValue());
@@ -254,7 +260,7 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         static::assertTrue($valueObj->isValid());
 
         $valueObj->setRawValue('2', '2', false);
-        static::assertTrue($valueObj->hasValue());
+        static::assertTrue($valueObj->hasValueOrDefault());
         static::assertFalse($valueObj->isItFromDb());
         static::assertTrue($valueObj->hasOldValue());
         static::assertTrue($valueObj->isOldValueWasFromDb());

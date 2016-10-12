@@ -247,7 +247,7 @@ class DbSelect {
 
     /**
      * @return array
-     * @throws \LengthException
+     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \PDOException
      */
@@ -257,7 +257,7 @@ class DbSelect {
 
     /**
      * @return array
-     * @throws \LengthException
+     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \PDOException
      */
@@ -267,7 +267,7 @@ class DbSelect {
 
     /**
      * @return array
-     * @throws \LengthException
+     * @throws \UnexpectedValueException
      * @throws \PDOException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -292,7 +292,7 @@ class DbSelect {
 
     /**
      * @return array
-     * @throws \LengthException
+     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \PDOException
      */
@@ -304,7 +304,7 @@ class DbSelect {
      * @param string $keysColumn
      * @param string $valuesColumn
      * @return array
-     * @throws \LengthException
+     * @throws \UnexpectedValueException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
@@ -322,7 +322,7 @@ class DbSelect {
     /**
      * @param DbExpr $expression
      * @return string
-     * @throws \LengthException
+     * @throws \UnexpectedValueException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
@@ -333,7 +333,7 @@ class DbSelect {
     /**
      * @param string $selectionType - one of PeskyORM\Core\Utils::FETCH_*
      * @return mixed
-     * @throws \LengthException
+     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \PDOException
      */
@@ -355,7 +355,7 @@ class DbSelect {
     /**
      * @return string
      * @throws \UnexpectedValueException
-     * @throws \LengthException
+     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \PDOException
      */
@@ -935,7 +935,7 @@ class DbSelect {
     /**
      * @return string
      * @throws \InvalidArgumentException
-     * @throws \LengthException
+     * @throws \UnexpectedValueException
      */
     protected function makeColumnsForQuery() {
         $columns = [];
@@ -963,7 +963,7 @@ class DbSelect {
             }
         }
         if (empty($columns)) {
-            throw new \LengthException('There is no columns to select');
+            throw new \UnexpectedValueException('There is no columns to select');
         }
         return implode(', ', $columns);
     }

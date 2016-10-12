@@ -2,6 +2,7 @@
 
 namespace PeskyORM\ORM;
 
+use PeskyORM\Core\DbExpr;
 use Swayok\Utils\NormalizeValue;
 use Swayok\Utils\ValidateValue;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -293,18 +294,26 @@ abstract class DbRecordValueHelpers {
         return [$formatter, $formats];
     }
 
+    static protected function getSimpleValueFormContainer(DbRecordValue $valueContainer) {
+        $value = $valueContainer->getValueOrDefault();
+        if ($value instanceof DbExpr) {
+            throw new \UnexpectedValueException('It is impossible to change format of the DbExpr');
+        }
+    }
+
     static public function formatTimestamp(DbRecordValue $valueContainer, $format) {
         if (!is_string($format)) {
             throw new \InvalidArgumentException('$format argument must be a string');
         }
         return $valueContainer->getCustomInfo('as_' . $format, function (DbRecordValue $valueContainer) use ($format) {
+            $value = static::getSimpleValueFormContainer($valueContainer);
             switch ($format) {
                 case 'date':
-                    return date(NormalizeValue::DATE_FORMAT, strtotime($valueContainer->getValue()));
+                    return date(NormalizeValue::DATE_FORMAT, strtotime($value));
                 case 'time':
-                    return date(NormalizeValue::TIME_FORMAT, strtotime($valueContainer->getValue()));
+                    return date(NormalizeValue::TIME_FORMAT, strtotime($value));
                 case 'unix_ts':
-                    return strtotime($valueContainer->getValue());
+                    return strtotime($value);
                 default:
                     throw new \InvalidArgumentException("Requested value format '$format' is not implemented"); 
             }
@@ -317,7 +326,7 @@ abstract class DbRecordValueHelpers {
         }
         return $valueContainer->getCustomInfo('as_' . $format, function (DbRecordValue $valueContainer) use ($format) {
             if ($format === 'unix_ts') {
-                return strtotime($valueContainer->getValue());
+                return strtotime(static::getSimpleValueFormContainer($valueContainer));
             } else {
                 throw new \InvalidArgumentException("Requested value format '$format' is not implemented");
             }
@@ -329,11 +338,12 @@ abstract class DbRecordValueHelpers {
             throw new \InvalidArgumentException('$format argument must be a string');
         }
         return $valueContainer->getCustomInfo('as_' . $format, function (DbRecordValue $valueContainer) use ($format) {
+            $value = static::getSimpleValueFormContainer($valueContainer);
             switch ($format) {
                 case 'array':
-                    return json_decode($valueContainer->getValue(), true);
+                    return json_decode($value, true);
                 case 'object':
-                    return json_decode($valueContainer->getValue());
+                    return json_decode($value);
                 default:
                     throw new \InvalidArgumentException("Requested value format '$format' is not implemented");
             }

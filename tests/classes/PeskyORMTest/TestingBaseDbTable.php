@@ -13,10 +13,11 @@ abstract class TestingBaseDbTable extends DbTable {
 
     public function newRecord() {
         if (!$this->recordClass) {
-            $shortClassName = StringUtils::classify(StringUtils::singularize(static::getName()));
-            $this->recordClass = preg_replace('%\\[^\\]+$%', '', get_called_class()) . '\\' . $shortClassName;
+            $class = new \ReflectionClass(get_called_class());
+            $this->recordClass = $class->getNamespaceName() . '\\'
+                . StringUtils::singularize(str_replace('Table', '', $class->getShortName()));
         }
-        return new $this->recordClass();
+        return new $this->recordClass;
     }
 
     public function getTableStructure() {
