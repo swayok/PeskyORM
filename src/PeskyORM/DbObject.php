@@ -1692,6 +1692,7 @@ class DbObject {
         }
         if (!empty($ret)) {
             $this->cleanUpdatesOfFields();
+            $this->afterSave(false);
         }
         return !empty($ret);
     }
