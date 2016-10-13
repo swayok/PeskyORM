@@ -13,6 +13,11 @@ class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
 
     public static function setUpBeforeClass() {
         TestingApp::init();
+        \PeskyORMTest\TestingApp::cleanInstancesOfDbTablesAndStructures();
+    }
+
+    public static function tearDownAfterClass() {
+        \PeskyORMTest\TestingApp::cleanInstancesOfDbTablesAndStructures();
     }
 
     public function testTableStructureCore() {

@@ -4,6 +4,7 @@ namespace PeskyORMTest\TestingAdmins;
 
 use PeskyORM\Core\DbExpr;
 use PeskyORM\ORM\DbTableColumn;
+use PeskyORM\ORM\DbTableColumnDefaultClosures;
 use PeskyORM\ORM\DbTableRelation;
 use PeskyORM\ORM\DbTableStructure;
 
@@ -25,7 +26,7 @@ class TestingAdminsTableStructure extends DbTableStructure {
     private function parent_id() {
         return DbTableColumn::create(DbTableColumn::TYPE_INT)
             ->convertsEmptyStringToNull()
-            ->valueIsNotNullable()
+            ->valueIsNullable()
         ;
     }
 
@@ -43,10 +44,10 @@ class TestingAdminsTableStructure extends DbTableStructure {
             ->valueIsNotNullable()
             ->mustTrimValue()
             ->setValuePreprocessor(function ($value, $isDbValue, DbTableColumn $column) {
+                $value = DbTableColumnDefaultClosures::valuePreprocessor($value, $isDbValue, $column);
                 if ($isDbValue) {
-                    return $column->defaultValuePreprocessor($value, $isDbValue);
+                    return $value;
                 } else {
-                    $value = $column->defaultValuePreprocessor($value, $isDbValue);
                     if (!empty($value)) {
                         return password_hash($value, PASSWORD_BCRYPT);
                     }
@@ -127,8 +128,7 @@ class TestingAdminsTableStructure extends DbTableStructure {
 
     private function email() {
         return DbTableColumn::create(DbTableColumn::TYPE_EMAIL)
-            ->valueIsNotNullable()
-            ->setDefaultValue('');
+            ->valueIsNullable();
     }
 
     private function timezone() {
@@ -150,7 +150,10 @@ class TestingAdminsTableStructure extends DbTableStructure {
     private function some_file() {
         return DbTableColumn::create(DbTableColumn::TYPE_FILE)
             ->itDoesNotExistInDb()
-            ->valueIsNullable();
+            ->valueIsNullable()
+            ->setValueFormatter(function () {
+                return 'not implemented';
+            });
     }
 
     private function Parent() {

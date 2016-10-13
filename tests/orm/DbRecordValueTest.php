@@ -11,6 +11,11 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
 
     public static function setUpBeforeClass() {
         \PeskyORMTest\TestingApp::init();
+        \PeskyORMTest\TestingApp::cleanInstancesOfDbTablesAndStructures();
+    }
+
+    public static function tearDownAfterClass() {
+        \PeskyORMTest\TestingApp::cleanInstancesOfDbTablesAndStructures();
     }
 
     /**
@@ -125,15 +130,53 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         static::assertTrue($valueObj->isItFromDb());
     }
 
+    /**
+     * @expectedException \UnexpectedValueException
+     * @expectedExceptionMessage Default value for column 'language' is not valid
+     */
+    public function testInvalidDefaultValue() {
+        $col = TestingAdminsTableStructure::getColumn('language')->setDefaultValue('invalid');
+        $valueObj = DbRecordValue::create($col, TestingAdmin::_());
+        $valueObj->getDefaultValue();
+    }
+
+    /**
+     * @expectedException \UnexpectedValueException
+     * @expectedExceptionMessage Fallback value of the default value for column 'parent_id' is not valid. Errors: Null value is not allowed
+     */
+    public function testInvalidDefaultValue2() {
+        $valueObj = DbRecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
+        $valueObj->getDefaultValue();
+    }
+
+    /**
+     * @expectedException \UnexpectedValueException
+     * @expectedExceptionMessage Default value for column 'parent_id' is not valid. Errors: Null value is not allowed
+     */
+    public function testInvalidDefaultValue3() {
+        $valueObj = DbRecordValue::create(
+            TestingAdminsTableStructure::getColumn('parent_id')->setDefaultValue(null),
+            TestingAdmin::_()
+        );
+        $valueObj->getDefaultValue();
+    }
+
+    /**
+     * @expectedException \UnexpectedValueException
+     * @expectedExceptionMessage Default value received from validDefaultValueGetter closure for column 'parent_id' is not valid. Errors: Null value is not allowed
+     */
+    public function testInvalidDefaultValue4() {
+        $valueObj = DbRecordValue::create(
+            TestingAdminsTableStructure::getColumn('parent_id')->setValidDefaultValueGetter(function () {
+                return null;
+            }),
+            TestingAdmin::_()
+        );
+        $valueObj->getDefaultValue();
+    }
+
     public function testDefaultValue() {
         $record = TestingAdmin::_();
-        $valueObj = DbRecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), $record);
-        static::assertFalse($valueObj->hasDefaultValue());
-        static::assertFalse($valueObj->isDefaultValueCanBeSet());
-        static::assertFalse($valueObj->hasValue());
-        static::assertFalse($valueObj->hasValueOrDefault());
-        static::assertInstanceOf(DbExpr::class, $valueObj->getDefaultValue());
-        $record::getTable()->getConnection()->getExpressionToSetDefaultValueForAColumn();
 
         $langCol = TestingAdminsTableStructure::getColumn('language');
         $valueObj = DbRecordValue::create($langCol, $record);
@@ -141,8 +184,8 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         static::assertTrue($valueObj->isDefaultValueCanBeSet());
         static::assertFalse($valueObj->hasValue());
         static::assertTrue($valueObj->hasValueOrDefault());
-        static::assertEquals($langCol->getDefaultValue(), $valueObj->getDefaultValue());
-        static::assertEquals($langCol->getDefaultValue(), $valueObj->getValue());
+        static::assertEquals($langCol->getValidDefaultValue(), $valueObj->getDefaultValue());
+        static::assertEquals($langCol->getValidDefaultValue(), $valueObj->getValue());
 
         $langCol->setDefaultValue(function () {
             return 'de';
@@ -172,16 +215,6 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($langColValueObj->isDefaultValueCanBeSet());
         $idColValueObj->setRawValue(2, 2, false)->setValidValue(2, 2);
         static::assertFalse($idColValueObj->isDefaultValueCanBeSet());
-    }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Default value for column 'language' is not valid
-     */
-    public function testInvalidDefaultValue() {
-        $col = TestingAdminsTableStructure::getColumn('language')->setDefaultValue('invalid');
-        $valueObj = DbRecordValue::create($col, TestingAdmin::_());
-        $valueObj->getDefaultValue();
     }
 
     /**

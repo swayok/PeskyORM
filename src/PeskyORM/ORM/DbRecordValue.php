@@ -142,19 +142,18 @@ class DbRecordValue {
      * @throws \UnexpectedValueException
      */
     public function getDefaultValue() {
-        $defaultValue = $this->getColumn()->getDefaultValue(function (DbRecord $record) {
-            /** @noinspection ExceptionsAnnotatingAndHandlingInspection */
-            return $record::getTable()->getConnection()->getExpressionToSetDefaultValueForAColumn();
-        });
-        if ($defaultValue instanceof \Closure) {
-            $defaultValue = $defaultValue($this->getRecord());
-        }
-        if (!($defaultValue instanceof DbExpr) && count($this->getColumn()->validateValue($defaultValue, false)) > 0) {
-            throw new \UnexpectedValueException(
-                "Default value for column '{$this->getColumn()->getName()}' is not valid"
-            );
-        }
-        return $defaultValue;
+        return $this->getColumn()->getValidDefaultValue();
+    }
+
+    /**
+     * Return null if there is no default value.
+     * When there is no default value this method will avoid validation of a NULL value so that there will be no
+     * exception 'default value is not valid' if column is not nullable
+     * @return mixed
+     * @throws \UnexpectedValueException
+     */
+    public function getDefaultValueOrNull() {
+        return $this->hasDefaultValue() ? $this->getColumn()->getValidDefaultValue() : null;
     }
 
     /**

@@ -388,4 +388,11 @@ abstract class DbTableStructure implements DbTableStructureInterface {
         return $this->pk;
     }
 
+    /**
+     * Resets class instances (used for testing only, that's why it is private)
+     */
+    static private function resetInstances() {
+        self::$instances = [];
+    }
+
 }

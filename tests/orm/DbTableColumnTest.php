@@ -6,6 +6,14 @@ use PeskyORMTest\TestingAdmins\TestingAdminsTable;
 
 class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
 
+    public static function setUpBeforeClass() {
+        \PeskyORMTest\TestingApp::cleanInstancesOfDbTablesAndStructures();
+    }
+
+    public static function tearDownAfterClass() {
+        \PeskyORMTest\TestingApp::cleanInstancesOfDbTablesAndStructures();
+    }
+
     /**
      * @param object $object
      * @param string $propertyName
@@ -76,6 +84,20 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
         static::assertInstanceOf(\Closure::class, $obj->getValueSavingExtender());
         static::assertInstanceOf(\Closure::class, $obj->getValueDeleteExtender());
         static::assertFalse($obj->hasValueFormatter());
+        static::assertTrue($obj->isItExistsInDb());
+        static::assertTrue($obj->isValueCanBeNull());
+        static::assertFalse($obj->isItPrimaryKey());
+        static::assertTrue($obj->isValueCanBeSetOrChanged());
+        static::assertFalse($obj->isValueLowercasingRequired());
+        static::assertFalse($obj->isValueMustBeUnique());
+        static::assertFalse($obj->isValuePrivate());
+        static::assertFalse($obj->isValueTrimmingRequired());
+        static::assertFalse($obj->isAutoUpdatingValue());
+        static::assertFalse($obj->isEmptyStringMustBeConvertedToNull());
+        static::assertFalse($obj->isEnum());
+        static::assertFalse($obj->isItAFile());
+        static::assertFalse($obj->isItAForeignKey());
+        static::assertFalse($obj->isItAnImage());
     }
 
     /**
@@ -186,20 +208,76 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
         static::assertNotEmpty($this->getObjectPropertyValue($obj, 'valueFormatterFormats'));
     }
 
+    /**
+     * @expectedException \BadMethodCallException
+     * @expectedExceptionMessage Default value for column 'name' is not set
+     */
+    public function testInvalidDefaultValueGet1() {
+        DbTableColumn::create(DbTableColumn::TYPE_BOOL, 'name')->getDefaultValueAsIs();
+    }
+
+    /**
+     * @expectedException \UnexpectedValueException
+     * @expectedExceptionMessage Default value for column 'name' is not valid. Errors: Value must be of a boolean data type
+     */
+    public function testInvalidDefaultValueGet2() {
+        DbTableColumn::create(DbTableColumn::TYPE_BOOL, 'name')
+            ->setDefaultValue(-1)
+            ->getValidDefaultValue();
+    }
+
+    /**
+     * @expectedException \UnexpectedValueException
+     * @expectedExceptionMessage Fallback value of the default value for column 'name' is not valid. Errors: Value must be of a boolean data type
+     */
+    public function testInvalidDefaultValueGet3() {
+        DbTableColumn::create(DbTableColumn::TYPE_BOOL, 'name')
+            ->getValidDefaultValue(-1);
+    }
+
+    /**
+     * @expectedException \UnexpectedValueException
+     * @expectedExceptionMessage Default value received from validDefaultValueGetter closure for column 'name' is not valid. Errors: Value must be of a boolean data type
+     */
+    public function testInvalidDefaultValueGet4() {
+        DbTableColumn::create(DbTableColumn::TYPE_BOOL, 'name')
+            ->setValidDefaultValueGetter(function ($fallback) {
+                return -1;
+            })
+            ->getValidDefaultValue(true);
+    }
+
     public function testDefaultValues() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_BOOL);
+        $obj = DbTableColumn::create(DbTableColumn::TYPE_BOOL, 'name');
         static::assertFalse($obj->hasDefaultValue());
-        static::assertEquals(-1, $obj->getDefaultValue(-1));
-        static::assertInstanceOf(Closure::class, $obj->getDefaultValue(function () { return -1; }));
+        static::assertFalse($obj->getValidDefaultValue(false));
+        static::assertTrue($obj->getValidDefaultValue(function () { return true; }));
+
+        $obj->setDefaultValue(function () {
+            return false;
+        });
+        static::assertTrue($obj->hasDefaultValue());
+        static::assertInstanceOf(Closure::class, $obj->getDefaultValueAsIs());
+        static::assertFalse($obj->getValidDefaultValue(true));
+
         $obj->setDefaultValue(false);
         static::assertTrue($obj->hasDefaultValue());
-        static::assertEquals(false, $obj->getDefaultValue(-1));
+        static::assertFalse($obj->getDefaultValueAsIs());
+        static::assertFalse($obj->getValidDefaultValue(true));
+
         $obj->setDefaultValue(null);
         static::assertTrue($obj->hasDefaultValue());
-        static::assertEquals(null, $obj->getDefaultValue(-1));
-        $obj->setDefaultValue(-1);
+        static::assertNull($obj->getDefaultValueAsIs());
+        static::assertNull($obj->getValidDefaultValue(true));
+
+        // default value getter
+        $obj->setValidDefaultValueGetter(function ($fallbackValue, DbTableColumn $column) {
+            return $fallbackValue;
+        });
+        $obj->setDefaultValue(true);
         static::assertTrue($obj->hasDefaultValue());
-        static::assertEquals(-1, $obj->getDefaultValue(-2));
+        static::assertTrue(true, $obj->getDefaultValueAsIs());
+        static::assertFalse($obj->getValidDefaultValue(false));
     }
 
     /**

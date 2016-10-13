@@ -9,11 +9,93 @@ use PeskyORMTest\TestingApp;
 use PeskyORMTest\TestingSettings\TestingSetting;
 use PeskyORMTest\TestingSettings\TestingSettingsTable;
 use PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
+use Swayok\Utils\NormalizeValue;
 
 class DbRecordTest extends PHPUnit_Framework_TestCase {
 
     public static function setUpBeforeClass() {
         TestingApp::init();
+        TestingApp::cleanInstancesOfDbTablesAndStructures();
+    }
+
+    public static function tearDownAfterClass() {
+        TestingApp::clearTables();
+        TestingApp::cleanInstancesOfDbTablesAndStructures();
+    }
+
+    protected function setUp() {
+        TestingApp::cleanInstancesOfDbTablesAndStructures();
+    }
+
+    private function insertMinimalTestDataToAdminsTable() {
+        $data = [
+            [
+                'id' => 1,
+                'login' => '2AE351AF-131D-6654-9DB2-79B8F273986C',
+                'password' => password_hash('KIS37QEG4HT', PASSWORD_DEFAULT),
+                'parent_id' => null,
+                'created_at' => '2015-05-14 02:12:05+00',
+                'updated_at' => '2015-06-10 19:30:24+00',
+                'remember_token' => '6A758CB2-234F-F7A1-24FE-4FE263E6FF81',
+                'is_superadmin' => true,
+                'language' => 'en',
+                'ip' => '192.168.0.1',
+                'role' => 'admin',
+                'is_active' => 1,
+                'name' => 'Lionel Freeman',
+                'email' => 'diam.at.pretium@idmollisnec.co.uk',
+                'timezone' => 'Europe/Moscow'
+            ],
+            [
+                'id' => 2,
+                'login' => 'ADCE237A-9E48-BECD-1F01-1CACA964CF0F',
+                'password' => password_hash('NKJ63NMV6NY', PASSWORD_DEFAULT),
+                'parent_id' => 1,
+                'created_at' => '2015-05-14 06:54:01+00',
+                'updated_at' => '2015-05-19 23:48:17+00',
+                'remember_token' => '0A2E7DA9-6072-34E2-38E8-2675C73F3419',
+                'is_superadmin' => true,
+                'language' => 'en',
+                'ip' => '192.168.0.1',
+                'role' => 'admin',
+                'is_active' => false,
+                'name' => 'Jasper Waller',
+                'email' => 'elit@eratvelpede.org',
+                'timezone' => 'Europe/Moscow'
+            ]
+        ];
+        TestingApp::$dbConnection->insertMany('admins', array_keys($data[0]), $data);
+    }
+
+    private function getDataForSingleAdmin($withIdAndHashedPassword = false, $withHashedPassword = false) {
+        return array_merge($withIdAndHashedPassword ? ['id' => 1] : [], [
+            'login' => '2AE351AF-131D-6654-9DB2-79B8F273986C',
+            'password' => $withHashedPassword ? password_hash('KIS37QEG4HT', PASSWORD_DEFAULT) : 'KIS37QEG4HT',
+            'parent_id' => 1,
+            'created_at' => '2015-05-14 02:12:05',
+            'updated_at' => '2015-06-10 19:30:24',
+            'remember_token' => '6A758CB2-234F-F7A1-24FE-4FE263E6FF81',
+            'is_superadmin' => true,
+            'language' => 'en',
+            'ip' => '192.168.0.1',
+            'role' => 'admin',
+            'is_active' => '1',
+            'name' => 'Lionel Freeman',
+            'email' => 'diam.at.pretium@idmollisnec.co.uk',
+            'timezone' => 'Europe/Moscow'
+        ]);
+    }
+
+    private function normalizeAdmin($adminData) {
+        $adminData['is_superadmin'] = NormalizeValue::normalizeBoolean($adminData['is_superadmin']);
+        $adminData['is_active'] = NormalizeValue::normalizeBoolean($adminData['is_active']);
+        if ($adminData['parent_id'] !== null) {
+            $adminData['parent_id'] = NormalizeValue::normalizeInteger($adminData['parent_id']);
+        }
+        if (array_key_exists('id', $adminData)) {
+            $adminData['id'] = NormalizeValue::normalizeInteger($adminData['id']);
+        }
+        return $adminData;
     }
 
     /**
@@ -203,7 +285,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
 
     public function testGetValue() {
         $rec = TestingAdmin::newEmptyRecord();
-        static::assertEquals(TestingAdmin::getColumn('id')->getDefaultValue(), $rec->getValue('id'));
+        static::assertEquals(TestingAdmin::getColumn('id')->getDefaultValueAsIs(), $rec->getValue('id'));
         $rec->setValue('id', 2, false);
         static::assertEquals(2, $rec->getValue('id'));
         static::assertEquals(2, $rec->getValue(TestingAdmin::getColumn('id')));
@@ -274,10 +356,155 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testExistsInDb() {
-        // _existsInDb, existsInDb
+        $this->insertMinimalTestDataToAdminsTable();
+
+        $rec = new TestingAdmin();
+        $prevQuery = TestingAdminsTable::getLastQuery();
+        static::assertFalse($rec->existsInDb());
+        static::assertFalse($rec->existsInDb(true));
+        static::assertEquals($prevQuery, TestingAdminsTable::getLastQuery());
+
+        $rec->setValue('id', 1, false);
+        $prevQuery = TestingAdminsTable::getLastQuery();
+        static::assertFalse($rec->existsInDb());
+        static::assertFalse($rec->existsInDb(true));
+        static::assertEquals($prevQuery, TestingAdminsTable::getLastQuery());
+
+        $rec->setValue('id', 1, true);
+        $prevQuery = TestingAdminsTable::getLastQuery();
+        static::assertTrue($rec->existsInDb());
+        static::assertTrue($rec->existsInDb(true));
+        static::assertNotEquals($prevQuery, TestingAdminsTable::getLastQuery());
+
+        $rec->setValue('id', 888, true);
+        $prevQuery = TestingAdminsTable::getLastQuery();
+        static::assertTrue($rec->existsInDb());
+        static::assertFalse($rec->existsInDb(true));
+        static::assertNotEquals($prevQuery, TestingAdminsTable::getLastQuery());
+    }
+
+    public function testGetDefaults() {
+        $rec = TestingAdmin::newEmptyRecord();
+        static::assertEquals(
+            [
+                'id' => null,
+                'parent_id' => null,
+                'login' => null,
+                'password' => null,
+                'created_at' => null,
+                'updated_at' => null,
+                'remember_token' => null,
+                'is_superadmin' => false,
+                'language' => 'en',
+                'ip' => null,
+                'role' => 'guest',
+                'is_active' => true,
+                'name' => '',
+                'email' => null,
+                'timezone' => 'UTC'
+            ],
+            $rec->getDefaults()
+        );
+        static::assertEquals(
+            [
+                'id' => TestingAdminsTableStructure::getColumn('id')->getDefaultValueAsIs(),
+                'parent_id' => null,
+                'login' => null,
+                'password' => null,
+                'created_at' => TestingAdminsTableStructure::getColumn('created_at')->getDefaultValueAsIs(),
+                'updated_at' => null,
+                'remember_token' => null,
+                'is_superadmin' => false,
+                'language' => 'en',
+                'ip' => null,
+                'role' => 'guest',
+                'is_active' => true,
+                'name' => '',
+                'email' => null,
+                'timezone' => 'UTC',
+                'avatar' => null,
+                'some_file' => null
+            ],
+            $rec->getDefaults([], false, false)
+        );
+    }
+
+    public function testToArray() {
+        // toArray, toArrayWitoutFiles
+        $rec = TestingAdmin::fromArray([]);
+        static::assertEquals(
+            [
+                'id' => null,
+                'parent_id' => null,
+                'login' => null,
+                'password' => null,
+                'created_at' => null,
+                'updated_at' => null,
+                'remember_token' => null,
+                'is_superadmin' => false,
+                'language' => 'en',
+                'ip' => null,
+                'role' => 'guest',
+                'is_active' => true,
+                'name' => '',
+                'email' => null,
+                'timezone' => 'UTC'
+            ],
+            $rec->toArrayWitoutFiles()
+        );
+
+        $admin = $this->getDataForSingleAdmin(true);
+        $adminNormalized = $this->normalizeAdmin($admin);
+        $toArray = $rec->fromData($admin)->toArray();
+        static::assertTrue(password_verify($admin['password'], $toArray['password']));
+        unset($toArray['password'], $adminNormalized['password']);
+        static::assertEquals(
+            array_merge(['avatar' => 'not implemented', 'some_file' => 'not implemented'], $adminNormalized),
+            $toArray
+        );
+
+        $adminNoId = $this->getDataForSingleAdmin(false);
+        $adminNoIdNormalized = $this->normalizeAdmin($adminNoId);
+        $toArray = $rec->fromData($adminNoId)->toArrayWitoutFiles();
+        static::assertTrue(password_verify($adminNoId['password'], $toArray['password']));
+        unset($toArray['password'], $adminNoIdNormalized['password']);
+        static::assertEquals(array_merge(['id' => null], $adminNoIdNormalized), $toArray);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage $data argument contains unknown column name or relation name: '0'
+     */
+    public function testInvalidFromData1() {
+        TestingAdmin::fromArray(['unknown_col']);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage $data argument contains unknown column name or relation name: 'unknown_col'
+     */
+    public function testInvalidFromData2() {
+        TestingAdmin::fromArray(['unknown_col' => 1]);
+    }
+
+    /**
+     * @expectedException PeskyORM\ORM\Exception\InvalidDataException
+     * @expectedExceptionMessage error.invalid_data
+     */
+    public function testInvalidFromData3() {
+        TestingAdmin::fromArray(['id' => 'qqqq']);
     }
 
     public function testFromData() {
+        $adminWithId = $this->getDataForSingleAdmin(true);
+        $normalizedAdminWithId = $this->normalizeAdmin($adminWithId);
+        $adminWithoutId = $this->getDataForSingleAdmin(false);
+        $normalizedAdminWithoutId = $this->normalizeAdmin($adminWithoutId);
+
+        $rec = TestingAdmin::fromArray([]);
+        static::assertEquals($rec->getDefaults([]), $rec->toArrayWitoutFiles());
+
+        //$rec = TestingAdmin::fromArray($this->getDataForSingleAdmin(false), false);
         // fromArray, fromData ,fromDbData
     }
 
@@ -310,7 +537,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testUpdateValues() {
-
+        // merge, updateValues
     }
 
     public function testInvalidBegin1() {
@@ -382,14 +609,6 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testInvalidDelete() {
-
-    }
-
-    public function testToArray() {
-        // toArray, toArrayWitoutFiles
-    }
-
-    public function testGetDefaults() {
 
     }
 

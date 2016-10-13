@@ -25,34 +25,25 @@ class OrmSelect extends DbSelect {
     protected $contains = [];
 
     /**
-     * @param string|DbTable $tableName
+     * @param DbTable $table
      * @return $this
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    static public function from($tableName) {
-        return new static($tableName);
+    static public function from(DbTable $table) {
+        return new static($table);
     }
 
     /**
-     * @param string|DbTable $table - table name or DbTable object
-     * @param bool $useOrm - enable/disable usage of ORM classes
-     *      - true: if $table is string - DbTable object will be loaded from DbClassesManager, also there will be more
-     *              validations related to DbTableStructure of a DbTable. No possiblity to use a table that has no
-     *              DbTable and DbTableStructure instances
-     *      - false: disables usage of ORM classes, less validations, but it becomes possible to use any table in DB
+     * @param DbTable $table - table name or DbTable object
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \UnexpectedValueException
      */
-    public function __construct($table) {
-        if ($table instanceof DbTable) {
-            $this->setTable($table);
-        } else if (is_string($table) && !empty($tableName)) {
-            $this->setTable(DbClassesManager::i()->getTableInstance($table));
-        } else {
-            throw new \InvalidArgumentException('$table argument must be a string or instance of DbTable class');
-        }
-        $this->init();
+    public function __construct(DbTable $table) {
+        $this->setTable($table);
+        parent::__construct($table::getName(), $table::getConnection());
     }
 
     protected function parseNormalizedConfigsArray(array $conditionsAndOptions) {
@@ -85,6 +76,9 @@ class OrmSelect extends DbSelect {
 
     /**
      * @return DbRecord
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -191,6 +185,9 @@ class OrmSelect extends DbSelect {
     /**
      * @param DbTable $table
      * @throws \BadMethodCallException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
      */
     protected function setTable(DbTable $table) {
         $this->tableName = $table->getName();

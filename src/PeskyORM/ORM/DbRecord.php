@@ -92,6 +92,14 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
         return static::newEmptyRecord();
     }
 
+    /**
+     * Create new empty record (shortcut)
+     * @return static
+     */
+    static public function new1() {
+        return static::newEmptyRecord();
+    }
+
     public function __construct() {
         $this->reset();
     }
@@ -333,6 +341,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param mixed $value
      * @param boolean $isFromDb
      * @return $this
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -348,6 +357,9 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
             $this->valuesBackup[$column->getName()] = clone $valueContainer;
         }
         call_user_func($column->getValueSetter(), $value, (bool) $isFromDb, $this->getValueObject($column));
+        if (!$valueContainer->isValid()) {
+            throw new InvalidDataException([$column->getName() => $valueContainer->getValidationErrors()]);
+        }
         return $this;
     }
 
@@ -676,6 +688,22 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
             }
         }
         return $this;
+    }
+
+    /**
+     * Update several values
+     * Note: it does not save this values to DB, only stores them locally
+     * @param array $data
+     * @param bool $isFromDb - true: marks values as loaded from DB
+     * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
+     * @return $this
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \UnexpectedValueException
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     */
+    public function merge(array $data, $isFromDb = false, $haltOnUnknownColumnNames = true) {
+        return $this->updateValues($data, $isFromDb, $haltOnUnknownColumnNames);
     }
 
     /**
@@ -1118,15 +1146,19 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
         }
         $data = [];
         $fileColumns = static::getFileColumns();
-        foreach ($columnsNames as $columnsName) {
-            if (array_key_exists($columnsName, $fileColumns)) {
+        foreach ($columnsNames as $columnName) {
+            $column = static::getColumn($columnName);
+            if (array_key_exists($column->getName(), $fileColumns)) {
                 if ($withFilesInfo) {
-                    /** @var DbFileInfo|DbImageFileInfo $fileInfo */
-                    $fileInfo = $this->getValue($columnsName);
-                    $data[$columnsName] = $fileInfo->toArray();
+                    $data[$column->getName()] = $this->getValue($column, 'array');
+                }
+            } else if ($this->hasValue($column, true)) {
+                $data[$columnName] = $this->getValue($column);
+                if ($data[$columnName] instanceof DbExpr) {
+                    $data[$columnName] = null;
                 }
             } else {
-                $data[$columnsName] = $this->getValue($columnsName);
+                $data[$columnName] = null;
             }
         }
         foreach ($relatedRecordsNames as $relatedRecordName) {
@@ -1181,7 +1213,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @throws \BadMethodCallException
      */
     public function getDefaults(array $columns = [], $ignoreColumnsThatDoNotExistInDB = true, $nullifyDbExprValues = true) {
-        if (empty($columns)) {
+        if (count($columns) === 0) {
             $columns = array_keys($this->values);
         }
         $values = array();
@@ -1190,8 +1222,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
             if ($ignoreColumnsThatDoNotExistInDB && !$column->isItExistsInDb()) {
                 continue;
             } else {
-                $values[$columnName] = $this->getValueObject($column)->getDefaultValue();
-                if ($values[$columnName] instanceof DbExpr) {
+                $values[$columnName] = $this->getValueObject($column)->getDefaultValueOrNull();
+                if ($nullifyDbExprValues && $values[$columnName] instanceof DbExpr) {
                     $values[$columnName] = null;
                 }
             }

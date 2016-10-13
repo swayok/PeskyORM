@@ -31,10 +31,6 @@ abstract class DbTable implements DbTableInterface {
         return self::$instances[$class];
     }
 
-    static public function getName() {
-        return static::getStructure()->getTableName();
-    }
-
     /**
      * Shortcut for static::getInstance()
      * @return $this
@@ -45,6 +41,18 @@ abstract class DbTable implements DbTableInterface {
      */
     final static public function i() {
         return static::getInstance();
+    }
+
+    /**
+     * Get table name
+     * @return string
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    static public function getName() {
+        return static::getStructure()->getTableName();
     }
 
     /**
@@ -82,6 +90,10 @@ abstract class DbTable implements DbTableInterface {
 
     /**
      * @return string
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \BadMethodCallException
      */
     public function getTableAlias() {
         if (!$this->alias || !is_string($this->alias)) {
@@ -168,13 +180,14 @@ abstract class DbTable implements DbTableInterface {
      * @param string|array $columns
      * @param array $conditionsAndOptions
      * @return DbRecordsSet
+     * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function select($columns = '*', array $conditionsAndOptions = []) {
-        return OrmSelect::from(static::getName())
+        return OrmSelect::from(static::getInstance())
             ->fromConfigsArray($conditionsAndOptions)
             ->columns($columns)
             ->fetchMany();
@@ -185,13 +198,14 @@ abstract class DbTable implements DbTableInterface {
      * @param string $column
      * @param array $conditionsAndOptions
      * @return array
+     * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function selectColumn($column, array $conditionsAndOptions = []) {
-        return OrmSelect::from(static::getName())
+        return OrmSelect::from(static::getInstance())
             ->fromConfigsArray($conditionsAndOptions)
             ->columns(['value' => $column])
             ->fetchColumn();
@@ -204,13 +218,14 @@ abstract class DbTable implements DbTableInterface {
      * @param string $valuesColumn
      * @param array $conditionsAndOptions
      * @return array
+     * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function selectAssoc($keysColumn, $valuesColumn, array $conditionsAndOptions = []) {
-        return OrmSelect::from(static::getName())
+        return OrmSelect::from(static::getInstance())
             ->fromConfigsArray($conditionsAndOptions)
             ->fetchAssoc($keysColumn, $valuesColumn);
     }
@@ -220,13 +235,14 @@ abstract class DbTable implements DbTableInterface {
      * @param string|array $columns
      * @param array $conditionsAndOptions
      * @return array
+     * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function selectOne($columns, array $conditionsAndOptions) {
-        return OrmSelect::from(static::getName())
+        return OrmSelect::from(static::getInstance())
             ->fromConfigsArray($conditionsAndOptions)
             ->columns($columns)
             ->fetchOne();
@@ -237,13 +253,14 @@ abstract class DbTable implements DbTableInterface {
      * @param DbExpr $expression - example: DbExpr::create('COUNT(*)'), DbExpr::create('SUM(`field`)')
      * @param array $conditionsAndOptions
      * @return string
+     * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function selectValue(DbExpr $expression, array $conditionsAndOptions = []) {
-        return OrmSelect::from(static::getName())
+        return OrmSelect::from(static::getInstance())
             ->fromConfigsArray($conditionsAndOptions)
             ->fetchValue($expression);
     }
@@ -252,6 +269,7 @@ abstract class DbTable implements DbTableInterface {
      * Does table contain any record matching provided condition
      * @param array $conditionsAndOptions
      * @return bool
+     * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -267,12 +285,14 @@ abstract class DbTable implements DbTableInterface {
      * @param array $conditionsAndOptions
      * @param bool $removeNotInnerJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
      * @return int
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PDOException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function count(array $conditionsAndOptions, $removeNotInnerJoins = false) {
-        return OrmSelect::from(static::getName())
+        return OrmSelect::from(static::getInstance())
             ->fromConfigsArray($conditionsAndOptions)
             ->fetchCount($removeNotInnerJoins);
     }
@@ -442,6 +462,13 @@ abstract class DbTable implements DbTableInterface {
             }
         }
         return $pdoDataTypes;
+    }
+
+    /**
+     * Resets class instances (used for testing only, that's why it is private)
+     */
+    static private function resetInstances() {
+        self::$instances = [];
     }
 
 }

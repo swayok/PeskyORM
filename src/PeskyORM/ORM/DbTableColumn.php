@@ -1,6 +1,7 @@
 <?php
 
 namespace PeskyORM\ORM;
+use PeskyORM\Core\DbExpr;
 
 /**
  * Value setter workflow:
@@ -149,13 +150,19 @@ class DbTableColumn {
      * DbRecord will not save columns that does not exist in DB
      * @var bool
      */
-    protected $existsInDb = false;
+    protected $existsInDb = true;
     /**
      * Allow/disallow value setting and modification
      * DbRecord will not save columns that cannot be set or modified
      * @var int
      */
     protected $isValueCanBeSetOrChanged = true;
+    /**
+     * Function to return default column value
+     * By default returns: $this->defaultValue
+     * @var \Closure
+     */
+    protected $validDefaultValueGetter = null;
     /**
      * Function to return column value. Useful for virtual columns
      * By default: DbTableColumnDefaultClosures::valueGetter()
@@ -474,22 +481,64 @@ class DbTableColumn {
     }
 
     /**
-     * @param mixed $fallbackValue - value to be returned when default value was not configured (may be a \Closure)
-     * @return mixed - may be a \Closure: function(DbRecord $record) { return 'default value'; }
+     * Get default value set via $this->setDefaultValue()
+     * @return mixed - may be a \Closure: function() { return 'default value'; }
+     * @throws \BadMethodCallException
      */
-    public function getDefaultValue($fallbackValue = null) {
-        return $this->hasDefaultValue() ? $this->defaultValue : $fallbackValue;
+    public function getDefaultValueAsIs() {
+        if (!$this->hasDefaultValue()) {
+            throw new \BadMethodCallException("Default value for column '{$this->getName()}' is not set");
+        }
+        return $this->defaultValue;
+    }
+
+    /**
+     * Get validated default value
+     * @param mixed $fallbackValue - value to be returned when default value was not configured (may be a \Closure)
+     * @return mixed - validated default value or $fallbackValue or return from $this->validDefaultValueGetter
+     * @throws \UnexpectedValueException
+     */
+    public function getValidDefaultValue($fallbackValue = null) {
+        if ($this->validDefaultValueGetter) {
+            $defaultValue = call_user_func($this->validDefaultValueGetter, $fallbackValue, $this);
+            $excPrefix = 'Default value received from validDefaultValueGetter closure';
+        } else if ($this->hasDefaultValue()) {
+            $defaultValue = $this->defaultValue;
+            $excPrefix = 'Default value';
+        } else {
+            $defaultValue = $fallbackValue;
+            $excPrefix = 'Fallback value of the default value';
+        }
+        if ($defaultValue instanceof \Closure) {
+            $defaultValue = $defaultValue();
+        }
+        $errors = $this->validateValue($defaultValue, false);
+        if (!($defaultValue instanceof DbExpr) && count($errors) > 0) {
+            throw new \UnexpectedValueException(
+                "{$excPrefix} for column '{$this->getName()}' is not valid. Errors: " . implode(', ', $errors)
+            );
+        }
+        return $defaultValue;
+    }
+
+    /**
+     * @param \Closure $validDefaultValueGetter - function ($fallbackValue, DbTableColumn $column) { return 'default'; }
+     * @return $this
+     */
+    public function setValidDefaultValueGetter(\Closure $validDefaultValueGetter) {
+        $this->validDefaultValueGetter = $validDefaultValueGetter;
+        return $this;
     }
 
     /**
      * @return bool
      */
     public function hasDefaultValue() {
-        return $this->defaultValue !== self::DEFAULT_VALUE_NOT_SET;
+        return $this->defaultValue !== self::DEFAULT_VALUE_NOT_SET || $this->validDefaultValueGetter;
     }
 
     /**
-     * @param mixed $defaultValue - may be a \Closure: function(DbRecord $record) { return 'default value'; }
+     * @param mixed $defaultValue - may be a \Closure: function() { return 'default value'; }
      * @return $this
      */
     public function setDefaultValue($defaultValue) {
