@@ -299,6 +299,7 @@ abstract class DbRecordValueHelpers {
         if ($value instanceof DbExpr) {
             throw new \UnexpectedValueException('It is impossible to change format of the DbExpr');
         }
+        return $value;
     }
 
     static public function formatTimestamp(DbRecordValue $valueContainer, $format) {

@@ -142,7 +142,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
 
     public function testReset() {
         $rec = TestingAdmin::newEmptyRecord()
-            ->setValue('id', 1, false)
+            ->setValue('id', 1, true)
             ->setValue('parent_id', 2, false);
         static::assertTrue($rec->hasValue('id', false));
         static::assertTrue($rec->hasValue('parent_id', false));
@@ -154,8 +154,9 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $valId1 = $this->callObjectMethod($rec, 'getValueObject', 'id');
         static::assertFalse($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
         $rec->begin()->setValue('parent_id', 3, false);
-        static::assertTrue($valId1->hasOldValue());
-        static::assertEquals(2, $valId1->getOldValue());
+        $valId2 = $this->callObjectMethod($rec, 'getValueObject', 'id');
+        static::assertTrue($valId2->hasOldValue());
+        static::assertEquals(2, $valId2->getOldValue());
         static::assertTrue($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
         static::assertCount(1, $this->getObjectPropertyValue($rec, 'valuesBackup'));
         $rec->reset();
@@ -168,10 +169,10 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
         /** @var DbRecordValue $valId2 */
         $rec->setValue('id', 2, false);
-        $valId2 = $this->callObjectMethod($rec, 'getValueObject', 'id');
-        static::assertEquals(2, $valId2->getValue());
-        static::assertFalse($valId2->hasOldValue());
-        static::assertEquals($valId1->getValue(), $valId2->getOldValue());
+        $valId3 = $this->callObjectMethod($rec, 'getValueObject', 'id');
+        static::assertEquals(2, $valId3->getValue());
+        static::assertFalse($valId3->hasOldValue());
+        static::assertEquals($valId1->getValue(), $valId3->getOldValue());
         // reset value
 
     }
