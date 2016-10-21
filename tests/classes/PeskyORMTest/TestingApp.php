@@ -43,6 +43,7 @@ class TestingApp {
             $data = array_slice($data, 0, $limit);
         }
         static::$dbConnection->insertMany('admins', array_keys($data[0]), $data);
+        return $data;
     }
 
     static public function fillSettingsTable($limit = 0) {
@@ -51,6 +52,7 @@ class TestingApp {
             $data = array_slice($data, 0, $limit);
         }
         static::$dbConnection->insertMany('admins', array_keys($data[0]), $data);
+        return $data;
     }
 
     static public function clearTables() {

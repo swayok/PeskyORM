@@ -108,7 +108,7 @@ abstract class DbTableStructure implements DbTableStructureInterface {
     }
 
     /**
-     * @return DbTableColumn[]
+     * @return DbTableColumn[] - key = column name
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException

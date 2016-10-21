@@ -37,6 +37,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param bool $isFromDb
      * @param bool $haltOnUnknownColumnNames
      * @return static
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -49,31 +50,35 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
     /**
      * Create new record and load values from DB using $pkValue
      * @param mixed $pkValue
+     * @param array $columns
+     * @param array $readRelatedRecords
      * @return static
+     * @throws \UnexpectedValueException
      * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PDOException
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
-    static public function read($pkValue) {
-        return static::newEmptyRecord()->fromPrimaryKey($pkValue);
+    static public function read($pkValue, array $columns = [], array $readRelatedRecords = []) {
+        return static::newEmptyRecord()->fromPrimaryKey($pkValue, $columns, $readRelatedRecords);
     }
 
     /**
      * Create new record and find values in DB using $conditionsAndOptions
      * @param array $conditionsAndOptions
+     * @param array $columns
+     * @param array $readRelatedRecords
      * @return static
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \UnexpectedValueException
      * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \UnexpectedValueException
      * @throws \PDOException
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
-    static public function find(array $conditionsAndOptions) {
-        return static::newEmptyRecord()->fromDb($conditionsAndOptions);
+    static public function find(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = []) {
+        return static::newEmptyRecord()->fromDb($conditionsAndOptions, $columns, $readRelatedRecords);
     }
 
     /**
@@ -116,7 +121,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
     }
 
     /**
-     * @return DbTableColumn[]
+     * @return DbTableColumn[] - key = column name
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -124,6 +129,48 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      */
     static public function getColumns() {
         return static::getTableStructure()->getColumns();
+    }
+
+    /**
+     * @return DbTableColumn[] - key = column name
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    static public function getColumnsThatExistInDb() {
+        static $columns = null;
+        if ($columns === null) {
+            $columns = [];
+            $allColumns = static::getColumns();
+            foreach ($allColumns as $name => $column) {
+                if ($column->isItExistsInDb()) {
+                    $columns[$name] = $column;
+                }
+            }
+        }
+        return $columns;
+    }
+
+    /**
+     * @return array
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    static public function getColumnsThatDoNotExistInDb() {
+        static $columns = null;
+        if ($columns === null) {
+            $columns = [];
+            $allColumns = static::getColumns();
+            foreach ($allColumns as $name => $column) {
+                if (!$column->isItExistsInDb()) {
+                    $columns[$name] = $column;
+                }
+            }
+        }
+        return $columns;
     }
 
     /**
@@ -337,6 +384,18 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
     }
 
     /**
+     * @param string|DbTableColumn $column
+     * @return bool
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    public function isValueFromDb($column) {
+        return $this->getValueObject($column)->isItFromDb();
+    }
+
+    /**
      * @param string|DbTableColumn $columnName
      * @param mixed $value
      * @param boolean $isFromDb
@@ -428,6 +487,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      */
     protected function setRelatedRecord($relationName, $relatedRecord, $isFromDb, $haltOnUnknownColumnNames = true) {
         $relation = static::getRelation($relationName);
@@ -458,6 +518,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param string $relationName
      * @param bool $loadIfNotSet - true: read relation data if it is not set
      * @return DbRecord|DbRecordsSet
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -480,6 +541,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * Read related object(s). If there are already loaded object(s) - they will be overwritten
      * @param string $relationName
      * @return $this
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -525,6 +587,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param bool $isFromDb - true: marks values as loaded from DB
      * @param bool $haltOnUnknownColumnNames - exception will be thrown if there are unknown column names in $data
      * @return $this
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -541,6 +604,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * All values are marked as loaded from DB and any unknows column names will raise exception
      * @param array $data
      * @return $this
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -556,6 +620,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param array $columns - empty: get all columns
      * @param array $readRelatedRecords - also read related records
      * @return $this
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PDOException
      * @throws \UnexpectedValueException
@@ -574,6 +639,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param array $columns - empty: get all columns
      * @param array $readRelatedRecords - also read related records
      * @return $this
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \UnexpectedValueException
@@ -584,6 +650,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
     public function fromDb(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = []) {
         if (empty($columns)) {
             $columns = ['*'];
+        } else {
+            $columns[] = static::getPrimaryKeyColumnName();
         }
         $hasOneAndBelongsToRelations = [];
         $hasManyRelations = [];
@@ -595,7 +663,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
             }
         }
         $record = static::getTable()->selectOne(
-            $columns,
+            array_unique($columns),
             array_merge(
                 $conditionsAndOptions,
                 ['CONTAIN' => $hasOneAndBelongsToRelations]
@@ -616,6 +684,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param array $columns - columns to read
      * @param array $readRelatedRecords - also read related records
      * @return $this
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\RecordNotFoundException
      * @throws \UnexpectedValueException
      * @throws \PDOException
@@ -635,6 +704,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * Read values for specific columns
      * @param array $columns - columns to read
      * @return $this
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \PDOException
@@ -670,6 +740,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param bool $isFromDb - true: marks values as loaded from DB
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
      * @return $this
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -697,6 +768,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param bool $isFromDb - true: marks values as loaded from DB
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
      * @return $this
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -1130,6 +1202,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param bool $loadRelatedRecordsIfNotSet - true: read all missing related objects from DB
      * @param bool $withFilesInfo - true: add info about files attached to a record (url, path, file_name, full_file_name, ext)
      * @return array
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -1187,6 +1260,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param array $relatedRecordsNames - empty: do not add any relations
      * @param bool $loadRelatedRecordsIfNotSet - true: read required missing related objects from DB
      * @return array
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -1304,6 +1378,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
     /**
      * @param mixed $key - column name, column name with format (ex: created_at_as_date) or relation name
      * @return mixed
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -1328,6 +1403,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      */
     public function offsetSet($key, $value) {
         if (static::hasRelation($key)) {
@@ -1360,6 +1436,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
     /**
      * @param $name - column name, column name with format (ex: created_at_as_date) or relation name
      * @return mixed
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -1376,6 +1453,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      */
     public function __set($name, $value) {
         return $this->offsetSet($name, $value);
@@ -1405,6 +1483,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param string $name
      * @param array $arguments
      * @return $this
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException

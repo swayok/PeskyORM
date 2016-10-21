@@ -70,7 +70,6 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
     private function getDataForSingleAdmin($withIdAndHashedPassword = false, $withHashedPassword = false) {
         return array_merge($withIdAndHashedPassword ? ['id' => 1] : [], [
             'login' => '2AE351AF-131D-6654-9DB2-79B8F273986C',
-            'password' => $withHashedPassword ? password_hash('KIS37QEG4HT', PASSWORD_DEFAULT) : 'KIS37QEG4HT',
             'parent_id' => 1,
             'created_at' => '2015-05-14 02:12:05',
             'updated_at' => '2015-06-10 19:30:24',
@@ -89,11 +88,14 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
     private function normalizeAdmin($adminData) {
         $adminData['is_superadmin'] = NormalizeValue::normalizeBoolean($adminData['is_superadmin']);
         $adminData['is_active'] = NormalizeValue::normalizeBoolean($adminData['is_active']);
+        $adminData['password'] = null;
         if ($adminData['parent_id'] !== null) {
             $adminData['parent_id'] = NormalizeValue::normalizeInteger($adminData['parent_id']);
         }
         if (array_key_exists('id', $adminData)) {
             $adminData['id'] = NormalizeValue::normalizeInteger($adminData['id']);
+        } else {
+            $adminData['id'] = null;
         }
         return $adminData;
     }
@@ -143,7 +145,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
     public function testReset() {
         $rec = TestingAdmin::newEmptyRecord()
             ->setValue('id', 1, true)
-            ->setValue('parent_id', 2, false);
+            ->setValue('parent_id', 2, true);
         static::assertTrue($rec->hasValue('id', false));
         static::assertTrue($rec->hasValue('parent_id', false));
         $rec->next();
@@ -154,9 +156,6 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $valId1 = $this->callObjectMethod($rec, 'getValueObject', 'id');
         static::assertFalse($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
         $rec->begin()->setValue('parent_id', 3, false);
-        $valId2 = $this->callObjectMethod($rec, 'getValueObject', 'id');
-        static::assertTrue($valId2->hasOldValue());
-        static::assertEquals(2, $valId2->getOldValue());
         static::assertTrue($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
         static::assertCount(1, $this->getObjectPropertyValue($rec, 'valuesBackup'));
         $rec->reset();
@@ -168,13 +167,12 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
         static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
         /** @var DbRecordValue $valId2 */
+        $valId2 = $this->callObjectMethod($rec, 'getValueObject', 'id');
+        static::assertFalse($valId2->hasOldValue());
         $rec->setValue('id', 2, false);
+        /** @var DbRecordValue $valId3 */
         $valId3 = $this->callObjectMethod($rec, 'getValueObject', 'id');
         static::assertEquals(2, $valId3->getValue());
-        static::assertFalse($valId3->hasOldValue());
-        static::assertEquals($valId1->getValue(), $valId3->getOldValue());
-        // reset value
-
     }
 
     public function testStaticMethods() {
@@ -241,6 +239,18 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertEquals([], TestingAdmin::validateValue('language', 'ru', false));
         static::assertEquals(['Value is not allowed'], TestingAdmin::validateValue('language', 'qq', true));
         static::assertEquals(['Value is not allowed'], TestingAdmin::validateValue('language', 'qq', false));
+
+        // columns that exist in db or not
+        static::assertEquals(['avatar', 'some_file'], array_keys(TestingAdmin::getColumnsThatDoNotExistInDb()));
+        static::assertEquals([], array_keys(TestingSetting::getColumnsThatDoNotExistInDb()));
+        static::assertEquals(
+            [
+                'id', 'parent_id', 'login', 'password', 'created_at', 'updated_at', 'remember_token',
+                'is_superadmin', 'language', 'ip', 'role', 'is_active', 'name', 'email', 'timezone'
+            ],
+            array_keys(TestingAdmin::getColumnsThatExistInDb())
+        );
+        static::assertEquals(['id', 'key', 'value'], array_keys(TestingSetting::getColumnsThatExistInDb()));
     }
 
     public function testCreateDbValueObject() {
@@ -457,19 +467,40 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $admin = $this->getDataForSingleAdmin(true);
         $adminNormalized = $this->normalizeAdmin($admin);
         $toArray = $rec->fromData($admin)->toArray();
-        static::assertTrue(password_verify($admin['password'], $toArray['password']));
-        unset($toArray['password'], $adminNormalized['password']);
+        $toArrayPartial = $rec->toArray(['id', 'parent_id', 'login', 'role']);
         static::assertEquals(
             array_merge(['avatar' => 'not implemented', 'some_file' => 'not implemented'], $adminNormalized),
             $toArray
         );
+        static::assertEquals(array_intersect_key($adminNormalized, $toArrayPartial), $toArrayPartial);
 
         $adminNoId = $this->getDataForSingleAdmin(false);
         $adminNoIdNormalized = $this->normalizeAdmin($adminNoId);
         $toArray = $rec->fromData($adminNoId)->toArrayWitoutFiles();
-        static::assertTrue(password_verify($adminNoId['password'], $toArray['password']));
-        unset($toArray['password'], $adminNoIdNormalized['password']);
+        $toArrayPartial = $rec->toArrayWitoutFiles(['id', 'parent_id', 'login', 'role']);
         static::assertEquals(array_merge(['id' => null], $adminNoIdNormalized), $toArray);
+        static::assertEquals(array_intersect_key(array_merge(['id' => null], $adminNoIdNormalized), $toArrayPartial), $toArrayPartial);
+
+        $adminNoId['Parent'] = $adminNoId;
+        $toArrayRelation = $rec->fromData($adminNoId)->toArrayWitoutFiles(['id'], ['Parent']);
+        static::assertEquals(
+            ['id' => null, 'Parent' => array_merge(['id' => null], $adminNoIdNormalized)],
+            $toArrayRelation
+        );
+
+        // todo: test load related records if not set
+    }
+
+    public function testIsValueFromDb() {
+        $rec = TestingAdmin::newEmptyRecord();
+        $rec->setValue('parent_id', 1, false);
+        /** @var DbRecordValue $val */
+        $val = $this->callObjectMethod($rec, 'getValueObject', 'parent_id');
+        static::assertFalse($val->isItFromDb());
+        static::assertFalse($rec->isValueFromDb('parent_id'));
+        $rec->setValue('parent_id', 2, true);
+        static::assertTrue($val->isItFromDb());
+        static::assertTrue($rec->isValueFromDb('parent_id'));
     }
 
     /**
@@ -505,16 +536,179 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $rec = TestingAdmin::fromArray([]);
         static::assertEquals($rec->getDefaults([]), $rec->toArrayWitoutFiles());
 
-        //$rec = TestingAdmin::fromArray($this->getDataForSingleAdmin(false), false);
-        // fromArray, fromData ,fromDbData
+        $rec = TestingAdmin::fromArray($adminWithoutId, false);
+        static::assertEquals($normalizedAdminWithoutId, $rec->toArrayWitoutFiles());
+        static::assertFalse($rec->isValueFromDb('parent_id'));
+
+        $rec = TestingAdmin::_()->fromData($adminWithoutId, false);
+        static::assertEquals($normalizedAdminWithoutId, $rec->toArrayWitoutFiles());
+        static::assertFalse($rec->isValueFromDb('parent_id'));
+
+        $rec = TestingAdmin::fromArray($adminWithId, true);
+        static::assertEquals($normalizedAdminWithId, $rec->toArrayWitoutFiles());
+        static::assertTrue($rec->isValueFromDb('id'));
+        static::assertTrue($rec->isValueFromDb('parent_id'));
+
+        $rec = TestingAdmin::_()->fromData($adminWithoutId, true);
+        static::assertEquals($normalizedAdminWithoutId, $rec->toArrayWitoutFiles());
+        static::assertFalse($rec->isValueFromDb('id'));
+        static::assertTrue($rec->isValueFromDb('parent_id'));
+
+        $rec = TestingAdmin::_()->fromDbData($adminWithId);
+        static::assertEquals($normalizedAdminWithId, $rec->toArrayWitoutFiles());
+        static::assertTrue($rec->isValueFromDb('id'));
+        static::assertTrue($rec->isValueFromDb('parent_id'));
     }
 
     public function testFromPrimaryKey() {
-        // fromPrimaryKey, read
+        TestingApp::clearTables();
+        $recordsAdded = TestingApp::fillAdminsTable(10);
+        $example = $recordsAdded[1];
+        unset($example['password'], $example['created_at'], $example['updated_at']);
+        $normalColumns = array_diff(array_keys(TestingAdmin::getColumnsThatExistInDb()), ['password', 'created_at', 'updated_at']);
+        $shortSetOfColumns = ['id', 'parent_id', 'login'];
+
+        $rec = TestingAdmin::newEmptyRecord()->fromPrimaryKey($example['id']);
+        static::assertEquals((int)$example['id'], $rec->getValue('id'));
+        static::assertTrue($rec->existsInDb());
+        static::assertTrue($rec->existsInDb(true));
+        static::assertEquals($example, $rec->toArray($normalColumns));
+        static::assertTrue($rec->isValueFromDb('id'));
+        static::assertTrue($rec->isValueFromDb('parent_id'));
+
+        $rec = TestingAdmin::newEmptyRecord()->fromPrimaryKey($example['id'], $shortSetOfColumns);
+        static::assertEquals((int)$example['id'], $rec->getValue('id'));
+        static::assertTrue($rec->existsInDb());
+        static::assertTrue($rec->existsInDb(true));
+        static::assertEquals(array_intersect_key($example, array_flip($shortSetOfColumns)), $rec->toArray($shortSetOfColumns));
+        static::assertTrue($rec->isValueFromDb('id'));
+        static::assertTrue($rec->isValueFromDb('parent_id'));
+        static::assertTrue($rec->isValueFromDb('login'));
+        static::assertFalse($rec->isValueFromDb('email'));
+
+        $rec = TestingAdmin::read($example['id']);
+        static::assertEquals((int)$example['id'], $rec->getValue('id'));
+        static::assertTrue($rec->existsInDb());
+        static::assertTrue($rec->existsInDb(true));
+        static::assertEquals($example, $rec->toArray($normalColumns));
+        static::assertTrue($rec->isValueFromDb('id'));
+        static::assertTrue($rec->isValueFromDb('parent_id'));
+
+        $rec = TestingAdmin::read($example['id'], $shortSetOfColumns);
+        static::assertEquals((int)$example['id'], $rec->getValue('id'));
+        static::assertTrue($rec->existsInDb());
+        static::assertTrue($rec->existsInDb(true));
+        static::assertEquals(array_intersect_key($example, array_flip($shortSetOfColumns)), $rec->toArray($shortSetOfColumns));
+        static::assertTrue($rec->isValueFromDb('id'));
+        static::assertTrue($rec->isValueFromDb('parent_id'));
+        static::assertTrue($rec->isValueFromDb('login'));
+        static::assertFalse($rec->isValueFromDb('email'));
+
+        $rec = TestingAdmin::read(99999);
+        static::assertFalse($rec->existsInDb());
+        static::assertFalse($rec->existsInDb(true));
+        static::assertFalse($rec->hasValue('id'));
+
+        // todo: test relations
     }
 
+    // todo: test exceptions genereated by TestingAdmin::newEmptyRecord()->fromDb()
+
     public function testFromDb() {
-        // fromDb, find
+        TestingApp::clearTables();
+        $recordsAdded = TestingApp::fillAdminsTable(10);
+        $example = $recordsAdded[0];
+        $exampleWithParent = $recordsAdded[1];
+        $exampleParent = $recordsAdded[2];
+        unset(
+            $example['password'], $example['created_at'], $example['updated_at'],
+            $exampleWithParent['password'], $exampleWithParent['created_at'], $exampleWithParent['updated_at'],
+            $exampleParent['password'], $exampleParent['created_at'], $exampleParent['updated_at']
+        );
+        $normalColumns = array_diff(array_keys(TestingAdmin::getColumnsThatExistInDb()), ['password', 'created_at', 'updated_at']);
+        $shortSetOfColumns = ['id', 'parent_id', 'email'];
+
+        $rec = TestingAdmin::newEmptyRecord()->fromDb(['email' => $example['email']]);
+        static::assertEquals((int)$example['id'], $rec->getValue('id'));
+        static::assertEquals($example['email'], $rec->getValue('email'));
+        static::assertTrue($rec->existsInDb());
+        static::assertTrue($rec->existsInDb(true));
+        static::assertEquals($example, $rec->toArray($normalColumns));
+        static::assertTrue($rec->isValueFromDb('id'));
+        static::assertTrue($rec->isValueFromDb('parent_id'));
+
+        $rec = TestingAdmin::newEmptyRecord()->fromDb(['email' => $example['email']], $shortSetOfColumns);
+        static::assertEquals((int)$example['id'], $rec->getValue('id'));
+        static::assertEquals($example['email'], $rec->getValue('email'));
+        static::assertTrue($rec->existsInDb());
+        static::assertTrue($rec->existsInDb(true));
+        static::assertEquals(array_intersect_key($example, array_flip($shortSetOfColumns)), $rec->toArray($shortSetOfColumns));
+        static::assertTrue($rec->isValueFromDb('id'));
+        static::assertTrue($rec->isValueFromDb('parent_id'));
+
+        $rec = TestingAdmin::find(['email' => $example['email']]);
+        static::assertEquals((int)$example['id'], $rec->getValue('id'));
+        static::assertEquals($example['email'], $rec->getValue('email'));
+        static::assertTrue($rec->existsInDb());
+        static::assertTrue($rec->existsInDb(true));
+        static::assertEquals($example, $rec->toArray($normalColumns));
+        static::assertTrue($rec->isValueFromDb('id'));
+        static::assertTrue($rec->isValueFromDb('parent_id'));
+
+        $rec = TestingAdmin::find(['email' => $example['email']], $shortSetOfColumns);
+        static::assertEquals((int)$example['id'], $rec->getValue('id'));
+        static::assertEquals($example['email'], $rec->getValue('email'));
+        static::assertTrue($rec->existsInDb());
+        static::assertTrue($rec->existsInDb(true));
+        static::assertEquals(array_intersect_key($example, array_flip($shortSetOfColumns)), $rec->toArray($shortSetOfColumns));
+        static::assertTrue($rec->isValueFromDb('id'));
+        static::assertTrue($rec->isValueFromDb('parent_id'));
+
+        $rec = TestingAdmin::find(['email' => 'abrakadabra@abrakada.bra']);
+        static::assertFalse($rec->existsInDb());
+        static::assertFalse($rec->existsInDb(true));
+        static::assertFalse($rec->hasValue('id'));
+        static::assertFalse($rec->hasValue('email'));
+
+        // todo: test relations
+        /*$rec = TestingAdmin::find(['id' => $exampleWithParent['id']], $shortSetOfColumns, ['Parent']);
+        static::assertTrue($rec->existsInDb());
+        static::assertTrue($rec->existsInDb(true));
+        static::assertTrue($rec->isValueFromDb('id'));
+        static::assertTrue($rec->isValueFromDb('parent_id'));
+        static::assertNotNull($rec->getValue('parent_id'));
+        static::assertEquals(array_intersect_key($exampleWithParent, array_flip($shortSetOfColumns)), $rec->toArray($shortSetOfColumns));
+        static::assertEquals($exampleParent, $rec->getRelatedRecord('Parent')->toArray($normalColumns));*/
+    }
+
+    public function testReload() {
+        $recordsAdded = TestingApp::fillAdminsTable(10);
+        $example = $recordsAdded[0];
+        $normalColumns = array_diff(array_keys(TestingAdmin::getColumnsThatExistInDb()), ['password', 'created_at', 'updated_at']);
+        unset($example['password'], $example['created_at'], $example['updated_at']);
+
+        $rec = TestingAdmin::newEmptyRecord()->setValue('id', $example['id'], true);
+        static::assertTrue($rec->existsInDb());
+        static::assertTrue($rec->existsInDb(true));
+        static::assertEquals((int)$example['id'], $rec->getValue('id'));
+        static::assertFalse($rec->hasValue('email'));
+
+        $rec->reload(['email']);
+        static::assertTrue($rec->existsInDb());
+        static::assertTrue($rec->existsInDb(true));
+        static::assertEquals((int)$example['id'], $rec->getValue('id'));
+        static::assertTrue($rec->hasValue('email'));
+        static::assertEquals($example['email'], $rec->getValue('email'));
+        static::assertFalse($rec->hasValue('parent_id'));
+
+        $rec->reload();
+        static::assertTrue($rec->existsInDb());
+        static::assertTrue($rec->existsInDb(true));
+        static::assertEquals((int)$example['id'], $rec->getValue('id'));
+        static::assertTrue($rec->hasValue('email'));
+        static::assertEquals($example, $rec->toArray($normalColumns));
+
+        // todo: test relations
     }
 
     public function testReadColumns() {
@@ -530,10 +724,6 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testGetAndHasRelatedRecord() {
-
-    }
-
-    public function testReload() {
 
     }
 
@@ -638,6 +828,10 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testMagicMethods() {
+
+    }
+
+    public function testDbRecordOldValue() {
 
     }
 
