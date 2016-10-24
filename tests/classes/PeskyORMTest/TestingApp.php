@@ -15,6 +15,7 @@ class TestingApp {
      */
     static public $dbConnection;
     static protected $dataForDb;
+    static protected $dataForDbMinimal;
 
     static public function init() {
         if (!static::$dbConnection) {
@@ -30,28 +31,34 @@ class TestingApp {
         return include __DIR__ . '/../../configs/global.php';
     }
 
-    static public function getRecordsForDb($table) {
-        if (!static::$dataForDb) {
-            static::$dataForDb = include __DIR__ . '/../../configs/base_db_contents.php';
+    static public function getRecordsForDb($table, $limit = 0) {
+        if ($limit === 0 || $limit <= 10) {
+            if (!static::$dataForDbMinimal) {
+                static::$dataForDbMinimal = include __DIR__ . '/../../configs/minimal_db_contents.php';
+            }
+            $records = static::$dataForDbMinimal;
+        } else {
+            if (!static::$dataForDb) {
+                static::$dataForDb = include __DIR__ . '/../../configs/base_db_contents.php';
+            }
+            $records = static::$dataForDb;
         }
-        return static::$dataForDb[$table];
+        if ($limit > 0) {
+            return array_slice($records[$table], 0, $limit);
+        } else {
+            return $records[$table];
+        }
     }
 
     static public function fillAdminsTable($limit = 0) {
-        $data = static::getRecordsForDb('admins');
-        if ($limit > 0) {
-            $data = array_slice($data, 0, $limit);
-        }
+        $data = static::getRecordsForDb('admins', $limit);
         static::$dbConnection->insertMany('admins', array_keys($data[0]), $data);
         return $data;
     }
 
     static public function fillSettingsTable($limit = 0) {
-        $data = static::getRecordsForDb('settings');
-        if ($limit > 0) {
-            $data = array_slice($data, 0, $limit);
-        }
-        static::$dbConnection->insertMany('admins', array_keys($data[0]), $data);
+        $data = static::getRecordsForDb('settings', $limit);
+        static::$dbConnection->insertMany('settings', array_keys($data[0]), $data);
         return $data;
     }
 

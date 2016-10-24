@@ -85,7 +85,7 @@ interface DbRecordInterface {
      * @param string $relationName
      * @return bool
      */
-    public function hasRelatedRecord($relationName);
+    public function isRelatedRecordAttached($relationName);
 
     /**
      * Fill record values from passed $data.

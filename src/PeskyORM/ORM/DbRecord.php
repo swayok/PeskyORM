@@ -525,7 +525,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @throws \InvalidArgumentException
      */
     public function getRelatedRecord($relationName, $loadIfNotSet = false) {
-        if (!$this->hasRelatedRecord($relationName)) {
+        if (!$this->isRelatedRecordAttached($relationName)) {
             if ($loadIfNotSet) {
                 $this->readRelatedRecord($relationName);
             } else {
@@ -575,7 +575,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    public function hasRelatedRecord($relationName) {
+    public function isRelatedRecordAttached($relationName) {
         static::getRelation($relationName);
         return array_key_exists($relationName, $this->relatedRecords);
     }
@@ -1105,7 +1105,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
             );
         }
         foreach ($relationsToSave as $relationName) {
-            if ($this->hasRelatedRecord($relationName)) {
+            if ($this->isRelatedRecordAttached($relationName)) {
                 $record = $this->getRelatedRecord($relationName);
                 if ($record instanceof DbRecord) {
                     $record->setValue(
@@ -1198,7 +1198,11 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
     /**
      * Get required values as array
      * @param array $columnsNames - empty: return all columns
-     * @param array $relatedRecordsNames - empty: do not add any relations
+     * @param array $relatedRecordsNames
+     *  - empty: do not add any relations
+     *  - array: contains key-value or index-value pairs:
+     *      key-value: key is relation name and value is array containing column names of related record to return
+     *      index-value or value without key: value is relation name, will return all columns of the related record
      * @param bool $loadRelatedRecordsIfNotSet - true: read all missing related objects from DB
      * @param bool $withFilesInfo - true: add info about files attached to a record (url, path, file_name, full_file_name, ext)
      * @return array
@@ -1234,15 +1238,25 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
                 $data[$columnName] = null;
             }
         }
-        foreach ($relatedRecordsNames as $relatedRecordName) {
+        foreach ($relatedRecordsNames as $relatedRecordName => $relatedRecordColumns) {
+            if (is_int($relatedRecordName)) {
+                $relatedRecordName = $relatedRecordColumns;
+                $relatedRecordColumns = [];
+            }
+            if (!is_array($relatedRecordColumns)) {
+                throw new \InvalidArgumentException(
+                    "Columns list for relation '{$relatedRecordName}' must be an array. "
+                        . gettype($relatedRecordName) . ' given.'
+                );
+            }
             $relatedRecord = $this->getRelatedRecord($relatedRecordName, $loadRelatedRecordsIfNotSet);
             if ($relatedRecord instanceof DbRecord) {
                 $data[$relatedRecordName] = $withFilesInfo
-                    ? $relatedRecord->toArray()
-                    : $relatedRecord->toArrayWitoutFiles();
+                    ? $relatedRecord->toArray($relatedRecordColumns)
+                    : $relatedRecord->toArrayWitoutFiles($relatedRecordColumns);
             } else {
                 /** @var DbRecordsSet $relatedRecord*/
-                $relatedRecord->setSingleDbRecordIterationMode(true);
+                $relatedRecord->enableDbRecordInstanceReuseDuringIteration(true);
                 $data[$relatedRecordName][] = [];
                 foreach ($relatedRecord as $relRecord) {
                     $data[$relatedRecordName][] = $withFilesInfo
@@ -1371,7 +1385,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
     public function offsetExists($key) {
         return (
             static::hasColumn($key) && $this->hasValue($key)
-            || static::hasRelation($key) && $this->hasRelatedRecord($key)
+            || static::hasRelation($key) && $this->isRelatedRecordAttached($key)
         );
     }
 

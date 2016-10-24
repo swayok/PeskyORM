@@ -281,6 +281,21 @@ class DbSelect {
     }
 
     /**
+     * @return array
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     */
+    public function fetchPrevPage() {
+        if (!$this->limit) {
+            throw new \BadMethodCallException('It is impossible to use pagination when there is no limit');
+        }
+        $this->offset($this->offset - $this->limit);
+        return $this->_fetch(Utils::FETCH_ALL);
+    }
+
+    /**
      * @param bool $ignoreLeftJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
      * @return int
      * @throws \InvalidArgumentException

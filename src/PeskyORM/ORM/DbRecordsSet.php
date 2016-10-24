@@ -10,7 +10,7 @@ class DbRecordsSet implements \ArrayAccess, \Iterator {
     protected $table;
 
     /**
-     * @var DbSelect
+     * @var OrmSelect
      */
     protected $select;
     /**
@@ -32,7 +32,7 @@ class DbRecordsSet implements \ArrayAccess, \Iterator {
     /**
      * @var bool
      */
-    protected $singleDbRecordIteration = false;
+    protected $dbRecordInstanceReuseEnabled = false;
     /**
      * @var DbRecord
      */
@@ -50,30 +50,30 @@ class DbRecordsSet implements \ArrayAccess, \Iterator {
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    static public function createFromArray(DbTable $table, array $records, $isFromDb = false) {
+    static public function createFromArray(DbTableInterface $table, array $records, $isFromDb = false) {
         return new static($table, $records, $isFromDb);
     }
 
     /**
-     * @param DbSelect $dbSelect
+     * @param OrmSelect $dbSelect
      * @return static
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    static public function createFromDbSelect(DbSelect $dbSelect) {
+    static public function createFromOrmSelect(OrmSelect $dbSelect) {
         return new static($dbSelect->getTable(), $dbSelect);
     }
 
     /**
-     * @param DbTable $table
-     * @param DbSelect|array $dbSelectOrRecords
+     * @param DbTableInterface $table
+     * @param OrmSelect|array $dbSelectOrRecords
      * @param bool $isFromDb - true: records are from db. works only if $dbSelectOrRecords is array
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    protected function __construct(DbTable $table, $dbSelectOrRecords, $isFromDb = false) {
+    protected function __construct(DbTableInterface $table, $dbSelectOrRecords, $isFromDb = false) {
         $this->table = $table;
-        if ($dbSelectOrRecords instanceof DbSelect) {
+        if ($dbSelectOrRecords instanceof OrmSelect) {
             $this->select = $dbSelectOrRecords;
             $this->isFromDb = true;
         } else if (is_array($dbSelectOrRecords)) {
@@ -87,23 +87,67 @@ class DbRecordsSet implements \ArrayAccess, \Iterator {
             $this->dbRecordForIteration = $this->table->newRecord();
         } else {
             throw new \InvalidArgumentException(
-                '$dbSelectOrRecords argument bust be an array or instance of DbSelect class'
+                '$dbSelectOrRecords argument bust be an array or instance of OrmSelect class'
             );
         }
     }
 
     /**
-     * @param bool $enable
+     * @return $this
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
-    public function setSingleDbRecordIterationMode($enable = true) {
-        $this->singleDbRecordIteration = (bool)$enable;
+    public function nextPage() {
+        if (!$this->select) {
+            throw new \BadMethodCallException('Pagination is impossible without OrmSelect instance');
+        }
+        $this->rewind();
+        $this->records = $this->select->fetchNextPage();
+        return $this;
+    }
+
+    /**
+     * @return $this
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    public function prevPage() {
+        if (!$this->select) {
+            throw new \BadMethodCallException('Pagination is impossible without OrmSelect instance');
+        }
+        $this->rewind();
+        $this->records = $this->select->fetchPrevPage();
+        return $this;
+    }
+
+    // todo: add possibility to fetch records via OrmSelect until there is no more records in db (using nextPage or prevPage)
+    // this should be enabled/disabled via a method like [enable/disable]IterationOverAllMatchingRecords()
+
+    /**
+     * @return $this
+     */
+    public function enableDbRecordInstanceReuseDuringIteration() {
+        $this->dbRecordInstanceReuseEnabled = true;
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function disableDbRecordInstanceReuseDuringIteration() {
+        $this->dbRecordInstanceReuseEnabled = false;
+        return $this;
     }
 
     /**
      * @return bool
      */
-    public function isSingleRecordIterationModeEnabled() {
-        return $this->singleDbRecordIteration;
+    public function isDbRecordInstanceReuseDuringIterationEnabled() {
+        return $this->dbRecordInstanceReuseEnabled;
     }
 
     /**
@@ -115,6 +159,9 @@ class DbRecordsSet implements \ArrayAccess, \Iterator {
 
     /**
      * @return array[]
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
      */
     public function toArrays() {
         if (!$this->records && $this->select) {
@@ -125,6 +172,10 @@ class DbRecordsSet implements \ArrayAccess, \Iterator {
 
     /**
      * @return DbRecord[]
+     * @throws \PDOException
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -141,6 +192,10 @@ class DbRecordsSet implements \ArrayAccess, \Iterator {
     /**
      * Return the current element
      * @return DbRecord
+     * @throws \PDOException
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -148,7 +203,7 @@ class DbRecordsSet implements \ArrayAccess, \Iterator {
         if (!$this->offsetExists($this->position)) {
             return null;
         }
-        if ($this->isSingleRecordIterationModeEnabled()) {
+        if ($this->isDbRecordInstanceReuseDuringIterationEnabled()) {
             if ($this->position !== $this->currentDbRecordIndex) {
                 $data = $this->getRecordDataByIndex($this->position);
                 $this->dbRecordForIteration->fromData($data, $this->isRecordsFromDb());
@@ -178,6 +233,9 @@ class DbRecordsSet implements \ArrayAccess, \Iterator {
     /**
      * Checks if current position is valid
      * @return boolean - true on success or false on failure.
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
      */
     public function valid() {
         return $this->offsetExists($this->position);
@@ -194,6 +252,9 @@ class DbRecordsSet implements \ArrayAccess, \Iterator {
      * Whether a record with specified index exists
      * @param mixed $index - an offset to check for.
      * @return boolean - true on success or false on failure.
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
      */
     public function offsetExists($index) {
         return array_key_exists($index, $this->toArrays());
@@ -202,6 +263,10 @@ class DbRecordsSet implements \ArrayAccess, \Iterator {
     /**
      * @param int $index - The offset to retrieve.
      * @return DbRecord
+     * @throws \PDOException
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -217,6 +282,8 @@ class DbRecordsSet implements \ArrayAccess, \Iterator {
     /**
      * @param $index
      * @return mixed
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
      * @throws \InvalidArgumentException
      */
     protected function getRecordDataByIndex($index) {
