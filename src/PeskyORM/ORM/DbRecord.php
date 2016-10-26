@@ -1256,7 +1256,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
                     : $relatedRecord->toArrayWitoutFiles($relatedRecordColumns);
             } else {
                 /** @var DbRecordsSet $relatedRecord*/
-                $relatedRecord->enableDbRecordInstanceReuseDuringIteration(true);
+                $relatedRecord->enableDbRecordInstanceReuseDuringIteration();
                 $data[$relatedRecordName][] = [];
                 foreach ($relatedRecord as $relRecord) {
                     $data[$relatedRecordName][] = $withFilesInfo

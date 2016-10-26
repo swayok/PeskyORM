@@ -550,6 +550,13 @@ class DbSelect {
     }
 
     /**
+     * @return int
+     */
+    public function getLimit() {
+        return $this->limit;
+    }
+
+    /**
      * Set/Remove OFFSET
      * @param int $offset - 0 = no offset
      * @return $this
@@ -563,6 +570,13 @@ class DbSelect {
         }
         $this->offset = (int)$offset;
         return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getOffset() {
+        return $this->offset;
     }
 
     /**

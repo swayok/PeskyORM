@@ -2,313 +2,188 @@
 
 namespace PeskyORM\ORM;
 
-class DbRecordsSet implements \ArrayAccess, \Iterator {
-
-    /**
-     * @var DbTable
-     */
-    protected $table;
+class DbRecordsSet extends DbRecordsArray {
 
     /**
      * @var OrmSelect
      */
     protected $select;
     /**
-     * @var array
+     * null - not counted
+     * @var null|int
      */
-    protected $records = null;
+    protected $recordsCount = null;
     /**
-     * @var
+     * Used for optimized iteration that uses pagination to fetch small packs of records instead of fetching all at once
+     * @var int
      */
-    protected $position = 0;
+    protected $recordsLimitPerPageForOptimizedIteration = 50;
     /**
-     * @var DbRecord[]
-     */
-    protected $dbRecords = [];
-    /**
+     * Use pagination to fetch small packs of records instead of fetching all at once?
+     * Automatically enabed when there is no limit/offset in DbSelect or when
+     * limit > $this->recordsCountPerPageForOptimizedIteration * 4
      * @var bool
      */
-    protected $isFromDb = false;
+    protected $optimizeIterationOverLargeAmountOfRecords = false;
     /**
-     * @var bool
+     * Limits size of $this->records when $this->optimizeIterationOverLargeAmountOfRecords === true to avoid memory
+     * problems
+     * @var int
      */
-    protected $dbRecordInstanceReuseEnabled = false;
+    protected $maxRecordsToStoreDuringOptimizedIteration = 1000;
     /**
-     * @var DbRecord
+     * Offset provided by original OrmSelect object
+     * @var null|int
      */
-    protected $dbRecordForIteration = null;
+    protected $baseOffset = null;
+    /**
+     * @var null|int
+     */
+    protected $limitBackup = null;
     /**
      * @var int
      */
-    protected $currentDbRecordIndex = -1;
+    protected $localOffset = 0;
 
     /**
      * @param DbTableInterface $table
      * @param array $records
      * @param boolean $isFromDb
-     * @return static
-     * @throws \BadMethodCallException
+     * @return DbRecordsArray
      * @throws \InvalidArgumentException
      */
-    static public function createFromArray(DbTableInterface $table, array $records, $isFromDb = false) {
-        return new static($table, $records, $isFromDb);
+    static public function createFromArray(DbTableInterface $table, array $records, $isFromDb) {
+        return new DbRecordsArray($table, $records, (bool)$isFromDb);
     }
 
     /**
-     * @param OrmSelect $dbSelect
-     * @return static
-     * @throws \BadMethodCallException
+     * @param OrmSelect $dbSelect - it will be cloned to avoid possible problems when original object
+     *      is changed outside DbRecordsSet + to allow optimised iteration via pagination
+     * @return DbRecordsSet
      * @throws \InvalidArgumentException
      */
     static public function createFromOrmSelect(OrmSelect $dbSelect) {
-        return new static($dbSelect->getTable(), $dbSelect);
+        return new DbRecordsSet($dbSelect->getTable(), $dbSelect, true);
     }
 
     /**
      * @param DbTableInterface $table
-     * @param OrmSelect|array $dbSelectOrRecords
-     * @param bool $isFromDb - true: records are from db. works only if $dbSelectOrRecords is array
-     * @throws \BadMethodCallException
+     * @param OrmSelect $dbSelect - it will be cloned to avoid possible problems when original object
+     *      is changed outside DbRecordsSet + to allow optimised iteration via pagination
      * @throws \InvalidArgumentException
      */
-    protected function __construct(DbTableInterface $table, $dbSelectOrRecords, $isFromDb = false) {
-        $this->table = $table;
-        if ($dbSelectOrRecords instanceof OrmSelect) {
-            $this->select = $dbSelectOrRecords;
-            $this->isFromDb = true;
-        } else if (is_array($dbSelectOrRecords)) {
-            foreach ($dbSelectOrRecords as $record) {
-                if (!is_array($record)) {
-                    throw new \InvalidArgumentException('$dbSelectOrRecords must contain only arrays');
-                }
-            }
-            $this->records = array_values($dbSelectOrRecords);
-            $this->isFromDb = $isFromDb;
-            $this->dbRecordForIteration = $this->table->newRecord();
-        } else {
-            throw new \InvalidArgumentException(
-                '$dbSelectOrRecords argument bust be an array or instance of OrmSelect class'
-            );
+    public function __construct(DbTableInterface $table, OrmSelect $dbSelect) {
+        parent::__construct($table, [], true);
+        $this->records = null;
+        $this->select = clone $dbSelect;
+        $this->optimizeIterationOverLargeAmountOfRecords = (
+            $this->select->getLimit() === 0
+            || $this->select->getLimit() > 4 * $this->recordsLimitPerPageForOptimizedIteration
+        );
+        if ($this->optimizeIterationOverLargeAmountOfRecords) {
+            $this->baseOffset = $this->select->getOffset();
+            $this->limitBackup = $this->select->getLimit();
+            $this->select->limit($this->recordsLimitPerPageForOptimizedIteration);
         }
     }
 
     /**
      * @return $this
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
     public function nextPage() {
-        if (!$this->select) {
-            throw new \BadMethodCallException('Pagination is impossible without OrmSelect instance');
-        }
         $this->rewind();
-        $this->records = $this->select->fetchNextPage();
+        if ($this->optimizeIterationOverLargeAmountOfRecords) {
+
+        } else {
+            $this->records = $this->select->fetchNextPage();
+        }
         return $this;
     }
 
     /**
      * @return $this
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
     public function prevPage() {
-        if (!$this->select) {
-            throw new \BadMethodCallException('Pagination is impossible without OrmSelect instance');
-        }
         $this->rewind();
-        $this->records = $this->select->fetchPrevPage();
-        return $this;
-    }
+        if ($this->optimizeIterationOverLargeAmountOfRecords) {
 
-    // todo: add possibility to fetch records via OrmSelect until there is no more records in db (using nextPage or prevPage)
-    // this should be enabled/disabled via a method like [enable/disable]IterationOverAllMatchingRecords()
-
-    /**
-     * @return $this
-     */
-    public function enableDbRecordInstanceReuseDuringIteration() {
-        $this->dbRecordInstanceReuseEnabled = true;
+        } else if ($this->select->getOffset() <= 0) {
+            $this->records = [];
+        } else {
+            $this->records = $this->select->fetchPrevPage();
+        }
         return $this;
     }
 
     /**
-     * @return $this
+     * @return array
      */
-    public function disableDbRecordInstanceReuseDuringIteration() {
-        $this->dbRecordInstanceReuseEnabled = false;
-        return $this;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isDbRecordInstanceReuseDuringIterationEnabled() {
-        return $this->dbRecordInstanceReuseEnabled;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isRecordsFromDb() {
-        return $this->isFromDb;
+    protected function getRecords() {
+        return $this->select->fetchMany();
     }
 
     /**
      * @return array[]
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
     public function toArrays() {
-        if (!$this->records && $this->select) {
-            $this->records = $this->select->fetchMany();
+        if (
+            $this->optimizeIterationOverLargeAmountOfRecords
+            && (
+                $this->records === null
+                || $this->count() !== count($this->records))
+            ) {
+            $this->records = $this->select->page(0, $this->baseOffset)->fetchMany();
+        } else if ($this->records === null) {
+            $this->records = $this->getRecords();
         }
         return $this->records;
-    }
-
-    /**
-     * @return DbRecord[]
-     * @throws \PDOException
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     */
-    public function toObjects() {
-        $count = count($this->records);
-        if ($count !== count($this->dbRecords)) {
-            for ($i = 0; $i < $count; $i++) {
-                $this->offsetGet($i);
-            }
-        }
-        return $this->records;
-    }
-
-    /**
-     * Return the current element
-     * @return DbRecord
-     * @throws \PDOException
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
-     */
-    public function current() {
-        if (!$this->offsetExists($this->position)) {
-            return null;
-        }
-        if ($this->isDbRecordInstanceReuseDuringIterationEnabled()) {
-            if ($this->position !== $this->currentDbRecordIndex) {
-                $data = $this->getRecordDataByIndex($this->position);
-                $this->dbRecordForIteration->fromData($data, $this->isRecordsFromDb());
-            }
-            return $this->dbRecordForIteration;
-        } else {
-            return $this->offsetGet($this->position);
-        }
-    }
-
-    /**
-     * Move forward to next element
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
-     */
-    public function next() {
-        $this->position++;
-    }
-
-    /**
-     * Return the key of the current element
-     */
-    public function key() {
-        return $this->position;
-    }
-
-    /**
-     * Checks if current position is valid
-     * @return boolean - true on success or false on failure.
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
-     */
-    public function valid() {
-        return $this->offsetExists($this->position);
-    }
-
-    /**
-     * Rewind the Iterator to the first element
-     */
-    public function rewind() {
-        $this->position = 0;
     }
 
     /**
      * Whether a record with specified index exists
      * @param mixed $index - an offset to check for.
      * @return boolean - true on success or false on failure.
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
     public function offsetExists($index) {
-        return array_key_exists($index, $this->toArrays());
-    }
-
-    /**
-     * @param int $index - The offset to retrieve.
-     * @return DbRecord
-     * @throws \PDOException
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     */
-    public function offsetGet($index) {
-        if (empty($this->dbRecords[$index])) {
-            $data = $this->getRecordDataByIndex($index);
-            $this->dbRecords[$index] = $this->table->newRecord()
-                ->fromData($data, $this->isRecordsFromDb());
-        }
-        return $this->dbRecords[$index];
+        return $index >= 0 && $index < $this->count();
     }
 
     /**
      * @param $index
      * @return mixed
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
     protected function getRecordDataByIndex($index) {
         if (!$this->offsetExists($index)) {
             throw new \InvalidArgumentException("Array does not contain index '{$index}'");
         }
+        if (!array_key_exists($index, $this->records)) {
+            if ($this->optimizeIterationOverLargeAmountOfRecords) {
+                $page = (int)floor($index / $this->recordsLimitPerPageForOptimizedIteration);
+                $this->localOffset = $page * $this->recordsLimitPerPageForOptimizedIteration;
+                $this->select->page(
+                    $this->recordsLimitPerPageForOptimizedIteration,
+                    $this->baseOffset + $this->localOffset
+                );
+                $newRecords = $this->getRecords();
+                if (count($this->records) + $this->recordsLimitPerPageForOptimizedIteration >= $this->maxRecordsToStoreDuringOptimizedIteration) {
+                    $this->records = [];
+                }
+                array_splice($this->records, $this->localOffset, $this->recordsLimitPerPageForOptimizedIteration, $newRecords);
+            } else {
+                $this->records = $this->getRecords();
+            }
+        }
         return $this->records[$index];
     }
 
     /**
-     * Offset to set
-     * @param int $index
-     * @param mixed $value
-     * @throws \BadMethodCallException
+     * Count elements of an object
+     * @return int
      */
-    public function offsetSet($index, $value) {
-        throw new \BadMethodCallException('DbRecordSet cannot be modified');
-    }
-
-    /**
-     * Offset to unset
-     * @param int $index
-     * @throws \BadMethodCallException
-     */
-    public function offsetUnset($index) {
-        throw new \BadMethodCallException('DbRecordSet cannot be modified');
+    public function count() {
+        if ($this->recordsCount === null) {
+            $this->recordsCount = $this->select->page($this->limitBackup, $this->baseOffset)->fetchCount();
+        }
+        return $this->recordsCount;
     }
 }
