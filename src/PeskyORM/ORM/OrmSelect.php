@@ -27,6 +27,8 @@ class OrmSelect extends DbSelect {
     /**
      * @param DbTable $table
      * @return $this
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -76,6 +78,7 @@ class OrmSelect extends DbSelect {
 
     /**
      * @return DbRecord
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \PDOException
@@ -178,6 +181,14 @@ class OrmSelect extends DbSelect {
         }
         $columns = ($columns === null) ? [] : $this->normalizeColumnsList($columns);
         $this->contains[$relationName] = compact('columns', 'conditions');
+    }
+
+    /**
+     * @return DbRecordsSet
+     * @throws \InvalidArgumentException
+     */
+    public function fetchMany() {
+        return DbRecordsSet::createFromOrmSelect($this);
     }
 
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */

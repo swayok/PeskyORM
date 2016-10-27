@@ -69,68 +69,89 @@ interface DbTableInterface {
 
     /**
      * @param string|array $columns
-     * @param array $conditionsAndOptions
+     * @param array $conditions
+     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return DbRecordsSet
      * @throws \InvalidArgumentException
      */
-    static public function select($columns = '*', array $conditionsAndOptions = []);
+    static public function select($columns = '*', array $conditions = [], \Closure $configurator = null);
 
     /**
      * Selects only 1 column
      * @param string $column
-     * @param array $conditionsAndOptions
+     * @param array $conditions
+     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
      */
-    static public function selectColumn($column, array $conditionsAndOptions = []);
+    static public function selectColumn($column, array $conditions = [], \Closure $configurator = null);
 
     /**
      * Select associative array
      * Note: does not support columns from foreign models
      * @param string $keysColumn
      * @param string $valuesColumn
-     * @param array $conditionsAndOptions
+     * @param array $conditions
+     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
      */
-    static public function selectAssoc($keysColumn, $valuesColumn, array $conditionsAndOptions = []);
+    static public function selectAssoc($keysColumn, $valuesColumn, array $conditions = [], \Closure $configurator = null);
 
     /**
      * Get 1 record from DB
      * @param string|array $columns
-     * @param array $conditionsAndOptions
+     * @param array $conditions
+     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
      */
-    static public function selectOne($columns, array $conditionsAndOptions);
+    static public function selectOne($columns, array $conditions, \Closure $configurator = null);
 
     /**
      * Make a query that returns only 1 value defined by $expression
      * @param DbExpr $expression - example: DbExpr::create('COUNT(*)'), DbExpr::create('SUM(`field`)')
-     * @param array $conditionsAndOptions
+     * @param array $conditions
+     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return string
      * @throws \InvalidArgumentException
      */
-    static public function selectValue(DbExpr $expression, array $conditionsAndOptions = []);
+    static public function selectValue(DbExpr $expression, array $conditions = [], \Closure $configurator = null);
 
     /**
      * Does table contain any record matching provided condition
-     * @param array $conditionsAndOptions
+     * @param array $conditions
+     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return bool
      * @throws \InvalidArgumentException
      */
-    static public function hasMatchingRecord(array $conditionsAndOptions);
+    static public function hasMatchingRecord(array $conditions, \Closure $configurator = null);
 
     /**
-     * @param array $conditionsAndOptions
+     * @param array $conditions
      * @param bool $removeNotInnerJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
+     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return int
      */
-    static public function count(array $conditionsAndOptions, $removeNotInnerJoins = false);
+    static public function count(array $conditions, \Closure $configurator = null, $removeNotInnerJoins = false);
 
+    /**
+     * @param bool $readOnly
+     * @param null|string $transactionType
+     * @return void
+     */
     static public function beginTransaction($readOnly = false, $transactionType = null);
 
+    /**
+     * @return bool
+     */
     static public function inTransaction();
 
+    /**
+     * @return void
+     */
     static public function commitTransaction();
 
+    /**
+     * @return void
+     */
     static public function rollBackTransaction();
 
     /**

@@ -89,11 +89,18 @@ class DbRecordsSet extends DbRecordsArray {
 
     /**
      * @return $this
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
     public function nextPage() {
         $this->rewind();
         if ($this->optimizeIterationOverLargeAmountOfRecords) {
-
+            if ($this->limitBackup === 0) {
+                throw new \BadMethodCallException('It is impossible to use pagination when there is no limit');
+            }
+            $this->changeBaseOffset($this->baseOffset + $this->limitBackup);
         } else {
             $this->records = $this->select->fetchNextPage();
         }
@@ -102,13 +109,15 @@ class DbRecordsSet extends DbRecordsArray {
 
     /**
      * @return $this
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
     public function prevPage() {
         $this->rewind();
         if ($this->optimizeIterationOverLargeAmountOfRecords) {
-
-        } else if ($this->select->getOffset() <= 0) {
-            $this->records = [];
+            $this->changeBaseOffset($this->baseOffset - $this->limitBackup);
         } else {
             $this->records = $this->select->fetchPrevPage();
         }
@@ -116,7 +125,27 @@ class DbRecordsSet extends DbRecordsArray {
     }
 
     /**
+     * @param int $newBaseOffset
+     * @return $this
+     * @throws \InvalidArgumentException
+     */
+    protected function changeBaseOffset($newBaseOffset) {
+        if ($newBaseOffset < 0) {
+            throw new \InvalidArgumentException('Negative offset is not allowed');
+        }
+        $this->baseOffset = (int)$newBaseOffset;
+        $this->select->offset($this->baseOffset);
+        $this->localOffset = 0;
+        $this->recordsCount = null;
+        $this->records = null;
+        return $this;
+    }
+
+    /**
      * @return array
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
      */
     protected function getRecords() {
         return $this->select->fetchMany();
@@ -124,6 +153,9 @@ class DbRecordsSet extends DbRecordsArray {
 
     /**
      * @return array[]
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
      */
     public function toArrays() {
         if (
@@ -143,6 +175,8 @@ class DbRecordsSet extends DbRecordsArray {
      * Whether a record with specified index exists
      * @param mixed $index - an offset to check for.
      * @return boolean - true on success or false on failure.
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
      */
     public function offsetExists($index) {
         return $index >= 0 && $index < $this->count();
@@ -151,6 +185,9 @@ class DbRecordsSet extends DbRecordsArray {
     /**
      * @param $index
      * @return mixed
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
      */
     protected function getRecordDataByIndex($index) {
         if (!$this->offsetExists($index)) {
@@ -179,6 +216,8 @@ class DbRecordsSet extends DbRecordsArray {
     /**
      * Count elements of an object
      * @return int
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
      */
     public function count() {
         if ($this->recordsCount === null) {
