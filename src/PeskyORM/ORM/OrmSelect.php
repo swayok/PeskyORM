@@ -183,14 +183,6 @@ class OrmSelect extends DbSelect {
         $this->contains[$relationName] = compact('columns', 'conditions');
     }
 
-    /**
-     * @return DbRecordsSet
-     * @throws \InvalidArgumentException
-     */
-    public function fetchMany() {
-        return DbRecordsSet::createFromOrmSelect($this);
-    }
-
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
 
     /**

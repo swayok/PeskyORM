@@ -194,7 +194,7 @@ abstract class DbTable implements DbTableInterface {
         if ($configurator !== null) {
             call_user_func($configurator, $select);
         }
-        return $select->fetchMany();
+        return DbRecordsSet::createFromOrmSelect($select);
     }
 
     /**
