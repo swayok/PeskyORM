@@ -2,6 +2,7 @@
 
 namespace PeskyORM\Core;
 
+use PeskyORM\ORM\OrmJoinConfig;
 use Swayok\Utils\StringUtils;
 use Swayok\Utils\ValidateValue;
 
@@ -68,7 +69,7 @@ class DbSelect {
     /**
      * @param string $tableName
      * @param DbAdapterInterface $connection
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     static public function from($tableName, DbAdapterInterface $connection) {
@@ -159,6 +160,20 @@ class DbSelect {
      * @throws \InvalidArgumentException
      */
     protected function parseNormalizedConfigsArray(array $conditionsAndOptions) {
+        // JOINS - must be 1st to allow columns validation in OrmSelect or other child class
+        if (!empty($conditionsAndOptions['JOINS'])) {
+            if (!is_array($conditionsAndOptions['JOINS'])) {
+                throw new \InvalidArgumentException('JOINS key in $conditionsAndOptions argument must be an array');
+            }
+            foreach ($conditionsAndOptions['JOINS'] as $join) {
+                if (!($join instanceof DbJoinConfig)) {
+                    throw new \InvalidArgumentException(
+                        'JOINS key in $conditionsAndOptions argument must contain only instances of DbJoinConfig class'
+                    );
+                }
+                $this->join($join);
+            }
+        }
         // COLUMNS
         if (!empty($conditionsAndOptions['COLUMNS'])) {
             if (!is_array($conditionsAndOptions['COLUMNS']) && $conditionsAndOptions['COLUMNS'] !== '*') {
@@ -224,20 +239,6 @@ class DbSelect {
             }
             $this->having($conditionsAndOptions['HAVING']);
         }
-        // JOINS
-        if (!empty($conditionsAndOptions['JOINS'])) {
-            if (!is_array($conditionsAndOptions['JOINS'])) {
-                throw new \InvalidArgumentException('JOINS key in $conditionsAndOptions argument must be an array');
-            }
-            foreach ($conditionsAndOptions['JOINS'] as $join) {
-                if (!($join instanceof DbJoinConfig)) {
-                    throw new \InvalidArgumentException(
-                        'JOINS key in $conditionsAndOptions argument must contain only instances of DbJoinConfig class'
-                    );
-                }
-                $this->join($join);
-            }
-        }
         // CONDITIONS
         $conditions = array_diff_key($conditionsAndOptions, array_flip($this->getListOfSpecialKeysInConditionsAndOptions()));
         if (!empty($conditions)) {
@@ -296,13 +297,27 @@ class DbSelect {
     }
 
     /**
+     * Count records matching provided conditions and options
      * @param bool $ignoreLeftJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
      * @return int
-     * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
      * @throws \PDOException
+     * @throws \InvalidArgumentException
      */
     public function fetchCount($ignoreLeftJoins = true) {
-        return (int) $this->getConnection()->query($this->getCountQuery($ignoreLeftJoins), Utils::FETCH_VALUE);
+        return (int)$this->getConnection()->query($this->getCountQuery($ignoreLeftJoins), Utils::FETCH_VALUE);
+    }
+
+    /**
+     * Tests if there is at least 1 record matching provided conditions and options
+     * @param bool $ignoreLeftJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
+     * @return bool
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    public function fetchExistence($ignoreLeftJoins = true) {
+        return (int)$this->getConnection()->query($this->getExistenceQuery($ignoreLeftJoins), Utils::FETCH_VALUE) === 1;
     }
 
     /**
@@ -401,6 +416,30 @@ class DbSelect {
      * @throws \PDOException
      */
     public function getCountQuery($ignoreLeftJoins = true) {
+        return $this->getSimplifiedQuery('COUNT(*)', $ignoreLeftJoins);
+    }
+
+    /**
+     * @param bool $ignoreLeftJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
+     * @return string
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \PDOException
+     */
+    public function getExistenceQuery($ignoreLeftJoins = true) {
+        return $this->getSimplifiedQuery('1', $ignoreLeftJoins) . ' LIMIT 1';
+    }
+
+    /**
+     * Make a simplified query without LIMIT, OFFSET and ORDER BY
+     * @param string $expression - something like "COUNT(*)" or "1" to be selected by the query
+     * @param bool $ignoreLeftJoins
+     * @return string
+     * @throws \PDOException
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     */
+    protected function getSimplifiedQuery($expression, $ignoreLeftJoins = true) {
         $this->beforeQueryBuilding();
         $table = $this->makeTableNameWithAliasForQuery(
             $this->getTableName(),
@@ -412,7 +451,7 @@ class DbSelect {
         $group = $this->makeGroupBy();
         $having = $this->makeConditions($this->having, 'HAVING');
         $this->validateIfThereAreEnoughJoins();
-        return "SELECT COUNT(*) FROM {$table}{$joins}{$conditions}{$group}{$having}";
+        return "SELECT $expression FROM {$table}{$joins}{$conditions}{$group}{$having}";
     }
 
     /**
@@ -429,9 +468,6 @@ class DbSelect {
      * @throws \InvalidArgumentException
      */
     public function columns(...$columns) {
-        if (count($columns) === 1 && is_array($columns[0])) {
-            $columns = $columns[0];
-        }
         $this->columns = $this->normalizeColumnsList($columns);
         return $this;
     }
@@ -483,7 +519,7 @@ class DbSelect {
             throw new \InvalidArgumentException('$columnName argument must be a string or instance of DbExpr class');
         }
         if (!$append) {
-            $this->orderBy = [];
+           $this->removeOrdering();
         }
         if ($isDbExpr) {
             $this->orderBy[] = $columnName;
@@ -493,6 +529,15 @@ class DbSelect {
             $columnInfo['direction'] = $isAscending ? 'ASC' : 'DESC';
             $this->orderBy[$key] = $columnInfo;
         }
+        return $this;
+    }
+
+    /**
+     * Remove order by (used to speedup existence test)
+     * @return $this
+     */
+    public function removeOrdering() {
+        $this->orderBy = [];
         return $this;
     }
 
@@ -824,12 +869,26 @@ class DbSelect {
      * @throws \InvalidArgumentException
      */
     protected function normalizeColumnsList(array $columns, $joinName = null) {
+        if (count($columns) === 1 && is_array($columns[0])) {
+            $columns = $columns[0];
+        }
         if (empty($columns)) {
             $columns = ['*'];
         }
         $normalizedColumns = [];
         foreach ($columns as $columnAlias => $columnName) {
-            if (!is_string($columnName) && !($columnName instanceof DbExpr)) {
+            if (
+                (is_array($columnName) || $columnName === '*')
+                && !is_numeric($columnName)
+                && $this->hasJoin($columnName)
+            ) {
+                /** @noinspection SlowArrayOperationsInLoopInspection */
+                $normalizedColumns = array_merge(
+                    $normalizedColumns,
+                    $this->normalizeColumnsList($columnName, $columnAlias)
+                );
+                continue;
+            } else if (!is_string($columnName) && !($columnName instanceof DbExpr)) {
                 throw new \InvalidArgumentException(
                     "Invalid column name for a key '$columnAlias'. "
                     . '$columns argument must contain only strings and instances of DbExpr class.'
@@ -1087,5 +1146,24 @@ class DbSelect {
                 'There are no joins defined for next aliases: ' . implode(', ', $missingJoins)
             );
         }
+    }
+
+    /**
+     * @param string $joinName
+     * @return bool
+     */
+    protected function hasJoin($joinName) {
+        return array_key_exists($joinName, $this->joins);
+    }
+
+    /**
+     * @param string $joinName
+     * @return DbJoinConfig|OrmJoinConfig
+     */
+    protected function getJoin($joinName) {
+        if (!$this->hasJoin($joinName)) {
+            throw new \InvalidArgumentException("Join config with name [{$joinName}] not found");
+        }
+        return $this->joins[$joinName];
     }
 }

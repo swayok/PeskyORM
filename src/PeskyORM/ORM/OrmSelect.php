@@ -3,7 +3,6 @@
 namespace PeskyORM\ORM;
 
 use PeskyORM\Core\DbSelect;
-use SebastianBergmann\ObjectEnumerator\InvalidArgumentException;
 
 class OrmSelect extends DbSelect {
 
@@ -25,25 +24,25 @@ class OrmSelect extends DbSelect {
     protected $contains = [];
 
     /**
-     * @param DbTable $table
-     * @return $this
+     * @param DbTableInterface $table
+     * @return static
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    static public function from(DbTable $table) {
+    static public function from(DbTableInterface $table) {
         return new static($table);
     }
 
     /**
-     * @param DbTable $table - table name or DbTable object
+     * @param DbTableInterface $table - table name or DbTable object
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      */
-    public function __construct(DbTable $table) {
+    public function __construct(DbTableInterface $table) {
         $this->setTable($table);
         parent::__construct($table::getName(), $table::getConnection());
     }
@@ -68,7 +67,7 @@ class OrmSelect extends DbSelect {
             if (is_string($conditionsAndOptions['CONTAINS'])) {
                 $conditionsAndOptions['CONTAINS'] = [$conditionsAndOptions['CONTAINS']];
             } else {
-                throw new InvalidArgumentException(
+                throw new \InvalidArgumentException(
                     'Key "CONTAINS" in $conditionsAndOptions argument must be an array or a string'
                 );
             }
@@ -175,12 +174,45 @@ class OrmSelect extends DbSelect {
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    public function contain($relationName, $columns = null, array $conditions = []) {
-        if ($columns !== null && !is_array($columns)) {
+    public function contain($relationName, $columns = null, array $conditions = [], DbTable $table = null) {
+        /*if ($columns !== null && !is_array($columns)) {
             throw new \InvalidArgumentException('$columns argument must be an array or null');
         }
         $columns = ($columns === null) ? [] : $this->normalizeColumnsList($columns);
-        $this->contains[$relationName] = compact('columns', 'conditions');
+        $this->contains[$relationName] = compact('columns', 'conditions');*/
+        // todo: covert DbTableRelation to DbJoinConfig and add it as join
+    }
+
+    /**
+     * @param array $columns
+     * @param null $joinName
+     * @return array
+     * @throws \InvalidArgumentException
+     */
+    protected function normalizeColumnsList(array $columns, $joinName = null) {
+        foreach ($columns as $columnAlias => $columnName) {
+            if (
+                !is_numeric($columnAlias)
+                && !$this->hasJoin($columnAlias)
+            ) {
+                if ($joinName === null && $this->getTable()->hasRelation($columnAlias)) {
+                    $this->contain($columnAlias, null, []);
+                } else if (($foreignTable = $this->getJoin($joinName)->getForeignDbTable())->hasRelation($columnAlias)) {
+                    $this->contain($columnAlias, null, [], $foreignTable);
+                }
+            }
+        }
+        return $this->normalizeColumnsList($columns, $joinName);
+    }
+
+    /**
+     * @param OrmJoinConfig $joinConfig
+     * @param bool $append
+     * @return $this
+     */
+    public function join(OrmJoinConfig $joinConfig, $append = true) {
+        parent::join($joinConfig, $append);
+        return $this;
     }
 
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
@@ -192,10 +224,9 @@ class OrmSelect extends DbSelect {
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      */
-    protected function setTable(DbTable $table) {
-        $this->tableName = $table->getName();
+    protected function setTable(DbTableInterface $table) {
         $this->table = $table;
-        $this->tableStructure = $table->getStructure();
+        $this->tableStructure = $table::getStructure();
     }
 
     protected function addRelation(DbTableRelation $relation) {

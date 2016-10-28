@@ -180,6 +180,26 @@ abstract class DbTable implements DbTableInterface {
      * @param string|array $columns
      * @param array $conditions
      * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @return OrmSelect
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    static public function makeSelect($columns, array $conditions = [], \Closure $configurator = null) {
+        $select = OrmSelect::from(static::getInstance())
+            ->fromConfigsArray($conditions)
+            ->columns($columns);
+        if ($configurator !== null) {
+            call_user_func($configurator, $select);
+        }
+        return $select;
+    }
+
+    /**
+     * @param string|array $columns
+     * @param array $conditions
+     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return DbRecordsSet
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PDOException
@@ -188,13 +208,7 @@ abstract class DbTable implements DbTableInterface {
      * @throws \InvalidArgumentException
      */
     static public function select($columns = '*', array $conditions = [], \Closure $configurator = null) {
-        $select = OrmSelect::from(static::getInstance())
-            ->fromConfigsArray($conditions)
-            ->columns($columns);
-        if ($configurator !== null) {
-            call_user_func($configurator, $select);
-        }
-        return DbRecordsSet::createFromOrmSelect($select);
+        return DbRecordsSet::createFromOrmSelect(static::makeSelect($columns, $conditions, $configurator));
     }
 
     /**
@@ -210,13 +224,7 @@ abstract class DbTable implements DbTableInterface {
      * @throws \InvalidArgumentException
      */
     static public function selectColumn($column, array $conditions = [], \Closure $configurator = null) {
-        $select = OrmSelect::from(static::getInstance())
-            ->fromConfigsArray($conditions)
-            ->columns(['value' => $column]);
-        if ($configurator !== null) {
-            call_user_func($configurator, $select);
-        }
-        return $select->fetchColumn();
+        return static::makeSelect(['value' => $column], $conditions, $configurator)->fetchColumn();
     }
 
     /**
@@ -234,16 +242,12 @@ abstract class DbTable implements DbTableInterface {
      * @throws \InvalidArgumentException
      */
     static public function selectAssoc($keysColumn, $valuesColumn, array $conditions = [], \Closure $configurator = null) {
-        $select = OrmSelect::from(static::getInstance())
-            ->fromConfigsArray($conditions);
-        if ($configurator !== null) {
-            call_user_func($configurator, $select);
-        }
-        return $select->fetchAssoc($keysColumn, $valuesColumn);
+        return static::makeSelect(['key' => $keysColumn, 'value' => $valuesColumn], $conditions, $configurator)
+            ->fetchAssoc($keysColumn, $valuesColumn);
     }
 
     /**
-     * Get 1 record from DB
+     * Get 1 record from DB as array
      * @param string|array $columns
      * @param array $conditions
      * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
@@ -255,13 +259,24 @@ abstract class DbTable implements DbTableInterface {
      * @throws \InvalidArgumentException
      */
     static public function selectOne($columns, array $conditions, \Closure $configurator = null) {
-        $select = OrmSelect::from(static::getInstance())
-            ->fromConfigsArray($conditions)
-            ->columns($columns);
-        if ($configurator !== null) {
-            call_user_func($configurator, $select);
-        }
-        return $select->fetchOne();
+        return static::makeSelect($columns, $conditions, $configurator)->fetchOne();
+    }
+
+    /**
+     * Get 1 record from DB as DbRecord
+     * @param string|array $columns
+     * @param array $conditions
+     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @return DbRecordInterface
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    static public function selectOneAsDbRecord($columns, array $conditions, \Closure $configurator = null) {
+        return static::makeSelect($columns, $conditions, $configurator)->fetchOneAsDbRecord();
     }
 
     /**
@@ -277,12 +292,7 @@ abstract class DbTable implements DbTableInterface {
      * @throws \InvalidArgumentException
      */
     static public function selectValue(DbExpr $expression, array $conditions = [], \Closure $configurator = null) {
-        $select = OrmSelect::from(static::getInstance())
-            ->fromConfigsArray($conditions);
-        if ($configurator !== null) {
-            call_user_func($configurator, $select);
-        }
-        return $select->fetchValue($expression);
+        return static::makeSelect(['value' => $expression], $conditions, $configurator)->fetchValue($expression);
     }
 
     /**
@@ -290,36 +300,34 @@ abstract class DbTable implements DbTableInterface {
      * @param array $conditions
      * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return bool
+     * @throws \UnexpectedValueException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PDOException
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
     static public function hasMatchingRecord(array $conditions, \Closure $configurator = null) {
-        $conditions['LIMIT'] = 1;
-        unset($conditions['OFFSET'], $conditions['ORDER']);
-        return static::selectValue(DbExpr::create('1'), $conditions, $configurator) === 1;
+        $callback = function (OrmSelect $select) use ($configurator) {
+            call_user_func($configurator, $select);
+            $select->offset(0)->limit(1)->removeOrdering();
+        };
+        return (int)static::selectValue(DbExpr::create('1'), $conditions, $callback) === 1;
     }
 
     /**
      * @param array $conditions
      * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     *      Note: columns list, LIMIT, OFFSET and ORDER BY are not applied to count query
      * @param bool $removeNotInnerJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
      * @return int
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \PDOException
      * @throws \BadMethodCallException
+     * @throws \PDOException
      * @throws \InvalidArgumentException
      */
     static public function count(array $conditions, \Closure $configurator = null, $removeNotInnerJoins = false) {
-        $select = OrmSelect::from(static::getInstance())
-            ->fromConfigsArray($conditions);
-        if ($configurator !== null) {
-            call_user_func($configurator, $select);
-        }
-        return $select->fetchCount($removeNotInnerJoins);
+        return static::makeSelect([], $conditions, $configurator)->fetchCount($removeNotInnerJoins);
     }
 
     /**

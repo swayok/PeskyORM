@@ -97,13 +97,22 @@ interface DbTableInterface {
     static public function selectAssoc($keysColumn, $valuesColumn, array $conditions = [], \Closure $configurator = null);
 
     /**
-     * Get 1 record from DB
+     * Get 1 record from DB as array
      * @param string|array $columns
      * @param array $conditions
      * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
      */
     static public function selectOne($columns, array $conditions, \Closure $configurator = null);
+
+    /**
+     * Get 1 record from DB as DbRecord
+     * @param string|array $columns
+     * @param array $conditions
+     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @return array
+     */
+    static public function selectOneAsDbRecord($columns, array $conditions, \Closure $configurator = null);
 
     /**
      * Make a query that returns only 1 value defined by $expression
