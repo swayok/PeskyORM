@@ -1,11 +1,13 @@
 <?php
 
+use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\DbJoinConfig;
 use PeskyORM\ORM\OrmSelect;
 use PeskyORMTest\TestingAdmins\TestingAdminsTable;
 use PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use PeskyORMTest\TestingApp;
+use Swayok\Utils\Set;
 
 class OrmSelectTest extends \PHPUnit_Framework_TestCase {
 
@@ -19,6 +21,15 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
 
     static protected function getNewSelect() {
         return OrmSelect::from(TestingAdminsTable::getInstance());
+    }
+
+    public function convertTestDataForAdminsTableAssert($data) {
+        foreach ($data as &$item) {
+            $item['id'] = "{$item['id']}";
+            $item['is_superadmin'] = (bool)$item['is_superadmin'];
+            $item['is_active'] = (bool)$item['is_active'];
+        }
+        return $data;
     }
 
     /**
@@ -54,22 +65,27 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         static::assertInstanceOf(TestingAdminsTableStructure::class, $dbSelect->getTableStructure());
         static::assertEquals('admins', $dbSelect->getTableName());
         static::assertEquals('Admins', $dbSelect->getTableAlias());
-        static::assertEquals(
-            [
-                [
-                    'name' => '*',
+        static::assertCount(15, $this->getObjectPropertyValue($dbSelect, 'columns'));
+        $expectedColsInfo = [];
+        $colsInSelect = [];
+        foreach ($dbSelect->getTable()->getTableStructure()->getColumns() as $column) {
+            if ($column->isItExistsInDb()) {
+                $expectedColsInfo[] = [
+                    'name' => $column->getName(),
                     'alias' => null,
-                    'join_alias' => null,
+                    'join_name' => null,
                     'type_cast' => null,
-                ]
-            ],
-            $this->getObjectPropertyValue($dbSelect, 'columns')
-        );
-        static::assertEquals('SELECT "Admins".* FROM "public"."admins" AS "Admins"', rtrim($dbSelect->getQuery()));
+                ];
+                $colsInSelect[] = '"Admins"."' . $column->getName() . '" AS "_Admins__' . $column->getName() . '"';
+            }
+        }
+        static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
+        static::assertEquals('SELECT ' . implode(', ', $colsInSelect) . ' FROM "public"."admins" AS "Admins"', rtrim($dbSelect->getQuery()));
         static::assertEquals('SELECT COUNT(*) FROM "public"."admins" AS "Admins"', rtrim($dbSelect->getCountQuery()));
 
-        /*$insertedData = static::fillTables();
-        $testData = static::convertTestDataForAdminsTableAssert($insertedData['admins']);
+        TestingApp::clearTables();
+        $insertedData = TestingApp::fillAdminsTable(2);
+        $testData = static::convertTestDataForAdminsTableAssert($insertedData);
         $count = $dbSelect->fetchCount();
         static::assertEquals(2, $count);
         $data = $dbSelect->fetchMany();
@@ -84,257 +100,14 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         static::assertEquals(array_sum(Set::extract('/id', $testData)), $sum);
 
         // via static
-        $dbSelect = DbSelect::from('admins', $adapter);
-        static::assertInstanceOf(DbSelect::class, $dbSelect);
+        $dbSelect = OrmSelect::from(TestingAdminsTable::getInstance());
+        static::assertInstanceOf(OrmSelect::class, $dbSelect);
         static::assertInstanceOf(Postgres::class, $dbSelect->getConnection());
+        static::assertInstanceOf(TestingAdminsTable::class, $dbSelect->getTable());
+        static::assertInstanceOf(TestingAdminsTableStructure::class, $dbSelect->getTableStructure());
         static::assertEquals('admins', $dbSelect->getTableName());
         $data = $dbSelect->limit(1)->fetchNextPage();
-        static::assertEquals([$testData[1]], $data);*/
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columns argument must contain only strings and instances of DbExpr class
-     */
-    public function testInvalidColumns1() {
-        static::getNewSelect()->columns(null);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columns argument must contain only strings and instances of DbExpr class
-     */
-    public function testInvalidColumns3() {
-        static::getNewSelect()->columns(1);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columns argument contains an empty column name for a key
-     */
-    public function testInvalidColumns4() {
-        static::getNewSelect()->columns(['']);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columns argument contains an empty column name for a key 'qq'
-     */
-    public function testInvalidColumns5() {
-        static::getNewSelect()->columns(['qq' => '']);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columns argument contains an empty column alias
-     */
-    public function testInvalidColumns6() {
-        static::getNewSelect()->columns(['' => 'qq']);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columns argument must contain only strings and instances of DbExpr class
-     */
-    public function testInvalidColumns7() {
-        static::getNewSelect()->columns([$this]);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columns argument must contain only strings and instances of DbExpr class
-     */
-    public function testInvalidColumns8() {
-        static::getNewSelect()->columns([[]]);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columnName argument must be a string or instance of DbExpr class
-     */
-    public function testInvalidAnalyzeColumnName11() {
-        $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', [null]);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columnName argument is not allowed to be an empty string
-     */
-    public function testInvalidAnalyzeColumnName12() {
-        $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['']);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columnName argument must be a string or instance of DbExpr class
-     */
-    public function testInvalidAnalyzeColumnName13() {
-        $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', [[]]);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columnName argument must be a string or instance of DbExpr class
-     */
-    public function testInvalidAnalyzeColumnName14() {
-        $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', [false]);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Invalid column name or json selector: [test test]
-     */
-    public function testInvalidAnalyzeColumnName15() {
-        $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test test']);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Invalid column name or json selector: [0test]
-     */
-    public function testInvalidAnalyzeColumnName16() {
-        $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['0test']);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Invalid column name or json selector: [test%test]
-     */
-    public function testInvalidAnalyzeColumnName17() {
-        $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test%test']);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $alias argument must be a string or null
-     */
-    public function testInvalidAnalyzeColumnName21() {
-        $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', []]);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $alias argument must be a string or null
-     */
-    public function testInvalidAnalyzeColumnName22() {
-        $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', false]);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $alias argument is not allowed to be an empty string
-     */
-    public function testInvalidAnalyzeColumnName23() {
-        $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', '']);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $joinName argument must be a string or null
-     */
-    public function testInvalidAnalyzeColumnName31() {
-        $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', null, false]);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $joinName argument must be a string or null
-     */
-    public function testInvalidAnalyzeColumnName32() {
-        $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', null, []]);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $joinName argument is not allowed to be an empty string
-     */
-    public function testInvalidAnalyzeColumnName33() {
-        $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', null, '']);
-    }
-
-    public function testAnalyzeColumnName() {
-        $dbSelect = static::getNewSelect();
-        static::assertEquals(
-            [
-                'name' => '*',
-                'alias' => null,
-                'join_alias' => null,
-                'type_cast' => null,
-            ],
-            $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['*', 'test'])
-        );
-        static::assertEquals(
-            [
-                'name' => '*',
-                'alias' => null,
-                'join_alias' => 'JoinAlias',
-                'type_cast' => null,
-            ],
-            $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['JoinAlias.*', 'test'])
-        );
-        static::assertEquals(
-            [
-                'name' => 'id',
-                'alias' => 'not_id',
-                'join_alias' => null,
-                'type_cast' => null,
-            ],
-            $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['id as not_id'])
-        );
-        static::assertEquals(
-            [
-                'name' => 'id',
-                'alias' => null,
-                'join_alias' => null,
-                'type_cast' => 'int',
-            ],
-            $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['Admins.id::int'])
-        );
-        static::assertEquals(
-            [
-                'name' => 'id',
-                'alias' => null,
-                'join_alias' => 'Other',
-                'type_cast' => 'int',
-            ],
-            $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['Other.id::int'])
-        );
-        $dbExpr = DbExpr::create('Other.id::int');
-        $columnInfo = $this->callObjectMethod($dbSelect, 'analyzeColumnName', [$dbExpr]);
-        static::assertArraySubset(
-            [
-                'alias' => null,
-                'join_alias' => null,
-                'type_cast' => null,
-            ],
-            $columnInfo
-        );
-        static::assertInstanceOf(DbExpr::class, $columnInfo['name']);
-        static::assertEquals($dbExpr->get(), $columnInfo['name']->get());
-        $columnInfo = $this->callObjectMethod($dbSelect, 'analyzeColumnName', [$dbExpr, 'dbexpr']);
-        static::assertArraySubset(
-            [
-                'alias' => 'dbexpr',
-                'join_alias' => null,
-                'type_cast' => null,
-            ],
-            $columnInfo
-        );
-        static::assertInstanceOf(DbExpr::class, $columnInfo['name']);
-        static::assertEquals($dbExpr->get(), $columnInfo['name']->get());
+        static::assertEquals([$testData[1]], $data);
     }
 
     /**
@@ -342,10 +115,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage There are no joins defined for next aliases: OtherTable
      */
     public function testInvalidJoinsSet() {
-        static::assertEquals(
-            'SELECT "OtherTable"."id" AS "_OtherTable__id" FROM "public"."admins" AS "Admins"',
-            rtrim(static::getNewSelect()->columns(['OtherTable.id'])->getQuery())
-        );
+        static::getNewSelect()->columns(['OtherTable.id'])->getQuery();
     }
 
     public function testColumns() {
@@ -385,282 +155,6 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         static::assertEquals(
             'SELECT "Admins".*, (SUM("id")) AS "_Admins__sum" FROM "public"."admins" AS "Admins"',
             rtrim($dbSelect->columns(['*', 'sum' => DbExpr::create('SUM(`id`)')])->getQuery())
-        );
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columnName argument cannot be empty
-     */
-    public function testInvalidOrderBy1() {
-        static::getNewSelect()->orderBy('');
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columnName argument cannot be empty
-     */
-    public function testInvalidOrderBy2() {
-        static::getNewSelect()->orderBy(null);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columnName argument cannot be empty
-     */
-    public function testInvalidOrderBy3() {
-        static::getNewSelect()->orderBy(false);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columnName argument must be a string or instance of DbExpr class
-     */
-    public function testInvalidOrderBy4() {
-        static::getNewSelect()->orderBy(true);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columnName argument cannot be empty
-     */
-    public function testInvalidOrderBy5() {
-        static::getNewSelect()->orderBy([]);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columnName argument must be a string or instance of DbExpr class
-     */
-    public function testInvalidOrderBy6() {
-        static::getNewSelect()->orderBy($this);
-    }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage There are no joins defined for next aliases: OtherTable
-     */
-    public function testInvalidOrderBy7() {
-        static::getNewSelect()->orderBy('OtherTable.id')->getQuery();
-    }
-
-    public function testOrderBy() {
-        $dbSelect = static::getNewSelect();
-        static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" ORDER BY "Admins"."id" ASC',
-            $dbSelect->orderBy('id')->getQuery()
-        );
-        static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" ORDER BY "Admins"."id" DESC',
-            $dbSelect->orderBy('Admins.id', false)->getQuery()
-        );
-        static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" ORDER BY "Admins"."id" DESC, "Admins"."email" DESC',
-            $dbSelect->orderBy('email', false)->getQuery()
-        );
-        static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" ORDER BY (RANDOM())',
-            $dbSelect->orderBy(DbExpr::create('RANDOM()'), null, false)->getQuery()
-        );
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columns argument contains invalid value at index '0'
-     */
-    public function testInvalidGroupBy1() {
-        static::getNewSelect()->groupBy([null]);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columns argument contains invalid value at index '0'
-     */
-    public function testInvalidGroupBy2() {
-        static::getNewSelect()->groupBy([true]);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columns argument contains invalid value at index '0'
-     */
-    public function testInvalidGroupBy3() {
-        static::getNewSelect()->groupBy([false]);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columns argument contains invalid value at index '0'
-     */
-    public function testInvalidGroupBy4() {
-        static::getNewSelect()->groupBy([$this]);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columns argument contains invalid value at index '0'
-     */
-    public function testInvalidGroupBy5() {
-        static::getNewSelect()->groupBy([[]]);
-    }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage There are no joins defined for next aliases: OtherTable
-     */
-    public function testInvalidGroupBy6() {
-        static::getNewSelect()->groupBy(['OtherTable.id'])->getQuery();
-    }
-
-    public function testGroupBy() {
-        $dbSelect = static::getNewSelect();
-        static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" GROUP BY "Admins"."id"',
-            $dbSelect->groupBy(['id'])->getQuery()
-        );
-        static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" GROUP BY "Admins"."id"',
-            $dbSelect->groupBy(['Admins.id'])->getQuery()
-        );
-        static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" GROUP BY "Admins"."id", "Admins"."email"',
-            $dbSelect->groupBy(['email'])->getQuery()
-        );
-        static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" GROUP BY (RANDOM())',
-            $dbSelect->groupBy([DbExpr::create('RANDOM()')], false)->getQuery()
-        );
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $limit argument must be an integer
-     */
-    public function testInvalidLimit1() {
-        static::getNewSelect()->limit(null);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $limit argument must be an integer
-     */
-    public function testInvalidLimit2() {
-        static::getNewSelect()->limit(true);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $limit argument must be an integer
-     */
-    public function testInvalidLimit3() {
-        static::getNewSelect()->limit(false);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $limit argument must be an integer
-     */
-    public function testInvalidLimit4() {
-        static::getNewSelect()->limit([]);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $limit argument must be an integer
-     */
-    public function testInvalidLimit5() {
-        static::getNewSelect()->limit($this);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $limit argument must be an integer value >= 0
-     */
-    public function testInvalidLimit6() {
-        static::getNewSelect()->limit(-1);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $offset argument must be an integer
-     */
-    public function testInvalidOffset1() {
-        static::getNewSelect()->offset(null);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $offset argument must be an integer
-     */
-    public function testInvalidOffset2() {
-        static::getNewSelect()->offset(true);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $offset argument must be an integer
-     */
-    public function testInvalidOffset3() {
-        static::getNewSelect()->offset(false);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $offset argument must be an integer
-     */
-    public function testInvalidOffset4() {
-        static::getNewSelect()->offset([]);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $offset argument must be an integer
-     */
-    public function testInvalidOffset5() {
-        static::getNewSelect()->offset($this);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $offset argument must be an integer value >= 0
-     */
-    public function testInvalidOffset6() {
-        static::getNewSelect()->offset(-1);
-    }
-
-    public function testLimitAndOffset() {
-        $dbSelect = static::getNewSelect();
-        static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins"',
-            $dbSelect->limit(0)->getQuery()
-        );
-        static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" LIMIT 1',
-            $dbSelect->limit(1)->getQuery()
-        );
-        static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins"',
-            $dbSelect->noLimit()->getQuery()
-        );
-        static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" LIMIT 1',
-            $dbSelect->limit(1)->offset(0)->getQuery()
-        );
-        static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" LIMIT 1 OFFSET 2',
-            $dbSelect->limit(1)->offset(2)->getQuery()
-        );
-        static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" LIMIT 1',
-            $dbSelect->limit(1)->offset(0)->getQuery()
-        );
-        static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" OFFSET 1',
-            $dbSelect->limit(0)->offset(1)->getQuery()
-        );
-        static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" LIMIT 10 OFFSET 9',
-            $dbSelect->page(10, 9)->getQuery()
         );
     }
 
@@ -763,7 +257,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             $this->callObjectMethod($dbSelect, 'makeColumnNameWithAliasForQuery', [[
                 'name' => 'colname',
                 'alias' => null,
-                'join_alias' => null,
+                'join_name' => null,
                 'type_cast' => null
             ]])
         );
@@ -772,7 +266,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             $this->callObjectMethod($dbSelect, 'makeColumnNameWithAliasForQuery', [[
                 'name' => 'colname',
                 'alias' => null,
-                'join_alias' => 'JoinAlias',
+                'join_name' => 'JoinAlias',
                 'type_cast' => 'int'
             ]])
         );
@@ -781,7 +275,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             $this->callObjectMethod($dbSelect, 'makeColumnNameWithAliasForQuery', [[
                 'name' => 'colname',
                 'alias' => 'colalias',
-                'join_alias' => 'JoinAlias',
+                'join_name' => 'JoinAlias',
                 'type_cast' => 'int'
             ]])
         );
@@ -809,7 +303,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             $this->callObjectMethod($dbSelect, 'makeColumnNameForCondition', [[
                 'name' => 'colname',
                 'alias' => null,
-                'join_alias' => null,
+                'join_name' => null,
                 'type_cast' => null
             ]])
         );
@@ -818,7 +312,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             $this->callObjectMethod($dbSelect, 'makeColumnNameForCondition', [[
                 'name' => 'colname',
                 'alias' => 'colalias',
-                'join_alias' => null,
+                'join_name' => null,
                 'type_cast' => 'int'
             ]])
         );
@@ -827,7 +321,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             $this->callObjectMethod($dbSelect, 'makeColumnNameForCondition', [[
                 'name' => 'colname',
                 'alias' => 'colalias',
-                'join_alias' => 'JoinAlias',
+                'join_name' => 'JoinAlias',
                 'type_cast' => 'int'
             ]])
         );

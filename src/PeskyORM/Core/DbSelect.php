@@ -65,6 +65,10 @@ class DbSelect {
      * @var DbJoinConfig[]
      */
     protected $joins = [];
+    /**
+     * @var array
+     */
+    protected $analyzedColumns = [];
 
     /**
      * @param string $tableName
@@ -455,16 +459,32 @@ class DbSelect {
     }
 
     /**
-     * @param string[] $columns -
+     * @param string[] $columns - formats:
      *  - array === []: all columns
      *  - array === ['*']: all columns
      *  - array format: [
      *      'col1Name',
-     *      'TableAlias.col2name',
+     *      'TableAlias.col1Name',  //< it is possible but should not be used
      *      'alias1' => DbExpr::create('Count(*)'), //< converted to DbExpr::create('Count(*) as `alias1`'),
-     *      'alias2' => 'col4', //< converted to DbExpr::create('`col4` as `alias2`')
+     *      'alias2' => 'col4',     //< converted to DbExpr::create('`col4` as `alias2`')
+     *
+     *  Specials for OrmSelect:
+     *  - array === ['RelationName' => '*'] or ['RelationName' => ['*']] or ['RelationName.*']: all columns from RelationName
+     *  - array === ['RelationName' => []]: no columns from RelationName but if join has type RIGHT JOIN or INNER JOIN - it will be joined
+     *  - additional possibilities for array keys: [
+     *      'RelationName.rel_col1',
+     *      'RelationName' => [
+     *          'rel_col1',
+     *          'rel_col2',
+     *          'SubRelationName' => [      //< this relation must be related to RelationName, not to main table
+     *              'subrel_col1',
+     *              'subrel_col2'
+     *          ]
+     *      ]
      *   ]
+     * Note: all relations used here will be autoloaded
      * @return $this
+     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      */
     public function columns(...$columns) {
@@ -525,7 +545,7 @@ class DbSelect {
             $this->orderBy[] = $columnName;
         } else {
             $columnInfo = $this->analyzeColumnName($columnName);
-            $key = ($columnInfo['join_alias'] ?: $this->getTableAlias()) . '.' . $columnInfo['name'];
+            $key = ($columnInfo['join_name'] ?: $this->getTableAlias()) . '.' . $columnInfo['name'];
             $columnInfo['direction'] = $isAscending ? 'ASC' : 'DESC';
             $this->orderBy[$key] = $columnInfo;
         }
@@ -557,7 +577,7 @@ class DbSelect {
                 $this->groupBy[] = $columnName;
             } else if (is_string($columnName)) {
                 $columnInfo = $this->analyzeColumnName($columnName);
-                $key = ($columnInfo['join_alias'] ?: $this->getTableAlias()) . '.' . $columnInfo['name'];
+                $key = ($columnInfo['join_name'] ?: $this->getTableAlias()) . '.' . $columnInfo['name'];
                 $this->groupBy[$key] = $columnInfo;
             } else {
                 throw new \InvalidArgumentException(
@@ -676,49 +696,49 @@ class DbSelect {
      *  1.1 'column1' => [
      *    'name' => 'column1',
      *    'alias' => null,
-     *    'join_alias' => null,
+     *    'join_name' => null,
      *    'type_cast' => null,
      *  ]
      *  1.2 '*' => [
      *    'name' => '*',
      *    'alias' => null,
-     *    'join_alias' => null,
+     *    'join_name' => null,
      *    'type_cast' => null,
      *  ]
      *  2.1. 'TableAlias.column2 as alias1' => [
      *    'name' => 'column2',
      *    'alias' => 'alias1',
-     *    'join_alias' => null, //< $this->getTableAlias() === 'TableAlias' - no join here
+     *    'join_name' => null, //< $this->getTableAlias() === 'TableAlias' - no join here
      *    'type_cast' => null,
      *  ]
      *  2.2. 'TableAlias.* as alias1' => [
      *    'name' => 'column2',
      *    'alias' => null,
-     *    'join_alias' => null, //< $this->getTableAlias() === 'TableAlias' - no join here
+     *    'join_name' => null, //< $this->getTableAlias() === 'TableAlias' - no join here
      *    'type_cast' => null,
      *  ]
      *  3.1. 'JoinName.column3' => [
      *    'name' => 'column3',
      *    'alias' => null,
-     *    'join_alias' => 'JoinName',
+     *    'join_name' => 'JoinName',
      *    'type_cast' => null,
      *  ]
      *  3.2. 'JoinName.column3' => [
      *    'name' => 'column3',
      *    'alias' => null,
-     *    'join_alias' => 'JoinName',
+     *    'join_name' => 'JoinName',
      *    'type_cast' => null,
      *  ]
      *  4. 'JoinName.column4::varchar' => [
      *    'name' => 'column4',
      *    'alias' => null,
-     *    'join_alias' => 'JoinName',
+     *    'join_name' => 'JoinName',
      *    'type_cast' => 'varchar',
      *  ]
-     * @param string|DbExpr $columnName
+     * @param DbExpr|string $columnName
      * @param string|null $columnAlias
      * @param string|null $joinName
-     * @return array - contains keys: 'name', 'alias', 'join_alias', 'type_cast'. All keys are strings or nulls (except 'name')
+     * @return array - contains keys: 'name', 'alias', 'join_name', 'type_cast'. All keys are strings or nulls (except 'name')
      * @throws \InvalidArgumentException
      */
     protected function analyzeColumnName($columnName, $columnAlias = null, $joinName = null) {
@@ -728,6 +748,11 @@ class DbSelect {
             throw new \InvalidArgumentException('$columnName argument must be a string or instance of DbExpr class');
         } else if (!$isDbExpr && $columnName === '') {
             throw new \InvalidArgumentException('$columnName argument is not allowed to be an empty string');
+        }
+        /** @var DbExpr|string $columnName */
+        $cacheKey = ($isDbExpr ? $columnName->get() : $columnName) . "_{$columnAlias}_{$joinName}";
+        if (array_key_exists($cacheKey, $this->analyzedColumns)) {
+            return $this->analyzedColumns[$cacheKey];
         }
         if ($columnAlias !== null && !is_string($columnAlias)) {
             throw new \InvalidArgumentException('$alias argument must be a string or null');
@@ -771,7 +796,7 @@ class DbSelect {
         return [
             'name' => $columnName,
             'alias' => $columnAlias,
-            'join_alias' => $joinName,
+            'join_name' => $joinName,
             'type_cast' => $typeCast,
         ];
     }
@@ -790,7 +815,7 @@ class DbSelect {
      * @return string - something like: "JoinAlias"."column_name"::typecast as "ColumnAlias"
      */
     protected function makeColumnNameWithAliasForQuery(array $columnInfo) {
-        $tableAlias = $columnInfo['join_alias'] ?: $this->getTableAlias();
+        $tableAlias = $columnInfo['join_name'] ?: $this->getTableAlias();
         $shortTableAlias = $this->getShortAlias($tableAlias);
         $isDbExpr = $columnInfo['name'] instanceof DbExpr;
         if ($isDbExpr) {
@@ -828,7 +853,7 @@ class DbSelect {
      * @return string `TableAlias`.`column_name`::typecast
      */
     protected function makeColumnNameForCondition(array $columnInfo) {
-        $tableAlias = $columnInfo['join_alias'] ?: $this->getTableAlias();
+        $tableAlias = $columnInfo['join_name'] ?: $this->getTableAlias();
         $columnName = $this->quoteDbEntityName($this->getShortAlias($tableAlias)) . '.' . $this->quoteDbEntityName($columnInfo['name']);
         if ($columnInfo['type_cast']) {
             $columnName = $this->getConnection()->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
@@ -867,26 +892,30 @@ class DbSelect {
      * @param null $joinName
      * @return array
      * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
      */
     protected function normalizeColumnsList(array $columns, $joinName = null) {
         if (count($columns) === 1 && is_array($columns[0])) {
+            /** @var array $columns */
             $columns = $columns[0];
         }
         if (empty($columns)) {
-            $columns = ['*'];
+            if ($joinName === null) {
+                $columns = ['*'];
+            } else {
+                return [];
+            }
         }
         $normalizedColumns = [];
         foreach ($columns as $columnAlias => $columnName) {
             if (
-                (is_array($columnName) || $columnName === '*')
-                && !is_numeric($columnName)
-                && $this->hasJoin($columnName)
+                !is_numeric($columnAlias)
+                && (
+                    is_array($columnName)
+                    || $columnName === '*'
+                )
             ) {
-                /** @noinspection SlowArrayOperationsInLoopInspection */
-                $normalizedColumns = array_merge(
-                    $normalizedColumns,
-                    $this->normalizeColumnsList($columnName, $columnAlias)
-                );
+                $this->resolveColumnsToBeSelectedForJoin($columnAlias, $columnName, $joinName, false);
                 continue;
             } else if (!is_string($columnName) && !($columnName instanceof DbExpr)) {
                 throw new \InvalidArgumentException(
@@ -904,9 +933,55 @@ class DbSelect {
                 );
             }
             $columnAlias = is_int($columnAlias) ? null : $columnAlias;
-            $normalizedColumns[] = $this->analyzeColumnName($columnName, $columnAlias, $joinName);
+            if ($columnName === '*') {
+                $normalizedColumns = array_merge(
+                    $normalizedColumns,
+                    $this->normalizeWildcardColumn($joinName)
+                );
+            } else {
+                $columnInfo = $this->analyzeColumnName($columnName, $columnAlias, $joinName);
+                if ($columnInfo['join_name'] !== $joinName) {
+                    if ($joinName === null) {
+                        $this->resolveColumnsToBeSelectedForJoin(
+                            $columnInfo['join_name'],
+                            [$columnAlias => $columnName],
+                            null,
+                            true
+                        );
+                    } else {
+                        throw new \UnexpectedValueException(
+                            "Invalid join name '{$columnInfo['join_name']}' used in columns list for join named '{$joinName}'"
+                        );
+                    }
+                }
+                $normalizedColumns[] = $columnInfo;
+            }
         }
         return $normalizedColumns;
+    }
+
+    /**
+     * Normalize '*' column name
+     * @param null|string $joinName
+     * @return array - returns list of $this->analyzeColumnName() results
+     * @throws \InvalidArgumentException
+     */
+    protected function normalizeWildcardColumn($joinName = null) {
+        return [$this->analyzeColumnName('*', null, $joinName)];
+    }
+
+    /**
+     * Decide what to do if join name mentioned in columns list
+     * @param string $joinName
+     * @param string|array $columns - string === '*' only
+     * @param string $parentJoinName
+     * @param bool $appendToExisting - true: $columns will be appended | false: $columns will replace existing ones
+     * @throws \UnexpectedValueException
+     */
+    protected function resolveColumnsToBeSelectedForJoin($joinName, $columns, $parentJoinName = null, $appendToExisting = false) {
+        throw new \UnexpectedValueException(
+            "You must use DbJoinConfig->setForeignColumnsToSelect() to set the columns list to select for join named '{$joinName}'"
+        );
     }
 
     /**
@@ -1034,6 +1109,20 @@ class DbSelect {
                 $columns[] = $this->makeColumnNameWithAliasForQuery($columnInfo);
             }
         }
+        $columns = array_merge($columns, $this->collectJoinedColumnsForQuery());
+        if (empty($columns)) {
+            throw new \UnexpectedValueException('There is no columns to select');
+        }
+        return implode(', ', $columns);
+    }
+
+    /**
+     * @return array
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     */
+    protected function collectJoinedColumnsForQuery() {
+        $columns = [];
         foreach ($this->joins as $joinConfig) {
             if (empty($joinConfig->getForeignColumnsToSelect())) {
                 continue;
@@ -1050,10 +1139,7 @@ class DbSelect {
                 }
             }
         }
-        if (empty($columns)) {
-            throw new \UnexpectedValueException('There is no columns to select');
-        }
-        return implode(', ', $columns);
+        return $columns;
     }
 
     /**
@@ -1143,7 +1229,7 @@ class DbSelect {
         }
         if (count($missingJoins) > 0) {
             throw new \UnexpectedValueException(
-                'There are no joins defined for next aliases: ' . implode(', ', $missingJoins)
+                'There are no joins defined under next names: ' . implode(', ', $missingJoins)
             );
         }
     }
@@ -1159,6 +1245,7 @@ class DbSelect {
     /**
      * @param string $joinName
      * @return DbJoinConfig|OrmJoinConfig
+     * @throws \InvalidArgumentException
      */
     protected function getJoin($joinName) {
         if (!$this->hasJoin($joinName)) {

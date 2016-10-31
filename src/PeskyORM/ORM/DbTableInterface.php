@@ -43,6 +43,13 @@ interface DbTableInterface {
     public function getTableStructure();
 
     /**
+     * @param string $relationName
+     * @param string|null $alterTableAlias - alter this table's alias in join config
+     * @return OrmJoinConfig
+     */
+    static public function getJoinConfigForRelation($relationName, $alterTableAlias = null);
+
+    /**
      * @return bool
      */
     static public function hasPkColumn();

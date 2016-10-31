@@ -66,6 +66,11 @@ class Utils {
      * @param \Closure|null $columnQuoter - default: function ($columnName, DbAdapterInterface $connection) {
      *      return $connection->quoteDbEntityName($columnName);
      *  }
+     * @param \Closure|null $conditionValuePreprocessor - used to modify or validate condition's value.
+     *      default: function ($columnName, $rawValue, DbAdapterInterface $connection) {
+     *          return $rawValue;
+     *      }
+     *      Note: $rawValue is never an object
      * @return string
      * @throws \PDOException
      * @throws \InvalidArgumentException
@@ -74,7 +79,8 @@ class Utils {
         DbAdapterInterface $connection,
         array $conditions,
         \Closure $columnQuoter = null,
-        $glue = 'AND'
+        $glue = 'AND',
+        \Closure $conditionValuePreprocessor = null
     ) {
         $glue = strtoupper(trim($glue));
         if (!in_array($glue, ['AND', 'OR'], true)) {
@@ -83,6 +89,11 @@ class Utils {
         if (!$columnQuoter) {
             $columnQuoter = function ($columnName, DbAdapterInterface $connection) {
                 return $connection->quoteDbEntityName($columnName);
+            };
+        }
+        if (!$conditionValuePreprocessor) {
+            $conditionValuePreprocessor = function ($columnName, $rawValue, DbAdapterInterface $connection) {
+                return $rawValue;
             };
         }
         if (empty($conditions)) {
@@ -116,7 +127,8 @@ class Utils {
                         $connection,
                         $rawValue,
                         $columnQuoter,
-                        $subGlue
+                        $subGlue,
+                        $conditionValuePreprocessor
                     );
                     $assembled[] = '(' . $subConditons . ')';
                 } else {
@@ -141,7 +153,7 @@ class Utils {
                     $assembled[] = $connection->assembleCondition(
                         $columnQuoter($column, $connection),
                         $operator,
-                        $rawValue
+                        $conditionValuePreprocessor($column, $rawValue, $connection)
                     );
                 }
             }

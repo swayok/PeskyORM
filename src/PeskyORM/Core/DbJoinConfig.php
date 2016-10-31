@@ -229,7 +229,7 @@ class DbJoinConfig {
         }
         $this->tableName = $tableName;
         if ($this->tableAlias === null) {
-            $this->tableAlias = StringUtils::classify($this->tableName);
+            $this->setTableAlias(StringUtils::classify($this->tableName));
         }
         return $this;
     }
@@ -298,7 +298,7 @@ class DbJoinConfig {
     }
 
     /**
-     * @param string[] $columns - use '*' or ['*'] to select all columns and empty array to select none
+     * @param array $columns - use '*' or ['*'] to select all columns and empty array to select none
      * @return $this
      */
     public function setForeignColumnsToSelect(...$columns) {

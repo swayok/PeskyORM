@@ -5,7 +5,7 @@ namespace PeskyORM\ORM;
 class DbRecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
-     * @var DbTable
+     * @var DbTableInterface
      */
     protected $table;
     /**

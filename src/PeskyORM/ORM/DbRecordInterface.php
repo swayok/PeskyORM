@@ -11,7 +11,7 @@ interface DbRecordInterface {
     static public function newEmptyRecord();
 
     /**
-     * @return DbTable
+     * @return DbTableInterface
      */
     static public function getTable();
 

@@ -156,7 +156,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
                 [
                     'name' => '*',
                     'alias' => null,
-                    'join_alias' => null,
+                    'join_name' => null,
                     'type_cast' => null,
                 ]
             ],
@@ -369,7 +369,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             [
                 'name' => '*',
                 'alias' => null,
-                'join_alias' => null,
+                'join_name' => null,
                 'type_cast' => null,
             ],
             $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['*', 'test'])
@@ -378,7 +378,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             [
                 'name' => '*',
                 'alias' => null,
-                'join_alias' => 'JoinAlias',
+                'join_name' => 'JoinAlias',
                 'type_cast' => null,
             ],
             $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['JoinAlias.*', 'test'])
@@ -387,7 +387,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             [
                 'name' => 'id',
                 'alias' => 'not_id',
-                'join_alias' => null,
+                'join_name' => null,
                 'type_cast' => null,
             ],
             $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['id as not_id'])
@@ -396,7 +396,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             [
                 'name' => 'id',
                 'alias' => null,
-                'join_alias' => null,
+                'join_name' => null,
                 'type_cast' => 'int',
             ],
             $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['Admins.id::int'])
@@ -405,7 +405,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             [
                 'name' => 'id',
                 'alias' => null,
-                'join_alias' => 'Other',
+                'join_name' => 'Other',
                 'type_cast' => 'int',
             ],
             $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['Other.id::int'])
@@ -415,7 +415,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
         static::assertArraySubset(
             [
                 'alias' => null,
-                'join_alias' => null,
+                'join_name' => null,
                 'type_cast' => null,
             ],
             $columnInfo
@@ -426,7 +426,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
         static::assertArraySubset(
             [
                 'alias' => 'dbexpr',
-                'join_alias' => null,
+                'join_name' => null,
                 'type_cast' => null,
             ],
             $columnInfo
@@ -437,12 +437,34 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage There are no joins defined for next aliases: OtherTable
+     * @expectedExceptionMessage You must use DbJoinConfig->setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'
      */
-    public function testInvalidJoinsSet() {
+    public function testInvalidColumnsWithJoinName() {
         static::assertEquals(
             'SELECT "OtherTable"."id" AS "_OtherTable__id" FROM "public"."admins" AS "Admins"',
             rtrim(static::getNewSelect()->columns(['OtherTable.id'])->getQuery())
+        );
+    }
+
+    /**
+     * @expectedException UnexpectedValueException
+     * @expectedExceptionMessage You must use DbJoinConfig->setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'
+     */
+    public function testInvalidColumnsWithJoinName2() {
+        static::assertEquals(
+            'SELECT "OtherTable"."id" AS "_OtherTable__id" FROM "public"."admins" AS "Admins"',
+            rtrim(static::getNewSelect()->columns(['OtherTable' => '*'])->getQuery())
+        );
+    }
+
+    /**
+     * @expectedException UnexpectedValueException
+     * @expectedExceptionMessage You must use DbJoinConfig->setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'
+     */
+    public function testInvalidColumnsWithJoinName3() {
+        static::assertEquals(
+            'SELECT "OtherTable"."id" AS "_OtherTable__id" FROM "public"."admins" AS "Admins"',
+            rtrim(static::getNewSelect()->columns(['OtherTable' => ['col1']])->getQuery())
         );
     }
 
@@ -762,6 +784,26 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
         );
     }
 
+    /**
+     * @expectedException UnexpectedValueException
+     * @expectedExceptionMessage There are no joins defined under next names: Test
+     */
+    public function testInvalidWhereUsingUnknownJoin() {
+        static::getNewSelect()
+            ->where(['Test.id' => 1])
+            ->getQuery();
+    }
+
+    /**
+     * @expectedException UnexpectedValueException
+     * @expectedExceptionMessage There are no joins defined under next names: Test
+     */
+    public function testInvalidHavingUsingUnknownJoin() {
+        static::getNewSelect()
+            ->having(['Test.id' => 1])
+            ->getQuery();
+    }
+
     public function testWhereAndHaving() {
         $dbSelect = static::getNewSelect();
         static::assertEquals(
@@ -802,6 +844,19 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             ->setConfigForForeignTable('settings', 'id')
             ->setJoinType(DbJoinConfig::JOIN_INNER);
         static::getNewSelect()->join($joinConfig)->join($joinConfig);
+    }
+
+    /**
+     * @expectedException UnexpectedValueException
+     * @expectedExceptionMessage Invalid join name 'NotTest' used in columns list for join named 'Test'
+     */
+    public function testInvalidJoinColumns() {
+        $joinConfig = DbJoinConfig::create('Test')
+            ->setConfigForLocalTable('admins', 'id')
+            ->setConfigForForeignTable('settings', 'id')
+            ->setJoinType(DbJoinConfig::JOIN_INNER)
+            ->setForeignColumnsToSelect('Test.key', 'NotTest.value');
+        static::getNewSelect()->join($joinConfig)->getQuery();
     }
 
     public function testJoins() {
@@ -861,7 +916,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             $this->callObjectMethod($dbSelect, 'makeColumnNameWithAliasForQuery', [[
                 'name' => 'colname',
                 'alias' => null,
-                'join_alias' => null,
+                'join_name' => null,
                 'type_cast' => null
             ]])
         );
@@ -870,7 +925,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             $this->callObjectMethod($dbSelect, 'makeColumnNameWithAliasForQuery', [[
                 'name' => 'colname',
                 'alias' => null,
-                'join_alias' => 'JoinAlias',
+                'join_name' => 'JoinAlias',
                 'type_cast' => 'int'
             ]])
         );
@@ -879,7 +934,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             $this->callObjectMethod($dbSelect, 'makeColumnNameWithAliasForQuery', [[
                 'name' => 'colname',
                 'alias' => 'colalias',
-                'join_alias' => 'JoinAlias',
+                'join_name' => 'JoinAlias',
                 'type_cast' => 'int'
             ]])
         );
@@ -907,7 +962,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             $this->callObjectMethod($dbSelect, 'makeColumnNameForCondition', [[
                 'name' => 'colname',
                 'alias' => null,
-                'join_alias' => null,
+                'join_name' => null,
                 'type_cast' => null
             ]])
         );
@@ -916,7 +971,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             $this->callObjectMethod($dbSelect, 'makeColumnNameForCondition', [[
                 'name' => 'colname',
                 'alias' => 'colalias',
-                'join_alias' => null,
+                'join_name' => null,
                 'type_cast' => 'int'
             ]])
         );
@@ -925,7 +980,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             $this->callObjectMethod($dbSelect, 'makeColumnNameForCondition', [[
                 'name' => 'colname',
                 'alias' => 'colalias',
-                'join_alias' => 'JoinAlias',
+                'join_name' => 'JoinAlias',
                 'type_cast' => 'int'
             ]])
         );
@@ -1214,7 +1269,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
                 'colname2' => 'value2',
                 'colname3' => 'value3',
             ],
-            'COLUMNS' => ['colname', 'colname2', 'colname3', 'setting_value' => 'Test.value', '*'],
+            'COLUMNS' => ['colname', 'colname2', 'colname3', '*'],
             'ORDER' => ['colname', 'Test.admin_id' => 'desc'],
             'LIMIT' => 10,
             'OFFSET' => 20,
@@ -1228,11 +1283,11 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
                     ->setConfigForLocalTable('admins', 'id')
                     ->setJoinType(DbJoinConfig::JOIN_LEFT)
                     ->setConfigForForeignTable('settings', 'admin_id')
-                    ->setForeignColumnsToSelect('admin_id')
+                    ->setForeignColumnsToSelect(['admin_id', 'setting_value' => 'Test.value'])
             ]
         ];
         static::assertEquals(
-            'SELECT "Admins"."colname" AS "_Admins__colname", "Admins"."colname2" AS "_Admins__colname2", "Admins"."colname3" AS "_Admins__colname3", "Test"."value" AS "_Test__setting_value", "Admins".*, "Test"."admin_id" AS "_Test__admin_id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."settings" AS "Test" ON ("Admins"."admins" = "Test"."admin_id") WHERE "Admins"."colname" = \'value\' AND ("Admins"."colname2" = \'value2\' OR "Admins"."colname3" = \'value3\') GROUP BY "Admins"."colname", "Test"."admin_id" HAVING "Admins"."colname3" = \'value\' AND "Test"."admin_id" > \'1\' ORDER BY "Admins"."colname" ASC, "Test"."admin_id" DESC LIMIT 10 OFFSET 20',
+            'SELECT "Admins"."colname" AS "_Admins__colname", "Admins"."colname2" AS "_Admins__colname2", "Admins"."colname3" AS "_Admins__colname3", "Admins".*, "Test"."admin_id" AS "_Test__admin_id", "Test"."value" AS "_Test__setting_value" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."settings" AS "Test" ON ("Admins"."admins" = "Test"."admin_id") WHERE "Admins"."colname" = \'value\' AND ("Admins"."colname2" = \'value2\' OR "Admins"."colname3" = \'value3\') GROUP BY "Admins"."colname", "Test"."admin_id" HAVING "Admins"."colname3" = \'value\' AND "Test"."admin_id" > \'1\' ORDER BY "Admins"."colname" ASC, "Test"."admin_id" DESC LIMIT 10 OFFSET 20',
             static::getNewSelect()->fromConfigsArray($configs)->getQuery()
         );
     }

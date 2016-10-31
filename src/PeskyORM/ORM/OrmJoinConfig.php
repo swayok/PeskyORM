@@ -6,27 +6,27 @@ use PeskyORM\Core\DbJoinConfig;
 
 class OrmJoinConfig extends DbJoinConfig {
 
-    /** @var DbTable */
+    /** @var DbTableInterface */
     protected $dbTable = null;
-    /** @var DbTable */
+    /** @var DbTableInterface */
     protected $foreignDbTable = null;
 
     /**
      * @param string $joinName
-     * @param DbTable $dbTable
+     * @param DbTableInterface $dbTable
      * @param string $column
      * @param string $joinType
-     * @param DbTable $foreignDbTable
+     * @param DbTableInterface $foreignDbTable
      * @param string $foreignColumn
      * @return $this
      * @throws \InvalidArgumentException
      */
     static public function construct(
         $joinName,
-        DbTable $dbTable,
+        DbTableInterface $dbTable,
         $column,
         $joinType,
-        DbTable $foreignDbTable,
+        DbTableInterface $foreignDbTable,
         $foreignColumn
     ) {
         return self::create($joinName)
@@ -36,39 +36,59 @@ class OrmJoinConfig extends DbJoinConfig {
     }
 
     /**
-     * @param DbTable $dbTable
+     * @param DbTableInterface $dbTable
      * @param string $column
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setConfigForLocalTable(DbTable $dbTable, $column) {
+    public function setConfigForLocalTable(DbTableInterface $dbTable, $column) {
         return $this->setDbTable($dbTable)->setColumnName($column);
     }
 
     /**
-     * @param DbTable $foreignDbTable
+     * @param DbTableInterface $foreignDbTable
      * @param string $foreignColumn
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setConfigForForeignTable(DbTable $foreignDbTable, $foreignColumn) {
+    public function setConfigForForeignTable(DbTableInterface $foreignDbTable, $foreignColumn) {
         return $this->setForeignDbTable($foreignDbTable)->setForeignColumnName($foreignColumn);
     }
 
     /**
-     * @param DbTable $dbTable
+     * @param DbTableInterface $dbTable
      * @return $this
+     * @throws \InvalidArgumentException
      */
-    public function setDbTable(DbTable $dbTable) {
+    public function setDbTable(DbTableInterface $dbTable) {
         $this->dbTable = $dbTable;
+        if ($this->tableAlias === null) {
+            $this->setTableAlias($this->dbTable->getAlias());
+        }
         return $this;
     }
 
     /**
-     * @param DbTable $foreignDbTable
+     * @param string $tableName
+     * @return $this
+     * @throws \BadMethodCallException
+     */
+    public function setTableName($tableName) {
+        throw new \BadMethodCallException('You must use ' . get_class($this) . '->setDbTable() instead');
+    }
+
+    /**
+     * @return DbTableInterface
+     */
+    public function getDbTable() {
+        return $this->dbTable;
+    }
+
+    /**
+     * @param DbTableInterface $foreignDbTable
      * @return $this
      */
-    public function setForeignDbTable(DbTable $foreignDbTable) {
+    public function setForeignDbTable(DbTableInterface $foreignDbTable) {
         $this->foreignDbTable = $foreignDbTable;
         $this->foreignTableName = $foreignDbTable->getName();
         return $this;
@@ -77,47 +97,49 @@ class OrmJoinConfig extends DbJoinConfig {
     /**
      * @param string $foreignTableName
      * @return $this
-     * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
     public function setForeignTableName($foreignTableName) {
-        $foreignDbTable = $this->getForeignDbTable();
-        if (!$foreignDbTable || $foreignDbTable->getName() !== $foreignTableName) {
-            $this->setForeignDbTable(DbClassesManager::i()->getTableInstance($foreignTableName));
-        } else {
-            parent::setForeignTableName($foreignTableName);
-        }
-        return $this;
+        throw new \BadMethodCallException('You must use ' . get_class($this) . '->setForeignDbTable() instead');
     }
 
     /**
-     * @return DbTable
+     * @return DbTableInterface
      */
     public function getForeignDbTable() {
         return $this->foreignDbTable;
     }
 
-    /**
-     * @param string $tableName
-     * @return $this
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
-     */
-    public function setTableName($tableName) {
-        $dbTable = $this->getDbTable();
-        if (!$dbTable || $dbTable->getName() !== $tableName) {
-            $this->setDbTable(DbClassesManager::i()->getTableInstance($tableName));
-        } else {
-            parent::setTableName($tableName);
-        }
-        return $this;
+    public function setForeignTableSchema($schema) {
+        throw new \BadMethodCallException('This method cannot be used in ' . get_class($this));
     }
 
     /**
-     * @return DbTable
+     * @param array $columns
+     * @return $this
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
-    public function getDbTable() {
-        return $this->dbTable;
+    public function setForeignColumnsToSelect(...$columns) {
+        if (count($columns) === 1 && is_array($columns[0])) {
+            /** @var array $columns */
+            $columns = $columns[0];
+        }
+        $this->foreignColumnsToSelect = [];
+        foreach ($columns as $columnAlias => $columnName) {
+            if ($columnName !== '*') {
+                $this->foreignColumnsToSelect[$columnAlias] = $columnName;
+            } else {
+                foreach ($this->getForeignDbTable()->getTableStructure()->getColumns() as $knownColumnName => $columnInfo) {
+                    if ($columnInfo->isItExistsInDb() && !in_array($columnName, $columns, true)) {
+                        // add only columns still not listed here
+                        $this->foreignColumnsToSelect[] = $columnName;
+                    }
+                }
+            }
+        }
+        return $this;
     }
 
 

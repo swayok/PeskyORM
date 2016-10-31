@@ -2,12 +2,15 @@
 
 namespace PeskyORM\ORM;
 
+use Exceptions\Data\ValidationException;
+use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\DbSelect;
+use PeskyORM\Core\Utils;
 
 class OrmSelect extends DbSelect {
 
     /**
-     * @var DbTable
+     * @var DbTableInterface
      */
     protected $table;
     /**
@@ -17,11 +20,11 @@ class OrmSelect extends DbSelect {
     /**
      * @var array
      */
-    protected $relations = [];
+    protected $columnsForRelations = [];
     /**
      * @var array
      */
-    protected $contains = [];
+    protected $relationsParents = [];
 
     /**
      * @param DbTableInterface $table
@@ -47,7 +50,7 @@ class OrmSelect extends DbSelect {
         parent::__construct($table::getName(), $table::getConnection());
     }
 
-    protected function parseNormalizedConfigsArray(array $conditionsAndOptions) {
+    /*protected function parseNormalizedConfigsArray(array $conditionsAndOptions) {
         if (!empty($conditionsAndOptions['CONTAINS'])) {
             foreach ($conditionsAndOptions['CONTAINS'] as $relation) {
                 $this->addRelation($relation);
@@ -55,9 +58,9 @@ class OrmSelect extends DbSelect {
         }
         unset($conditionsAndOptions['CONTAINS']);
         parent::parseNormalizedConfigsArray($conditionsAndOptions);
-    }
+    }*/
 
-    protected function normalizeConditionsAndOptionsArray(array $conditionsAndOptions) {
+    /*protected function normalizeConditionsAndOptionsArray(array $conditionsAndOptions) {
         $conditionsAndOptions = parent::normalizeConditionsAndOptionsArray($conditionsAndOptions);
         if (array_key_exists('CONTAIN', $conditionsAndOptions)) {
             $conditionsAndOptions['CONTAINS'] = $conditionsAndOptions['CONTAIN'];
@@ -73,7 +76,7 @@ class OrmSelect extends DbSelect {
             }
         }
         return $conditionsAndOptions;
-    }
+    }*/
 
     /**
      * @return DbRecord
@@ -89,7 +92,7 @@ class OrmSelect extends DbSelect {
     }
 
     /**
-     * @return DbTable
+     * @return DbTableInterface
      */
     public function getTable() {
         return $this->table;
@@ -107,7 +110,7 @@ class OrmSelect extends DbSelect {
      * @param array $conditionsAndOptions
      * @return mixed $where
      */
-    public function resolveContains(array $conditionsAndOptions) {
+    /*public function resolveContains(array $conditionsAndOptions) {
         if (is_array($conditionsAndOptions)) {
             if (!empty($conditionsAndOptions['CONTAIN'])) {
                 if (!is_array($conditionsAndOptions['CONTAIN'])) {
@@ -166,7 +169,7 @@ class OrmSelect extends DbSelect {
             unset($conditionsAndOptions['CONTAIN']);
         }
         return $conditionsAndOptions;
-    }
+    }*/
 
     /**
      * @param string $relationName
@@ -174,22 +177,25 @@ class OrmSelect extends DbSelect {
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    public function contain($relationName, $columns = null, array $conditions = [], DbTable $table = null) {
-        /*if ($columns !== null && !is_array($columns)) {
+    /*public function contain($relationName, $columns = null) {
+        if ($columns !== null && !is_array($columns)) {
             throw new \InvalidArgumentException('$columns argument must be an array or null');
         }
         $columns = ($columns === null) ? [] : $this->normalizeColumnsList($columns);
-        $this->contains[$relationName] = compact('columns', 'conditions');*/
+        $this->contains[$relationName] = compact('columns', 'conditions');
         // todo: covert DbTableRelation to DbJoinConfig and add it as join
-    }
+    }*/
 
     /**
      * @param array $columns
      * @param null $joinName
      * @return array
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    protected function normalizeColumnsList(array $columns, $joinName = null) {
+    /*protected function normalizeColumnsList(array $columns, $joinName = null) {
         foreach ($columns as $columnAlias => $columnName) {
             if (
                 !is_numeric($columnAlias)
@@ -202,13 +208,14 @@ class OrmSelect extends DbSelect {
                 }
             }
         }
-        return $this->normalizeColumnsList($columns, $joinName);
-    }
+        return parent::normalizeColumnsList($columns, $joinName);
+    }*/
 
     /**
      * @param OrmJoinConfig $joinConfig
      * @param bool $append
      * @return $this
+     * @throws \InvalidArgumentException
      */
     public function join(OrmJoinConfig $joinConfig, $append = true) {
         parent::join($joinConfig, $append);
@@ -218,7 +225,7 @@ class OrmSelect extends DbSelect {
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
 
     /**
-     * @param DbTable $table
+     * @param DbTableInterface $table
      * @throws \BadMethodCallException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \InvalidArgumentException
@@ -229,11 +236,146 @@ class OrmSelect extends DbSelect {
         $this->tableStructure = $table::getStructure();
     }
 
-    protected function addRelation(DbTableRelation $relation) {
+    protected function beforeQueryBuilding() {
+        parent::beforeQueryBuilding();
+        foreach ($this->relationsParents as $relationName => $parentRelation) {
+            $this->loadRelation($parentRelation);
+            $this->loadRelation($relationName);
+        }
+        $this->relationsParents = []; //< needed only once
+    }
+
+    protected function normalizeWildcardColumn($joinName = null) {
+        if ($joinName === null) {
+            $normalizedColumns = [];
+            foreach ($this->getTableStructure()->getColumns() as $columnName => $config) {
+                if ($config->isItExistsInDb()) {
+                    $normalizedColumns[] = $this->analyzeColumnName($columnName);
+                }
+            }
+            return $normalizedColumns;
+        }
+        return parent::normalizeWildcardColumn($joinName);
+    }
+
+    protected function resolveColumnsToBeSelectedForJoin($joinName, $columns, $parentJoinName = null, $appendToExisting = false) {
+        $this->columnsForRelations[$joinName] = empty($columns) ? [] : $this->normalizeColumnsList($columns, $joinName);
+        $this->relationsParents[$joinName] = $parentJoinName;
+    }
+
+    protected function collectJoinedColumnsForQuery() {
+        foreach ($this->columnsForRelations as $relationName => $columns) {
+            $this->getJoin($relationName)->setForeignColumnsToSelect(empty($columns) ? [] : $columns);
+        }
+        return parent::collectJoinedColumnsForQuery();
+    }
+
+    /**
+     * Load relation and all its parents
+     * @param string $relationName
+     * @return $this
+     * @throws \InvalidArgumentException
+     */
+    protected function loadRelation($relationName) {
+        if (!$this->hasJoin($relationName)) {
+            if ($this->relationsParents[$relationName] === null) {
+                $this->join($this->getTable()->getJoinConfigForRelation($relationName, $this->getTableAlias()));
+            } else {
+                $parentJoin = $this
+                    ->loadRelation($this->relationsParents[$relationName])
+                    ->getJoin($this->relationsParents[$relationName]);
+                $this->join(
+                    $parentJoin->getForeignDbTable()->getJoinConfigForRelation($relationName, $parentJoin->getJoinName())
+                );
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * @param array $conditions
+     * @param string $subject
+     * @return string
+     * @throws \PDOException
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     * @throws \Exceptions\Data\ValidationException
+     */
+    protected function makeConditions(array $conditions, $subject = 'WHERE') {
+        $assembled = Utils::assembleWhereConditionsFromArray(
+            $this->getConnection(),
+            $conditions,
+            function ($columnName) {
+                $columnInfo = $this->analyzeColumnName($columnName);
+                return $this->makeColumnNameForCondition($columnInfo);
+            },
+            'AND',
+            function ($columnName, $value) {
+                $columnInfo = $this->analyzeColumnName($columnName);
+                if (!($columnInfo['name'] instanceof DbExpr)) {
+                    if ($columnInfo['join_name'] === null) {
+                        $errors = $this->getTableStructure()->getColumn($columnInfo['name'])->validateValue($value);
+                    } else {
+                        $errors = $this
+                            ->loadRelation($columnInfo['join_name'])
+                            ->getJoin($columnInfo['join_name'])
+                            ->getForeignDbTable()
+                            ->getStructure()
+                            ->getColumn($columnInfo['name'])
+                            ->validateValue($value);
+                    }
+                    if (!empty($errors)) {
+                        throw new ValidationException(
+                            "Invalid condition value [{$value}] provided for column '{$columnName}'"
+                        );
+                    }
+                }
+            }
+        );
+        $assembled = trim($assembled);
+        return empty($assembled) ? '' : " {$subject} {$assembled}";
+    }
+
+    protected function makeColumnNameWithAliasForQuery(array $columnInfo) {
+        $this->validateColumnInfo($columnInfo);
+        return parent::makeColumnNameWithAliasForQuery($columnInfo);
+    }
+
+    protected function makeColumnNameForCondition(array $columnInfo) {
+        $this->validateColumnInfo($columnInfo);
+        return parent::makeColumnNameForCondition($columnInfo);
+    }
+
+    protected function validateColumnInfo(array $columnInfo) {
+        if (!($columnInfo['name'] instanceof DbExpr)) {
+            if ($columnInfo['join_name'] === null) {
+                $isValid = $this->getTableStructure()->hasColumn($columnInfo['name']);
+                if (!$isValid) {
+                    throw new ValidationException("Invalid column name [{$columnInfo['name']}]");
+                }
+            } else {
+                $isValid = $this
+                    ->loadRelation($columnInfo['join_name'])
+                    ->getJoin($columnInfo['join_name'])
+                    ->getForeignDbTable()
+                    ->getTableStructure()
+                    ->hasColumn($columnInfo['name']);
+                if (!$isValid) {
+                    throw new ValidationException(
+                        "Invalid column name [{$columnInfo['join_name']}.{$columnInfo['name']}]"
+                    );
+                }
+            }
+        }
+    }
+
+
+    /*protected function addRelation(DbTableRelation $relation) {
         if (!array_key_exists($relation->getName(), $this->relations)) {
             throw new \InvalidArgumentException("Relation with name '{$relation->getName()}' already defined");
         }
         $this->relations[$relation->getName()] = $relation;
-    }
+    }*/
 
 }

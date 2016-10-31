@@ -136,27 +136,41 @@ abstract class DbTable implements DbTableInterface {
     }
 
     /**
-     * @param string $relationAlias - alias for relation defined in DbTableStructure
+     * @param string $relationName - alias for relation defined in DbTableStructure
      * @return DbTableInterface
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    static public function getRelatedTable($relationAlias) {
-        return static::getStructure()->getRelation($relationAlias)->getForeignTable();
+    static public function getRelatedTable($relationName) {
+        return static::getStructure()->getRelation($relationName)->getForeignTable();
     }
 
     /**
-     * @param string $relationAlias - alias for relation defined in DbTableStructure
+     * Get OrmJoinConfig for required relation
+     * @param string $relationName
+     * @param null|string $alterTableAlias - alter this table's alias in join config
+     * @return OrmJoinConfig
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    static public function getJoinConfigForRelation($relationName, $alterTableAlias = null) {
+        return static::getStructure()->getRelation($relationName)->toOrmJoinConfig(static::getInstance(), $alterTableAlias);
+    }
+
+    /**
+     * @param string $relationName - alias for relation defined in DbTableStructure
      * @return bool
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \BadMethodCallException
      */
-    static public function hasRelation($relationAlias) {
-        return static::getStructure()->hasRelation($relationAlias);
+    static public function hasRelation($relationName) {
+        return static::getStructure()->hasRelation($relationName);
     }
 
     /**

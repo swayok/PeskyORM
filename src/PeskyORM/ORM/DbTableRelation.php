@@ -26,7 +26,7 @@ class DbTableRelation {
     /** @var string */
     protected $localColumnName;
 
-    /** @var DbTable */
+    /** @var DbTableInterface */
     protected $foreignTable;
     /** @var string */
     protected $foreignTableClass;
@@ -190,7 +190,7 @@ class DbTableRelation {
             );
         }
         $this->foreignTableClass = $foreignTableClass;
-        /** @var DbTable $foreignTableClass */
+        /** @var DbTableInterface $foreignTableClass */
         $this->foreignTable = $foreignTableClass::getInstance();
         return $this;
     }
@@ -284,6 +284,24 @@ class DbTableRelation {
         }
         $this->joinType = $joinType;
         return $this;
+    }
+
+    /**
+     * Convert to OrmJoinConfig
+     * @param DbTableInterface $localTable
+     * @param null|string $tableAlias
+     * @return OrmJoinConfig
+     * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
+     * @throws \BadMethodCallException
+     */
+    public function toOrmJoinConfig(DbTableInterface $localTable, $localTableAlias = null) {
+        return OrmJoinConfig::create($this->getName())
+            ->setConfigForLocalTable($localTable, $this->getLocalColumnName())
+            ->setConfigForForeignTable($this->getForeignTable(), $this->getForeignColumnName())
+            ->setJoinType($this->getJoinType())
+            ->setAdditionalJoinConditions($this->getAdditionalJoinConditions())
+            ->setTableAlias($tableAlias ?: $localTable::getAlias());
     }
 
 }

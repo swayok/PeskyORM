@@ -360,6 +360,22 @@ class UtilsTest extends \PHPUnit_Framework_TestCase {
         );
     }
 
+    /**
+     * @expectedException \UnexpectedValueException
+     * @expectedExceptionMessage Value [aaa] for column name [test] is invalid
+     */
+    public function testValidationViaAssembleWhereConditionsFromArray() {
+        Utils::assembleWhereConditionsFromArray(
+            static::getValidAdapter(),
+            ['test' => 'aaa'],
+            null,
+            'AND',
+            function ($colName, $value, $connection) {
+                throw new \UnexpectedValueException("Value [$value] for column name [$colName] is invalid");
+            }
+        );
+    }
+
     public function testDbExprUsageInAssembleWhereConditionsFromArray() {
         $adapter = static::getValidAdapter();
         $columnQuoter = function ($columnName) use ($adapter) {
@@ -372,7 +388,11 @@ class UtilsTest extends \PHPUnit_Framework_TestCase {
             Utils::assembleWhereConditionsFromArray(
                 $adapter,
                 [DbExpr::create('`col` = ``value``')],
-                $columnQuoter
+                $columnQuoter,
+                'AND',
+                function ($colName, $value, $connection) {
+                    throw new \UnexpectedValueException("Value [$value] for column name [$colName] is invalid");
+                }
             )
         );
         static::assertEquals(
