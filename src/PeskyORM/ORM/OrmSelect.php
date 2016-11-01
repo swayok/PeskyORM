@@ -2,7 +2,6 @@
 
 namespace PeskyORM\ORM;
 
-use Exceptions\Data\ValidationException;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\DbSelect;
 use PeskyORM\Core\Utils;
@@ -239,7 +238,9 @@ class OrmSelect extends DbSelect {
     protected function beforeQueryBuilding() {
         parent::beforeQueryBuilding();
         foreach ($this->relationsParents as $relationName => $parentRelation) {
-            $this->loadRelation($parentRelation);
+            if ($parentRelation !== null) {
+                $this->loadRelation($parentRelation);
+            }
             $this->loadRelation($relationName);
         }
         $this->relationsParents = []; //< needed only once
@@ -259,7 +260,7 @@ class OrmSelect extends DbSelect {
     }
 
     protected function resolveColumnsToBeSelectedForJoin($joinName, $columns, $parentJoinName = null, $appendToExisting = false) {
-        $this->columnsForRelations[$joinName] = empty($columns) ? [] : $this->normalizeColumnsList($columns, $joinName);
+        $this->columnsForRelations[$joinName] = empty($columns) ? [] : $columns;
         $this->relationsParents[$joinName] = $parentJoinName;
     }
 
@@ -300,18 +301,17 @@ class OrmSelect extends DbSelect {
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
-     * @throws \Exceptions\Data\ValidationException
      */
     protected function makeConditions(array $conditions, $subject = 'WHERE') {
         $assembled = Utils::assembleWhereConditionsFromArray(
             $this->getConnection(),
             $conditions,
-            function ($columnName) {
+            function ($columnName) use ($subject) {
                 $columnInfo = $this->analyzeColumnName($columnName);
-                return $this->makeColumnNameForCondition($columnInfo);
+                return $this->makeColumnNameForCondition($columnInfo, $subject);
             },
             'AND',
-            function ($columnName, $value) {
+            function ($columnName, $value) use ($subject) {
                 $columnInfo = $this->analyzeColumnName($columnName);
                 if (!($columnInfo['name'] instanceof DbExpr)) {
                     if ($columnInfo['join_name'] === null) {
@@ -326,11 +326,12 @@ class OrmSelect extends DbSelect {
                             ->validateValue($value);
                     }
                     if (!empty($errors)) {
-                        throw new ValidationException(
-                            "Invalid condition value [{$value}] provided for column '{$columnName}'"
+                        throw new \UnexpectedValueException(
+                            "Invalid {$subject} condition value provided for column [{$columnName}]. Value: " . print_r($value, true)
                         );
                     }
                 }
+                return $value;
             }
         );
         $assembled = trim($assembled);
@@ -338,32 +339,36 @@ class OrmSelect extends DbSelect {
     }
 
     protected function makeColumnNameWithAliasForQuery(array $columnInfo) {
-        $this->validateColumnInfo($columnInfo);
+        $this->validateColumnInfo($columnInfo, 'SELECT');
         return parent::makeColumnNameWithAliasForQuery($columnInfo);
     }
 
-    protected function makeColumnNameForCondition(array $columnInfo) {
-        $this->validateColumnInfo($columnInfo);
+    protected function makeColumnNameForCondition(array $columnInfo, $subject = 'WHERE') {
+        $this->validateColumnInfo($columnInfo, $subject);
         return parent::makeColumnNameForCondition($columnInfo);
     }
 
-    protected function validateColumnInfo(array $columnInfo) {
+    protected function validateColumnInfo(array $columnInfo, $subject) {
         if (!($columnInfo['name'] instanceof DbExpr)) {
             if ($columnInfo['join_name'] === null) {
                 $isValid = $this->getTableStructure()->hasColumn($columnInfo['name']);
                 if (!$isValid) {
-                    throw new ValidationException("Invalid column name [{$columnInfo['name']}]");
+                    throw new \UnexpectedValueException(
+                        "{$subject}: column with name [{$columnInfo['name']}] not found in "
+                            . get_class($this->getTableStructure())
+                    );
                 }
             } else {
-                $isValid = $this
+                $foreignTableStructure = $this
                     ->loadRelation($columnInfo['join_name'])
                     ->getJoin($columnInfo['join_name'])
                     ->getForeignDbTable()
-                    ->getTableStructure()
-                    ->hasColumn($columnInfo['name']);
+                    ->getTableStructure();
+                $isValid = $foreignTableStructure->hasColumn($columnInfo['name']);
                 if (!$isValid) {
-                    throw new ValidationException(
-                        "Invalid column name [{$columnInfo['join_name']}.{$columnInfo['name']}]"
+                    throw new \UnexpectedValueException(
+                        "{$subject}: column with name [{$columnInfo['join_name']}.{$columnInfo['name']}] not found in "
+                            . get_class($foreignTableStructure)
                     );
                 }
             }

@@ -78,6 +78,13 @@ class OrmJoinConfig extends DbJoinConfig {
     }
 
     /**
+     * @return string
+     */
+    public function getTableName() {
+        return $this->getDbTable()->getTableStructure()->getTableName();
+    }
+
+    /**
      * @return DbTableInterface
      */
     public function getDbTable() {

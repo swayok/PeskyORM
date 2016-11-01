@@ -92,11 +92,6 @@ class DbSelect {
         $this->tableName = $tableName;
         $this->tableAlias = StringUtils::classify($tableName);
         $this->connection = $connection;
-        $this->init();
-    }
-
-    protected function init() {
-        $this->columns([]);
     }
 
     /**
@@ -489,6 +484,11 @@ class DbSelect {
      */
     public function columns(...$columns) {
         $this->columns = $this->normalizeColumnsList($columns);
+        if (empty($this->columns)) {
+            throw new \InvalidArgumentException(
+                '$columns argument must contain at least 1 column to be selected from main table'
+            );
+        }
         return $this;
     }
 
@@ -672,7 +672,7 @@ class DbSelect {
      */
     public function join(DbJoinConfig $joinConfig, $append = true) {
         if (!$joinConfig->isValid()) {
-            throw new \InvalidArgumentException('Join config is not valid');
+            throw new \InvalidArgumentException("Join config with name '{$joinConfig->getJoinName()}' is not valid");
         }
         if (!$append) {
             $this->joins = [];
@@ -934,6 +934,7 @@ class DbSelect {
             }
             $columnAlias = is_int($columnAlias) ? null : $columnAlias;
             if ($columnName === '*') {
+                /** @noinspection SlowArrayOperationsInLoopInspection */
                 $normalizedColumns = array_merge(
                     $normalizedColumns,
                     $this->normalizeWildcardColumn($joinName)
@@ -941,10 +942,12 @@ class DbSelect {
             } else {
                 $columnInfo = $this->analyzeColumnName($columnName, $columnAlias, $joinName);
                 if ($columnInfo['join_name'] !== $joinName) {
+                    // Note: ($joinName === null) restricts situation like
+                    // new DbJoinConfig('Join2')->setForeignColumnsToSelect(['SomeOtehrJoin.col'])
                     if ($joinName === null) {
                         $this->resolveColumnsToBeSelectedForJoin(
                             $columnInfo['join_name'],
-                            [$columnAlias => $columnName],
+                            $columnInfo['alias'] ? [$columnInfo['alias'] => $columnInfo['name']] : [$columnInfo['name']],
                             null,
                             true
                         );
@@ -953,8 +956,9 @@ class DbSelect {
                             "Invalid join name '{$columnInfo['join_name']}' used in columns list for join named '{$joinName}'"
                         );
                     }
+                } else {
+                    $normalizedColumns[] = $columnInfo;
                 }
-                $normalizedColumns[] = $columnInfo;
             }
         }
         return $normalizedColumns;
@@ -1075,7 +1079,7 @@ class DbSelect {
     protected function makeJoinConditions(DbJoinConfig $joinConfig) {
         $conditions = array_merge(
             [
-                "{$joinConfig->getTableAlias()}.{$joinConfig->getTableName()}"
+                "{$joinConfig->getTableAlias()}.{$joinConfig->getColumnName()}"
                     => DbExpr::create("`{$joinConfig->getJoinName()}`.`{$joinConfig->getForeignColumnName()}`", false)
             ],
             $joinConfig->getAdditionalJoinConditions()
@@ -1101,6 +1105,11 @@ class DbSelect {
      * @throws \UnexpectedValueException
      */
     protected function makeColumnsForQuery() {
+        if (empty($this->columns)) {
+            // init columns (it is forbidden to select no columns so empty array means that columns were not provided
+            // and it is expected to fetch all columns
+            $this->columns([]);
+        }
         $columns = [];
         foreach ($this->columns as $columnInfo) {
             if (is_string($columnInfo)) {
@@ -1229,7 +1238,7 @@ class DbSelect {
         }
         if (count($missingJoins) > 0) {
             throw new \UnexpectedValueException(
-                'There are no joins defined under next names: ' . implode(', ', $missingJoins)
+                'There are no joins with names: ' . implode(', ', $missingJoins)
             );
         }
     }
