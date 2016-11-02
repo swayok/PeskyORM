@@ -136,12 +136,21 @@ class OrmJoinConfig extends DbJoinConfig {
         $this->foreignColumnsToSelect = [];
         foreach ($columns as $columnAlias => $columnName) {
             if ($columnName !== '*') {
+                if (!is_string($columnName)) {
+                    throw new \InvalidArgumentException(
+                        "\$columns argument contains non-string column name on key '{$columnAlias}' for join named '{$this->getJoinName()}'"
+                    );
+                } else if (!$this->getForeignDbTable()->getTableStructure()->hasColumn($columnName)) {
+                    throw new \InvalidArgumentException(
+                        "\$columns argument contains unknown column '{$columnName}' on key '{$columnAlias}' for join named '{$this->getJoinName()}'"
+                    );
+                }
                 $this->foreignColumnsToSelect[$columnAlias] = $columnName;
             } else {
                 foreach ($this->getForeignDbTable()->getTableStructure()->getColumns() as $knownColumnName => $columnInfo) {
-                    if ($columnInfo->isItExistsInDb() && !in_array($columnName, $columns, true)) {
+                    if ($columnInfo->isItExistsInDb() && !in_array($knownColumnName, $columns, true)) {
                         // add only columns still not listed here
-                        $this->foreignColumnsToSelect[] = $columnName;
+                        $this->foreignColumnsToSelect[] = $knownColumnName;
                     }
                 }
             }

@@ -227,7 +227,122 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         );
     }
 
+    /**
+     * @expectedException UnexpectedValueException
+     * @expectedExceptionMessage Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect
+     */
+    public function testHasManyRelationException1() {
+        static::getNewSelect()->columns('id', 'Children.*')->getQuery();
+    }
+
+    /**
+     * @expectedException UnexpectedValueException
+     * @expectedExceptionMessage Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect
+     */
+    public function testHasManyRelationException2() {
+        static::getNewSelect()->columns(['id', 'Parent' => ['Children.*']])->getQuery();
+    }
+
+    /**
+     * @expectedException UnexpectedValueException
+     * @expectedExceptionMessage Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect
+     */
+    public function testHasManyRelationException3() {
+        static::getNewSelect()->columns(['id', 'Parent' => ['Children' => '*']])->getQuery();
+    }
+
+    /**
+     * @expectedException UnexpectedValueException
+     * @expectedExceptionMessage Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect
+     */
+    public function testHasManyRelationException4() {
+        static::getNewSelect()->columns(['id', 'Parent' => ['Children' => ['*']]])->getQuery();
+    }
+
+    /**
+     * @expectedException UnexpectedValueException
+     * @expectedExceptionMessage Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect
+     */
+    public function testHasManyRelationException5() {
+        static::getNewSelect()->columns(['id', 'Parent' => ['Children' => []]])->getQuery();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $columns argument contains unknown column 'qqq' on key 'Children' for join named 'Parent'
+     */
+    public function testHasManyRelationException6() {
+        static::getNewSelect()->columns(['id', 'Parent' => ['Children' => 'qqq']])->getQuery();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $columns argument contains unknown column 'qqq' on key '0' for join named 'Parent'
+     */
+    public function testInvalidColNameInRelation1() {
+        static::getNewSelect()->columns(['id', 'Parent' => ['qqq']])->getQuery();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $columns argument contains unknown column 'qqq' on key 'key' for join named 'Parent'
+     */
+    public function testInvalidColNameInRelation2() {
+        static::getNewSelect()->columns(['id', 'Parent' => ['key' => 'qqq']])->getQuery();
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $columns argument contains unknown column 'qqq' on key '0' for join named 'Parent'
+     */
+    public function testInvalidColNameInRelation3() {
+        static::getNewSelect()->columns(['id', 'Parent.qqq'])->getQuery();
+    }
+
     public function testColumnsWithRelations() {
+        $dbSelect = static::getNewSelect();
+        static::assertEquals(
+            'SELECT "Admins"."id" AS "_Admins__id", "Parent"."id" AS "_Parent__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id")',
+            $dbSelect->columns(['id', 'Parent.id'])->getQuery()
+        );
+        static::assertEquals(
+            'SELECT "Admins"."id" AS "_Admins__id", "Parent"."id" AS "_Parent__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id")',
+            $dbSelect->columns(['id', 'Parent' => ['id']])->getQuery()
+        );
+        static::assertEquals(
+            'SELECT "Admins"."id" AS "_Admins__id", "Parent"."id" AS "_Parent__id", "Parent"."login" AS "_Parent__login" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id")',
+            $dbSelect->columns(['id', 'Parent' => ['id', 'login']])->getQuery()
+        );
+        static::assertEquals(
+            'SELECT "Admins"."id" AS "_Admins__id", "Parent"."id" AS "_Parent__id", "Parent2"."id" AS "_Parent2__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") LEFT JOIN "public"."admins" AS "Parent2" ON ("Parent"."parent_id" = "Parent2"."id")',
+            $dbSelect->columns(['id', 'Parent' => ['id', 'Parent as Parent2' => ['id']]])->getQuery()
+        );
+        $colsInSelectForParent = [];
+        $colsInSelectForParent2 = [];
+        foreach ($dbSelect->getTable()->getTableStructure()->getColumns() as $column) {
+            if ($column->isItExistsInDb()) {
+                $expectedColsInfo[] = [
+                    'name' => $column->getName(),
+                    'alias' => null,
+                    'join_name' => null,
+                    'type_cast' => null,
+                ];
+                $colsInSelectForParent[] = '"Parent"."' . $column->getName() . '" AS "_Parent__' . $column->getName() . '"';
+                $colsInSelectForParent2[] = '"Parent2"."' . $column->getName() . '" AS "_Parent2__' . $column->getName() . '"';
+            }
+        }
+        $colsInSelectForParent = implode(', ', $colsInSelectForParent);
+        $colsInSelectForParent2 = implode(', ', $colsInSelectForParent2);
+
+        static::assertEquals(
+            'SELECT "Admins"."id" AS "_Admins__id", ' . $colsInSelectForParent . ', "Parent2"."id" AS "_Parent2__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") LEFT JOIN "public"."admins" AS "Parent2" ON ("Parent"."parent_id" = "Parent2"."id")',
+            $dbSelect->columns(['id', 'Parent' => ['*', 'Parent as Parent2' => ['id']]])->getQuery()
+        );
+
+        static::assertEquals(
+            'SELECT "Admins"."id" AS "_Admins__id", "Parent"."id" AS "_Parent__id", ' . $colsInSelectForParent2 . ' FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") LEFT JOIN "public"."admins" AS "Parent2" ON ("Parent"."parent_id" = "Parent2"."id")',
+            $dbSelect->columns(['id', 'Parent' => ['id', 'Parent as Parent2' => '*']])->getQuery()
+        );
 
     }
 

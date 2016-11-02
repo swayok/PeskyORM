@@ -150,15 +150,20 @@ abstract class DbTable implements DbTableInterface {
     /**
      * Get OrmJoinConfig for required relation
      * @param string $relationName
-     * @param null|string $alterTableAlias - alter this table's alias in join config
+     * @param string|null $alterLocalTableAlias - alter this table's alias in join config
+     * @param string|null $joinName - string: specific join name; null: $relationName is used
      * @return OrmJoinConfig
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    static public function getJoinConfigForRelation($relationName, $alterTableAlias = null) {
-        return static::getStructure()->getRelation($relationName)->toOrmJoinConfig(static::getInstance(), $alterTableAlias);
+    static public function getJoinConfigForRelation($relationName, $alterLocalTableAlias = null, $joinName = null) {
+        return static::getStructure()->getRelation($relationName)->toOrmJoinConfig(
+            static::getInstance(),
+            $alterLocalTableAlias,
+            $joinName
+        );
     }
 
     /**

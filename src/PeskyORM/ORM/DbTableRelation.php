@@ -14,8 +14,6 @@ class DbTableRelation {
     const JOIN_RIGHT = DbJoinConfig::JOIN_RIGHT;
     const JOIN_INNER = DbJoinConfig::JOIN_INNER;
 
-    const NAME_VALIDATION_REGEXP = '%^[A-Z][a-zA-Z0-9]*$%';   //< CamelCase
-
     /** @var string */
     protected $name;
     /** @var string */
@@ -100,10 +98,10 @@ class DbTableRelation {
     public function setName($name) {
         if ($this->hasName()) {
             throw new \BadMethodCallException('Relation name alteration is forbidden');
-        }
-        if (!preg_match(static::NAME_VALIDATION_REGEXP, $name)) {
+        } else if (!preg_match(DbJoinConfig::NAME_VALIDATION_REGEXP, $name)) {
             throw new \InvalidArgumentException(
-                "\$name argument contains invalid value: '$name'. Pattern: " . static::NAME_VALIDATION_REGEXP . '. Example: CamelCase1'
+                "\$name argument contains invalid value: '$name'. Pattern: "
+                    . DbJoinConfig::NAME_VALIDATION_REGEXP . '. Example: CamelCase1'
             );
         }
         $this->name = $name;
@@ -289,19 +287,20 @@ class DbTableRelation {
     /**
      * Convert to OrmJoinConfig
      * @param DbTableInterface $localTable
-     * @param null|string $tableAlias
+     * @param string|null $localTableAlias
+     * @param string|null $joinName
      * @return OrmJoinConfig
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      */
-    public function toOrmJoinConfig(DbTableInterface $localTable, $localTableAlias = null) {
-        return OrmJoinConfig::create($this->getName())
+    public function toOrmJoinConfig(DbTableInterface $localTable, $localTableAlias = null, $joinName = null) {
+        return OrmJoinConfig::create($joinName ?: $this->getName())
             ->setConfigForLocalTable($localTable, $this->getLocalColumnName())
             ->setConfigForForeignTable($this->getForeignTable(), $this->getForeignColumnName())
             ->setJoinType($this->getJoinType())
             ->setAdditionalJoinConditions($this->getAdditionalJoinConditions())
-            ->setTableAlias($tableAlias ?: $localTable::getAlias());
+            ->setTableAlias($localTableAlias ?: $localTable::getAlias());
     }
 
 }

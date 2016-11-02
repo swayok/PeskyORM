@@ -2,6 +2,7 @@
 
 namespace PeskyORM\ORM;
 use PeskyORM\Core\DbConnectionsManager;
+use PeskyORM\Core\DbJoinConfig;
 use PeskyORM\ORM\Exception\OrmException;
 
 abstract class DbTableStructure implements DbTableStructureInterface {
@@ -226,7 +227,7 @@ abstract class DbTableStructure implements DbTableStructureInterface {
             }
             if (preg_match(DbTableColumn::NAME_VALIDATION_REGEXP, $method->getName())) {
                 $this->columns[$method->getName()] = $method;
-            } else if (preg_match(DbTableRelation::NAME_VALIDATION_REGEXP, $method->getName())) {
+            } else if (preg_match(DbJoinConfig::NAME_VALIDATION_REGEXP, $method->getName())) {
                 $this->relations[$method->getName()] = $method;
             }
         }

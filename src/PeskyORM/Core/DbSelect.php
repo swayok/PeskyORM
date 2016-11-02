@@ -397,12 +397,12 @@ class DbSelect {
         );
         $columns = $this->makeColumnsForQuery();
         $conditions = $this->makeConditions($this->where, 'WHERE');
-        $joins = $this->makeJoins(false);
         $group = $this->makeGroupBy();
         $order = $this->makeOrderBy();
         $limit = $this->makeLimit();
         $offset = $this->makeOffset();
         $having = $this->makeConditions($this->having, 'HAVING');
+        $joins = $this->makeJoins(false);
         $this->validateIfThereAreEnoughJoins();
         return "SELECT {$columns} FROM {$table}{$joins}{$conditions}{$group}{$having}{$order}{$limit}{$offset}";
     }
@@ -446,9 +446,9 @@ class DbSelect {
             $this->getTableSchemaName()
         );
         $conditions = $this->makeConditions($this->where, 'WHERE');
-        $joins = $this->makeJoins($ignoreLeftJoins);
         $group = $this->makeGroupBy();
         $having = $this->makeConditions($this->having, 'HAVING');
+        $joins = $this->makeJoins($ignoreLeftJoins);
         $this->validateIfThereAreEnoughJoins();
         return "SELECT $expression FROM {$table}{$joins}{$conditions}{$group}{$having}";
     }
@@ -483,7 +483,8 @@ class DbSelect {
      * @throws \InvalidArgumentException
      */
     public function columns(...$columns) {
-        $this->columns = $this->normalizeColumnsList($columns);
+        $this->beforeNewColumnsListAdded();
+        $this->columns = $this->normalizeColumnsList($columns, null, true);
         if (empty($this->columns)) {
             throw new \InvalidArgumentException(
                 '$columns argument must contain at least 1 column to be selected from main table'
@@ -518,6 +519,7 @@ class DbSelect {
      * @return $this
      */
     public function where(array $conditions) {
+        $this->beforeNewWhereConditionsAdded();
         $this->where = $conditions;
         return $this;
     }
@@ -660,6 +662,7 @@ class DbSelect {
      * @return $this
      */
     public function having(array $conditions) {
+        $this->beforeNewHavingConditionsAdded();
         $this->having = $conditions;
         return $this;
     }
@@ -685,6 +688,27 @@ class DbSelect {
     }
 
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
+
+    /**
+     * Triggered when new columns list received
+     */
+    protected function beforeNewColumnsListAdded() {
+
+    }
+
+    /**
+     * Triggered when new WHERE conditons list received
+     */
+    protected function beforeNewWhereConditionsAdded() {
+
+    }
+
+    /**
+     * Triggered when new HAVING conditons list received
+     */
+    protected function beforeNewHavingConditionsAdded() {
+
+    }
 
     protected function beforeQueryBuilding() {
         $this->shortAliases = [];
@@ -890,11 +914,12 @@ class DbSelect {
     /**
      * @param array $columns
      * @param null $joinName
+     * @param bool $allowSubJoins - true: allow colums like ['Join1' => ['Join2.*']]
      * @return array
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      */
-    protected function normalizeColumnsList(array $columns, $joinName = null) {
+    protected function normalizeColumnsList(array $columns, $joinName = null, $allowSubJoins = false) {
         if (count($columns) === 1 && is_array($columns[0])) {
             /** @var array $columns */
             $columns = $columns[0];
@@ -944,7 +969,7 @@ class DbSelect {
                 if ($columnInfo['join_name'] !== $joinName) {
                     // Note: ($joinName === null) restricts situation like
                     // new DbJoinConfig('Join2')->setForeignColumnsToSelect(['SomeOtehrJoin.col'])
-                    if ($joinName === null) {
+                    if ($allowSubJoins) {
                         $this->resolveColumnsToBeSelectedForJoin(
                             $columnInfo['join_name'],
                             $columnInfo['alias'] ? [$columnInfo['alias'] => $columnInfo['name']] : [$columnInfo['name']],
@@ -977,12 +1002,12 @@ class DbSelect {
     /**
      * Decide what to do if join name mentioned in columns list
      * @param string $joinName
-     * @param string|array $columns - string === '*' only
+     * @param array|string $columns - string === '*' only
      * @param string $parentJoinName
-     * @param bool $appendToExisting - true: $columns will be appended | false: $columns will replace existing ones
+     * @param bool $appendColumnsToExisting - true: $columns will be appended | false: $columns will replace existing ones
      * @throws \UnexpectedValueException
      */
-    protected function resolveColumnsToBeSelectedForJoin($joinName, $columns, $parentJoinName = null, $appendToExisting = false) {
+    protected function resolveColumnsToBeSelectedForJoin($joinName, $columns, $parentJoinName = null, $appendColumnsToExisting = false) {
         throw new \UnexpectedValueException(
             "You must use DbJoinConfig->setForeignColumnsToSelect() to set the columns list to select for join named '{$joinName}'"
         );
@@ -1232,7 +1257,7 @@ class DbSelect {
     protected function validateIfThereAreEnoughJoins() {
         $missingJoins = [];
         foreach ($this->shortAliases as $fullAlias => $notUsed) {
-            if ($fullAlias !== $this->getTableAlias() && !array_key_exists($fullAlias, $this->joins)) {
+            if ($fullAlias !== $this->getTableAlias() && !$this->hasJoin($fullAlias)) {
                 $missingJoins[] = $fullAlias;
             }
         }

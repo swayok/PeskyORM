@@ -10,6 +10,8 @@ class DbJoinConfig {
     const JOIN_RIGHT = 'right';
     const JOIN_INNER = 'inner';
 
+    const NAME_VALIDATION_REGEXP = '%^[A-Z][a-zA-Z0-9]*$%';   //< CamelCase
+
     /** @var string */
     protected $joinName = null;
     /** @var string */
@@ -182,6 +184,11 @@ class DbJoinConfig {
     public function setJoinName($joinName) {
         if (empty($joinName) || !is_string($joinName)) {
             throw new \InvalidArgumentException('$joinName argument must be a not-empty string');
+        } else if (!preg_match(static::NAME_VALIDATION_REGEXP, $joinName)) {
+            throw new \InvalidArgumentException(
+                "\$joinName argument contains invalid value: '$joinName'. Pattern: "
+                    . static::NAME_VALIDATION_REGEXP . '. Example: CamelCase1'
+            );
         }
         $this->joinName = $joinName;
         return $this;

@@ -19,11 +19,19 @@ class OrmSelect extends DbSelect {
     /**
      * @var array
      */
-    protected $columnsForRelations = [];
+    protected $columnsToSelectFromJoinedRelations = [];
     /**
      * @var array
      */
-    protected $relationsParents = [];
+    protected $joinNameToRelationName = [];
+    /**
+     * @var array
+     */
+    protected $joinedRelationsParents = [];
+    /**
+     * @var array
+     */
+    protected $joinsAddedByRelations = [];
 
     /**
      * @param DbTableInterface $table
@@ -221,6 +229,22 @@ class OrmSelect extends DbSelect {
         return $this;
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function where(array $conditions) {
+        $this->removeJoinsAddedByRelations();
+        return parent::where($conditions);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function having(array $conditions) {
+        $this->removeJoinsAddedByRelations();
+        return parent::having($conditions);
+    }
+
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
 
     /**
@@ -235,15 +259,29 @@ class OrmSelect extends DbSelect {
         $this->tableStructure = $table::getStructure();
     }
 
-    protected function beforeQueryBuilding() {
-        parent::beforeQueryBuilding();
-        foreach ($this->relationsParents as $relationName => $parentRelation) {
-            if ($parentRelation !== null) {
-                $this->loadRelation($parentRelation);
-            }
-            $this->loadRelation($relationName);
+    protected function beforeNewColumnsListAdded() {
+        $this->removeJoinsAddedByRelations();
+    }
+
+    protected function beforeNewWhereConditionsAdded() {
+        $this->removeJoinsAddedByRelations();
+    }
+
+    protected function beforeNewHavingConditionsAdded() {
+        $this->removeJoinsAddedByRelations();
+    }
+
+    /**
+     * Removes all joins that were added to OrmSelect via indirect usage of relations + cleans all related properties
+     */
+    protected function removeJoinsAddedByRelations() {
+        foreach ($this->joinsAddedByRelations as $joinName) {
+            unset($this->joins[$joinName]);
         }
-        $this->relationsParents = []; //< needed only once
+        $this->joinedRelationsParents = [];
+        $this->columnsToSelectFromJoinedRelations = [];
+        $this->joinNameToRelationName = [];
+        $this->joinsAddedByRelations = [];
     }
 
     protected function normalizeWildcardColumn($joinName = null) {
@@ -259,36 +297,98 @@ class OrmSelect extends DbSelect {
         return parent::normalizeWildcardColumn($joinName);
     }
 
-    protected function resolveColumnsToBeSelectedForJoin($joinName, $columns, $parentJoinName = null, $appendToExisting = false) {
-        $this->columnsForRelations[$joinName] = empty($columns) ? [] : $columns;
-        $this->relationsParents[$joinName] = $parentJoinName;
+    protected function resolveColumnsToBeSelectedForJoin($joinName, $columns, $parentJoinName = null, $appendColumnsToExisting = false) {
+        if (is_array($columns) && !empty($columns)) {
+            $filteredColumns = [];
+            /** @var array $columns */
+            foreach ($columns as $columnAlias => $columnName) {
+                if (!is_int($columnAlias) && (is_array($columnName) || $columnName === '*')) {
+                    // subrealtion
+                    $this->resolveColumnsToBeSelectedForJoin($columnAlias, $columnName, $joinName, false);
+                } else if (preg_match('%^(.*)\.\*$%', $columnName, $matches)) {
+                    // subrealtion like 'SubRel.*'
+                    $this->resolveColumnsToBeSelectedForJoin($matches[1], '*', $joinName, false);
+                } else {
+                    $filteredColumns[$columnAlias] = $columnName;
+                }
+            }
+        } else {
+            $filteredColumns = empty($columns) ? [] : $columns;
+        }
+        $relationName = $joinName;
+        // resolve 'JoinName as OtherName'
+        if (preg_match('%\s*(.+)\s+AS\s+(.+)\s*%is', $joinName, $matches)) {
+            list(, $relationName, $joinName) = $matches;
+        }
+        $this->joinNameToRelationName[$joinName] = $relationName;
+        if ($appendColumnsToExisting && array_key_exists($joinName, $this->columnsToSelectFromJoinedRelations)) {
+            $this->columnsToSelectFromJoinedRelations[$joinName] = array_merge(
+                $this->columnsToSelectFromJoinedRelations[$joinName],
+                $filteredColumns
+            );
+        } else {
+            $this->columnsToSelectFromJoinedRelations[$joinName] = $filteredColumns;
+        }
+        $this->joinedRelationsParents[$joinName] = $parentJoinName;
     }
 
     protected function collectJoinedColumnsForQuery() {
-        foreach ($this->columnsForRelations as $relationName => $columns) {
-            $this->getJoin($relationName)->setForeignColumnsToSelect(empty($columns) ? [] : $columns);
+        foreach ($this->columnsToSelectFromJoinedRelations as $joinName => $columns) {
+            $this->getJoin($joinName)->setForeignColumnsToSelect(empty($columns) ? [] : $columns);
         }
         return parent::collectJoinedColumnsForQuery();
     }
 
     /**
-     * Load relation and all its parents
-     * @param string $relationName
-     * @return $this
+     * @param string $joinName
+     * @return OrmJoinConfig
+     * @throws \UnexpectedValueException
+     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    protected function loadRelation($relationName) {
-        if (!$this->hasJoin($relationName)) {
-            if ($this->relationsParents[$relationName] === null) {
-                $this->join($this->getTable()->getJoinConfigForRelation($relationName, $this->getTableAlias()));
+    protected function getJoin($joinName) {
+        if (!$this->hasJoin($joinName) && array_key_exists($joinName, $this->joinedRelationsParents)) {
+            $this->addJoinFromRelation($joinName);
+        }
+        return parent::getJoin($joinName);
+    }
+
+    /**
+     * Load relation and all its parents
+     * @param string $joinName
+     * @return $this
+     * @throws \BadMethodCallException
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     */
+    protected function addJoinFromRelation($joinName) {
+        if (!$this->hasJoin($joinName)) {
+            $relationName = $this->getRelationByJoinName($joinName);
+            $parentJoinName = $this->joinedRelationsParents[$joinName];
+            if ($parentJoinName === null) {
+                // join on base table
+                if ($this->getTableStructure()->getRelation($relationName)->getType() === DbTableRelation::HAS_MANY) {
+                    throw new \UnexpectedValueException(
+                        "Relation '{$relationName}' has type 'HAS MANY' and should not be used as JOIN (not optimal). "
+                            . 'Select that records outside of OrmSelect.'
+                    );
+                }
+                $joinConfig = $this->getTable()->getJoinConfigForRelation($relationName, $this->getTableAlias(), $joinName);
             } else {
-                $parentJoin = $this
-                    ->loadRelation($this->relationsParents[$relationName])
-                    ->getJoin($this->relationsParents[$relationName]);
-                $this->join(
-                    $parentJoin->getForeignDbTable()->getJoinConfigForRelation($relationName, $parentJoin->getJoinName())
-                );
+                // join on other join
+                $this->addJoinFromRelation($parentJoinName);
+                $parentJoin = $this->getJoin($parentJoinName);
+                $foreignTable = $parentJoin->getForeignDbTable();
+                if ($foreignTable->getTableStructure()->getRelation($relationName)->getType() === DbTableRelation::HAS_MANY) {
+                    throw new \UnexpectedValueException(
+                        "Relation '{$relationName}' has type 'HAS MANY' and should not be used as JOIN (not optimal). "
+                            . 'Select that records outside of OrmSelect.'
+                    );
+                }
+                $joinConfig = $foreignTable->getJoinConfigForRelation($relationName, $parentJoin->getJoinName(), $joinName);
             }
+            $this->joinsAddedByRelations[] = $joinName;
+            $this->join($joinConfig);
         }
         return $this;
     }
@@ -318,7 +418,6 @@ class OrmSelect extends DbSelect {
                         $errors = $this->getTableStructure()->getColumn($columnInfo['name'])->validateValue($value);
                     } else {
                         $errors = $this
-                            ->loadRelation($columnInfo['join_name'])
                             ->getJoin($columnInfo['join_name'])
                             ->getForeignDbTable()
                             ->getStructure()
@@ -348,6 +447,13 @@ class OrmSelect extends DbSelect {
         return parent::makeColumnNameForCondition($columnInfo);
     }
 
+    protected function getRelationByJoinName($joinName) {
+        if (!array_key_exists($joinName, $this->joinNameToRelationName)) {
+            throw new \InvalidArgumentException("There is no known relation for join named '{$joinName}'");
+        }
+        return $this->joinNameToRelationName[$joinName];
+    }
+
     protected function validateColumnInfo(array $columnInfo, $subject) {
         if (!($columnInfo['name'] instanceof DbExpr)) {
             if ($columnInfo['join_name'] === null) {
@@ -360,7 +466,6 @@ class OrmSelect extends DbSelect {
                 }
             } else {
                 $foreignTableStructure = $this
-                    ->loadRelation($columnInfo['join_name'])
                     ->getJoin($columnInfo['join_name'])
                     ->getForeignDbTable()
                     ->getTableStructure();

@@ -44,10 +44,11 @@ interface DbTableInterface {
 
     /**
      * @param string $relationName
-     * @param string|null $alterTableAlias - alter this table's alias in join config
+     * @param string|null $alterLocalTableAlias - alter this table's alias in join config
+     * @param string|null $joinName - string: specific join name; null: $relationName is used
      * @return OrmJoinConfig
      */
-    static public function getJoinConfigForRelation($relationName, $alterTableAlias = null);
+    static public function getJoinConfigForRelation($relationName, $alterLocalTableAlias = null, $joinName = null);
 
     /**
      * @return bool
