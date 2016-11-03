@@ -89,12 +89,24 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest {
             $adapter->assembleConditionValue('string', '@>')
         );
         static::assertEquals(
+            'string',
+            $adapter->assembleConditionValue('string', '@>', true)
+        );
+        static::assertEquals(
             $adapter->quoteValue(json_encode(['key' => 'value'])),
             $adapter->assembleConditionValue(['key' => 'value'], '@>')
         );
         static::assertEquals(
+            json_encode(['key' => 'value']),
+            $adapter->assembleConditionValue(json_encode(['key' => 'value']), '@>', true)
+        );
+        static::assertEquals(
             $adapter->quoteValue(json_encode([1, 2, 3])),
             $adapter->assembleConditionValue([1, 2, 3], '<@')
+        );
+        static::assertEquals(
+            json_encode([1, 2, 3]),
+            $adapter->assembleConditionValue(json_encode([1, 2, 3]), '<@', true)
         );
     }
 
@@ -108,28 +120,56 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest {
             $adapter->assembleCondition($column, '@>', ['test' => '1'])
         );
         static::assertEquals(
+            "JSON_CONTAINS({$column}, " . $adapter->assembleConditionValue(json_encode(['test' => '1']), '@>', true) . ')',
+            $adapter->assembleCondition($column, '@>', json_encode(['test' => '1']), true)
+        );
+        static::assertEquals(
             "JSON_CONTAINS({$column}, " . $adapter->assembleConditionValue(['test' => '2'], '<@') . ')',
             $adapter->assembleCondition($column, '<@', ['test' => '2'])
+        );
+        static::assertEquals(
+            "JSON_CONTAINS({$column}, " . $adapter->assembleConditionValue(json_encode(['test' => '2']), '<@', true) . ')',
+            $adapter->assembleCondition($column, '<@', json_encode(['test' => '2']), true)
         );
         static::assertEquals(
             "JSON_CONTAINS_PATH({$column}, $many, " . $adapter->quoteValue('$.test') . ')',
             $adapter->assembleCondition($column, '?', 'test')
         );
         static::assertEquals(
+            "JSON_CONTAINS_PATH({$column}, $many, test)",
+            $adapter->assembleCondition($column, '?', 'test', true)
+        );
+        static::assertEquals(
             "JSON_CONTAINS_PATH({$column}, $one, " . $adapter->quoteValue('$.test') . ')',
             $adapter->assembleCondition($column, '?|', 'test')
+        );
+        static::assertEquals(
+            "JSON_CONTAINS_PATH({$column}, $one, test)",
+            $adapter->assembleCondition($column, '?|', 'test', true)
         );
         static::assertEquals(
             "JSON_CONTAINS_PATH({$column}, $one, " . $adapter->quoteValue('$.test1') . ', ' . $adapter->quoteValue('$[0][1]') . ')',
             $adapter->assembleCondition($column, '?|', ['test1', '[0][1]'])
         );
         static::assertEquals(
+            "JSON_CONTAINS_PATH({$column}, $one, test1, [0][1])",
+            $adapter->assembleCondition($column, '?|', ['test1', '[0][1]'], true)
+        );
+        static::assertEquals(
             "JSON_CONTAINS_PATH({$column}, $many, " . $adapter->quoteValue('$.test') . ')',
             $adapter->assembleCondition($column, '?&', 'test')
         );
         static::assertEquals(
+            "JSON_CONTAINS_PATH({$column}, $many, test)",
+            $adapter->assembleCondition($column, '?&', 'test', true)
+        );
+        static::assertEquals(
             "JSON_CONTAINS_PATH({$column}, $many, " . $adapter->quoteValue('$.test1') . ', ' . $adapter->quoteValue('$[0][1]') . ')',
             $adapter->assembleCondition($column, '?&', ['test1', '[0][1]'])
+        );
+        static::assertEquals(
+            "JSON_CONTAINS_PATH({$column}, $many, test1, [0][1])",
+            $adapter->assembleCondition($column, '?&', ['test1', '[0][1]'], true)
         );
     }
 }

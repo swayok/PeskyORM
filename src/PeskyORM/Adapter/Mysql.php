@@ -291,16 +291,27 @@ class Mysql extends DbAdapter {
     /**
      * @param mixed $value
      * @param string $operator
+     * @param bool $valueAlreadyQuoted
      * @return string
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function assembleConditionValue($value, $operator) {
+    public function assembleConditionValue($value, $operator, $valueAlreadyQuoted = false) {
         if (in_array($operator, ['@>', '<@'], true)) {
-            $value = is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : $value;
-            return $this->quoteValue($value);
+            if ($valueAlreadyQuoted) {
+                if (!is_string($value)) {
+                    throw new \InvalidArgumentException(
+                        'Condition value with $valueAlreadyQuoted === true must be a string. '
+                             . gettype($value) . ' received'
+                    );
+                }
+                return $value;
+            } else {
+                $value = is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : $value;
+                return $this->quoteValue($value);
+            }
         } else {
-            return parent::assembleConditionValue($value, $operator);
+            return parent::assembleConditionValue($value, $operator, $valueAlreadyQuoted);
         }
     }
 
@@ -309,17 +320,18 @@ class Mysql extends DbAdapter {
      * @param string $quotedColumn
      * @param string $operator
      * @param mixed $rawValue
+     * @param bool $valueAlreadyQuoted
      * @return string
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function assembleCondition($quotedColumn, $operator, $rawValue) {
+    public function assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted = false) {
         if (in_array($operator, ['?', '?|', '?&'], true)) {
             if (!is_array($rawValue)) {
-                $rawValue = [$this->quoteJsonSelectorValue($rawValue)];
+                $rawValue = [$valueAlreadyQuoted ? $rawValue : $this->quoteJsonSelectorValue($rawValue)];
             } else {
                 foreach ($rawValue as &$localValue) {
-                    $localValue = $this->quoteJsonSelectorValue($localValue);
+                    $localValue = $valueAlreadyQuoted ? $localValue : $this->quoteJsonSelectorValue($localValue);
                 }
                 unset($localValue);
             }
@@ -327,10 +339,10 @@ class Mysql extends DbAdapter {
             $howMany = $this->quoteValue($operator === '?|' ? 'one' : 'many');
             return "JSON_CONTAINS_PATH($quotedColumn, $howMany, $values)";
         } else if (in_array($operator, ['@>', '<@'], true)) {
-            $value = $this->assembleConditionValue($rawValue, $operator);
+            $value = $this->assembleConditionValue($rawValue, $operator, $valueAlreadyQuoted);
             return "JSON_CONTAINS($quotedColumn, $value)";
         } else {
-            return parent::assembleCondition($quotedColumn, $operator, $rawValue);
+            return parent::assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted);
         }
     }
 

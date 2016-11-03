@@ -164,5 +164,9 @@ class TestingAdminsTableStructure extends DbTableStructure {
         return DbTableRelation::create('id', DbTableRelation::HAS_MANY, TestingAdminsTable::class, 'parent_id');
     }
 
+    private function VeryLongRelationNameSoItMustBeShortened() {
+        return DbTableRelation::create('parent_id', DbTableRelation::BELONGS_TO, TestingAdminsTable::class, 'id');
+    }
+
 
 }

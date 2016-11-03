@@ -20,6 +20,7 @@ class DbExpr {
      */
     protected $expression = '';
     protected $wrapInBrackets = true;
+    protected $allowValidation = true;
 
     /**
      * @param string $expression
@@ -60,5 +61,30 @@ class DbExpr {
      */
     public function get() {
         return $this->wrapInBrackets ? "({$this->expression})" : $this->expression;
+    }
+
+    /**
+     * Disable relation and column name validation when DbExpr is used by OrmSelect
+     * @return $this
+     */
+    public function noValidate() {
+        $this->allowValidation = false;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isValidationAllowed() {
+        return $this->allowValidation;
+    }
+
+    /**
+     * @param array $replaces - associative array where keys are regular expressions and values are replacements
+     * @return $this
+     */
+    public function applyReplaces(array $replaces) {
+        $this->expression = preg_replace(array_keys($replaces), array_values($replaces), $this->expression);
+        return $this;
     }
 }

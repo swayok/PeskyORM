@@ -941,11 +941,12 @@ abstract class DbAdapter implements DbAdapterInterface {
     /**
      * @param mixed $value
      * @param string $operator
+     * @param bool $valueAlreadyQuoted
      * @return string
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function assembleConditionValue($value, $operator) {
+    public function assembleConditionValue($value, $operator, $valueAlreadyQuoted = false) {
         $operator = mb_strtoupper($operator);
         if ($value instanceof DbExpr) {
             return $this->quoteDbExpr($value);
@@ -967,7 +968,9 @@ abstract class DbAdapter implements DbAdapterInterface {
                     'BETWEEN and NOT BETWEEN conditions does not allow min or max values to be null or boolean'
                 );
             }
-            return $this->quoteValue($value[0]) . ' AND ' . $this->quoteValue($value[1]);
+            $fromValue = $valueAlreadyQuoted ? $value[0] : $this->quoteValue($value[0]);
+            $toValue = $valueAlreadyQuoted ? $value[1] : $this->quoteValue($value[1]);
+            return $fromValue . ' AND ' . $toValue;
         } else if (is_array($value)) {
             // 2.4
             if (empty($value)) {
@@ -975,13 +978,13 @@ abstract class DbAdapter implements DbAdapterInterface {
             } else {
                 $quotedValues = [];
                 foreach ($value as $val) {
-                    $quotedValues[] = $this->quoteValue($val);
+                    $quotedValues[] = $valueAlreadyQuoted ? $value : $this->quoteValue($val);
                 }
                 return '(' . implode(',', $quotedValues) . ')';
             }
         } else {
             // 2.1, 2.2
-            return $this->quoteValue($value);
+            return $valueAlreadyQuoted ? $value : $this->quoteValue($value);
         }
     }
 
@@ -990,12 +993,13 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @param string $quotedColumn
      * @param string $operator
      * @param mixed $rawValue
+     * @param bool $valueAlreadyQuoted
      * @return string
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function assembleCondition($quotedColumn, $operator, $rawValue) {
-        $rawValue = $this->assembleConditionValue($rawValue, $operator);
+    public function assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted = false) {
+        $rawValue = $this->assembleConditionValue($rawValue, $operator, $valueAlreadyQuoted);
         return "{$quotedColumn} {$operator} {$rawValue}";
     }
 

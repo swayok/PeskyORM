@@ -181,16 +181,27 @@ class Postgres extends DbAdapter {
     /**
      * @param mixed $value
      * @param string $operator
+     * @param bool $valueAlreadyQuoted
      * @return string
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function assembleConditionValue($value, $operator) {
+    public function assembleConditionValue($value, $operator, $valueAlreadyQuoted = false) {
         if (in_array($operator, ['@>', '<@'], true)) {
-            $value = is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : $value;
-            return $this->quoteValue($value) . '::jsonb';
+            if ($valueAlreadyQuoted) {
+                if (!is_string($value)) {
+                    throw new \InvalidArgumentException(
+                        'Condition value with $valueAlreadyQuoted === true must be a string. '
+                             . gettype($value) . ' received'
+                    );
+                }
+                return $value . '::jsonb';
+            } else {
+                $value = is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : $value;
+                return $this->quoteValue($value) . '::jsonb';
+            }
         } else {
-            return parent::assembleConditionValue($value, $operator);
+            return parent::assembleConditionValue($value, $operator, $valueAlreadyQuoted);
         }
     }
 
@@ -199,23 +210,24 @@ class Postgres extends DbAdapter {
      * @param string $quotedColumn
      * @param string $operator
      * @param mixed $rawValue
+     * @param bool $valueAlreadyQuoted
      * @return string
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function assembleCondition($quotedColumn, $operator, $rawValue) {
+    public function assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted = false) {
         // jsonb opertaors - '?', '?|' or '?&' interfere with prepared PDO statements that use '?' to insert values
         // so it is impossible to use this operators directly. We need to use workarounds
         if (in_array($operator, ['?', '?|', '?&'], true)) {
             if ($operator === '?') {
-                $value = $this->assembleConditionValue($rawValue, $operator);
+                $value = $this->assembleConditionValue($rawValue, $operator, $valueAlreadyQuoted);
                 return "jsonb_exists($quotedColumn, $value)";
             } else {
                 if (!is_array($rawValue)) {
-                    $rawValue = [$this->quoteValue($rawValue)];
+                    $rawValue = [$valueAlreadyQuoted ? $rawValue : $this->quoteValue($rawValue)];
                 } else {
                     foreach ($rawValue as &$localValue) {
-                        $localValue = $this->quoteValue($localValue);
+                        $localValue = $valueAlreadyQuoted ? $localValue : $this->quoteValue($localValue);
                     }
                     unset($localValue);
                 }
@@ -227,7 +239,7 @@ class Postgres extends DbAdapter {
                 }
             }
         } else {
-            return parent::assembleCondition($quotedColumn, $operator, $rawValue);
+            return parent::assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted);
         }
     }
 

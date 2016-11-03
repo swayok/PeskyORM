@@ -585,8 +585,20 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
             $adapter->assembleConditionValue($dbexpr, 'doesnt matter')
         );
         static::assertEquals(
+            $adapter->quoteDbExpr($dbexpr),
+            $adapter->assembleConditionValue($dbexpr, 'doesnt matter', true)
+        );
+        static::assertEquals(
             $adapter->quoteValue(10) . ' AND ' . $adapter->quoteValue(20),
             $adapter->assembleConditionValue([10, 20], 'BETWEEN')
+        );
+        static::assertEquals(
+            'str1 AND str2',
+            $adapter->assembleConditionValue(['str1', 'str2'], 'BETWEEN', true)
+        );
+        static::assertEquals(
+            'str1',
+            $adapter->assembleConditionValue('str1', '=', true)
         );
         static::assertEquals(
             $adapter->quoteValue(DbExpr::create('11')) . ' AND ' . $adapter->quoteValue(DbExpr::create('21')),
@@ -602,6 +614,14 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
         );
     }
 
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Condition value with $valueAlreadyQuoted === true must be a string. array received
+     */
+    public function testInvalidConditionValueWithQuotedFlag() {
+        static::getValidAdapter()->assembleConditionValue(['key' => 'value'], '@>', true);
+    }
+
     public function testAssembleConditionValueAdapterSpecific() {
         $adapter = static::getValidAdapter();
         static::assertEquals(
@@ -609,12 +629,24 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
             $adapter->assembleConditionValue('string', '@>')
         );
         static::assertEquals(
+            'string::jsonb',
+            $adapter->assembleConditionValue('string', '@>', true)
+        );
+        static::assertEquals(
             $adapter->quoteValue(json_encode(['key' => 'value'])) . '::jsonb',
             $adapter->assembleConditionValue(['key' => 'value'], '@>')
         );
         static::assertEquals(
+            json_encode(['key' => 'value']) . '::jsonb',
+            $adapter->assembleConditionValue(json_encode(['key' => 'value']), '@>', true)
+        );
+        static::assertEquals(
             $adapter->quoteValue(json_encode([1, 2, 3])) . '::jsonb',
             $adapter->assembleConditionValue([1, 2, 3], '<@')
+        );
+        static::assertEquals(
+            json_encode([1, 2, 3]) . '::jsonb',
+            $adapter->assembleConditionValue(json_encode([1, 2, 3]), '<@', true)
         );
     }
 
@@ -626,12 +658,24 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
             $adapter->assembleCondition($column, '=', 'test')
         );
         static::assertEquals(
+            $column . ' = ' . $adapter->assembleConditionValue('test', '=', true),
+            $adapter->assembleCondition($column, '=', 'test', true)
+        );
+        static::assertEquals(
             $column . ' IN ' . $adapter->assembleConditionValue([1, 2], 'IN'),
             $adapter->assembleCondition($column, 'IN', [1, 2])
         );
         static::assertEquals(
+            $column . ' IN ' . $adapter->assembleConditionValue([1, 2], 'IN', true),
+            $adapter->assembleCondition($column, 'IN', [1, 2], true)
+        );
+        static::assertEquals(
             $column . ' BETWEEN ' . $adapter->assembleConditionValue([1, 2], 'BETWEEN'),
             $adapter->assembleCondition($column, 'BETWEEN', [1, 2])
+        );
+        static::assertEquals(
+            $column . ' BETWEEN ' . $adapter->assembleConditionValue([1, 2], 'BETWEEN', true),
+            $adapter->assembleCondition($column, 'BETWEEN', [1, 2], true)
         );
     }
 
@@ -643,28 +687,56 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
             $adapter->assembleCondition($column, '@>', 'test')
         );
         static::assertEquals(
+            $column . ' @> ' . $adapter->assembleConditionValue('test', '@>', true),
+            $adapter->assembleCondition($column, '@>', 'test', true)
+        );
+        static::assertEquals(
             $column . ' <@ ' . $adapter->assembleConditionValue('test', '<@'),
             $adapter->assembleCondition($column, '<@', 'test')
+        );
+        static::assertEquals(
+            $column . ' <@ ' . $adapter->assembleConditionValue('test', '<@', true),
+            $adapter->assembleCondition($column, '<@', 'test', true)
         );
         static::assertEquals(
             "jsonb_exists({$column}, " . $adapter->assembleConditionValue('test', '?') . ')',
             $adapter->assembleCondition($column, '?', 'test')
         );
         static::assertEquals(
+            "jsonb_exists({$column}, " . $adapter->assembleConditionValue('test', '?', true) . ')',
+            $adapter->assembleCondition($column, '?', 'test', true)
+        );
+        static::assertEquals(
             "jsonb_exists_any({$column}, array[" . $adapter->quoteValue('test') . '])',
             $adapter->assembleCondition($column, '?|', 'test')
+        );
+        static::assertEquals(
+            "jsonb_exists_any({$column}, array[test])",
+            $adapter->assembleCondition($column, '?|', 'test', true)
         );
         static::assertEquals(
             "jsonb_exists_any({$column}, array[" . $adapter->quoteValue('test1') . ', ' . $adapter->quoteValue('test2') . '])',
             $adapter->assembleCondition($column, '?|', ['test1', 'test2'])
         );
         static::assertEquals(
+            "jsonb_exists_any({$column}, array[test1, test2])",
+            $adapter->assembleCondition($column, '?|', ['test1', 'test2'], true)
+        );
+        static::assertEquals(
             "jsonb_exists_all({$column}, array[" . $adapter->quoteValue('test') . '])',
             $adapter->assembleCondition($column, '?&', 'test')
         );
         static::assertEquals(
+            "jsonb_exists_all({$column}, array[test])",
+            $adapter->assembleCondition($column, '?&', 'test', true)
+        );
+        static::assertEquals(
             "jsonb_exists_all({$column}, array[" . $adapter->quoteValue('test1') . ', ' . $adapter->quoteValue('test2') . '])',
             $adapter->assembleCondition($column, '?&', ['test1', 'test2'])
+        );
+        static::assertEquals(
+            "jsonb_exists_all({$column}, array[test1, test2])",
+            $adapter->assembleCondition($column, '?&', ['test1', 'test2'], true)
         );
     }
 

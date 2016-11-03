@@ -68,9 +68,9 @@ class Utils {
      *  }
      * @param \Closure|null $conditionValuePreprocessor - used to modify or validate condition's value.
      *      default: function ($columnName, $rawValue, DbAdapterInterface $connection) {
-     *          return $rawValue;
+     *          return ($rawValue instanceof DbExpr) ? $connection->quoteDbExpr($rawValue) : $rawValue;
      *      }
-     *      Note: $rawValue is never an object
+     *      Note: $rawValue can be DbExpr instance but not any other object
      * @return string
      * @throws \PDOException
      * @throws \InvalidArgumentException
@@ -93,7 +93,7 @@ class Utils {
         }
         if (!$conditionValuePreprocessor) {
             $conditionValuePreprocessor = function ($columnName, $rawValue, DbAdapterInterface $connection) {
-                return $rawValue;
+                return ($rawValue instanceof DbExpr) ? $connection->quoteDbExpr($rawValue) : $rawValue;
             };
         }
         if (empty($conditions)) {
@@ -112,7 +112,7 @@ class Utils {
                 $valueIsDbExpr = is_object($rawValue) && ($rawValue instanceof DbExpr);
                 if (is_numeric($column) && $valueIsDbExpr) {
                     // 1 - custom expressions
-                    $assembled[] = $connection->quoteDbExpr($rawValue);
+                    $assembled[] = $conditionValuePreprocessor($column, $rawValue, $connection);
                     continue;
                 } else if (
                     (
@@ -153,7 +153,8 @@ class Utils {
                     $assembled[] = $connection->assembleCondition(
                         $columnQuoter($column, $connection),
                         $operator,
-                        $conditionValuePreprocessor($column, $rawValue, $connection)
+                        $conditionValuePreprocessor($column, $rawValue, $connection),
+                        $valueIsDbExpr
                     );
                 }
             }

@@ -65,8 +65,13 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         static::assertInstanceOf(TestingAdminsTableStructure::class, $dbSelect->getTableStructure());
         static::assertEquals('admins', $dbSelect->getTableName());
         static::assertEquals('Admins', $dbSelect->getTableAlias());
-        static::assertCount(1, $this->getObjectPropertyValue($dbSelect, 'columns'));
+        static::assertCount(1, $this->getObjectPropertyValue($dbSelect, 'columnsRaw'));
+        static::assertCount(0, $this->getObjectPropertyValue($dbSelect, 'columns'));
 
+
+        static::assertEquals(['id'], $this->getObjectPropertyValue($dbSelect, 'columnsRaw'));
+        static::assertEquals('SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins"', rtrim($dbSelect->getQuery()));
+        static::assertEquals('SELECT COUNT(*) FROM "public"."admins" AS "Admins"', rtrim($dbSelect->getCountQuery()));
         $expectedColsInfo = [
             [
                 'name' => 'id',
@@ -76,8 +81,6 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             ]
         ];
         static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
-        static::assertEquals('SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins"', rtrim($dbSelect->getQuery()));
-        static::assertEquals('SELECT COUNT(*) FROM "public"."admins" AS "Admins"', rtrim($dbSelect->getCountQuery()));
 
         TestingApp::clearTables();
         $insertedData = TestingApp::fillAdminsTable(2);
@@ -112,7 +115,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage There are no joins defined for next aliases: OtherTable
      */
     public function testInvalidJoinsSet() {
-        static::getNewSelect()->columns(['OtherTable.id'])->getQuery();
+        static::getNewSelect()->columns(['id', 'OtherTable.id'])->getQuery();
     }
 
     /**
@@ -128,7 +131,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage SELECT: column with name [Parent.asid] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
      */
     public function testNotExistingColumnName2() {
-        static::getNewSelect()->columns(['Parent.asid'])->getQuery();
+        static::getNewSelect()->columns(['id', 'Parent.asid'])->getQuery();
     }
 
     /**
@@ -153,7 +156,15 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $columns argument must contain at least 1 column to be selected from main table
      */
     public function testEmptyColumnsList1() {
-        static::getNewSelect()->columns(['Parent.id'])->getQuery();
+        static::getNewSelect()->columns(['id', 'Parent.id'])->getQuery();
+    }
+
+    /**
+     * @expectedException UnexpectedValueException
+     * @expectedExceptionMessage SELECT: column with name [asdasdqdasd] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
+     */
+    public function testInvalidColNameInDbExpr() {
+        static::getNewSelect()->columns(['sum' => DbExpr::create('SUM(`Admins`.`asdasdqdasd`)')])->getQuery();
     }
 
     public function testColumnsBasic() {
@@ -174,28 +185,28 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         $colsInSelect = implode(', ', $colsInSelect);
 
         $dbSelect->columns([]);
-        static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
-        static::assertCount(15, $this->getObjectPropertyValue($dbSelect, 'columns'));
         static::assertEquals(
             'SELECT ' . $colsInSelect . ' FROM "public"."admins" AS "Admins"',
             rtrim($dbSelect->getQuery())
         );
+        static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
+        static::assertCount(15, $this->getObjectPropertyValue($dbSelect, 'columns'));
 
         $dbSelect->columns(['*']);
-        static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
-        static::assertCount(15, $this->getObjectPropertyValue($dbSelect, 'columns'));
         static::assertEquals(
             'SELECT ' . $colsInSelect . ' FROM "public"."admins" AS "Admins"',
             rtrim($dbSelect->getQuery())
         );
+        static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
+        static::assertCount(15, $this->getObjectPropertyValue($dbSelect, 'columns'));
 
         $dbSelect->columns('*');
-        static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
-        static::assertCount(15, $this->getObjectPropertyValue($dbSelect, 'columns'));
         static::assertEquals(
             'SELECT ' . $colsInSelect . ' FROM "public"."admins" AS "Admins"',
             rtrim($dbSelect->getQuery())
         );
+        static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
+        static::assertCount(15, $this->getObjectPropertyValue($dbSelect, 'columns'));
 
         static::assertEquals(
             'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins"',
@@ -344,6 +355,18 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             $dbSelect->columns(['id', 'Parent' => ['id', 'Parent as Parent2' => '*']])->getQuery()
         );
 
+        $query = $dbSelect->columns([
+            'VeryLongColumnAliasSoItMustBeShortened' => 'id',
+            'VeryLongRelationNameSoItMustBeShortened' => ['id', 'VeryLongRelationNameSoItMustBeShortened as VeryLongRelationNameSoItMustBeShortened2' => ['VeryLongColumnAliasSoItMustBeShortened2' => 'id']]]
+        )->getQuery();
+        $shortJoinName = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', ['VeryLongRelationNameSoItMustBeShortened']);
+        $shortJoinName2 = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', ['VeryLongRelationNameSoItMustBeShortened2']);
+        $shortColumnName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', ['VeryLongColumnAliasSoItMustBeShortened']);
+        $shortColumnName2 = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', ['VeryLongColumnAliasSoItMustBeShortened2']);
+        static::assertEquals(
+            'SELECT "Admins"."id" AS "_Admins__' . $shortColumnName . '", "' . $shortJoinName .'"."id" AS "_' . $shortJoinName . '__id", "' . $shortJoinName2 .'"."id" AS "_' . $shortJoinName2 . '__' . $shortColumnName2 . '" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "' . $shortJoinName . '" ON ("Admins"."parent_id" = "' . $shortJoinName . '"."id") LEFT JOIN "public"."admins" AS "' . $shortJoinName2 . '" ON ("' . $shortJoinName . '"."parent_id" = "' . $shortJoinName2 . '"."id")',
+            $query
+        );
     }
 
     /**
@@ -378,7 +401,53 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         static::getNewSelect()->having(['invalid_____' => '0'])->getQuery();
     }
 
-    // todo: test invalid relations usage
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Join config with name [InvalidRel] not found
+     */
+    public function testInvalidRelationInWhere1() {
+        static::getNewSelect()->where(['InvalidRel.col' => '0'])->getQuery();
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Join config with name [InvalidRel] not found
+     */
+    public function testInvalidRelationInHaving1() {
+        static::getNewSelect()->having(['InvalidRel.col' => '0'])->getQuery();
+    }
+
+    /**
+     * @expectedException \UnexpectedValueException
+     * @expectedExceptionMessage WHERE: column with name [Parent.col] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
+     */
+    public function testInvalidRelationInWhere2() {
+        static::getNewSelect()->where(['Parent.col' => '0'])->getQuery();
+    }
+
+    /**
+     * @expectedException \UnexpectedValueException
+     * @expectedExceptionMessage HAVING: column with name [Parent.col] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
+     */
+    public function testInvalidRelationInHaving2() {
+        static::getNewSelect()->having(['Parent.col' => '0'])->getQuery();
+    }
+
+    /**
+     * @expectedException \UnexpectedValueException
+     * @expectedExceptionMessage WHERE: column with name [Parent2.col] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
+     */
+    public function testInvalidRelationInWhere3() {
+        static::getNewSelect()->columns(['id', 'Parent' => ['Parent as Parent2' => '*']])->where(['Parent2.col' => '0'])->getQuery();
+    }
+
+    /**
+     * @expectedException \UnexpectedValueException
+     * @expectedExceptionMessage HAVING: column with name [Parent2.col] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
+     */
+    public function testInvalidRelationInHaving3() {
+        static::getNewSelect()->columns(['id', 'Parent' => ['Parent as Parent2' => '*']])->having(['Parent2.col' => '0'])->getQuery();
+    }
 
     public function testWhereAndHaving() {
         $dbSelect = static::getNewSelect()->columns('id');
@@ -398,7 +467,37 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins" WHERE (SUM("id") > \'1\') HAVING (SUM("id") > \'2\')',
             $dbSelect->where([DbExpr::create('SUM(`id`) > ``1``')])->having([DbExpr::create('SUM(`id`) > ``2``')])->getQuery()
         );
-        // todo: test relations usage
+        // test relations usage
+        static::assertEquals(
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") WHERE "Parent"."parent_id" IS NOT NULL',
+            $dbSelect->where(['Parent.parent_id !=' => null])->having([])->getQuery()
+        );
+        static::assertEquals(
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") HAVING "Parent"."parent_id" IS NOT NULL',
+            $dbSelect->where([])->having(['Parent.parent_id !=' => null])->getQuery()
+        );
+        $dbSelect
+            ->columns(['id', 'Parent' => ['Parent as Parent2' => ['id']]])
+            ->where(['Parent2.parent_id !=' => null])
+            ->having(['Parent2.parent_id !=' => null])
+            ->getQuery();
+        static::assertEquals(
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") HAVING "Parent"."parent_id" IS NOT NULL',
+            $dbSelect->getQuery()
+        );
+        // test long aliases
+        $query = $dbSelect->where(['VeryLongRelationNameSoItMustBeShortened.parent_id !=' => null])->having([])->getQuery();
+        $shortAlias = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', ['VeryLongRelationNameSoItMustBeShortened']);
+        static::assertEquals(
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "' . $shortAlias . '" ON ("Admins"."parent_id" = "' . $shortAlias . '"."id") WHERE "' . $shortAlias . '"."parent_id" IS NOT NULL',
+            $query
+        );
+        $query = $dbSelect->where([])->having(['VeryLongRelationNameSoItMustBeShortened.parent_id !=' => null])->getQuery();
+        $shortAlias = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', ['VeryLongRelationNameSoItMustBeShortened']);
+        static::assertEquals(
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "' . $shortAlias . '" ON ("Admins"."parent_id" = "' . $shortAlias . '"."id") HAVING "' . $shortAlias . '"."parent_id" IS NOT NULL',
+            $query
+        );
         // conditions assembling tests are in Utils::assembleWhereConditionsFromArray()
     }
 

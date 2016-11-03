@@ -193,9 +193,10 @@ interface DbAdapterInterface {
      * @param string $quotedColumn
      * @param string $operator
      * @param mixed $rawValue
+     * @param bool $valueAlreadyQuoted
      * @return string
      */
-    public function assembleCondition($quotedColumn, $operator, $rawValue);
+    public function assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted = false);
 
     /**
      * Converts general representation of data type conversion to adapter's specific one

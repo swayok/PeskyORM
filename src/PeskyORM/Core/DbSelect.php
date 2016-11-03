@@ -26,13 +26,21 @@ class DbSelect {
      */
     protected $connection;
     /**
-     * @var array - key = full table alias; value - short table alias
+     * @var array - key = full table alias or join name; value - short alias
      */
-    protected $shortAliases = [];
+    protected $shortJoinAliases = [];
+    /**
+     * @var array - key = full column alias or name; value - short column alias
+     */
+    protected $shortColumnAliases = [];
     /**
      * @var array
      */
     protected $columns = [];
+    /**
+     * @var array
+     */
+    protected $columnsRaw = ['*'];
     /**
      * @var boolean
      */
@@ -69,6 +77,11 @@ class DbSelect {
      * @var array
      */
     protected $analyzedColumns = [];
+    /**
+     * Indicates that DbSelect has changed since last getQuery or getSimplifiedQuery call
+     * @var null|array - null: all dirty | array - only some items are dirty
+     */
+    protected $isDirty = null;
 
     /**
      * @param string $tableName
@@ -157,6 +170,7 @@ class DbSelect {
     /**
      * @param array $conditionsAndOptions
      * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
      */
     protected function parseNormalizedConfigsArray(array $conditionsAndOptions) {
         // JOINS - must be 1st to allow columns validation in OrmSelect or other child class
@@ -396,14 +410,15 @@ class DbSelect {
             $this->getTableSchemaName()
         );
         $columns = $this->makeColumnsForQuery();
-        $conditions = $this->makeConditions($this->where, 'WHERE');
         $group = $this->makeGroupBy();
         $order = $this->makeOrderBy();
         $limit = $this->makeLimit();
         $offset = $this->makeOffset();
+        $conditions = $this->makeConditions($this->where, 'WHERE');
         $having = $this->makeConditions($this->having, 'HAVING');
         $joins = $this->makeJoins(false);
         $this->validateIfThereAreEnoughJoins();
+        $this->notDirty();
         return "SELECT {$columns} FROM {$table}{$joins}{$conditions}{$group}{$having}{$order}{$limit}{$offset}";
     }
 
@@ -445,11 +460,12 @@ class DbSelect {
             $this->getTableAlias(),
             $this->getTableSchemaName()
         );
-        $conditions = $this->makeConditions($this->where, 'WHERE');
         $group = $this->makeGroupBy();
+        $conditions = $this->makeConditions($this->where, 'WHERE');
         $having = $this->makeConditions($this->having, 'HAVING');
         $joins = $this->makeJoins($ignoreLeftJoins);
         $this->validateIfThereAreEnoughJoins();
+        $this->notDirty();
         return "SELECT $expression FROM {$table}{$joins}{$conditions}{$group}{$having}";
     }
 
@@ -483,13 +499,9 @@ class DbSelect {
      * @throws \InvalidArgumentException
      */
     public function columns(...$columns) {
-        $this->beforeNewColumnsListAdded();
-        $this->columns = $this->normalizeColumnsList($columns, null, true);
-        if (empty($this->columns)) {
-            throw new \InvalidArgumentException(
-                '$columns argument must contain at least 1 column to be selected from main table'
-            );
-        }
+        $this->columnsRaw = $columns;
+        $this->columns = [];
+        $this->setDirty('columns');
         return $this;
     }
 
@@ -519,8 +531,8 @@ class DbSelect {
      * @return $this
      */
     public function where(array $conditions) {
-        $this->beforeNewWhereConditionsAdded();
         $this->where = $conditions;
+        $this->setDirty('where');
         return $this;
     }
 
@@ -551,6 +563,7 @@ class DbSelect {
             $columnInfo['direction'] = $isAscending ? 'ASC' : 'DESC';
             $this->orderBy[$key] = $columnInfo;
         }
+        $this->setDirty('orderBy');
         return $this;
     }
 
@@ -560,6 +573,7 @@ class DbSelect {
      */
     public function removeOrdering() {
         $this->orderBy = [];
+        $this->setDirty('orderBy');
         return $this;
     }
 
@@ -587,6 +601,7 @@ class DbSelect {
                 );
             }
         }
+        $this->setDirty('groupBy');
         return $this;
     }
 
@@ -662,8 +677,8 @@ class DbSelect {
      * @return $this
      */
     public function having(array $conditions) {
-        $this->beforeNewHavingConditionsAdded();
         $this->having = $conditions;
+        $this->setDirty('having');
         return $this;
     }
 
@@ -684,34 +699,55 @@ class DbSelect {
             throw new \InvalidArgumentException("Join with name '{$joinConfig->getJoinName()}' already defined");
         }
         $this->joins[$joinConfig->getJoinName()] = $joinConfig;
+        $this->setDirty('joins');
         return $this;
     }
 
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
 
     /**
-     * Triggered when new columns list received
+     * @param string $subject - set subject as dirty
+     * @return $this
      */
-    protected function beforeNewColumnsListAdded() {
-
+    protected function setDirty($subject) {
+        if ($this->isDirty !== null) {
+            $this->isDirty[] = $subject;
+        }
+        return $this;
     }
 
     /**
-     * Triggered when new WHERE conditons list received
+     * @param null|string $subject - null: any dirt? | string: is $subject dirty?
+     * @return bool
      */
-    protected function beforeNewWhereConditionsAdded() {
-
+    protected function isDirty($subject = null) {
+        if ($subject === null) {
+            return $this->isDirty === null || !empty($this->isDirty);
+        } else {
+            return $this->isDirty === null || in_array($subject, $this->isDirty, true);
+        }
     }
 
-    /**
-     * Triggered when new HAVING conditons list received
-     */
-    protected function beforeNewHavingConditionsAdded() {
-
+    protected function notDirty() {
+        $this->isDirty = [];
+        return $this;
     }
 
     protected function beforeQueryBuilding() {
-        $this->shortAliases = [];
+        $this->shortJoinAliases = [];
+        if ($this->isDirty('columns')) {
+            $this->processRawColumns();
+        }
+    }
+
+    protected function processRawColumns() {
+        $this->columns = $this->normalizeColumnsList($this->columnsRaw, null, true);
+        if (empty($this->columns)) {
+            throw new \InvalidArgumentException(
+                '$columns argument must contain at least 1 column to be selected from main table'
+            );
+        }
+        return $this;
     }
 
     /**
@@ -826,12 +862,13 @@ class DbSelect {
     }
 
     /**
-     * @param string $columnName
-     * @param null|string $joinAlias
+     * @param string $columnNameOrAlias
+     * @param null|string $tableAliasOrJoinName
      * @return string
      */
-    protected function makeColumnAlias($columnName, $joinAlias = null) {
-        return '_' . $this->getShortAlias($joinAlias ?: $this->getTableAlias()) . '__' . $columnName;
+    protected function makeColumnAlias($columnNameOrAlias, $tableAliasOrJoinName = null) {
+        $joinShortAlias = $this->getShortJoinAlias($tableAliasOrJoinName ?: $this->getTableAlias());
+        return '_' . $joinShortAlias . '__' . $this->getShortColumnAlias($columnNameOrAlias);
     }
 
     /**
@@ -840,7 +877,7 @@ class DbSelect {
      */
     protected function makeColumnNameWithAliasForQuery(array $columnInfo) {
         $tableAlias = $columnInfo['join_name'] ?: $this->getTableAlias();
-        $shortTableAlias = $this->getShortAlias($tableAlias);
+        $shortTableAlias = $this->getShortJoinAlias($tableAlias);
         $isDbExpr = $columnInfo['name'] instanceof DbExpr;
         if ($isDbExpr) {
             $columnName = $this->quoteDbExpr($columnInfo['name']);
@@ -869,7 +906,7 @@ class DbSelect {
         if ($this->getConnection()->isDbSupportsTableSchemas()) {
             $schema = $this->quoteDbEntityName($tableSchema ?: $this->getConnection()->getDefaultTableSchema()) . '.';
         }
-        return $schema . $this->quoteDbEntityName($tableName) . ' AS ' . $this->quoteDbEntityName($this->getShortAlias($tableAlias));
+        return $schema . $this->quoteDbEntityName($tableName) . ' AS ' . $this->quoteDbEntityName($this->getShortJoinAlias($tableAlias));
     }
 
     /**
@@ -878,7 +915,7 @@ class DbSelect {
      */
     protected function makeColumnNameForCondition(array $columnInfo) {
         $tableAlias = $columnInfo['join_name'] ?: $this->getTableAlias();
-        $columnName = $this->quoteDbEntityName($this->getShortAlias($tableAlias)) . '.' . $this->quoteDbEntityName($columnInfo['name']);
+        $columnName = $this->quoteDbEntityName($this->getShortJoinAlias($tableAlias)) . '.' . $this->quoteDbEntityName($columnInfo['name']);
         if ($columnInfo['type_cast']) {
             $columnName = $this->getConnection()->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
         }
@@ -902,13 +939,44 @@ class DbSelect {
      * @param string $alias
      * @return string
      */
-    protected function getShortAlias($alias) {
-        if (!array_key_exists($alias, $this->shortAliases)) {
-            $this->shortAliases[$alias] = mb_strlen($alias) > 16
+    protected function getShortJoinAlias($alias) {
+        if (!array_key_exists($alias, $this->shortJoinAliases)) {
+            // maybe it is already an alias?
+            if (!preg_match('%^[a-z][a-zA-Z0-9]{8}\d$%', $alias) || !in_array($alias, $this->shortJoinAliases, true)) {
+                return $alias;
+                // todo: should it throw an exception instead?
+            }
+            $this->shortJoinAliases[$alias] = mb_strlen($alias) > 16
                 ? chr(mt_rand(97, 122)) . hash('crc32b', $alias) . mt_rand(0, 9)
                 : $alias;
         }
-        return $this->shortAliases[$alias];
+        return $this->shortJoinAliases[$alias];
+    }
+
+    /**
+     * @param string $alias
+     * @return string
+     */
+    protected function getShortColumnAlias($alias) {
+        if (!array_key_exists($alias, $this->shortColumnAliases)) {
+            $this->shortColumnAliases[$alias] = mb_strlen($alias) > 16
+                ? chr(mt_rand(97, 122)) . hash('crc32b', $alias) . mt_rand(0, 9)
+                : $alias;
+        }
+        return $this->shortColumnAliases[$alias];
+    }
+
+    /**
+     * Replace long join names and table alias by short ones inside $dbExpr
+     * @param DbExpr $dbExpr
+     * @return DbExpr
+     */
+    protected function modifyTableAliasAndJoinNamesInDbExpr(DbExpr $dbExpr) {
+        $replaces = ["%`{$this->getTableAlias()}`\.%" => '`' . $this->getShortJoinAlias($this->getTableAlias()) . '``.'];
+        foreach ($this->joins as $joinConfig) {
+            $replaces["%`{$joinConfig->getJoinName()}`\.%"] = '`' . $this->getShortJoinAlias($joinConfig->getJoinName()) . '`.';
+        }
+        return $dbExpr->applyReplaces($replaces);
     }
 
     /**
@@ -1022,20 +1090,24 @@ class DbSelect {
 
     /**
      * @param array $conditions
-     * @param string $subject - can be 'WHERE' or 'HAVING'
+     * @param string $subject - can be 'WHERE', 'HAVING' or ''
+     * @param null $joinName - string: used when assembling conditions for join
      * @return string
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    protected function makeConditions(array $conditions, $subject = 'WHERE') {
+    protected function makeConditions(array $conditions, $subject = 'WHERE', $joinName = null) {
         $assembled = Utils::assembleWhereConditionsFromArray(
             $this->getConnection(),
             $conditions,
-            function ($columnName) {
-                $columnInfo = $this->analyzeColumnName($columnName);
+            function ($columnName) use ($joinName) {
+                $columnInfo = $this->analyzeColumnName($columnName, null, $joinName);
                 return $this->makeColumnNameForCondition($columnInfo);
             },
-            'AND'
+            'AND',
+            function ($columnName, $rawValue) {
+                return $rawValue instanceof DbExpr ? $this->quoteDbExpr($rawValue) : $rawValue;
+            }
         );
         $assembled = trim($assembled);
         return empty($assembled) ? '' : " {$subject} {$assembled}";
@@ -1102,26 +1174,15 @@ class DbSelect {
      * @throws \InvalidArgumentException
      */
     protected function makeJoinConditions(DbJoinConfig $joinConfig) {
+        $shortJoinName = $this->getShortJoinAlias($joinConfig->getJoinName());
         $conditions = array_merge(
             [
-                "{$joinConfig->getTableAlias()}.{$joinConfig->getColumnName()}"
-                    => DbExpr::create("`{$joinConfig->getJoinName()}`.`{$joinConfig->getForeignColumnName()}`", false)
+                $this->getShortJoinAlias($joinConfig->getTableAlias()) . '.' . $joinConfig->getColumnName()
+                    => DbExpr::create("`{$shortJoinName}`.`{$joinConfig->getForeignColumnName()}`", false)
             ],
             $joinConfig->getAdditionalJoinConditions()
         );
-        return Utils::assembleWhereConditionsFromArray(
-            $this->getConnection(),
-            $conditions,
-            function ($columnName) use ($joinConfig) {
-                if ($columnName instanceof DbExpr) {
-                    return $columnName->get();
-                } else {
-                    $columnInfo = $this->analyzeColumnName($columnName, null, $joinConfig->getJoinName());
-                    return $this->makeColumnNameForCondition($columnInfo);
-                }
-            },
-            'AND'
-        );
+        return trim($this->makeConditions($conditions, '', $joinConfig->getJoinName()));
     }
 
     /**
@@ -1130,11 +1191,6 @@ class DbSelect {
      * @throws \UnexpectedValueException
      */
     protected function makeColumnsForQuery() {
-        if (empty($this->columns)) {
-            // init columns (it is forbidden to select no columns so empty array means that columns were not provided
-            // and it is expected to fetch all columns
-            $this->columns([]);
-        }
         $columns = [];
         foreach ($this->columns as $columnInfo) {
             if (is_string($columnInfo)) {
@@ -1199,12 +1255,16 @@ class DbSelect {
     private function normalizeRecord(array $record) {
         $dataBlocks = [$this->getTableAlias() => []];
         // process record's column aliases and group column values by table alias
-        $shortAliasToAlias = array_flip($this->shortAliases);
+        $shortJoinAliasToAlias = array_flip($this->shortJoinAliases);
+        $shortColumnAliasToAlias = array_flip($this->shortColumnAliases);
         foreach ($record as $columnAlias => $value) {
             if (preg_match('%^_(.+?)__(.+?)$%', $columnAlias, $colInfo)) {
                 list(, $tableAlias, $column) = $colInfo;
-                if (array_key_exists($tableAlias, $shortAliasToAlias)) {
-                    $tableAlias = $shortAliasToAlias[$tableAlias];
+                if (array_key_exists($tableAlias, $shortJoinAliasToAlias)) {
+                    $tableAlias = $shortJoinAliasToAlias[$tableAlias];
+                }
+                if (array_key_exists($column, $shortColumnAliasToAlias)) {
+                    $column = $shortColumnAliasToAlias[$column];
                 }
                 if (empty($dataBlocks[$tableAlias])) {
                     $dataBlocks[$tableAlias] = [];
@@ -1231,7 +1291,7 @@ class DbSelect {
      * @return string
      */
     protected function quoteDbExpr(DbExpr $expr) {
-        return $this->getConnection()->quoteDbExpr($expr);
+        return $this->getConnection()->quoteDbExpr($this->modifyTableAliasAndJoinNamesInDbExpr($expr));
     }
 
     /**
@@ -1256,8 +1316,8 @@ class DbSelect {
      */
     protected function validateIfThereAreEnoughJoins() {
         $missingJoins = [];
-        foreach ($this->shortAliases as $fullAlias => $notUsed) {
-            if ($fullAlias !== $this->getTableAlias() && !$this->hasJoin($fullAlias)) {
+        foreach ($this->shortJoinAliases as $fullAlias => $notUsed) {
+            if ($fullAlias !== $this->getTableAlias() && !$this->hasJoin($fullAlias, false)) {
                 $missingJoins[] = $fullAlias;
             }
         }
@@ -1270,10 +1330,11 @@ class DbSelect {
 
     /**
      * @param string $joinName
+     * @param bool $mayBeShort - true: alias may be received from $this->getShortJoinAlias()
      * @return bool
      */
-    protected function hasJoin($joinName) {
-        return array_key_exists($joinName, $this->joins);
+    protected function hasJoin($joinName, $mayBeShort = false) {
+        return array_key_exists($joinName, $this->joins) || ($mayBeShort && in_array($joinName, $this->shortJoinAliases, true));
     }
 
     /**
@@ -1282,9 +1343,13 @@ class DbSelect {
      * @throws \InvalidArgumentException
      */
     protected function getJoin($joinName) {
-        if (!$this->hasJoin($joinName)) {
+        if (!$this->hasJoin($joinName, true)) {
             throw new \InvalidArgumentException("Join config with name [{$joinName}] not found");
         }
-        return $this->joins[$joinName];
+        if (array_key_exists($joinName, $this->joins)) {
+            return $this->joins[$joinName];
+        } else {
+            return $this->joins[array_flip($this->shortJoinAliases)[$joinName]];
+        }
     }
 }

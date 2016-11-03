@@ -185,7 +185,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $columns argument must contain only strings and instances of DbExpr class
      */
     public function testInvalidColumns1() {
-        static::getNewSelect()->columns(null);
+        static::getNewSelect()->columns(null)->getQuery();
     }
 
     /**
@@ -193,7 +193,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $columns argument must contain only strings and instances of DbExpr class
      */
     public function testInvalidColumns3() {
-        static::getNewSelect()->columns(1);
+        static::getNewSelect()->columns(1)->getQuery();
     }
 
     /**
@@ -201,7 +201,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $columns argument contains an empty column name for a key
      */
     public function testInvalidColumns4() {
-        static::getNewSelect()->columns(['']);
+        static::getNewSelect()->columns([''])->getQuery();
     }
 
     /**
@@ -209,7 +209,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $columns argument contains an empty column name for a key 'qq'
      */
     public function testInvalidColumns5() {
-        static::getNewSelect()->columns(['qq' => '']);
+        static::getNewSelect()->columns(['qq' => ''])->getQuery();
     }
 
     /**
@@ -217,7 +217,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $columns argument contains an empty column alias
      */
     public function testInvalidColumns6() {
-        static::getNewSelect()->columns(['' => 'qq']);
+        static::getNewSelect()->columns(['' => 'qq'])->getQuery();
     }
 
     /**
@@ -225,7 +225,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $columns argument must contain only strings and instances of DbExpr class
      */
     public function testInvalidColumns7() {
-        static::getNewSelect()->columns([$this]);
+        static::getNewSelect()->columns([$this])->getQuery();
     }
 
     /**
@@ -233,7 +233,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $columns argument must contain only strings and instances of DbExpr class
      */
     public function testInvalidColumns8() {
-        static::getNewSelect()->columns([[]]);
+        static::getNewSelect()->columns([[]])->getQuery();
     }
 
     /**
@@ -496,6 +496,19 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             'SELECT "Admins".*, (SUM("id")) AS "_Admins__sum" FROM "public"."admins" AS "Admins"',
             rtrim($dbSelect->columns(['*', 'sum' => DbExpr::create('SUM(`id`)')])->getQuery())
         );
+        // test column alias shortening
+        $query = $dbSelect->columns(['VeryLongColumnAliasSoItMustBeShortened' => 'id'])->getQuery();
+        $shortAlias = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', ['VeryLongColumnAliasSoItMustBeShortened']);
+        static::assertEquals(
+            'SELECT "Admins"."id" AS "_Admins__' . $shortAlias . '" FROM "public"."admins" AS "Admins"',
+            $query
+        );
+        $insertedData = static::fillTables();
+        $expectedData = [];
+        foreach ($insertedData['admins'] as $data) {
+            $expectedData[] = ['VeryLongColumnAliasSoItMustBeShortened' => $data['id']];
+        }
+        static::assertEquals($expectedData, $dbSelect->fetchMany());
     }
 
     /**
@@ -779,9 +792,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage There are no joins with names: Test
      */
     public function testInvalidWhereUsingUnknownJoin() {
-        static::getNewSelect()
-            ->where(['Test.id' => 1])
-            ->getQuery();
+        static::getNewSelect()->where(['Test.id' => 1])->getQuery();
     }
 
     /**
@@ -789,9 +800,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage There are no joins with names: Test
      */
     public function testInvalidHavingUsingUnknownJoin() {
-        static::getNewSelect()
-            ->having(['Test.id' => 1])
-            ->getQuery();
+        static::getNewSelect()->having(['Test.id' => 1])->getQuery();
     }
 
     public function testWhereAndHaving() {
@@ -885,6 +894,17 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             'SELECT "Admins".* FROM "public"."admins" AS "Admins" RIGHT JOIN "public"."settings" AS "Test" ON ("Admins"."id" = "Test"."id")',
             $dbSelect->join($joinConfig, false)->getQuery()
         );
+        // test join name shortening
+        $joinConfig
+            ->setJoinName('VeryLongJoinNameSoItMustBeShortened')
+            ->setAdditionalJoinConditions(['VeryLongJoinNameSoItMustBeShortened.parentId' => null]);
+        $query = $dbSelect->join($joinConfig, false)->getQuery();
+        $shortJoinName = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', [$joinConfig->getJoinName()]);
+        static::assertEquals(
+            'SELECT "Admins".* FROM "public"."admins" AS "Admins" RIGHT JOIN "public"."settings" AS "' . $shortJoinName . '" ON ("Admins"."id" = "' . $shortJoinName . '"."id" AND "' . $shortJoinName .'"."parentId" IS NULL)',
+            $query
+        );
+
     }
 
     public function testMakeColumnAlias() {
@@ -976,16 +996,30 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
         );
     }
 
-    public function testGetShortAlias() {
+    public function testGetShortJoinAlias() {
         $dbSelect = static::getNewSelect();
         static::assertEquals(
             'Admins',
-            $this->callObjectMethod($dbSelect, 'getShortAlias', ['Admins'])
+            $this->callObjectMethod($dbSelect, 'getShortJoinAlias', ['Admins'])
         );
         for ($i = 0; $i < 30; $i++) {
             // it uses rand so it will be better to test it many times
-            $alias = $this->callObjectMethod($dbSelect, 'getShortAlias', ['SomeTooLongTableAliasToMakeSystemShortenIt']);
-            static::assertNotEquals('Admins', $alias);
+            $alias = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', ['SomeTooLongTableAliasToMakeSystemShortenIt']);
+            static::assertNotEquals('SomeTooLongTableAliasToMakeSystemShortenIt', $alias);
+            static::assertRegExp('%^[a-z][a-z0-9]+$%', $alias);
+        }
+    }
+
+    public function testGetShortColumnAlias() {
+        $dbSelect = static::getNewSelect();
+        static::assertEquals(
+            'parent_id',
+            $this->callObjectMethod($dbSelect, 'getShortColumnAlias', ['parent_id'])
+        );
+        for ($i = 0; $i < 30; $i++) {
+            // it uses rand so it will be better to test it many times
+            $alias = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', ['SomeTooLongColumnAliasToMakeSystemShortenIt']);
+            static::assertNotEquals('SomeTooLongColumnAliasToMakeSystemShortenIt', $alias);
             static::assertRegExp('%^[a-z][a-z0-9]+$%', $alias);
         }
     }
@@ -1280,5 +1314,9 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             'SELECT "Admins"."colname" AS "_Admins__colname", "Admins"."colname2" AS "_Admins__colname2", "Admins"."colname3" AS "_Admins__colname3", "Admins".*, "Test"."admin_id" AS "_Test__admin_id", "Test"."value" AS "_Test__setting_value" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."settings" AS "Test" ON ("Admins"."id" = "Test"."admin_id") WHERE "Admins"."colname" = \'value\' AND ("Admins"."colname2" = \'value2\' OR "Admins"."colname3" = \'value3\') GROUP BY "Admins"."colname", "Test"."admin_id" HAVING "Admins"."colname3" = \'value\' AND "Test"."admin_id" > \'1\' ORDER BY "Admins"."colname" ASC, "Test"."admin_id" DESC LIMIT 10 OFFSET 20',
             static::getNewSelect()->fromConfigsArray($configs)->getQuery()
         );
+    }
+
+    public function testNormalizeRecord() {
+        // todo: add tests
     }
 }
