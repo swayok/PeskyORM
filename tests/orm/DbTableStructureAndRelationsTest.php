@@ -70,7 +70,7 @@ class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testTableStructureRelations() {
-        static::assertCount(1, TestingAdminsTableStructure::getRelations());
+        static::assertCount(3, TestingAdminsTableStructure::getRelations());
         static::assertTrue(TestingAdminsTableStructure::hasRelation('Parent'));
         static::assertFalse(TestingAdminsTableStructure::hasRelation('Abrakadabra'));
         $relation = TestingAdminsTableStructure::getRelation('Parent');

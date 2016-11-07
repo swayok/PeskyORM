@@ -558,7 +558,7 @@ class DbSelect {
         if ($isDbExpr) {
             $this->orderBy[] = $columnName;
         } else {
-            $columnInfo = $this->analyzeColumnName($columnName);
+            $columnInfo = $this->analyzeColumnName($columnName, null, null, 'ORDER BY');
             $key = ($columnInfo['join_name'] ?: $this->getTableAlias()) . '.' . $columnInfo['name'];
             $columnInfo['direction'] = $isAscending ? 'ASC' : 'DESC';
             $this->orderBy[$key] = $columnInfo;
@@ -592,7 +592,7 @@ class DbSelect {
             if ($columnName instanceof DbExpr) {
                 $this->groupBy[] = $columnName;
             } else if (is_string($columnName)) {
-                $columnInfo = $this->analyzeColumnName($columnName);
+                $columnInfo = $this->analyzeColumnName($columnName, null, null, 'GROUP BY');
                 $key = ($columnInfo['join_name'] ?: $this->getTableAlias()) . '.' . $columnInfo['name'];
                 $this->groupBy[$key] = $columnInfo;
             } else {
@@ -741,10 +741,10 @@ class DbSelect {
     }
 
     protected function processRawColumns() {
-        $this->columns = $this->normalizeColumnsList($this->columnsRaw, null, true);
+        $this->columns = $this->normalizeColumnsList($this->columnsRaw, null, true, 'SELECT');
         if (empty($this->columns)) {
-            throw new \InvalidArgumentException(
-                '$columns argument must contain at least 1 column to be selected from main table'
+            throw new \UnexpectedValueException(
+                'Failed to assemble DB query: there is no columns to be selected from main table'
             );
         }
         return $this;
@@ -798,16 +798,18 @@ class DbSelect {
      * @param DbExpr|string $columnName
      * @param string|null $columnAlias
      * @param string|null $joinName
+     * @param string $errorsPrefix - prefix for error messages
      * @return array - contains keys: 'name', 'alias', 'join_name', 'type_cast'. All keys are strings or nulls (except 'name')
      * @throws \InvalidArgumentException
      */
-    protected function analyzeColumnName($columnName, $columnAlias = null, $joinName = null) {
+    protected function analyzeColumnName($columnName, $columnAlias = null, $joinName = null, $errorsPrefix = '') {
         $typeCast = null;
+        $errorsPrefix = trim((string)$errorsPrefix) === '' ? '' : $errorsPrefix . ': ';
         $isDbExpr = $columnName instanceof DbExpr;
         if (!is_string($columnName) && !$isDbExpr) {
-            throw new \InvalidArgumentException('$columnName argument must be a string or instance of DbExpr class');
+            throw new \InvalidArgumentException($errorsPrefix . '$columnName argument must be a string or instance of DbExpr class');
         } else if (!$isDbExpr && $columnName === '') {
-            throw new \InvalidArgumentException('$columnName argument is not allowed to be an empty string');
+            throw new \InvalidArgumentException($errorsPrefix . '$columnName argument is not allowed to be an empty string');
         }
         /** @var DbExpr|string $columnName */
         $cacheKey = ($isDbExpr ? $columnName->get() : $columnName) . "_{$columnAlias}_{$joinName}";
@@ -815,14 +817,14 @@ class DbSelect {
             return $this->analyzedColumns[$cacheKey];
         }
         if ($columnAlias !== null && !is_string($columnAlias)) {
-            throw new \InvalidArgumentException('$alias argument must be a string or null');
+            throw new \InvalidArgumentException($errorsPrefix . '$alias argument must be a string or null');
         } else if ($columnAlias === '') {
-            throw new \InvalidArgumentException('$alias argument is not allowed to be an empty string');
+            throw new \InvalidArgumentException($errorsPrefix . '$alias argument is not allowed to be an empty string');
         }
         if ($joinName !== null && !is_string($joinName)) {
-            throw new \InvalidArgumentException('$joinName argument must be a string or null');
+            throw new \InvalidArgumentException($errorsPrefix . '$joinName argument must be a string or null');
         } else if ($joinName === '') {
-            throw new \InvalidArgumentException('$joinName argument is not allowed to be an empty string');
+            throw new \InvalidArgumentException($errorsPrefix . '$joinName argument is not allowed to be an empty string');
         }
         if (!$isDbExpr) {
             $columnName = trim($columnName);
@@ -843,7 +845,7 @@ class DbSelect {
                 list(, $joinName, $columnName) = $columnParts;
             }
             if (!$this->getConnection()->isValidDbEntityName($columnName)) {
-                throw new \InvalidArgumentException("Invalid column name or json selector: [$columnName]");
+                throw new \InvalidArgumentException("{$errorsPrefix}Invalid column name or json selector: [$columnName]");
             }
             if ($columnName === '*') {
                 $typeCast = null;
@@ -911,9 +913,10 @@ class DbSelect {
 
     /**
      * @param array $columnInfo - return of $this->analyzeColumnName($columnName)
+     * @param string $subject - may be used for exception messages in child classes
      * @return string `TableAlias`.`column_name`::typecast
      */
-    protected function makeColumnNameForCondition(array $columnInfo) {
+    protected function makeColumnNameForCondition(array $columnInfo, $subject = 'WHERE') {
         $tableAlias = $columnInfo['join_name'] ?: $this->getTableAlias();
         $columnName = $this->quoteDbEntityName($this->getShortJoinAlias($tableAlias)) . '.' . $this->quoteDbEntityName($columnInfo['name']);
         if ($columnInfo['type_cast']) {
@@ -942,7 +945,7 @@ class DbSelect {
     protected function getShortJoinAlias($alias) {
         if (!array_key_exists($alias, $this->shortJoinAliases)) {
             // maybe it is already an alias?
-            if (!preg_match('%^[a-z][a-zA-Z0-9]{8}\d$%', $alias) || !in_array($alias, $this->shortJoinAliases, true)) {
+            if (preg_match('%^[a-z][a-zA-Z0-9]{8}\d$%', $alias) && in_array($alias, $this->shortJoinAliases, true)) {
                 return $alias;
                 // todo: should it throw an exception instead?
             }
@@ -983,11 +986,12 @@ class DbSelect {
      * @param array $columns
      * @param null $joinName
      * @param bool $allowSubJoins - true: allow colums like ['Join1' => ['Join2.*']]
+     * @param string $subject - prefix used for error messages
      * @return array
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      */
-    protected function normalizeColumnsList(array $columns, $joinName = null, $allowSubJoins = false) {
+    protected function normalizeColumnsList(array $columns, $joinName = null, $allowSubJoins = false, $subject = 'SELECT') {
         if (count($columns) === 1 && is_array($columns[0])) {
             /** @var array $columns */
             $columns = $columns[0];
@@ -1033,7 +1037,7 @@ class DbSelect {
                     $this->normalizeWildcardColumn($joinName)
                 );
             } else {
-                $columnInfo = $this->analyzeColumnName($columnName, $columnAlias, $joinName);
+                $columnInfo = $this->analyzeColumnName($columnName, $columnAlias, $joinName, $subject);
                 if ($columnInfo['join_name'] !== $joinName) {
                     // Note: ($joinName === null) restricts situation like
                     // new DbJoinConfig('Join2')->setForeignColumnsToSelect(['SomeOtehrJoin.col'])
@@ -1064,7 +1068,7 @@ class DbSelect {
      * @throws \InvalidArgumentException
      */
     protected function normalizeWildcardColumn($joinName = null) {
-        return [$this->analyzeColumnName('*', null, $joinName)];
+        return [$this->analyzeColumnName('*', null, $joinName, 'SELECT')];
     }
 
     /**
@@ -1100,9 +1104,9 @@ class DbSelect {
         $assembled = Utils::assembleWhereConditionsFromArray(
             $this->getConnection(),
             $conditions,
-            function ($columnName) use ($joinName) {
-                $columnInfo = $this->analyzeColumnName($columnName, null, $joinName);
-                return $this->makeColumnNameForCondition($columnInfo);
+            function ($columnName) use ($joinName, $subject) {
+                $columnInfo = $this->analyzeColumnName($columnName, null, $joinName, $subject);
+                return $this->makeColumnNameForCondition($columnInfo, $subject);
             },
             'AND',
             function ($columnName, $rawValue) {
@@ -1122,7 +1126,7 @@ class DbSelect {
             if ($column instanceof DbExpr) {
                 $groups[] = $this->quoteDbExpr($column);
             } else {
-                $groups[] = $this->makeColumnNameForCondition($column);
+                $groups[] = $this->makeColumnNameForCondition($column, 'GROUP BY');
             }
         }
         return count($groups) ? ' GROUP BY ' . implode(', ', $groups) : '';
@@ -1137,7 +1141,7 @@ class DbSelect {
             if ($columnInfo instanceof DbExpr) {
                 $orders[] = $columnInfo->get();
             } else {
-                $orders[] = $this->makeColumnNameForCondition($columnInfo) . ' ' . $columnInfo['direction'];
+                $orders[] = $this->makeColumnNameForCondition($columnInfo, 'ORDER BY') . ' ' . $columnInfo['direction'];
             }
         }
         return count($orders) ? ' ORDER BY ' . implode(', ', $orders) : '';
@@ -1219,7 +1223,9 @@ class DbSelect {
             }
             $joinColumns = $this->normalizeColumnsList(
                 $joinConfig->getForeignColumnsToSelect(),
-                $joinConfig->getJoinName()
+                $joinConfig->getJoinName(),
+                false,
+                'JOIN [' . $joinConfig->getJoinName() . ']'
             );
             foreach ($joinColumns as $columnInfo) {
                 if (is_string($columnInfo)) {
@@ -1340,11 +1346,11 @@ class DbSelect {
     /**
      * @param string $joinName
      * @return DbJoinConfig|OrmJoinConfig
-     * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
      */
     protected function getJoin($joinName) {
         if (!$this->hasJoin($joinName, true)) {
-            throw new \InvalidArgumentException("Join config with name [{$joinName}] not found");
+            throw new \UnexpectedValueException("Join config with name [{$joinName}] not found");
         }
         if (array_key_exists($joinName, $this->joins)) {
             return $this->joins[$joinName];

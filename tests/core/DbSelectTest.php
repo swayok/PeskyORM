@@ -473,6 +473,10 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             rtrim($dbSelect->columns(['id'])->getQuery())
         );
         static::assertEquals(
+            'SELECT "Admins"."id"::integer AS "_Admins__id" FROM "public"."admins" AS "Admins"',
+            rtrim($dbSelect->columns(['id::integer'])->getQuery())
+        );
+        static::assertEquals(
             'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins"',
             rtrim($dbSelect->columns(['Admins.id'])->getQuery())
         );
@@ -575,7 +579,15 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
         );
         static::assertEquals(
             'SELECT "Admins".* FROM "public"."admins" AS "Admins" ORDER BY "Admins"."id" DESC',
-            $dbSelect->orderBy('Admins.id', false)->getQuery()
+            $dbSelect->orderBy('Admins.id', false, true)->getQuery()
+        );
+        static::assertEquals(
+            'SELECT "Admins".* FROM "public"."admins" AS "Admins" ORDER BY "Admins"."id"::integer ASC',
+            $dbSelect->orderBy('Admins.id::integer', true, true)->getQuery()
+        );
+        static::assertEquals(
+            'SELECT "Admins".* FROM "public"."admins" AS "Admins" ORDER BY "Admins"."id" DESC',
+            $dbSelect->orderBy('Admins.id', false, true)->getQuery()
         );
         static::assertEquals(
             'SELECT "Admins".* FROM "public"."admins" AS "Admins" ORDER BY "Admins"."id" DESC, "Admins"."email" DESC',
@@ -961,8 +973,8 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             'makeTableNameWithAliasForQuery',
             ['admins', 'SomeTooLongTableAliasToMakeSystemShortenIt', 'other']
         );
-        static::assertRegExp('%"other"\."admins" AS "[a-z][a-z0-9]+"%', $expr);
         static::assertNotEquals('"other"."admins" AS "SomeTooLongTableAliasToMakeSystemShortenIt"', $expr);
+        static::assertRegExp('%"other"\."admins" AS "[a-z][a-z0-9]+[0-9]"%', $expr);
     }
 
     public function testMakeColumnNameForCondition() {

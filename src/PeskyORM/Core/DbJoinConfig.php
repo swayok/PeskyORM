@@ -226,6 +226,13 @@ class DbJoinConfig {
     }
 
     /**
+     * @return bool
+     */
+    protected function hasTableName() {
+        return !empty($this->tableName);
+    }
+
+    /**
      * @param string $tableName
      * @return $this
      * @throws \InvalidArgumentException
@@ -321,7 +328,7 @@ class DbJoinConfig {
      */
     public function isValid() {
         return (
-            !empty($this->getTableName())
+            $this->hasTableName()
             && !empty($this->getColumnName())
             && !empty($this->getForeignTableName())
             && !empty($this->getForeignColumnName())

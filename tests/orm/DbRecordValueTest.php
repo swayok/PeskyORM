@@ -219,7 +219,7 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException \BadMethodCallException
-     * @expectedExceptionMessage Value for column 'parent_id' is not set and default value cannot be set because
+     * @expectedExceptionMessage Value for column 'parent_id' is not set
      */
     public function testInvalidGetValue() {
         $valueObj = DbRecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_()->setId(1));

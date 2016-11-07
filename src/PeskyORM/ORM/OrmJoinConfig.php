@@ -85,6 +85,13 @@ class OrmJoinConfig extends DbJoinConfig {
     }
 
     /**
+     * @return bool
+     */
+    protected function hasTableName() {
+        return !empty($this->getDbTable());
+    }
+
+    /**
      * @return DbTableInterface
      */
     public function getDbTable() {
@@ -134,15 +141,18 @@ class OrmJoinConfig extends DbJoinConfig {
             $columns = $columns[0];
         }
         $this->foreignColumnsToSelect = [];
+        $tableStruct = $this->getForeignDbTable()->getTableStructure();
         foreach ($columns as $columnAlias => $columnName) {
             if ($columnName !== '*') {
                 if (!is_string($columnName)) {
                     throw new \InvalidArgumentException(
                         "\$columns argument contains non-string column name on key '{$columnAlias}' for join named '{$this->getJoinName()}'"
                     );
-                } else if (!$this->getForeignDbTable()->getTableStructure()->hasColumn($columnName)) {
+                } else if (!$tableStruct->hasColumn($columnName)) {
                     throw new \InvalidArgumentException(
-                        "\$columns argument contains unknown column '{$columnName}' on key '{$columnAlias}' for join named '{$this->getJoinName()}'"
+                        "Column with name [{$this->getJoinName()}.{$columnName}]"
+                            . (is_int($columnAlias) ? '' : " and alias [{$columnAlias}]")
+                            . ' not found in ' . get_class($tableStruct)
                     );
                 }
                 $this->foreignColumnsToSelect[$columnAlias] = $columnName;

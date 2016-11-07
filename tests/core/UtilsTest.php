@@ -390,8 +390,8 @@ class UtilsTest extends \PHPUnit_Framework_TestCase {
                 [DbExpr::create('`col` = ``value``')],
                 $columnQuoter,
                 'AND',
-                function ($colName, $value, $connection) {
-                    throw new \UnexpectedValueException("Value [$value] for column name [$colName] is invalid");
+                function ($colName, $value, \PeskyORM\Core\DbAdapterInterface $connection) {
+                    return $connection->quoteDbExpr($value);
                 }
             )
         );

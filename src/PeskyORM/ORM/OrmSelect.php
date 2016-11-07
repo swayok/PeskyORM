@@ -57,34 +57,6 @@ class OrmSelect extends DbSelect {
         parent::__construct($table::getName(), $table::getConnection());
     }
 
-    /*protected function parseNormalizedConfigsArray(array $conditionsAndOptions) {
-        if (!empty($conditionsAndOptions['CONTAINS'])) {
-            foreach ($conditionsAndOptions['CONTAINS'] as $relation) {
-                $this->addRelation($relation);
-            }
-        }
-        unset($conditionsAndOptions['CONTAINS']);
-        parent::parseNormalizedConfigsArray($conditionsAndOptions);
-    }*/
-
-    /*protected function normalizeConditionsAndOptionsArray(array $conditionsAndOptions) {
-        $conditionsAndOptions = parent::normalizeConditionsAndOptionsArray($conditionsAndOptions);
-        if (array_key_exists('CONTAIN', $conditionsAndOptions)) {
-            $conditionsAndOptions['CONTAINS'] = $conditionsAndOptions['CONTAIN'];
-            unset($conditionsAndOptions['CONTAIN']);
-        }
-        if (array_key_exists('CONTAINS', $conditionsAndOptions) && !is_array($conditionsAndOptions['CONTAINS'])) {
-            if (is_string($conditionsAndOptions['CONTAINS'])) {
-                $conditionsAndOptions['CONTAINS'] = [$conditionsAndOptions['CONTAINS']];
-            } else {
-                throw new \InvalidArgumentException(
-                    'Key "CONTAINS" in $conditionsAndOptions argument must be an array or a string'
-                );
-            }
-        }
-        return $conditionsAndOptions;
-    }*/
-
     /**
      * @return DbRecord
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
@@ -111,112 +83,6 @@ class OrmSelect extends DbSelect {
     public function getTableStructure() {
         return $this->tableStructure;
     }
-    
-    /**
-     * Build valid 'JOIN' settings from 'CONTAIN' table aliases
-     * @param array $conditionsAndOptions
-     * @return mixed $where
-     */
-    /*public function resolveContains(array $conditionsAndOptions) {
-        if (is_array($conditionsAndOptions)) {
-            if (!empty($conditionsAndOptions['CONTAIN'])) {
-                if (!is_array($conditionsAndOptions['CONTAIN'])) {
-                    $conditionsAndOptions['CONTAIN'] = [$conditionsAndOptions['CONTAIN']];
-                }
-                $conditionsAndOptions['JOIN'] = [];
-
-                foreach ($conditionsAndOptions['CONTAIN'] as $alias => $columns) {
-                    if (is_int($alias)) {
-                        $alias = $columns;
-                        $columns = !empty($relation['fields']) ? $relation['fields'] : '*';
-                    }
-                    $relationConfig = $this->getTableRealtaion($alias);
-                    if ($relationConfig->getType() === DbTableRelation::HAS_MANY) {
-                        throw new DbModelException($this, "Queries with one-to-many joins are not allowed via 'CONTAIN' key");
-                    } else {
-                        $model = $this->getRelatedModel($alias);
-                        $additionalConditions = $relationConfig->getAdditionalJoinConditions();
-                        $joinType = $relationConfig->getJoinType();
-                        if (is_array($columns)) {
-                            if (isset($columns['TYPE'])) {
-                                $joinType = $columns['TYPE'];
-                            }
-                            unset($columns['TYPE']);
-                            if (isset($columns['CONDITIONS'])) {
-                                $additionalConditions = array_replace_recursive($additionalConditions, $columns['CONDITIONS']);
-                            }
-                            unset($columns['CONDITIONS']);
-                            if (!empty($columns['CONTAIN'])) {
-                                $subContains = ['CONTAIN' => $columns['CONTAIN']];
-                            }
-                            unset($columns['CONTAIN']);
-                            if (empty($columns)) {
-                                $columns = '*';
-                            }
-                        }
-
-                        $conditionsAndOptions['JOIN'][$alias] = DbJoinConfig::create($alias)
-                            ->setConfigForLocalTable($this, $relationConfig->getColumn())
-                            ->setJoinType($joinType)
-                            ->setConfigForForeignTable($model, $relationConfig->getForeignColumn())
-                            ->setAdditionalJoinConditions($additionalConditions)
-                            ->setForeignColumnsToSelect($columns)
-                            ->getConfigsForDbQuery();
-
-                        if (!empty($subContains)) {
-                            $subJoins = $model->resolveContains($subContains);
-                            $conditionsAndOptions['JOIN'] = array_merge($conditionsAndOptions['JOIN'], $subJoins['JOIN']);
-                        }
-                    }
-                }
-                if (empty($conditionsAndOptions['JOIN'])) {
-                    unset($conditionsAndOptions['JOIN']);
-                }
-            }
-            unset($conditionsAndOptions['CONTAIN']);
-        }
-        return $conditionsAndOptions;
-    }*/
-
-    /**
-     * @param string $relationName
-     * @param null|array $columns
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     */
-    /*public function contain($relationName, $columns = null) {
-        if ($columns !== null && !is_array($columns)) {
-            throw new \InvalidArgumentException('$columns argument must be an array or null');
-        }
-        $columns = ($columns === null) ? [] : $this->normalizeColumnsList($columns);
-        $this->contains[$relationName] = compact('columns', 'conditions');
-        // todo: covert DbTableRelation to DbJoinConfig and add it as join
-    }*/
-
-    /**
-     * @param array $columns
-     * @param null $joinName
-     * @return array
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     */
-    /*protected function normalizeColumnsList(array $columns, $joinName = null) {
-        foreach ($columns as $columnAlias => $columnName) {
-            if (
-                !is_numeric($columnAlias)
-                && !$this->hasJoin($columnAlias)
-            ) {
-                if ($joinName === null && $this->getTable()->hasRelation($columnAlias)) {
-                    $this->contain($columnAlias, null, []);
-                } else if (($foreignTable = $this->getJoin($joinName)->getForeignDbTable())->hasRelation($columnAlias)) {
-                    $this->contain($columnAlias, null, [], $foreignTable);
-                }
-            }
-        }
-        return parent::normalizeColumnsList($columns, $joinName);
-    }*/
 
     /**
      * @param OrmJoinConfig $joinConfig
@@ -248,8 +114,16 @@ class OrmSelect extends DbSelect {
             $this->setDirty('columns');
             $this->setDirty('where');
             $this->setDirty('having');
+            $this->setDirty('orderBy');
+            $this->setDirty('groupBy');
         }
-        if ($this->isDirty('columns') || $this->isDirty('where') || $this->isDirty('having')) {
+        if (
+            $this->isDirty('columns')
+            || $this->isDirty('where')
+            || $this->isDirty('having')
+            || $this->isDirty('orderBy')
+            || $this->isDirty('groupBy')
+        ) {
             // remove all joins that were added to OrmSelect via indirect usage of relations
             foreach ($this->joinsAddedByRelations as $joinName) {
                 unset($this->joins[$joinName]);
@@ -263,12 +137,24 @@ class OrmSelect extends DbSelect {
         parent::beforeQueryBuilding();
     }
 
+    protected function processRawColumns() {
+        parent::processRawColumns();
+        foreach ($this->columnsToSelectFromJoinedRelations as $joinName => $columns) {
+            try {
+                $this->getJoin($joinName)->setForeignColumnsToSelect(empty($columns) ? [] : $columns);
+            } catch (\InvalidArgumentException $exc) {
+                throw new \UnexpectedValueException('SELECT: ' . $exc->getMessage(), 0);
+            }
+        }
+        return $this;
+    }
+
     protected function normalizeWildcardColumn($joinName = null) {
         if ($joinName === null) {
             $normalizedColumns = [];
             foreach ($this->getTableStructure()->getColumns() as $columnName => $config) {
                 if ($config->isItExistsInDb()) {
-                    $normalizedColumns[] = $this->analyzeColumnName($columnName);
+                    $normalizedColumns[] = $this->analyzeColumnName($columnName, null, null, 'SELECT');
                 }
             }
             return $normalizedColumns;
@@ -309,13 +195,6 @@ class OrmSelect extends DbSelect {
             $this->columnsToSelectFromJoinedRelations[$joinName] = $filteredColumns;
         }
         $this->joinedRelationsParents[$joinName] = $parentJoinName;
-    }
-
-    protected function collectJoinedColumnsForQuery() {
-        foreach ($this->columnsToSelectFromJoinedRelations as $joinName => $columns) {
-            $this->getJoin($joinName)->setForeignColumnsToSelect(empty($columns) ? [] : $columns);
-        }
-        return parent::collectJoinedColumnsForQuery();
     }
 
     /**
@@ -402,7 +281,7 @@ class OrmSelect extends DbSelect {
             $this->getConnection(),
             $conditions,
             function ($columnName) use ($subject, $joinName) {
-                $columnInfo = $this->analyzeColumnName($columnName, $joinName);
+                $columnInfo = $this->analyzeColumnName($columnName, null, $joinName, $subject);
                 return $this->makeColumnNameForCondition($columnInfo, $subject);
             },
             'AND',
@@ -410,7 +289,7 @@ class OrmSelect extends DbSelect {
                 if ($value instanceof DbExpr) {
                     return $this->quoteDbExpr($value);
                 } else if (!($columnName instanceof DbExpr)) {
-                    $columnInfo = $this->analyzeColumnName($columnName, $joinName);
+                    $columnInfo = $this->analyzeColumnName($columnName, null, $joinName, $subject);
                     if ($columnInfo['join_name'] === null) {
                         $errors = $this->getTableStructure()->getColumn($columnInfo['name'])->validateValue($value);
                     } else {
@@ -453,7 +332,7 @@ class OrmSelect extends DbSelect {
 
     /**
      * @param array $columnInfo
-     * @param string $subject - used in exceptions, can be 'SELECT', 'WHERE' or 'HAVING'
+     * @param string $subject - used in exceptions, can be 'SELECT', 'ORDER BY', 'GROUP BY', 'WHERE' or 'HAVING'
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -462,11 +341,11 @@ class OrmSelect extends DbSelect {
         if ($columnInfo['name'] instanceof DbExpr) {
             if (
                 $columnInfo['name']->isValidationAllowed()
-                && preg_match_all('%`(.+)`\.`(.+)`(?!\.)%', $columnInfo['name']->get(), $matches)
+                && preg_match_all('%`([a-zA-Z_][a-zA-Z_0-9]+)`\.`([a-zA-Z_][a-zA-Z_0-9]+)`(?!\.)%', $columnInfo['name']->get(), $matches)
             ) {
                 foreach ($matches[1] as $index => $joinName) {
                     $this->validateColumnInfo(
-                        $this->analyzeColumnName($matches[2][$index], null, $joinName),
+                        $this->analyzeColumnName($matches[2][$index], null, $joinName, $subject),
                         $subject
                     );
                 }
@@ -476,7 +355,7 @@ class OrmSelect extends DbSelect {
                 $isValid = $this->getTableStructure()->hasColumn($columnInfo['name']);
                 if (!$isValid) {
                     throw new \UnexpectedValueException(
-                        "{$subject}: column with name [{$columnInfo['name']}] not found in "
+                        "{$subject}: Column with name [{$columnInfo['name']}] not found in "
                             . get_class($this->getTableStructure())
                     );
                 }
@@ -488,19 +367,12 @@ class OrmSelect extends DbSelect {
                 $isValid = $foreignTableStructure->hasColumn($columnInfo['name']);
                 if (!$isValid) {
                     throw new \UnexpectedValueException(
-                        "{$subject}: column with name [{$columnInfo['join_name']}.{$columnInfo['name']}] not found in "
+                        "{$subject}: Column with name [{$columnInfo['join_name']}.{$columnInfo['name']}] not found in "
                             . get_class($foreignTableStructure)
                     );
                 }
             }
         }
     }
-
-    /*protected function addRelation(DbTableRelation $relation) {
-        if (!array_key_exists($relation->getName(), $this->relations)) {
-            throw new \InvalidArgumentException("Relation with name '{$relation->getName()}' already defined");
-        }
-        $this->relations[$relation->getName()] = $relation;
-    }*/
 
 }
