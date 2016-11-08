@@ -1358,4 +1358,10 @@ class DbSelect {
             return $this->joins[array_flip($this->shortJoinAliases)[$joinName]];
         }
     }
+
+    public function __clone() {
+        foreach ($this->joins as $key => $joinConfig) {
+            $this->joins[$key] = clone $joinConfig;
+        }
+    }
 }

@@ -653,21 +653,18 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
         } else {
             $columns[] = static::getPrimaryKeyColumnName();
         }
-        $hasOneAndBelongsToRelations = [];
+        $columnsFromRelations = [];
         $hasManyRelations = [];
         foreach ($readRelatedRecords as $relationName) {
             if (static::getRelation($relationName)->getType() === DbTableRelation::HAS_MANY) {
                 $hasManyRelations[] = $relationName;
             } else {
-                $hasOneAndBelongsToRelations[] = $relationName;
+                $columnsFromRelations[$relationName] = '*';
             }
         }
         $record = static::getTable()->selectOne(
-            array_unique($columns),
-            array_merge(
-                $conditionsAndOptions,
-                ['CONTAIN' => $hasOneAndBelongsToRelations]
-            )
+            array_merge(array_unique($columns), $columnsFromRelations),
+            $conditionsAndOptions
         );
         if (!empty($record)) {
             $this->fromDbData($record);

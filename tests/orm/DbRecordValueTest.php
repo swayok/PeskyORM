@@ -19,6 +19,14 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
     }
 
     /**
+     * @param $columnName
+     * @return DbTableColumn
+     */
+    protected function getClonedColumn($columnName) {
+        return clone TestingAdminsTableStructure::getColumn($columnName);
+    }
+
+    /**
      * @param DbRecordValue $object
      * @param string $propertyName
      * @return mixed
@@ -135,7 +143,7 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Default value for column 'language' is not valid
      */
     public function testInvalidDefaultValue() {
-        $col = TestingAdminsTableStructure::getColumn('language')->setDefaultValue('invalid');
+        $col = $this->getClonedColumn('language')->setDefaultValue('invalid');
         $valueObj = DbRecordValue::create($col, TestingAdmin::_());
         $valueObj->getDefaultValue();
     }
@@ -145,7 +153,7 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Fallback value of the default value for column 'parent_id' is not valid. Errors: Null value is not allowed
      */
     public function testInvalidDefaultValue2() {
-        $valueObj = DbRecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
+        $valueObj = DbRecordValue::create($this->getClonedColumn('parent_id')->valueIsNotNullable(), TestingAdmin::_());
         $valueObj->getDefaultValue();
     }
 
@@ -155,7 +163,7 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
      */
     public function testInvalidDefaultValue3() {
         $valueObj = DbRecordValue::create(
-            TestingAdminsTableStructure::getColumn('parent_id')->setDefaultValue(null),
+            $this->getClonedColumn('parent_id')->valueIsNotNullable()->setDefaultValue(null),
             TestingAdmin::_()
         );
         $valueObj->getDefaultValue();
@@ -167,9 +175,11 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
      */
     public function testInvalidDefaultValue4() {
         $valueObj = DbRecordValue::create(
-            TestingAdminsTableStructure::getColumn('parent_id')->setValidDefaultValueGetter(function () {
-                return null;
-            }),
+            $this->getClonedColumn('parent_id')
+                ->valueIsNotNullable()
+                ->setValidDefaultValueGetter(function () {
+                    return null;
+                }),
             TestingAdmin::_()
         );
         $valueObj->getDefaultValue();
@@ -178,6 +188,11 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
     public function testDefaultValue() {
         $record = TestingAdmin::_();
 
+        $valueObj = DbRecordValue::create( TestingAdminsTableStructure::getColumn('parent_id'), $record);
+        static::assertFalse($valueObj->hasDefaultValue());
+        static::assertFalse($valueObj->hasValue());
+        static::assertNull($valueObj->getDefaultValueOrNull());
+
         $langCol = TestingAdminsTableStructure::getColumn('language');
         $valueObj = DbRecordValue::create($langCol, $record);
         static::assertTrue($valueObj->hasDefaultValue());
@@ -185,7 +200,8 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($valueObj->hasValue());
         static::assertTrue($valueObj->hasValueOrDefault());
         static::assertEquals($langCol->getValidDefaultValue(), $valueObj->getDefaultValue());
-        static::assertEquals($langCol->getValidDefaultValue(), $valueObj->getValue());
+        static::assertEquals($langCol->getValidDefaultValue(), $valueObj->getValueOrDefault());
+        static::assertFalse($valueObj->hasValue());
 
         $langCol->setDefaultValue(function () {
             return 'de';
@@ -194,16 +210,18 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         static::assertTrue($valueObj->isDefaultValueCanBeSet());
         static::assertFalse($valueObj->hasValue());
         static::assertTrue($valueObj->hasValueOrDefault());
+        static::assertFalse($valueObj->hasValue());
         static::assertEquals('de', $valueObj->getDefaultValue());
-        static::assertEquals('de', $valueObj->getValue());
+        static::assertEquals('de', $valueObj->getValueOrDefault());
 
         $langCol->setDefaultValue(DbExpr::create('test2'));
         static::assertTrue($valueObj->hasDefaultValue());
         static::assertTrue($valueObj->isDefaultValueCanBeSet());
         static::assertFalse($valueObj->hasValue());
         static::assertTrue($valueObj->hasValueOrDefault());
+        static::assertFalse($valueObj->hasValue());
         static::assertInstanceOf(DbExpr::class, $valueObj->getDefaultValue());
-        static::assertInstanceOf(DbExpr::class, $valueObj->getValue());
+        static::assertInstanceOf(DbExpr::class, $valueObj->getValueOrDefault());
 
         $valueObj->setRawValue('ru', 'ru', false)->setValidValue('ru', 'ru');
         static::assertEquals('ru', $valueObj->getValue());

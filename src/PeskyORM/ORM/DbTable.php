@@ -327,7 +327,9 @@ abstract class DbTable implements DbTableInterface {
      */
     static public function hasMatchingRecord(array $conditions, \Closure $configurator = null) {
         $callback = function (OrmSelect $select) use ($configurator) {
-            call_user_func($configurator, $select);
+            if ($configurator) {
+                call_user_func($configurator, $select);
+            }
             $select->offset(0)->limit(1)->removeOrdering();
         };
         return (int)static::selectValue(DbExpr::create('1'), $conditions, $callback) === 1;
