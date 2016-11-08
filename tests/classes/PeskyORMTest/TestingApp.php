@@ -24,6 +24,8 @@ class TestingApp {
                 DbConnectionsManager::ADAPTER_POSTGRES,
                 PostgresConfig::fromArray(static::getGlobalConfigs()['pgsql'])
             );
+            static::$dbConnection->query('SET LOCAL TIME ZONE "UTC"');
+            date_default_timezone_set('UTC');
         }
     }
 
@@ -51,12 +53,14 @@ class TestingApp {
     }
 
     static public function fillAdminsTable($limit = 0) {
+        static::$dbConnection->exec('TRUNCATE TABLE admins');
         $data = static::getRecordsForDb('admins', $limit);
         static::$dbConnection->insertMany('admins', array_keys($data[0]), $data);
         return $data;
     }
 
     static public function fillSettingsTable($limit = 0) {
+        static::$dbConnection->exec('TRUNCATE TABLE settings');
         $data = static::getRecordsForDb('settings', $limit);
         static::$dbConnection->insertMany('settings', array_keys($data[0]), $data);
         return $data;

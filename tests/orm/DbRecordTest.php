@@ -440,8 +440,32 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         );
     }
 
+    /**
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage Related record with name 'Parent' is not set and autoloading is disabled
+     */
+    public function testInvalidRelationRequestInToArray1() {
+        TestingAdmin::fromArray(['id' => 1])->toArrayWithoutFiles(['id'], ['Parent']);
+    }
+
+    /**
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage Related record with name 'Children' is not set and autoloading is disabled
+     */
+    public function testInvalidRelationRequestInToArray2() {
+        TestingAdmin::fromArray(['id' => 1])->toArrayWithoutFiles(['id'], ['Children']);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Table has no relation named 'Invalid'
+     */
+    public function testInvalidRelationRequestInToArray3() {
+        TestingAdmin::fromArray(['id' => 1])->toArrayWithoutFiles(['id'], ['Invalid']);
+    }
+
     public function testToArray() {
-        // toArray, toArrayWitoutFiles
+        // toArray, toArrayWithoutFiles
         $rec = TestingAdmin::fromArray([]);
         static::assertEquals(
             [
@@ -461,7 +485,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
                 'email' => null,
                 'timezone' => 'UTC'
             ],
-            $rec->toArrayWitoutFiles()
+            $rec->toArrayWithoutFiles()
         );
 
         $admin = $this->getDataForSingleAdmin(true);
@@ -476,19 +500,49 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
 
         $adminNoId = $this->getDataForSingleAdmin(false);
         $adminNoIdNormalized = $this->normalizeAdmin($adminNoId);
-        $toArray = $rec->fromData($adminNoId)->toArrayWitoutFiles();
-        $toArrayPartial = $rec->toArrayWitoutFiles(['id', 'parent_id', 'login', 'role']);
+        $toArray = $rec->fromData($adminNoId)->toArrayWithoutFiles();
+        $toArrayPartial = $rec->toArrayWithoutFiles(['id', 'parent_id', 'login', 'role']);
         static::assertEquals(array_merge(['id' => null], $adminNoIdNormalized), $toArray);
         static::assertEquals(array_intersect_key(array_merge(['id' => null], $adminNoIdNormalized), $toArrayPartial), $toArrayPartial);
 
         $adminNoId['Parent'] = $adminNoId;
-        $toArrayRelation = $rec->fromData($adminNoId)->toArrayWitoutFiles(['id'], ['Parent']);
+        $toArrayRelation = $rec->fromData($adminNoId)->toArrayWithoutFiles(['id'], ['Parent']);
         static::assertEquals(
             ['id' => null, 'Parent' => array_merge(['id' => null], $adminNoIdNormalized)],
             $toArrayRelation
         );
 
-        // todo: test load related records if not set
+        $insertedRecords = TestingApp::fillAdminsTable(10);
+        unset($adminNoId['Parent']);
+        $toArrayRelation = $rec->read($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent'], true);
+        static::assertEquals(
+            ['id' => $insertedRecords[1]['id'], 'Parent' => $insertedRecords[0]],
+            $toArrayRelation
+        );
+
+        $toArrayRelation = $rec->read($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent' => ['login']], true);
+        static::assertEquals(
+            ['id' => $insertedRecords[1]['id'], 'Parent' => ['login' => $insertedRecords[0]['login']]],
+            $toArrayRelation
+        );
+
+        $toArrayRelation = $rec->read($insertedRecords[0]['id'])->toArrayWithoutFiles(['id'], ['Children'], true);
+        static::assertEquals(
+            ['id' => $insertedRecords[0]['id'], 'Children' => [$insertedRecords[1], $insertedRecords[2]]],
+            $toArrayRelation
+        );
+
+        $toArrayRelation = $rec->read($insertedRecords[0]['id'])->toArrayWithoutFiles(['id'], ['Children' => ['email']], true);
+        static::assertEquals(
+            [
+                'id' => $insertedRecords[0]['id'],
+                'Children' => [
+                    ['email' => $insertedRecords[1]['email']],
+                    ['email' => $insertedRecords[2]['email']]
+                ]
+            ],
+            $toArrayRelation
+        );
     }
 
     public function testIsValueFromDb() {
@@ -534,41 +588,40 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $normalizedAdminWithoutId = $this->normalizeAdmin($adminWithoutId);
 
         $rec = TestingAdmin::fromArray([]);
-        static::assertEquals($rec->getDefaults([]), $rec->toArrayWitoutFiles());
+        static::assertEquals($rec->getDefaults([]), $rec->toArrayWithoutFiles());
 
         $rec = TestingAdmin::fromArray($adminWithoutId, false);
-        static::assertEquals($normalizedAdminWithoutId, $rec->toArrayWitoutFiles());
+        static::assertEquals($normalizedAdminWithoutId, $rec->toArrayWithoutFiles());
         static::assertFalse($rec->isValueFromDb('parent_id'));
 
         $rec = TestingAdmin::_()->fromData($adminWithoutId, false);
-        static::assertEquals($normalizedAdminWithoutId, $rec->toArrayWitoutFiles());
+        static::assertEquals($normalizedAdminWithoutId, $rec->toArrayWithoutFiles());
         static::assertFalse($rec->isValueFromDb('parent_id'));
 
         $rec = TestingAdmin::fromArray($adminWithId, true);
-        static::assertEquals($normalizedAdminWithId, $rec->toArrayWitoutFiles());
+        static::assertEquals($normalizedAdminWithId, $rec->toArrayWithoutFiles());
         static::assertTrue($rec->isValueFromDb('id'));
         static::assertTrue($rec->isValueFromDb('parent_id'));
 
         $rec = TestingAdmin::_()->fromData($adminWithoutId, true);
-        static::assertEquals($normalizedAdminWithoutId, $rec->toArrayWitoutFiles());
+        static::assertEquals($normalizedAdminWithoutId, $rec->toArrayWithoutFiles());
         static::assertFalse($rec->isValueFromDb('id'));
         static::assertTrue($rec->isValueFromDb('parent_id'));
 
         $rec = TestingAdmin::_()->fromDbData($adminWithId);
-        static::assertEquals($normalizedAdminWithId, $rec->toArrayWitoutFiles());
+        static::assertEquals($normalizedAdminWithId, $rec->toArrayWithoutFiles());
         static::assertTrue($rec->isValueFromDb('id'));
         static::assertTrue($rec->isValueFromDb('parent_id'));
 
         $withUnknownColumn = array_merge($adminWithId, ['unknown_col' => 1]);
         TestingAdmin::_()->fromData($withUnknownColumn, true, false);
-        static::assertEquals($normalizedAdminWithId, $rec->toArrayWitoutFiles());
+        static::assertEquals($normalizedAdminWithId, $rec->toArrayWithoutFiles());
         static::assertTrue($rec->isValueFromDb('id'));
         static::assertTrue($rec->isValueFromDb('parent_id'));
     }
 
     public function testFromPrimaryKey() {
-        TestingApp::clearTables();
-        $recordsAdded = TestingApp::fillAdminsTable(2);
+        $recordsAdded = TestingApp::fillAdminsTable(10);
         $example = $recordsAdded[1];
         unset($example['password'], $example['created_at'], $example['updated_at']);
         $normalColumns = array_diff(array_keys(TestingAdmin::getColumnsThatExistInDb()), ['password', 'created_at', 'updated_at']);
@@ -615,7 +668,26 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($rec->existsInDb(true));
         static::assertFalse($rec->hasValue('id'));
 
-        // todo: test relations
+        // get related records
+        $rec = TestingAdmin::read($example['id'], [], ['Parent', 'Children']);
+        static::assertTrue($rec->existsInDb());
+        $relatedRecords = static::getObjectPropertyValue($rec, 'relatedRecords');
+        static::assertCount(2, $relatedRecords);
+        static::assertArrayHasKey('Parent', $relatedRecords);
+        static::assertArrayHasKey('Children', $relatedRecords);
+        static::assertInstanceOf(TestingAdmin::class, $relatedRecords['Parent']);
+        static::assertInstanceOf(TestingAdmin::class, $rec->getRelatedRecord('Parent', false));
+        static::assertInstanceOf(\PeskyORM\ORM\DbRecordsArray::class, $relatedRecords['Children']);
+        static::assertInstanceOf(\PeskyORM\ORM\DbRecordsArray::class, $rec->getRelatedRecord('Children', false));
+        static::assertEquals($recordsAdded[0], $rec->getRelatedRecord('Parent', false)->toArrayWithoutFiles());
+        static::assertCount(2, $relatedRecords['Children']);
+        static::assertCount(2, $rec->getRelatedRecord('Children', false));
+        $expected = [$recordsAdded[3], $recordsAdded[7]];
+        $expected[0]['created_at'] .= '+00';
+        $expected[0]['updated_at'] .= '+00';
+        $expected[1]['created_at'] .= '+00';
+        $expected[1]['updated_at'] .= '+00';
+        static::assertEquals($expected, $rec->getRelatedRecord('Children', false)->toArrays());
     }
 
     // todo: test exceptions genereated by TestingAdmin::newEmptyRecord()->fromDb()
@@ -674,21 +746,30 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($rec->hasValue('id'));
         static::assertFalse($rec->hasValue('email'));
 
-        // todo: test relations
-        // todo: test exceptions
-        /*$rec = TestingAdmin::find(['id' => $exampleWithParent['id']], $shortSetOfColumns, ['Parent']);
+        // relations
+        $rec = TestingAdmin::find(['id' => $exampleWithParent['id']], $shortSetOfColumns, ['Parent', 'Children']);
         static::assertTrue($rec->existsInDb());
         static::assertTrue($rec->existsInDb(true));
         static::assertTrue($rec->isValueFromDb('id'));
         static::assertTrue($rec->isValueFromDb('parent_id'));
         static::assertNotNull($rec->getValue('parent_id'));
         static::assertEquals(array_intersect_key($exampleWithParent, array_flip($shortSetOfColumns)), $rec->toArray($shortSetOfColumns));
-        static::assertEquals($example, $rec->getRelatedRecord('Parent')->toArray($normalColumns));*/
+        static::assertEquals($example, $rec->getRelatedRecord('Parent', false)->toArray($normalColumns));
+        $children = $rec->getRelatedRecord('Children', false);
+        static::assertCount(2, $children->toArrays());
+        static::assertEquals([$recordsAdded[3]['id'], $recordsAdded[7]['id']], \Swayok\Utils\Set::extract('/id', $children->toArrays()));
+
+        $rec = TestingAdmin::find(['id' => $recordsAdded[0]['id']], $shortSetOfColumns, ['Parent']);
+        static::assertTrue($rec->existsInDb());
+        static::assertEquals(array_intersect_key($example, array_flip($shortSetOfColumns)), $rec->toArray($shortSetOfColumns));
+        static::assertFalse($rec->getRelatedRecord('Parent', false)->existsInDb());
     }
+
+    // todo: test exceptions thrown by reload()
 
     public function testReload() {
         TestingApp::clearTables();
-        $recordsAdded = TestingApp::fillAdminsTable(1);
+        $recordsAdded = TestingApp::fillAdminsTable(10);
         $example = $recordsAdded[0];
         $normalColumns = array_diff(array_keys(TestingAdmin::getColumnsThatExistInDb()), ['password', 'created_at', 'updated_at']);
         unset($example['password'], $example['created_at'], $example['updated_at']);
@@ -714,9 +795,19 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertTrue($rec->hasValue('email'));
         static::assertEquals($example, $rec->toArray($normalColumns));
 
-        // todo: test relations
-        // todo: test exceptions
+        // test relations
+        $rec->reload([], ['Parent', 'Children']);
+        static::assertTrue($rec->isRelatedRecordAttached('Parent'));
+        static::assertTrue($rec->isRelatedRecordAttached('Children'));
+        static::assertFalse($rec->getRelatedRecord('Parent', false)->existsInDb());
+        static::assertCount(2, $rec->getRelatedRecord('Children', false)->toArrays());
+        static::assertEquals(
+            [$recordsAdded[1]['id'], $recordsAdded[2]['id']],
+            \Swayok\Utils\Set::extract('/id', $rec->getRelatedRecord('Children', false)->toArrays())
+        );
     }
+
+    // todo: test exceptions thrown by readColumns()
 
     public function testReadColumns() {
         TestingApp::clearTables();
@@ -740,9 +831,11 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertEquals($example['login'], $rec->getValue('login'));
         static::assertFalse($rec->hasValue('parent_id'));
         static::assertFalse($rec->hasValue('language'));
-
-        // todo: test exceptions
     }
+
+    // todo: test exceptions thrown by setRelatedRecord();
+    // todo: test exceptions thrown by getRelatedRecord();
+    // todo: test exceptions thrown by hasRelatedRecord();
 
     public function testSetGetAndHasRelatedRecord() {
         TestingApp::clearTables();
@@ -761,49 +854,53 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $rec = TestingAdmin::fromArray($recordData, true);
         $this->callObjectMethod($rec, 'setRelatedRecord', 'Parent', $parentData, true);
         static::assertTrue($rec->isRelatedRecordAttached('Parent'));
-        static::assertEquals($normalizedParentData, $rec->getRelatedRecord('Parent', false)->toArrayWitoutFiles($normalColumns));
+        static::assertEquals($normalizedParentData, $rec->getRelatedRecord('Parent', false)->toArrayWithoutFiles($normalColumns));
         static::assertTrue($rec->getRelatedRecord('Parent', false)->existsInDb());
 
         $rec = TestingAdmin::fromArray(array_merge($recordData, ['Parent' => $parentData]), true);
         static::assertTrue($rec->isRelatedRecordAttached('Parent'));
-        static::assertEquals($normalizedParentData, $rec->getRelatedRecord('Parent', false)->toArrayWitoutFiles($normalColumns));
+        static::assertEquals($normalizedParentData, $rec->getRelatedRecord('Parent', false)->toArrayWithoutFiles($normalColumns));
         static::assertTrue($rec->getRelatedRecord('Parent', false)->existsInDb());
         static::assertEquals(
             array_merge($normalizedRecordData, ['Parent' => $normalizedParentData]),
-            $rec->toArrayWitoutFiles($normalColumns, ['Parent' => $normalColumns], false)
+            $rec->toArrayWithoutFiles($normalColumns, ['Parent' => $normalColumns], false)
         );
-        // todo: test exceptions
     }
+
+    // todo: test exceptions thrown by readRelatedRecord();
 
     public function testReadRelatedRecord() {
         TestingApp::clearTables();
-        $recordsAdded = TestingApp::fillAdminsTable(3);
+        $recordsAdded = TestingApp::fillAdminsTable(10);
         $parentData = $recordsAdded[0];
-        $child1Data = $recordsAdded[1];
-        $child2Data = $recordsAdded[2];
-        $normalColumns = array_diff(array_keys(TestingAdmin::getColumnsThatExistInDb()), ['password', 'created_at', 'updated_at']);
-        unset(
-            $parentData['password'], $parentData['created_at'], $parentData['updated_at'],
-            $child1Data['password'], $child1Data['created_at'], $child1Data['updated_at'],
-            $child2Data['password'], $child2Data['created_at'], $child2Data['updated_at']
-        );
-        $normalizedParentData = $this->normalizeAdmin($parentData);
-        $normalizedChild1Data = $this->normalizeAdmin($child1Data);
-        $normalizedChild2Data = $this->normalizeAdmin($child2Data);
-        unset($normalizedParentData['password'], $normalizedChild1Data['password'], $normalizedChild2Data['password']);
+        $normalColumns = array_diff(array_keys(TestingAdmin::getColumnsThatExistInDb()), ['created_at', 'updated_at']);
+        unset($parentData['created_at'], $parentData['updated_at']);
 
-        $rec = TestingAdmin::fromArray($child1Data, true);
+        $rec = TestingAdmin::fromArray($recordsAdded[1], true);
         static::assertFalse($rec->isRelatedRecordAttached('Parent'));
         static::assertFalse($rec->isRelatedRecordAttached('Children'));
         static::assertEquals($parentData['id'], $rec->getValue('parent_id'));
         $prevSqlQuery = TestingAdminsTable::getLastQuery();
-        static::assertEquals($normalizedParentData, $rec->getRelatedRecord('Parent', true)->toArray($normalColumns));
+        static::assertTrue($rec->getRelatedRecord('Parent', true)->existsInDb());
         static::assertNotEquals($prevSqlQuery, TestingAdminsTable::getLastQuery());
         static::assertTrue($rec->isRelatedRecordAttached('Parent'));
+        static::assertEquals($parentData, $rec->getRelatedRecord('Parent', false)->toArray($normalColumns));
+        $prevSqlQuery = TestingAdminsTable::getLastQuery();
         static::assertInstanceOf(\PeskyORM\ORM\DbRecordsSet::class, $rec->getRelatedRecord('Children', true));
+        static::assertEquals($prevSqlQuery, TestingAdminsTable::getLastQuery()); //< DbRecordsSet is lazy - query is still the same
+        static::assertCount(2, $rec->getRelatedRecord('Children', true));
+        static::assertNotEquals($prevSqlQuery, TestingAdminsTable::getLastQuery()); //< count mades a query
+        $prevSqlQuery = TestingAdminsTable::getLastQuery();
+        static::assertEquals(
+            [$recordsAdded[3]['id'], $recordsAdded[7]['id']],
+            \Swayok\Utils\Set::extract('/id', $rec->getRelatedRecord('Children', false)->toArrays())
+        );
+        static::assertNotEquals($prevSqlQuery, TestingAdminsTable::getLastQuery()); //< and now it was a query to get records data
 
-
-        // todo: test exceptions
+        // change id and test if relations were erased
+        $rec->setValue('id', $parentData['id'], true);
+        static::assertFalse($rec->isRelatedRecordAttached('Parent'));
+        static::assertFalse($rec->isRelatedRecordAttached('Children'));
     }
 
     public function testUpdateValues() {

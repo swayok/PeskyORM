@@ -159,6 +159,7 @@ class DbSelect {
      *      'HAVING' - DbExpr,
      *      'JOINS' - array of DbJoinConfig
      * @return $this
+     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      */
     public function fromConfigsArray(array $conditionsAndOptions) {
@@ -559,12 +560,29 @@ class DbSelect {
             $this->orderBy[] = $columnName;
         } else {
             $columnInfo = $this->analyzeColumnName($columnName, null, null, 'ORDER BY');
-            $key = ($columnInfo['join_name'] ?: $this->getTableAlias()) . '.' . $columnInfo['name'];
             $columnInfo['direction'] = $isAscending ? 'ASC' : 'DESC';
-            $this->orderBy[$key] = $columnInfo;
+            $this->orderBy[$this->makeKeyForOrderBy($columnInfo)] = $columnInfo;
         }
         $this->setDirty('orderBy');
         return $this;
+    }
+
+    /**
+     * @param array $columnInfo
+     * @return string
+     */
+    protected function makeKeyForOrderBy(array $columnInfo) {
+        return ($columnInfo['join_name'] ?: $this->getTableAlias()) . '.' . $columnInfo['name'];
+    }
+
+    /**
+     * @param $columnName
+     * @return bool
+     * @throws \InvalidArgumentException
+     */
+    public function hasOrderingForColumn($columnName) {
+        $columnInfo = $this->analyzeColumnName($columnName, null, null, 'ORDER BY');
+        return array_key_exists($this->makeKeyForOrderBy($columnInfo), $this->orderBy);
     }
 
     /**
@@ -659,6 +677,20 @@ class DbSelect {
      */
     public function getOffset() {
         return $this->offset;
+    }
+
+    /**
+     * @return array
+     */
+    public function getOrderByColumns() {
+        return $this->orderBy;
+    }
+
+    /**
+     * @return array
+     */
+    public function getGroupByColumns() {
+        return $this->groupBy;
     }
 
     /**

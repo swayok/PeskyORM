@@ -412,6 +412,10 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
             throw new \BadMethodCallException("It is forbidden to modify or set value of a '{$columnName}' column");
         }
         $column = $columnName instanceof DbTableColumn ? $columnName : static::getColumn($columnName);
+        if ($column->isItPrimaryKey() && $valueContainer->hasValue() && $valueContainer->isItFromDb()) {
+            // backup pk value only if it was from db
+            $prevPkValue = $valueContainer->getValue();
+        }
         if ($this->isCollectingUpdates && !array_key_exists($column->getName(), $this->valuesBackup)) {
             $this->valuesBackup[$column->getName()] = clone $valueContainer;
         }
@@ -419,7 +423,25 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
         if (!$valueContainer->isValid()) {
             throw new InvalidDataException([$column->getName() => $valueContainer->getValidationErrors()]);
         }
+        if (
+            isset($prevPkValue)
+            && (
+                !$valueContainer->hasValue()
+                || $prevPkValue !== $valueContainer->getValue()
+            )
+        ) {
+            // this will trigger only when previus pk value (that was from db) was changed or removed
+            $this->onPrimaryKeyChangeForRecordReceivedFromDb($prevPkValue);
+        }
         return $this;
+    }
+
+    /**
+     * Erase related records when primary key received from db was changed or removed
+     * @param string|int|float $prevPkValue
+     */
+    protected function onPrimaryKeyChangeForRecordReceivedFromDb($prevPkValue) {
+        $this->relatedRecords = [];
     }
 
     /**
@@ -480,7 +502,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
 
     /**
      * @param string $relationName
-     * @param array|DbRecord $relatedRecord
+     * @param array|DbRecord|DbRecordsArray $relatedRecord
      * @param bool $isFromDb - true: marks values as loaded from DB
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
      * @throws \InvalidArgumentException
@@ -494,11 +516,21 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
         $relationTable = $relation->getForeignTable();
         if ($relation->getType() === DbTableRelation::HAS_MANY) {
             if (is_array($relatedRecord)) {
-                $relatedRecord = DbRecordsSet::createFromArray($relationTable, $relatedRecord);
+                $relatedRecord = DbRecordsSet::createFromArray($relationTable, $relatedRecord, $isFromDb);
+            } else if (!($relatedRecord instanceof DbRecordsArray)) {
+                throw new \InvalidArgumentException(
+                    '$relatedRecord argument for HAS MANY relation must be array or instance of '
+                        . get_class(DbRecordsArray::class)
+                );
             }
         } else if (is_array($relatedRecord)) {
-            $relatedRecord = $relationTable->newRecord()
-                ->fromData($relatedRecord, $isFromDb, $haltOnUnknownColumnNames);
+            if (!empty($relatedRecord) && $relatedRecord[$relationTable->getPkColumnName()] !== null) {
+                $relatedRecord = $relationTable
+                    ->newRecord()
+                    ->fromData($relatedRecord, $isFromDb, $haltOnUnknownColumnNames);
+            } else {
+                $relatedRecord = $relationTable->newRecord();
+            }
         } else if ($relatedRecord instanceof DbRecord) {
             if ($relatedRecord::getTable()->getName() !== $relationTable) {
                 throw new \InvalidArgumentException(
@@ -555,7 +587,9 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
             $relation->getAdditionalJoinConditions()
         );
         if ($relation->getType() === DbTableRelation::HAS_MANY) {
-            $this->relatedRecords[$relationName] = $relatedTable->select('*', $conditions);
+            $this->relatedRecords[$relationName] = $relatedTable->select('*', $conditions, function (OrmSelect $select) use ($relatedTable) {
+                $select->orderBy($relatedTable->getPkColumnName(), true);
+            });
         } else {
             $this->relatedRecords[$relationName] = $relatedTable->newRecord();
             $data = $relatedTable->selectOne('*', $conditions);
@@ -1250,15 +1284,15 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
             if ($relatedRecord instanceof DbRecord) {
                 $data[$relatedRecordName] = $withFilesInfo
                     ? $relatedRecord->toArray($relatedRecordColumns)
-                    : $relatedRecord->toArrayWitoutFiles($relatedRecordColumns);
+                    : $relatedRecord->toArrayWithoutFiles($relatedRecordColumns);
             } else {
                 /** @var DbRecordsSet $relatedRecord*/
                 $relatedRecord->enableDbRecordInstanceReuseDuringIteration();
-                $data[$relatedRecordName][] = [];
+                $data[$relatedRecordName] = [];
                 foreach ($relatedRecord as $relRecord) {
                     $data[$relatedRecordName][] = $withFilesInfo
-                        ? $relRecord->toArray()
-                        : $relRecord->toArrayWitoutFiles();
+                        ? $relRecord->toArray($relatedRecordColumns)
+                        : $relRecord->toArrayWithoutFiles($relatedRecordColumns);
                 }
             }
         }
@@ -1277,7 +1311,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @throws \InvalidArgumentException
      * @throws \PeskyORM\ORM\Exception\OrmException
      */
-    public function toArrayWitoutFiles(
+    public function toArrayWithoutFiles(
         array $columnsNames = [],
         array $relatedRecordsNames = [],
         $loadRelatedRecordsIfNotSet = false

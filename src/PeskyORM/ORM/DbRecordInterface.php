@@ -236,7 +236,7 @@ interface DbRecordInterface {
      * @param bool $loadRelatedRecordsIfNotSet - true: read required missing related objects from DB
      * @return array
      */
-    public function toArrayWitoutFiles(
+    public function toArrayWithoutFiles(
         array $columnsNames = [],
         array $relatedRecordsNames = [],
         $loadRelatedRecordsIfNotSet = false
