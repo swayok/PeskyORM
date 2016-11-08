@@ -156,6 +156,16 @@ class TestingAdminsTableStructure extends DbTableStructure {
             });
     }
 
+    private function not_changeable_column() {
+        return DbTableColumn::create(DbTableColumn::TYPE_STRING)
+            ->valueCannotBeSetOrChanged();
+    }
+
+    private function not_existing_column() {
+        return DbTableColumn::create(DbTableColumn::TYPE_STRING)
+            ->itDoesNotExistInDb();
+    }
+
     private function Parent() {
         return DbTableRelation::create('parent_id', DbTableRelation::BELONGS_TO, TestingAdminsTable::class, 'id');
     }

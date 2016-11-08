@@ -285,6 +285,11 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @throws \BadMethodCallException
      */
     public function reset() {
+        if ($this->isCollectingUpdates) {
+            throw new \BadMethodCallException(
+                'Attempt to reset record while changes collecting was not finished. You need to use commit() or rollback() first'
+            );
+        }
         $this->values = [];
         $this->relatedRecords = [];
         $this->iteratorIdx = 0;
@@ -534,12 +539,12 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
         } else if ($relatedRecord instanceof DbRecord) {
             if ($relatedRecord::getTable()->getName() !== $relationTable) {
                 throw new \InvalidArgumentException(
-                    "\$relatedRecord argument must be an instance of DbRecord class for a '{$relationTable->getName()}' DB table"
+                    "\$relatedRecord argument must be an instance of DbRecord class for the '{$relationTable->getName()}' DB table"
                 );
             }
         } else {
             throw new \InvalidArgumentException(
-                "\$relatedRecord argument must be an array or instance of DbRecord class for a '{$relationTable->getName()}' DB table"
+                "\$relatedRecord argument must be an array or instance of DbRecord class for the '{$relationTable->getName()}' DB table"
             );
         }
         $this->relatedRecords[$relationName] = $relatedRecord;
@@ -953,7 +958,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @throws \UnexpectedValueException
      */
     protected function saveToDb(array $columnsToSave = []) {
-        if (empty($columnsToSave) && empty($relationsToSave)) {
+        if (empty($columnsToSave)) {
             // nothing to save
             return;
         }

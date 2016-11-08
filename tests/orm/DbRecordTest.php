@@ -870,7 +870,6 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
     // todo: test exceptions thrown by readRelatedRecord();
 
     public function testReadRelatedRecord() {
-        TestingApp::clearTables();
         $recordsAdded = TestingApp::fillAdminsTable(10);
         $parentData = $recordsAdded[0];
         $normalColumns = array_diff(array_keys(TestingAdmin::getColumnsThatExistInDb()), ['created_at', 'updated_at']);
@@ -903,44 +902,86 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($rec->isRelatedRecordAttached('Children'));
     }
 
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $data argument contains unknown column name or relation name: 'invalid_col'
+     */
+    public function testInvalidUpdateValuesData1() {
+        TestingAdmin::newEmptyRecord()->updateValues(['id' => 1, 'invalid_col' => 2]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $relatedRecord argument must be an array or instance of DbRecord class for the 'admins' DB table
+     */
+    public function testInvalidUpdateValuesData2() {
+        TestingAdmin::newEmptyRecord()->updateValues(['id' => 1, 'Parent' => null, 'Parent2' => null]);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $data argument contains unknown column name or relation name: 'Parent2'
+     */
+    public function testInvalidUpdateValuesData3() {
+        TestingAdmin::newEmptyRecord()->updateValues(['id' => 1, 'Parent' => [], 'Parent2' => null]);
+    }
+
+    /**
+     * @expectedException \PeskyORM\ORM\Exception\InvalidDataException
+     * @expectedExceptionMessage error.invalid_data
+     */
+    public function testInvalidUpdateValuesData4() {
+        TestingAdmin::newEmptyRecord()->updateValues(['email' => 'not email']);
+    }
+
     public function testUpdateValues() {
-        // merge, updateValues
-    }
+        $records = TestingApp::getRecordsForDb('admins', 10);
+        $rec = TestingAdmin::fromArray($records[1]);
+        static::assertFalse($rec->isRelatedRecordAttached('Parent'));
+        static::assertEquals($records[1]['email'], $rec->getValue('email'));
 
-    public function testInvalidBegin1() {
+        $rec->updateValues(['email' => 'changed' . $records[1]['email']]);
+        static::assertEquals('changed' . $records[1]['email'], $rec->getValue('email'));
+        static::assertFalse($rec->isValueFromDb('email'));
 
-    }
+        $rec->updateValues(['email' => 'changed2' . $records[1]['email']], true);
+        static::assertEquals('changed2' . $records[1]['email'], $rec->getValue('email'));
+        static::assertTrue($rec->isValueFromDb('email'));
 
-    public function testInvalidBegin2() {
+        $rec->updateValues(['Parent' => $records[0]]);
+        static::assertTrue($rec->isRelatedRecordAttached('Parent'));
+        static::assertFalse($rec->getRelatedRecord('Parent', false)->existsInDb(false));
 
-    }
+        $rec->updateValues(['Parent' => $records[0]], true);
+        static::assertTrue($rec->isRelatedRecordAttached('Parent'));
+        static::assertTrue($rec->getRelatedRecord('Parent', false)->existsInDb(false));
+        static::assertEquals($records[0], $rec->getRelatedRecord('Parent', false)->toArrayWithoutFiles());
 
-    public function testBegin() {
+        $rec->merge(['Parent' => [], 'email' => null], false);
+        static::assertTrue($rec->isRelatedRecordAttached('Parent'));
+        static::assertFalse($rec->getRelatedRecord('Parent', false)->existsInDb(false));
+        static::assertNull($rec->getValue('email'));
+        static::assertFalse($rec->isValueFromDb('email'));
 
-    }
-
-    public function testInvalidRollback() {
-
-    }
-
-    public function testRollback() {
-
-    }
-
-    public function testInvalidCommit() {
-
-    }
-
-    public function testCommit() {
-
+        $rec->merge(['invalid_column' => 1, 'email' => 'qqqq@qqqq.qq'], false, false);
     }
 
     public function testGetAllColumnsWithUpdatableValues() {
-
+        $rec = TestingAdmin::newEmptyRecord();
+        $updateable = $this->callObjectMethod($rec, 'getAllColumnsWithUpdatableValues');
+        static::assertContains('id', $updateable);
+        static::assertContains('updated_at', $updateable);
+        static::assertContains('created_at', $updateable);
+        static::assertContains('avatar', $updateable);
+        static::assertContains('some_file', $updateable);
+        static::assertNotContains('not_changeable_column', $updateable);
+        static::assertNotContains('not_existing_column', $updateable);
     }
 
     public function testGetAllAutoUpdatingColumns() {
-
+        $rec = TestingAdmin::newEmptyRecord();
+        $updateable = $this->callObjectMethod($rec, 'getAllAutoUpdatingColumns');
+        static::assertEquals(['updated_at'], $updateable);
     }
 
     public function testInvalidSave() {
@@ -957,6 +998,140 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
 
     public function testSaveAndSaveToDbAndBeforeAfterSave() {
         // save, saveToDb, afterSave
+    }
+
+    /**
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage Trying to begin collecting changes on not existing record
+     */
+    public function testInvalidBegin1() {
+        TestingAdmin::newEmptyRecord()->begin();
+    }
+
+    /**
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage Trying to begin collecting changes on not existing record
+     */
+    public function testInvalidBegin2() {
+        TestingAdmin::fromArray(['id' => 1], false)->begin();
+    }
+
+    /**
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage Attempt to begin collecting changes when already collecting changes
+     */
+    public function testInvalidBegin3() {
+        TestingAdmin::fromArray(['id' => 1], true)->begin()->begin();
+    }
+
+    /**
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage Attempt to reset record while changes collecting was not finished. You need to use commit() or rollback() first
+     */
+    public function testInvalidBegin4() {
+        TestingAdmin::fromArray(['id' => 1], true)->begin()->reset();
+    }
+
+    /**
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage It is impossible to rollback changed values: changes collecting was not started
+     */
+    public function testInvalidRollback1() {
+        TestingAdmin::newEmptyRecord()->rollback();
+    }
+
+    public function testBeginAndRollback() {
+        $rec = TestingAdmin::fromArray(['id' => 1], true);
+        $rec->begin();
+        static::assertTrue($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
+        static::assertEquals([], $this->getObjectPropertyValue($rec, 'valuesBackup'));
+        $rec->rollback();
+        static::assertFalse($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
+        static::assertEquals([], $this->getObjectPropertyValue($rec, 'valuesBackup'));
+        $rec->begin();
+        $rec->setValue('email', 'email.was@changed.hehe', true);
+        static::assertCount(1, $this->getObjectPropertyValue($rec, 'valuesBackup'));
+        static::assertArrayHasKey('email', $this->getObjectPropertyValue($rec, 'valuesBackup'));
+        static::assertInstanceOf(DbRecordValue::class, $this->getObjectPropertyValue($rec, 'valuesBackup')['email']);
+        static::assertFalse($this->getObjectPropertyValue($rec, 'valuesBackup')['email']->hasValue());
+        static::assertEquals('email.was@changed.hehe', $rec->getValue('email'));
+        static::assertFalse($this->callObjectMethod($rec, 'getValueObject', 'email')->hasOldValue());
+        $rec->rollback();
+        static::assertFalse($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
+        static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
+        static::assertFalse($rec->hasValue('email'));
+        static::assertFalse($this->callObjectMethod($rec, 'getValueObject', 'email')->hasOldValue());
+
+        $rec->begin();
+        $rec->setValue('email', 'email.was@changed.hehe', false);
+        $rec->setValue('login', 'email.was@changed.hehe', false);
+        static::assertCount(2, $this->getObjectPropertyValue($rec, 'valuesBackup'));
+        static::assertArrayHasKey('email', $this->getObjectPropertyValue($rec, 'valuesBackup'));
+        static::assertArrayHasKey('login', $this->getObjectPropertyValue($rec, 'valuesBackup'));
+        static::assertInstanceOf(DbRecordValue::class, $this->getObjectPropertyValue($rec, 'valuesBackup')['email']);
+        static::assertInstanceOf(DbRecordValue::class, $this->getObjectPropertyValue($rec, 'valuesBackup')['login']);
+        static::assertFalse($this->getObjectPropertyValue($rec, 'valuesBackup')['email']->hasValue());
+        static::assertFalse($this->getObjectPropertyValue($rec, 'valuesBackup')['login']->hasValue());
+        static::assertEquals('email.was@changed.hehe', $rec->getValue('email'));
+        static::assertEquals('email.was@changed.hehe', $rec->getValue('login'));
+        static::assertFalse($this->callObjectMethod($rec, 'getValueObject', 'email')->hasOldValue());
+        static::assertFalse($this->callObjectMethod($rec, 'getValueObject', 'login')->hasOldValue());
+        $rec->rollback();
+        static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
+        static::assertFalse($rec->hasValue('email'));
+        static::assertFalse($rec->hasValue('login'));
+        static::assertFalse($this->callObjectMethod($rec, 'getValueObject', 'email')->hasOldValue());
+        static::assertFalse($this->callObjectMethod($rec, 'getValueObject', 'login')->hasOldValue());
+
+        $data = TestingApp::getRecordsForDb('admins', 1)[0];
+        $rec->fromData($data, true); //< it should not fail even if there was no commit() or rollback() after previous begin()
+        static::assertEquals($data, $rec->toArrayWithoutFiles());
+        $rec->begin()->rollback()->begin();
+        $rec->setValue('email', 'email.was@changed.hehe', true);
+        static::assertCount(1, $this->getObjectPropertyValue($rec, 'valuesBackup'));
+        static::assertArrayHasKey('email', $this->getObjectPropertyValue($rec, 'valuesBackup'));
+        static::assertEquals($data['email'], $this->getObjectPropertyValue($rec, 'valuesBackup')['email']->getValue());
+        static::assertEquals('email.was@changed.hehe', $rec->getValue('email'));
+        static::assertEquals($data['email'], $this->callObjectMethod($rec, 'getValueObject', 'email')->getOldValue());
+        $rec->rollback();
+        static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
+        static::assertTrue($rec->hasValue('email'));
+        static::assertEquals($data['email'], $rec->getValue('email'));
+        static::assertFalse($this->callObjectMethod($rec, 'getValueObject', 'email')->hasOldValue());
+        static::assertEquals($data, $rec->toArrayWithoutFiles());
+
+        $rec->begin();
+        static::assertEquals($data, $rec->toArrayWithoutFiles());
+        $rec->setValue('email', 'email.was@changed.hehe', false);
+        $rec->setValue('login', 'email.was@changed.hehe', false);
+        static::assertCount(2, $this->getObjectPropertyValue($rec, 'valuesBackup'));
+        static::assertArrayHasKey('email', $this->getObjectPropertyValue($rec, 'valuesBackup'));
+        static::assertArrayHasKey('login', $this->getObjectPropertyValue($rec, 'valuesBackup'));
+        static::assertEquals($data['email'], $this->getObjectPropertyValue($rec, 'valuesBackup')['email']->getValue());
+        static::assertEquals($data['login'], $this->getObjectPropertyValue($rec, 'valuesBackup')['login']->getValue());
+        static::assertEquals('email.was@changed.hehe', $rec->getValue('email'));
+        static::assertEquals('email.was@changed.hehe', $rec->getValue('login'));
+        static::assertEquals($data['email'], $this->callObjectMethod($rec, 'getValueObject', 'email')->getOldValue());
+        static::assertEquals($data['login'], $this->callObjectMethod($rec, 'getValueObject', 'login')->getOldValue());
+        $rec->rollback();
+        static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
+        static::assertTrue($rec->hasValue('email'));
+        static::assertTrue($rec->hasValue('login'));
+        static::assertEquals($data, $rec->toArrayWithoutFiles());
+        static::assertFalse($this->callObjectMethod($rec, 'getValueObject', 'email')->hasOldValue());
+        static::assertFalse($this->callObjectMethod($rec, 'getValueObject', 'login')->hasOldValue());
+    }
+
+    /**
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage It is impossible to commit changed values: changes collecting was not started
+     */
+    public function testInvalidCommit1() {
+        TestingAdmin::newEmptyRecord()->commit();
+    }
+
+    public function testCommit() {
+
     }
 
     public function testValidateNewData() {
