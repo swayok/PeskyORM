@@ -903,6 +903,7 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
             ->setAllowedValues(['abrakadabra']);
         static::assertEquals([], DbRecordValueHelpers::isValidDbColumnValue($column, 'test'));
         static::assertEquals([], DbRecordValueHelpers::isValidDbColumnValue($column, ''));
+        static::assertEquals([], DbRecordValueHelpers::isValidDbColumnValue($column, \PeskyORM\Core\DbExpr::create('test')));
         static::assertEquals(
             ['not null'],
             DbRecordValueHelpers::isValidDbColumnValue($column, null, ['value_cannot_be_null' => 'not null'])
@@ -912,6 +913,7 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         $column->valueIsNullable();
         static::assertEquals([], DbRecordValueHelpers::isValidDbColumnValue($column, null));
         static::assertEquals([], DbRecordValueHelpers::isValidDbColumnValue($column, ''));
+        static::assertEquals([], DbRecordValueHelpers::isValidDbColumnValue($column, \PeskyORM\Core\DbExpr::create('test')));
         // invalid valie
         $column = DbTableColumn::create(DbTableColumn::TYPE_INT, 'test')
             ->valueIsNotNullable()

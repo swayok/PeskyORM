@@ -16,6 +16,9 @@ abstract class DbRecordValueHelpers {
      * @return array
      */
     static public function isValidDbColumnValue(DbTableColumn $column, $value, array $errorMessages = []) {
+        if ($value instanceof DbExpr) {
+            return [];
+        }
         $value = static::preprocessColumnValue($column, $value);
         // null value?
         if ($value === null) {

@@ -37,6 +37,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param bool $isFromDb
      * @param bool $haltOnUnknownColumnNames
      * @return static
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
@@ -405,11 +406,12 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param mixed $value
      * @param boolean $isFromDb
      * @return $this
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \InvalidArgumentException
+     * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      */
     public function setValue($columnName, $value, $isFromDb) {
         $valueContainer = $this->getValueObject($columnName);
@@ -417,6 +419,11 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
             throw new \BadMethodCallException("It is forbidden to modify or set value of a '{$columnName}' column");
         }
         $column = $columnName instanceof DbTableColumn ? $columnName : static::getColumn($columnName);
+        if ($isFromDb && !$column->isItPrimaryKey() && !$this->existsInDb()) {
+            throw new \InvalidArgumentException(
+                "Attempt to set a value for column [{$columnName}] with flag \$isFromDb === true while record does not exist in DB"
+            );
+        }
         if ($column->isItPrimaryKey() && $valueContainer->hasValue() && $valueContainer->isItFromDb()) {
             // backup pk value only if it was from db
             $prevPkValue = $valueContainer->getValue();
@@ -442,11 +449,35 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
     }
 
     /**
-     * Erase related records when primary key received from db was changed or removed
+     * Unset primary key value
+     * @return $this
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    public function unsetPrimaryKeyValue() {
+        if ($this->hasPrimaryKeyValue()) {
+            $pkName = $this::getPrimaryKeyColumnName();
+            $oldPkValue = $this->getValueObject($pkName)->getValue();
+            $this->values[$pkName] = $this->createValueObject($this::getColumn($pkName));
+            $this->onPrimaryKeyChangeForRecordReceivedFromDb($oldPkValue);
+        }
+        return $this;
+    }
+
+    /**
+     * Erase related records when primary key received from db was changed or removed + mark all values as
+     * received not from db
      * @param string|int|float $prevPkValue
      */
     protected function onPrimaryKeyChangeForRecordReceivedFromDb($prevPkValue) {
         $this->relatedRecords = [];
+        foreach ($this->values as $valueContainer) {
+            if ($valueContainer->hasValue()) {
+                $valueContainer->setIsFromDb(false);
+            }
+        }
     }
 
     /**
@@ -515,6 +546,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PDOException
      */
     protected function setRelatedRecord($relationName, $relatedRecord, $isFromDb, $haltOnUnknownColumnNames = true) {
         $relation = static::getRelation($relationName);
@@ -555,6 +587,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param string $relationName
      * @param bool $loadIfNotSet - true: read relation data if it is not set
      * @return DbRecord|DbRecordsSet
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
@@ -578,6 +611,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * Read related object(s). If there are already loaded object(s) - they will be overwritten
      * @param string $relationName
      * @return $this
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
@@ -626,6 +660,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param bool $isFromDb - true: marks values as loaded from DB
      * @param bool $haltOnUnknownColumnNames - exception will be thrown if there are unknown column names in $data
      * @return $this
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
@@ -643,6 +678,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * All values are marked as loaded from DB and any unknows column names will raise exception
      * @param array $data
      * @return $this
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
@@ -776,6 +812,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param bool $isFromDb - true: marks values as loaded from DB
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
      * @return $this
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
@@ -783,6 +820,19 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @throws \InvalidArgumentException
      */
     public function updateValues(array $data, $isFromDb = false, $haltOnUnknownColumnNames = true) {
+        if ($isFromDb && !$this->existsInDb()) {
+            // first set pk column value
+            $pkColName = $this::getPrimaryKeyColumnName();
+            if (array_key_exists($pkColName, $data)) {
+                $this->setValue($pkColName, $data[$pkColName], true);
+                unset($data[$pkColName]);
+            } else {
+                throw new \InvalidArgumentException(
+                    'Values update failed: record does not exist in DB while $isFromDb argument is \'true\'.'
+                    . ' Possibly you\'ve missed a primary key value in $data argument.'
+                );
+            }
+        }
         foreach ($data as $columnNameOrRelationName => $value) {
             if (static::hasColumn($columnNameOrRelationName)) {
                 $this->setValue($columnNameOrRelationName, $value, $isFromDb);
@@ -804,6 +854,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param bool $isFromDb - true: marks values as loaded from DB
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
      * @return $this
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
@@ -962,56 +1013,30 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
             // nothing to save
             return;
         }
-        $diff = array_diff(array_keys($this->values), $columnsToSave);
+        $diff = array_diff($columnsToSave, array_keys($this->values));
         if (count($diff)) {
             throw new \InvalidArgumentException(
                 '$columnsToSave argument contains unknown columns: ' . implode(', ', $diff)
             );
         }
-        $diff = array_diff($this->getAllColumnsWithUpdatableValues(), $columnsToSave);
+        $diff = array_diff($columnsToSave, $this->getAllColumnsWithUpdatableValues());
         if (count($diff)) {
             throw new \InvalidArgumentException(
                 '$columnsToSave argument contains columns that cannot be saved to DB: '  . implode(', ', $diff)
             );
         }
         $isUpdate = $this->existsInDb();
-        if (!$isUpdate && $this->hasPrimaryKeyValue()) {
-            $columnsToSave[] = static::getPrimaryKeyColumnName();
-        }
-        $data = [];
-        // collect values that are not from DB
-        foreach ($columnsToSave as $columnName) {
-            $column = static::getColumn($columnName);
-            if ($column->isItExistsInDb()) {
-                $valueObject = $this->getValueObject($column);
-                if ($this->_hasValue($valueObject, true) && !$valueObject->isItFromDb()) {
-                    $data[$columnName] = $this->getValue($column);
-                }
-            } else {
-                unset($data[$columnName]);
-            }
-        }
-        // collect auto updates
-        $autoUpdatingColumns = $this->getAllAutoUpdatingColumns();
-        foreach ($autoUpdatingColumns as $columnName) {
-            $column = static::getColumn($columnName);
-            if ($column->isItExistsInDb()) {
-                $data[$columnName] = static::getColumn($columnName)->getAutoUpdateForAValue();
-            }
-        }
-        $errors = $this->validateNewData($data, $columnsToSave);
+        $data = $this->collectValuesForSave($columnsToSave, $isUpdate);
+
+        $errors = $this->validateNewData($data, $columnsToSave, $isUpdate);
         if (!empty($errors)) {
             throw new InvalidDataException($errors);
-        }
-        if (empty($data) && !$isUpdate) {
-            $data = [
-                static::getPrimaryKeyColumnName() => static::getTable()->getExpressionToSetDefaultValueForAColumn()
-            ];
         }
         $errors = $this->beforeSave($columnsToSave, $data, $isUpdate);
         if (!empty($errors)) {
             throw new InvalidDataException($errors);
         }
+
         $updatedData = [];
         if (!empty($data)) {
             $table = static::getTable();
@@ -1054,6 +1079,43 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
     }
 
     /**
+     * @param array $columnsToSave
+     * @param bool $isUpdate
+     * @return array
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     * @throws InvalidDataException
+     */
+    protected function collectValuesForSave(array $columnsToSave, $isUpdate) {
+        $data = [];
+        // collect values that are not from DB
+        foreach ($columnsToSave as $columnName) {
+            $column = static::getColumn($columnName);
+            if ($column->isItExistsInDb()) {
+                $valueObject = $this->getValueObject($column);
+                if ($this->_hasValue($valueObject, true) && !$valueObject->isItFromDb()) {
+                    $data[$columnName] = $this->getValue($column);
+                }
+            }
+        }
+        // collect auto updates
+        $autoUpdatingColumns = $this->getAllAutoUpdatingColumns();
+        foreach ($autoUpdatingColumns as $columnName) {
+            $column = static::getColumn($columnName);
+            if ($column->isItExistsInDb()) {
+                $data[$columnName] = static::getColumn($columnName)->getAutoUpdateForAValue();
+            }
+        }
+        // set pk value
+        $data[static::getPrimaryKeyColumnName()] = $isUpdate
+            ? $this->getPrimaryKeyValue()
+            : static::getTable()->getExpressionToSetDefaultValueForAColumn();
+        return $data;
+    }
+
+    /**
      * Called after all data collected and validated
      * @param array $columnsToSave
      * @param array $data
@@ -1075,38 +1137,48 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
 
     /**
      * Validate a value
-     * @param string $columnName
+     * @param string|DbTableColumn $column
      * @param mixed $value
      * @param bool $isFromDb
      * @return array - errors
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
-     * @throws \PeskyORM\ORM\Exception\OrmException
      */
-    static public function validateValue($columnName, $value, $isFromDb = false) {
-        return static::getColumn($columnName)->validateValue($value, $isFromDb);
+    static public function validateValue($column, $value, $isFromDb = false) {
+        if (!($column instanceof DbTableColumn)) {
+            $column = static::getColumn($column);
+        }
+        return $column->validateValue($value, $isFromDb);
     }
 
     /**
      * Validate data
      * @param array $data
      * @param array $columnsNames - column names to validate. If col
+     * @param bool $isUpdate
      * @return array
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    protected function validateNewData(array $data, array $columnsNames = []) {
+    protected function validateNewData(array $data, array $columnsNames = [], $isUpdate = false) {
         if (!count($columnsNames)) {
             $columnsNames = array_keys($data);
         }
         $errors = [];
         foreach ($columnsNames as $columnName) {
             $column = static::getColumn($columnName);
-            $value = array_key_exists($columnName, $data) ? $data[$columnName] : null;
-            $columnErrors = $column->validateValue($value, false);
+            if (array_key_exists($columnName, $data)) {
+                $value = $data[$columnName];
+            } else if ($isUpdate) {
+                continue;
+            } else {
+                $value = null;
+            }
+            $columnErrors = $this->validateValue($column, $value, false);
             if (!empty($columnErrors)) {
                 $errors[$columnName] = $columnErrors;
             }
@@ -1242,6 +1314,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param bool $loadRelatedRecordsIfNotSet - true: read all missing related objects from DB
      * @param bool $withFilesInfo - true: add info about files attached to a record (url, path, file_name, full_file_name, ext)
      * @return array
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
@@ -1310,6 +1383,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param array $relatedRecordsNames - empty: do not add any relations
      * @param bool $loadRelatedRecordsIfNotSet - true: read required missing related objects from DB
      * @return array
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
@@ -1428,6 +1502,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
     /**
      * @param mixed $key - column name, column name with format (ex: created_at_as_date) or relation name
      * @return mixed
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
@@ -1454,6 +1529,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PDOException
      */
     public function offsetSet($key, $value) {
         if (static::hasRelation($key)) {
@@ -1486,6 +1562,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
     /**
      * @param $name - column name, column name with format (ex: created_at_as_date) or relation name
      * @return mixed
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
@@ -1504,6 +1581,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PDOException
      */
     public function __set($name, $value) {
         return $this->offsetSet($name, $value);
@@ -1533,6 +1611,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @param string $name
      * @param array $arguments
      * @return $this
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException

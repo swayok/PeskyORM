@@ -109,10 +109,6 @@ class DbRecordValue {
 
     /**
      * @return bool
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
      */
     public function hasValue() {
         return $this->hasValue;
@@ -120,11 +116,11 @@ class DbRecordValue {
 
     /**
      * @return bool
-     * @throws \PDOException
-     * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
      * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
     public function hasValueOrDefault() {
         return $this->hasValue() || $this->isDefaultValueCanBeSet();
@@ -158,11 +154,11 @@ class DbRecordValue {
 
     /**
      * @return boolean
-     * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PDOException
      * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
     public function isDefaultValueCanBeSet() {
         if (!$this->hasDefaultValue()) {
@@ -206,9 +202,6 @@ class DbRecordValue {
 
     /**
      * @return mixed
-     * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      */
@@ -221,9 +214,9 @@ class DbRecordValue {
 
     /**
      * @return mixed
-     * @throws \InvalidArgumentException
-     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      */
@@ -250,8 +243,8 @@ class DbRecordValue {
      * @param mixed $value
      * @param mixed $rawValue - needed to verify that valid value once was same as raw value
      * @return $this
-     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
      */
     public function setValidValue($value, $rawValue) {
         if ($rawValue !== $this->rawValue) {
@@ -274,8 +267,8 @@ class DbRecordValue {
 
     /**
      * @return mixed
-     * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
+     * @throws \UnexpectedValueException
      */
     public function getOldValue() {
         if (!$this->hasOldValue()) {
@@ -322,8 +315,8 @@ class DbRecordValue {
 
     /**
      * @return bool
-     * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
+     * @throws \UnexpectedValueException
      */
     public function isValid() {
         if (!$this->isValidated()) {
@@ -337,8 +330,8 @@ class DbRecordValue {
      * @param mixed|\Closure $default
      * @param bool $storeDefaultValueIfUsed - if default value is used - save it to custom info as new value
      * @return mixed
-     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
      */
     public function getCustomInfo($key = null, $default = null, $storeDefaultValueIfUsed = false) {
         if ($key === null) {
@@ -394,8 +387,8 @@ class DbRecordValue {
     /**
      * @param null|string $key
      * @return $this
-     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
      */
     public function removeCustomInfo($key = null) {
         if ($key === null) {
