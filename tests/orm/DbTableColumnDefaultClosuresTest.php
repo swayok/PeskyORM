@@ -119,13 +119,20 @@ class DbTableColumnDefaultClosuresTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException \BadMethodCallException
-     * @expectedExceptionMessage Column 'test' restricts value setting and modification
+     * @expectedExceptionMessage Column 'test2' restricts value modification
      */
     public function testValueSetIsForbidden() {
-        $column = DbTableColumn::create(DbTableColumn::TYPE_STRING, 'test')
+        $column = DbTableColumn::create(DbTableColumn::TYPE_STRING, 'test1')
             ->valueCannotBeSetOrChanged();
         $valueObj = DbRecordValue::create($column, TestingAdmin::_());
-        DbTableColumnDefaultClosures::valueSetter('test', false, $valueObj);
+        DbTableColumnDefaultClosures::valueSetter('1', true, $valueObj);
+        static::assertEquals('1', $valueObj->getRawValue());
+        static::assertEquals('1', $valueObj->getValue());
+
+        $column = DbTableColumn::create(DbTableColumn::TYPE_STRING, 'test2')
+            ->valueCannotBeSetOrChanged();
+        $valueObj = DbRecordValue::create($column, TestingAdmin::_());
+        DbTableColumnDefaultClosures::valueSetter('2', false, $valueObj);
     }
 
     public function testValueSetter() {

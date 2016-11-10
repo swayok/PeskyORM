@@ -68,8 +68,8 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         TestingApp::$dbConnection->insertMany('admins', array_keys($data[0]), $data);
     }
 
-    private function getDataForSingleAdmin($withIdAndHashedPassword = false, $withHashedPassword = false) {
-        return array_merge($withIdAndHashedPassword ? ['id' => 1] : [], [
+    private function getDataForSingleAdmin($withId = false) {
+        return array_merge($withId ? ['id' => 1] : [], [
             'login' => '2AE351AF-131D-6654-9DB2-79B8F273986C',
             'parent_id' => 1,
             'created_at' => '2015-05-14 02:12:05',
@@ -86,7 +86,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         ]);
     }
 
-    private function normalizeAdmin($adminData) {
+    private function normalizeAdmin($adminData, $addNotChangeableCol = true, $addNotExistingCol = true) {
         $adminData['is_superadmin'] = NormalizeValue::normalizeBoolean($adminData['is_superadmin']);
         $adminData['is_active'] = NormalizeValue::normalizeBoolean($adminData['is_active']);
         $adminData['password'] = null;
@@ -97,6 +97,12 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
             $adminData['id'] = NormalizeValue::normalizeInteger($adminData['id']);
         } else {
             $adminData['id'] = null;
+        }
+        if ($addNotChangeableCol || $addNotChangeableCol === null) {
+            $adminData['not_changeable_column'] = $addNotChangeableCol === null ? null : 'not changable';
+        }
+        if ($addNotExistingCol) {
+            $adminData['not_existing_column'] = null;
         }
         return $adminData;
     }
@@ -159,6 +165,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $rec->begin()->setValue('parent_id', 3, false);
         static::assertTrue($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
         static::assertCount(1, $this->getObjectPropertyValue($rec, 'valuesBackup'));
+        $rec->rollback();
         $rec->reset();
         static::assertFalse($rec->hasValue('id', false));
         static::assertFalse($rec->hasValue('parent_id', false));
@@ -242,12 +249,13 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertEquals(['Value is not allowed'], TestingAdmin::validateValue('language', 'qq', false));
 
         // columns that exist in db or not
-        static::assertEquals(['avatar', 'some_file'], array_keys(TestingAdmin::getColumnsThatDoNotExistInDb()));
+        static::assertEquals(['avatar', 'some_file', 'not_existing_column'], array_keys(TestingAdmin::getColumnsThatDoNotExistInDb()));
         static::assertEquals([], array_keys(TestingSetting::getColumnsThatDoNotExistInDb()));
         static::assertEquals(
             [
                 'id', 'parent_id', 'login', 'password', 'created_at', 'updated_at', 'remember_token',
-                'is_superadmin', 'language', 'ip', 'role', 'is_active', 'name', 'email', 'timezone'
+                'is_superadmin', 'language', 'ip', 'role', 'is_active', 'name', 'email', 'timezone',
+                'not_changeable_column'
             ],
             array_keys(TestingAdmin::getColumnsThatExistInDb())
         );
@@ -462,7 +470,8 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
                 'is_active' => true,
                 'name' => '',
                 'email' => null,
-                'timezone' => 'UTC'
+                'timezone' => 'UTC',
+                'not_changeable_column' => null
             ],
             $rec->getDefaults()
         );
@@ -484,7 +493,9 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
                 'email' => null,
                 'timezone' => 'UTC',
                 'avatar' => null,
-                'some_file' => null
+                'some_file' => null,
+                'not_changeable_column' => null,
+                'not_existing_column' => null,
             ],
             $rec->getDefaults([], false, false)
         );
@@ -533,13 +544,15 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
                 'is_active' => true,
                 'name' => '',
                 'email' => null,
-                'timezone' => 'UTC'
+                'timezone' => 'UTC',
+                'not_changeable_column' => null,
+                'not_existing_column' => null
             ],
             $rec->toArrayWithoutFiles()
         );
 
         $admin = $this->getDataForSingleAdmin(true);
-        $adminNormalized = $this->normalizeAdmin($admin);
+        $adminNormalized = $this->normalizeAdmin($admin, null);
         $toArray = $rec->fromData($admin)->toArray();
         $toArrayPartial = $rec->toArray(['id', 'parent_id', 'login', 'role']);
         static::assertEquals(
@@ -549,7 +562,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertEquals(array_intersect_key($adminNormalized, $toArrayPartial), $toArrayPartial);
 
         $adminNoId = $this->getDataForSingleAdmin(false);
-        $adminNoIdNormalized = $this->normalizeAdmin($adminNoId);
+        $adminNoIdNormalized = $this->normalizeAdmin($adminNoId, null);
         $toArray = $rec->fromData($adminNoId)->toArrayWithoutFiles();
         $toArrayPartial = $rec->toArrayWithoutFiles(['id', 'parent_id', 'login', 'role']);
         static::assertEquals(array_merge(['id' => null], $adminNoIdNormalized), $toArray);
@@ -563,6 +576,9 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         );
 
         $insertedRecords = TestingApp::fillAdminsTable(10);
+        $insertedRecords[0]['not_existing_column'] = null;
+        $insertedRecords[1]['not_existing_column'] = null;
+        $insertedRecords[2]['not_existing_column'] = null;
         unset($adminNoId['Parent']);
         $toArrayRelation = $rec->read($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent'], true);
         static::assertEquals(
@@ -602,7 +618,9 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $val = $this->callObjectMethod($rec, 'getValueObject', 'parent_id');
         static::assertFalse($val->isItFromDb());
         static::assertFalse($rec->isValueFromDb('parent_id'));
-        $rec->setValue('parent_id', 2, true);
+        $rec
+            ->setValue('id', 1, true)
+            ->setValue('parent_id', 2, true);
         static::assertTrue($val->isItFromDb());
         static::assertTrue($rec->isValueFromDb('parent_id'));
     }
@@ -633,12 +651,13 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
 
     public function testFromData() {
         $adminWithId = $this->getDataForSingleAdmin(true);
-        $normalizedAdminWithId = $this->normalizeAdmin($adminWithId);
+        $normalizedAdminWithId = $this->normalizeAdmin($adminWithId, null);
         $adminWithoutId = $this->getDataForSingleAdmin(false);
-        $normalizedAdminWithoutId = $this->normalizeAdmin($adminWithoutId);
+        $normalizedAdminWithoutId = $this->normalizeAdmin($adminWithoutId, null);
+        $columns = array_merge(array_keys($adminWithId), ['password', 'not_existing_column', 'not_changeable_column']);
 
         $rec = TestingAdmin::fromArray([]);
-        static::assertEquals($rec->getDefaults([]), $rec->toArrayWithoutFiles());
+        static::assertEquals($rec->getDefaults($columns, false), $rec->toArrayWithoutFiles());
 
         $rec = TestingAdmin::fromArray($adminWithoutId, false);
         static::assertEquals($normalizedAdminWithoutId, $rec->toArrayWithoutFiles());
@@ -651,11 +670,6 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $rec = TestingAdmin::fromArray($adminWithId, true);
         static::assertEquals($normalizedAdminWithId, $rec->toArrayWithoutFiles());
         static::assertTrue($rec->isValueFromDb('id'));
-        static::assertTrue($rec->isValueFromDb('parent_id'));
-
-        $rec = TestingAdmin::_()->fromData($adminWithoutId, true);
-        static::assertEquals($normalizedAdminWithoutId, $rec->toArrayWithoutFiles());
-        static::assertFalse($rec->isValueFromDb('id'));
         static::assertTrue($rec->isValueFromDb('parent_id'));
 
         $rec = TestingAdmin::_()->fromDbData($adminWithId);
@@ -672,6 +686,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
 
     public function testFromPrimaryKey() {
         $recordsAdded = TestingApp::fillAdminsTable(10);
+        $recordsAdded[0]['not_existing_column'] = null;
         $example = $recordsAdded[1];
         unset($example['password'], $example['created_at'], $example['updated_at']);
         $normalColumns = array_diff(array_keys(TestingAdmin::getColumnsThatExistInDb()), ['password', 'created_at', 'updated_at']);
@@ -897,8 +912,8 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
             $parentData['password'], $parentData['created_at'], $parentData['updated_at'],
             $recordData['password'], $recordData['created_at'], $recordData['updated_at']
         );
-        $normalizedParentData = $this->normalizeAdmin($parentData);
-        $normalizedRecordData = $this->normalizeAdmin($recordData);
+        $normalizedParentData = $this->normalizeAdmin($parentData, true, false);
+        $normalizedRecordData = $this->normalizeAdmin($recordData, true, false);
         unset($normalizedParentData['password'], $normalizedRecordData['password']);
 
         $rec = TestingAdmin::fromArray($recordData, true);
@@ -994,7 +1009,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
 
     public function testUpdateValues() {
         $records = TestingApp::getRecordsForDb('admins', 10);
-        $rec = TestingAdmin::fromArray($records[1]);
+        $rec = TestingAdmin::fromArray($records[1], true);
         static::assertFalse($rec->isRelatedRecordAttached('Parent'));
         static::assertEquals($records[1]['email'], $rec->getValue('email'));
 
@@ -1006,14 +1021,17 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertEquals('changed2' . $records[1]['email'], $rec->getValue('email'));
         static::assertTrue($rec->isValueFromDb('email'));
 
-        $rec->updateValues(['Parent' => $records[0]]);
+        $rec->updateValues(['Parent' => array_diff_key($records[0], ['not_changeable_column' => ''])]);
         static::assertTrue($rec->isRelatedRecordAttached('Parent'));
         static::assertFalse($rec->getRelatedRecord('Parent', false)->existsInDb(false));
 
         $rec->updateValues(['Parent' => $records[0]], true);
         static::assertTrue($rec->isRelatedRecordAttached('Parent'));
         static::assertTrue($rec->getRelatedRecord('Parent', false)->existsInDb(false));
-        static::assertEquals($records[0], $rec->getRelatedRecord('Parent', false)->toArrayWithoutFiles());
+        static::assertEquals(
+            array_merge($records[0], ['not_existing_column' => null]),
+            $rec->getRelatedRecord('Parent', false)->toArrayWithoutFiles()
+        );
 
         $rec->merge(['Parent' => [], 'email' => null], false);
         static::assertTrue($rec->isRelatedRecordAttached('Parent'));
@@ -1036,9 +1054,9 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertNotContains('not_existing_column', $updateable);
     }
 
-    public function testGetAllAutoUpdatingColumns() {
+    public function testGetAllColumnsWithAutoUpdatingValues() {
         $rec = TestingAdmin::newEmptyRecord();
-        $updateable = $this->callObjectMethod($rec, 'getAllAutoUpdatingColumns');
+        $updateable = $this->callObjectMethod($rec, 'getAllColumnsWithAutoUpdatingValues');
         static::assertEquals(['updated_at'], $updateable);
     }
 
@@ -1080,7 +1098,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
      */
     public function testInvalidDataInCollectValuesForSave() {
         $this->callObjectMethod(
-            TestingAdmin::fromArray(['parent_id' => null, 'email' => 'invalid', 'login' => 'asd'], true),
+            TestingAdmin::fromArray(['id' => 1, 'parent_id' => null, 'email' => 'invalid', 'login' => 'asd'], true),
             'collectValuesForSave',
             ['parent_id', 'email', 'login'],
             false
@@ -1115,6 +1133,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
             $expectedData,
             ['id' => TestingAdminsTable::getExpressionToSetDefaultValueForAColumn()]
         );
+        unset($expectedData['not_changeable_column']);
         static::assertEquals(
             $expectedData,
             $this->callObjectMethod($rec, 'collectValuesForSave', $columnsToSave, false)
@@ -1242,6 +1261,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($this->callObjectMethod($rec, 'getValueObject', 'login')->hasOldValue());
 
         $data = TestingApp::getRecordsForDb('admins', 1)[0];
+        $data = array_merge($data, ['not_existing_column' => null]);
         $rec->fromData($data, true); //< it should not fail even if there was no commit() or rollback() after previous begin()
         static::assertEquals($data, $rec->toArrayWithoutFiles());
         $rec->begin()->rollback()->begin();

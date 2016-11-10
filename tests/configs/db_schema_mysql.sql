@@ -6,7 +6,8 @@ SET time_zone = "+00:00";
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8 */;
 
-CREATE TABLE IF NOT EXISTS `admins` (
+DROP TABLE IF EXISTS `admins`;
+CREATE TABLE `admins` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `login` varchar(100) NOT NULL,
   `password` varchar(100) NOT NULL,
@@ -22,6 +23,7 @@ CREATE TABLE IF NOT EXISTS `admins` (
   `name` varchar(200) NOT NULL DEFAULT '',
   `email` varchar(100) DEFAULT NULL,
   `timezone` varchar(50) NOT NULL DEFAULT 'UTC',
+  `not_changeable_column` varchar(50) NOT NULL DEFAULT 'not changable',
   PRIMARY KEY (`id`),
   UNIQUE KEY `login` (`login`),
   UNIQUE KEY `email` (`email`),
@@ -31,7 +33,8 @@ CREATE TABLE IF NOT EXISTS `admins` (
 
 -- --------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `info_pages` (
+DROP TABLE IF EXISTS `info_pages`;
+CREATE TABLE `info_pages` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `code` varchar(255) NOT NULL,
   `lang` char(2) NOT NULL DEFAULT 'en',
@@ -49,7 +52,8 @@ CREATE TABLE IF NOT EXISTS `info_pages` (
 
 -- --------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS `settings` (
+DROP TABLE IF EXISTS `settings`;
+CREATE TABLE `settings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `key` varchar(100) NOT NULL,
   `value` text NOT NULL,

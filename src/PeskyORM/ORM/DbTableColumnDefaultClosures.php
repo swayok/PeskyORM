@@ -17,9 +17,9 @@ class DbTableColumnDefaultClosures {
      */
     static public function valueSetter($newValue, $isFromDb, DbRecordValue $valueContainer) {
         $column = $valueContainer->getColumn();
-        if (!$column->isValueCanBeSetOrChanged()) {
+        if (!$isFromDb && !$column->isValueCanBeSetOrChanged()) {
             throw new \BadMethodCallException(
-                "Column '{$column->getName()}' restricts value setting and modification"
+                "Column '{$column->getName()}' restricts value modification"
             );
         }
         $preprocessedValue = call_user_func($column->getValuePreprocessor(), $newValue, $isFromDb, $column);

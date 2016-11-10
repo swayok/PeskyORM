@@ -470,11 +470,16 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * Erase related records when primary key received from db was changed or removed + mark all values as
      * received not from db
      * @param string|int|float $prevPkValue
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \UnexpectedValueException
      */
     protected function onPrimaryKeyChangeForRecordReceivedFromDb($prevPkValue) {
         $this->relatedRecords = [];
-        foreach ($this->values as $valueContainer) {
-            if ($valueContainer->hasValue()) {
+        $pkColName = static::getPrimaryKeyColumnName();
+        foreach ($this->values as $colName => $valueContainer) {
+            if ($colName !== $pkColName && $valueContainer->hasValue()) {
                 $valueContainer->setIsFromDb(false);
             }
         }
@@ -561,7 +566,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
                 );
             }
         } else if (is_array($relatedRecord)) {
-            if (!empty($relatedRecord) && $relatedRecord[$relationTable->getPkColumnName()] !== null) {
+            if (!empty($relatedRecord) && (!$isFromDb || $relatedRecord[$relationTable->getPkColumnName()] !== null)) {
                 $relatedRecord = $relationTable
                     ->newRecord()
                     ->fromData($relatedRecord, $isFromDb, $haltOnUnknownColumnNames);
@@ -724,7 +729,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      */
     public function fromDb(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = []) {
         if (empty($columns)) {
-            $columns = ['*'];
+            $columns = array_keys(static::getColumnsThatExistInDb());
         } else {
             $columns[] = static::getPrimaryKeyColumnName();
         }
@@ -960,7 +965,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    protected function getAllAutoUpdatingColumns() {
+    protected function getAllColumnsWithAutoUpdatingValues() {
         $columnsNames = [];
         foreach (static::getColumns() as $columnName => $column) {
             if ($column->isAutoUpdatingValue() && $column->isItExistsInDb()) {
@@ -1101,7 +1106,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
             }
         }
         // collect auto updates
-        $autoUpdatingColumns = $this->getAllAutoUpdatingColumns();
+        $autoUpdatingColumns = $this->getAllColumnsWithAutoUpdatingValues();
         foreach ($autoUpdatingColumns as $columnName) {
             $column = static::getColumn($columnName);
             if ($column->isItExistsInDb()) {
