@@ -199,11 +199,17 @@ interface DbTableInterface {
     /**
      * @param array $data - key-value array where key = table column and value = value of associated column
      * @param array $conditions - WHERE conditions
-     * @return int - number of modified rows
+     * @param bool|array $returning - return some data back after $data inserted to $table
+     *          - true: return values for all columns of inserted table row
+     *          - false: do not return anything
+     *          - array: list of columns to return values for
+     * @return array|int - information about update execution
+     *          - int: number of modified rows (when $returning === false)
+     *          - array: modified records (when $returning !== false)
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    static public function update(array $data, array $conditions);
+    static public function update(array $data, array $conditions, $returning = false);
 
     /**
      * @param array $conditions - WHERE conditions

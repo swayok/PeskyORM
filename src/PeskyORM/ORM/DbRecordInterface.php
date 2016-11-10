@@ -32,10 +32,10 @@ interface DbRecordInterface {
     /**
      * Check if there is a value for $columnName
      * @param string $columnName
-     * @param bool $checkDefaultValue - true: returns true if there is no value set but column has default value
+     * @param bool $trueIfThereIsDefaultValue - true: returns true if there is no value set but column has default value
      * @return bool
      */
-    public function hasValue($columnName, $checkDefaultValue = false);
+    public function hasValue($columnName, $trueIfThereIsDefaultValue = false);
 
     /**
      * Set a $value for $columnName

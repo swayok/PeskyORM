@@ -369,24 +369,24 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
     /**
      * Check if there is a value for $columnName
      * @param string|DbTableColumn $columnName
-     * @param bool $checkDefaultValue - true: returns true if there is no value set but column has default value
+     * @param bool $trueIfThereIsDefaultValue - true: returns true if there is no value set but column has default value
      * @return bool
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \PeskyORM\ORM\Exception\OrmException
      */
-    public function hasValue($columnName, $checkDefaultValue = false) {
-        return $this->_hasValue($this->getValueObject($columnName), $checkDefaultValue);
+    public function hasValue($columnName, $trueIfThereIsDefaultValue = false) {
+        return $this->_hasValue($this->getValueObject($columnName), $trueIfThereIsDefaultValue);
     }
 
     /**
      * @param DbRecordValue $value
-     * @param bool $checkDefaultValue - true: returns true if there is no value set but column has default value
+     * @param bool $trueIfThereIsDefaultValue - true: returns true if there is no value set but column has default value
      * @return mixed
      */
-    protected function _hasValue(DbRecordValue $value, $checkDefaultValue = false) {
-        return call_user_func($value->getColumn()->getValueExistenceChecker(), $value, $checkDefaultValue);
+    protected function _hasValue(DbRecordValue $value, $trueIfThereIsDefaultValue = false) {
+        return call_user_func($value->getColumn()->getValueExistenceChecker(), $value, $trueIfThereIsDefaultValue);
     }
 
     /**
@@ -418,7 +418,17 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
         if (!$isFromDb && !$valueContainer->getColumn()->isValueCanBeSetOrChanged()) {
             throw new \BadMethodCallException("It is forbidden to modify or set value of a '{$columnName}' column");
         }
+        if ($this->isCollectingUpdates && $isFromDb) {
+            throw new \BadMethodCallException("It is forbidden to set value with \$isFromDb === true after begin()");
+        }
         $column = $columnName instanceof DbTableColumn ? $columnName : static::getColumn($columnName);
+        if ($column->isItPrimaryKey()) {
+            if ($value === null) {
+                return $this->unsetPrimaryKeyValue();
+            } else if (!$isFromDb) {
+                throw new \InvalidArgumentException('It is forbidden to set primary key value when $isFromDb === false');
+            }
+        }
         if ($isFromDb && !$column->isItPrimaryKey() && !$this->existsInDb()) {
             throw new \InvalidArgumentException(
                 "Attempt to set a value for column [{$columnName}] with flag \$isFromDb === true while record does not exist in DB"
@@ -825,9 +835,9 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @throws \InvalidArgumentException
      */
     public function updateValues(array $data, $isFromDb = false, $haltOnUnknownColumnNames = true) {
+        $pkColName = $this::getPrimaryKeyColumnName();
         if ($isFromDb && !$this->existsInDb()) {
             // first set pk column value
-            $pkColName = $this::getPrimaryKeyColumnName();
             if (array_key_exists($pkColName, $data)) {
                 $this->setValue($pkColName, $data[$pkColName], true);
                 unset($data[$pkColName]);
@@ -1032,54 +1042,55 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
         }
         $isUpdate = $this->existsInDb();
         $data = $this->collectValuesForSave($columnsToSave, $isUpdate);
-
-        $errors = $this->validateNewData($data, $columnsToSave, $isUpdate);
-        if (!empty($errors)) {
-            throw new InvalidDataException($errors);
-        }
-        $errors = $this->beforeSave($columnsToSave, $data, $isUpdate);
-        if (!empty($errors)) {
-            throw new InvalidDataException($errors);
-        }
-
         $updatedData = [];
         if (!empty($data)) {
+            $errors = $this->validateNewData($data, $columnsToSave, $isUpdate);
+            if (!empty($errors)) {
+                throw new InvalidDataException($errors);
+            }
+            $errors = $this->beforeSave($columnsToSave, $data, $isUpdate);
+            if (!empty($errors)) {
+                throw new InvalidDataException($errors);
+            }
+
             $table = static::getTable();
             $alreadyInTransaction = $table::inTransaction();
             if (!$alreadyInTransaction) {
                 $table::beginTransaction();
             }
-            if ($isUpdate) {
-                try {
+            try {
+                if ($isUpdate) {
+                    /** @var array $updatedData */
                     $updatedData = static::getTable()->update(
                         $data,
                         [static::getPrimaryKeyColumnName() => $this->getPrimaryKeyValue()],
                         true
                     );
-                } catch (\PDOException $exc) {
-                    if ($table::inTransaction()) {
-                        $table::rollBackTransaction();
+                    if (count($updatedData)) {
+                        $this->updateValues($updatedData[0], true);
+                    } else {
+                        // this means that record does not exist anymore
+                        $this->reset();
+                        return;
                     }
-                    throw $exc;
+                } else {
+                    $this->updateValues(
+                        static::getTable()->insert($data, true),
+                        true
+                    );
                 }
-            } else {
-                $updatedData = static::getTable()->insert($data, true);
+            } catch (\PDOException $exc) {
+                if ($table::inTransaction()) {
+                    $table::rollBackTransaction();
+                }
+                throw $exc;
             }
             if (!$alreadyInTransaction) {
                 $table::commitTransaction();
             }
         }
-        $this->updateValues($updatedData, true);
         // run column saving extenders
-        foreach ($columnsToSave as $columnName) {
-            call_user_func(
-                static::getColumn($columnName)->getValueSavingExtender(),
-                $this->getValueObject($columnName),
-                $isUpdate,
-                $updatedData,
-                $this
-            );
-        }
+        $this->runColumnSavingExtenders($columnsToSave, $data, $updatedData, $isUpdate);
         $this->afterSave(!$isUpdate);
     }
 
@@ -1098,12 +1109,15 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
         // collect values that are not from DB
         foreach ($columnsToSave as $columnName) {
             $column = static::getColumn($columnName);
-            if ($column->isItExistsInDb()) {
+            if ($column->isItExistsInDb() && !$column->isItPrimaryKey()) {
                 $valueObject = $this->getValueObject($column);
                 if ($this->_hasValue($valueObject, true) && !$valueObject->isItFromDb()) {
                     $data[$columnName] = $this->getValue($column);
                 }
             }
+        }
+        if (count($data) === 0) {
+            return [];
         }
         // collect auto updates
         $autoUpdatingColumns = $this->getAllColumnsWithAutoUpdatingValues();
@@ -1118,6 +1132,31 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
             ? $this->getPrimaryKeyValue()
             : static::getTable()->getExpressionToSetDefaultValueForAColumn();
         return $data;
+    }
+
+    /**
+     * @param array $columnsToSave
+     * @param array $dataSavedToDb
+     * @param array $updatesReceivedFromDb
+     * @param $isUpdate
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \UnexpectedValueException
+     */
+    protected function runColumnSavingExtenders(array $columnsToSave, array $dataSavedToDb, array $updatesReceivedFromDb, $isUpdate) {
+        foreach ($columnsToSave as $columnName) {
+            $column = static::getColumn($columnName);
+            if (array_key_exists($columnName, $dataSavedToDb) || !$column->isItExistsInDb()) {
+                call_user_func(
+                    static::getColumn($columnName)->getValueSavingExtender(),
+                    $this->getValueObject($columnName),
+                    $isUpdate,
+                    $updatesReceivedFromDb,
+                    $this
+                );
+            }
+        }
     }
 
     /**

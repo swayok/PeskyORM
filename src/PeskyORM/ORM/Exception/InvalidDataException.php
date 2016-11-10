@@ -7,7 +7,19 @@ class InvalidDataException extends OrmException {
     protected $errors = [];
 
     public function __construct(array $errors) {
-        parent::__construct(static::MESSAGE_INVALID_DATA, static::CODE_INVALID_DATA);
+        $message = [];
+        foreach ($errors as $key => $error) {
+            $errorMsg = '';
+            if (!is_int($key)) {
+                $errorMsg = '[' . $key . '] ';
+            }
+            if (is_array($error)) {
+                $error = implode(', ', $error);
+            }
+            $errorMsg .= $error;
+            $message[] = $errorMsg;
+        }
+        parent::__construct(static::MESSAGE_INVALID_DATA . implode('; ', $message), static::CODE_INVALID_DATA);
         $this->errors = $errors;
     }
 

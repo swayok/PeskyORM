@@ -146,7 +146,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @return DbExpr
      */
     static public function getExpressionToSetDefaultValueForAColumn() {
-        return DbExpr::create('DEFAULT');
+        return DbExpr::create('DEFAULT', false);
     }
 
     /**
@@ -358,7 +358,9 @@ abstract class DbAdapter implements DbAdapterInterface {
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
      *          - array: list of columns to return values for
-     * @return int - number of modified rows
+     * @return array|int - information about update execution
+     *          - int: number of modified rows (when $returning === false)
+     *          - array: modified records (when $returning !== false)
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \PeskyORM\Core\DbException

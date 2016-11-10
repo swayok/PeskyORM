@@ -44,11 +44,12 @@ interface DbAdapterInterface {
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
      *          - array: list of columns to return values for
-     * @return bool|array - array returned only if $returning is not empty
+     * @param string $pkName
+     * @return array|bool - array returned only if $returning is not empty
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function insert($table, array $data, array $dataTypes = [], $returning = false);
+    public function insert($table, array $data, array $dataTypes = [], $returning = false, $pkName = 'id');
 
     /**
      * @param string $table
@@ -79,7 +80,9 @@ interface DbAdapterInterface {
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
      *          - array: list of columns to return values for
-     * @return int - number of modified rows
+     * @return array|int - information about update execution
+     *          - int: number of modified rows (when $returning === false)
+     *          - array: modified records (when $returning !== false)
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */

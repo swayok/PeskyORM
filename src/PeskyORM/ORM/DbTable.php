@@ -447,7 +447,9 @@ abstract class DbTable implements DbTableInterface {
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
      *          - array: list of columns to return values for
-     * @return int - number of modified rows
+     * @return array|int - information about update execution
+     *          - int: number of modified rows (when $returning === false)
+     *          - array: modified records (when $returning !== false)
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PDOException

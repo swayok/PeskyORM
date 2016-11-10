@@ -135,18 +135,21 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
 
     public function testConstructor() {
         $rec1 = new TestingAdmin();
-        $rec1->setValue('id', 1, false);
-        static::assertTrue($rec1->hasValue('id', false));
+        static::assertFalse($rec1->existsInDb());
+        static::assertFalse($rec1->hasValue('id', false));
+        static::assertFalse($rec1->hasValue('parent_id', false));
 
         $rec2 = TestingAdmin::newEmptyRecord();
         static::assertInstanceOf(TestingAdmin::class, $rec2);
+        static::assertFalse($rec2->existsInDb());
         static::assertFalse($rec2->hasValue('id', false));
-        $rec2->setValue('id', 1, false);
-        static::assertTrue($rec2->hasValue('id', false));
+        static::assertFalse($rec2->hasValue('parent_id', false));
 
         $rec3 = TestingAdmin::_();
         static::assertInstanceOf(TestingAdmin::class, $rec3);
+        static::assertFalse($rec3->existsInDb());
         static::assertFalse($rec3->hasValue('id', false));
+        static::assertFalse($rec3->hasValue('parent_id', false));
     }
 
     public function testReset() {
@@ -157,7 +160,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertTrue($rec->hasValue('parent_id', false));
         $rec->next();
         static::assertEquals(1, $this->getObjectPropertyValue($rec, 'iteratorIdx'));
-        $rec->updateValues(['Parent' => ['id' => 2, 'parent_id' => null]]);
+        $rec->updateValues(['Parent' => ['id' => 2, 'parent_id' => null]], true);
         static::assertCount(1, $this->getObjectPropertyValue($rec, 'relatedRecords'));
         /** @var DbRecordValue $valId1 */
         $valId1 = $this->callObjectMethod($rec, 'getValueObject', 'id');
@@ -177,7 +180,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         /** @var DbRecordValue $valId2 */
         $valId2 = $this->callObjectMethod($rec, 'getValueObject', 'id');
         static::assertFalse($valId2->hasOldValue());
-        $rec->setValue('id', 2, false);
+        $rec->setValue('id', 2, true);
         /** @var DbRecordValue $valId3 */
         $valId3 = $this->callObjectMethod($rec, 'getValueObject', 'id');
         static::assertEquals(2, $valId3->getValue());
@@ -306,7 +309,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
     public function testGetValue() {
         $rec = TestingAdmin::newEmptyRecord();
         static::assertEquals(TestingAdmin::getColumn('id')->getDefaultValueAsIs(), $rec->getValue('id'));
-        $rec->setValue('id', 2, false);
+        $rec->setValue('id', 2, true);
         static::assertEquals(2, $rec->getValue('id'));
         static::assertEquals(2, $rec->getValue(TestingAdmin::getColumn('id')));
     }
@@ -322,7 +325,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($this->callObjectMethod($rec, '_hasValue', $val, false));
         static::assertTrue($this->callObjectMethod($rec, '_hasValue', $val, true));
 
-        $rec->setValue('id', 2, false);
+        $rec->setValue('id', 2, true);
         static::assertTrue($rec->hasValue('id', false));
         static::assertTrue($rec->hasValue('id', true));
 
@@ -355,8 +358,26 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
      */
     public function testInvalidSetValue3() {
         $rec = new TestingAdmin();
-        $rec->setValue('id', 1, false);
         $rec->setValue('parent_id', 1, true);
+    }
+
+    /**
+     * @expectedException \BadMethodCallException
+     * @expectedExceptionMessage It is forbidden to set value with $isFromDb === true after begin()
+     */
+    public function testInvalidSetValue4() {
+        $rec = new TestingAdmin();
+        $rec->setValue('id', 1, true);
+        $rec->begin()->setValue('parent_id', 2, true);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage It is forbidden to set primary key value when $isFromDb === false
+     */
+    public function testInvalidSetPkValue() {
+        $rec = new TestingAdmin();
+        $rec->setValue('id', 1, false);
     }
 
     public function testSetValueAndPkValue() {
@@ -369,12 +390,12 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $val = $this->callObjectMethod($rec, 'getValueObject', 'id');
         static::assertTrue($val->isItFromDb());
         static::assertFalse($val->hasOldValue());
-        $rec->setValue('id', 3, false);
+        $rec->setValue('id', 3, true);
         static::assertTrue($rec->hasValue('id'));
         static::assertEquals(3, $rec->getValue('id'));
         /** @var DbRecordValue $val */
         $val = $this->callObjectMethod($rec, 'getValueObject', 'id');
-        static::assertFalse($val->isItFromDb());
+        static::assertTrue($val->isItFromDb());
         static::assertTrue($val->hasOldValue());
         static::assertEquals(2, $val->getOldValue());
 
@@ -402,10 +423,10 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertTrue($rec->isValueFromDb('id'));
         static::assertTrue($rec->isValueFromDb('parent_id'));
         static::assertTrue($rec->isValueFromDb('email'));
-        $rec->setValue('id', 2, false);
+        $rec->setValue('id', 2, true);
         static::assertTrue($rec->hasPrimaryKeyValue());
         static::assertEquals(2, $rec->getValue('id'));
-        static::assertFalse($rec->isValueFromDb('id'));
+        static::assertTrue($rec->isValueFromDb('id'));
         static::assertEquals(4, $rec->getValue('parent_id'));
         static::assertFalse($rec->isValueFromDb('parent_id'));
         static::assertEquals('test@test.cc', $rec->getValue('email'));
@@ -428,12 +449,6 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $this->insertMinimalTestDataToAdminsTable();
 
         $rec = new TestingAdmin();
-        $prevQuery = TestingAdminsTable::getLastQuery();
-        static::assertFalse($rec->existsInDb());
-        static::assertFalse($rec->existsInDb(true));
-        static::assertEquals($prevQuery, TestingAdminsTable::getLastQuery());
-
-        $rec->setValue('id', 1, false);
         $prevQuery = TestingAdminsTable::getLastQuery();
         static::assertFalse($rec->existsInDb());
         static::assertFalse($rec->existsInDb(true));
@@ -506,7 +521,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Related record with name 'Parent' is not set and autoloading is disabled
      */
     public function testInvalidRelationRequestInToArray1() {
-        TestingAdmin::fromArray(['id' => 1])->toArrayWithoutFiles(['id'], ['Parent']);
+        TestingAdmin::fromArray(['id' => 1], true)->toArrayWithoutFiles(['id'], ['Parent']);
     }
 
     /**
@@ -514,7 +529,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Related record with name 'Children' is not set and autoloading is disabled
      */
     public function testInvalidRelationRequestInToArray2() {
-        TestingAdmin::fromArray(['id' => 1])->toArrayWithoutFiles(['id'], ['Children']);
+        TestingAdmin::fromArray(['id' => 1], true)->toArrayWithoutFiles(['id'], ['Children']);
     }
 
     /**
@@ -522,7 +537,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Table has no relation named 'Invalid'
      */
     public function testInvalidRelationRequestInToArray3() {
-        TestingAdmin::fromArray(['id' => 1])->toArrayWithoutFiles(['id'], ['Invalid']);
+        TestingAdmin::fromArray(['id' => 1], true)->toArrayWithoutFiles(['id'], ['Invalid']);
     }
 
     public function testToArray() {
@@ -553,7 +568,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
 
         $admin = $this->getDataForSingleAdmin(true);
         $adminNormalized = $this->normalizeAdmin($admin, null);
-        $toArray = $rec->fromData($admin)->toArray();
+        $toArray = $rec->fromData($admin, true)->toArray();
         $toArrayPartial = $rec->toArray(['id', 'parent_id', 'login', 'role']);
         static::assertEquals(
             array_merge(['avatar' => 'not implemented', 'some_file' => 'not implemented'], $adminNormalized),
@@ -646,7 +661,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage error.invalid_data
      */
     public function testInvalidFromData3() {
-        TestingAdmin::fromArray(['id' => 'qqqq']);
+        TestingAdmin::fromArray(['id' => 'qqqq'], true);
     }
 
     public function testFromData() {
@@ -972,7 +987,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $data argument contains unknown column name or relation name: 'invalid_col'
      */
     public function testInvalidUpdateValuesData1() {
-        TestingAdmin::newEmptyRecord()->updateValues(['id' => 1, 'invalid_col' => 2]);
+        TestingAdmin::newEmptyRecord()->updateValues(['id' => 1, 'invalid_col' => 2], true);
     }
 
     /**
@@ -980,7 +995,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $relatedRecord argument must be an array or instance of DbRecord class for the 'admins' DB table
      */
     public function testInvalidUpdateValuesData2() {
-        TestingAdmin::newEmptyRecord()->updateValues(['id' => 1, 'Parent' => null, 'Parent2' => null]);
+        TestingAdmin::newEmptyRecord()->updateValues(['id' => 1, 'Parent' => null, 'Parent2' => null], true);
     }
 
     /**
@@ -988,7 +1003,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $data argument contains unknown column name or relation name: 'Parent2'
      */
     public function testInvalidUpdateValuesData3() {
-        TestingAdmin::newEmptyRecord()->updateValues(['id' => 1, 'Parent' => [], 'Parent2' => null]);
+        TestingAdmin::newEmptyRecord()->updateValues(['id' => 1, 'Parent' => [], 'Parent2' => null], true);
     }
 
     /**
@@ -1007,6 +1022,14 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         TestingAdmin::newEmptyRecord()->updateValues(['email' => 'test@email.cc'], true);
     }
 
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage It is forbidden to set primary key value when $isFromDb === false
+     */
+    public function testInvalidUpdateValuesData6() {
+        TestingAdmin::newEmptyRecord()->updateValues(['id' => 1], false);
+    }
+
     public function testUpdateValues() {
         $records = TestingApp::getRecordsForDb('admins', 10);
         $rec = TestingAdmin::fromArray($records[1], true);
@@ -1021,7 +1044,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertEquals('changed2' . $records[1]['email'], $rec->getValue('email'));
         static::assertTrue($rec->isValueFromDb('email'));
 
-        $rec->updateValues(['Parent' => array_diff_key($records[0], ['not_changeable_column' => ''])]);
+        $rec->updateValues(['Parent' => array_diff_key($records[0], ['id' => '', 'not_changeable_column' => ''])]);
         static::assertTrue($rec->isRelatedRecordAttached('Parent'));
         static::assertFalse($rec->getRelatedRecord('Parent', false)->existsInDb(false));
 
@@ -1117,7 +1140,19 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $originalData = TestingApp::getRecordsForDb('admins', 1)[0];
         $rec = TestingAdmin::fromArray($originalData, true);
         $columnsToSave = $this->callObjectMethod($rec, 'getAllColumnsWithUpdatableValues');
-        $expectedData = ['id' => $originalData['id'], 'updated_at' => DbExpr::create('NOW()')];
+        static::assertEquals(
+            [],
+            $this->callObjectMethod($rec, 'collectValuesForSave', $columnsToSave, true)
+        );
+        $updates = array_diff_key($originalData, array_flip(['id', 'not_changeable_column', 'password']));
+        $rec->updateValues($updates, false);
+        static::assertEquals(
+            [], //< data actually was not modified for any column
+            $this->callObjectMethod($rec, 'collectValuesForSave', $columnsToSave, true)
+        );
+        $rec->reset()->setValue('id', $originalData['id'], true);
+        $rec->updateValues($updates);
+        $expectedData = array_merge($updates, ['id' => $originalData['id'], 'updated_at' => DbExpr::create('NOW()')]);
         static::assertEquals(
             $expectedData,
             $this->callObjectMethod($rec, 'collectValuesForSave', $columnsToSave, true)
@@ -1133,13 +1168,13 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
             $expectedData,
             ['id' => TestingAdminsTable::getExpressionToSetDefaultValueForAColumn()]
         );
-        unset($expectedData['not_changeable_column']);
+        unset($expectedData['not_changeable_column'], $expectedData['password']);
         static::assertEquals(
             $expectedData,
             $this->callObjectMethod($rec, 'collectValuesForSave', $columnsToSave, false)
         );
         static::assertEquals(
-            [],
+            ['password' => ['Null value is not allowed']],
             $this->callObjectMethod($rec, 'validateNewData', $expectedData, $columnsToSave, false)
         );
 
@@ -1163,6 +1198,14 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
             $this->callObjectMethod($rec, 'validateNewData', $expectedData, $columnsToSave, false)
         );
 
+        $rec->reset();
+        $expectedData = ['id' => 1, 'parent_id' => null, 'email' => 'test@test.cc', 'login' => 'test'];
+        $rec->fromData($expectedData, true);
+        static::assertEquals(
+            [],
+            $this->callObjectMethod($rec, 'collectValuesForSave', $columnsToSave, true)
+        );
+
         static::assertEquals(
             ['email' => ['Value must be an email']],
             $this->callObjectMethod($rec, 'validateNewData', ['email' => 'invalid'], ['email'], true)
@@ -1173,8 +1216,147 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         );
     }
 
+    /**
+     * @covers DbRecord::beforeSave()
+     * @expectedException \BadMethodCallException
+     * @expectedExceptionMessage before: no-no-no!
+     */
+    public function testBeforeSave() {
+        TestingApp::clearTables();
+        $rec = \PeskyORMTest\TestingAdmins\TestingAdmin2::newEmptyRecord();
+        $rec
+            ->fromData(['id' => 999, 'login' => 'qqq'], true)
+            ->setValue('password', 'test', false)
+            ->save();
+        TestingApp::clearTables();
+    }
+
+    /**
+     * @covers DbRecord::afterSave()
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage after: no-no-no!
+     */
+    public function testAfterSave() {
+        TestingApp::clearTables();
+        $rec = \PeskyORMTest\TestingAdmins\TestingAdmin2::newEmptyRecord();
+        $rec
+            ->setValue('login', 'test', false)
+            ->setValue('password', 'test', false)
+            ->save();
+        TestingApp::clearTables();
+    }
+
+    /**
+     * @covers DbRecord::runColumnSavingExtenders()
+     * @expectedException UnexpectedValueException
+     * @expectedExceptionMessage login: update!
+     */
+    public function testColumnSavingExtenders1() {
+        $rec = \PeskyORMTest\TestingAdmins\TestingAdmin3::newEmptyRecord();
+        $this->callObjectMethod(
+            $rec,
+            'runColumnSavingExtenders',
+            ['id', 'parent_id', 'login'],
+            ['id' => 1, 'parent_id' => null, 'login' => 'test'],
+            ['id' => 1, 'parent_id' => null, 'login' => 'test'],
+            true
+        );
+    }
+
+    /**
+     * @covers DbRecord::runColumnSavingExtenders()
+     * @expectedException UnexpectedValueException
+     * @expectedExceptionMessage some_file: here
+     */
+    public function testColumnSavingExtenders2() {
+        $rec = \PeskyORMTest\TestingAdmins\TestingAdmin3::newEmptyRecord();
+        $this->callObjectMethod(
+            $rec,
+            'runColumnSavingExtenders',
+            ['parent_id', 'login'],
+            ['parent_id' => null, 'login' => 'test'],
+            ['id' => 1, 'parent_id' => null, 'login' => 'test'],
+            false
+        );
+
+        $this->callObjectMethod(
+            $rec,
+            'runColumnSavingExtenders',
+            ['parent_id', 'some_file'],
+            ['parent_id' => null],
+            ['id' => 1, 'parent_id' => null],
+            false
+        );
+    }
+
+    /**
+     * @covers DbRecord::runColumnSavingExtenders()
+     * @expectedException UnexpectedValueException
+     * @expectedExceptionMessage login: update!
+     */
+    public function testColumnSavingExtendersUsageInSave1() {
+        TestingApp::fillAdminsTable(1);
+        $rec = \PeskyORMTest\TestingAdmins\TestingAdmin3::newEmptyRecord()
+            ->fromData(['id' => 1], true)
+            ->updateValues(['parent_id' => null, 'login' => 'test']);
+        $rec->save();
+        TestingApp::clearTables();
+    }
+
+    /**
+     * @covers DbRecord::runColumnSavingExtenders()
+     * @expectedException UnexpectedValueException
+     * @expectedExceptionMessage some_file: here
+     */
+    public function testColumnSavingExtendersUsageInSave2() {
+        TestingApp::fillAdminsTable(1);
+        $rec = \PeskyORMTest\TestingAdmins\TestingAdmin3::newEmptyRecord()
+            ->fromData(['id' => 1], true)
+            ->updateValues([
+                'parent_id' => null,
+                'some_file' => [
+                    'tmp_name' => __DIR__ . '/files/test_file.jpg',
+                    'name' => 'image.jpg',
+                    'type' => 'image/jpeg',
+                    'size' => filesize(__DIR__ . '/files/test_file.jpg'),
+                    'error' => 0,
+                ]
+            ]);
+        $rec->save();
+        TestingApp::clearTables();
+    }
+
+    /**
+     * @covers DbRecord::save()
+     * @covers DbRecord::saveToDb()
+     */
     public function testSaveAndSaveToDbAndBeforeAfterSave() {
-        // todo: test save, saveToDb, afterSave
+        $recordsAdded = TestingApp::fillAdminsTable(10);
+        static::assertEquals(10, TestingAdminsTable::count([]));
+        $rec = TestingAdmin::newEmptyRecord();
+        // insert
+        $newRec = array_diff_key($recordsAdded[0], array_flip(['id', 'not_changeable_column', 'password']));
+        $rec->fromData($newRec)->setValue('password', 'test', false)->save();
+        static::assertTrue($rec->existsInDb());
+        static::assertTrue($rec->existsInDb(true));
+        static::assertNotEquals($newRec['updated_at'], $rec->getValue('updated_at'));
+        static::assertTrue(password_verify('test', $rec->getValue('password')));
+        unset($newRec['updated_at']);
+        static::assertEquals($newRec, $rec->toArrayWithoutFiles(array_keys($newRec)));
+        static::assertEquals(11, TestingAdminsTable::count([]));
+        // update
+        $rec->fromData($recordsAdded[1], true)->updateValues($newRec)->save();
+        static::assertTrue($rec->existsInDb());
+        static::assertTrue($rec->existsInDb(true));
+        static::assertEquals($recordsAdded[1]['password'], $rec->getValue('password'));
+        static::assertEquals($newRec, $rec->toArrayWithoutFiles(array_keys($newRec)));
+        static::assertEquals(11, TestingAdminsTable::count([]));
+        // update not exising id
+        $rec->setValue('id', 0, true)->save();
+        static::assertFalse($rec->existsInDb());
+        static::assertFalse($rec->existsInDb(true));
+        static::assertEquals(11, TestingAdminsTable::count([]));
+        // todo: test relations saving
     }
 
     /**
@@ -1190,7 +1372,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Trying to begin collecting changes on not existing record
      */
     public function testInvalidBegin2() {
-        TestingAdmin::fromArray(['id' => 1], false)->begin();
+        TestingAdmin::fromArray(['parent_id' => 1], false)->begin();
     }
 
     /**
@@ -1308,8 +1490,38 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         TestingAdmin::newEmptyRecord()->commit();
     }
 
+    /**
+     * @covers DbRecord::commit()
+     */
     public function testCommit() {
-
+        $recordsAdded = TestingApp::fillAdminsTable(10);
+        static::assertEquals(10, TestingAdminsTable::count([]));
+        $rec = TestingAdmin::fromArray($recordsAdded[2], true);
+        $expected = array_diff_key($recordsAdded[2], array_flip(['updated_at', 'password']));
+        static::assertEquals($expected, $rec->toArrayWithoutFiles(array_keys($expected)));
+        $update = array_diff_key($recordsAdded[0], array_flip(['id', 'password', 'not_changeable_column']));
+        $rec
+            ->begin()
+            ->updateValues($update, false)
+            ->commit()
+            ->reload();
+        unset($update['updated_at']);
+        $expected = array_merge($expected, $update);
+        static::assertEquals($expected, $rec->toArrayWithoutFiles(array_keys($expected)));
+        static::assertNotEquals($recordsAdded[2]['updated_at'], $rec->getValue('updated_at'));
+        static::assertNotEquals($recordsAdded[0]['updated_at'], $rec->getValue('updated_at'));
+        static::assertEquals($recordsAdded[2]['password'], $rec->getValue('password'));
+        static::assertEquals($recordsAdded[2]['not_changeable_column'], $rec->getValue('not_changeable_column'));
+        // test password change
+        $rec
+            ->begin()
+            ->setValue('password', 'test1111', false)
+            ->commit();
+        static::assertEquals(array_merge($expected, $update), $rec->toArrayWithoutFiles(array_keys($expected)));
+        static::assertNotEquals($recordsAdded[0]['password'], $rec->getValue('password'));
+        static::assertNotEquals($recordsAdded[2]['password'], $rec->getValue('password'));
+        static::assertTrue(password_verify('test1111', $rec->getValue('password')));
+        static::assertTrue(password_verify('test1111', $rec->reload()->getValue('password')));
     }
 
     public function testInvalidSaveRelations1() {
