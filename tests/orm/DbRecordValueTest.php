@@ -185,6 +185,22 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         $valueObj->getDefaultValue();
     }
 
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage $value argument must be a string, integer, float or array to be able to validate if it is within allowed values
+     */
+    public function testInvalidDefaultValue5() {
+        $langCol = clone TestingAdminsTableStructure::getColumn('language');
+        $langCol->setDefaultValue(DbExpr::create('test2'));
+        $valueObj = DbRecordValue::create($langCol, TestingAdmin::_());
+        static::assertTrue($valueObj->hasDefaultValue());
+        static::assertTrue($valueObj->isDefaultValueCanBeSet());
+        static::assertFalse($valueObj->hasValue());
+        static::assertTrue($valueObj->hasValueOrDefault());
+        static::assertFalse($valueObj->hasValue());
+        $valueObj->getDefaultValue();
+    }
+
     public function testDefaultValue() {
         $record = TestingAdmin::_();
 
@@ -214,15 +230,6 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         static::assertEquals('de', $valueObj->getDefaultValue());
         static::assertEquals('de', $valueObj->getValueOrDefault());
 
-        $langCol->setDefaultValue(DbExpr::create('test2'));
-        static::assertTrue($valueObj->hasDefaultValue());
-        static::assertTrue($valueObj->isDefaultValueCanBeSet());
-        static::assertFalse($valueObj->hasValue());
-        static::assertTrue($valueObj->hasValueOrDefault());
-        static::assertFalse($valueObj->hasValue());
-        static::assertInstanceOf(DbExpr::class, $valueObj->getDefaultValue());
-        static::assertInstanceOf(DbExpr::class, $valueObj->getValueOrDefault());
-
         $valueObj->setRawValue('ru', 'ru', false)->setValidValue('ru', 'ru');
         static::assertEquals('ru', $valueObj->getValue());
 
@@ -240,7 +247,10 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Value for column 'parent_id' is not set
      */
     public function testInvalidGetValue() {
-        $valueObj = DbRecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_()->setId(1));
+        $valueObj = DbRecordValue::create(
+            TestingAdminsTableStructure::getColumn('parent_id'),
+            TestingAdmin::newEmptyRecord()
+        );
         $valueObj->getValue();
     }
 

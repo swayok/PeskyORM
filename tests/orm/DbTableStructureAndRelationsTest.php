@@ -55,7 +55,7 @@ class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
 
     public function testTableStructureColumns() {
         $columns = TestingAdminsTableStructure::getColumns();
-        static::assertCount(17, $columns);
+        static::assertCount(19, $columns);
         static::assertTrue(TestingAdminsTableStructure::hasPkColumn());
         static::assertEquals('id', TestingAdminsTableStructure::getPkColumnName());
         static::assertTrue(TestingAdminsTableStructure::hasColumn('login'));

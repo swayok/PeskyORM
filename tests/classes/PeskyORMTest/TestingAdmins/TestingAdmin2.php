@@ -15,7 +15,7 @@ class TestingAdmin2 extends DbRecord {
 
     protected function beforeSave(array $columnsToSave, array $data, $isUpdate) {
         if ($isUpdate) {
-            throw new \BadMethodCallException('before: no-no-no!');
+            return ['login' => ['error']];
         }
         return [];
     }

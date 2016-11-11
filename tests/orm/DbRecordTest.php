@@ -658,7 +658,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException PeskyORM\ORM\Exception\InvalidDataException
-     * @expectedExceptionMessage error.invalid_data
+     * @expectedExceptionMessage Validation errors: [id] Value must be of an integer data type
      */
     public function testInvalidFromData3() {
         TestingAdmin::fromArray(['id' => 'qqqq'], true);
@@ -1008,7 +1008,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException \PeskyORM\ORM\Exception\InvalidDataException
-     * @expectedExceptionMessage error.invalid_data
+     * @expectedExceptionMessage Validation errors: [email] Value must be an email
      */
     public function testInvalidUpdateValuesData4() {
         TestingAdmin::newEmptyRecord()->updateValues(['email' => 'not email']);
@@ -1117,7 +1117,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException \PeskyORM\ORM\Exception\InvalidDataException
-     * @expectedExceptionMessage error.invalid_data
+     * @expectedExceptionMessage Validation errors: [email] Value must be an email
      */
     public function testInvalidDataInCollectValuesForSave() {
         $this->callObjectMethod(
@@ -1218,8 +1218,8 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @covers DbRecord::beforeSave()
-     * @expectedException \BadMethodCallException
-     * @expectedExceptionMessage before: no-no-no!
+     * @expectedException \PeskyORM\ORM\Exception\InvalidDataException
+     * @expectedExceptionMessage Validation errors: [login] error
      */
     public function testBeforeSave() {
         TestingApp::clearTables();
@@ -1408,7 +1408,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
         static::assertEquals([], $this->getObjectPropertyValue($rec, 'valuesBackup'));
         $rec->begin();
-        $rec->setValue('email', 'email.was@changed.hehe', true);
+        $rec->setValue('email', 'email.was@changed.hehe', false);
         static::assertCount(1, $this->getObjectPropertyValue($rec, 'valuesBackup'));
         static::assertArrayHasKey('email', $this->getObjectPropertyValue($rec, 'valuesBackup'));
         static::assertInstanceOf(DbRecordValue::class, $this->getObjectPropertyValue($rec, 'valuesBackup')['email']);
@@ -1447,7 +1447,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $rec->fromData($data, true); //< it should not fail even if there was no commit() or rollback() after previous begin()
         static::assertEquals($data, $rec->toArrayWithoutFiles());
         $rec->begin()->rollback()->begin();
-        $rec->setValue('email', 'email.was@changed.hehe', true);
+        $rec->setValue('email', 'email.was@changed.hehe', false);
         static::assertCount(1, $this->getObjectPropertyValue($rec, 'valuesBackup'));
         static::assertArrayHasKey('email', $this->getObjectPropertyValue($rec, 'valuesBackup'));
         static::assertEquals($data['email'], $this->getObjectPropertyValue($rec, 'valuesBackup')['email']->getValue());

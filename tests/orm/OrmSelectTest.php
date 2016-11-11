@@ -85,6 +85,10 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         TestingApp::clearTables();
         $insertedData = TestingApp::fillAdminsTable(2);
         $testData = static::convertTestDataForAdminsTableAssert($insertedData);
+        $testData[0]['created_at'] .= '+00';
+        $testData[0]['updated_at'] .= '+00';
+        $testData[1]['created_at'] .= '+00';
+        $testData[1]['updated_at'] .= '+00';
         $dbSelect->columns('*');
         $count = $dbSelect->fetchCount();
         static::assertEquals(2, $count);
@@ -173,13 +177,14 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         $colsInSelect = [];
         foreach ($dbSelect->getTable()->getTableStructure()->getColumns() as $column) {
             if ($column->isItExistsInDb()) {
+                $shortName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', [$column->getName()]);
                 $expectedColsInfo[] = [
                     'name' => $column->getName(),
                     'alias' => null,
                     'join_name' => null,
                     'type_cast' => null,
                 ];
-                $colsInSelect[] = '"Admins"."' . $column->getName() . '" AS "_Admins__' . $column->getName() . '"';
+                $colsInSelect[] = '"Admins"."' . $column->getName() . '" AS "_Admins__' . $shortName . '"';
             }
         }
         $colsInSelect = implode(', ', $colsInSelect);
@@ -190,7 +195,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             rtrim($dbSelect->getQuery())
         );
         static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
-        static::assertCount(15, $this->getObjectPropertyValue($dbSelect, 'columns'));
+        static::assertCount(16, $this->getObjectPropertyValue($dbSelect, 'columns'));
 
         $dbSelect->columns(['*']);
         static::assertEquals(
@@ -198,7 +203,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             rtrim($dbSelect->getQuery())
         );
         static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
-        static::assertCount(15, $this->getObjectPropertyValue($dbSelect, 'columns'));
+        static::assertCount(16, $this->getObjectPropertyValue($dbSelect, 'columns'));
 
         $dbSelect->columns('*');
         static::assertEquals(
@@ -206,7 +211,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             rtrim($dbSelect->getQuery())
         );
         static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
-        static::assertCount(15, $this->getObjectPropertyValue($dbSelect, 'columns'));
+        static::assertCount(16, $this->getObjectPropertyValue($dbSelect, 'columns'));
 
         static::assertEquals(
             'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins"',
@@ -332,14 +337,15 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         $colsInSelectForParent2 = [];
         foreach ($dbSelect->getTable()->getTableStructure()->getColumns() as $column) {
             if ($column->isItExistsInDb()) {
+                $shortName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', [$column->getName()]);
                 $expectedColsInfo[] = [
                     'name' => $column->getName(),
                     'alias' => null,
                     'join_name' => null,
                     'type_cast' => null,
                 ];
-                $colsInSelectForParent[] = '"Parent"."' . $column->getName() . '" AS "_Parent__' . $column->getName() . '"';
-                $colsInSelectForParent2[] = '"Parent2"."' . $column->getName() . '" AS "_Parent2__' . $column->getName() . '"';
+                $colsInSelectForParent[] = '"Parent"."' . $column->getName() . '" AS "_Parent__' . $shortName . '"';
+                $colsInSelectForParent2[] = '"Parent2"."' . $column->getName() . '" AS "_Parent2__' . $shortName . '"';
             }
         }
         $colsInSelectForParent = implode(', ', $colsInSelectForParent);
@@ -537,7 +543,8 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         $colsInSelectForTest = [];
         foreach ($dbSelect->getTable()->getTableStructure()->getColumns() as $column) {
             if ($column->isItExistsInDb()) {
-                $colsInSelectForTest[] = '"Test"."' . $column->getName() . '" AS "_Test__' . $column->getName() . '"';
+                $shortName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', [$column->getName()]);
+                $colsInSelectForTest[] = '"Test"."' . $column->getName() . '" AS "_Test__' . $shortName . '"';
             }
         }
         $colsInSelectForTest = implode(', ', $colsInSelectForTest);
