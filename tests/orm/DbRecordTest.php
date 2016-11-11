@@ -128,9 +128,9 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
      */
     private function callObjectMethod($object, $methodName, ...$args) {
         $reflection = new ReflectionClass($object);
-        $prop = $reflection->getMethod($methodName);
-        $prop->setAccessible(true);
-        return $prop->invokeArgs($object, $args);
+        $method = $reflection->getMethod($methodName);
+        $method->setAccessible(true);
+        return $method->invokeArgs($object, $args);
     }
 
     public function testConstructor() {
@@ -540,6 +540,32 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         TestingAdmin::fromArray(['id' => 1], true)->toArrayWithoutFiles(['id'], ['Invalid']);
     }
 
+    /**
+     * @covers DbRecord::getColumnValueForToArray()
+     */
+    public function testGetColumnValueForToArray() {
+        $rec = TestingAdmin::fromArray(['parent_id' => 1], false);
+        $reflection = new ReflectionClass($rec);
+        $method = $reflection->getMethod('getColumnValueForToArray');
+        $method->setAccessible(true);
+        static::assertEquals(null, $method->invoke($rec, 'id', false));
+        static::assertEquals(1, $method->invoke($rec, 'parent_id', false));
+        static::assertEquals('en', $method->invoke($rec, 'language', false));
+        static::assertEquals(null, $method->invoke($rec, 'avatar', false));
+        static::assertEquals(null, $method->invoke($rec, 'avatar', true));
+        $rec->setValue('id', 2, true);
+        static::assertEquals(2, $method->invoke($rec, 'id', false));
+        static::assertEquals(1, $method->invoke($rec, 'parent_id', false));
+        static::assertEquals(null, $method->invoke($rec, 'language', false));
+        static::assertEquals(null, $method->invoke($rec, 'avatar', false));
+        static::assertEquals(null, $method->invoke($rec, 'avatar', true));
+        $method->setAccessible(false);
+    }
+
+    /**
+     * @covers DbRecord::toArray()
+     * @covers DbRecord::toArrayWithoutFiles()
+     */
     public function testToArray() {
         // toArray, toArrayWithoutFiles
         $rec = TestingAdmin::fromArray([]);
@@ -571,7 +597,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $toArray = $rec->fromData($admin, true)->toArray();
         $toArrayPartial = $rec->toArray(['id', 'parent_id', 'login', 'role']);
         static::assertEquals(
-            array_merge(['avatar' => 'not implemented', 'some_file' => 'not implemented'], $adminNormalized),
+            array_diff_key($adminNormalized, array_flip(['not_changeable_column', 'not_existing_column', 'password'])),
             $toArray
         );
         static::assertEquals(array_intersect_key($adminNormalized, $toArrayPartial), $toArrayPartial);
@@ -591,14 +617,11 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         );
 
         $insertedRecords = TestingApp::fillAdminsTable(10);
-        $insertedRecords[0]['not_existing_column'] = null;
-        $insertedRecords[1]['not_existing_column'] = null;
-        $insertedRecords[2]['not_existing_column'] = null;
         unset($adminNoId['Parent']);
         $toArrayRelation = $rec->read($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent'], true);
         static::assertEquals(
             ['id' => $insertedRecords[1]['id'], 'Parent' => $insertedRecords[0]],
-            $toArrayRelation
+            array_diff_key($toArrayRelation, ['not_existing_column' => ''])
         );
 
         $toArrayRelation = $rec->read($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent' => ['login']], true);
@@ -1356,7 +1379,35 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($rec->existsInDb());
         static::assertFalse($rec->existsInDb(true));
         static::assertEquals(11, TestingAdminsTable::count([]));
-        // todo: test relations saving
+        // relations saving
+        $rec = TestingAdmin::fromArray($newRec, false)->setValue('password', 'test1', false);
+        $child1 = array_merge($recordsAdded[1], ['parent_id' => null, 'id' => null, 'password' => 'test']);
+        $child2 = array_merge($recordsAdded[2], ['parent_id' => null, 'id' => null, 'password' => 'test2']);
+        unset($child1['not_changeable_column'], $child2['not_changeable_column']);
+        $rec->updateValues(['Children' => [$child1, $child2]], false);
+        static::assertEquals(11, TestingAdminsTable::count());
+        $rec->save(['Children']);
+        static::assertEquals(14, TestingAdminsTable::count());
+        static::assertNull($rec->getValue('parent_id')); //< should not be changed
+        static::assertTrue($rec->isValueFromDb('parent_id'));
+        static::assertCount(2, $rec->getRelatedRecord('Children'));
+        $rec->reload([], ['Children']);
+        static::assertNull($rec->getValue('parent_id'));
+        $expected1 = array_diff_key($child1, array_flip(['id', 'updated_at', 'password']));
+        $expected2 = array_diff_key($child2, array_flip(['id', 'updated_at', 'password']));
+        $expected1['parent_id'] = $expected2['parent_id'] = $rec->getPrimaryKeyValue();
+        static::assertEquals(
+            $expected1,
+            $rec->getRelatedRecord('Children')[0]->toArrayWithoutFiles(array_keys($expected1))
+        );
+        static::assertEquals(
+            $expected2,
+            $rec->getRelatedRecord('Children')[1]->toArrayWithoutFiles(array_keys($expected1))
+        );
+        static::assertEquals($rec->getPrimaryKeyValue(), $rec->getRelatedRecord('Children')[0]->getValue('parent_id'));
+        static::assertEquals($rec->getPrimaryKeyValue(), $rec->getRelatedRecord('Children')[1]->getValue('parent_id'));
+        static::assertTrue(password_verify('test', $rec->getRelatedRecord('Children')[0]->getValue('password')));
+        static::assertTrue(password_verify('test2', $rec->getRelatedRecord('Children')[1]->getValue('password')));
     }
 
     /**
@@ -1524,47 +1575,202 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertTrue(password_verify('test1111', $rec->reload()->getValue('password')));
     }
 
+    /**
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage It is impossible to save related objects of a record that does not exist in DB
+     */
     public function testInvalidSaveRelations1() {
-
+        TestingAdmin::newEmptyRecord()->saveRelations(['Parent']);
     }
 
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $relationsToSave argument contains unknown relations: NotRelation, Array
+     */
     public function testInvalidSaveRelations2() {
-
+        TestingAdmin::newEmptyRecord()->setValue('id', 1, true)->saveRelations(['NotRelation', ['asd']]);
     }
 
     public function testSaveRelations() {
+        $recordsAdded = TestingApp::fillAdminsTable(10);
+        $parent = array_merge($recordsAdded[2], ['parent_id' => null, 'id' => null, 'password' => 'test']);
+        unset($parent['not_changeable_column']);
+        // belongs to while record exists
+        $rec = TestingAdmin::fromArray($recordsAdded[0], true);
+        $rec->updateValues(['Parent' => $parent], false);
+        static::assertEquals(10, TestingAdminsTable::count());
+        $rec->saveRelations(['Parent']);
+        static::assertEquals(11, TestingAdminsTable::count());
+        static::assertNotNull($rec->getValue('parent_id'));
+        static::assertTrue($rec->isValueFromDb('parent_id'));
+        static::assertTrue($rec->getRelatedRecord('Parent')->existsInDb(true));
+        $rec->reload([], ['Parent']);
+        static::assertNotNull($rec->getValue('parent_id'));
+        $expected = array_diff_key($parent, array_flip(['id', 'updated_at', 'password']));
+        static::assertEquals(
+            $expected,
+            $rec->getRelatedRecord('Parent')->toArrayWithoutFiles(array_keys($expected))
+        );
+        static::assertEquals($rec->getValue('parent_id'), $rec->getRelatedRecord('Parent')->getPrimaryKeyValue());
+        static::assertTrue(password_verify('test', $rec->getRelatedRecord('Parent')->getValue('password')));
 
+        // belongs to while record not exists - it is forbidden but maybe later
+        /*$rec->unsetPrimaryKeyValue();
+        $rec->updateValues(['Parent' => $parent], false);
+        $rec->saveRelations(['Parent']);
+        static::assertEquals(12, TestingAdminsTable::count());
+        static::assertNotNull($rec->getValue('parent_id'));
+        static::assertFalse($rec->isValueFromDb('parent_id'));*/
+
+        // has one
+        TestingApp::fillAdminsTable(1);
+        $rec = TestingAdmin::fromArray($recordsAdded[0], true);
+        $rec->updateValues(['HasOne' => $parent], false);
+        static::assertEquals(1, TestingAdminsTable::count());
+        $rec->saveRelations(['HasOne']);
+        static::assertEquals(2, TestingAdminsTable::count());
+        static::assertNull($rec->getValue('parent_id')); //< should not be changed
+        static::assertTrue($rec->isValueFromDb('parent_id'));
+        static::assertTrue($rec->getRelatedRecord('HasOne')->existsInDb(true));
+        $rec->reload([], ['HasOne']);
+        static::assertNull($rec->getValue('parent_id'));
+        $expected = array_diff_key($parent, array_flip(['id', 'updated_at', 'password']));
+        $expected['parent_id'] = $rec->getPrimaryKeyValue();
+        static::assertEquals(
+            $expected,
+            $rec->getRelatedRecord('HasOne')->toArrayWithoutFiles(array_keys($expected))
+        );
+        static::assertEquals($rec->getPrimaryKeyValue(), $rec->getRelatedRecord('HasOne')->getValue('parent_id'));
+        static::assertTrue(password_verify('test', $rec->getRelatedRecord('HasOne')->getValue('password')));
+
+        // has many
+        TestingApp::fillAdminsTable(1);
+        $rec = TestingAdmin::fromArray($recordsAdded[0], true);
+        $child1 = array_merge($recordsAdded[1], ['parent_id' => null, 'id' => null, 'password' => 'test2']);
+        unset($child1['not_changeable_column']);
+        $rec->updateValues(['Children' => [$child1, $parent]], false);
+        static::assertEquals(1, TestingAdminsTable::count());
+        $rec->saveRelations(['Children']);
+        static::assertEquals(3, TestingAdminsTable::count());
+        static::assertNull($rec->getValue('parent_id')); //< should not be changed
+        static::assertTrue($rec->isValueFromDb('parent_id'));
+        static::assertCount(2, $rec->getRelatedRecord('Children'));
+        $rec->reload([], ['Children']);
+        static::assertNull($rec->getValue('parent_id'));
+        $expected1 = array_diff_key($child1, array_flip(['id', 'updated_at', 'password']));
+        $expected2 = array_diff_key($parent, array_flip(['id', 'updated_at', 'password']));
+        $expected1['parent_id'] = $expected2['parent_id'] = $rec->getPrimaryKeyValue();
+        static::assertEquals(
+            $expected1,
+            $rec->getRelatedRecord('Children')[0]->toArrayWithoutFiles(array_keys($expected1))
+        );
+        static::assertEquals(
+            $expected2,
+            $rec->getRelatedRecord('Children')[1]->toArrayWithoutFiles(array_keys($expected1))
+        );
+        static::assertEquals($rec->getPrimaryKeyValue(), $rec->getRelatedRecord('Children')[0]->getValue('parent_id'));
+        static::assertEquals($rec->getPrimaryKeyValue(), $rec->getRelatedRecord('Children')[1]->getValue('parent_id'));
+        static::assertTrue(password_verify('test2', $rec->getRelatedRecord('Children')[0]->getValue('password')));
+        static::assertTrue(password_verify('test', $rec->getRelatedRecord('Children')[1]->getValue('password')));
     }
 
+    /**
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage It is impossible to delete record has no primary key value
+     */
     public function testInvalidDelete() {
-
+        TestingAdmin::newEmptyRecord()->delete();
     }
 
-    public function testDeleteAndBeforeAfterDelete() {
-
+    /**
+     * @covers DbRecord::beforeDelete()
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage before delete: no-no-no!
+     */
+    public function testBeforeDelete() {
+        \PeskyORMTest\TestingAdmins\TestingAdmin2::fromArray(['id' => 9999], true)->delete();
     }
 
-    public function testIterationsAndArrayAccess() {
-
+    /**
+     * @covers DbRecord::afterDelete()
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage after delete: no-no-no!
+     */
+    public function testAfterDelete() {
+        \PeskyORMTest\TestingAdmins\TestingAdmin2::fromArray(['id' => 0], true)->delete();
     }
 
-    public function testMagicGetter() {
-
+    /**
+     * @covers DbRecord::delete()
+     */
+    public function testDelete() {
+        $addedRecords = TestingApp::fillAdminsTable(10);
+        static::assertEquals(10, TestingAdminsTable::count());
+        $rec = TestingAdmin::fromArray($addedRecords[1], true);
+        $rec->delete();
+        static::assertEquals(9, TestingAdminsTable::count());
+        static::assertFalse(TestingAdmin::read($addedRecords[1]['id'])->existsInDb());
     }
 
-    public function testMagicSetter() {
-
+    /**
+     * @covers DbRecord::current()
+     * @covers DbRecord::valid()
+     * @covers DbRecord::key()
+     * @covers DbRecord::next()
+     * @covers DbRecord::rewind()
+     */
+    public function testIterations() {
+        /** @var TestingAdmin $rec */
+        $rec = TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true);
+        $cols = [];
+        foreach ($rec as $name => $value) {
+            // in iteration it works like iteration over $rec->toArray()
+            static::assertEquals($this->callObjectMethod($rec, 'getColumnValueForToArray', $name), $value);
+            $cols[] = $name;
+        }
+        static::assertEquals(array_keys($rec::getColumns()), $cols);
+        $count = 0;
+        foreach ($rec as $name => $value) {
+            // totest rewitnd
+            $count++;
+        }
+        static::assertEquals($count, count($rec::getColumns()));
     }
 
-    public function testMagicIsset() {
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Table does not contain column named '0'
+     */
+    public function testInvalidArrayAccess() {
+        /** @var TestingAdmin $rec */
+        $rec = TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true);
+        $rec[0];
+    }
+
+    /**
+     * @covers DbRecord::offsetExists()
+     * @covers DbRecord::offsetGet()
+     * @covers DbRecord::__get()
+     * @covers DbRecord::__isset()
+     */
+    public function testMagicGetterAndArrayAccessGetterAndIsset() {
+        /** @var TestingAdmin $rec */
+        $rec = TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true);
+        foreach ($rec::getColumns() as $name => $config) {
+            if (!in_array($name, ['avatar', 'some_file', 'not_existing_column'], true)) {
+                static::assertTrue(isset($rec->$name));
+                static::assertTrue(isset($rec[$name]));
+                static::assertEquals($rec->getValue($name), $rec->$name);
+                static::assertEquals($rec->getValue($name), $rec[$name]);
+            }
+        }
+    }
+
+    public function testMagicSetterAndMagicSetterMethodAndArrayAccessSetter() {
 
     }
 
     public function testMagicUnset() {
-
-    }
-
-    public function testMagicMethods() {
 
     }
 

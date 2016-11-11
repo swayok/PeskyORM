@@ -147,7 +147,7 @@ interface DbTableInterface {
      * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return int
      */
-    static public function count(array $conditions, \Closure $configurator = null, $removeNotInnerJoins = false);
+    static public function count(array $conditions = [], \Closure $configurator = null, $removeNotInnerJoins = false);
 
     /**
      * @param bool $readOnly

@@ -7,7 +7,7 @@ use PeskyORM\ORM\Exception\InvalidDataException;
 use PeskyORM\ORM\Exception\RecordNotFoundException;
 use Swayok\Utils\StringUtils;
 
-abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \Countable {
+abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
 
     /**
      * @var DbRecordValue[]
@@ -1231,7 +1231,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
     }
 
     /**
-     * ave requested relations to DB
+     * Save requested relations to DB
      * Note: this Record must exist in DB
      * @param array $relationsToSave
      * @throws \InvalidArgumentException
@@ -1258,16 +1258,24 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
         }
         foreach ($relationsToSave as $relationName) {
             if ($this->isRelatedRecordAttached($relationName)) {
-                $record = $this->getRelatedRecord($relationName);
-                if ($record instanceof DbRecord) {
-                    $record->setValue(
+                $relatedRecord = $this->getRelatedRecord($relationName);
+                if ($relations[$relationName]->getType() === $relations[$relationName]::HAS_ONE) {
+                    $relatedRecord->setValue(
                         $relations[$relationName]->getForeignColumnName(),
                         $this->getValue($relations[$relationName]->getLocalColumnName()),
                         false
                     );
-                    $record->save();
+                    $relatedRecord->save();
+                } else if ($relations[$relationName]->getType() === $relations[$relationName]::BELONGS_TO) {
+                    $relatedRecord->save();
+                    $this->setValue(
+                        $relations[$relationName]->getLocalColumnName(),
+                        $relatedRecord->getValue($relations[$relationName]->getForeignColumnName()),
+                        false
+                    );
+                    $this->saveToDb([$relations[$relationName]->getLocalColumnName()]);
                 } else {
-                    foreach ($record as $recordObj) {
+                    foreach ($relatedRecord as $recordObj) {
                         $recordObj->setValue(
                             $relations[$relationName]->getForeignColumnName(),
                             $this->getValue($relations[$relationName]->getLocalColumnName()),
@@ -1293,8 +1301,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      * @throws \InvalidArgumentException
      */
     public function delete($resetAllValuesAfterDelete = true, $deleteFiles = true) {
-        if (!$this->existsInDb()) {
-            throw new \BadMethodCallException('Unable to delete record that does not exist in DB');
+        if (!$this->hasPrimaryKeyValue()) {
+            throw new \BadMethodCallException('It is impossible to delete record has no primary key value');
         } else {
             $this->beforeDelete();
             $table = static::getTable();
@@ -1375,20 +1383,10 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
             $columnsNames = array_keys($this->values);
         }
         $data = [];
-        $fileColumns = static::getFileColumns();
         foreach ($columnsNames as $columnName) {
-            $column = static::getColumn($columnName);
-            if (array_key_exists($column->getName(), $fileColumns)) {
-                if ($withFilesInfo) {
-                    $data[$column->getName()] = $this->getValue($column, 'array');
-                }
-            } else if ($this->hasValue($column, true)) {
-                $data[$columnName] = $this->getValue($column);
-                if ($data[$columnName] instanceof DbExpr) {
-                    $data[$columnName] = null;
-                }
-            } else {
-                $data[$columnName] = null;
+            $data[$columnName] = $this->getColumnValueForToArray($columnName, !$withFilesInfo, $notSet);
+            if ($notSet) {
+                unset($data[$columnName]);
             }
         }
         foreach ($relatedRecordsNames as $relatedRecordName => $relatedRecordColumns) {
@@ -1419,6 +1417,45 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
             }
         }
         return $data;
+    }
+
+    /**
+     * Get column value if it is set or null in any other cases
+     * @param string $columnName
+     * @param bool $returnNullForFiles - false: return file information for file column | true: return null for file column
+     * @param bool $notSet
+     * @return mixed
+     * @throws \PDOException
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    protected function getColumnValueForToArray($columnName, $returnNullForFiles = false, &$notSet = null) {
+        $column = static::getColumn($columnName);
+        $notSet = true;
+        if ($column->isItAFile()) {
+            if (!$returnNullForFiles && $this->hasValue($column, false)) {
+                $notSet = false;
+                return $this->getValue($column, 'array');
+            }
+        } else {
+            if ($this->existsInDb()) {
+                if ($this->hasValue($column, false)) {
+                    $notSet = false;
+                    $val = $this->getValue($column);
+                    return ($val instanceof DbExpr) ? null : $val;
+                }
+            } else {
+                $notSet = false; //< there is always a value when record does not eist in DB
+                // if default value not provided directly it is considered to be null when record does not exist is DB
+                if ($this->hasValue($column, true)) {
+                    $val = $this->getValue($column);
+                    return ($val instanceof DbExpr) ? null : $val;
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -1476,6 +1513,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
     /**
      * Return the current element
      * @return mixed
+     * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -1483,7 +1521,10 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
      */
     public function current() {
         $key = $this->key();
-        return $key!== null ? $this->getValue($key) : null;
+        if ($key === null) {
+            return null;
+        }
+        return $key !== null ? $this->getColumnValueForToArray($key) : null;
     }
 
     /**
@@ -1592,18 +1633,6 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
     }
 
     /**
-     * Count elements of an object
-     * @return integer
-     * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     */
-    public function count() {
-        return count(static::getColumns());
-    }
-
-    /**
      * @param $name - column name, column name with format (ex: created_at_as_date) or relation name
      * @return mixed
      * @throws \PDOException
@@ -1652,8 +1681,9 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator, \
     }
 
     /**
-     * @param string $name
-     * @param array $arguments
+     * Supports only methods starting with 'set' and ending with column name or relation name
+     * @param string $name - something like 'setColumnName' or 'setRelationName'
+     * @param array $arguments - only 1 accepted
      * @return $this
      * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException

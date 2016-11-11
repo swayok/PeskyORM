@@ -347,7 +347,7 @@ abstract class DbTable implements DbTableInterface {
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    static public function count(array $conditions, \Closure $configurator = null, $removeNotInnerJoins = false) {
+    static public function count(array $conditions = [], \Closure $configurator = null, $removeNotInnerJoins = false) {
         return static::makeSelect([], $conditions, $configurator)->fetchCount($removeNotInnerJoins);
     }
 

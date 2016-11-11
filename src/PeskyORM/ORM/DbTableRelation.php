@@ -206,8 +206,18 @@ class DbTableRelation {
 
     /**
      * @return string
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
      */
     public function getForeignColumnName() {
+        if (
+            $this->getType() === static::HAS_MANY
+            && $this->getForeignTable()->getPkColumnName() === $this->foreignColumnName
+        ) {
+            throw new \InvalidArgumentException(
+                'Foreign column is a primary key column. It makes no sense for HAS MANY relation'
+            );
+        }
         return $this->foreignColumnName;
     }
 

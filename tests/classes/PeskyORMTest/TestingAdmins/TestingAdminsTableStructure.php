@@ -170,6 +170,10 @@ class TestingAdminsTableStructure extends DbTableStructure {
         return DbTableRelation::create('parent_id', DbTableRelation::BELONGS_TO, TestingAdminsTable::class, 'id');
     }
 
+    private function HasOne() {
+        return DbTableRelation::create('id', DbTableRelation::HAS_ONE, TestingAdminsTable::class, 'parent_id');
+    }
+
     private function Children() {
         return DbTableRelation::create('id', DbTableRelation::HAS_MANY, TestingAdminsTable::class, 'parent_id');
     }

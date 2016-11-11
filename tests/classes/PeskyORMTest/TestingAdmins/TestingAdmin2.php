@@ -24,5 +24,15 @@ class TestingAdmin2 extends DbRecord {
         throw new \BadMethodCallException('after: no-no-no!');
     }
 
+    protected function beforeDelete() {
+        if ($this->getPrimaryKeyValue() !== 0) {
+            throw new \BadMethodCallException('before delete: no-no-no!');
+        }
+    }
+
+    protected function afterDelete() {
+        throw new \BadMethodCallException('after delete: no-no-no!');
+    }
+
 
 }
