@@ -48,18 +48,20 @@ class DbRecordsSet extends DbRecordsArray {
     /**
      * @param DbTableInterface $table
      * @param array $records
-     * @param boolean $isFromDb
+     * @param boolean|null $isFromDb - null: autodetect by primary key value existence
      * @return DbRecordsArray
      * @throws \InvalidArgumentException
      */
-    static public function createFromArray(DbTableInterface $table, array $records, $isFromDb) {
-        return new DbRecordsArray($table, $records, (bool)$isFromDb);
+    static public function createFromArray(DbTableInterface $table, array $records, $isFromDb = null) {
+        return new DbRecordsArray($table, $records, $isFromDb === null ? null : (bool)$isFromDb);
     }
 
     /**
      * @param OrmSelect $dbSelect - it will be cloned to avoid possible problems when original object
      *      is changed outside DbRecordsSet + to allow optimised iteration via pagination
      * @return DbRecordsSet
+     * @throws \UnexpectedValueException
+     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function createFromOrmSelect(OrmSelect $dbSelect) {
@@ -182,6 +184,7 @@ class DbRecordsSet extends DbRecordsArray {
      * Whether a record with specified index exists
      * @param mixed $index - an offset to check for.
      * @return boolean - true on success or false on failure.
+     * @throws \UnexpectedValueException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */

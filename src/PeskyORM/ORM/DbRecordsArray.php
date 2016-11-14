@@ -40,10 +40,10 @@ class DbRecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     /**
      * @param DbTableInterface $table
      * @param array $records
-     * @param bool $isFromDb - true: records are from db. works only if $dbSelectOrRecords is array
+     * @param bool $isFromDb|null - true: records are from db | null - autodetect
      * @throws \InvalidArgumentException
      */
-    public function __construct(DbTableInterface $table, array $records, $isFromDb) {
+    public function __construct(DbTableInterface $table, array $records, $isFromDb = null) {
         $this->table = $table;
         if (count($records)) {
             /** @noinspection ForeachSourceInspection */
@@ -110,10 +110,22 @@ class DbRecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     }
 
     /**
-     * @return bool
+     * @return bool|null - null: mixed
      */
     public function isRecordsFromDb() {
         return $this->isFromDb;
+    }
+
+    /**
+     * @param array $data
+     * @return bool
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    protected function autodetectIfRecordIsFromDb(array $data) {
+        $pkName = $this->table->getTableStructure()->getPkColumnName();
+        return array_key_exists($pkName, $data) && $data[$pkName] !== null;
     }
 
     /**
@@ -125,6 +137,7 @@ class DbRecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
      * @return DbRecord[]
+     * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
@@ -144,6 +157,7 @@ class DbRecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     /**
      * @param int $index - record's index
      * @return DbRecord
+     * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
@@ -152,7 +166,12 @@ class DbRecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      */
     protected function convertToObject($index) {
         if (empty($this->dbRecords[$index])) {
-            return $this->table->newRecord()->fromData($this->getRecordDataByIndex($index), $this->isRecordsFromDb());
+            $data = $this->getRecordDataByIndex($index);
+            $isFromDb = $this->isRecordsFromDb();
+            if ($isFromDb === null) {
+                $isFromDb = $this->autodetectIfRecordIsFromDb($data);
+            }
+            return $this->table->newRecord()->fromData($data, $isFromDb);
         }
         return $this->dbRecords[$index];
     }
@@ -160,6 +179,7 @@ class DbRecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     /**
      * Return the current element
      * @return DbRecord
+     * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
@@ -217,6 +237,7 @@ class DbRecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     /**
      * @param int $index - The offset to retrieve.
      * @return DbRecord
+     * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\ORM\Exception\OrmException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
@@ -227,7 +248,12 @@ class DbRecordsArray implements \ArrayAccess, \Iterator, \Countable  {
         if ($this->isDbRecordInstanceReuseDuringIterationEnabled()) {
             $dbRecord = $this->getDbRecordObjectForIteration();
             if ($this->position !== $this->currentDbRecordIndex) {
-                $dbRecord->fromData($this->getRecordDataByIndex($this->position), $this->isRecordsFromDb());
+                $data = $this->getRecordDataByIndex($this->position);
+                $isFromDb = $this->isRecordsFromDb();
+                if ($isFromDb === null) {
+                    $isFromDb = $this->autodetectIfRecordIsFromDb($data);
+                }
+                $dbRecord->fromData($data, $isFromDb);
             }
             return $dbRecord;
         } else {

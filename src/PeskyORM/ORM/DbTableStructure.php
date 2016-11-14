@@ -316,7 +316,7 @@ abstract class DbTableStructure implements DbTableStructureInterface {
      */
     protected function _loadRelationConfig($relationName) {
         if (!static::hasRelation($relationName)) {
-            throw new \InvalidArgumentException("Table has no relation named '{$relationName}'");
+            throw new \InvalidArgumentException("There is no relation '{$relationName}' in " . get_class($this));
         }
         if ($this->relations[$relationName] instanceof \ReflectionMethod) {
             /** @var \ReflectionMethod $method */

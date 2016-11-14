@@ -70,7 +70,7 @@ class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testTableStructureRelations() {
-        static::assertCount(3, TestingAdminsTableStructure::getRelations());
+        static::assertCount(4, TestingAdminsTableStructure::getRelations());
         static::assertTrue(TestingAdminsTableStructure::hasRelation('Parent'));
         static::assertFalse(TestingAdminsTableStructure::hasRelation('Abrakadabra'));
         $relation = TestingAdminsTableStructure::getRelation('Parent');
@@ -93,7 +93,7 @@ class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Table has no relation named 'abrakadabra'
+     * @expectedExceptionMessage There is no relation 'abrakadabra' in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
      */
     public function testInvalidRelationGet() {
         TestingAdminsTableStructure::getRelation('abrakadabra');

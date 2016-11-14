@@ -604,7 +604,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     /**
      * @param string $relationName
      * @param array|DbRecord|DbRecordsArray $relatedRecord
-     * @param bool $isFromDb - true: marks values as loaded from DB
+     * @param bool|null $isFromDb - true: marks values as loaded from DB | null: autodetect
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -613,7 +613,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PDOException
      */
-    protected function setRelatedRecord($relationName, $relatedRecord, $isFromDb, $haltOnUnknownColumnNames = true) {
+    public function setRelatedRecord($relationName, $relatedRecord, $isFromDb = null, $haltOnUnknownColumnNames = true) {
         $relation = static::getRelation($relationName);
         $relationTable = $relation->getForeignTable();
         if ($relation->getType() === DbTableRelation::HAS_MANY) {
@@ -621,12 +621,15 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
                 $relatedRecord = DbRecordsSet::createFromArray($relationTable, $relatedRecord, $isFromDb);
             } else if (!($relatedRecord instanceof DbRecordsArray)) {
                 throw new \InvalidArgumentException(
-                    '$relatedRecord argument for HAS MANY relation must be array or instance of '
-                        . get_class(DbRecordsArray::class)
+                    '$relatedRecord argument for HAS MANY relation must be array or instance of ' . DbRecordsArray::class
                 );
             }
         } else if (is_array($relatedRecord)) {
-            if (!empty($relatedRecord) && (!$isFromDb || $relatedRecord[$relationTable->getPkColumnName()] !== null)) {
+            if ($isFromDb === null) {
+                $pkName = $relationTable->getPkColumnName();
+                $isFromDb = array_key_exists($pkName, $relatedRecord) && $relatedRecord[$pkName] !== null;
+            }
+            if (!empty($relatedRecord)) {
                 $relatedRecord = $relationTable
                     ->newRecord()
                     ->fromData($relatedRecord, $isFromDb, $haltOnUnknownColumnNames);
@@ -645,6 +648,19 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
             );
         }
         $this->relatedRecords[$relationName] = $relatedRecord;
+    }
+
+    /**
+     * Remove related record
+     * @param string $name
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \UnexpectedValueException
+     */
+    public function unsetRelatedRecord($name) {
+        static::getRelation($name);
+        unset($this->relatedRecords[$name]);
     }
 
     /**
@@ -795,7 +811,10 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
         }
         $columnsFromRelations = [];
         $hasManyRelations = [];
+        /** @var DbTableRelation[] $relations */
+        $relations = [];
         foreach ($readRelatedRecords as $relationName) {
+            $relations[$relationName] = static::getRelation($relationName);
             if (static::getRelation($relationName)->getType() === DbTableRelation::HAS_MANY) {
                 $hasManyRelations[] = $relationName;
             } else {
@@ -806,7 +825,20 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
             array_merge(array_unique($columns), $columnsFromRelations),
             $conditionsAndOptions
         );
-        if (!empty($record)) {
+        if (empty($record)) {
+            $this->reset();
+        } else {
+            // clear not existing relations
+            foreach ($columnsFromRelations as $relationName => $unused) {
+                $fkColName = $relations[$relationName]->getForeignColumnName();
+                if (
+                    !array_key_exists($relationName, $record)
+                    || !array_key_exists($fkColName, $record[$relationName])
+                    || $record[$relationName][$fkColName] === null
+                ) {
+                    $record[$relationName] = [];
+                }
+            }
             $this->fromDbData($record);
             foreach ($hasManyRelations as $relationName) {
                 $this->readRelatedRecord($relationName);
@@ -853,20 +885,16 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
         if (!$this->existsInDb()) {
             throw new RecordNotFoundException('Record must exist in DB');
         }
-        if (empty($columns)) {
-            $this->reload($columns);
-        } else {
-            $data = static::getTable()->selectOne(
-                $columns, 
-                [static::getPrimaryKeyColumnName() => $this->getPrimaryKeyValue()]
+        $data = static::getTable()->selectOne(
+            empty($columns) ? '*' : $columns,
+            [static::getPrimaryKeyColumnName() => $this->getPrimaryKeyValue()]
+        );
+        if (empty($data)) {
+            throw new RecordNotFoundException(
+                "Record with primary key '{$this->getPrimaryKeyValue()}' was not found in DB"
             );
-            if (empty($data)) {
-                throw new RecordNotFoundException(
-                    "Record with primary key '{$this->getPrimaryKeyValue()}' was not found in DB"
-                );
-            }
-            $this->updateValues($data, true);
         }
+        $this->updateValues($data, true);
         return $this;
     }
 
@@ -902,7 +930,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
             if (static::hasColumn($columnNameOrRelationName)) {
                 $this->setValue($columnNameOrRelationName, $value, $isFromDb);
             } else if (static::hasRelation($columnNameOrRelationName)) {
-                $this->setRelatedRecord($columnNameOrRelationName, $value, $isFromDb, $haltOnUnknownColumnNames);
+                $this->setRelatedRecord($columnNameOrRelationName, $value, $isFromDb ? null : false, $haltOnUnknownColumnNames);
             } else if ($haltOnUnknownColumnNames) {
                 throw new \InvalidArgumentException(
                     "\$data argument contains unknown column name or relation name: '$columnNameOrRelationName'"
@@ -1628,10 +1656,14 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @throws \BadMethodCallException
      */
     public function offsetExists($key) {
-        return (
-            static::hasColumn($key) && $this->hasValue($key)
-            || static::hasRelation($key) && $this->isRelatedRecordAttached($key)
-        );
+        if (static::hasRelation($key)) {
+            return $this->isRelatedRecordAttached($key);
+        } else if (static::hasColumn($key)) {
+            return $this->hasValue($key);
+        } else {
+            static::getColumn($key); //< to throw column not exist exception
+            return false;
+        }
     }
 
     /**
@@ -1648,7 +1680,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
         if (static::hasRelation($key)) {
             return $this->getRelatedRecord($key);
         } else {
-            if (!static::hasColumn($key) && preg_match('%^(.+)_as_()%is', $key, $parts)) {
+            if (!static::hasColumn($key) && preg_match('%^(.+)_as_(.*)$%is', $key, $parts)) {
                 return $this->getValue($parts[1], $parts[2]);
             } else {
                 return $this->getValue($key);
@@ -1668,18 +1700,26 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      */
     public function offsetSet($key, $value) {
         if (static::hasRelation($key)) {
-            $this->setRelatedRecord($key, $value, false);
+            $this->setRelatedRecord($key, $value, null);
         } else {
-            $this->setValue($key, $value, false);
+            $this->setValue($key, $value, $key === static::getPrimaryKeyColumnName());
         }
     }
 
     /**
-     * @param mixed $key
+     * @param string $key
+     * @return DbRecord
      * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \UnexpectedValueException
      */
     public function offsetUnset($key) {
-        throw new \BadMethodCallException('It is forbidden to unset a value');
+        if (static::hasRelation($key)) {
+            return $this->unsetRelatedRecord($key);
+        } else {
+            return $this->unsetValue($key);
+        }
     }
 
     /**
@@ -1723,17 +1763,20 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     }
 
     /**
-     * @param $name - column name or relation name
+     * @param string $name - column name or relation name
      * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \UnexpectedValueException
      */
     public function __unset($name) {
-        return $this->offsetUnset($name);
+        $this->offsetUnset($name);
     }
 
     /**
      * Supports only methods starting with 'set' and ending with column name or relation name
      * @param string $name - something like 'setColumnName' or 'setRelationName'
-     * @param array $arguments - only 1 accepted
+     * @param array $arguments - 1 required, 2 accepted. 1st - value, 2nd - $isFromDb
      * @return $this
      * @throws \PDOException
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
@@ -1746,38 +1789,46 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
         $isValidName = preg_match('%^set([A-Z][a-zA-Z0-9]*)$%', $name, $nameParts);
         if (!$isValidName) {
             throw new \BadMethodCallException(
-                "Magic method '{$name}()' is forbidden. You can magically call only methods starting with 'set', for example: setId(1)"
+                "Magic method '{$name}(\$value, \$isFromDb = false)' is forbidden. You can magically call only methods starting with 'set', for example: setId(1)"
             );
         } else if (count($arguments) > 2) {
             throw new \InvalidArgumentException(
-                "Magic method '{$name}()' accepts only 2 arguments, but " . count($arguments) . ' arguments passed'
+                "Magic method '{$name}(\$value, \$isFromDb = false)' accepts only 2 arguments, but " . count($arguments) . ' arguments passed'
             );
         } else if (array_key_exists(1, $arguments) && !is_bool($arguments[1])) {
             throw new \InvalidArgumentException(
-                "2nd argument for magic method '{$name}()' must be a boolean and reflects if value received from DB"
+                "2nd argument for magic method '{$name}(\$value, \$isFromDb = false)' must be a boolean and reflects if value received from DB"
             );
         }
-        list($value, $isFromDb) = $arguments;
+        $value = $arguments[0];
         if (static::hasRelation($nameParts[1])) {
             if (
-                !is_object($value)
+                (
+                    !is_array($value)
+                    && !is_object($value)
+                )
                 || (
-                    !($value instanceof DbRecord)
+                    is_object($value)
+                    && !($value instanceof DbRecord)
                     && !($value instanceof DbRecordsSet)
                 )
             ) {
                 throw new \InvalidArgumentException(
-                    "1st argument for magic method '{$name}()' must be an instance of DbRecord class or DbRecordsSet class"
+                    "1st argument for magic method '{$name}(\$value, \$isFromDb = false)' must be an array or instance of DbRecord class or DbRecordsSet class"
                 );
             }
+            $isFromDb = array_key_exists(1, $arguments) ? (bool)$arguments[1] : null;
             $this->setRelatedRecord($nameParts[1], $value, $isFromDb);
         } else {
             $columnName = StringUtils::underscore($nameParts[1]);
             if (!static::hasColumn($columnName)) {
                 throw new \BadMethodCallException(
-                    "Magic method '{$name}()' is not linked with any column or relation"
+                    "Magic method '{$name}(\$value, \$isFromDb = false)' is not linked with any column or relation"
                 );
             }
+            $isFromDb = array_key_exists(1, $arguments)
+                ? (bool)$arguments[1]
+                : $columnName === static::getPrimaryKeyColumnName(); //< make pk key be from DB by default or it will crash
             $this->setValue($columnName, $value, $isFromDb);
         }
         return $this;

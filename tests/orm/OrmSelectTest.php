@@ -116,7 +116,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage SELECT: Table has no relation named 'OtherTable'
+     * @expectedExceptionMessage SELECT: There is no relation 'OtherTable' in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
      */
     public function testInvalidJoinsSet() {
         static::getNewSelect()->columns(['id', 'OtherTable.id'])->getQuery();

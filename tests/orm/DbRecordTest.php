@@ -2,6 +2,7 @@
 
 use PeskyORM\Core\DbExpr;
 use PeskyORM\ORM\DbRecord;
+use PeskyORM\ORM\DbRecordsArray;
 use PeskyORM\ORM\DbRecordValue;
 use PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORMTest\TestingAdmins\TestingAdminsTable;
@@ -89,7 +90,6 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
     private function normalizeAdmin($adminData, $addNotChangeableCol = true, $addNotExistingCol = true) {
         $adminData['is_superadmin'] = NormalizeValue::normalizeBoolean($adminData['is_superadmin']);
         $adminData['is_active'] = NormalizeValue::normalizeBoolean($adminData['is_active']);
-        $adminData['password'] = null;
         if ($adminData['parent_id'] !== null) {
             $adminData['parent_id'] = NormalizeValue::normalizeInteger($adminData['parent_id']);
         }
@@ -97,6 +97,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
             $adminData['id'] = NormalizeValue::normalizeInteger($adminData['id']);
         } else {
             $adminData['id'] = null;
+            $adminData['password'] = null;
         }
         if ($addNotChangeableCol || $addNotChangeableCol === null) {
             $adminData['not_changeable_column'] = $addNotChangeableCol === null ? null : 'not changable';
@@ -559,7 +560,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Table has no relation named 'Invalid'
+     * @expectedExceptionMessage There is no relation 'Invalid' in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
      */
     public function testInvalidRelationRequestInToArray3() {
         TestingAdmin::fromArray(['id' => 1], true)->toArrayWithoutFiles(['id'], ['Invalid']);
@@ -714,7 +715,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
 
     public function testFromData() {
         $adminWithId = $this->getDataForSingleAdmin(true);
-        $normalizedAdminWithId = $this->normalizeAdmin($adminWithId, null);
+        $normalizedAdminWithId = $this->normalizeAdmin($adminWithId, false, false);
         $adminWithoutId = $this->getDataForSingleAdmin(false);
         $normalizedAdminWithoutId = $this->normalizeAdmin($adminWithoutId, null);
         $columns = array_merge(array_keys($adminWithId), ['password', 'not_existing_column', 'not_changeable_column']);
@@ -723,33 +724,32 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertEquals($rec->getDefaults($columns, false), $rec->toArrayWithoutFiles());
 
         $rec = TestingAdmin::fromArray($adminWithoutId, false);
-        static::assertEquals($normalizedAdminWithoutId, $rec->toArrayWithoutFiles());
         static::assertFalse($rec->isValueFromDb('parent_id'));
+        static::assertEquals($normalizedAdminWithoutId, $rec->toArrayWithoutFiles($columns));
 
         $rec = TestingAdmin::_()->fromData($adminWithoutId, false);
-        static::assertEquals($normalizedAdminWithoutId, $rec->toArrayWithoutFiles());
         static::assertFalse($rec->isValueFromDb('parent_id'));
+        static::assertEquals($normalizedAdminWithoutId, $rec->toArrayWithoutFiles($columns));
 
         $rec = TestingAdmin::fromArray($adminWithId, true);
-        static::assertEquals($normalizedAdminWithId, $rec->toArrayWithoutFiles());
         static::assertTrue($rec->isValueFromDb('id'));
         static::assertTrue($rec->isValueFromDb('parent_id'));
+        static::assertEquals($normalizedAdminWithId, $rec->toArrayWithoutFiles($columns));
 
         $rec = TestingAdmin::_()->fromDbData($adminWithId);
-        static::assertEquals($normalizedAdminWithId, $rec->toArrayWithoutFiles());
         static::assertTrue($rec->isValueFromDb('id'));
         static::assertTrue($rec->isValueFromDb('parent_id'));
+        static::assertEquals($normalizedAdminWithId, $rec->toArrayWithoutFiles($columns));
 
         $withUnknownColumn = array_merge($adminWithId, ['unknown_col' => 1]);
         TestingAdmin::_()->fromData($withUnknownColumn, true, false);
-        static::assertEquals($normalizedAdminWithId, $rec->toArrayWithoutFiles());
+        static::assertEquals($normalizedAdminWithId, $rec->toArrayWithoutFiles($columns));
         static::assertTrue($rec->isValueFromDb('id'));
         static::assertTrue($rec->isValueFromDb('parent_id'));
     }
 
     public function testFromPrimaryKey() {
         $recordsAdded = TestingApp::fillAdminsTable(10);
-        $recordsAdded[0]['not_existing_column'] = null;
         $example = $recordsAdded[1];
         unset($example['password'], $example['created_at'], $example['updated_at']);
         $normalColumns = array_diff(array_keys(TestingAdmin::getColumnsThatExistInDb()), ['password', 'created_at', 'updated_at']);
@@ -805,8 +805,8 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertArrayHasKey('Children', $relatedRecords);
         static::assertInstanceOf(TestingAdmin::class, $relatedRecords['Parent']);
         static::assertInstanceOf(TestingAdmin::class, $rec->getRelatedRecord('Parent', false));
-        static::assertInstanceOf(\PeskyORM\ORM\DbRecordsArray::class, $relatedRecords['Children']);
-        static::assertInstanceOf(\PeskyORM\ORM\DbRecordsArray::class, $rec->getRelatedRecord('Children', false));
+        static::assertInstanceOf(DbRecordsArray::class, $relatedRecords['Children']);
+        static::assertInstanceOf(DbRecordsArray::class, $rec->getRelatedRecord('Children', false));
         static::assertEquals($recordsAdded[0], $rec->getRelatedRecord('Parent', false)->toArrayWithoutFiles());
         static::assertCount(2, $relatedRecords['Children']);
         static::assertCount(2, $rec->getRelatedRecord('Children', false));
@@ -818,7 +818,37 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertEquals($expected, $rec->getRelatedRecord('Children', false)->toArrays());
     }
 
-    // todo: test exceptions genereated by TestingAdmin::newEmptyRecord()->fromDb()
+    /**
+     * @expectedException \UnexpectedValueException
+     * @expectedExceptionMessage SELECT: Column with name [invalid] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
+     */
+    public function testInvalidColumnInFromDb1() {
+        TestingAdmin::newEmptyRecord()->fromDb(['id' => 1], ['invalid']);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Invalid column name for a key '0'. $columns argument must contain only strings and instances of DbExpr class.
+     */
+    public function testInvalidColumnInFromDb2() {
+        TestingAdmin::newEmptyRecord()->fromDb(['id' => 1], [['invalid']]);
+    }
+
+    /**
+     * @expectedException \UnexpectedValueException
+     * @expectedExceptionMessage WHERE: Column with name [invalid] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
+     */
+    public function testInvalidConditionInFromDb() {
+        TestingAdmin::newEmptyRecord()->fromDb(['invalid' => 1], ['id']);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage There is no relation 'Invalid' in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
+     */
+    public function testInvalidRelationInFromDb() {
+        TestingAdmin::newEmptyRecord()->fromDb(['id' => 1], ['id'], ['Invalid']);
+    }
 
     public function testFromDb() {
         TestingApp::clearTables();
@@ -893,7 +923,13 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($rec->getRelatedRecord('Parent', false)->existsInDb());
     }
 
-    // todo: test exceptions thrown by reload()
+    /**
+     * @expectedException \PeskyORM\ORM\Exception\RecordNotFoundException
+     * @expectedExceptionMessage Record must exist in DB
+     */
+    public function testInvalidReload() {
+        TestingAdmin::newEmptyRecord()->reload();
+    }
 
     public function testReload() {
         TestingApp::clearTables();
@@ -935,7 +971,31 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         );
     }
 
-    // todo: test exceptions thrown by readColumns()
+    /**
+     * @expectedException \PeskyORM\ORM\Exception\RecordNotFoundException
+     * @expectedExceptionMessage Record must exist in DB
+     */
+    public function testInvalidReadColumns1() {
+        TestingAdmin::newEmptyRecord()->readColumns();
+    }
+
+    /**
+     * @expectedException \PeskyORM\ORM\Exception\RecordNotFoundException
+     * @expectedExceptionMessage Record with primary key '1' was not found in DB
+     */
+    public function testInvalidReadColumns2() {
+        TestingApp::clearTables();
+        TestingAdmin::fromArray(['id' => 1], true)->readColumns(['parent_id']);
+    }
+
+    /**
+     * @expectedException \PeskyORM\ORM\Exception\RecordNotFoundException
+     * @expectedExceptionMessage Record with primary key '1' was not found in DB
+     */
+    public function testInvalidReadColumns3() {
+        TestingApp::clearTables();
+        TestingAdmin::fromArray(['id' => 1], true)->readColumns();
+    }
 
     public function testReadColumns() {
         TestingApp::clearTables();
@@ -961,9 +1021,61 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($rec->hasValue('language'));
     }
 
-    // todo: test exceptions thrown by setRelatedRecord();
-    // todo: test exceptions thrown by getRelatedRecord();
-    // todo: test exceptions thrown by hasRelatedRecord();
+    /**
+     * @expectedException \BadMethodCallException
+     * @expectedExceptionMessage Related record with name 'Parent' is not set and autoloading is disabled
+     */
+    public function testInvalidGetRelatedRecord1() {
+        TestingAdmin::newEmptyRecord()->getRelatedRecord('Parent');
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage There is no relation 'InvalidRelation' in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
+     */
+    public function testInvalidGetRelatedRecord2() {
+        TestingAdmin::newEmptyRecord()->getRelatedRecord('InvalidRelation');
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage There is no relation 'InvalidRelation' in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
+     */
+    public function testInvalidIsRelatedRecordAttached() {
+        TestingAdmin::newEmptyRecord()->isRelatedRecordAttached('InvalidRelation');
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage There is no relation 'InvalidRelation' in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
+     */
+    public function testInvalidSetRelatedRecord1() {
+        TestingAdmin::newEmptyRecord()->setRelatedRecord('InvalidRelation', []);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage $relatedRecord argument for HAS MANY relation must be array or instance of PeskyORM\ORM\DbRecordsArray
+     */
+    public function testInvalidSetRelatedRecord2() {
+        TestingAdmin::newEmptyRecord()->setRelatedRecord('Children', 'test');
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage $relatedRecord argument must be an instance of DbRecord class for the 'admins' DB table
+     */
+    public function testInvalidSetRelatedRecord3() {
+        TestingAdmin::newEmptyRecord()->setRelatedRecord('Parent', TestingSetting::newEmptyRecord());
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage $relatedRecord argument must be an array or instance of DbRecord class for the 'admins' DB table
+     */
+    public function testInvalidSetRelatedRecord4() {
+        TestingAdmin::newEmptyRecord()->setRelatedRecord('Parent', 'string');
+    }
 
     public function testSetGetAndHasRelatedRecord() {
         TestingApp::clearTables();
@@ -995,7 +1107,13 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         );
     }
 
-    // todo: test exceptions thrown by readRelatedRecord();
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage There is no relation 'InvalidRelation' in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
+     */
+    public function testInvalidReadRelatedRecord() {
+        TestingAdmin::newEmptyRecord()->readRelatedRecord('InvalidRelation');
+    }
 
     public function testReadRelatedRecord() {
         $recordsAdded = TestingApp::fillAdminsTable(10);
@@ -1099,10 +1217,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $rec->updateValues(['Parent' => $records[0]], true);
         static::assertTrue($rec->isRelatedRecordAttached('Parent'));
         static::assertTrue($rec->getRelatedRecord('Parent', false)->existsInDb(false));
-        static::assertEquals(
-            array_merge($records[0], ['not_existing_column' => null]),
-            $rec->getRelatedRecord('Parent', false)->toArrayWithoutFiles()
-        );
+        static::assertEquals($records[0], $rec->getRelatedRecord('Parent', false)->toArrayWithoutFiles());
 
         $rec->merge(['Parent' => [], 'email' => null], false);
         static::assertTrue($rec->isRelatedRecordAttached('Parent'));
@@ -1766,10 +1881,84 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
      * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage Table does not contain column named '0'
      */
-    public function testInvalidArrayAccess() {
+    public function testInvalidArrayAccess1() {
         /** @var TestingAdmin $rec */
         $rec = TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true);
         $rec[0];
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Table does not contain column named 'invalidcolname'
+     */
+    public function testInvalidArrayAccess2() {
+        /** @var TestingAdmin $rec */
+        $rec = TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true);
+        $rec['invalidcolname'];
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Table does not contain column named 'invalidcolname'
+     */
+    public function testInvalidMagicGetter() {
+        TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)->invalidcolname;
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Table does not contain column named 'invalidcolname'
+     */
+    public function testInvalidMagicIsset() {
+        isset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)->invalidcolname);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Table does not contain column named 'invalidcolname'
+     */
+    public function testInvalidArrayOffsetIsset1() {
+        isset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)['invalidcolname']);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Table does not contain column named 'created_at_as_date'
+     */
+    public function testInvalidArrayOffsetIsset2() {
+        isset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)['created_at_as_date']);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Table does not contain column named 'invalidcolname'
+     */
+    public function testInvalidArrayOffsetUnset1() {
+        unset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)['invalidcolname']);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Table does not contain column named 'created_at_as_date'
+     */
+    public function testInvalidArrayOffsetUnset2() {
+        unset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)['created_at_as_date']);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Table does not contain column named 'invalidcolname'
+     */
+    public function testInvalidMagicPropertyUnset1() {
+        unset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)->invalidcolname);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Table does not contain column named 'created_at_as_date'
+     */
+    public function testInvalidMagicPropertyUnset2() {
+        unset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)->created_at_as_date);
     }
 
     /**
@@ -1778,29 +1967,235 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
      * @covers DbRecord::__get()
      * @covers DbRecord::__isset()
      */
-    public function testMagicGetterAndArrayAccessGetterAndIsset() {
+    public function testMagicGetterAndOffsetGetAndIssetAndUnset() {
         /** @var TestingAdmin $rec */
-        $rec = TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true);
+        $data = TestingApp::getRecordsForDb('admins', 1)[0];
+        $rec = TestingAdmin::fromArray($data, true);
+        $rec->updateValues(['Parent' => $data, 'Children' => [$data, $data]], true);
         foreach ($rec::getColumns() as $name => $config) {
             if (!in_array($name, ['avatar', 'some_file', 'not_existing_column'], true)) {
-                static::assertTrue(isset($rec->$name));
-                static::assertTrue(isset($rec[$name]));
-                static::assertEquals($rec->getValue($name), $rec->$name);
-                static::assertEquals($rec->getValue($name), $rec[$name]);
+                static::assertTrue(isset($rec->$name), "isset property: $name");
+                static::assertTrue(isset($rec[$name]), "isset array key: $name");
+                static::assertEquals($rec->getValue($name), $rec->$name, "get property: $name");
+                static::assertEquals($rec->getValue($name), $rec[$name], "get array key: $name");
             }
         }
+        // special
+        static::assertEquals('2015-05-14', $rec->created_at_as_date);
+        static::assertEquals('2015-05-14', $rec['created_at_as_date']);
+        // relation
+        static::assertTrue(isset($rec->Parent));
+        static::assertTrue(isset($rec->Children));
+        static::assertTrue(isset($rec['Parent']));
+        static::assertTrue(isset($rec['Children']));
+        static::assertInstanceOf(TestingAdmin::class, $rec->Parent);
+        static::assertInstanceOf(DbRecordsArray::class, $rec->Children);
+        static::assertInstanceOf(TestingAdmin::class, $rec['Parent']);
+        static::assertInstanceOf(DbRecordsArray::class, $rec['Children']);
+        static::assertEquals($data, $rec->Parent->toArray(array_keys($data)));
+        static::assertCount(2, $rec->Children);
+        static::assertEquals($data, $rec['Parent']->toArray(array_keys($data)));
+        static::assertCount(2, $rec['Children']);
+        // unset columns
+        unset($rec->parent_id);
+        static::assertFalse($rec->hasValue('parent_id'));
+        static::assertFalse(isset($rec->parent_id));
+        unset($rec['language']);
+        static::assertFalse($rec->hasValue('parent_id'));
+        static::assertFalse(isset($rec['language']));
+        // relations
+        unset($rec->Parent);
+        static::assertFalse($rec->isRelatedRecordAttached('Parent'));
+        static::assertFalse(isset($rec->Parent));
+        unset($rec['Children']);
+        static::assertFalse($rec->isRelatedRecordAttached('Children'));
+        static::assertFalse(isset($rec['Children']));
     }
 
-    public function testMagicSetterAndMagicSetterMethodAndArrayAccessSetter() {
-
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Table does not contain column named 'invalidcolname'
+     */
+    public function testInvalidMagicPropertySetter1() {
+        TestingAdmin::newEmptyRecord()->invalidcolname = 1;
     }
 
-    public function testMagicUnset() {
-
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Table does not contain column named 'created_at_as_date'
+     */
+    public function testInvalidMagicPropertySetter2() {
+        TestingAdmin::newEmptyRecord()->created_at_as_date = 1;
     }
 
-    public function testDbRecordOldValue() {
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Table does not contain column named 'invalidcolname'
+     */
+    public function testInvalidArrayAccessSetter1() {
+        TestingAdmin::newEmptyRecord()['invalidcolname'] = 1;
+    }
 
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Table does not contain column named 'created_at_as_date'
+     */
+    public function testInvalidArrayAccessSetter2() {
+        TestingAdmin::newEmptyRecord()['created_at_as_date'] = 1;
+    }
+
+    /**
+     * @expectedException \BadMethodCallException
+     * @expectedExceptionMessage Magic method 'setInvalidcolumn($value, $isFromDb = false)' is not linked with any column or relation
+     */
+    public function testInvalidMagicMethodSetter1() {
+        TestingAdmin::newEmptyRecord()->setInvalidcolumn(1);
+    }
+
+    /**
+     * @expectedException \BadMethodCallException
+     * @expectedExceptionMessage Magic method 'setCreatedAtAsDate($value, $isFromDb = false)' is not linked with any column or relation
+     */
+    public function testInvalidMagicMethodSetter2() {
+        TestingAdmin::newEmptyRecord()->setCreatedAtAsDate(1);
+    }
+
+    /**
+     * @expectedException \BadMethodCallException
+     * @expectedExceptionMessage Magic method 'setParentid($value, $isFromDb = false)' is not linked with any column or relation
+     */
+    public function testInvalidMagicMethodSetter3() {
+        TestingAdmin::newEmptyRecord()->setParentid(1);
+    }
+
+    /**
+     * @expectedException \BadMethodCallException
+     * @expectedExceptionMessage Magic method 'setparentid($value, $isFromDb = false)' is forbidden. You can magically call only methods starting with 'set'
+     */
+    public function testInvalidMagicMethodSetter4() {
+        TestingAdmin::newEmptyRecord()->setparentid(1);
+    }
+
+    /**
+     * @expectedException \BadMethodCallException
+     * @expectedExceptionMessage Magic method 'anymethod($value, $isFromDb = false)' is forbidden. You can magically call only methods starting with 'set'
+     */
+    public function testInvalidMagicMethodSetter5() {
+        TestingAdmin::newEmptyRecord()->anymethod(1);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Magic method 'setId($value, $isFromDb = false)' accepts only 2 arguments, but 3 arguments passed
+     */
+    public function testInvalidMagicMethodSetter6() {
+        TestingAdmin::newEmptyRecord()->setId(1, 2, 3);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage 2nd argument for magic method 'setId($value, $isFromDb = false)' must be a boolean and reflects if value received from DB
+     */
+    public function testInvalidMagicMethodSetter7() {
+        TestingAdmin::newEmptyRecord()->setId(1, 2);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage 1st argument for magic method 'setParent($value, $isFromDb = false)' must be an array or instance of DbRecord class or DbRecordsSet class
+     */
+    public function testInvalidMagicMethodSetter8() {
+        TestingAdmin::newEmptyRecord()->setParent(1);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage 1st argument for magic method 'setParent($value, $isFromDb = false)' must be an array or instance of DbRecord class or DbRecordsSet class
+     */
+    public function testInvalidMagicMethodSetter9() {
+        TestingAdmin::newEmptyRecord()->setParent($this);
+    }
+
+    public function testMagicSetterAndMagicSetterMethodAndOffsetSet() {
+        $records = TestingApp::getRecordsForDb('admins', 3);
+        unset(
+            $records[0]['password'], $records[0]['not_changeable_column'],
+            $records[1]['password'], $records[1]['not_changeable_column'],
+            $records[2]['password'], $records[2]['not_changeable_column']
+        );
+        $recForMagickSetterProperty = TestingAdmin::newEmptyRecord();
+        $recForMagickSetterMethodFromDb = TestingAdmin::newEmptyRecord();
+        $recForMagickSetterMethodNotFromDb = TestingAdmin::newEmptyRecord();
+        $recForOffsetSetter = TestingAdmin::newEmptyRecord();
+        // columns
+        foreach ($records[1] as $name => $value) {
+            $recForOffsetSetter->offsetSet($name, $value);
+            static::assertTrue($recForOffsetSetter->hasValue($name), "offsetSet: $name");
+            static::assertEquals($value, $recForOffsetSetter->getValue($name), "offsetSet: $name");
+            if ($name === 'id') {
+                static::assertTrue($recForOffsetSetter->isValueFromDb($name), "offsetSet: $name");
+            } else {
+                static::assertFalse($recForOffsetSetter->isValueFromDb($name), "offsetSet: $name");
+            }
+
+            $recForMagickSetterProperty->$name = $value;
+            static::assertTrue($recForMagickSetterProperty->hasValue($name));
+            static::assertEquals($value, $recForMagickSetterProperty->getValue($name));
+            if ($name === 'id') {
+                static::assertTrue($recForMagickSetterProperty->isValueFromDb($name));
+            } else {
+                static::assertFalse($recForMagickSetterProperty->isValueFromDb($name));
+            }
+
+            $setterMethodName = 'set' . \Swayok\Utils\StringUtils::classify($name);
+            call_user_func([$recForMagickSetterMethodFromDb, $setterMethodName], $value, true);
+            static::assertTrue($recForMagickSetterMethodFromDb->hasValue($name));
+            static::assertEquals($value, $recForMagickSetterMethodFromDb->getValue($name));
+            static::assertTrue($recForMagickSetterMethodFromDb->isValueFromDb($name));
+
+            call_user_func([$recForMagickSetterMethodNotFromDb, $setterMethodName], $value, $name === 'id');
+            static::assertTrue($recForMagickSetterMethodNotFromDb->hasValue($name));
+            static::assertEquals($value, $recForMagickSetterMethodNotFromDb->getValue($name));
+            if ($name === 'id') {
+                static::assertTrue($recForMagickSetterMethodNotFromDb->isValueFromDb($name));
+            } else {
+                static::assertFalse($recForMagickSetterMethodNotFromDb->isValueFromDb($name));
+            }
+        }
+        // relations
+        $recForOffsetSetter->offsetSet('Parent', $records[0]);
+        static::assertTrue($recForOffsetSetter->isRelatedRecordAttached('Parent'));
+        static::assertEquals($records[0], $recForOffsetSetter->getRelatedRecord('Parent')->toArray(array_keys($records[0])));
+        static::assertTrue($recForOffsetSetter->getRelatedRecord('Parent')->existsInDb());
+
+        $recForMagickSetterProperty->Parent = $records[0];
+        static::assertTrue($recForMagickSetterProperty->isRelatedRecordAttached('Parent'));
+        static::assertEquals($records[0], $recForMagickSetterProperty->getRelatedRecord('Parent')->toArray(array_keys($records[0])));
+        static::assertTrue($recForMagickSetterProperty->getRelatedRecord('Parent')->existsInDb());
+
+        $recForMagickSetterMethodFromDb->setParent($records[0], true);
+        static::assertTrue($recForMagickSetterMethodFromDb->isRelatedRecordAttached('Parent'));
+        static::assertEquals($records[0], $recForMagickSetterMethodFromDb->getRelatedRecord('Parent')->toArray(array_keys($records[0])));
+        static::assertTrue($recForMagickSetterMethodFromDb->getRelatedRecord('Parent')->existsInDb());
+
+        $recForMagickSetterMethodNotFromDb->setParent($records[0]);
+        static::assertTrue($recForMagickSetterMethodNotFromDb->isRelatedRecordAttached('Parent'));
+        static::assertEquals($records[0], $recForMagickSetterMethodNotFromDb->getRelatedRecord('Parent')->toArray(array_keys($records[0])));
+        static::assertTrue($recForMagickSetterMethodNotFromDb->getRelatedRecord('Parent')->existsInDb());
+
+        $recForMagickSetterMethodFromDb->setChildren([$records[0], $records[2]], true);
+        static::assertTrue($recForMagickSetterMethodFromDb->isRelatedRecordAttached('Children'));
+        static::assertEquals($records[0], $recForMagickSetterMethodFromDb->getRelatedRecord('Children')[0]->toArray(array_keys($records[0])));
+        static::assertEquals($records[2], $recForMagickSetterMethodFromDb->getRelatedRecord('Children')[1]->toArray(array_keys($records[2])));
+        static::assertTrue($recForMagickSetterMethodFromDb->getRelatedRecord('Children')[0]->existsInDb());
+        static::assertTrue($recForMagickSetterMethodFromDb->getRelatedRecord('Children')[1]->existsInDb());
+
+        $recForMagickSetterMethodNotFromDb->setChildren([$records[0], $records[2]]);
+        static::assertTrue($recForMagickSetterMethodNotFromDb->isRelatedRecordAttached('Children'));
+        static::assertEquals($records[0], $recForMagickSetterMethodNotFromDb->getRelatedRecord('Children')[0]->toArray(array_keys($records[0])));
+        static::assertEquals($records[2], $recForMagickSetterMethodNotFromDb->getRelatedRecord('Children')[1]->toArray(array_keys($records[2])));
+        static::assertTrue($recForMagickSetterMethodNotFromDb->getRelatedRecord('Children')[0]->existsInDb());
+        static::assertTrue($recForMagickSetterMethodNotFromDb->getRelatedRecord('Children')[1]->existsInDb());
     }
 
 }

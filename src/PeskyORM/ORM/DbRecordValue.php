@@ -276,10 +276,12 @@ class DbRecordValue {
     /**
      * @param DbRecordValue $oldValueObject
      * @return $this
+     * @throws \UnexpectedValueException
+     * @throws \BadMethodCallException
      */
     public function setOldValue(DbRecordValue $oldValueObject) {
         if ($oldValueObject->hasValue()) {
-            $this->oldValue = $oldValueObject->hasValue();
+            $this->oldValue = $oldValueObject->getValue();
             $this->oldValueIsFromDb = $oldValueObject->isItFromDb();
             $this->hasOldValue = true;
         }
