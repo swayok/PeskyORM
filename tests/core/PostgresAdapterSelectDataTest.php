@@ -76,6 +76,7 @@ class PostgresAdapterSelectDataTest extends \PHPUnit_Framework_TestCase {
             $item['id'] = "{$item['id']}";
             $item['is_superadmin'] = (bool)$item['is_superadmin'];
             $item['is_active'] = (bool)$item['is_active'];
+            $item['not_changeable_column'] = 'not changable';
         }
         return $data;
     }

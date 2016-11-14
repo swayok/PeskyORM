@@ -449,7 +449,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      */
-    public function setValue($columnName, $value, $isFromDb) {
+    public function updateValue($columnName, $value, $isFromDb) {
         $valueContainer = $this->getValueObject($columnName);
         if (!$isFromDb && !$valueContainer->getColumn()->isValueCanBeSetOrChanged()) {
             throw new \BadMethodCallException("It is forbidden to modify or set value of a '{$columnName}' column");
@@ -613,7 +613,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @throws \PeskyORM\ORM\Exception\InvalidDataException
      * @throws \PDOException
      */
-    public function setRelatedRecord($relationName, $relatedRecord, $isFromDb = null, $haltOnUnknownColumnNames = true) {
+    public function updateRelatedRecord($relationName, $relatedRecord, $isFromDb = null, $haltOnUnknownColumnNames = true) {
         $relation = static::getRelation($relationName);
         $relationTable = $relation->getForeignTable();
         if ($relation->getType() === DbTableRelation::HAS_MANY) {
@@ -917,7 +917,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
         if ($isFromDb && !$this->existsInDb()) {
             // first set pk column value
             if (array_key_exists($pkColName, $data)) {
-                $this->setValue($pkColName, $data[$pkColName], true);
+                $this->updateValue($pkColName, $data[$pkColName], true);
                 unset($data[$pkColName]);
             } else {
                 throw new \InvalidArgumentException(
@@ -928,9 +928,9 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
         }
         foreach ($data as $columnNameOrRelationName => $value) {
             if (static::hasColumn($columnNameOrRelationName)) {
-                $this->setValue($columnNameOrRelationName, $value, $isFromDb);
+                $this->updateValue($columnNameOrRelationName, $value, $isFromDb);
             } else if (static::hasRelation($columnNameOrRelationName)) {
-                $this->setRelatedRecord($columnNameOrRelationName, $value, $isFromDb ? null : false, $haltOnUnknownColumnNames);
+                $this->updateRelatedRecord($columnNameOrRelationName, $value, $isFromDb ? null : false, $haltOnUnknownColumnNames);
             } else if ($haltOnUnknownColumnNames) {
                 throw new \InvalidArgumentException(
                     "\$data argument contains unknown column name or relation name: '$columnNameOrRelationName'"
@@ -1338,7 +1338,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
             if ($this->isRelatedRecordAttached($relationName)) {
                 $relatedRecord = $this->getRelatedRecord($relationName);
                 if ($relations[$relationName]->getType() === $relations[$relationName]::HAS_ONE) {
-                    $relatedRecord->setValue(
+                    $relatedRecord->updateValue(
                         $relations[$relationName]->getForeignColumnName(),
                         $this->getValue($relations[$relationName]->getLocalColumnName()),
                         false
@@ -1346,7 +1346,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
                     $relatedRecord->save();
                 } else if ($relations[$relationName]->getType() === $relations[$relationName]::BELONGS_TO) {
                     $relatedRecord->save();
-                    $this->setValue(
+                    $this->updateValue(
                         $relations[$relationName]->getLocalColumnName(),
                         $relatedRecord->getValue($relations[$relationName]->getForeignColumnName()),
                         false
@@ -1354,7 +1354,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
                     $this->saveToDb([$relations[$relationName]->getLocalColumnName()]);
                 } else {
                     foreach ($relatedRecord as $recordObj) {
-                        $recordObj->setValue(
+                        $recordObj->updateValue(
                             $relations[$relationName]->getForeignColumnName(),
                             $this->getValue($relations[$relationName]->getLocalColumnName()),
                             false
@@ -1700,9 +1700,9 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      */
     public function offsetSet($key, $value) {
         if (static::hasRelation($key)) {
-            $this->setRelatedRecord($key, $value, null);
+            $this->updateRelatedRecord($key, $value, null);
         } else {
-            $this->setValue($key, $value, $key === static::getPrimaryKeyColumnName());
+            $this->updateValue($key, $value, $key === static::getPrimaryKeyColumnName());
         }
     }
 
@@ -1818,7 +1818,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
                 );
             }
             $isFromDb = array_key_exists(1, $arguments) ? (bool)$arguments[1] : null;
-            $this->setRelatedRecord($nameParts[1], $value, $isFromDb);
+            $this->updateRelatedRecord($nameParts[1], $value, $isFromDb);
         } else {
             $columnName = StringUtils::underscore($nameParts[1]);
             if (!static::hasColumn($columnName)) {
@@ -1829,7 +1829,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
             $isFromDb = array_key_exists(1, $arguments)
                 ? (bool)$arguments[1]
                 : $columnName === static::getPrimaryKeyColumnName(); //< make pk key be from DB by default or it will crash
-            $this->setValue($columnName, $value, $isFromDb);
+            $this->updateValue($columnName, $value, $isFromDb);
         }
         return $this;
     }

@@ -44,7 +44,7 @@ interface DbRecordInterface {
      * @param boolean $isFromDb
      * @return $this
      */
-    public function setValue($columnName, $value, $isFromDb);
+    public function updateValue($columnName, $value, $isFromDb);
 
     /**
      * Get a value of the primary key column

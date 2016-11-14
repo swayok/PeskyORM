@@ -236,7 +236,7 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         $idColValueObj = DbRecordValue::create(TestingAdminsTableStructure::getPkColumn(), $record);
         static::assertTrue($idColValueObj->isDefaultValueCanBeSet());
         $langColValueObj = DbRecordValue::create($langCol, $record);
-        $record->reset()->setValue('id', 1, true);
+        $record->reset()->updateValue('id', 1, true);
         static::assertFalse($langColValueObj->isDefaultValueCanBeSet());
         $idColValueObj->setRawValue(2, 2, false)->setValidValue(2, 2);
         static::assertFalse($idColValueObj->isDefaultValueCanBeSet());
