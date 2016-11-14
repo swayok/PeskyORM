@@ -380,7 +380,16 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $rec->setValue('id', 1, false);
     }
 
-    public function testSetValueAndPkValue() {
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Table does not contain column named 'invalidcolumn'
+     */
+    public function testInvalidUnsetValue() {
+        $rec = new TestingAdmin();
+        $rec->unsetValue('invalidcolumn');
+    }
+
+    public function testSetValueAndSetPkValueAndUnsetValue() {
         $rec = new TestingAdmin();
         static::assertFalse($rec->hasValue('id'));
         $rec->setValue('id', 2, true);
@@ -427,6 +436,9 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertTrue($rec->hasPrimaryKeyValue());
         static::assertEquals(2, $rec->getValue('id'));
         static::assertTrue($rec->isValueFromDb('id'));
+        static::assertTrue($rec->hasOldValue('id'));
+        static::assertTrue($rec->isOldValueWasFromDb('id'));
+        static::assertEquals(1, $rec->getOldValue('id'));
         static::assertEquals(4, $rec->getValue('parent_id'));
         static::assertFalse($rec->isValueFromDb('parent_id'));
         static::assertEquals('test@test.cc', $rec->getValue('email'));
@@ -443,6 +455,19 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($rec->isValueFromDb('parent_id'));
         static::assertEquals('test@test.cc', $rec->getValue('email'));
         static::assertFalse($rec->isValueFromDb('email'));
+
+        $rec
+            ->reset()
+            ->setValue('id', 1, true)
+            ->setValue('parent_id', 4, true)
+            ->setValue('email', 'test@test.cc', true);
+        static::assertEquals(4, $rec->getValue('parent_id'));
+        $rec->unsetValue('parent_id');
+        static::assertFalse($rec->hasValue('parent_id'));
+        static::assertTrue($rec->hasOldValue('parent_id'));
+        static::assertTrue($rec->isOldValueWasFromDb('parent_id'));
+        static::assertEquals(4, $rec->getOldValue('parent_id'));
+        static::assertEquals('test@test.cc', $rec->getValue('email'));
     }
 
     public function testExistsInDb() {

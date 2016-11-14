@@ -273,6 +273,38 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
     }
 
     /**
+     * @covers DbRecordValue::setOldValue()
+     * @covers DbRecordValue::hasOldValue()
+     * @covers DbRecordValue::getOldValue()
+     */
+    public function testSetOldValue() {
+        $valueObj = DbRecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
+        $valueObj->setRawValue(2, 2, false)->setValidValue(2, 2);
+        static::assertFalse($valueObj->hasOldValue());
+        $valueObj->setOldValue($valueObj);
+        static::assertTrue($valueObj->hasOldValue());
+        static::assertFalse($valueObj->isOldValueWasFromDb());
+        static::assertEquals(2, $valueObj->getOldValue());
+        $valueObj->setIsFromDb(true);
+        $valueObj->setOldValue($valueObj);
+        static::assertTrue($valueObj->hasOldValue());
+        static::assertTrue($valueObj->isOldValueWasFromDb());
+        static::assertEquals(2, $valueObj->getOldValue());
+
+        $valueObj = DbRecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
+        $valueObj->setRawValue(2, 2, false)->setValidValue(2, 2);
+        static::assertFalse($valueObj->hasOldValue());
+        $valueObj->setRawValue(3, 3, true);
+        static::assertTrue($valueObj->hasOldValue());
+        static::assertFalse($valueObj->isOldValueWasFromDb());
+        static::assertEquals(2, $valueObj->getOldValue());
+        $valueObj->setRawValue(4, 4, false);
+        static::assertTrue($valueObj->hasOldValue());
+        static::assertTrue($valueObj->isOldValueWasFromDb());
+        static::assertEquals(3, $valueObj->getOldValue());
+    }
+
+    /**
      * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage $rawValue argument for column 'parent_id' must be same as current raw value: NULL
      */

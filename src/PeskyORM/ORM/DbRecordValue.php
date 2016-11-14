@@ -185,11 +185,7 @@ class DbRecordValue {
      * @return $this
      */
     public function setRawValue($rawValue, $preprocessedValue, $isFromDb) {
-        if ($this->hasValue) {
-            $this->hasOldValue = true;
-            $this->oldValue = $this->value;
-            $this->oldValueIsFromDb = $this->isFromDb;
-        }
+        $this->setOldValue($this);
         $this->rawValue = $rawValue;
         $this->value = $preprocessedValue;
         $this->hasValue = true;
@@ -275,6 +271,19 @@ class DbRecordValue {
             throw new \BadMethodCallException("Old value is not set for column '{$this->getColumn()->getName()}'");
         }
         return $this->oldValue;
+    }
+
+    /**
+     * @param DbRecordValue $oldValueObject
+     * @return $this
+     */
+    public function setOldValue(DbRecordValue $oldValueObject) {
+        if ($oldValueObject->hasValue()) {
+            $this->oldValue = $oldValueObject->hasValue();
+            $this->oldValueIsFromDb = $oldValueObject->isItFromDb();
+            $this->hasOldValue = true;
+        }
+        return $this;
     }
 
     /**

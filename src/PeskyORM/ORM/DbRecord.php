@@ -367,6 +367,42 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     }
 
     /**
+     * @param string $columnName
+     * @return mixed
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    public function getOldValue($columnName) {
+        return $this->getValueObject($columnName)->getOldValue();
+    }
+
+    /**
+     * @param string $columnName
+     * @return bool
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    public function hasOldValue($columnName) {
+        return $this->getValueObject($columnName)->hasOldValue();
+    }
+
+    /**
+     * @param string $columnName
+     * @return bool
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    public function isOldValueWasFromDb($columnName) {
+        return $this->getValueObject($columnName)->isOldValueWasFromDb();
+    }
+
+    /**
      * Check if there is a value for $columnName
      * @param string|DbTableColumn $columnName
      * @param bool $trueIfThereIsDefaultValue - true: returns true if there is no value set but column has default value
@@ -459,6 +495,26 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     }
 
     /**
+     * @param string $columnName
+     * @return $this
+     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     * @throws \UnexpectedValueException
+     */
+    public function unsetValue($columnName) {
+        $oldValueObject = $this->getValueObject($columnName);
+        if ($oldValueObject->hasValue()) {
+            $this->values[$columnName] = $this->createValueObject(static::getColumn($columnName));
+            $this->values[$columnName]->setOldValue($oldValueObject);
+            if ($columnName === static::getPrimaryKeyColumnName()) {
+                $this->onPrimaryKeyChangeForRecordReceivedFromDb($oldValueObject->getValue());
+            }
+        }
+        return $this;
+    }
+
+    /**
      * Unset primary key value
      * @return $this
      * @throws \UnexpectedValueException
@@ -467,13 +523,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @throws \BadMethodCallException
      */
     public function unsetPrimaryKeyValue() {
-        if ($this->hasPrimaryKeyValue()) {
-            $pkName = $this::getPrimaryKeyColumnName();
-            $oldPkValue = $this->getValueObject($pkName)->getValue();
-            $this->values[$pkName] = $this->createValueObject($this::getColumn($pkName));
-            $this->onPrimaryKeyChangeForRecordReceivedFromDb($oldPkValue);
-        }
-        return $this;
+        return $this->unsetValue(static::getPrimaryKeyColumnName());
     }
 
     /**
