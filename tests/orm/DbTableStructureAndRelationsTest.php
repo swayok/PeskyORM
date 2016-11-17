@@ -148,4 +148,8 @@ class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
         TestingInvalidRelationsInTableStructure::getRelation('InvalidForeignTableClass');
     }
 
+    public function testColumnsConfigsAutoLoadingFormDbDescription() {
+        // todo: add tests for columns configs auto loading form db description
+    }
+
 }

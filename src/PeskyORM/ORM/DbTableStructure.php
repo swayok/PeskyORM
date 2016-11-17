@@ -238,8 +238,21 @@ abstract class DbTableStructure implements DbTableStructureInterface {
      * @throws \InvalidArgumentException
      */
     protected function createMissingColumnConfigsFromDbTableDescription() {
-        DbConnectionsManager::getConnection(static::getConnectionName())->describeTable(static::getTableName());
-        // todo: implement this
+        $description = DbConnectionsManager::getConnection(static::getConnectionName())
+            ->describeTable(static::getTableName(), static::getSchema());
+        foreach ($description->getColumns() as $columnName => $columnDescription) {
+            if (!static::hasColumn($columnName)) {
+                $column = DbTableColumn::create($columnDescription->getOrmType(), $columnName)
+                    ->setIsNullable($columnDescription->isNullable())
+                    ->valueMustBeUnique($columnDescription->isUnique());
+                if ($columnDescription->isPrimaryKey()) {
+                    $column->itIsPrimaryKey();
+                }
+                if ($columnDescription->getDefault() !== null) {
+                    $column->setDefaultValue($columnDescription->getDefault());
+                }
+            }
+        }
     }
 
     /**
