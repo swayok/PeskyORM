@@ -6,6 +6,7 @@ use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbException;
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\DbTableDescription;
 use PeskyORM\Core\Utils;
 
 class Mysql extends DbAdapter {
@@ -224,9 +225,10 @@ class Mysql extends DbAdapter {
     /**
      * Get table description from DB
      * @param string $table
-     * @return array
+     * @param null $schema - not used for MySQL
+     * @return DbTableDescription
      */
-    public function describeTable($table) {
+    public function describeTable($table, $schema = null) {
         // todo: implement describeTable
     }
 

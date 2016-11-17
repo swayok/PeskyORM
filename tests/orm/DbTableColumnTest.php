@@ -429,6 +429,4 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
         static::assertTrue($obj->isItAForeignKey());
     }
 
-    // todo: test default closures
-
 }

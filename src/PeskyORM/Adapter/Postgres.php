@@ -5,7 +5,12 @@ namespace PeskyORM\Adapter;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbException;
+use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\DbTableColumnDescription;
+use PeskyORM\Core\DbTableDescription;
 use PeskyORM\Core\Utils;
+use PeskyORM\ORM\DbTableColumn;
+use Swayok\Utils\ValidateValue;
 
 class Postgres extends DbAdapter {
 
@@ -26,6 +31,74 @@ class Postgres extends DbAdapter {
     const BOOL_FALSE = 'FALSE';
 
     const NO_LIMIT = 'ALL';
+
+    /**
+     * @var array
+     */
+    protected static $dbTypeToOrmType = [
+        'bool' => DbTableColumn::TYPE_BOOL,
+        'bytea' => DbTableColumn::TYPE_BLOB,
+        'char' => DbTableColumn::TYPE_STRING,
+        'name' => DbTableColumn::TYPE_STRING,
+        'int8' => DbTableColumn::TYPE_INT,
+        'int2' => DbTableColumn::TYPE_INT,
+        'int4' => DbTableColumn::TYPE_INT,
+        'text' => DbTableColumn::TYPE_TEXT,
+        'json' => DbTableColumn::TYPE_JSON,
+        'jsonb' => DbTableColumn::TYPE_JSONB,
+        'xml' => DbTableColumn::TYPE_STRING,
+        'float4' => DbTableColumn::TYPE_FLOAT,
+        'float8' => DbTableColumn::TYPE_FLOAT,
+        'money' => DbTableColumn::TYPE_FLOAT,
+        'macaddr' => DbTableColumn::TYPE_STRING,
+        'inet' => DbTableColumn::TYPE_STRING,       //< 192.168.0.0/24
+        'cidr' => DbTableColumn::TYPE_IPV4_ADDRESS, //< 192.168.0.0
+        'bpchar' => DbTableColumn::TYPE_STRING,     //< blank-padded char == char, internal use but may happen
+        'varchar' => DbTableColumn::TYPE_STRING,
+        'date' => DbTableColumn::TYPE_DATE,
+        'time' => DbTableColumn::TYPE_TIME,
+        'timestamp' => DbTableColumn::TYPE_TIMESTAMP,
+        'timestamptz' => DbTableColumn::TYPE_TIMESTAMP_WITH_TZ,
+        'interval' => DbTableColumn::TYPE_STRING,
+        'timetz' => DbTableColumn::TYPE_TIME,
+        'bit' => DbTableColumn::TYPE_BLOB,
+        'varbit' => DbTableColumn::TYPE_BLOB,
+        'numeric' => DbTableColumn::TYPE_FLOAT,
+        'uuid' => DbTableColumn::TYPE_STRING,
+    ];
+
+    // types
+    /*
+        bool
+        bytea
+        char
+        name
+        int8
+        int2
+        int4
+        text
+        json
+        xml
+        float4
+        float8
+        money
+        macaddr
+        inet
+        cidr
+        bpchar
+        varchar
+        date
+        time
+        timestamp
+        timestamptz
+        interval
+        timetz
+        bit
+        varbit
+        numeric
+        uuid
+        jsonb
+     */
 
     /**
      * @var bool - false: transaction queries like BEGIN TRANSACTION, COMMIT and ROLLBACK will not be remembered
@@ -153,10 +226,102 @@ class Postgres extends DbAdapter {
     /**
      * Get table description from DB
      * @param string $table
-     * @return array
+     * @param null|string $schema - name of DB schema that contains $table
+     * @return DbTableDescription
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\Core\DbException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
      */
-    public function describeTable($table) {
+    public function describeTable($table, $schema = 'public') {
+        $description = new DbTableDescription($table, $schema);
         // todo: implement describeTable
+        $query = "
+            SELECT  
+                `f`.`attname` AS `name`,  
+                `f`.`attnotnull` AS `notnull`,
+                `t`.`typname` AS `type`,
+                `pg_catalog`.format_type(`f`.`atttypid`,`f`.`atttypmod`) as `type_description`,  
+                CASE  
+                    WHEN `p`.`contype` = ``p`` THEN true  
+                    ELSE false  
+                END AS `primarykey`,  
+                CASE  
+                    WHEN `p`.`contype` = ``u`` THEN true  
+                    ELSE false
+                END AS `uniquekey`,
+                CASE
+                    WHEN `p`.`contype` = ``f`` THEN `g`.`relname`
+                END AS `foreignkey_on_table`,
+                CASE
+                    WHEN `p`.`contype` = ``f`` THEN pg_get_constraintdef(`p`.`oid`)
+                END AS `foreignkey_definition`,
+                CASE
+                    WHEN `f`.`atthasdef` = true THEN `d`.`adsrc`
+                END AS `default`
+            FROM pg_attribute f  
+                JOIN `pg_class` `c` ON `c`.`oid` = `f`.`attrelid`  
+                JOIN `pg_type` `t` ON `t`.`oid` = `f`.`atttypid`  
+                LEFT JOIN `pg_attrdef` `d` ON `d`.adrelid = `c`.`oid` AND `d`.`adnum` = `f`.`attnum`  
+                LEFT JOIN `pg_namespace` `n` ON `n`.`oid` = `c`.`relnamespace`  
+                LEFT JOIN `pg_constraint` `p` ON `p`.`conrelid` = `c`.`oid` AND `f`.`attnum` = ANY (`p`.`conkey`)  
+                LEFT JOIN `pg_class` AS `g` ON `p`.`confrelid` = `g`.`oid`  
+            WHERE `c`.`relkind` = ``r``::char  
+                AND `n`.`nspname` = ``{$schema}``
+                AND `c`.`relname` = ``{$table}``
+                AND `f`.`attnum` > 0 
+            ORDER BY `f`.`attnum`
+        ";
+        $columns = $this->query(DbExpr::create($query), Utils::FETCH_ALL);
+        foreach ($columns as $columnInfo) {
+            $columnDescription = new DbTableColumnDescription(
+                $columnInfo['name'],
+                $columnInfo['type'],
+                $this->convertDbTypeToOrmType($columnInfo['type'])
+            );
+            $columnDescription
+                ->setIsNullable(!(bool)$columnInfo['notnull'])
+                ->setIsPrimaryKey($columnInfo['primarykey'])
+                ->setIsForeignKey(!empty($columnInfo['foreignkey_on_table']))
+                ->setIsUnique($columnInfo['uniquekey'])
+                ->setDefault($this->cleanDefaultValueForColumnDescription($columnInfo['default']));
+            // todo: add char limit, number limit and number precision
+            $description->addColumn($columnDescription);
+        }
+        // todo: add foreign keys info to table description
+        return $description;
+    }
+
+    /**
+     * @param $dbType
+     * @return string
+     */
+    protected function convertDbTypeToOrmType($dbType) {
+        return array_key_exists($dbType, static::$dbTypeToOrmType) 
+            ? static::$dbTypeToOrmType[$dbType]
+            : DbTableColumn::TYPE_STRING;
+    }
+
+    /**
+     * @param string $default
+     * @return mixed
+     */
+    protected function cleanDefaultValueForColumnDescription($default) {
+        if ($default === null || $default === '') {
+            return null;
+        } else if (preg_match("%^'(.*?)'::(bpchar|character varying|char|jsonb?|xml|macaddr|varchar|inet|cidr|text|uuid)$%", $default, $matches)) {
+            return str_replace("''", "'", $matches[1]);
+        } else if ($default === 'true') {
+            return true;
+        } else if ($default === 'false') {
+            return false;
+        } else if (ValidateValue::isInteger($default)) {
+            return (int)$default;
+        } else if (ValidateValue::isFloat($default)) {
+            return (float)$default;
+        } else {
+            return DbExpr::create($default);
+        }
     }
 
     /**

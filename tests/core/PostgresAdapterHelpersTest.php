@@ -740,4 +740,51 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
         );
     }
 
+    public function testDescribeTable() {
+        $adapter = static::getValidAdapter();
+        $description = $adapter->describeTable('settings');
+        static::assertInstanceOf(\PeskyORM\Core\DbTableDescription::class, $adapter->describeTable('admins'));
+        static::assertEquals('settings', $description->getName());
+        static::assertEquals('public', $description->getDbSchema());
+        static::assertCount(3, $description->getColumns());
+        static::assertCount(0, $description->getForeignKeys());
+        $idCol = $description->getColumn('id');
+        static::assertEquals('id', $idCol->getName());
+        static::assertEquals('int4', $idCol->getDbType());
+        static::assertEquals('integer', $idCol->getOrmType());
+        static::assertEquals(DbExpr::create('nextval(\'settings_id_seq\'::regclass)'), $idCol->getDefault());
+        static::assertEquals(null, $idCol->getNumberLimit());
+        static::assertEquals(null, $idCol->getNumberPrecision());
+        static::assertEquals(null, $idCol->getCharLimit());
+        static::assertTrue($idCol->isPrimaryKey());
+        static::assertFalse($idCol->isUnique());
+        static::assertFalse($idCol->isForeignKey());
+        static::assertFalse($idCol->isNullable());
+        $keyCol = $description->getColumn('key');
+        static::assertEquals('key', $keyCol->getName());
+        static::assertEquals('varchar', $keyCol->getDbType());
+        static::assertEquals('string', $keyCol->getOrmType());
+        static::assertEquals(null, $keyCol->getDefault());
+        static::assertEquals(null, $keyCol->getNumberLimit());
+        static::assertEquals(null, $keyCol->getNumberPrecision());
+        static::assertEquals(null, $keyCol->getCharLimit());
+        static::assertFalse($keyCol->isPrimaryKey());
+        static::assertTrue($keyCol->isUnique());
+        static::assertFalse($keyCol->isForeignKey());
+        static::assertFalse($keyCol->isNullable());
+        $valueCol = $description->getColumn('value');
+        static::assertEquals('value', $valueCol->getName());
+        static::assertEquals('json', $valueCol->getDbType());
+        static::assertEquals('json', $valueCol->getOrmType());
+        static::assertEquals('{}', $valueCol->getDefault());
+        static::assertEquals(null, $valueCol->getNumberLimit());
+        static::assertEquals(null, $valueCol->getNumberPrecision());
+        static::assertEquals(null, $valueCol->getCharLimit());
+        static::assertFalse($valueCol->isPrimaryKey());
+        static::assertFalse($valueCol->isUnique());
+        static::assertFalse($valueCol->isForeignKey());
+        static::assertFalse($valueCol->isNullable());
+        // todo: add more tests for column descriptions (PostgreSQL)
+    }
+
 }

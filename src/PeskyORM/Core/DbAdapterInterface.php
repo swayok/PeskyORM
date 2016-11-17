@@ -294,9 +294,10 @@ interface DbAdapterInterface {
     /**
      * Get table description from DB
      * @param string $table
-     * @return array
+     * @param null|string $schema - name of DB schema that contains $table (for PostgreSQL)
+     * @return DbTableDescription
      */
-    public function describeTable($table);
+    public function describeTable($table, $schema = null);
 
     /**
      * Return DbExpr to set default value for a column.

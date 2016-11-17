@@ -172,4 +172,10 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest {
             $adapter->assembleCondition($column, '?&', ['test1', '[0][1]'], true)
         );
     }
+
+    public function testDescribeTable() {
+        // todo: added tests for describe table (MySQL)
+    }
+
+
 }
