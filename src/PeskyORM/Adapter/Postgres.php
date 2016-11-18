@@ -51,8 +51,8 @@ class Postgres extends DbAdapter {
         'float8' => Column::TYPE_FLOAT,
         'money' => Column::TYPE_FLOAT,
         'macaddr' => Column::TYPE_STRING,
-        'inet' => Column::TYPE_STRING,       //< 192.168.0.0/24
-        'cidr' => Column::TYPE_IPV4_ADDRESS, //< 192.168.0.0
+        'inet' => Column::TYPE_STRING,       //< 192.168.0.0 or 192.168.0.0/24
+        'cidr' => Column::TYPE_STRING,       //< 192.168.0.0/24 only
         'bpchar' => Column::TYPE_STRING,     //< blank-padded char == char, internal use but may happen
         'varchar' => Column::TYPE_STRING,
         'date' => Column::TYPE_DATE,
@@ -309,7 +309,7 @@ class Postgres extends DbAdapter {
     protected function cleanDefaultValueForColumnDescription($default) {
         if ($default === null || $default === '') {
             return null;
-        } else if (preg_match("%^'(.*?)'::(bpchar|character varying|char|jsonb?|xml|macaddr|varchar|inet|cidr|text|uuid)$%", $default, $matches)) {
+        } else if (preg_match("%^'((?:[^']|'')*?)'(?:::(bpchar|character varying|char|jsonb?|xml|macaddr|varchar|inet|cidr|text|uuid))?$%", $default, $matches)) {
             return str_replace("''", "'", $matches[1]);
         } else if ($default === 'true') {
             return true;
@@ -317,8 +317,8 @@ class Postgres extends DbAdapter {
             return false;
         } else if (ValidateValue::isInteger($default)) {
             return (int)$default;
-        } else if (ValidateValue::isFloat($default)) {
-            return (float)$default;
+        } else if (ValidateValue::isFloat(trim($default, "'"))) {
+            return (float)trim($default, "'");
         } else {
             return DbExpr::create($default);
         }

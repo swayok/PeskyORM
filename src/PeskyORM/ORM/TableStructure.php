@@ -70,6 +70,7 @@ abstract class TableStructure implements TableStructureInterface {
         if (static::$autodetectColumnConfigs) {
             $this->createMissingColumnConfigsFromDbTableDescription();
         }
+        $this->_loadAllRelationsConfigs();
         if (!$this->_findPkColumn(false)) {
             throw new OrmException('Table schema must contain primary key', OrmException::CODE_INVALID_TABLE_SCHEMA);
         }
@@ -216,6 +217,9 @@ abstract class TableStructure implements TableStructureInterface {
      * Relation name must start from upper case letter: private function RelationName() {}
      * Column method must return Column object
      * Relation method must return Relation object
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
      */
     protected function loadColumnConfigsFromPrivateMethods() {
         $objectReflection = new \ReflectionObject($this);
@@ -247,12 +251,15 @@ abstract class TableStructure implements TableStructureInterface {
                     ->valueMustBeUnique($columnDescription->isUnique());
                 if ($columnDescription->isPrimaryKey()) {
                     $column->itIsPrimaryKey();
+                    $this->pk = $column;
                 }
                 if ($columnDescription->getDefault() !== null) {
                     $column->setDefaultValue($columnDescription->getDefault());
                 }
+                $this->columns[$columnName] = $column;
             }
         }
+        // todo: add possibility to cache table description
     }
 
     /**
@@ -283,7 +290,10 @@ abstract class TableStructure implements TableStructureInterface {
             }
             /** @var Column $config */
             $config->setTableStructure($this);
-            unset($method, $this->columns[$colName]);
+            unset($method);
+            if ($colName !== $config->getName()) {
+                unset($this->columns[$colName]);
+            }
             $this->columns[$config->getName()] = $config;
             if ($config->isItPrimaryKey()) {
                 if (!empty($this->pk)) {

@@ -99,7 +99,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         static::assertEquals($testData, $data);
         $data = $dbSelect->fetchOne();
         static::assertEquals($testData[0], $data);
-        $data = $dbSelect->fetchColumn();
+        $data = $dbSelect->columns(['id'])->fetchColumn();
         static::assertEquals(Set::extract('/id', $testData), $data);
         $data = $dbSelect->fetchAssoc('id', 'login');
         static::assertEquals(Set::combine($testData, '/id', '/login'), $data);

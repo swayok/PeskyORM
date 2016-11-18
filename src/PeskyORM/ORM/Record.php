@@ -1856,6 +1856,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * The string representation of the object.
      * </p>
      * @return void
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @since 5.1.0
      */
@@ -1864,6 +1867,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         if (!is_array($data)) {
             throw new \InvalidArgumentException('$serialized argument must be a json-encoded array');
         }
+        $this->reset();
         /** @var array $data */
         foreach ($data as $name => $value) {
             $this->values[$name]->unserialize($value);

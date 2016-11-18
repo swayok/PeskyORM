@@ -418,9 +418,12 @@ class RecordValue {
 
     /**
      * Collects all properties. Used by Record::serialize()
+     * @return array
      */
     public function serialize() {
-        return json_encode(array_diff_key(get_object_vars($this), ['column', 'record']));
+        $data = get_object_vars($this);
+        unset($data['column'], $data['record']);
+        return $data;
     }
 
     /**

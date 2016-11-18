@@ -1,5 +1,6 @@
 <?php
 
+use PeskyORM\Core\DbExpr;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Relation;
 use PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
@@ -149,7 +150,76 @@ class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testCreateMissingColumnConfigsFromDbTableDescription() {
-        // todo: add tests for columns configs auto loading form db description
+        $structure = \PeskyORMTest\TestingAdmins\TestingAdmins4TableStructure::getInstance();
+        static::assertCount(16, $structure::getColumns());
+        static::assertEquals(
+            [
+                'updated_at', 'id', 'login', 'password', 'parent_id', 'created_at', 'remember_token', 'is_superadmin',
+                'language', 'ip', 'role', 'is_active', 'name', 'email', 'timezone', 'not_changeable_column'
+            ],
+            array_keys($structure::getColumns())
+        );
+        // defined column
+        $col = $structure::getColumn('updated_at');
+        static::assertFalse($col->isValueCanBeNull());
+        static::assertTrue($col->isAutoUpdatingValue());
+        static::assertFalse($col->hasDefaultValue());
+        // autoloaded columns
+        // costraints
+        static::assertTrue($structure::getColumn('id')->isItPrimaryKey());
+        static::assertTrue($structure::getColumn('parent_id')->isItAForeignKey()); //< its not a mistake - it is affected only be existing relation
+        static::assertTrue($structure::getColumn('email')->isValueMustBeUnique());
+        static::assertTrue($structure::getColumn('login')->isValueMustBeUnique());
+        // nullable
+        static::assertTrue($structure::getColumn('parent_id')->isValueCanBeNull());
+        static::assertTrue($structure::getColumn('email')->isValueCanBeNull());
+        static::assertFalse($structure::getColumn('login')->isValueCanBeNull());
+        static::assertFalse($structure::getColumn('password')->isValueCanBeNull());
+        // defaults
+        static::assertFalse($structure::getColumn('email')->hasDefaultValue());
+        static::assertFalse($structure::getColumn('parent_id')->hasDefaultValue());
+        static::assertFalse($structure::getColumn('login')->hasDefaultValue());
+        static::assertFalse($structure::getColumn('password')->hasDefaultValue());
+        static::assertTrue($structure::getColumn('language')->hasDefaultValue());
+        static::assertEquals('en', $structure::getColumn('language')->getDefaultValueAsIs());
+        static::assertTrue($structure::getColumn('is_superadmin')->hasDefaultValue());
+        static::assertEquals(false, $structure::getColumn('is_superadmin')->getDefaultValueAsIs());
+        static::assertTrue($structure::getColumn('remember_token')->hasDefaultValue());
+        static::assertEquals('', $structure::getColumn('remember_token')->getDefaultValueAsIs());
+        static::assertTrue($structure::getColumn('created_at')->hasDefaultValue());
+        static::assertEquals(DbExpr::create('now()'), $structure::getColumn('created_at')->getDefaultValueAsIs());
+        static::assertTrue($structure::getColumn('id')->hasDefaultValue());
+        static::assertEquals(
+            DbExpr::create("nextval('admins_id_seq'::regclass)"),
+            $structure::getColumn('id')->getDefaultValueAsIs()
+        );
+        static::assertTrue($structure::getColumn('ip')->hasDefaultValue());
+        static::assertEquals('192.168.1.1', $structure::getColumn('ip')->getDefaultValueAsIs());
+        static::assertTrue($structure::getColumn('role')->hasDefaultValue());
+        static::assertEquals('', $structure::getColumn('role')->getDefaultValueAsIs());
+        static::assertTrue($structure::getColumn('is_active')->hasDefaultValue());
+        static::assertEquals(true, $structure::getColumn('is_active')->getDefaultValueAsIs());
+        static::assertTrue($structure::getColumn('timezone')->hasDefaultValue());
+        static::assertEquals('UTC', $structure::getColumn('timezone')->getDefaultValueAsIs());
+        static::assertTrue($structure::getColumn('not_changeable_column')->hasDefaultValue());
+        static::assertEquals('not changable', $structure::getColumn('not_changeable_column')->getDefaultValueAsIs());
+        // types
+        static::assertEquals(Column::TYPE_BOOL, $structure::getColumn('is_active')->getType());
+        static::assertEquals(Column::TYPE_BOOL, $structure::getColumn('is_superadmin')->getType());
+        static::assertEquals(Column::TYPE_STRING, $structure::getColumn('ip')->getType());
+        static::assertEquals(Column::TYPE_INT, $structure::getColumn('id')->getType());
+        static::assertEquals(Column::TYPE_INT, $structure::getColumn('parent_id')->getType());
+        static::assertEquals(Column::TYPE_TIMESTAMP_WITH_TZ, $structure::getColumn('created_at')->getType());
+        static::assertEquals(Column::TYPE_TIMESTAMP, $structure::getColumn('updated_at')->getType());
+        static::assertEquals(Column::TYPE_STRING, $structure::getColumn('language')->getType());
+        static::assertEquals(Column::TYPE_STRING, $structure::getColumn('login')->getType());
+        static::assertEquals(Column::TYPE_STRING, $structure::getColumn('password')->getType());
+        static::assertEquals(Column::TYPE_STRING, $structure::getColumn('remember_token')->getType());
+        static::assertEquals(Column::TYPE_STRING, $structure::getColumn('role')->getType());
+        static::assertEquals(Column::TYPE_STRING, $structure::getColumn('name')->getType());
+        static::assertEquals(Column::TYPE_STRING, $structure::getColumn('email')->getType());
+        static::assertEquals(Column::TYPE_STRING, $structure::getColumn('timezone')->getType());
+        static::assertEquals(Column::TYPE_STRING, $structure::getColumn('not_changeable_column')->getType());
     }
 
 }

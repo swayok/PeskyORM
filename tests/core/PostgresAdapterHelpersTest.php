@@ -749,7 +749,86 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
             $this->invokePrivateAdapterMethod('extractLimitAndPrecisionForColumnDescription', 'numeric(8,2)')
         );
         // Postgres::cleanDefaultValueForColumnDescription()
-        // todo: add tests for Postgres::cleanDefaultValueForColumnDescription()
+        static::assertEquals(
+            '',
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "''::character varying")
+        );
+        static::assertEquals(
+            ' ',
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "' '::text")
+        );
+        static::assertEquals(
+            'a',
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'a'::bpchar")
+        );
+        static::assertEquals(
+            '{}',
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'{}'::jsonb")
+        );
+        static::assertEquals(
+            null,
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', '')
+        );
+        static::assertEquals(
+            null,
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', null)
+        );
+        static::assertEquals(
+            true,
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', 'true')
+        );
+        static::assertEquals(
+            false,
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', 'false')
+        );
+        static::assertEquals(
+            11,
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', '11')
+        );
+        static::assertEquals(
+            11.1,
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', '11.1')
+        );
+        static::assertEquals(
+            11.1,
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'11.1'")
+        );
+        static::assertEquals(
+            DbExpr::create("'somecode'::text + NOW()::text + INTERVAL '1 day'::text"),
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'somecode'::text + NOW()::text + INTERVAL '1 day'::text")
+        );
+        static::assertEquals(
+            "'",
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "''''::text")
+        );
+        static::assertEquals(
+            "test'quote",
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'test''quote'::text")
+        );
+        static::assertEquals(
+            "test'",
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'test'''::text")
+        );
+        static::assertEquals(
+            "'quote",
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'''quote'::text")
+        );
+        static::assertEquals(
+            "'quote'",
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'''quote'''::text")
+        );
+        static::assertEquals(
+            "'quote'test ' asd'",
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'''quote''test '' asd'''::text")
+        );
+        static::assertEquals(
+            "'quote'test ' asd'",
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'''quote''test '' asd'''")
+        );
+        static::assertEquals(
+            DbExpr::create('NOW()'),
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', 'NOW()')
+        );
         // Postgres::describeTable()
         $adapter = static::getValidAdapter();
         $description = $adapter->describeTable('settings');
@@ -757,6 +836,7 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
         static::assertEquals('settings', $description->getName());
         static::assertEquals('public', $description->getDbSchema());
         static::assertCount(3, $description->getColumns());
+
         $idCol = $description->getColumn('id');
         static::assertEquals('id', $idCol->getName());
         static::assertEquals('int4', $idCol->getDbType());
@@ -768,6 +848,7 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($idCol->isUnique());
         static::assertFalse($idCol->isForeignKey());
         static::assertFalse($idCol->isNullable());
+
         $keyCol = $description->getColumn('key');
         static::assertEquals('key', $keyCol->getName());
         static::assertEquals('varchar', $keyCol->getDbType());
@@ -779,6 +860,7 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
         static::assertTrue($keyCol->isUnique());
         static::assertFalse($keyCol->isForeignKey());
         static::assertFalse($keyCol->isNullable());
+
         $valueCol = $description->getColumn('value');
         static::assertEquals('value', $valueCol->getName());
         static::assertEquals('json', $valueCol->getDbType());
@@ -790,11 +872,15 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($valueCol->isUnique());
         static::assertFalse($valueCol->isForeignKey());
         static::assertFalse($valueCol->isNullable());
-        // todo: add more tests for column descriptions (PostgreSQL)
+
         $description = $adapter->describeTable('admins');
         static::assertEquals('admins', $description->getName());
         static::assertEquals('public', $description->getDbSchema());
         static::assertCount(16, $description->getColumns());
+        static::assertTrue($description->getColumn('login')->isUnique());
+        static::assertTrue($description->getColumn('email')->isUnique());
+        static::assertTrue($description->getColumn('parent_id')->isForeignKey());
+        static::assertTrue($description->getColumn('remember_token')->isNullable());
     }
 
 }
