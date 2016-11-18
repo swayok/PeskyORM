@@ -2,7 +2,7 @@
 
 namespace PeskyORM\ORM;
 
-class DbRecordsSet extends DbRecordsArray {
+class RecordsSet extends RecordsArray {
 
     /**
      * @var OrmSelect
@@ -29,7 +29,7 @@ class DbRecordsSet extends DbRecordsArray {
     protected $minRecordsCountForOptimizedIteration = 200;
     /**
      * Use pagination to fetch small packs of records instead of fetching all at once?
-     * Automatically enabed when there is no limit/offset in DbSelect or when
+     * Automatically enabed when there is no limit/offset in Select or when
      * limit > $this->recordsCountPerPageForOptimizedIteration * 4
      * @var bool
      */
@@ -46,37 +46,37 @@ class DbRecordsSet extends DbRecordsArray {
     protected $localOffsetForOptimizedIteration = 0;
 
     /**
-     * @param DbTableInterface $table
+     * @param TableInterface $table
      * @param array $records
      * @param boolean|null $isFromDb - null: autodetect by primary key value existence
-     * @return DbRecordsArray
+     * @return RecordsArray
      * @throws \InvalidArgumentException
      */
-    static public function createFromArray(DbTableInterface $table, array $records, $isFromDb = null) {
-        return new DbRecordsArray($table, $records, $isFromDb === null ? null : (bool)$isFromDb);
+    static public function createFromArray(TableInterface $table, array $records, $isFromDb = null) {
+        return new RecordsArray($table, $records, $isFromDb === null ? null : (bool)$isFromDb);
     }
 
     /**
      * @param OrmSelect $dbSelect - it will be cloned to avoid possible problems when original object
-     *      is changed outside DbRecordsSet + to allow optimised iteration via pagination
-     * @return DbRecordsSet
+     *      is changed outside RecordsSet + to allow optimised iteration via pagination
+     * @return RecordsSet
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function createFromOrmSelect(OrmSelect $dbSelect) {
-        return new DbRecordsSet($dbSelect->getTable(), $dbSelect, true);
+        return new RecordsSet($dbSelect->getTable(), $dbSelect, true);
     }
 
     /**
-     * @param DbTableInterface $table
+     * @param TableInterface $table
      * @param OrmSelect $dbSelect - it will be cloned to avoid possible problems when original object
-     *      is changed outside DbRecordsSet + to allow optimised iteration via pagination
+     *      is changed outside RecordsSet + to allow optimised iteration via pagination
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      */
-    public function __construct(DbTableInterface $table, OrmSelect $dbSelect) {
+    public function __construct(TableInterface $table, OrmSelect $dbSelect) {
         parent::__construct($table, [], true);
         $this->records = null;
         $this->select = clone $dbSelect;

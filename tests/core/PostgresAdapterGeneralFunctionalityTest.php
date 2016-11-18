@@ -3,25 +3,20 @@
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbExpr;
+use PeskyORMTest\TestingApp;
 
 class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCase {
 
-    /** @var PostgresConfig */
-    static protected $dbConnectionConfig;
-
     public static function setUpBeforeClass() {
-        $data = include __DIR__ . '/../configs/global.php';
-        self::$dbConnectionConfig = PostgresConfig::fromArray($data['pgsql']);
+        TestingApp::clearTables(static::getValidAdapter());
     }
 
     public static function tearDownAfterClass() {
-        $adapter = static::getValidAdapter();
-        $adapter->exec('TRUNCATE TABLE settings');
-        self::$dbConnectionConfig = null;
+        TestingApp::clearTables(static::getValidAdapter());
     }
 
     static private function getValidAdapter() {
-        return new Postgres(self::$dbConnectionConfig);
+        return TestingApp::getPgsqlConnection();
     }
 
     /**
@@ -45,7 +40,7 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
     public function testConnectionWithInvalidUserName2() {
         $config = PostgresConfig::fromArray([
             'name' => 'totally_not_existing_db',
-            'user' => self::$dbConnectionConfig->getUserName(),
+            'user' => static::getValidAdapter()->getConnectionConfig()->getUserName(),
             'password' => 'this_password_is_for_not_existing_user'
         ]);
         $adapter = new Postgres($config);
@@ -59,8 +54,8 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
     public function testConnectionWithInvalidDbName() {
         $config = PostgresConfig::fromArray([
             'name' => 'totally_not_existing_db',
-            'user' => self::$dbConnectionConfig->getUserName(),
-            'password' => self::$dbConnectionConfig->getUserPassword()
+            'user' => static::getValidAdapter()->getConnectionConfig()->getUserName(),
+            'password' => static::getValidAdapter()->getConnectionConfig()->getUserPassword()
         ]);
         $adapter = new Postgres($config);
         $adapter->getConnection();
@@ -72,8 +67,8 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
      */
     public function testConnectionWithInvalidUserPassword() {
         $config = PostgresConfig::fromArray([
-            'name' => self::$dbConnectionConfig->getDbName(),
-            'user' => self::$dbConnectionConfig->getUserName(),
+            'name' => static::getValidAdapter()->getConnectionConfig()->getDbName(),
+            'user' => static::getValidAdapter()->getConnectionConfig()->getUserName(),
             'password' => 'this_password_is_for_not_existing_user'
         ]);
         $adapter = new Postgres($config);
@@ -87,9 +82,9 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
         $this->expectException(PDOException::class);
         $this->expectExceptionMessage('could not connect to server');
         $config = PostgresConfig::fromArray([
-            'name' => self::$dbConnectionConfig->getDbName(),
-            'user' => self::$dbConnectionConfig->getUserName(),
-            'password' => self::$dbConnectionConfig->getUserPassword(),
+            'name' => static::getValidAdapter()->getConnectionConfig()->getDbName(),
+            'user' => static::getValidAdapter()->getConnectionConfig()->getUserName(),
+            'password' => static::getValidAdapter()->getConnectionConfig()->getUserPassword(),
             'port' => '9999'
         ]);
         $adapter = new Postgres($config);

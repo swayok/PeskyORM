@@ -221,7 +221,7 @@ interface DbAdapterInterface {
      * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \InvalidArgumentException
      */
     public function select($table, array $columns = [], $conditionsAndOptions = null);
@@ -235,7 +235,7 @@ interface DbAdapterInterface {
      * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \InvalidArgumentException
      */
     public function selectColumn($table, $column, $conditionsAndOptions = null);
@@ -249,7 +249,7 @@ interface DbAdapterInterface {
      * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \InvalidArgumentException
      */
     public function selectAssoc($table, $keysColumn, $valuesColumn, $conditionsAndOptions = null);
@@ -262,7 +262,7 @@ interface DbAdapterInterface {
      * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \InvalidArgumentException
      */
     public function selectOne($table, array $columns = [], $conditionsAndOptions = null);
@@ -275,7 +275,7 @@ interface DbAdapterInterface {
      * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \InvalidArgumentException
      */
     public function selectValue($table, DbExpr $expression, $conditionsAndOptions = null);
@@ -295,7 +295,7 @@ interface DbAdapterInterface {
      * Get table description from DB
      * @param string $table
      * @param null|string $schema - name of DB schema that contains $table (for PostgreSQL)
-     * @return DbTableDescription
+     * @return TableDescription
      */
     public function describeTable($table, $schema = null);
 

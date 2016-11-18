@@ -1,9 +1,9 @@
 <?php
 
-use PeskyORM\Adapter\Postgres;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
+use PeskyORMTest\TestingApp;
 use Swayok\Utils\Set;
 
 class UtilsTest extends \PHPUnit_Framework_TestCase {
@@ -12,24 +12,15 @@ class UtilsTest extends \PHPUnit_Framework_TestCase {
     static protected $dbConnectionConfig;
 
     static public function setUpBeforeClass() {
-        $data = include __DIR__ . '/../configs/global.php';
-        static::$dbConnectionConfig = PostgresConfig::fromArray($data['pgsql']);
-        static::cleanTables();
+        TestingApp::clearTables(static::getValidAdapter());
     }
 
     static public function tearDownAfterClass() {
-        static::cleanTables();
-        static::$dbConnectionConfig = null;
+        TestingApp::clearTables(static::getValidAdapter());
     }
 
     protected function tearDown() {
-        static::cleanTables();
-    }
-
-    static protected function cleanTables() {
-        $adapter = static::getValidAdapter();
-        $adapter->exec('TRUNCATE TABLE settings');
-        $adapter->exec('TRUNCATE TABLE admins');
+        TestingApp::clearTables(static::getValidAdapter());
     }
 
     static protected function fillTables() {
@@ -39,7 +30,7 @@ class UtilsTest extends \PHPUnit_Framework_TestCase {
     }
 
     static protected function getValidAdapter() {
-        $adapter = new Postgres(static::$dbConnectionConfig);
+        $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
         return $adapter;
     }

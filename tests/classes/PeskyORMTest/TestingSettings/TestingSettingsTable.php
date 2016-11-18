@@ -2,8 +2,8 @@
 
 namespace PeskyORMTest\TestingSettings;
 
-use PeskyORMTest\TestingBaseDbTable;
+use PeskyORMTest\TestingBaseTable;
 
-class TestingSettingsTable extends TestingBaseDbTable {
+class TestingSettingsTable extends TestingBaseTable {
 
 }

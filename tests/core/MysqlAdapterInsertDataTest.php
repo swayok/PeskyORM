@@ -1,23 +1,13 @@
 <?php
 
-require_once __DIR__ . '/PostgresAdapterInsertDataTest.php';
+use PeskyORMTest\TestingApp;
 
-use PeskyORM\Adapter\Mysql;
-use PeskyORM\Config\Connection\MysqlConfig;
+require_once __DIR__ . '/PostgresAdapterInsertDataTest.php';
 
 class MysqlAdapterInsertDataTest extends PostgresAdapterInsertDataTest {
 
-    /** @var MysqlConfig */
-    static protected $dbConnectionConfig;
-
-    static public function setUpBeforeClass() {
-        $data = include __DIR__ . '/../configs/global.php';
-        static::$dbConnectionConfig = MysqlConfig::fromArray($data['mysql']);
-        static::cleanTables();
-    }
-
     static protected function getValidAdapter() {
-        return new Mysql(static::$dbConnectionConfig);
+        return TestingApp::getMysqlConnection();
     }
 
     public function convertTestDataForAdminsTableAssert($data) {

@@ -1,43 +1,31 @@
 <?php
 
 use PeskyORM\Adapter\Postgres;
-use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\DbJoinConfig;
-use PeskyORM\Core\DbSelect;
+use PeskyORM\Core\JoinInfo;
+use PeskyORM\Core\Select;
+use PeskyORMTest\TestingApp;
 use Swayok\Utils\Set;
 
 class DbSelectTest extends \PHPUnit_Framework_TestCase {
 
-    /** @var PostgresConfig */
-    static protected $dbConnectionConfig;
-
     static public function setUpBeforeClass() {
-        $data = include __DIR__ . '/../configs/global.php';
-        static::$dbConnectionConfig = PostgresConfig::fromArray($data['pgsql']);
-        static::cleanTables();
+        TestingApp::clearTables(static::getValidAdapter());
     }
 
     static public function tearDownAfterClass() {
-        static::cleanTables();
-        static::$dbConnectionConfig = null;
+        TestingApp::clearTables(static::getValidAdapter());
     }
 
-    static protected function cleanTables() {
-        $adapter = static::getValidAdapter();
-        $adapter->exec('TRUNCATE TABLE settings');
-        $adapter->exec('TRUNCATE TABLE admins');
-    }
-
-    static protected function fillTables() {
-        static::cleanTables();
+    static protected function fillAdminsTable() {
+        TestingApp::clearTables(static::getValidAdapter());
         $data = static::getTestDataForAdminsTableInsert();
         static::getValidAdapter()->insertMany('admins', array_keys($data[0]), $data);
-        return ['admins' => $data];
+        return $data;
     }
 
     static protected function getValidAdapter() {
-        $adapter = new Postgres(static::$dbConnectionConfig);
+        $adapter = \PeskyORMTest\TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
@@ -82,7 +70,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
     }
 
     static protected function getNewSelect() {
-        return DbSelect::from('admins', static::getValidAdapter());
+        return Select::from('admins', static::getValidAdapter());
     }
 
     public function convertTestDataForAdminsTableAssert($data) {
@@ -96,7 +84,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @param DbSelect $object
+     * @param Select $object
      * @param string $propertyName
      * @return mixed
      */
@@ -108,7 +96,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @param DbSelect $object
+     * @param Select $object
      * @param string $methodName
      * @param array $args
      * @return mixed
@@ -125,7 +113,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $tableName argument must be a not-empty string
      */
     public function testInvalidTableNameInConstructor1() {
-        DbSelect::from('', static::getValidAdapter());
+        Select::from('', static::getValidAdapter());
     }
 
     /**
@@ -133,7 +121,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $tableName argument must be a not-empty string
      */
     public function testInvalidTableNameInConstructor2() {
-        DbSelect::from(null, static::getValidAdapter());
+        Select::from(null, static::getValidAdapter());
     }
 
     /**
@@ -147,8 +135,8 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
     public function testConstructorAndBasicFetching() {
         $adapter = static::getValidAdapter();
         // via new
-        $dbSelect = new DbSelect('admins', $adapter);
-        static::assertInstanceOf(DbSelect::class, $dbSelect);
+        $dbSelect = new Select('admins', $adapter);
+        static::assertInstanceOf(Select::class, $dbSelect);
         static::assertInstanceOf(Postgres::class, $dbSelect->getConnection());
         static::assertEquals('admins', $dbSelect->getTableName());
         static::assertEquals('Admins', $dbSelect->getTableAlias());
@@ -157,8 +145,8 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
         static::assertEquals('SELECT COUNT(*) FROM "public"."admins" AS "Admins"', rtrim($dbSelect->getCountQuery()));
         static::assertEquals('SELECT 1 FROM "public"."admins" AS "Admins" LIMIT 1', rtrim($dbSelect->getExistenceQuery()));
 
-        $insertedData = static::fillTables();
-        $testData = static::convertTestDataForAdminsTableAssert($insertedData['admins']);
+        $insertedData = static::fillAdminsTable();
+        $testData = static::convertTestDataForAdminsTableAssert($insertedData);
         static::assertEquals(2, $dbSelect->fetchCount());
         static::assertTrue($dbSelect->fetchExistence());
         $data = $dbSelect->fetchMany();
@@ -173,8 +161,8 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
         static::assertEquals(array_sum(Set::extract('/id', $testData)), $sum);
 
         // via static
-        $dbSelect = DbSelect::from('admins', $adapter);
-        static::assertInstanceOf(DbSelect::class, $dbSelect);
+        $dbSelect = Select::from('admins', $adapter);
+        static::assertInstanceOf(Select::class, $dbSelect);
         static::assertInstanceOf(Postgres::class, $dbSelect->getConnection());
         static::assertEquals('admins', $dbSelect->getTableName());
         $data = $dbSelect->limit(1)->fetchNextPage();
@@ -428,7 +416,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage You must use DbJoinConfig->setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'
+     * @expectedExceptionMessage You must use JoinInfo->setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'
      */
     public function testInvalidColumnsWithJoinName() {
         static::assertEquals(
@@ -439,7 +427,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage You must use DbJoinConfig->setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'
+     * @expectedExceptionMessage You must use JoinInfo->setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'
      */
     public function testInvalidColumnsWithJoinName2() {
         static::assertEquals(
@@ -450,7 +438,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage You must use DbJoinConfig->setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'
+     * @expectedExceptionMessage You must use JoinInfo->setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'
      */
     public function testInvalidColumnsWithJoinName3() {
         static::assertEquals(
@@ -508,9 +496,9 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             'SELECT "Admins"."id" AS "_Admins__' . $shortAlias . '" FROM "public"."admins" AS "Admins"',
             $query
         );
-        $insertedData = static::fillTables();
+        $insertedData = static::fillAdminsTable();
         $expectedData = [];
-        foreach ($insertedData['admins'] as $data) {
+        foreach ($insertedData as $data) {
             $expectedData[] = ['VeryLongColumnAliasSoItMustBeShortened' => $data['id']];
         }
         static::assertEquals($expectedData, $dbSelect->fetchMany());
@@ -842,7 +830,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Join config with name 'Test' is not valid
      */
     public function testInvalidJoin1() {
-        $joinConfig = DbJoinConfig::create('Test');
+        $joinConfig = JoinInfo::create('Test');
         static::getNewSelect()->join($joinConfig);
     }
 
@@ -851,10 +839,10 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Join with name 'Test' already defined
      */
     public function testInvalidJoin2() {
-        $joinConfig = DbJoinConfig::create('Test')
+        $joinConfig = JoinInfo::create('Test')
             ->setConfigForLocalTable('admins', 'id')
             ->setConfigForForeignTable('settings', 'id')
-            ->setJoinType(DbJoinConfig::JOIN_INNER);
+            ->setJoinType(JoinInfo::JOIN_INNER);
         static::getNewSelect()->join($joinConfig)->join($joinConfig);
     }
 
@@ -863,27 +851,27 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Invalid join name 'NotTest' used in columns list for join named 'Test'
      */
     public function testInvalidJoinColumns() {
-        $joinConfig = DbJoinConfig::create('Test')
+        $joinConfig = JoinInfo::create('Test')
             ->setConfigForLocalTable('admins', 'id')
             ->setConfigForForeignTable('settings', 'id')
-            ->setJoinType(DbJoinConfig::JOIN_INNER)
+            ->setJoinType(JoinInfo::JOIN_INNER)
             ->setForeignColumnsToSelect('Test.key', 'NotTest.value');
         static::getNewSelect()->join($joinConfig)->getQuery();
     }
 
     public function testJoins() {
         $dbSelect = static::getNewSelect();
-        $joinConfig = DbJoinConfig::create('Test')
+        $joinConfig = JoinInfo::create('Test')
             ->setConfigForLocalTable('admins', 'id')
             ->setConfigForForeignTable('settings', 'id')
-            ->setJoinType(DbJoinConfig::JOIN_INNER)
+            ->setJoinType(JoinInfo::JOIN_INNER)
             ->setForeignColumnsToSelect('key', 'value');
         static::assertEquals(
             'SELECT "Admins".*, "Test"."key" AS "_Test__key", "Test"."value" AS "_Test__value" FROM "public"."admins" AS "Admins" INNER JOIN "public"."settings" AS "Test" ON ("Admins"."id" = "Test"."id")',
             $dbSelect->join($joinConfig)->getQuery()
         );
         $joinConfig
-            ->setJoinType(DbJoinConfig::JOIN_LEFT)
+            ->setJoinType(JoinInfo::JOIN_LEFT)
             ->setForeignColumnsToSelect('*')
             ->setAdditionalJoinConditions([
                 'key' => 'name'
@@ -893,14 +881,14 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             $dbSelect->join($joinConfig, false)->getQuery()
         );
         $joinConfig
-            ->setJoinType(DbJoinConfig::JOIN_RIGHT)
+            ->setJoinType(JoinInfo::JOIN_RIGHT)
             ->setForeignColumnsToSelect(['value']);
         static::assertEquals(
             'SELECT "Admins".*, "Test"."value" AS "_Test__value" FROM "public"."admins" AS "Admins" RIGHT JOIN "public"."settings" AS "Test" ON ("Admins"."id" = "Test"."id" AND "Test"."key" = \'name\')',
             $dbSelect->join($joinConfig, false)->getQuery()
         );
         $joinConfig
-            ->setJoinType(DbJoinConfig::JOIN_RIGHT)
+            ->setJoinType(JoinInfo::JOIN_RIGHT)
             ->setAdditionalJoinConditions([])
             ->setForeignColumnsToSelect([]);
         static::assertEquals(
@@ -1213,7 +1201,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage JOINS key in $conditionsAndOptions argument must contain only instances of DbJoinConfig class
+     * @expectedExceptionMessage JOINS key in $conditionsAndOptions argument must contain only instances of JoinInfo class
      */
     public function testInvalidFromConfigsArrayJoins3() {
         static::getNewSelect()->fromConfigsArray([
@@ -1223,7 +1211,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage JOINS key in $conditionsAndOptions argument must contain only instances of DbJoinConfig class
+     * @expectedExceptionMessage JOINS key in $conditionsAndOptions argument must contain only instances of JoinInfo class
      */
     public function testInvalidFromConfigsArrayJoins4() {
         static::getNewSelect()->fromConfigsArray([
@@ -1316,9 +1304,9 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
                 'Test.admin_id >' => '1',
             ],
             'JOIN' => [
-                DbJoinConfig::create('Test')
+                JoinInfo::create('Test')
                     ->setConfigForLocalTable('admins', 'id')
-                    ->setJoinType(DbJoinConfig::JOIN_LEFT)
+                    ->setJoinType(JoinInfo::JOIN_LEFT)
                     ->setConfigForForeignTable('settings', 'admin_id')
                     ->setForeignColumnsToSelect(['admin_id', 'setting_value' => 'Test.value'])
             ]

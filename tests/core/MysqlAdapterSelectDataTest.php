@@ -2,22 +2,12 @@
 
 require_once __DIR__ . '/PostgresAdapterSelectDataTest.php';
 
-use PeskyORM\Adapter\Mysql;
-use PeskyORM\Config\Connection\MysqlConfig;
+use PeskyORMTest\TestingApp;
 
 class MysqlAdapterSelectDataTest extends PostgresAdapterSelectDataTest {
 
-    /** @var MysqlConfig */
-    static protected $dbConnectionConfig;
-
-    static public function setUpBeforeClass() {
-        $data = include __DIR__ . '/../configs/global.php';
-        static::$dbConnectionConfig = MysqlConfig::fromArray($data['mysql']);
-        static::cleanTables();
-    }
-
     static protected function getValidAdapter() {
-        return new Mysql(static::$dbConnectionConfig);
+        return TestingApp::getMysqlConnection();
     }
 
     public function convertTestDataForAdminsTableAssert($data) {

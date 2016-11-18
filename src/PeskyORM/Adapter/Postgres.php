@@ -3,13 +3,13 @@
 namespace PeskyORM\Adapter;
 
 use PeskyORM\Config\Connection\PostgresConfig;
+use PeskyORM\Core\ColumnDescription;
 use PeskyORM\Core\DbAdapter;
-use PeskyORM\Core\DbException;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\DbTableColumnDescription;
-use PeskyORM\Core\DbTableDescription;
+use PeskyORM\Core\TableDescription;
 use PeskyORM\Core\Utils;
-use PeskyORM\ORM\DbTableColumn;
+use PeskyORM\Exception\DbException;
+use PeskyORM\ORM\Column;
 use Swayok\Utils\ValidateValue;
 
 class Postgres extends DbAdapter {
@@ -36,35 +36,35 @@ class Postgres extends DbAdapter {
      * @var array
      */
     protected static $dbTypeToOrmType = [
-        'bool' => DbTableColumn::TYPE_BOOL,
-        'bytea' => DbTableColumn::TYPE_BLOB,
-        'char' => DbTableColumn::TYPE_STRING,
-        'name' => DbTableColumn::TYPE_STRING,
-        'int8' => DbTableColumn::TYPE_INT,
-        'int2' => DbTableColumn::TYPE_INT,
-        'int4' => DbTableColumn::TYPE_INT,
-        'text' => DbTableColumn::TYPE_TEXT,
-        'json' => DbTableColumn::TYPE_JSON,
-        'jsonb' => DbTableColumn::TYPE_JSONB,
-        'xml' => DbTableColumn::TYPE_STRING,
-        'float4' => DbTableColumn::TYPE_FLOAT,
-        'float8' => DbTableColumn::TYPE_FLOAT,
-        'money' => DbTableColumn::TYPE_FLOAT,
-        'macaddr' => DbTableColumn::TYPE_STRING,
-        'inet' => DbTableColumn::TYPE_STRING,       //< 192.168.0.0/24
-        'cidr' => DbTableColumn::TYPE_IPV4_ADDRESS, //< 192.168.0.0
-        'bpchar' => DbTableColumn::TYPE_STRING,     //< blank-padded char == char, internal use but may happen
-        'varchar' => DbTableColumn::TYPE_STRING,
-        'date' => DbTableColumn::TYPE_DATE,
-        'time' => DbTableColumn::TYPE_TIME,
-        'timestamp' => DbTableColumn::TYPE_TIMESTAMP,
-        'timestamptz' => DbTableColumn::TYPE_TIMESTAMP_WITH_TZ,
-        'interval' => DbTableColumn::TYPE_STRING,
-        'timetz' => DbTableColumn::TYPE_TIME,
-        'bit' => DbTableColumn::TYPE_BLOB,
-        'varbit' => DbTableColumn::TYPE_BLOB,
-        'numeric' => DbTableColumn::TYPE_FLOAT,
-        'uuid' => DbTableColumn::TYPE_STRING,
+        'bool' => Column::TYPE_BOOL,
+        'bytea' => Column::TYPE_BLOB,
+        'char' => Column::TYPE_STRING,
+        'name' => Column::TYPE_STRING,
+        'int8' => Column::TYPE_INT,
+        'int2' => Column::TYPE_INT,
+        'int4' => Column::TYPE_INT,
+        'text' => Column::TYPE_TEXT,
+        'json' => Column::TYPE_JSON,
+        'jsonb' => Column::TYPE_JSONB,
+        'xml' => Column::TYPE_STRING,
+        'float4' => Column::TYPE_FLOAT,
+        'float8' => Column::TYPE_FLOAT,
+        'money' => Column::TYPE_FLOAT,
+        'macaddr' => Column::TYPE_STRING,
+        'inet' => Column::TYPE_STRING,       //< 192.168.0.0/24
+        'cidr' => Column::TYPE_IPV4_ADDRESS, //< 192.168.0.0
+        'bpchar' => Column::TYPE_STRING,     //< blank-padded char == char, internal use but may happen
+        'varchar' => Column::TYPE_STRING,
+        'date' => Column::TYPE_DATE,
+        'time' => Column::TYPE_TIME,
+        'timestamp' => Column::TYPE_TIMESTAMP,
+        'timestamptz' => Column::TYPE_TIMESTAMP_WITH_TZ,
+        'interval' => Column::TYPE_STRING,
+        'timetz' => Column::TYPE_TIME,
+        'bit' => Column::TYPE_BLOB,
+        'varbit' => Column::TYPE_BLOB,
+        'numeric' => Column::TYPE_FLOAT,
+        'uuid' => Column::TYPE_STRING,
     ];
 
     // types
@@ -227,15 +227,14 @@ class Postgres extends DbAdapter {
      * Get table description from DB
      * @param string $table
      * @param null|string $schema - name of DB schema that contains $table
-     * @return DbTableDescription
+     * @return TableDescription
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
     public function describeTable($table, $schema = 'public') {
-        $description = new DbTableDescription($table, $schema);
-        // todo: implement describeTable
+        $description = new TableDescription($table, $schema);
         $query = "
             SELECT  
                 `f`.`attname` AS `name`,  
@@ -251,8 +250,9 @@ class Postgres extends DbAdapter {
                     ELSE false
                 END AS `uniquekey`,
                 CASE
-                    WHEN `p`.`contype` = ``f`` THEN `g`.`relname`
-                END AS `foreignkey_on_table`,
+                    WHEN `p`.`contype` = ``f`` THEN true
+                    ELSE false
+                END AS `foreignkey`,
                 CASE
                     WHEN `p`.`contype` = ``f`` THEN pg_get_constraintdef(`p`.`oid`)
                 END AS `foreignkey_definition`,
@@ -265,30 +265,30 @@ class Postgres extends DbAdapter {
                 LEFT JOIN `pg_attrdef` `d` ON `d`.adrelid = `c`.`oid` AND `d`.`adnum` = `f`.`attnum`  
                 LEFT JOIN `pg_namespace` `n` ON `n`.`oid` = `c`.`relnamespace`  
                 LEFT JOIN `pg_constraint` `p` ON `p`.`conrelid` = `c`.`oid` AND `f`.`attnum` = ANY (`p`.`conkey`)  
-                LEFT JOIN `pg_class` AS `g` ON `p`.`confrelid` = `g`.`oid`  
             WHERE `c`.`relkind` = ``r``::char  
                 AND `n`.`nspname` = ``{$schema}``
                 AND `c`.`relname` = ``{$table}``
                 AND `f`.`attnum` > 0 
             ORDER BY `f`.`attnum`
         ";
+        /** @var array $columns */
         $columns = $this->query(DbExpr::create($query), Utils::FETCH_ALL);
         foreach ($columns as $columnInfo) {
-            $columnDescription = new DbTableColumnDescription(
+            $columnDescription = new ColumnDescription(
                 $columnInfo['name'],
                 $columnInfo['type'],
                 $this->convertDbTypeToOrmType($columnInfo['type'])
             );
+            list($limit, $precision) = $this->extractLimitAndPrecisionForColumnDescription($columnInfo['type_description']);
             $columnDescription
+                ->setLimitAndPrecision($limit, $precision)
                 ->setIsNullable(!(bool)$columnInfo['notnull'])
                 ->setIsPrimaryKey($columnInfo['primarykey'])
-                ->setIsForeignKey(!empty($columnInfo['foreignkey_on_table']))
+                ->setIsForeignKey($columnInfo['foreignkey'])
                 ->setIsUnique($columnInfo['uniquekey'])
                 ->setDefault($this->cleanDefaultValueForColumnDescription($columnInfo['default']));
-            // todo: add char limit, number limit and number precision
             $description->addColumn($columnDescription);
         }
-        // todo: add foreign keys info to table description
         return $description;
     }
 
@@ -299,7 +299,7 @@ class Postgres extends DbAdapter {
     protected function convertDbTypeToOrmType($dbType) {
         return array_key_exists($dbType, static::$dbTypeToOrmType) 
             ? static::$dbTypeToOrmType[$dbType]
-            : DbTableColumn::TYPE_STRING;
+            : Column::TYPE_STRING;
     }
 
     /**
@@ -321,6 +321,18 @@ class Postgres extends DbAdapter {
             return (float)$default;
         } else {
             return DbExpr::create($default);
+        }
+    }
+
+    /**
+     * @param string $typeDescription
+     * @return array - index 0: limit; index 1: precision
+     */
+    protected function extractLimitAndPrecisionForColumnDescription($typeDescription) {
+        if (preg_match('%\((\d+)(?:,(\d+))?\)$%', $typeDescription, $matches)) {
+            return [(int)$matches[1], !isset($matches[2]) ? null : (int)$matches[2]];
+        } else {
+            return [null, null];
         }
     }
 

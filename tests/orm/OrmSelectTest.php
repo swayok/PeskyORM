@@ -2,7 +2,7 @@
 
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\ORM\OrmJoinConfig;
+use PeskyORM\ORM\OrmJoinInfo;
 use PeskyORM\ORM\OrmSelect;
 use PeskyORMTest\TestingAdmins\TestingAdminsTable;
 use PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
@@ -12,11 +12,15 @@ use Swayok\Utils\Set;
 class OrmSelectTest extends \PHPUnit_Framework_TestCase {
 
     static public function setUpBeforeClass() {
-        TestingApp::init();
+        TestingApp::clearTables(static::getValidAdapter());
     }
 
     static public function tearDownAfterClass() {
-        TestingApp::clearTables();
+        TestingApp::clearTables(static::getValidAdapter());
+    }
+
+    static protected function getValidAdapter() {
+        return TestingApp::getPgsqlConnection();
     }
 
     static protected function getNewSelect() {
@@ -82,7 +86,6 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         ];
         static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
 
-        TestingApp::clearTables();
         $insertedData = TestingApp::fillAdminsTable(2);
         $testData = static::convertTestDataForAdminsTableAssert($insertedData);
         $testData[0]['created_at'] .= '+00';
@@ -512,7 +515,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Join config with name 'Test' is not valid
      */
     public function testInvalidJoin1() {
-        $joinConfig = OrmJoinConfig::create('Test');
+        $joinConfig = OrmJoinInfo::create('Test');
         static::getNewSelect()->join($joinConfig);
     }
 
@@ -521,19 +524,19 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Join with name 'Test' already defined
      */
     public function testInvalidJoin2() {
-        $joinConfig = OrmJoinConfig::create('Test')
+        $joinConfig = OrmJoinInfo::create('Test')
             ->setConfigForLocalTable(TestingAdminsTable::getInstance(), 'parent_id')
             ->setConfigForForeignTable(TestingAdminsTable::getInstance(), 'id')
-            ->setJoinType(OrmJoinConfig::JOIN_INNER);
+            ->setJoinType(OrmJoinInfo::JOIN_INNER);
         static::getNewSelect()->join($joinConfig)->join($joinConfig);
     }
 
     public function testJoins() {
         $dbSelect = static::getNewSelect()->columns(['id']);
-        $joinConfig = OrmJoinConfig::create('Test')
+        $joinConfig = OrmJoinInfo::create('Test')
             ->setConfigForLocalTable(TestingAdminsTable::getInstance(), 'parent_id')
             ->setConfigForForeignTable(TestingAdminsTable::getInstance(), 'id')
-            ->setJoinType(OrmJoinConfig::JOIN_INNER)
+            ->setJoinType(OrmJoinInfo::JOIN_INNER)
             ->setForeignColumnsToSelect('login', 'email');
         static::assertEquals(
             'SELECT "Admins"."id" AS "_Admins__id", "Test"."login" AS "_Test__login", "Test"."email" AS "_Test__email" FROM "public"."admins" AS "Admins" INNER JOIN "public"."admins" AS "Test" ON ("Admins"."parent_id" = "Test"."id")',
@@ -550,7 +553,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         $colsInSelectForTest = implode(', ', $colsInSelectForTest);
 
         $joinConfig
-            ->setJoinType(OrmJoinConfig::JOIN_LEFT)
+            ->setJoinType(OrmJoinInfo::JOIN_LEFT)
             ->setForeignColumnsToSelect('*')
             ->setAdditionalJoinConditions([
                 'email' => 'test@test.ru'
@@ -561,14 +564,14 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             $dbSelect->join($joinConfig, false)->getQuery()
         );
         $joinConfig
-            ->setJoinType(OrmJoinConfig::JOIN_RIGHT)
+            ->setJoinType(OrmJoinInfo::JOIN_RIGHT)
             ->setForeignColumnsToSelect(['email']);
         static::assertEquals(
             'SELECT "Admins"."id" AS "_Admins__id", "Test"."email" AS "_Test__email" FROM "public"."admins" AS "Admins" RIGHT JOIN "public"."admins" AS "Test" ON ("Admins"."parent_id" = "Test"."id" AND "Test"."email" = \'test@test.ru\')',
             $dbSelect->join($joinConfig, false)->getQuery()
         );
         $joinConfig
-            ->setJoinType(OrmJoinConfig::JOIN_RIGHT)
+            ->setJoinType(OrmJoinInfo::JOIN_RIGHT)
             ->setAdditionalJoinConditions([])
             ->setForeignColumnsToSelect([]);
         static::assertEquals(

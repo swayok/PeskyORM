@@ -13,6 +13,21 @@ interface DbConnectionConfigInterface {
     /**
      * @return string
      */
+    public function getDbName();
+
+    /**
+     * @return string
+     */
+    public function getDbHost();
+
+    /**
+     * @return int|null|string
+     */
+    public function getDbPort();
+
+    /**
+     * @return string
+     */
     public function getUserName();
 
     /**
@@ -31,5 +46,10 @@ interface DbConnectionConfigInterface {
      * @return array
      */
     public function getOptions();
+
+    /**
+     * @return null|string
+     */
+    public function getCharset();
 
 }

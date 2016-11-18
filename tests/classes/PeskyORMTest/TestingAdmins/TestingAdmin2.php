@@ -2,9 +2,9 @@
 
 namespace PeskyORMTest\TestingAdmins;
 
-use PeskyORM\ORM\DbRecord;
+use PeskyORM\ORM\Record;
 
-class TestingAdmin2 extends DbRecord {
+class TestingAdmin2 extends Record {
 
     /**
      * @return TestingAdminsTable

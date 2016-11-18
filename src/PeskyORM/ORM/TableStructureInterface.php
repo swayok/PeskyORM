@@ -2,7 +2,7 @@
 
 namespace PeskyORM\ORM;
 
-interface DbTableStructureInterface {
+interface TableStructureInterface {
 
     /**
      * @return $this
@@ -32,12 +32,12 @@ interface DbTableStructureInterface {
 
     /**
      * @param string $colName
-     * @return DbTableColumn
+     * @return Column
      */
     static public function getColumn($colName);
 
     /**
-     * @return DbTableColumn[]
+     * @return Column[]
      */
     static public function getColumns();
 
@@ -47,7 +47,7 @@ interface DbTableStructureInterface {
     static public function getPkColumnName();
 
     /**
-     * @return DbTableColumn
+     * @return Column
      */
     static public function getPkColumn();
 
@@ -68,7 +68,7 @@ interface DbTableStructureInterface {
     static public function hasFileColumn($colName);
 
     /**
-     * @return DbTableColumn[] = array('column_name' => DbTableColumn)
+     * @return Column[] = array('column_name' => Column)
      */
     static public function getFileColumns();
 
@@ -80,12 +80,12 @@ interface DbTableStructureInterface {
 
     /**
      * @param string $relationName
-     * @return DbTableRelation
+     * @return Relation
      */
     static public function getRelation($relationName);
 
     /**
-     * @return DbTableRelation[]
+     * @return Relation[]
      */
     static public function getRelations();
 

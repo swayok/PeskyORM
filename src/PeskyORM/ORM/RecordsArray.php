@@ -2,10 +2,10 @@
 
 namespace PeskyORM\ORM;
 
-class DbRecordsArray implements \ArrayAccess, \Iterator, \Countable  {
+class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
-     * @var DbTableInterface
+     * @var TableInterface
      */
     protected $table;
     /**
@@ -17,7 +17,7 @@ class DbRecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      */
     protected $position = 0;
     /**
-     * @var DbRecord[]
+     * @var Record[]
      */
     protected $dbRecords = [];
     /**
@@ -29,7 +29,7 @@ class DbRecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      */
     protected $dbRecordInstanceReuseEnabled = false;
     /**
-     * @var DbRecord
+     * @var Record
      */
     protected $dbRecordForIteration = null;
     /**
@@ -38,12 +38,12 @@ class DbRecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     protected $currentDbRecordIndex = -1;
 
     /**
-     * @param DbTableInterface $table
+     * @param TableInterface $table
      * @param array $records
      * @param bool $isFromDb|null - true: records are from db | null - autodetect
      * @throws \InvalidArgumentException
      */
-    public function __construct(DbTableInterface $table, array $records, $isFromDb = null) {
+    public function __construct(TableInterface $table, array $records, $isFromDb = null) {
         $this->table = $table;
         if (count($records)) {
             /** @noinspection ForeachSourceInspection */
@@ -58,7 +58,7 @@ class DbRecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     }
 
     /**
-     * @return DbRecord
+     * @return Record
      */
     protected function getDbRecordObjectForIteration() {
         if ($this->dbRecordForIteration === null) {
@@ -136,11 +136,11 @@ class DbRecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     }
 
     /**
-     * @return DbRecord[]
+     * @return Record[]
      * @throws \PDOException
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -156,11 +156,11 @@ class DbRecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
      * @param int $index - record's index
-     * @return DbRecord
+     * @return Record
      * @throws \PDOException
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -178,11 +178,11 @@ class DbRecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
      * Return the current element
-     * @return DbRecord
+     * @return Record
      * @throws \PDOException
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -236,11 +236,11 @@ class DbRecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
      * @param int $index - The offset to retrieve.
-     * @return DbRecord
+     * @return Record
      * @throws \PDOException
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */

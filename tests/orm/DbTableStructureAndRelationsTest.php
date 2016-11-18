@@ -1,7 +1,7 @@
 <?php
 
-use PeskyORM\ORM\DbTableColumn;
-use PeskyORM\ORM\DbTableRelation;
+use PeskyORM\ORM\Column;
+use PeskyORM\ORM\Relation;
 use PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use PeskyORMTest\TestingApp;
 use PeskyORMTest\TestingInvalidClasses\TestingInvalidColumnsInTableStructure;
@@ -12,7 +12,7 @@ use PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
 
     public static function setUpBeforeClass() {
-        TestingApp::init();
+        TestingApp::getPgsqlConnection();
         \PeskyORMTest\TestingApp::cleanInstancesOfDbTablesAndStructures();
     }
 
@@ -27,7 +27,7 @@ class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @expectedException \PeskyORM\ORM\Exception\OrmException
+     * @expectedException \PeskyORM\Exception\OrmException
      * @expectedExceptionMessage Table schema must contain primary key
      */
     public function testAbsentPkColumn() {
@@ -36,7 +36,7 @@ class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException \BadMethodCallException
-     * @expectedExceptionMessage Attempt to create 2nd instance of class PeskyORM\ORM\DbTableStructure
+     * @expectedExceptionMessage Attempt to create 2nd instance of class PeskyORM\ORM\TableStructure
      */
     public function testDuplicateConstruct() {
         $class = new ReflectionClass(TestingAdminsTableStructure::class);
@@ -60,8 +60,8 @@ class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
         static::assertEquals('id', TestingAdminsTableStructure::getPkColumnName());
         static::assertTrue(TestingAdminsTableStructure::hasColumn('login'));
         static::assertFalse(TestingAdminsTableStructure::hasColumn('abrakadabra'));
-        static::assertInstanceOf(DbTableColumn::class, TestingAdminsTableStructure::getColumn('login'));
-        static::assertInstanceOf(DbTableColumn::class, TestingAdminsTableStructure::getPkColumn());
+        static::assertInstanceOf(Column::class, TestingAdminsTableStructure::getColumn('login'));
+        static::assertInstanceOf(Column::class, TestingAdminsTableStructure::getPkColumn());
         static::assertEquals('id', TestingAdminsTableStructure::getPkColumn()->getName());
         static::assertTrue(TestingAdminsTableStructure::hasFileColumns());
         static::assertCount(2, TestingAdminsTableStructure::getFileColumns());
@@ -74,7 +74,7 @@ class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
         static::assertTrue(TestingAdminsTableStructure::hasRelation('Parent'));
         static::assertFalse(TestingAdminsTableStructure::hasRelation('Abrakadabra'));
         $relation = TestingAdminsTableStructure::getRelation('Parent');
-        static::assertInstanceOf(DbTableRelation::class, $relation);
+        static::assertInstanceOf(Relation::class, $relation);
         static::assertTrue(
             TestingAdminsTableStructure::getColumn($relation->getLocalColumnName())->hasRelation($relation->getName())
         );
@@ -101,7 +101,7 @@ class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Method 'invalid' must return instance of \PeskyORM\ORM\DbTableColumn class
+     * @expectedExceptionMessage Method 'invalid' must return instance of \PeskyORM\ORM\Column class
      */
     public function testInvalidTableStructure1() {
         TestingInvalidColumnsInTableStructure::getColumn('invalid');
@@ -118,7 +118,7 @@ class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Method 'InvalidClass' must return instance of \PeskyORM\ORM\DbTableRelation class
+     * @expectedExceptionMessage Method 'InvalidClass' must return instance of \PeskyORM\ORM\Relation class
      */
     public function testInvalidTableStructure3() {
         TestingInvalidRelationsInTableStructure::getRelation('InvalidClass');
@@ -148,7 +148,7 @@ class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
         TestingInvalidRelationsInTableStructure::getRelation('InvalidForeignTableClass');
     }
 
-    public function testColumnsConfigsAutoLoadingFormDbDescription() {
+    public function testCreateMissingColumnConfigsFromDbTableDescription() {
         // todo: add tests for columns configs auto loading form db description
     }
 

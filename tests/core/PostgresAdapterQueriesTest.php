@@ -1,27 +1,23 @@
 <?php
 
 use PeskyORM\Adapter\Postgres;
-use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbExpr;
+use PeskyORMTest\TestingApp;
 
 class PostgresAdapterQueriesTest extends \PHPUnit_Framework_TestCase {
 
-    /** @var PostgresConfig */
-    static protected $dbConnectionConfig;
-
     public static function setUpBeforeClass() {
-        $data = include __DIR__ . '/../configs/global.php';
-        self::$dbConnectionConfig = PostgresConfig::fromArray($data['pgsql']);
+        TestingApp::clearTables(static::getValidAdapter());
     }
 
     public static function tearDownAfterClass() {
-        $adapter = static::getValidAdapter();
-        $adapter->exec('TRUNCATE TABLE settings');
-        self::$dbConnectionConfig = null;
+        TestingApp::clearTables(static::getValidAdapter());
     }
 
     static private function getValidAdapter() {
-        return new Postgres(self::$dbConnectionConfig);
+        $adapter = TestingApp::getPgsqlConnection();
+        $adapter->rememberTransactionQueries = false;
+        return $adapter;
     }
 
     /**
@@ -83,7 +79,7 @@ class PostgresAdapterQueriesTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @expectedException \PeskyORM\Core\DbException
+     * @expectedException \PeskyORM\Exception\DbException
      * @expectedExceptionMessage Already in transaction
      */
     public function testTransactionsNestingPrevention() {
@@ -93,26 +89,28 @@ class PostgresAdapterQueriesTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @expectedException \PeskyORM\Core\DbException
+     * @expectedException \PeskyORM\Exception\DbException
      * @expectedExceptionMessage Attempt to commit not started transaction
      */
     public function testTransactionCommitWithoutBegin() {
         $adapter = static::getValidAdapter();
         $adapter->commit();
+        $adapter->commit();
     }
 
     /**
-     * @expectedException \PeskyORM\Core\DbException
+     * @expectedException \PeskyORM\Exception\DbException
      * @expectedExceptionMessage Attempt to rollback not started transaction
      */
     public function testTransactionRollbackWithoutBegin() {
         $adapter = static::getValidAdapter();
         $adapter->rollBack();
+        $adapter->rollBack();
     }
 
     public function testTransactionTypes() {
         $adapter = static::getValidAdapter();
-
+        $adapter->rememberTransactionQueries = true;
         $adapter->begin(true);
         $this->assertEquals(
             'BEGIN ISOLATION LEVEL ' . Postgres::TRANSACTION_TYPE_DEFAULT . ' READ ONLY',
@@ -159,6 +157,9 @@ class PostgresAdapterQueriesTest extends \PHPUnit_Framework_TestCase {
      */
     public function testInvalidTransactionType() {
         $adapter = static::getValidAdapter();
+        if ($adapter->inTransaction()) {
+            $adapter->rollBack();
+        }
         $adapter->begin(true, 'abrakadabra');
     }
 

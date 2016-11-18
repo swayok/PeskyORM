@@ -1,7 +1,7 @@
 <?php
 
-use PeskyORM\ORM\DbTableColumn;
-use PeskyORM\ORM\DbTableRelation;
+use PeskyORM\ORM\Column;
+use PeskyORM\ORM\Relation;
 use PeskyORMTest\TestingAdmins\TestingAdminsTable;
 
 class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
@@ -31,7 +31,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $type argument must be a string, integer or float
      */
     public function testInvalidConstructor1() {
-        DbTableColumn::create(null);
+        Column::create(null);
     }
 
     /**
@@ -39,7 +39,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $type argument must be a string, integer or float
      */
     public function testInvalidConstructor2() {
-        DbTableColumn::create([]);
+        Column::create([]);
     }
 
     /**
@@ -47,7 +47,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $type argument must be a string, integer or float
      */
     public function testInvalidConstructor3() {
-        DbTableColumn::create($this);
+        Column::create($this);
     }
 
     /**
@@ -55,7 +55,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $type argument must be a string, integer or float
      */
     public function testInvalidConstructor4() {
-        DbTableColumn::create(true);
+        Column::create(true);
     }
 
     /**
@@ -63,13 +63,13 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $type argument must be a string, integer or float
      */
     public function testInvalidConstructor5() {
-        DbTableColumn::create(false);
+        Column::create(false);
     }
 
     public function testConstructor() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_BOOL);
-        static::assertInstanceOf(DbTableColumn::class, $obj);
-        static::assertEquals($obj->getType(), DbTableColumn::TYPE_BOOL);
+        $obj = Column::create(Column::TYPE_BOOL);
+        static::assertInstanceOf(Column::class, $obj);
+        static::assertEquals($obj->getType(), Column::TYPE_BOOL);
         static::assertFalse($obj->hasName());
         static::assertEquals('test', $obj->setName('test')->getName());
         static::assertTrue($obj->hasName());
@@ -105,7 +105,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage DB column name is not provided
      */
     public function testInvalidName1() {
-        DbTableColumn::create(DbTableColumn::TYPE_STRING, null)->getName();
+        Column::create(Column::TYPE_STRING, null)->getName();
     }
 
     /**
@@ -113,7 +113,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage DB column name is not provided
      */
     public function testInvalidName2() {
-        DbTableColumn::create(DbTableColumn::TYPE_STRING, false)->getName();
+        Column::create(Column::TYPE_STRING, false)->getName();
     }
 
     /**
@@ -121,7 +121,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage DB column name is not provided
      */
     public function testInvalidName3() {
-        DbTableColumn::create(DbTableColumn::TYPE_STRING, [])->getName();
+        Column::create(Column::TYPE_STRING, [])->getName();
     }
 
     /**
@@ -129,7 +129,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $name argument must be a string
      */
     public function testInvalidNameSet1() {
-        DbTableColumn::create(DbTableColumn::TYPE_INT, ['arr']);
+        Column::create(Column::TYPE_INT, ['arr']);
     }
 
     /**
@@ -137,7 +137,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $name argument must be a string
      */
     public function testInvalidNameSet2() {
-        DbTableColumn::create(DbTableColumn::TYPE_FLOAT, $this);
+        Column::create(Column::TYPE_FLOAT, $this);
     }
 
     /**
@@ -145,7 +145,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $name argument must be a string
      */
     public function testInvalidNameSet3() {
-        DbTableColumn::create(DbTableColumn::TYPE_IPV4_ADDRESS, true);
+        Column::create(Column::TYPE_IPV4_ADDRESS, true);
     }
 
     /**
@@ -153,7 +153,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessageRegExp %\$name argument contains invalid value: .*?\. Pattern: .*?\. Example: snake_case1%
      */
     public function testInvalidNameSet4() {
-        DbTableColumn::create(DbTableColumn::TYPE_BLOB, 'two words');
+        Column::create(Column::TYPE_BLOB, 'two words');
     }
 
     /**
@@ -161,7 +161,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessageRegExp %\$name argument contains invalid value: .*?\. Pattern: .*?\. Example: snake_case1%
      */
     public function testInvalidNameSet5() {
-        DbTableColumn::create(DbTableColumn::TYPE_DATE, 'camelCase');
+        Column::create(Column::TYPE_DATE, 'camelCase');
     }
 
     /**
@@ -169,7 +169,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessageRegExp %\$name argument contains invalid value: .*?\. Pattern: .*?\. Example: snake_case1%
      */
     public function testInvalidNameSet6() {
-        DbTableColumn::create(DbTableColumn::TYPE_EMAIL, 'UpperCase');
+        Column::create(Column::TYPE_EMAIL, 'UpperCase');
     }
 
     /**
@@ -177,31 +177,31 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Column name alteration is forbidden
      */
     public function testDoubleNameSetter() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_ENUM)->setName('test');
+        $obj = Column::create(Column::TYPE_ENUM)->setName('test');
         $obj->setName('test');
     }
 
     public function testFileTypes() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_FILE);
-        static::assertEquals($obj->getType(), DbTableColumn::TYPE_FILE);
+        $obj = Column::create(Column::TYPE_FILE);
+        static::assertEquals($obj->getType(), Column::TYPE_FILE);
         static::assertTrue($obj->isItAFile());
         static::assertFalse($obj->hasValueFormatter());
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_IMAGE);
-        static::assertEquals($obj->getType(), DbTableColumn::TYPE_IMAGE);
+        $obj = Column::create(Column::TYPE_IMAGE);
+        static::assertEquals($obj->getType(), Column::TYPE_IMAGE);
         static::assertTrue($obj->isItAFile());
         static::assertTrue($obj->isItAnImage());
         static::assertFalse($obj->hasValueFormatter());
     }
 
     public function testEnumType() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_ENUM);
-        static::assertEquals($obj->getType(), DbTableColumn::TYPE_ENUM);
+        $obj = Column::create(Column::TYPE_ENUM);
+        static::assertEquals($obj->getType(), Column::TYPE_ENUM);
         static::assertTrue($obj->isEnum());
     }
 
     public function testFormattersDetectedByType() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_TIMESTAMP);
-        static::assertEquals($obj->getType(), DbTableColumn::TYPE_TIMESTAMP);
+        $obj = Column::create(Column::TYPE_TIMESTAMP);
+        static::assertEquals($obj->getType(), Column::TYPE_TIMESTAMP);
         static::assertTrue($obj->hasValueFormatter());
         static::assertInstanceOf(\Closure::class, $obj->getValueFormatter());
         static::assertTrue(count($obj->getValueFormats()) > 0);
@@ -213,7 +213,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Default value for column 'name' is not set
      */
     public function testInvalidDefaultValueGet1() {
-        DbTableColumn::create(DbTableColumn::TYPE_BOOL, 'name')->getDefaultValueAsIs();
+        Column::create(Column::TYPE_BOOL, 'name')->getDefaultValueAsIs();
     }
 
     /**
@@ -221,7 +221,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Default value for column 'name' is not valid. Errors: Value must be of a boolean data type
      */
     public function testInvalidDefaultValueGet2() {
-        DbTableColumn::create(DbTableColumn::TYPE_BOOL, 'name')
+        Column::create(Column::TYPE_BOOL, 'name')
             ->setDefaultValue(-1)
             ->getValidDefaultValue();
     }
@@ -231,7 +231,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Fallback value of the default value for column 'name' is not valid. Errors: Value must be of a boolean data type
      */
     public function testInvalidDefaultValueGet3() {
-        DbTableColumn::create(DbTableColumn::TYPE_BOOL, 'name')
+        Column::create(Column::TYPE_BOOL, 'name')
             ->getValidDefaultValue(-1);
     }
 
@@ -240,7 +240,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Default value received from validDefaultValueGetter closure for column 'name' is not valid. Errors: Value must be of a boolean data type
      */
     public function testInvalidDefaultValueGet4() {
-        DbTableColumn::create(DbTableColumn::TYPE_BOOL, 'name')
+        Column::create(Column::TYPE_BOOL, 'name')
             ->setValidDefaultValueGetter(function ($fallback) {
                 return -1;
             })
@@ -248,7 +248,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testDefaultValues() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_BOOL, 'name');
+        $obj = Column::create(Column::TYPE_BOOL, 'name');
         static::assertFalse($obj->hasDefaultValue());
         static::assertFalse($obj->getValidDefaultValue(false));
         static::assertTrue($obj->getValidDefaultValue(function () { return true; }));
@@ -271,7 +271,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
         static::assertNull($obj->getValidDefaultValue(true));
 
         // default value getter
-        $obj->setValidDefaultValueGetter(function ($fallbackValue, DbTableColumn $column) {
+        $obj->setValidDefaultValueGetter(function ($fallbackValue, Column $column) {
             return $fallbackValue;
         });
         $obj->setDefaultValue(true);
@@ -285,7 +285,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Allowed values closure must return a not-empty array
      */
     public function testInvalidGetAllowedValues() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_BOOL)
+        $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(function () {
                 return -1;
             });
@@ -297,7 +297,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Allowed values closure must return a not-empty array
      */
     public function testInvalidSetAllowedValues1() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_BOOL)
+        $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(function () {
                 return -1;
             });
@@ -309,7 +309,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Allowed values closure must return a not-empty array
      */
     public function testInvalidSetAllowedValues2() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_BOOL)
+        $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(function () {
                 return [];
             });
@@ -321,7 +321,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $allowedValues argument cannot be empty
      */
     public function testInvalidSetAllowedValues3() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_BOOL)
+        $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(-1);
         $obj->getAllowedValues();
     }
@@ -331,7 +331,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $allowedValues argument cannot be empty
      */
     public function testInvalidSetAllowedValues4() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_BOOL)
+        $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(false);
         $obj->getAllowedValues();
     }
@@ -341,7 +341,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $allowedValues argument cannot be empty
      */
     public function testInvalidSetAllowedValues5() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_BOOL)
+        $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues([]);
         $obj->getAllowedValues();
     }
@@ -351,13 +351,13 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $allowedValues argument cannot be empty
      */
     public function testInvalidSetAllowedValues6() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_BOOL)
+        $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(null);
         $obj->getAllowedValues();
     }
 
     public function testAllwedValues() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_ENUM);
+        $obj = Column::create(Column::TYPE_ENUM);
         static::assertEquals([], $obj->getAllowedValues());
         $obj->setAllowedValues(['test']);
         static::assertEquals(['test'], $obj->getAllowedValues());
@@ -372,8 +372,8 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage DB column name is not provided
      */
     public function testInvalidAddRelation1() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_ENUM);
-        $obj->addRelation(new DbTableRelation('a', DbTableRelation::BELONGS_TO, TestingAdminsTable::class, 'id'));
+        $obj = Column::create(Column::TYPE_ENUM);
+        $obj->addRelation(new Relation('a', Relation::BELONGS_TO, TestingAdminsTable::class, 'id'));
     }
 
     /**
@@ -381,8 +381,8 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Relation name is not provided
      */
     public function testInvalidAddRelation2() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_ENUM)->setName('id');
-        $obj->addRelation(new DbTableRelation('a', DbTableRelation::BELONGS_TO, TestingAdminsTable::class, 'id'));
+        $obj = Column::create(Column::TYPE_ENUM)->setName('id');
+        $obj->addRelation(new Relation('a', Relation::BELONGS_TO, TestingAdminsTable::class, 'id'));
     }
 
     /**
@@ -390,9 +390,9 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Relation 'Test' is not connected to column 'id'
      */
     public function testInvalidAddRelation3() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_ENUM)->setName('id');
+        $obj = Column::create(Column::TYPE_ENUM)->setName('id');
         $obj->addRelation(
-            (new DbTableRelation('a', DbTableRelation::BELONGS_TO, TestingAdminsTable::class, 'id'))->setName('Test')
+            (new Relation('a', Relation::BELONGS_TO, TestingAdminsTable::class, 'id'))->setName('Test')
         );
     }
 
@@ -401,8 +401,8 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Relation 'Test' already defined for column 'id'
      */
     public function testInvalidAddRelation4() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_ENUM)->setName('id');
-        $rel = (new DbTableRelation('id', DbTableRelation::BELONGS_TO, TestingAdminsTable::class, 'id'))->setName('Test');
+        $obj = Column::create(Column::TYPE_ENUM)->setName('id');
+        $rel = (new Relation('id', Relation::BELONGS_TO, TestingAdminsTable::class, 'id'))->setName('Test');
         $obj->addRelation($rel);
         $obj->addRelation($rel);
     }
@@ -412,18 +412,18 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Relation 'Test' does not exist
      */
     public function testInvalidGetRelation() {
-        DbTableColumn::create(DbTableColumn::TYPE_ENUM)->getRelation('Test');
+        Column::create(Column::TYPE_ENUM)->getRelation('Test');
     }
 
     public function testRelations() {
-        $obj = DbTableColumn::create(DbTableColumn::TYPE_ENUM)->setName('id');
+        $obj = Column::create(Column::TYPE_ENUM)->setName('id');
         static::assertFalse($obj->hasRelation('Test'));
         static::assertFalse($obj->isItAForeignKey());
-        $rel = (new DbTableRelation('id', DbTableRelation::HAS_ONE, TestingAdminsTable::class, 'id'))->setName('Test');
+        $rel = (new Relation('id', Relation::HAS_ONE, TestingAdminsTable::class, 'id'))->setName('Test');
         $obj->addRelation($rel);
         static::assertTrue($obj->hasRelation('Test'));
         static::assertFalse($obj->isItAForeignKey());
-        $rel2 = (new DbTableRelation('id', DbTableRelation::BELONGS_TO, TestingAdminsTable::class, 'id'))->setName('Test2');
+        $rel2 = (new Relation('id', Relation::BELONGS_TO, TestingAdminsTable::class, 'id'))->setName('Test2');
         $obj->addRelation($rel2);
         static::assertTrue($obj->hasRelation('Test2'));
         static::assertTrue($obj->isItAForeignKey());

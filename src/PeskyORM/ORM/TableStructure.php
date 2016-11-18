@@ -2,10 +2,10 @@
 
 namespace PeskyORM\ORM;
 use PeskyORM\Core\DbConnectionsManager;
-use PeskyORM\Core\DbJoinConfig;
-use PeskyORM\ORM\Exception\OrmException;
+use PeskyORM\Core\JoinInfo;
+use PeskyORM\Exception\OrmException;
 
-abstract class DbTableStructure implements DbTableStructureInterface {
+abstract class TableStructure implements TableStructureInterface {
 
     /**
      * Use table description from DB to automatically create missing column configs
@@ -22,24 +22,24 @@ abstract class DbTableStructure implements DbTableStructureInterface {
      */
     protected $allRelationsProcessed = false;
     /**
-     * @var null|DbTableColumn
+     * @var null|Column
      */
     protected $pk = null;
     /**
-     * @var DbTableColumn[]
+     * @var Column[]
      */
     protected $fileColumns = [];
 
     /**
-     * At first it contains only ReflectionMethod objects and lazy-loads DbTableColumn objects later
-     * @var DbTableColumn[]
+     * At first it contains only ReflectionMethod objects and lazy-loads Column objects later
+     * @var Column[]
      */
     protected $columns = [];
 
-    /** @var DbTableRelation[] */
+    /** @var Relation[] */
     protected $relations = [];
 
-    /** @var DbTableStructure[]  */
+    /** @var TableStructure[]  */
     static private $instances = [];
 
     /**
@@ -99,7 +99,7 @@ abstract class DbTableStructure implements DbTableStructureInterface {
 
     /**
      * @param string $colName
-     * @return DbTableColumn
+     * @return Column
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -109,7 +109,7 @@ abstract class DbTableStructure implements DbTableStructureInterface {
     }
 
     /**
-     * @return DbTableColumn[] - key = column name
+     * @return Column[] - key = column name
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -129,7 +129,7 @@ abstract class DbTableStructure implements DbTableStructureInterface {
     }
 
     /**
-     * @return DbTableColumn
+     * @return Column
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -171,7 +171,7 @@ abstract class DbTableStructure implements DbTableStructureInterface {
     }
 
     /**
-     * @return DbTableColumn[] = array('column_name' => DbTableColumn)
+     * @return Column[] = array('column_name' => Column)
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -191,7 +191,7 @@ abstract class DbTableStructure implements DbTableStructureInterface {
 
     /**
      * @param string $relationName
-     * @return DbTableRelation
+     * @return Relation
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -201,7 +201,7 @@ abstract class DbTableStructure implements DbTableStructureInterface {
     }
 
     /**
-     * @return DbTableRelation[]
+     * @return Relation[]
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -214,8 +214,8 @@ abstract class DbTableStructure implements DbTableStructureInterface {
      * Collects column configs from private methods where method name is column name or relation name.
      * Column name must be a lowercased string starting from letter: private function parent_id() {}
      * Relation name must start from upper case letter: private function RelationName() {}
-     * Column method must return DbTableColumn object
-     * Relation method must return DbTableRelation object
+     * Column method must return Column object
+     * Relation method must return Relation object
      */
     protected function loadColumnConfigsFromPrivateMethods() {
         $objectReflection = new \ReflectionObject($this);
@@ -225,9 +225,9 @@ abstract class DbTableStructure implements DbTableStructureInterface {
             if ($method->isStatic()) {
                 continue;
             }
-            if (preg_match(DbTableColumn::NAME_VALIDATION_REGEXP, $method->getName())) {
+            if (preg_match(Column::NAME_VALIDATION_REGEXP, $method->getName())) {
                 $this->columns[$method->getName()] = $method;
-            } else if (preg_match(DbJoinConfig::NAME_VALIDATION_REGEXP, $method->getName())) {
+            } else if (preg_match(JoinInfo::NAME_VALIDATION_REGEXP, $method->getName())) {
                 $this->relations[$method->getName()] = $method;
             }
         }
@@ -242,7 +242,7 @@ abstract class DbTableStructure implements DbTableStructureInterface {
             ->describeTable(static::getTableName(), static::getSchema());
         foreach ($description->getColumns() as $columnName => $columnDescription) {
             if (!static::hasColumn($columnName)) {
-                $column = DbTableColumn::create($columnDescription->getOrmType(), $columnName)
+                $column = Column::create($columnDescription->getOrmType(), $columnName)
                     ->setIsNullable($columnDescription->isNullable())
                     ->valueMustBeUnique($columnDescription->isUnique());
                 if ($columnDescription->isPrimaryKey()) {
@@ -256,9 +256,9 @@ abstract class DbTableStructure implements DbTableStructureInterface {
     }
 
     /**
-     * Make DbTableColumn object for private method (if not made yet) and return it
+     * Make Column object for private method (if not made yet) and return it
      * @param string $colName
-     * @return DbTableColumn
+     * @return Column
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -273,15 +273,15 @@ abstract class DbTableStructure implements DbTableStructureInterface {
             $method->setAccessible(true);
             $config = $method->invoke($this);
             $method->setAccessible(false);
-            if (!($config instanceof DbTableColumn)) {
+            if (!($config instanceof Column)) {
                 throw new \UnexpectedValueException(
-                    "Method '{$method->getName()}' must return instance of \\PeskyORM\\ORM\\DbTableColumn class"
+                    "Method '{$method->getName()}' must return instance of \\PeskyORM\\ORM\\Column class"
                 );
             }
             if (!$config->hasName()) {
                 $config->setName($method->getName());
             }
-            /** @var DbTableColumn $config */
+            /** @var Column $config */
             $config->setTableStructure($this);
             unset($method, $this->columns[$colName]);
             $this->columns[$config->getName()] = $config;
@@ -302,7 +302,7 @@ abstract class DbTableStructure implements DbTableStructureInterface {
 
     /**
      * Run static::_loadColumnConfig() method for all $this->columns and return updated $this->columns
-     * @return DbTableColumn[]
+     * @return Column[]
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -310,7 +310,7 @@ abstract class DbTableStructure implements DbTableStructureInterface {
     protected function _loadAllColumnsConfigs() {
         if (!$this->allColumnsProcessed) {
             foreach ($this->columns as $columnName => $column) {
-                if (!($column instanceof DbTableColumn)) {
+                if (!($column instanceof Column)) {
                     $this->_loadColumnConfig($columnName);
                 }
             }
@@ -320,9 +320,9 @@ abstract class DbTableStructure implements DbTableStructureInterface {
     }
 
     /**
-     * Make DbTableRelation object for private method (if not made yet) and return it
+     * Make Relation object for private method (if not made yet) and return it
      * @param string $relationName
-     * @return DbTableRelation
+     * @return Relation
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -337,12 +337,12 @@ abstract class DbTableStructure implements DbTableStructureInterface {
             $method->setAccessible(true);
             $config = $method->invoke($this);
             $method->setAccessible(false);
-            if (!($config instanceof DbTableRelation)) {
+            if (!($config instanceof Relation)) {
                 throw new \UnexpectedValueException(
-                    "Method '{$method->getName()}' must return instance of \\PeskyORM\\ORM\\DbTableRelation class"
+                    "Method '{$method->getName()}' must return instance of \\PeskyORM\\ORM\\Relation class"
                 );
             }
-            /** @var DbTableRelation $config */
+            /** @var Relation $config */
             if (!static::hasColumn($config->getLocalColumnName())) {
                 $tableName = static::getTableName();
                 throw new \UnexpectedValueException(
@@ -363,7 +363,7 @@ abstract class DbTableStructure implements DbTableStructureInterface {
 
     /**
      * Run static::_loadRelationConfig() method for all $this->relations and return updated $this->relations
-     * @return DbTableRelation[]
+     * @return Relation[]
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -371,7 +371,7 @@ abstract class DbTableStructure implements DbTableStructureInterface {
     protected function _loadAllRelationsConfigs() {
         if (!$this->allRelationsProcessed) {
             foreach ($this->relations as $relationName => $relation) {
-                if (!($relation instanceof DbTableRelation)) {
+                if (!($relation instanceof Relation)) {
                     $this->_loadRelationConfig($relationName);
                 }
             }
@@ -383,7 +383,7 @@ abstract class DbTableStructure implements DbTableStructureInterface {
     /**
      * Find PK column config (if not known yet) by loading all not-loaded column configs
      * @param bool $throwExceptionIfNotFound
-     * @return null|DbTableColumn
+     * @return null|Column
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -391,7 +391,7 @@ abstract class DbTableStructure implements DbTableStructureInterface {
     protected function _findPkColumn($throwExceptionIfNotFound = true) {
         if ($this->pk === null) {
             foreach ($this->columns as $columnName => $column) {
-                if (!($column instanceof DbTableColumn) && $this->_loadColumnConfig($columnName)->isItPrimaryKey()) {
+                if (!($column instanceof Column) && $this->_loadColumnConfig($columnName)->isItPrimaryKey()) {
                     return $this->pk;
                 }
             }

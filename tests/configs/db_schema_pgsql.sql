@@ -78,6 +78,10 @@ ALTER TABLE "public"."admins" ADD FOREIGN KEY ("parent_id") REFERENCES "public".
 
 -- --------------------------------------------------------
 
+SELECT setval('"public"."admins_id_seq"', 10000, true);
+SELECT setval('"public"."info_pages_id_seq"', 10000, true);
+SELECT setval('"public"."settings_id_seq"', 10000, true);
+
 ALTER TABLE "public"."admins" OWNER TO "pesky_orm_test";
 ALTER TABLE "public"."info_pages" OWNER TO "pesky_orm_test";
 ALTER TABLE "public"."settings" OWNER TO "pesky_orm_test";

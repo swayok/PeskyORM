@@ -18,6 +18,7 @@ class MysqlConfig implements DbConnectionConfigInterface {
     /**
      * @param array $config
      * @return static
+     * @throws \InvalidArgumentException
      */
     static public function fromArray(array $config) {
         $dbName = array_key_exists('name', $config) ? $config['name'] : null;
@@ -46,6 +47,7 @@ class MysqlConfig implements DbConnectionConfigInterface {
      * @param string $dbName
      * @param string $user
      * @param string $password
+     * @throws \InvalidArgumentException
      */
     public function __construct(
         $dbName,
@@ -115,6 +117,7 @@ class MysqlConfig implements DbConnectionConfigInterface {
     /**
      * @param string $charset
      * @return $this
+     * @throws \InvalidArgumentException
      */
     public function setCharset($charset) {
         if (empty($charset)) {
@@ -136,6 +139,7 @@ class MysqlConfig implements DbConnectionConfigInterface {
     /**
      * @param string $dbHost
      * @return $this
+     * @throws \InvalidArgumentException
      */
     public function setDbHost($dbHost) {
         if (empty($dbHost)) {

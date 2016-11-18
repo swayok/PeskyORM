@@ -8,7 +8,7 @@ use PeskyORMTest\TestingSettings\TestingSettingsTable;
 class StaticPropertiesAndMethodsTest extends \PHPUnit_Framework_TestCase {
 
     public static function setUpBeforeClass() {
-        TestingApp::init();
+        TestingApp::getPgsqlConnection();
     }
 
     public function testStaticMethodsInDbTables() {

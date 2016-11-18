@@ -2,12 +2,12 @@
 
 namespace PeskyORMTest\TestingInvalidClasses;
 
-use PeskyORM\ORM\DbTableColumn;
-use PeskyORM\ORM\DbTableRelation;
-use PeskyORM\ORM\DbTableStructure;
+use PeskyORM\ORM\Column;
+use PeskyORM\ORM\Relation;
+use PeskyORM\ORM\TableStructure;
 use PeskyORMTest\TestingAdmins\TestingAdminsTable;
 
-class TestingInvalidRelationsInTableStructure extends DbTableStructure {
+class TestingInvalidRelationsInTableStructure extends TableStructure {
 
     /**
      * @return string
@@ -17,7 +17,7 @@ class TestingInvalidRelationsInTableStructure extends DbTableStructure {
     }
 
     private function valid() {
-        return DbTableColumn::create(DbTableColumn::TYPE_INT)
+        return Column::create(Column::TYPE_INT)
             ->itIsPrimaryKey();
     }
 
@@ -27,15 +27,15 @@ class TestingInvalidRelationsInTableStructure extends DbTableStructure {
     }
 
     private function InvalidLocalColumnName() {
-        return DbTableRelation::create('local_invalid', DbTableRelation::HAS_MANY, TestingAdminsTable::class, 'id');
+        return Relation::create('local_invalid', Relation::HAS_MANY, TestingAdminsTable::class, 'id');
     }
 
     private function InvalidForeignColumnName() {
-        return DbTableRelation::create('valid', DbTableRelation::HAS_MANY, TestingAdminsTable::class, 'foreign_invalid');
+        return Relation::create('valid', Relation::HAS_MANY, TestingAdminsTable::class, 'foreign_invalid');
     }
 
     private function InvalidForeignTableClass() {
-        return DbTableRelation::create('valid', DbTableRelation::HAS_MANY, '___class_invalid', 'id');
+        return Relation::create('valid', Relation::HAS_MANY, '___class_invalid', 'id');
     }
 
 }

@@ -2,11 +2,11 @@
 
 namespace PeskyORM\Core;
 
-use PeskyORM\ORM\OrmJoinConfig;
+use PeskyORM\ORM\OrmJoinInfo;
 use Swayok\Utils\StringUtils;
 use Swayok\Utils\ValidateValue;
 
-class DbSelect {
+class Select {
 
     /**
      * Main table name to select data from
@@ -70,7 +70,7 @@ class DbSelect {
      */
     protected $offset = 0;
     /**
-     * @var DbJoinConfig[]
+     * @var JoinInfo[]
      */
     protected $joins = [];
     /**
@@ -78,7 +78,7 @@ class DbSelect {
      */
     protected $analyzedColumns = [];
     /**
-     * Indicates that DbSelect has changed since last getQuery or getSimplifiedQuery call
+     * Indicates that Select has changed since last getQuery or getSimplifiedQuery call
      * @var null|array - null: all dirty | array - only some items are dirty
      */
     protected $isDirty = null;
@@ -94,7 +94,7 @@ class DbSelect {
     }
 
     /**
-     * @param string $tableName - table name or DbTable object
+     * @param string $tableName - table name or Table object
      * @param DbAdapterInterface $connection
      * @throws \InvalidArgumentException
      */
@@ -157,7 +157,7 @@ class DbSelect {
      *      'LIMIT' - int >= 0; 0 - unlimited
      *      'OFFSET' - int >= 0
      *      'HAVING' - DbExpr,
-     *      'JOINS' - array of DbJoinConfig
+     *      'JOINS' - array of JoinInfo
      * @return $this
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -180,9 +180,9 @@ class DbSelect {
                 throw new \InvalidArgumentException('JOINS key in $conditionsAndOptions argument must be an array');
             }
             foreach ($conditionsAndOptions['JOINS'] as $join) {
-                if (!($join instanceof DbJoinConfig)) {
+                if (!($join instanceof JoinInfo)) {
                     throw new \InvalidArgumentException(
-                        'JOINS key in $conditionsAndOptions argument must contain only instances of DbJoinConfig class'
+                        'JOINS key in $conditionsAndOptions argument must contain only instances of JoinInfo class'
                     );
                 }
                 $this->join($join);
@@ -715,12 +715,12 @@ class DbSelect {
     }
 
     /**
-     * @param DbJoinConfig $joinConfig
+     * @param JoinInfo $joinConfig
      * @param bool $append - false: reset joins list so it will only contain this join
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function join(DbJoinConfig $joinConfig, $append = true) {
+    public function join(JoinInfo $joinConfig, $append = true) {
         if (!$joinConfig->isValid()) {
             throw new \InvalidArgumentException("Join config with name '{$joinConfig->getJoinName()}' is not valid");
         }
@@ -1072,7 +1072,7 @@ class DbSelect {
                 $columnInfo = $this->analyzeColumnName($columnName, $columnAlias, $joinName, $subject);
                 if ($columnInfo['join_name'] !== $joinName) {
                     // Note: ($joinName === null) restricts situation like
-                    // new DbJoinConfig('Join2')->setForeignColumnsToSelect(['SomeOtehrJoin.col'])
+                    // new JoinInfo('Join2')->setForeignColumnsToSelect(['SomeOtehrJoin.col'])
                     if ($allowSubJoins) {
                         $this->resolveColumnsToBeSelectedForJoin(
                             $columnInfo['join_name'],
@@ -1113,7 +1113,7 @@ class DbSelect {
      */
     protected function resolveColumnsToBeSelectedForJoin($joinName, $columns, $parentJoinName = null, $appendColumnsToExisting = false) {
         throw new \UnexpectedValueException(
-            "You must use DbJoinConfig->setForeignColumnsToSelect() to set the columns list to select for join named '{$joinName}'"
+            "You must use JoinInfo->setForeignColumnsToSelect() to set the columns list to select for join named '{$joinName}'"
         );
     }
 
@@ -1204,12 +1204,12 @@ class DbSelect {
     }
 
     /**
-     * @param DbJoinConfig $joinConfig
+     * @param JoinInfo $joinConfig
      * @return string
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    protected function makeJoinConditions(DbJoinConfig $joinConfig) {
+    protected function makeJoinConditions(JoinInfo $joinConfig) {
         $shortJoinName = $this->getShortJoinAlias($joinConfig->getJoinName());
         $conditions = array_merge(
             [
@@ -1377,7 +1377,7 @@ class DbSelect {
 
     /**
      * @param string $joinName
-     * @return DbJoinConfig|OrmJoinConfig
+     * @return JoinInfo|OrmJoinInfo
      * @throws \UnexpectedValueException
      */
     protected function getJoin($joinName) {

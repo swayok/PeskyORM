@@ -1,33 +1,20 @@
 <?php
 
-use PeskyORM\Adapter\Postgres;
-use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbExpr;
+use PeskyORMTest\TestingApp;
 
 class PostgresAdapterSelectDataTest extends \PHPUnit_Framework_TestCase {
 
-    /** @var PostgresConfig */
-    static protected $dbConnectionConfig;
-
     static public function setUpBeforeClass() {
-        $data = include __DIR__ . '/../configs/global.php';
-        static::$dbConnectionConfig = PostgresConfig::fromArray($data['pgsql']);
-        static::cleanTables();
+        TestingApp::clearTables(static::getValidAdapter());
     }
 
     static public function tearDownAfterClass() {
-        static::cleanTables();
-        static::$dbConnectionConfig = null;
-    }
-
-    static protected function cleanTables() {
-        $adapter = static::getValidAdapter();
-        $adapter->exec('TRUNCATE TABLE settings');
-        $adapter->exec('TRUNCATE TABLE admins');
+        TestingApp::clearTables(static::getValidAdapter());
     }
 
     static protected function getValidAdapter() {
-        $adapter = new Postgres(static::$dbConnectionConfig);
+        $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
@@ -82,8 +69,8 @@ class PostgresAdapterSelectDataTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testSelects() {
-        static::cleanTables();
         $adapter = static::getValidAdapter();
+        TestingApp::clearTables($adapter);
         $testData = $this->getTestDataForAdminsTableInsert();
         $dataForAssert = $this->convertTestDataForAdminsTableAssert($testData);
         $adapter->insertMany('admins', array_keys($testData[0]), $testData);
@@ -94,7 +81,7 @@ class PostgresAdapterSelectDataTest extends \PHPUnit_Framework_TestCase {
 
         $data = $adapter->select('admins', ['id', 'parent_id'], DbExpr::create(
             "WHERE `id` IN (``{$testData[0]['id']}``)"
-        ), false);
+        ));
         $this->assertCount(1, $data);
         $this->assertCount(2, $data[0]);
         $this->assertArrayHasKey('id', $data[0]);

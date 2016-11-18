@@ -2,10 +2,10 @@
 
 namespace PeskyORMTest\TestingSettings;
 
-use PeskyORM\ORM\DbTableColumn;
-use PeskyORM\ORM\DbTableStructure;
+use PeskyORM\ORM\Column;
+use PeskyORM\ORM\TableStructure;
 
-class TestingSettingsTableStructure extends DbTableStructure {
+class TestingSettingsTableStructure extends TableStructure {
 
     /**
      * @return string
@@ -15,7 +15,7 @@ class TestingSettingsTableStructure extends DbTableStructure {
     }
 
     private function id() {
-        return DbTableColumn::create(DbTableColumn::TYPE_INT)
+        return Column::create(Column::TYPE_INT)
             ->itIsPrimaryKey()
             ->convertsEmptyStringToNull()
             ->valueIsNotNullable()
@@ -23,14 +23,14 @@ class TestingSettingsTableStructure extends DbTableStructure {
     }
 
     private function key() {
-        return DbTableColumn::create(DbTableColumn::TYPE_STRING)
+        return Column::create(Column::TYPE_STRING)
             ->convertsEmptyStringToNull()
             ->valueIsNotNullable()
         ;
     }
 
     private function value() {
-        return DbTableColumn::create(DbTableColumn::TYPE_JSONB)
+        return Column::create(Column::TYPE_JSONB)
             ->convertsEmptyStringToNull()
             ->valueIsNotNullable()
             ->setDefaultValue('{}')

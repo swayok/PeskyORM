@@ -2,6 +2,7 @@
 
 namespace PeskyORM\Core;
 
+use PeskyORM\Exception\DbException;
 use Swayok\Utils\Utils;
 
 abstract class DbAdapter implements DbAdapterInterface {
@@ -153,7 +154,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @param string|DbExpr $query
      * @param string|null $fetchData - null: return PDOStatement; string: one of \PeskyORM\Core\Utils::FETCH_*
      * @return \PDOStatement|mixed
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \InvalidArgumentException
      * @throws \PDOException
      */
@@ -182,7 +183,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @param string|DbExpr $query
      * @param bool $ignoreZeroModifiedRows - true: will not try to additionally validate if query failed
      * @return array|int = array: returned if $returning argument is not empty
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \InvalidArgumentException
      * @throws \PDOException
      */
@@ -212,7 +213,7 @@ abstract class DbAdapter implements DbAdapterInterface {
     /**
      * @param string|DbExpr $query
      * @return int|array = array: returned if $returning argument is not empty
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
@@ -234,7 +235,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @return bool|array - array returned only if $returning is not empty
      * @throws \PDOException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      */
     public function insert($table, array $data, array $dataTypes = [], $returning = false, $pkName = 'id') {
         $this->guardTableNameArg($table);
@@ -291,7 +292,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @return bool|array - array returned only if $returning is not empty
      * @throws \PDOException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      */
     public function insertMany($table, array $columns, array $data, array $dataTypes = [], $returning = false, $pkName = 'id') {
         $this->guardTableNameArg($table);
@@ -363,7 +364,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      *          - array: modified records (when $returning !== false)
      * @throws \PDOException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      */
     public function update($table, array $data, $conditions, array $dataTypes = [], $returning = false) {
         $this->guardTableNameArg($table);
@@ -404,7 +405,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @return int|array - int: number of deleted records | array: returned only if $returning is not empty
      * @throws \PDOException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      */
     public function delete($table, $conditions, $returning = false) {
         $this->guardTableNameArg($table);
@@ -593,7 +594,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @return $this
      * @throws \InvalidArgumentException
      * @throws \PDOException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      */
     public function begin($readOnly = false, $transactionType = null) {
         $this->guardTransaction('begin');
@@ -610,7 +611,7 @@ abstract class DbAdapter implements DbAdapterInterface {
     /**
      * @return $this
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \PDOException
      */
     public function commit() {
@@ -622,7 +623,7 @@ abstract class DbAdapter implements DbAdapterInterface {
     /**
      * @return $this
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \PDOException
      */
     public function rollBack() {
@@ -634,7 +635,7 @@ abstract class DbAdapter implements DbAdapterInterface {
     /**
      * @param string $action = begin|commit|rollback
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \PDOException
      */
     protected function guardTransaction($action) {
@@ -1013,7 +1014,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \InvalidArgumentException
      */
     public function select($table, array $columns = [], $conditionsAndOptions = null) {
@@ -1032,7 +1033,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \InvalidArgumentException
      */
     public function selectColumn($table, $column, $conditionsAndOptions = null) {
@@ -1056,7 +1057,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \InvalidArgumentException
      */
     public function selectAssoc($table, $keysColumn, $valuesColumn, $conditionsAndOptions = null) {
@@ -1089,7 +1090,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \InvalidArgumentException
      */
     public function selectOne($table, array $columns = [], $conditionsAndOptions = null) {
@@ -1107,7 +1108,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \InvalidArgumentException
      */
     public function selectValue($table, DbExpr $expression, $conditionsAndOptions = null) {

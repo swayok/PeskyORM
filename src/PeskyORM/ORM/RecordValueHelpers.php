@@ -7,15 +7,15 @@ use Swayok\Utils\NormalizeValue;
 use Swayok\Utils\ValidateValue;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
-abstract class DbRecordValueHelpers {
+abstract class RecordValueHelpers {
 
     /**
-     * @param DbTableColumn $column
+     * @param Column $column
      * @param mixed $value
      * @param array $errorMessages
      * @return array
      */
-    static public function isValidDbColumnValue(DbTableColumn $column, $value, array $errorMessages = []) {
+    static public function isValidDbColumnValue(Column $column, $value, array $errorMessages = []) {
         if ($value instanceof DbExpr) {
             return [];
         }
@@ -37,101 +37,101 @@ abstract class DbRecordValueHelpers {
     /**
      * Preprocess value using $column->getValuePreprocessor(). This will perform basic processing like
      * converting empty string to null, trimming and lowercasing if any required
-     * @param DbTableColumn $column
+     * @param Column $column
      * @param mixed $value
      * @param bool $isDbValue
      * @return mixed
      */
-    static public function preprocessColumnValue(DbTableColumn $column, $value, $isDbValue = false) {
+    static public function preprocessColumnValue(Column $column, $value, $isDbValue = false) {
         return call_user_func($column->getValuePreprocessor(), $value, $isDbValue, $column);
     }
 
     /**
      * Test if $value fits data type ($type)
      * @param mixed $value
-     * @param string $type - one of DbTableColumn::TYPE_*
+     * @param string $type - one of Column::TYPE_*
      * @param array $errorMessages
      * @return array
      */
     static public function isValueFitsDataType($value, $type, array $errorMessages = []) {
         switch ($type) {
-            case DbTableColumn::TYPE_BOOL:
+            case Column::TYPE_BOOL:
                 if (!ValidateValue::isBoolean($value)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_BOOLEAN)];
+                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_BOOLEAN)];
                 }
                 break;
-            case DbTableColumn::TYPE_INT:
+            case Column::TYPE_INT:
                 if (!ValidateValue::isInteger($value)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_INTEGER)];
+                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_INTEGER)];
                 }
                 break;
-            case DbTableColumn::TYPE_FLOAT:
+            case Column::TYPE_FLOAT:
                 if (!ValidateValue::isFloat($value)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_FLOAT)];
+                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_FLOAT)];
                 }
                 break;
-            case DbTableColumn::TYPE_ENUM:
+            case Column::TYPE_ENUM:
                 if (!is_string($value) && !is_numeric($value)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_STRING_OR_NUMERIC)];
+                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_STRING_OR_NUMERIC)];
                 }
                 break;
-            case DbTableColumn::TYPE_DATE:
+            case Column::TYPE_DATE:
                 if (!ValidateValue::isDateTime($value)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_DATE)];
+                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_DATE)];
                 }
                 break;
-            case DbTableColumn::TYPE_TIME:
+            case Column::TYPE_TIME:
                 if (!ValidateValue::isDateTime($value)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_TIME)];
+                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_TIME)];
                 }
                 break;
-            case DbTableColumn::TYPE_TIMESTAMP:
-            case DbTableColumn::TYPE_UNIX_TIMESTAMP:
+            case Column::TYPE_TIMESTAMP:
+            case Column::TYPE_UNIX_TIMESTAMP:
                 if (!ValidateValue::isDateTime($value)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_TIMESTAMP)];
+                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_TIMESTAMP)];
                 }
                 break;
-            case DbTableColumn::TYPE_TIMESTAMP_WITH_TZ:
+            case Column::TYPE_TIMESTAMP_WITH_TZ:
                 if (!ValidateValue::isDateTimeWithTz($value)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_TIMESTAMP_WITH_TZ)];
+                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_TIMESTAMP_WITH_TZ)];
                 }
                 break;
-            case DbTableColumn::TYPE_TIMEZONE_OFFSET:
+            case Column::TYPE_TIMEZONE_OFFSET:
                 if (!ValidateValue::isTimezoneOffset($value)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_TIMEZONE_OFFSET)];
+                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_TIMEZONE_OFFSET)];
                 }
                 break;
-            case DbTableColumn::TYPE_IPV4_ADDRESS:
+            case Column::TYPE_IPV4_ADDRESS:
                 if (!ValidateValue::isIpAddress($value)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_IPV4_ADDRESS)];
+                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_IPV4_ADDRESS)];
                 }
                 break;
-            case DbTableColumn::TYPE_JSON:
-            case DbTableColumn::TYPE_JSONB:
+            case Column::TYPE_JSON:
+            case Column::TYPE_JSONB:
                 if (!ValidateValue::isJson($value)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_JSON)];
+                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_JSON)];
                 }
                 break;
-            case DbTableColumn::TYPE_FILE:
+            case Column::TYPE_FILE:
                 if (!ValidateValue::isUploadedFile($value, true)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_FILE)];
+                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_FILE)];
                 }
                 break;
-            case DbTableColumn::TYPE_IMAGE:
+            case Column::TYPE_IMAGE:
                 if (!ValidateValue::isUploadedImage($value, true)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_IMAGE)];
+                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_IMAGE)];
                 }
                 break;
-            case DbTableColumn::TYPE_EMAIL:
+            case Column::TYPE_EMAIL:
                 if (!ValidateValue::isEmail($value)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_EMAIL)];
+                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_EMAIL)];
                 }
                 break;
-            case DbTableColumn::TYPE_PASSWORD:
-            case DbTableColumn::TYPE_TEXT:
-            case DbTableColumn::TYPE_STRING:
+            case Column::TYPE_PASSWORD:
+            case Column::TYPE_TEXT:
+            case Column::TYPE_STRING:
                 if (!is_string($value)) {
-                    return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_MUST_BE_STRING)];
+                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_STRING)];
                 }
                 break;
         }
@@ -154,14 +154,14 @@ abstract class DbRecordValueHelpers {
      *     empty string with option $column->isEmptyStringMustBeConvertedToNull() === true;
      *
      * @param string|int|float|array $value
-     * @param DbTableColumn $column
+     * @param Column $column
      * @param array $errorMessages
      * @return array
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      */
     static public function isValueWithinTheAllowedValuesOfTheColumn(
-        DbTableColumn $column,
+        Column $column,
         $value,
         array $errorMessages = []
     ) {
@@ -191,10 +191,10 @@ abstract class DbRecordValueHelpers {
         if (is_array($value)) {
             // compare if $value array is contained inside $allowedValues array
             if (count(array_diff($value, $allowedValues)) > 0) {
-                return [static::getErrorMessage($errorMessages, DbTableColumn::ONE_OF_VALUES_IS_NOT_ALLOWED)];
+                return [static::getErrorMessage($errorMessages, Column::ONE_OF_VALUES_IS_NOT_ALLOWED)];
             }
         } else if (!in_array($value, $allowedValues, true)) {
-            return [static::getErrorMessage($errorMessages, DbTableColumn::VALUE_IS_NOT_ALLOWED)];
+            return [static::getErrorMessage($errorMessages, Column::VALUE_IS_NOT_ALLOWED)];
         }
         return [];
     }
@@ -211,7 +211,7 @@ abstract class DbRecordValueHelpers {
     /**
      * Normalize $value according to expected data type ($type)
      * @param mixed $value
-     * @param string $type - one of DbTableColumn::TYPE_*
+     * @param string $type - one of Column::TYPE_*
      * @return null|string|UploadedFile
      */
     static public function normalizeValue($value, $type) {
@@ -219,33 +219,33 @@ abstract class DbRecordValueHelpers {
             return null;
         }
         switch ($type) {
-            case DbTableColumn::TYPE_BOOL:
+            case Column::TYPE_BOOL:
                 return NormalizeValue::normalizeBoolean($value);
-            case DbTableColumn::TYPE_INT:
-            case DbTableColumn::TYPE_UNIX_TIMESTAMP:
+            case Column::TYPE_INT:
+            case Column::TYPE_UNIX_TIMESTAMP:
                 return NormalizeValue::normalizeInteger($value);
-            case DbTableColumn::TYPE_FLOAT:
+            case Column::TYPE_FLOAT:
                 return NormalizeValue::normalizeFloat($value);
-            case DbTableColumn::TYPE_DATE:
+            case Column::TYPE_DATE:
                 return NormalizeValue::normalizeDate($value);
-            case DbTableColumn::TYPE_TIME:
-            case DbTableColumn::TYPE_TIMEZONE_OFFSET:
+            case Column::TYPE_TIME:
+            case Column::TYPE_TIMEZONE_OFFSET:
                 return NormalizeValue::normalizeTime($value);
-            case DbTableColumn::TYPE_TIMESTAMP:
+            case Column::TYPE_TIMESTAMP:
                 return NormalizeValue::normalizeDateTime($value);
-            case DbTableColumn::TYPE_TIMESTAMP_WITH_TZ:
+            case Column::TYPE_TIMESTAMP_WITH_TZ:
                 return NormalizeValue::normalizeDateTimeWithTz($value);
-            case DbTableColumn::TYPE_JSON:
-            case DbTableColumn::TYPE_JSONB:
+            case Column::TYPE_JSON:
+            case Column::TYPE_JSONB:
                 return NormalizeValue::normalizeJson($value);
-            case DbTableColumn::TYPE_FILE:
-            case DbTableColumn::TYPE_IMAGE:
+            case Column::TYPE_FILE:
+            case Column::TYPE_IMAGE:
                 return static::normalizeFile($value);
-            case DbTableColumn::TYPE_STRING:
-            case DbTableColumn::TYPE_IPV4_ADDRESS:
-            case DbTableColumn::TYPE_EMAIL:
-            case DbTableColumn::TYPE_PASSWORD:
-            case DbTableColumn::TYPE_TEXT:
+            case Column::TYPE_STRING:
+            case Column::TYPE_IPV4_ADDRESS:
+            case Column::TYPE_EMAIL:
+            case Column::TYPE_PASSWORD:
+            case Column::TYPE_TEXT:
                 return (string)$value;
             default:
                 return $value;
@@ -271,25 +271,25 @@ abstract class DbRecordValueHelpers {
         $formatter = null;
         $formats = [];
         switch ($type) {
-            case DbTableColumn::TYPE_UNIX_TIMESTAMP:
-            case DbTableColumn::TYPE_TIMESTAMP:
-            case DbTableColumn::TYPE_TIMESTAMP_WITH_TZ:
+            case Column::TYPE_UNIX_TIMESTAMP:
+            case Column::TYPE_TIMESTAMP:
+            case Column::TYPE_TIMESTAMP_WITH_TZ:
                 $formats = ['date', 'time', 'unix_ts'];
-                $formatter = function (DbRecordValue $valueContainer, $format) {
+                $formatter = function (RecordValue $valueContainer, $format) {
                     return static::formatTimestamp($valueContainer, $format);
                 };
                 break;
-            case DbTableColumn::TYPE_DATE:
-            case DbTableColumn::TYPE_TIME:
+            case Column::TYPE_DATE:
+            case Column::TYPE_TIME:
                 $formats = ['unix_ts'];
-                $formatter = function (DbRecordValue $valueContainer, $format) {
+                $formatter = function (RecordValue $valueContainer, $format) {
                     return static::formatDateOrTime($valueContainer, $format);
                 };
                 break;
-            case DbTableColumn::TYPE_JSON:
-            case DbTableColumn::TYPE_JSONB:
+            case Column::TYPE_JSON:
+            case Column::TYPE_JSONB:
                 $formats = ['array', 'object'];
-                $formatter = function (DbRecordValue $valueContainer, $format) {
+                $formatter = function (RecordValue $valueContainer, $format) {
                     return static::formatJson($valueContainer, $format);
                 };
                 break;
@@ -297,7 +297,7 @@ abstract class DbRecordValueHelpers {
         return [$formatter, $formats];
     }
 
-    static protected function getSimpleValueFormContainer(DbRecordValue $valueContainer) {
+    static protected function getSimpleValueFormContainer(RecordValue $valueContainer) {
         $value = $valueContainer->getValueOrDefault();
         if ($value instanceof DbExpr) {
             throw new \UnexpectedValueException('It is impossible to change format of the DbExpr');
@@ -305,11 +305,11 @@ abstract class DbRecordValueHelpers {
         return $value;
     }
 
-    static public function formatTimestamp(DbRecordValue $valueContainer, $format) {
+    static public function formatTimestamp(RecordValue $valueContainer, $format) {
         if (!is_string($format)) {
             throw new \InvalidArgumentException('$format argument must be a string');
         }
-        return $valueContainer->getCustomInfo('as_' . $format, function (DbRecordValue $valueContainer) use ($format) {
+        return $valueContainer->getCustomInfo('as_' . $format, function (RecordValue $valueContainer) use ($format) {
             $value = static::getSimpleValueFormContainer($valueContainer);
             switch ($format) {
                 case 'date':
@@ -324,11 +324,11 @@ abstract class DbRecordValueHelpers {
         }, true);
     }
 
-    static public function formatDateOrTime(DbRecordValue $valueContainer, $format) {
+    static public function formatDateOrTime(RecordValue $valueContainer, $format) {
         if (!is_string($format)) {
             throw new \InvalidArgumentException('$format argument must be a string');
         }
-        return $valueContainer->getCustomInfo('as_' . $format, function (DbRecordValue $valueContainer) use ($format) {
+        return $valueContainer->getCustomInfo('as_' . $format, function (RecordValue $valueContainer) use ($format) {
             if ($format === 'unix_ts') {
                 return strtotime(static::getSimpleValueFormContainer($valueContainer));
             } else {
@@ -337,11 +337,11 @@ abstract class DbRecordValueHelpers {
         }, true);
     }
 
-    static public function formatJson(DbRecordValue $valueContainer, $format) {
+    static public function formatJson(RecordValue $valueContainer, $format) {
         if (!is_string($format)) {
             throw new \InvalidArgumentException('$format argument must be a string');
         }
-        return $valueContainer->getCustomInfo('as_' . $format, function (DbRecordValue $valueContainer) use ($format) {
+        return $valueContainer->getCustomInfo('as_' . $format, function (RecordValue $valueContainer) use ($format) {
             $value = static::getSimpleValueFormContainer($valueContainer);
             switch ($format) {
                 case 'array':

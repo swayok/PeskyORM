@@ -6,12 +6,12 @@ use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbConnectionsManager;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
-use PeskyORM\ORM\Exception\OrmException;
+use PeskyORM\Exception\OrmException;
 use Swayok\Utils\StringUtils;
 
-abstract class DbTable implements DbTableInterface {
+abstract class Table implements TableInterface {
 
-    /** @var DbTable[] */
+    /** @var Table[] */
     static private $instances = [];
     /** @var string */
     protected $alias;
@@ -47,7 +47,7 @@ abstract class DbTable implements DbTableInterface {
      * Get table name
      * @return string
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -58,7 +58,7 @@ abstract class DbTable implements DbTableInterface {
     /**
      * @return DbAdapterInterface
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -67,10 +67,10 @@ abstract class DbTable implements DbTableInterface {
     }
 
     /**
-     * @return DbTableStructure
+     * @return TableStructure
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      */
     static public function getStructure() {
@@ -81,7 +81,7 @@ abstract class DbTable implements DbTableInterface {
      * @return string
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      */
     static public function getAlias() {
@@ -92,7 +92,7 @@ abstract class DbTable implements DbTableInterface {
      * @return string
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      */
     public function getTableAlias() {
@@ -104,7 +104,7 @@ abstract class DbTable implements DbTableInterface {
 
     /**
      * @return bool
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -114,8 +114,8 @@ abstract class DbTable implements DbTableInterface {
     }
 
     /**
-     * @return DbTableColumn
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @return Column
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -126,7 +126,7 @@ abstract class DbTable implements DbTableInterface {
 
     /**
      * @return string
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -136,9 +136,9 @@ abstract class DbTable implements DbTableInterface {
     }
 
     /**
-     * @param string $relationName - alias for relation defined in DbTableStructure
-     * @return DbTableInterface
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @param string $relationName - alias for relation defined in TableStructure
+     * @return TableInterface
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -148,13 +148,13 @@ abstract class DbTable implements DbTableInterface {
     }
 
     /**
-     * Get OrmJoinConfig for required relation
+     * Get OrmJoinInfo for required relation
      * @param string $relationName
      * @param string|null $alterLocalTableAlias - alter this table's alias in join config
      * @param string|null $joinName - string: specific join name; null: $relationName is used
-     * @return OrmJoinConfig
+     * @return OrmJoinInfo
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -167,11 +167,11 @@ abstract class DbTable implements DbTableInterface {
     }
 
     /**
-     * @param string $relationName - alias for relation defined in DbTableStructure
+     * @param string $relationName - alias for relation defined in TableStructure
      * @return bool
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      */
     static public function hasRelation($relationName) {
@@ -181,10 +181,10 @@ abstract class DbTable implements DbTableInterface {
     /**
      * @return DbExpr
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\DbException
      */
     static public function getExpressionToSetDefaultValueForAColumn() {
         if (get_called_class() === __CLASS__) {
@@ -201,7 +201,7 @@ abstract class DbTable implements DbTableInterface {
      * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return OrmSelect
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -219,15 +219,15 @@ abstract class DbTable implements DbTableInterface {
      * @param string|array $columns
      * @param array $conditions
      * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return DbRecordsSet
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @return RecordsSet
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function select($columns = '*', array $conditions = [], \Closure $configurator = null) {
-        return DbRecordsSet::createFromOrmSelect(static::makeSelect($columns, $conditions, $configurator));
+        return RecordsSet::createFromOrmSelect(static::makeSelect($columns, $conditions, $configurator));
     }
 
     /**
@@ -236,7 +236,7 @@ abstract class DbTable implements DbTableInterface {
      * @param array $conditions
      * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -254,7 +254,7 @@ abstract class DbTable implements DbTableInterface {
      * @param array $conditions
      * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -271,7 +271,7 @@ abstract class DbTable implements DbTableInterface {
      * @param array $conditions
      * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -282,14 +282,14 @@ abstract class DbTable implements DbTableInterface {
     }
 
     /**
-     * Get 1 record from DB as DbRecord
+     * Get 1 record from DB as Record
      * @param string|array $columns
      * @param array $conditions
      * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return DbRecordInterface
+     * @return RecordInterface
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -304,7 +304,7 @@ abstract class DbTable implements DbTableInterface {
      * @param array $conditions
      * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return string
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -320,7 +320,7 @@ abstract class DbTable implements DbTableInterface {
      * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return bool
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -342,7 +342,7 @@ abstract class DbTable implements DbTableInterface {
      * @param bool $removeNotInnerJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
      * @return int
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \PDOException
      * @throws \InvalidArgumentException
@@ -354,7 +354,7 @@ abstract class DbTable implements DbTableInterface {
     /**
      * @return null|string
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -401,7 +401,7 @@ abstract class DbTable implements DbTableInterface {
      *          - false: do not return anything
      *          - array: list of columns to return values for
      * @return array|bool - array returned only if $returning is not empty
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \PDOException
@@ -424,7 +424,7 @@ abstract class DbTable implements DbTableInterface {
      *          - false: do not return anything
      *          - array: list of columns to return values for
      * @return array|bool - array returned only if $returning is not empty
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -451,7 +451,7 @@ abstract class DbTable implements DbTableInterface {
      *          - int: number of modified rows (when $returning === false)
      *          - array: modified records (when $returning !== false)
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -474,7 +474,7 @@ abstract class DbTable implements DbTableInterface {
      *          - array: list of columns to return values for
      * @return int|array - int: number of deleted records | array: returned only if $returning is not empty
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @throws \PDOException
@@ -491,7 +491,7 @@ abstract class DbTable implements DbTableInterface {
      * Get list of PDO data types for requested $columns
      * @param array $columns
      * @return array
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException

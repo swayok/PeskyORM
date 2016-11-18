@@ -2,10 +2,10 @@
 
 namespace PeskyORMTest\TestingInvalidClasses;
 
-use PeskyORM\ORM\DbTableColumn;
-use PeskyORM\ORM\DbTableStructure;
+use PeskyORM\ORM\Column;
+use PeskyORM\ORM\TableStructure;
 
-class TestingInvalidColumnsInTableStructure extends DbTableStructure {
+class TestingInvalidColumnsInTableStructure extends TableStructure {
 
     /**
      * @return string
@@ -19,12 +19,12 @@ class TestingInvalidColumnsInTableStructure extends DbTableStructure {
     }
 
     private function pk1() {
-        return DbTableColumn::create(DbTableColumn::TYPE_INT)
+        return Column::create(Column::TYPE_INT)
             ->itIsPrimaryKey();
     }
 
     private function pk2() {
-        return DbTableColumn::create(DbTableColumn::TYPE_INT)
+        return Column::create(Column::TYPE_INT)
             ->itIsPrimaryKey();
     }
 }

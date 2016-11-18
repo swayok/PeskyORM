@@ -1,34 +1,21 @@
 <?php
 
-use PeskyORM\Adapter\Postgres;
-use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
+use PeskyORMTest\TestingApp;
 
 class PostgresAdapterInsertDataTest extends \PHPUnit_Framework_TestCase {
 
-    /** @var PostgresConfig */
-    static protected $dbConnectionConfig;
-
     static public function setUpBeforeClass() {
-        $data = include __DIR__ . '/../configs/global.php';
-        static::$dbConnectionConfig = PostgresConfig::fromArray($data['pgsql']);
-        static::cleanTables();
+        TestingApp::clearTables(static::getValidAdapter());
     }
 
     static public function tearDownAfterClass() {
-        static::cleanTables();
-        static::$dbConnectionConfig = null;
-    }
-
-    static protected function cleanTables() {
-        $adapter = static::getValidAdapter();
-        $adapter->exec('TRUNCATE TABLE settings');
-        $adapter->exec('TRUNCATE TABLE admins');
+        TestingApp::clearTables(static::getValidAdapter());
     }
 
     static protected function getValidAdapter() {
-        $adapter = new Postgres(static::$dbConnectionConfig);
+        $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
@@ -83,8 +70,8 @@ class PostgresAdapterInsertDataTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testInsertOne() {
-        static::cleanTables();
         $adapter = static::getValidAdapter();
+        TestingApp::clearTables($adapter);
         $testData1 = ['key' => 'test_key1', 'value' => json_encode('test_value1')];
         $adapter->insert('settings', $testData1);
         $data = Utils::getDataFromStatement(
@@ -169,8 +156,8 @@ class PostgresAdapterInsertDataTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testInsertMany() {
-        static::cleanTables();
         $adapter = static::getValidAdapter();
+        TestingApp::clearTables($adapter);
         $testData1 = [
             ['key' => 'test_key1', 'value' => json_encode('test_value1')],
             ['key' => 'test_key2', 'value' => json_encode('test_value2')]
@@ -227,8 +214,8 @@ class PostgresAdapterInsertDataTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testInsertManyReturning() {
-        static::cleanTables();
         $adapter = static::getValidAdapter();
+        TestingApp::clearTables($adapter);
         /** @var array $return */
         $testData3 = [
             ['key' => 'test_key_returning2', 'value' => json_encode('test_value1')],

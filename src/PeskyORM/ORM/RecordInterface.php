@@ -2,7 +2,7 @@
 
 namespace PeskyORM\ORM;
 
-interface DbRecordInterface {
+interface RecordInterface {
 
     /**
      * Create new empty record
@@ -11,7 +11,7 @@ interface DbRecordInterface {
     static public function newEmptyRecord();
 
     /**
-     * @return DbTableInterface
+     * @return TableInterface
      */
     static public function getTable();
 
@@ -24,7 +24,7 @@ interface DbRecordInterface {
     /**
      * Get a value from specific $columnName with optional $format
      * @param string $columnName
-     * @param null $format - change value format (list of formats depend on DbColumn type and config)
+     * @param null $format - change value format (list of formats depend on Column type and config)
      * @return mixed
      */
     public function getValue($columnName, $format = null);
@@ -69,13 +69,13 @@ interface DbRecordInterface {
      * Get existing related object(s) or read them
      * @param string $relationName
      * @param bool $loadIfNotSet - true: read relation data if it is not set
-     * @return DbRecord|DbRecordsSet
+     * @return Record|RecordsSet
      */
     public function getRelatedRecord($relationName, $loadIfNotSet = false);
 
     /**
      * Read related object(s). If there are already loaded object(s) - they will be overwritten
-     * @param string $relationName - name of relation defined in DbTableStructure
+     * @param string $relationName - name of relation defined in TableStructure
      * @return $this
      */
     public function readRelatedRecord($relationName);
@@ -132,7 +132,7 @@ interface DbRecordInterface {
      * @param array $columns - columns to read
      * @param array $readRelatedRecords - also read related records
      * @return $this
-     * @throws \PeskyORM\ORM\Exception\RecordNotFoundException
+     * @throws \PeskyORM\Exception\RecordNotFoundException
      */
     public function reload(array $columns = [], array $readRelatedRecords = []);
 
@@ -140,12 +140,12 @@ interface DbRecordInterface {
      * Read values for specific columns
      * @param array $columns - columns to read
      * @return $this
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \PDOException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\ORM\Exception\RecordNotFoundException
+     * @throws \PeskyORM\Exception\RecordNotFoundException
      */
     public function readColumns(array $columns = []);
 
@@ -249,7 +249,7 @@ interface DbRecordInterface {
      * @param bool $ignoreColumnsThatDoNotExistInDB - true: if column does not exist in DB - its value will not be returned
      * @param bool $nullifyDbExprValues - true: if default value is DbExpr - replace it by null
      * @return array
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException

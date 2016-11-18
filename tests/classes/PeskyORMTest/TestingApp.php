@@ -2,31 +2,54 @@
 
 namespace PeskyORMTest;
 
+use PeskyORM\Adapter\Mysql;
 use PeskyORM\Adapter\Postgres;
+use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Config\Connection\PostgresConfig;
+use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbConnectionsManager;
-use PeskyORM\ORM\DbTable;
-use PeskyORM\ORM\DbTableStructure;
+use PeskyORM\ORM\Table;
+use PeskyORM\ORM\TableStructure;
 
 class TestingApp {
 
     /**
      * @var Postgres
      */
-    static public $dbConnection;
+    static public $pgsqlConnection;
+    /**
+     * @var Mysql
+     */
+    static public $mysqlConnection;
     static protected $dataForDb;
     static protected $dataForDbMinimal;
 
-    static public function init() {
-        if (!static::$dbConnection) {
-            static::$dbConnection = DbConnectionsManager::createConnection(
+    static public function getMysqlConnection() {
+        if (!static::$mysqlConnection) {
+            static::$mysqlConnection = DbConnectionsManager::createConnection(
+                'mysql',
+                DbConnectionsManager::ADAPTER_MYSQL,
+                MysqlConfig::fromArray(static::getGlobalConfigs()['mysql'])
+            );
+            static::getMysqlConnection()->exec(file_get_contents(__DIR__ . '/../../configs/db_schema_mysql.sql'));
+            date_default_timezone_set('UTC');
+        }
+        return static::$mysqlConnection;
+    }
+
+    static public function getPgsqlConnection() {
+        if (!static::$pgsqlConnection) {
+            static::$pgsqlConnection = DbConnectionsManager::createConnection(
                 'default',
                 DbConnectionsManager::ADAPTER_POSTGRES,
                 PostgresConfig::fromArray(static::getGlobalConfigs()['pgsql'])
             );
-            static::$dbConnection->query('SET LOCAL TIME ZONE "UTC"');
+            static::getPgsqlConnection()->exec(file_get_contents(__DIR__ . '/../../configs/db_schema_pgsql.sql'));
+            static::$pgsqlConnection->query('SET LOCAL TIME ZONE "UTC"');
             date_default_timezone_set('UTC');
         }
+        static::$pgsqlConnection->rememberTransactionQueries = true;
+        return static::$pgsqlConnection;
     }
 
     static protected function getGlobalConfigs() {
@@ -53,32 +76,35 @@ class TestingApp {
     }
 
     static public function fillAdminsTable($limit = 0) {
-        static::$dbConnection->exec('TRUNCATE TABLE admins');
+        static::$pgsqlConnection->exec('TRUNCATE TABLE admins');
         $data = static::getRecordsForDb('admins', $limit);
-        static::$dbConnection->insertMany('admins', array_keys($data[0]), $data);
+        static::$pgsqlConnection->insertMany('admins', array_keys($data[0]), $data);
         return $data;
     }
 
     static public function fillSettingsTable($limit = 0) {
-        static::$dbConnection->exec('TRUNCATE TABLE settings');
+        static::$pgsqlConnection->exec('TRUNCATE TABLE settings');
         $data = static::getRecordsForDb('settings', $limit);
-        static::$dbConnection->insertMany('settings', array_keys($data[0]), $data);
+        static::$pgsqlConnection->insertMany('settings', array_keys($data[0]), $data);
         return $data;
     }
 
-    static public function clearTables() {
-        static::$dbConnection->exec('TRUNCATE TABLE settings');
-        static::$dbConnection->exec('TRUNCATE TABLE admins');
+    static public function clearTables(DbAdapterInterface $adapter) {
+        if ($adapter->inTransaction()) {
+            $adapter->rollBack();
+        }
+        $adapter->exec('TRUNCATE TABLE settings');
+        $adapter->exec('TRUNCATE TABLE admins');
     }
 
     static public function cleanInstancesOfDbTablesAndStructures() {
-        $class = new \ReflectionClass(DbTable::class);
+        $class = new \ReflectionClass(Table::class);
         $method = $class->getMethod('resetInstances');
         $method->setAccessible(true);
         $method->invoke(null);
         $method->setAccessible(false);
 
-        $class = new \ReflectionClass(DbTableStructure::class);
+        $class = new \ReflectionClass(TableStructure::class);
         $method = $class->getMethod('resetInstances');
         $method->setAccessible(true);
         $method->invoke(null);

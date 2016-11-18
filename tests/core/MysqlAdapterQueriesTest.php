@@ -1,27 +1,16 @@
 <?php
 
-use PeskyORM\Adapter\Mysql;
-use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Core\DbExpr;
+use PeskyORMTest\TestingApp;
 
 class MysqlAdapterQueriesTest extends \PHPUnit_Framework_TestCase {
 
-    /** @var MysqlConfig */
-    static protected $dbConnectionConfig;
-
-    public static function setUpBeforeClass() {
-        $data = include __DIR__ . '/../configs/global.php';
-        self::$dbConnectionConfig = MysqlConfig::fromArray($data['mysql']);
-    }
-
     public static function tearDownAfterClass() {
-        $adapter = static::getValidAdapter();
-        $adapter->exec('TRUNCATE TABLE settings');
-        self::$dbConnectionConfig = null;
+        TestingApp::clearTables(static::getValidAdapter());
     }
 
     static private function getValidAdapter() {
-        return new Mysql(self::$dbConnectionConfig);
+        return TestingApp::getMysqlConnection();
     }
 
     /**
@@ -83,7 +72,7 @@ class MysqlAdapterQueriesTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @expectedException \PeskyORM\Core\DbException
+     * @expectedException \PeskyORM\Exception\DbException
      * @expectedExceptionMessage Already in transaction
      */
     public function testTransactionsNestingPrevention() {
@@ -93,20 +82,22 @@ class MysqlAdapterQueriesTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @expectedException \PeskyORM\Core\DbException
+     * @expectedException \PeskyORM\Exception\DbException
      * @expectedExceptionMessage Attempt to commit not started transaction
      */
     public function testTransactionCommitWithoutBegin() {
         $adapter = static::getValidAdapter();
         $adapter->commit();
+        $adapter->commit();
     }
 
     /**
-     * @expectedException \PeskyORM\Core\DbException
+     * @expectedException \PeskyORM\Exception\DbException
      * @expectedExceptionMessage Attempt to rollback not started transaction
      */
     public function testTransactionRollbackWithoutBegin() {
         $adapter = static::getValidAdapter();
+        $adapter->rollBack();
         $adapter->rollBack();
     }
 }

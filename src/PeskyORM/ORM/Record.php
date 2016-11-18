@@ -3,18 +3,18 @@
 namespace PeskyORM\ORM;
 
 use PeskyORM\Core\DbExpr;
-use PeskyORM\ORM\Exception\InvalidDataException;
-use PeskyORM\ORM\Exception\RecordNotFoundException;
+use PeskyORM\Exception\InvalidDataException;
+use PeskyORM\Exception\RecordNotFoundException;
 use Swayok\Utils\StringUtils;
 
-abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
+abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Serializable {
 
     /**
-     * @var DbRecordValue[]
+     * @var RecordValue[]
      */
     protected $values = [];
     /**
-     * @var DbRecord[]|DbRecordsSet[]
+     * @var Record[]|RecordsSet[]
      */
     protected $relatedRecords = [];
     /**
@@ -23,7 +23,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     protected $isCollectingUpdates = false;
     /**
      * Collected when value is updated during $this->isCollectingUpdates === true
-     * @var DbRecordValue[]
+     * @var RecordValue[]
      */
     protected $valuesBackup = [];
     /**
@@ -38,8 +38,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param bool $haltOnUnknownColumnNames
      * @return static
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -55,8 +55,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param array $readRelatedRecords
      * @return static
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -71,9 +71,9 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param array $columns
      * @param array $readRelatedRecords
      * @return static
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -111,19 +111,19 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     }
 
     /**
-     * @return DbTableStructure
+     * @return TableStructure
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      */
     static public function getTableStructure() {
         return static::getTable()->getStructure();
     }
 
     /**
-     * @return DbTableColumn[] - key = column name
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @return Column[] - key = column name
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -133,9 +133,9 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     }
 
     /**
-     * @return DbTableColumn[] - key = column name
+     * @return Column[] - key = column name
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -156,7 +156,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     /**
      * @return array
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -176,8 +176,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
 
     /**
      * @param string $name
-     * @return DbTableColumn
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @return Column
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -189,7 +189,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     /**
      * @param string $name
      * @return bool
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -199,8 +199,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     }
 
     /**
-     * @return DbTableColumn
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @return Column
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -211,7 +211,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
 
     /**
      * @return string
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -221,8 +221,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     }
 
     /**
-     * @return DbTableRelation[]
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @return Relation[]
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -233,8 +233,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
 
     /**
      * @param string $name
-     * @return DbTableRelation
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @return Relation
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -246,7 +246,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     /**
      * @param string $name
      * @return bool
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -256,8 +256,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     }
 
     /**
-     * @return DbTableColumn[]
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @return Column[]
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -268,7 +268,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
 
     /**
      * @return bool
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -280,7 +280,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     /**
      * Resets all values and related records
      * @return $this
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -302,17 +302,17 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     }
 
     /**
-     * @param DbTableColumn $column
-     * @return DbRecordValue
+     * @param Column $column
+     * @return RecordValue
      */
-    protected function createValueObject(DbTableColumn $column) {
-        return DbRecordValue::create($column, $this);
+    protected function createValueObject(Column $column) {
+        return RecordValue::create($column, $this);
     }
 
     /**
-     * @param string|DbTableColumn $column
+     * @param string|Column $column
      * @return $this
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -336,9 +336,9 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
 
     /**
      * Warning: do not use it to get/set/check value!
-     * @param string|DbTableColumn $column
-     * @return DbRecordValue
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @param string|Column $column
+     * @return RecordValue
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -353,16 +353,16 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     }
 
     /**
-     * @param string|DbTableColumn $columnName
+     * @param string|Column $columnName
      * @param null $format
      * @return mixed
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     public function getValue($columnName, $format = null) {
-        $column = $columnName instanceof DbTableColumn ? $columnName : static::getColumn($columnName);
+        $column = $columnName instanceof Column ? $columnName : static::getColumn($columnName);
         return call_user_func($column->getValueGetter(), $this->getValueObject($column), $format);
     }
 
@@ -370,7 +370,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param string $columnName
      * @return mixed
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -382,7 +382,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param string $columnName
      * @return bool
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -394,7 +394,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param string $columnName
      * @return bool
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -404,32 +404,32 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
 
     /**
      * Check if there is a value for $columnName
-     * @param string|DbTableColumn $columnName
+     * @param string|Column $columnName
      * @param bool $trueIfThereIsDefaultValue - true: returns true if there is no value set but column has default value
      * @return bool
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      */
     public function hasValue($columnName, $trueIfThereIsDefaultValue = false) {
         return $this->_hasValue($this->getValueObject($columnName), $trueIfThereIsDefaultValue);
     }
 
     /**
-     * @param DbRecordValue $value
+     * @param RecordValue $value
      * @param bool $trueIfThereIsDefaultValue - true: returns true if there is no value set but column has default value
      * @return mixed
      */
-    protected function _hasValue(DbRecordValue $value, $trueIfThereIsDefaultValue = false) {
+    protected function _hasValue(RecordValue $value, $trueIfThereIsDefaultValue = false) {
         return call_user_func($value->getColumn()->getValueExistenceChecker(), $value, $trueIfThereIsDefaultValue);
     }
 
     /**
-     * @param string|DbTableColumn $column
+     * @param string|Column $column
      * @return bool
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -438,14 +438,14 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     }
 
     /**
-     * @param string|DbTableColumn $columnName
+     * @param string|Column $columnName
      * @param mixed $value
      * @param boolean $isFromDb
      * @return $this
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      */
@@ -457,7 +457,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
         if ($this->isCollectingUpdates && $isFromDb) {
             throw new \BadMethodCallException("It is forbidden to set value with \$isFromDb === true after begin()");
         }
-        $column = $columnName instanceof DbTableColumn ? $columnName : static::getColumn($columnName);
+        $column = $columnName instanceof Column ? $columnName : static::getColumn($columnName);
         if ($column->isItPrimaryKey()) {
             if ($value === null) {
                 return $this->unsetPrimaryKeyValue();
@@ -497,7 +497,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     /**
      * @param string $columnName
      * @return $this
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
@@ -518,7 +518,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * Unset primary key value
      * @return $this
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -532,7 +532,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param string|int|float $prevPkValue
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      */
     protected function onPrimaryKeyChangeForRecordReceivedFromDb($prevPkValue) {
@@ -547,7 +547,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
 
     /**
      * @return mixed
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -558,7 +558,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
 
     /**
      * @return bool
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -573,7 +573,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @return bool
      * @throws \UnexpectedValueException
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -588,7 +588,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
 
     /**
      * Check if current Record exists in DB using DB query
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -603,25 +603,25 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
 
     /**
      * @param string $relationName
-     * @param array|DbRecord|DbRecordsArray $relatedRecord
+     * @param array|Record|RecordsArray $relatedRecord
      * @param bool|null $isFromDb - true: marks values as loaded from DB | null: autodetect
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PDOException
      */
     public function updateRelatedRecord($relationName, $relatedRecord, $isFromDb = null, $haltOnUnknownColumnNames = true) {
         $relation = static::getRelation($relationName);
         $relationTable = $relation->getForeignTable();
-        if ($relation->getType() === DbTableRelation::HAS_MANY) {
+        if ($relation->getType() === Relation::HAS_MANY) {
             if (is_array($relatedRecord)) {
-                $relatedRecord = DbRecordsSet::createFromArray($relationTable, $relatedRecord, $isFromDb);
-            } else if (!($relatedRecord instanceof DbRecordsArray)) {
+                $relatedRecord = RecordsSet::createFromArray($relationTable, $relatedRecord, $isFromDb);
+            } else if (!($relatedRecord instanceof RecordsArray)) {
                 throw new \InvalidArgumentException(
-                    '$relatedRecord argument for HAS MANY relation must be array or instance of ' . DbRecordsArray::class
+                    '$relatedRecord argument for HAS MANY relation must be array or instance of ' . RecordsArray::class
                 );
             }
         } else if (is_array($relatedRecord)) {
@@ -636,15 +636,15 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
             } else {
                 $relatedRecord = $relationTable->newRecord();
             }
-        } else if ($relatedRecord instanceof DbRecord) {
+        } else if ($relatedRecord instanceof Record) {
             if ($relatedRecord::getTable()->getName() !== $relationTable) {
                 throw new \InvalidArgumentException(
-                    "\$relatedRecord argument must be an instance of DbRecord class for the '{$relationTable->getName()}' DB table"
+                    "\$relatedRecord argument must be an instance of Record class for the '{$relationTable->getName()}' DB table"
                 );
             }
         } else {
             throw new \InvalidArgumentException(
-                "\$relatedRecord argument must be an array or instance of DbRecord class for the '{$relationTable->getName()}' DB table"
+                "\$relatedRecord argument must be an array or instance of Record class for the '{$relationTable->getName()}' DB table"
             );
         }
         $this->relatedRecords[$relationName] = $relatedRecord;
@@ -655,7 +655,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param string $name
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      */
     public function unsetRelatedRecord($name) {
@@ -667,10 +667,10 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * Get existing related object(s) or read them
      * @param string $relationName
      * @param bool $loadIfNotSet - true: read relation data if it is not set
-     * @return DbRecord|DbRecordsSet
+     * @return Record|RecordsSet
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -693,8 +693,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param string $relationName
      * @return $this
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -706,7 +706,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
             [$relation->getForeignColumnName() => $this->getValue($relation->getLocalColumnName())],
             $relation->getAdditionalJoinConditions()
         );
-        if ($relation->getType() === DbTableRelation::HAS_MANY) {
+        if ($relation->getType() === Relation::HAS_MANY) {
             $this->relatedRecords[$relationName] = $relatedTable->select('*', $conditions, function (OrmSelect $select) use ($relatedTable) {
                 $select->orderBy($relatedTable->getPkColumnName(), true);
             });
@@ -724,7 +724,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * Check if related object(s) are stored in this Record
      * @param string $relationName
      * @return bool
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -742,8 +742,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param bool $haltOnUnknownColumnNames - exception will be thrown if there are unknown column names in $data
      * @return $this
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -760,8 +760,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param array $data
      * @return $this
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -776,8 +776,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param array $columns - empty: get all columns
      * @param array $readRelatedRecords - also read related records
      * @return $this
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \UnexpectedValueException
@@ -795,8 +795,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param array $columns - empty: get all columns
      * @param array $readRelatedRecords - also read related records
      * @return $this
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \UnexpectedValueException
      * @throws \PDOException
@@ -811,11 +811,11 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
         }
         $columnsFromRelations = [];
         $hasManyRelations = [];
-        /** @var DbTableRelation[] $relations */
+        /** @var Relation[] $relations */
         $relations = [];
         foreach ($readRelatedRecords as $relationName) {
             $relations[$relationName] = static::getRelation($relationName);
-            if (static::getRelation($relationName)->getType() === DbTableRelation::HAS_MANY) {
+            if (static::getRelation($relationName)->getType() === Relation::HAS_MANY) {
                 $hasManyRelations[] = $relationName;
             } else {
                 $columnsFromRelations[$relationName] = '*';
@@ -853,14 +853,14 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param array $columns - columns to read
      * @param array $readRelatedRecords - also read related records
      * @return $this
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \PeskyORM\ORM\Exception\RecordNotFoundException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\RecordNotFoundException
      * @throws \UnexpectedValueException
      * @throws \PDOException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      */
     public function reload(array $columns = [], array $readRelatedRecords = []) {
         if (!$this->existsInDb()) {
@@ -873,8 +873,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * Read values for specific columns
      * @param array $columns - columns to read
      * @return $this
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \PDOException
      * @throws \BadMethodCallException
@@ -906,8 +906,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
      * @return $this
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -948,8 +948,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
      * @return $this
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -965,11 +965,11 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * - commit() and rollback() will throw exception if used without begin()
      * - save() will throw exception if used after begin()
      * @return $this
-     * @throws \PeskyORM\ORM\Exception\RecordNotFoundException
+     * @throws \PeskyORM\Exception\RecordNotFoundException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      */
     public function begin() {
@@ -1006,11 +1006,11 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * Save values changed since begin() to DB
      * @return $this
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\InvalidTableColumnConfigException
-     * @throws \PeskyORM\Core\DbException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidTableColumnConfigException
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -1029,7 +1029,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     /**
      * Get names of all columns that can be saved to db
      * @return array
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -1048,7 +1048,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * Get names of all columns that should automatically update values on each save
      * Note: throws exception if used without begin()
      * @return array
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -1069,11 +1069,11 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param array $relationsToSave
      * @return $this
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\InvalidTableColumnConfigException
-     * @throws \PeskyORM\Core\DbException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidTableColumnConfigException
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -1095,10 +1095,10 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @throws \InvalidArgumentException
      * @throws \PDOException
      * @throws \BadMethodCallException
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \PeskyORM\Core\DbException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \PeskyORM\ORM\Exception\InvalidTableColumnConfigException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\InvalidTableColumnConfigException
      * @throws \UnexpectedValueException
      */
     protected function saveToDb(array $columnsToSave = []) {
@@ -1177,7 +1177,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param bool $isUpdate
      * @return array
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws InvalidDataException
@@ -1219,7 +1219,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param $isUpdate
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      */
     protected function runColumnSavingExtenders(array $columnsToSave, array $dataSavedToDb, array $updatesReceivedFromDb, $isUpdate) {
@@ -1259,17 +1259,17 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
 
     /**
      * Validate a value
-     * @param string|DbTableColumn $column
+     * @param string|Column $column
      * @param mixed $value
      * @param bool $isFromDb
      * @return array - errors
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      */
     static public function validateValue($column, $value, $isFromDb = false) {
-        if (!($column instanceof DbTableColumn)) {
+        if (!($column instanceof Column)) {
             $column = static::getColumn($column);
         }
         return $column->validateValue($value, $isFromDb);
@@ -1281,7 +1281,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param array $columnsNames - column names to validate. If col
      * @param bool $isUpdate
      * @return array
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -1314,11 +1314,11 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param array $relationsToSave
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
-     * @throws \PeskyORM\ORM\Exception\InvalidTableColumnConfigException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\InvalidTableColumnConfigException
+     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \PeskyORM\Core\DbException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\DbException
      * @throws \UnexpectedValueException
      */
     public function saveRelations(array $relationsToSave = []) {
@@ -1373,7 +1373,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param bool $deleteFiles - true: delete all attached files | false: do not delete attached files
      * @return $this
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -1445,11 +1445,11 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param bool $withFilesInfo - true: add info about files attached to a record (url, path, file_name, full_file_name, ext)
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      */
     public function toArray(
         array $columnsNames = [],
@@ -1479,12 +1479,12 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
                 );
             }
             $relatedRecord = $this->getRelatedRecord($relatedRecordName, $loadRelatedRecordsIfNotSet);
-            if ($relatedRecord instanceof DbRecord) {
+            if ($relatedRecord instanceof Record) {
                 $data[$relatedRecordName] = $withFilesInfo
                     ? $relatedRecord->toArray($relatedRecordColumns)
                     : $relatedRecord->toArrayWithoutFiles($relatedRecordColumns);
             } else {
-                /** @var DbRecordsSet $relatedRecord*/
+                /** @var RecordsSet $relatedRecord*/
                 $relatedRecord->enableDbRecordInstanceReuseDuringIteration();
                 $data[$relatedRecordName] = [];
                 foreach ($relatedRecord as $relRecord) {
@@ -1505,7 +1505,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @return mixed
      * @throws \PDOException
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -1543,11 +1543,11 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param bool $loadRelatedRecordsIfNotSet - true: read required missing related objects from DB
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      */
     public function toArrayWithoutFiles(
         array $columnsNames = [],
@@ -1564,7 +1564,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param bool $ignoreColumnsThatDoNotExistInDB - true: if column does not exist in DB - its value will not be returned
      * @param bool $nullifyDbExprValues - true: if default value is DbExpr - replace it by null
      * @return array
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -1592,7 +1592,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * Return the current element
      * @return mixed
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -1615,7 +1615,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     /**
      * Return the key of the current element
      * @return mixed scalar on success, or null on failure.
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -1631,7 +1631,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     /**
      * Checks if current position is valid
      * @return boolean
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -1650,7 +1650,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     /**
      * @param string $key - column name or relation name
      * @return boolean - true on success or false on failure.
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -1670,8 +1670,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param mixed $key - column name, column name with format (ex: created_at_as_date) or relation name
      * @return mixed
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -1694,8 +1694,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PDOException
      */
     public function offsetSet($key, $value) {
@@ -1708,10 +1708,10 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
 
     /**
      * @param string $key
-     * @return DbRecord
+     * @return Record
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      */
     public function offsetUnset($key) {
@@ -1726,8 +1726,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param $name - column name, column name with format (ex: created_at_as_date) or relation name
      * @return mixed
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -1742,8 +1742,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PDOException
      */
     public function __set($name, $value) {
@@ -1753,7 +1753,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
     /**
      * @param $name - column name or relation name
      * @return bool
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -1766,7 +1766,7 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param string $name - column name or relation name
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      */
     public function __unset($name) {
@@ -1779,8 +1779,8 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
      * @param array $arguments - 1 required, 2 accepted. 1st - value, 2nd - $isFromDb
      * @return $this
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -1809,12 +1809,12 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
                 )
                 || (
                     is_object($value)
-                    && !($value instanceof DbRecord)
-                    && !($value instanceof DbRecordsSet)
+                    && !($value instanceof Record)
+                    && !($value instanceof RecordsSet)
                 )
             ) {
                 throw new \InvalidArgumentException(
-                    "1st argument for magic method '{$name}(\$value, \$isFromDb = false)' must be an array or instance of DbRecord class or DbRecordsSet class"
+                    "1st argument for magic method '{$name}(\$value, \$isFromDb = false)' must be an array or instance of Record class or RecordsSet class"
                 );
             }
             $isFromDb = array_key_exists(1, $arguments) ? (bool)$arguments[1] : null;
@@ -1832,6 +1832,42 @@ abstract class DbRecord implements DbRecordInterface, \ArrayAccess, \Iterator {
             $this->updateValue($columnName, $value, $isFromDb);
         }
         return $this;
+    }
+
+    /**
+     * String representation of object
+     * Note: it does not save relations to prevent infinite loops
+     * @link http://php.net/manual/en/serializable.serialize.php
+     * @return string the string representation of the object or null
+     * @since 5.1.0
+     */
+    public function serialize() {
+        $data = [];
+        foreach ($this->values as $name => $value) {
+            $data[$name] = $value->serialize();
+        }
+        return json_encode($data);
+    }
+
+    /**
+     * Constructs the object
+     * @link http://php.net/manual/en/serializable.unserialize.php
+     * @param string $serialized <p>
+     * The string representation of the object.
+     * </p>
+     * @return void
+     * @throws \InvalidArgumentException
+     * @since 5.1.0
+     */
+    public function unserialize($serialized) {
+        $data = json_decode($serialized, true);
+        if (!is_array($data)) {
+            throw new \InvalidArgumentException('$serialized argument must be a json-encoded array');
+        }
+        /** @var array $data */
+        foreach ($data as $name => $value) {
+            $this->values[$name]->unserialize($value);
+        }
     }
 
 }

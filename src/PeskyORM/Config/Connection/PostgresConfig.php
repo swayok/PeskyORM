@@ -151,4 +151,11 @@ class PostgresConfig implements DbConnectionConfigInterface {
     public function getOptions() {
         return $this->options;
     }
+
+    /**
+     * @return null
+     */
+    public function getCharset() {
+        return null;
+    }
 }

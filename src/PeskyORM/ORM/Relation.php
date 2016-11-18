@@ -2,17 +2,17 @@
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\DbJoinConfig;
+use PeskyORM\Core\JoinInfo;
 
-class DbTableRelation {
+class Relation {
 
     const HAS_ONE = 'has_one';
     const HAS_MANY = 'has_many';
     const BELONGS_TO = 'belongs_to';
 
-    const JOIN_LEFT = DbJoinConfig::JOIN_LEFT;
-    const JOIN_RIGHT = DbJoinConfig::JOIN_RIGHT;
-    const JOIN_INNER = DbJoinConfig::JOIN_INNER;
+    const JOIN_LEFT = JoinInfo::JOIN_LEFT;
+    const JOIN_RIGHT = JoinInfo::JOIN_RIGHT;
+    const JOIN_INNER = JoinInfo::JOIN_INNER;
 
     /** @var string */
     protected $name;
@@ -24,7 +24,7 @@ class DbTableRelation {
     /** @var string */
     protected $localColumnName;
 
-    /** @var DbTableInterface */
+    /** @var TableInterface */
     protected $foreignTable;
     /** @var string */
     protected $foreignTableClass;
@@ -44,7 +44,7 @@ class DbTableRelation {
      * @param string $foreignColumnName
      * @return static
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -64,7 +64,7 @@ class DbTableRelation {
      * @param string $foreignColumnName
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      */
     public function __construct(
@@ -98,10 +98,10 @@ class DbTableRelation {
     public function setName($name) {
         if ($this->hasName()) {
             throw new \BadMethodCallException('Relation name alteration is forbidden');
-        } else if (!preg_match(DbJoinConfig::NAME_VALIDATION_REGEXP, $name)) {
+        } else if (!preg_match(JoinInfo::NAME_VALIDATION_REGEXP, $name)) {
             throw new \InvalidArgumentException(
                 "\$name argument contains invalid value: '$name'. Pattern: "
-                    . DbJoinConfig::NAME_VALIDATION_REGEXP . '. Example: CamelCase1'
+                    . JoinInfo::NAME_VALIDATION_REGEXP . '. Example: CamelCase1'
             );
         }
         $this->name = $name;
@@ -174,7 +174,7 @@ class DbTableRelation {
      * @param string $foreignTableClass
      * @return $this
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -188,13 +188,13 @@ class DbTableRelation {
             );
         }
         $this->foreignTableClass = $foreignTableClass;
-        /** @var DbTableInterface $foreignTableClass */
+        /** @var TableInterface $foreignTableClass */
         $this->foreignTable = $foreignTableClass::getInstance();
         return $this;
     }
 
     /**
-     * @return DbTableInterface
+     * @return TableInterface
      * @throws \BadMethodCallException
      */
     public function getForeignTable() {
@@ -295,17 +295,17 @@ class DbTableRelation {
     }
 
     /**
-     * Convert to OrmJoinConfig
-     * @param DbTableInterface $localTable
+     * Convert to OrmJoinInfo
+     * @param TableInterface $localTable
      * @param string|null $localTableAlias
      * @param string|null $joinName
-     * @return OrmJoinConfig
+     * @return OrmJoinInfo
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      */
-    public function toOrmJoinConfig(DbTableInterface $localTable, $localTableAlias = null, $joinName = null) {
-        return OrmJoinConfig::create($joinName ?: $this->getName())
+    public function toOrmJoinConfig(TableInterface $localTable, $localTableAlias = null, $joinName = null) {
+        return OrmJoinInfo::create($joinName ?: $this->getName())
             ->setConfigForLocalTable($localTable, $this->getLocalColumnName())
             ->setConfigForForeignTable($this->getForeignTable(), $this->getForeignColumnName())
             ->setJoinType($this->getJoinType())

@@ -1,40 +1,33 @@
 <?php
 
-use PeskyORM\Adapter\Postgres;
-use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
+use PeskyORMTest\TestingApp;
 
 class PostgresAdapterDeleteTest extends \PHPUnit_Framework_TestCase {
 
-    /** @var PostgresConfig */
-    static protected $dbConnectionConfig;
-
     static public function setUpBeforeClass() {
-        $data = include __DIR__ . '/../configs/global.php';
-        static::$dbConnectionConfig = PostgresConfig::fromArray($data['pgsql']);
-        static::cleanTables();
+        TestingApp::clearTables(static::getValidAdapter());
     }
 
     static public function tearDownAfterClass() {
-        static::cleanTables();
-        static::$dbConnectionConfig = null;
+        TestingApp::clearTables(static::getValidAdapter());
     }
 
-    static protected function cleanTables() {
-        $adapter = static::getValidAdapter();
-        $adapter->exec('TRUNCATE TABLE settings');
-        $adapter->exec('TRUNCATE TABLE admins');
-    }
-
+    /**
+     * @return \PeskyORM\Adapter\Postgres
+     */
     static protected function getValidAdapter() {
-        $adapter = new Postgres(static::$dbConnectionConfig);
+        $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
 
+    protected function setUp() {
+        TestingApp::clearTables(static::getValidAdapter());
+    }
+
     public function testDelete() {
-        static::cleanTables();
         $adapter = static::getValidAdapter();
         $testData1 = [
             ['key' => 'test_key1', 'value' => json_encode('test_value1')],
@@ -61,7 +54,6 @@ class PostgresAdapterDeleteTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testDeleteReturning() {
-        static::cleanTables();
         $adapter = static::getValidAdapter();
         $testData1 = [
             ['key' => 'test_key1', 'value' => json_encode('test_value1')],

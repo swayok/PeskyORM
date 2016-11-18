@@ -2,7 +2,9 @@
 
 namespace PeskyORM\Core;
 
-class DbTableColumnDescription implements \Serializable {
+use PeskyORM\ORM\Column;
+
+class ColumnDescription implements \Serializable {
 
     const NOT_SET = '___NOT_SET__';
 
@@ -21,11 +23,7 @@ class DbTableColumnDescription implements \Serializable {
     /**
      * @var integer
      */
-    protected $charLimit;
-    /**
-     * @var integer
-     */
-    protected $numberLimit;
+    protected $limit;
     /**
      * @var integer
      */
@@ -84,51 +82,30 @@ class DbTableColumnDescription implements \Serializable {
     }
 
     /**
-     * @return int
-     */
-    public function getCharLimit() {
-        return $this->charLimit;
-    }
-
-    /**
-     * @param int $charLimit
+     * @param int|null $limit
+     * @param int|null $numberPrecision
      * @return $this
      */
-    public function setCharLimit($charLimit) {
-        $this->charLimit = (int)$charLimit;
+    public function setLimitAndPrecision($limit, $numberPrecision = null) {
+        $this->limit = $limit ? (int)$limit : null;
+        if ($this->getOrmType() === Column::TYPE_FLOAT) {
+            $this->numberPrecision = $numberPrecision ? (int)$numberPrecision : null;
+        }
         return $this;
     }
 
     /**
-     * @return int
+     * @return int|null
      */
-    public function getNumberLimit() {
-        return $this->numberLimit;
+    public function getLimit() {
+        return $this->limit;
     }
 
     /**
-     * @param int $numberLimit
-     * @return $this
-     */
-    public function setNumberLimit($numberLimit) {
-        $this->numberLimit = (int)$numberLimit;
-        return $this;
-    }
-
-    /**
-     * @return int
+     * @return int|null
      */
     public function getNumberPrecision() {
         return $this->numberPrecision;
-    }
-
-    /**
-     * @param int $numberPrecision
-     * @return $this
-     */
-    public function setNumberPrecision($numberPrecision) {
-        $this->numberPrecision = (int)$numberPrecision;
-        return $this;
     }
 
     /**

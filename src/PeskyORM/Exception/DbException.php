@@ -1,6 +1,6 @@
 <?php
 
-namespace PeskyORM\Core;
+namespace PeskyORM\Exception;
 
 class DbException extends \PDOException {
 

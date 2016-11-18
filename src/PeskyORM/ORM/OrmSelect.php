@@ -3,17 +3,17 @@
 namespace PeskyORM\ORM;
 
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\DbSelect;
+use PeskyORM\Core\Select;
 use PeskyORM\Core\Utils;
 
-class OrmSelect extends DbSelect {
+class OrmSelect extends Select {
 
     /**
-     * @var DbTableInterface
+     * @var TableInterface
      */
     protected $table;
     /**
-     * @var DbTableStructure
+     * @var TableStructure
      */
     protected $tableStructure;
     /**
@@ -34,33 +34,33 @@ class OrmSelect extends DbSelect {
     protected $joinsAddedByRelations = [];
 
     /**
-     * @param DbTableInterface $table
+     * @param TableInterface $table
      * @return static
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    static public function from(DbTableInterface $table) {
+    static public function from(TableInterface $table) {
         return new static($table);
     }
 
     /**
-     * @param DbTableInterface $table - table name or DbTable object
+     * @param TableInterface $table - table name or Table object
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      */
-    public function __construct(DbTableInterface $table) {
+    public function __construct(TableInterface $table) {
         $this->setTable($table);
         parent::__construct($table::getName(), $table::getConnection());
     }
 
     /**
-     * @return DbRecord
-     * @throws \PeskyORM\ORM\Exception\InvalidDataException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @return Record
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \PDOException
      * @throws \BadMethodCallException
@@ -71,26 +71,26 @@ class OrmSelect extends DbSelect {
     }
 
     /**
-     * @return DbTableInterface
+     * @return TableInterface
      */
     public function getTable() {
         return $this->table;
     }
 
     /**
-     * @return DbTableStructure
+     * @return TableStructure
      */
     public function getTableStructure() {
         return $this->tableStructure;
     }
 
     /**
-     * @param OrmJoinConfig $joinConfig
+     * @param OrmJoinInfo $joinConfig
      * @param bool $append
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function join(OrmJoinConfig $joinConfig, $append = true) {
+    public function join(OrmJoinInfo $joinConfig, $append = true) {
         parent::join($joinConfig, $append);
         return $this;
     }
@@ -98,13 +98,13 @@ class OrmSelect extends DbSelect {
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
 
     /**
-     * @param DbTableInterface $table
+     * @param TableInterface $table
      * @throws \BadMethodCallException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      */
-    protected function setTable(DbTableInterface $table) {
+    protected function setTable(TableInterface $table) {
         $this->table = $table;
         $this->tableStructure = $table::getStructure();
     }
@@ -199,7 +199,7 @@ class OrmSelect extends DbSelect {
 
     /**
      * @param string $joinName
-     * @return OrmJoinConfig
+     * @return OrmJoinInfo
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -240,7 +240,7 @@ class OrmSelect extends DbSelect {
             $parentJoinName = $this->joinedRelationsParents[$joinName];
             if ($parentJoinName === null) {
                 // join on base table
-                if ($this->getTableStructure()->getRelation($relationName)->getType() === DbTableRelation::HAS_MANY) {
+                if ($this->getTableStructure()->getRelation($relationName)->getType() === Relation::HAS_MANY) {
                     throw new \UnexpectedValueException(
                         "Relation '{$relationName}' has type 'HAS MANY' and should not be used as JOIN (not optimal). "
                             . 'Select that records outside of OrmSelect.'
@@ -252,7 +252,7 @@ class OrmSelect extends DbSelect {
                 $this->addJoinFromRelation($parentJoinName);
                 $parentJoin = $this->getJoin($parentJoinName);
                 $foreignTable = $parentJoin->getForeignDbTable();
-                if ($foreignTable->getTableStructure()->getRelation($relationName)->getType() === DbTableRelation::HAS_MANY) {
+                if ($foreignTable->getTableStructure()->getRelation($relationName)->getType() === Relation::HAS_MANY) {
                     throw new \UnexpectedValueException(
                         "Relation '{$relationName}' has type 'HAS MANY' and should not be used as JOIN (not optimal). "
                             . 'Select that records outside of OrmSelect.'

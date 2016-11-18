@@ -2,9 +2,9 @@
 
 namespace PeskyORMTest\TestingAdmins;
 
-use PeskyORMTest\TestingBaseDbTable;
+use PeskyORMTest\TestingBaseTable;
 
-class TestingAdmins3Table extends TestingBaseDbTable  {
+class TestingAdmins3Table extends TestingBaseTable  {
 
     public function getTableStructure() {
         return TestingAdmins3TableStructure::getInstance();

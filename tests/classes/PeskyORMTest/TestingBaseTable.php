@@ -2,11 +2,11 @@
 
 namespace PeskyORMTest;
 
-use PeskyORM\ORM\DbTable;
-use PeskyORM\ORM\DbTableStructure;
+use PeskyORM\ORM\Table;
+use PeskyORM\ORM\TableStructure;
 use Swayok\Utils\StringUtils;
 
-abstract class TestingBaseDbTable extends DbTable {
+abstract class TestingBaseTable extends Table {
 
     /** @var null|string */
     protected $recordClass = null;
@@ -21,7 +21,7 @@ abstract class TestingBaseDbTable extends DbTable {
     }
 
     public function getTableStructure() {
-        /** @var DbTableStructure $class */
+        /** @var TableStructure $class */
         $class = get_called_class() . 'Structure';
         return $class::getInstance();
     }

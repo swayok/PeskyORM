@@ -2,10 +2,10 @@
 
 namespace PeskyORMTest\TestingInvalidClasses;
 
-use PeskyORM\ORM\DbTableColumn;
-use PeskyORM\ORM\DbTableStructure;
+use PeskyORM\ORM\Column;
+use PeskyORM\ORM\TableStructure;
 
-class TestingNoPkColumnInTableStructure extends DbTableStructure {
+class TestingNoPkColumnInTableStructure extends TableStructure {
 
     /**
      * @return string
@@ -15,6 +15,6 @@ class TestingNoPkColumnInTableStructure extends DbTableStructure {
     }
 
     private function not_a_pk() {
-        return DbTableColumn::create(DbTableColumn::TYPE_INT);
+        return Column::create(Column::TYPE_INT);
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace PeskyORM\ORM\Exception;
+namespace PeskyORM\Exception;
 
 use Exception;
 

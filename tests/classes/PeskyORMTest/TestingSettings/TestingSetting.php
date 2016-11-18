@@ -2,9 +2,9 @@
 
 namespace PeskyORMTest\TestingSettings;
 
-use PeskyORM\ORM\DbRecord;
+use PeskyORM\ORM\Record;
 
-class TestingSetting extends DbRecord {
+class TestingSetting extends Record {
 
     /**
      * @return TestingSettingsTable

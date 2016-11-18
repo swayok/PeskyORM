@@ -4,7 +4,7 @@ namespace PeskyORM\Core;
 
 use Swayok\Utils\StringUtils;
 
-class DbJoinConfig {
+class JoinInfo {
 
     const JOIN_LEFT = 'left';
     const JOIN_RIGHT = 'right';
@@ -59,7 +59,7 @@ class DbJoinConfig {
      * @param string $joinType
      * @param string $foreignTableName
      * @param string $foreignColumn
-     * @return DbJoinConfig
+     * @return JoinInfo
      * @throws \InvalidArgumentException
      */
     static public function construct($joinName, $tableName, $column, $joinType, $foreignTableName, $foreignColumn) {

@@ -5,7 +5,7 @@ namespace PeskyORM\ORM;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 
-interface DbTableInterface {
+interface TableInterface {
 
     /**
      * Table Name
@@ -26,19 +26,19 @@ interface DbTableInterface {
     static public function getConnection();
 
     /**
-     * @return DbTableInterface
+     * @return TableInterface
      */
     static public function getInstance();
 
     /**
      * Table schema description
-     * @return DbTableStructure
+     * @return TableStructure
      */
     static public function getStructure();
 
     /**
      * Table schema description
-     * @return DbTableStructure
+     * @return TableStructure
      */
     public function getTableStructure();
 
@@ -46,7 +46,7 @@ interface DbTableInterface {
      * @param string $relationName
      * @param string|null $alterLocalTableAlias - alter this table's alias in join config
      * @param string|null $joinName - string: specific join name; null: $relationName is used
-     * @return OrmJoinConfig
+     * @return OrmJoinInfo
      */
     static public function getJoinConfigForRelation($relationName, $alterLocalTableAlias = null, $joinName = null);
 
@@ -56,7 +56,7 @@ interface DbTableInterface {
     static public function hasPkColumn();
 
     /**
-     * @return DbTableColumn
+     * @return Column
      */
     static public function getPkColumn();
 
@@ -66,7 +66,7 @@ interface DbTableInterface {
     static public function getPkColumnName();
 
     /**
-     * @return DbRecord
+     * @return Record
      */
     public function newRecord();
 
@@ -79,7 +79,7 @@ interface DbTableInterface {
      * @param string|array $columns
      * @param array $conditions
      * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return DbRecordsSet
+     * @return RecordsSet
      * @throws \InvalidArgumentException
      */
     static public function select($columns = '*', array $conditions = [], \Closure $configurator = null);
@@ -114,7 +114,7 @@ interface DbTableInterface {
     static public function selectOne($columns, array $conditions, \Closure $configurator = null);
 
     /**
-     * Get 1 record from DB as DbRecord
+     * Get 1 record from DB as Record
      * @param string|array $columns
      * @param array $conditions
      * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}

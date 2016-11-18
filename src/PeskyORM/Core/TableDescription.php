@@ -2,7 +2,7 @@
 
 namespace PeskyORM\Core;
 
-class DbTableDescription implements \Serializable {
+class TableDescription implements \Serializable {
 
     /**
      * Name of DB schema that contains this table (PostgreSQL)
@@ -14,13 +14,9 @@ class DbTableDescription implements \Serializable {
      */
     protected $name;
     /**
-     * @var DbTableColumnDescription[]
+     * @var ColumnDescription[]
      */
     protected $columns = [];
-    /**
-     * @var DbJoinConfig[]
-     */
-    protected $foreignKeys = [];
 
     /**
      * @param string $tableName
@@ -32,30 +28,14 @@ class DbTableDescription implements \Serializable {
     }
 
     /**
-     * @param DbTableColumnDescription $columnDescription
+     * @param ColumnDescription $columnDescription
      * @throws \UnexpectedValueException
      */
-    public function addColumn(DbTableColumnDescription $columnDescription) {
+    public function addColumn(ColumnDescription $columnDescription) {
         if (array_key_exists($columnDescription->getName(), $this->columns)) {
             throw new \UnexpectedValueException("Table description already has description for column '{$columnDescription->getName()}'");
         }
         $this->columns[$columnDescription->getName()] = $columnDescription;
-    }
-
-    /**
-     * @param $columnName
-     * @param DbTableForeignKeyDescription $foreignKeyDescription
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
-     */
-    public function addForeignKeyForColumn($columnName, DbTableForeignKeyDescription $foreignKeyDescription) {
-        if (!array_key_exists($columnName, $this->columns)) {
-            throw new \InvalidArgumentException("Table has no column '{$columnName}'");
-        }
-        if (array_key_exists($columnName, $this->foreignKeys)) {
-            throw new \UnexpectedValueException("Column {$columnName} already has a foreign key");
-        }
-        $this->foreignKeys[$columnName] = $foreignKeyDescription;
     }
 
     /**
@@ -73,14 +53,14 @@ class DbTableDescription implements \Serializable {
     }
 
     /**
-     * @return DbTableColumnDescription[]
+     * @return ColumnDescription[]
      */
     public function getColumns() {
         return $this->columns;
     }
 
     /**
-     * @return DbTableColumnDescription
+     * @return ColumnDescription
      * @throws \InvalidArgumentException
      */
     public function getColumn($name) {
@@ -88,13 +68,6 @@ class DbTableDescription implements \Serializable {
             throw new \InvalidArgumentException("Column '{$name}' does not exist");
         }
         return $this->columns[$name];
-    }
-
-    /**
-     * @return DbJoinConfig[]
-     */
-    public function getForeignKeys() {
-        return $this->foreignKeys;
     }
 
     /**
@@ -112,9 +85,6 @@ class DbTableDescription implements \Serializable {
         ];
         foreach ($this->getColumns() as $columnName => $columnDescription) {
             $data['columns'][$columnName] = serialize($columnDescription);
-        }
-        foreach ($this->getForeignKeys() as $relationName => $relationDescription) {
-            $data['relations'][$relationName] = serialize($relationDescription);
         }
         return json_encode($data);
     }
@@ -139,9 +109,6 @@ class DbTableDescription implements \Serializable {
         }
         foreach ($this->columns as $columnName => $serializedForeignKey) {
             $this->columns[$columnName] = unserialize($serializedForeignKey);
-        }
-        foreach ($this->foreignKeys as $columnName => $serializedForeignKey) {
-            $this->foreignKeys[$columnName] = unserialize($serializedForeignKey);
         }
     }
 }

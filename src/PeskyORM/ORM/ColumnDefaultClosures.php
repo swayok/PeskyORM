@@ -2,20 +2,20 @@
 
 namespace PeskyORM\ORM;
 
-class DbTableColumnDefaultClosures {
+class ColumnDefaultClosures {
 
     /**
      * @param mixed $newValue
      * @param boolean $isFromDb
-     * @param DbRecordValue $valueContainer
-     * @return DbRecordValue
+     * @param RecordValue $valueContainer
+     * @return RecordValue
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    static public function valueSetter($newValue, $isFromDb, DbRecordValue $valueContainer) {
+    static public function valueSetter($newValue, $isFromDb, RecordValue $valueContainer) {
         $column = $valueContainer->getColumn();
         if (!$isFromDb && !$column->isValueCanBeSetOrChanged()) {
             throw new \BadMethodCallException(
@@ -55,12 +55,12 @@ class DbTableColumnDefaultClosures {
 
     /**
      * Uses $column->convertsEmptyValueToNull(), $column->mustTrimValue() and $column->mustLowercaseValue()
-     * @param DbTableColumn $column
+     * @param Column $column
      * @param mixed $value
      * @param bool $isFromDb
      * @return mixed
      */
-    static public function valuePreprocessor($value, $isFromDb, DbTableColumn $column) {
+    static public function valuePreprocessor($value, $isFromDb, Column $column) {
         if (is_string($value)) {
             if ($column->isValueTrimmingRequired()) {
                 $value = trim($value);
@@ -76,16 +76,16 @@ class DbTableColumnDefaultClosures {
     }
 
     /**
-     * @param DbRecordValue $value
+     * @param RecordValue $value
      * @param null|string $format
      * @return mixed
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    static public function valueGetter(DbRecordValue $value, $format = null) {
+    static public function valueGetter(RecordValue $value, $format = null) {
         if ($format !== null) {
             if (!is_string($format) && !is_numeric($format)) {
                 throw new \InvalidArgumentException(
@@ -97,7 +97,7 @@ class DbTableColumnDefaultClosures {
             if (!$column->hasValueFormatter()) {
                 throw new \InvalidArgumentException(
                     "\$format argument is not supported for column '{$value->getColumn()->getName()}'."
-                        . ' You need to provide a value formatter in DbTableColumn.'
+                        . ' You need to provide a value formatter in Column.'
                 );
             } else if (empty($formats) || in_array($format, $formats, true)) {
                 return call_user_func($column->getValueFormatter(), $value, $format);
@@ -113,35 +113,35 @@ class DbTableColumnDefaultClosures {
     }
 
     /**
-     * @param DbRecordValue $value
+     * @param RecordValue $value
      * @param bool $checkDefaultValue
      * @return bool
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      */
-    static public function valueExistenceChecker(DbRecordValue $value, $checkDefaultValue = false) {
+    static public function valueExistenceChecker(RecordValue $value, $checkDefaultValue = false) {
         return $checkDefaultValue ? $value->hasValueOrDefault() : $value->hasValue();
     }
 
     /**
-     * @param DbRecordValue|mixed $value
+     * @param RecordValue|mixed $value
      * @param bool $isFromDb
-     * @param DbTableColumn $column
+     * @param Column $column
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      */
-    static public function valueValidator($value, $isFromDb, DbTableColumn $column) {
-        if ($value instanceof DbRecordValue) {
+    static public function valueValidator($value, $isFromDb, Column $column) {
+        if ($value instanceof RecordValue) {
             $value = $value->getValue();
         }
-        $errors = DbRecordValueHelpers::isValidDbColumnValue(
+        $errors = RecordValueHelpers::isValidDbColumnValue(
             $column,
             $value,
             $column::getValidationErrorsLocalization()
@@ -163,15 +163,15 @@ class DbTableColumnDefaultClosures {
     }
 
     /**
-     * @param DbRecordValue|mixed $value
+     * @param RecordValue|mixed $value
      * @param bool $isFromDb
-     * @param DbTableColumn $column
+     * @param Column $column
      * @return array
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      */
-    static public function valueIsAllowedValidator($value, $isFromDb, DbTableColumn $column) {
-        return DbRecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn(
+    static public function valueIsAllowedValidator($value, $isFromDb, Column $column) {
+        return RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn(
             $column,
             $value,
             $column::getValidationErrorsLocalization()
@@ -181,11 +181,11 @@ class DbTableColumnDefaultClosures {
     /**
      * @param mixed $value
      * @param bool $isFromDb
-     * @param DbTableColumn $column
+     * @param Column $column
      * @return mixed
      */
-    static public function valueNormalizer($value, $isFromDb, DbTableColumn $column) {
-        return DbRecordValueHelpers::normalizeValue($value, $column->getType());
+    static public function valueNormalizer($value, $isFromDb, Column $column) {
+        return RecordValueHelpers::normalizeValue($value, $column->getType());
     }
 
 }

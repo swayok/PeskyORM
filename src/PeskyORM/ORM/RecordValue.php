@@ -4,7 +4,7 @@ namespace PeskyORM\ORM;
 
 use PeskyORM\Core\DbExpr;
 
-class DbRecordValue {
+class RecordValue {
 
     /**
      * @var mixed
@@ -34,28 +34,28 @@ class DbRecordValue {
      */
     protected $customInfo = [];
     /**
-     * @var DbTableColumn
+     * @var Column
      */
     protected $column;
     /**
-     * @var DbRecord
+     * @var Record
      */
     protected $record;
 
     /**
-     * @param DbTableColumn $dbTableColumn
-     * @param DbRecord $record
+     * @param Column $dbTableColumn
+     * @param Record $record
      * @return static
      */
-    static public function create(DbTableColumn $dbTableColumn, DbRecord $record) {
+    static public function create(Column $dbTableColumn, Record $record) {
         return new static($dbTableColumn, $record);
     }
 
     /**
-     * @param DbTableColumn $dbTableColumn
-     * @param DbRecord $record
+     * @param Column $dbTableColumn
+     * @param Record $record
      */
-    public function __construct(DbTableColumn $dbTableColumn, DbRecord $record) {
+    public function __construct(Column $dbTableColumn, Record $record) {
         $this->column = $dbTableColumn;
         $this->record = $record;
     }
@@ -78,14 +78,14 @@ class DbRecordValue {
     }
 
     /**
-     * @return DbTableColumn
+     * @return Column
      */
     public function getColumn() {
         return $this->column;
     }
 
     /**
-     * @return DbRecord
+     * @return Record
      */
     public function getRecord() {
         return $this->record;
@@ -117,7 +117,7 @@ class DbRecordValue {
     /**
      * @return bool
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -155,7 +155,7 @@ class DbRecordValue {
     /**
      * @return boolean
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -210,7 +210,7 @@ class DbRecordValue {
 
     /**
      * @return mixed
-     * @throws \PeskyORM\ORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -274,12 +274,12 @@ class DbRecordValue {
     }
 
     /**
-     * @param DbRecordValue $oldValueObject
+     * @param RecordValue $oldValueObject
      * @return $this
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      */
-    public function setOldValue(DbRecordValue $oldValueObject) {
+    public function setOldValue(RecordValue $oldValueObject) {
         if ($oldValueObject->hasValue()) {
             $this->oldValue = $oldValueObject->getValue();
             $this->oldValueIsFromDb = $oldValueObject->isItFromDb();
@@ -416,4 +416,20 @@ class DbRecordValue {
         return $this;
     }
 
+    /**
+     * Collects all properties. Used by Record::serialize()
+     */
+    public function serialize() {
+        return json_encode(array_diff_key(get_object_vars($this), ['column', 'record']));
+    }
+
+    /**
+     * Sets all properties from $data. Used by Record::unserialize()
+     * @param array $data
+     */
+    public function unserialize(array $data) {
+        foreach ($data as $propertyName => $value) {
+            $this->$propertyName = $value;
+        }
+    }
 }
