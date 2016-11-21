@@ -429,4 +429,35 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
         static::assertTrue($obj->isItAForeignKey());
     }
 
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $class argument must be a string and contain a full name of a calss that implements ColumnClosuresInterface
+     */
+    public function testInvalidSetClosuresClass1() {
+        Column::create(Column::TYPE_STRING)->setClosuresClass(\PeskyORMTest\TestingAdmins\TestingAdmin::class);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $class argument must be a string and contain a full name of a calss that implements ColumnClosuresInterface
+     */
+    public function testInvalidSetClosuresClass2() {
+        Column::create(Column::TYPE_STRING)->setClosuresClass(new \PeskyORM\ORM\DefaultColumnClosures);
+    }
+
+    public function testSetClosuresClass() {
+        $obj = Column::create(Column::TYPE_STRING)->setClosuresClass(\PeskyORM\ORM\DefaultColumnClosures::class);
+        static::assertInstanceOf(\Closure::class, $obj->getValueGetter());
+        static::assertInstanceOf(\Closure::class, $obj->getValueExistenceChecker());
+        static::assertInstanceOf(\Closure::class, $obj->getValueSetter());
+        static::assertInstanceOf(\Closure::class, $obj->getValueValidator());
+        static::assertInstanceOf(\Closure::class, $obj->getValueIsAllowedValidator());
+        static::assertInstanceOf(\Closure::class, $obj->getValueValidatorExtender());
+        static::assertInstanceOf(\Closure::class, $obj->getValueNormalizer());
+        static::assertInstanceOf(\Closure::class, $obj->getValuePreprocessor());
+        static::assertInstanceOf(\Closure::class, $obj->getValueSavingExtender());
+        static::assertInstanceOf(\Closure::class, $obj->getValueDeleteExtender());
+        static::assertEquals([], call_user_func($obj->getValueValidatorExtender(), '1', false, $obj));
+    }
+
 }

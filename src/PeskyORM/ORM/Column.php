@@ -8,7 +8,7 @@ use PeskyORM\Core\DbExpr;
  * $this->valueSetter closure is called and it calls
  * 1. $this->valuePreprocessor closure (result and original value saved to RecordValue object)
  * 2. $this->valueValidator closure (validation errors saved to RecordValue->setRawValue(...))
- * 2.1. $this->valueValidatorExtender closure (if ColumnDefaultClosures::valueValidator() is used and value is still valid)
+ * 2.1. $this->valueValidatorExtender closure (if DefaultColumnClosures::valueValidator() is used and value is still valid)
  * 3. (if value is valid) $this->valueNormalizer closure
  * Valid value saved to RecordValue->setValidValue(....)
  *
@@ -158,6 +158,10 @@ class Column {
      */
     protected $isValueCanBeSetOrChanged = true;
     /**
+     * @var string
+     */
+    protected $defaultClosuresClass = DefaultColumnClosures::class;
+    /**
      * Function to return default column value
      * By default returns: $this->defaultValue
      * @var \Closure
@@ -165,44 +169,44 @@ class Column {
     protected $validDefaultValueGetter = null;
     /**
      * Function to return column value. Useful for virtual columns
-     * By default: ColumnDefaultClosures::valueGetter()
+     * By default: $defaultClosuresClass::valueGetter()
      * @var null|\Closure
      */
     protected $valueGetter = null;
     /**
      * Function to check if column value is set
-     * By default: ColumnDefaultClosures::valueExistenceChecker()
+     * By default: $defaultClosuresClass::valueExistenceChecker()
      * @var null|\Closure
      */
     protected $valueExistenceChecker = null;
     /**
      * Function to set new column value
-     * By default: ColumnDefaultClosures::valueSetter()
+     * By default: $defaultClosuresClass::valueSetter()
      * @var null|\Closure
      */
     protected $valueSetter = null;
     /**
      * Function to preprocess value.
-     * Default: ColumnDefaultClosures::valuePreprocessor() that uses $column->convertEmptyValueToNull,
+     * Default: $defaultClosuresClass::valuePreprocessor() that uses $column->convertEmptyValueToNull,
      *      $column->trimValue, $column->lowercaseValue params to make value more reliable for validation
      * @var null|\Closure
      */
     protected $valuePreprocessor = null;
     /**
      * Function to normalize new validated column value
-     * By default: ColumnDefaultClosures->valueNormalizer()
+     * By default: $defaultClosuresClass->valueNormalizer()
      * @var null|\Closure
      */
     protected $valueNormalizer = null;
     /**
      * Validates column value
-     * By default: ColumnDefaultClosures::valueValidator()
+     * By default: $defaultClosuresClass::valueValidator()
      * @var null|\Closure
      */
     protected $valueValidator = null;
     /**
      * Validates if column value is within $this->allowedValues (if any)
-     * By default: ColumnDefaultClosures::valueIsAllowedValidator()
+     * By default: $defaultClosuresClass::valueIsAllowedValidator()
      * @var null|\Closure
      */
     protected $valueIsAllowedValidator = null;
@@ -291,39 +295,56 @@ class Column {
 
     protected function setDefaultClosures() {
         $this->setValueGetter(function (RecordValue $valueContainer, $format = null) {
-            return ColumnDefaultClosures::valueGetter($valueContainer, $format);
+            $class = $this->getClosuresClass();
+            return $class::valueGetter($valueContainer, $format);
         });
         $this->setValueExistenceChecker(function (RecordValue $valueContainer, $checkDefaultValue = false) {
-            return ColumnDefaultClosures::valueExistenceChecker($valueContainer, $checkDefaultValue);
+            $class = $this->getClosuresClass();
+            return $class::valueExistenceChecker($valueContainer, $checkDefaultValue);
         });
         $this->setValueSetter(function ($newValue, $isFromDb, RecordValue $valueContainer) {
-            return ColumnDefaultClosures::valueSetter($newValue, $isFromDb, $valueContainer);
+            $class = $this->getClosuresClass();
+            return $class::valueSetter($newValue, $isFromDb, $valueContainer);
         });
         $this->setValueValidator(function ($value, $isFromDb, Column $column) {
-            return ColumnDefaultClosures::valueValidator($value, $isFromDb, $column);
+            $class = $this->getClosuresClass();
+            return $class::valueValidator($value, $isFromDb, $column);
         });
         $this->setValueIsAllowedValidator(function ($value, $isFromDb, Column $column) {
-            return ColumnDefaultClosures::valueIsAllowedValidator($value, $isFromDb, $column);
+            $class = $this->getClosuresClass();
+            return $class::valueIsAllowedValidator($value, $isFromDb, $column);
         });
-        $this->setValueValidatorExtender(function () {
-            return [];
+        $this->setValueValidatorExtender(function ($value, $isFromDb, Column $column) {
+            $class = $this->getClosuresClass();
+            return $class::valueValidatorExtender($value, $isFromDb, $column);
         });
         $this->setValueNormalizer(function ($value, $isFromDb, Column $column) {
-            return ColumnDefaultClosures::valueNormalizer($value, $isFromDb, $column);
+            $class = $this->getClosuresClass();
+            return $class::valueNormalizer($value, $isFromDb, $column);
         });
         $this->setValuePreprocessor(function ($newValue, $isFromDb, Column $column) {
-            return ColumnDefaultClosures::valuePreprocessor($newValue, $isFromDb, $column);
+            $class = $this->getClosuresClass();
+            return $class::valuePreprocessor($newValue, $isFromDb, $column);
         });
-        $this->setValueSavingExtender(function () {
-
+        $this->setValueSavingExtender(function (RecordValue $valueContainer, $isUpdate, array $savedData, Record $record) {
+            $class = $this->getClosuresClass();
+            return $class::valueSavingExtender($valueContainer, $isUpdate, $savedData, $record);
         });
         $this->setValueDeleteExtender(function (RecordValue $valueContainer, Record $record, $deleteFiles) {
-
+            $class = $this->getClosuresClass();
+            return $class::valueDeleteExtender($valueContainer, $record, $deleteFiles);
         });
-        list ($formatter, $formats) = RecordValueHelpers::getValueFormatterAndFormatsByType($this->getType());
+        list ($formatter, $formats) = $this->detectValueFormatterByType();
         if (!empty($formatter)) {
             $this->setValueFormatter($formatter, $formats);
         }
+    }
+
+    /**
+     * @return array - 0 - \Closure $formatter; 1 - array $formats
+     */
+    protected function detectValueFormatterByType() {
+        return RecordValueHelpers::getValueFormatterAndFormatsByType($this->getType());
     }
 
     /**
@@ -340,6 +361,35 @@ class Column {
     public function setTableStructure(TableStructure $tableStructure) {
         $this->tableStructure = $tableStructure;
         return $this;
+    }
+
+    /**
+     * Class that provides all closures for a column.
+     * Note: if some closure is defined via Column->setClosureName(\Closure $fn) then $fn will be used istead of
+     * same closure provided by class
+     * @param string $class - class that implements ColumnClosuresInterface
+     * @return $this
+     * @throws \InvalidArgumentException
+     */
+    public function setClosuresClass($class) {
+        if (
+            !is_string($class)
+            || !class_exists($class)
+            || !(new \ReflectionClass($class))->implementsInterface(ColumnClosuresInterface::class)
+        ) {
+            throw new \InvalidArgumentException(
+                '$class argument must be a string and contain a full name of a calss that implements ColumnClosuresInterface'
+            );
+        }
+        $this->defaultClosuresClass = $class;
+        return $this;
+    }
+
+    /**
+     * @return string|ColumnClosuresInterface
+     */
+    public function getClosuresClass() {
+        return $this->defaultClosuresClass;
     }
 
     /**
@@ -957,8 +1007,6 @@ class Column {
     public function getValueSavingExtender() {
         return $this->valueSavingExtender;
     }
-
-
 
     /**
      * Additional processing for a column's value during a save.

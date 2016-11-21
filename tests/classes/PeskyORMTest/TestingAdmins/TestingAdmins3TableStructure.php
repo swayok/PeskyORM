@@ -4,7 +4,7 @@ namespace PeskyORMTest\TestingAdmins;
 
 use PeskyORM\Core\DbExpr;
 use PeskyORM\ORM\Column;
-use PeskyORM\ORM\ColumnDefaultClosures;
+use PeskyORM\ORM\DefaultColumnClosures;
 use PeskyORM\ORM\Relation;
 use PeskyORM\ORM\TableStructure;
 
@@ -49,7 +49,7 @@ class TestingAdmins3TableStructure extends TableStructure {
             ->valueIsNotNullable()
             ->mustTrimValue()
             ->setValuePreprocessor(function ($value, $isDbValue, Column $column) {
-                $value = ColumnDefaultClosures::valuePreprocessor($value, $isDbValue, $column);
+                $value = DefaultColumnClosures::valuePreprocessor($value, $isDbValue, $column);
                 if ($isDbValue) {
                     return $value;
                 } else {

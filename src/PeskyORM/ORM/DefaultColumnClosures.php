@@ -2,7 +2,7 @@
 
 namespace PeskyORM\ORM;
 
-class ColumnDefaultClosures {
+class DefaultColumnClosures implements ColumnClosuresInterface {
 
     /**
      * @param mixed $newValue
@@ -188,4 +188,34 @@ class ColumnDefaultClosures {
         return RecordValueHelpers::normalizeValue($value, $column->getType());
     }
 
+    /**
+     * @param RecordValue $valueContainer
+     * @param bool $isUpdate
+     * @param array $savedData
+     * @param Record $record
+     * @return void
+     */
+    static public function valueSavingExtender(RecordValue $valueContainer, $isUpdate, array $savedData, Record $record) {
+
+    }
+
+    /**
+     * @param RecordValue $valueContainer
+     * @param Record $record
+     * @param bool $deleteFiles
+     * @return void
+     */
+    static public function valueDeleteExtender(RecordValue $valueContainer, Record $record, $deleteFiles) {
+
+    }
+
+    /**
+     * @param mixed $value
+     * @param bool $isFromDb
+     * @param Column $column
+     * @return array - list of error messages (empty list = no errors)
+     */
+    static public function valueValidatorExtender($value, $isFromDb, Column $column) {
+        return [];
+    }
 }
