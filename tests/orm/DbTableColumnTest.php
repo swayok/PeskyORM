@@ -8,6 +8,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
 
     public static function setUpBeforeClass() {
         \PeskyORMTest\TestingApp::cleanInstancesOfDbTablesAndStructures();
+        \PeskyORMTest\TestingApp::getPgsqlConnection();
     }
 
     public static function tearDownAfterClass() {
@@ -83,7 +84,6 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
         static::assertInstanceOf(\Closure::class, $obj->getValuePreprocessor());
         static::assertInstanceOf(\Closure::class, $obj->getValueSavingExtender());
         static::assertInstanceOf(\Closure::class, $obj->getValueDeleteExtender());
-        static::assertFalse($obj->hasValueFormatter());
         static::assertTrue($obj->isItExistsInDb());
         static::assertTrue($obj->isValueCanBeNull());
         static::assertFalse($obj->isItPrimaryKey());
@@ -185,12 +185,10 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
         $obj = Column::create(Column::TYPE_FILE);
         static::assertEquals($obj->getType(), Column::TYPE_FILE);
         static::assertTrue($obj->isItAFile());
-        static::assertFalse($obj->hasValueFormatter());
         $obj = Column::create(Column::TYPE_IMAGE);
         static::assertEquals($obj->getType(), Column::TYPE_IMAGE);
         static::assertTrue($obj->isItAFile());
         static::assertTrue($obj->isItAnImage());
-        static::assertFalse($obj->hasValueFormatter());
     }
 
     public function testEnumType() {
@@ -199,13 +197,25 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
         static::assertTrue($obj->isEnum());
     }
 
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage Value format 'time' is not supported for column 'login'. Supported formats: none
+     */
+    public function testInvalidValueFormat() {
+        $rec = \PeskyORMTest\TestingAdmins\TestingAdmin::newEmptyRecord();
+        /** @var \PeskyORM\ORM\RecordValue $value */
+        $value = $this->getObjectPropertyValue($rec, 'values')['login'];
+        static::assertEquals('11:00:00', call_user_func($value->getColumn()->getValueFormatter(), $value, 'time'));
+    }
+
     public function testFormattersDetectedByType() {
         $obj = Column::create(Column::TYPE_TIMESTAMP);
         static::assertEquals($obj->getType(), Column::TYPE_TIMESTAMP);
-        static::assertTrue($obj->hasValueFormatter());
         static::assertInstanceOf(\Closure::class, $obj->getValueFormatter());
-        static::assertTrue(count($obj->getValueFormats()) > 0);
-        static::assertNotEmpty($this->getObjectPropertyValue($obj, 'valueFormatterFormats'));
+        $rec = \PeskyORMTest\TestingAdmins\TestingAdmin::fromArray(['created_at' => '2016-11-21 11:00:00']);
+        /** @var \PeskyORM\ORM\RecordValue $value */
+        $value = $this->getObjectPropertyValue($rec, 'values')['created_at'];
+        static::assertEquals('11:00:00', call_user_func($value->getColumn()->getValueFormatter(), $value, 'time'));
     }
 
     /**

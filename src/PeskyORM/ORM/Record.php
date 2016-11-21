@@ -1230,8 +1230,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     static::getColumn($columnName)->getValueSavingExtender(),
                     $this->getValueObject($columnName),
                     $isUpdate,
-                    $updatesReceivedFromDb,
-                    $this
+                    $updatesReceivedFromDb
                 );
             }
         }
@@ -1404,7 +1403,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 call_user_func(
                     $column->getValueDeleteExtender(),
                     $this->getValueObject($column),
-                    $this,
                     $deleteFiles
                 );
             }

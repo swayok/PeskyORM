@@ -85,7 +85,7 @@ class DbTableColumnDefaultClosuresTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $format argument is not supported for column 'parent_id'
+     * @expectedExceptionMessage Value format 'nooooo!' is not supported for column 'parent_id'. Supported formats: none
      */
     public function testInvalidFormatterInValueGetter() {
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
@@ -94,7 +94,7 @@ class DbTableColumnDefaultClosuresTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Value format named 'nooooo!' is not supported for column 'created_at'
+     * @expectedExceptionMessage Value format 'nooooo!' is not supported for column 'created_at'
      */
     public function testInvalidFormatInValueGetter1() {
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('created_at'), TestingAdmin::_());

@@ -92,21 +92,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
                     "\$format argument for column '{$value->getColumn()->getName()}' must be a string or a number."
                 );
             }
-            $column = $value->getColumn();
-            $formats = $column->getValueFormats();
-            if (!$column->hasValueFormatter()) {
-                throw new \InvalidArgumentException(
-                    "\$format argument is not supported for column '{$value->getColumn()->getName()}'."
-                        . ' You need to provide a value formatter in Column.'
-                );
-            } else if (empty($formats) || in_array($format, $formats, true)) {
-                return call_user_func($column->getValueFormatter(), $value, $format);
-            } else {
-                throw new \InvalidArgumentException(
-                    "Value format named '{$format}' is not supported for column '{$value->getColumn()->getName()}'."
-                        . ' Supported formats: ' . implode(', ', $formats)
-                );
-            }
+            return call_user_func($value->getColumn()->getValueFormatter(), $value, $format);
         } else {
             return $value->getValueOrDefault();
         }
@@ -192,20 +178,18 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
      * @param RecordValue $valueContainer
      * @param bool $isUpdate
      * @param array $savedData
-     * @param Record $record
      * @return void
      */
-    static public function valueSavingExtender(RecordValue $valueContainer, $isUpdate, array $savedData, Record $record) {
+    static public function valueSavingExtender(RecordValue $valueContainer, $isUpdate, array $savedData) {
 
     }
 
     /**
      * @param RecordValue $valueContainer
-     * @param Record $record
      * @param bool $deleteFiles
      * @return void
      */
-    static public function valueDeleteExtender(RecordValue $valueContainer, Record $record, $deleteFiles) {
+    static public function valueDeleteExtender(RecordValue $valueContainer, $deleteFiles) {
 
     }
 
@@ -217,5 +201,25 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
      */
     static public function valueValidatorExtender($value, $isFromDb, Column $column) {
         return [];
+    }
+
+    /**
+     * Formats value according to required $format
+     * @param RecordValue $valueContainer
+     * @param string $format
+     * @return mixed
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     */
+    static public function valueFormatter(RecordValue $valueContainer, $format) {
+        $column = $valueContainer->getColumn();
+        list ($formatter, $formats) = RecordValueHelpers::getValueFormatterAndFormatsByType($column->getType());
+        if (!in_array($format, $formats, true)) {
+            throw new \InvalidArgumentException(
+                "Value format '{$format}' is not supported for column '{$column->getName()}'."
+                    . ' Supported formats: ' . (count($formats) ? implode(', ', $formats) : 'none')
+            );
+        }
+        return call_user_func($formatter, $valueContainer, $format);
     }
 }

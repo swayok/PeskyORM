@@ -115,10 +115,6 @@ class Column {
      */
     protected $lowercaseValue = false;
     /**
-     * @var mixed - can be a \Closure
-     */
-    protected $defaultValue = self::DEFAULT_VALUE_NOT_SET;
-    /**
      * @var bool
      */
     protected $convertEmptyStringToNull = false;
@@ -127,9 +123,9 @@ class Column {
      */
     protected $allowedValues = [];
     /**
-     * @var bool
+     * @var mixed - can be a \Closure
      */
-    protected $requireValue = false;
+    protected $defaultValue = self::DEFAULT_VALUE_NOT_SET;
     /**
      * @var bool
      */
@@ -235,10 +231,6 @@ class Column {
      */
     protected $valueFormatter = null;
     /**
-     * @var array
-     */
-    protected $valueFormatterFormats = [];
-    /**
      * Function that generates new value for a column for each save operation
      * Usage example: updated_at column
      * @var null|\Closure
@@ -326,18 +318,18 @@ class Column {
             $class = $this->getClosuresClass();
             return $class::valuePreprocessor($newValue, $isFromDb, $column);
         });
-        $this->setValueSavingExtender(function (RecordValue $valueContainer, $isUpdate, array $savedData, Record $record) {
+        $this->setValueSavingExtender(function (RecordValue $valueContainer, $isUpdate, array $savedData) {
             $class = $this->getClosuresClass();
-            return $class::valueSavingExtender($valueContainer, $isUpdate, $savedData, $record);
+            return $class::valueSavingExtender($valueContainer, $isUpdate, $savedData);
         });
-        $this->setValueDeleteExtender(function (RecordValue $valueContainer, Record $record, $deleteFiles) {
+        $this->setValueDeleteExtender(function (RecordValue $valueContainer, $deleteFiles) {
             $class = $this->getClosuresClass();
-            return $class::valueDeleteExtender($valueContainer, $record, $deleteFiles);
+            return $class::valueDeleteExtender($valueContainer, $deleteFiles);
         });
-        list ($formatter, $formats) = $this->detectValueFormatterByType();
-        if (!empty($formatter)) {
-            $this->setValueFormatter($formatter, $formats);
-        }
+        $this->setValueFormatter(function (RecordValue $valueContainer, $format) {
+            $class = $this->getClosuresClass();
+            return $class::valueFormatter($valueContainer, $format);
+        });
     }
 
     /**
@@ -1018,8 +1010,7 @@ class Column {
      *       $record->saveToDb() was called. Data inside it was not modified by $this->updateValues($savedData, true)
      * - bool $isUpdate - true: $record->saveToDb() updated existing DB row | false: $record->saveToDb() inserted DB row
      * - array $savedData - data fetched from DB after saving
-     * - Record $record - current Record
-     * @param \Closure $valueSaver function (RecordValue $valueContainer, $isUpdate, array $savedData, Record $record) {  }
+     * @param \Closure $valueSaver function (RecordValue $valueContainer, $isUpdate, array $savedData) {  }
      * @return $this
      * @throws \UnexpectedValueException
      */
@@ -1042,9 +1033,8 @@ class Column {
      * Note: if transaction started outside of Record::delete() it won't be closed inside it.
      * Closure arguments:
      * - RecordValue $valueContainer
-     * - Record $record
      * - bool $deleteFiles - true: files related to column's value should be deleted | false: leave files if any
-     * @param \Closure $valueDeleteExtender function (RecordValue $valueContainer, Record $record, $deleteFiles) {  }
+     * @param \Closure $valueDeleteExtender function (RecordValue $valueContainer, $deleteFiles) {  }
      * @return $this
      * @throws \UnexpectedValueException
      */
@@ -1054,38 +1044,20 @@ class Column {
     }
 
     /**
-     * @return \Closure|null
+     * @return \Closure
      */
     public function getValueFormatter() {
         return $this->valueFormatter;
     }
 
     /**
-     * @return array
-     */
-    public function getValueFormats() {
-        return $this->valueFormatterFormats;
-    }
-
-    /**
      * Function to transform original value into another format and return result. Used by default value getter
      * @param \Closure $valueFormatter - function (RecordValue $valueContainer, $format) { return 'formatted value'; }
-     * @param array $formats - list of value format names. Used to validate if format passed to getter is valid before
-     *      calling formatter. If empty - this validation is disabled.
-     *      Example: ['ts', 'date', 'time'] for timestamp column.
      * @return $this
      */
-    public function setValueFormatter(\Closure $valueFormatter, array $formats = []) {
+    public function setValueFormatter(\Closure $valueFormatter) {
         $this->valueFormatter = $valueFormatter;
-        $this->valueFormatterFormats = $formats;
         return $this;
-    }
-
-    /**
-     * @return boolean
-     */
-    public function hasValueFormatter() {
-        return !empty($this->valueFormatter);
     }
 
     /**
