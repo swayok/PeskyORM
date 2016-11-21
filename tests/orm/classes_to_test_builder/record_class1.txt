@@ -1,0 +1,15 @@
+<?php
+
+namespace App\Db;
+
+use PeskyORM\ORM\Record;
+
+class Admin extends Record {
+
+    /**
+     * @return AdminsTable
+     */
+    static public function getTable() {
+        return AdminsTable::getInstance();
+    }
+}

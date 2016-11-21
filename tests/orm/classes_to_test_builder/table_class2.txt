@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Db;
+
+use PeskyORMTest\TestingBaseTable;
+
+class AdminsTable extends TestingBaseTable {
+
+    /**
+     * @return AdminsTableStructure
+     */
+    public function getTableStructure() {
+        return AdminsTableStructure::getInstance();
+    }
+
+    /**
+     * @return Admin
+     */
+    public function newRecord() {
+        return new Admin();
+    }
+
+}

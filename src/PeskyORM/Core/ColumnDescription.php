@@ -6,8 +6,6 @@ use PeskyORM\ORM\Column;
 
 class ColumnDescription implements \Serializable {
 
-    const NOT_SET = '___NOT_SET__';
-
     /**
      * @var string
      */
@@ -35,7 +33,7 @@ class ColumnDescription implements \Serializable {
     /**
      * @var mixed
      */
-    protected $default = self::NOT_SET;
+    protected $default = null;
     /**
      * @var bool
      */
@@ -125,7 +123,7 @@ class ColumnDescription implements \Serializable {
     }
 
     /**
-     * @return mixed
+     * @return string|int|float|bool|DbExpr|null
      */
     public function getDefault() {
         return $this->default;

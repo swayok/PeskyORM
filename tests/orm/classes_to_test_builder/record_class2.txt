@@ -1,0 +1,15 @@
+<?php
+
+namespace App\Db;
+
+use PeskyORMTest\TestingAdmins\TestingAdmin;
+
+class Admin extends TestingAdmin {
+
+    /**
+     * @return AdminsTable
+     */
+    static public function getTable() {
+        return AdminsTable::getInstance();
+    }
+}

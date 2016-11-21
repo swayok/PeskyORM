@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Db;
+
+use PeskyORM\ORM\Table;
+
+class AdminsTable extends Table {
+
+    /**
+     * @return AdminsTableStructure
+     */
+    public function getTableStructure() {
+        return AdminsTableStructure::getInstance();
+    }
+
+    /**
+     * @return Admin
+     */
+    public function newRecord() {
+        return new Admin();
+    }
+
+}

@@ -1,0 +1,110 @@
+<?php
+
+namespace App\Db;
+
+use PeskyORM\ORM\TableStructure;
+use PeskyORM\ORM\Column;
+use PeskyORM\ORM\Relation;
+use PeskyORM\Core\DbExpr;
+
+class AdminsTableStructure extends TableStructure {
+
+    static public function getTableName() {
+        return 'admins';
+    }
+
+    private function id() {
+        return Column::create(Column::TYPE_INT)
+            ->itIsPrimaryKey()
+            ->valueIsNotNullable();
+    }
+
+    private function login() {
+        return Column::create(Column::TYPE_STRING)
+            ->valueMustBeUnique(true)
+            ->valueIsNotNullable();
+    }
+
+    private function password() {
+        return Column::create(Column::TYPE_STRING)
+            ->valueIsNotNullable();
+    }
+
+    private function parent_id() {
+        return Column::create(Column::TYPE_INT)
+            ->convertsEmptyStringToNull();
+    }
+
+    private function created_at() {
+        return Column::create(Column::TYPE_TIMESTAMP_WITH_TZ)
+            ->valueIsNotNullable()
+            ->setDefaultValue(DbExpr::create('now()'));
+    }
+
+    private function updated_at() {
+        return Column::create(Column::TYPE_TIMESTAMP_WITH_TZ)
+            ->valueIsNotNullable()
+            ->setDefaultValue(DbExpr::create('now()'));
+    }
+
+    private function remember_token() {
+        return Column::create(Column::TYPE_STRING)
+            ->convertsEmptyStringToNull()
+            ->setDefaultValue('');
+    }
+
+    private function is_superadmin() {
+        return Column::create(Column::TYPE_BOOL)
+            ->valueIsNotNullable()
+            ->setDefaultValue(false);
+    }
+
+    private function language() {
+        return Column::create(Column::TYPE_STRING)
+            ->convertsEmptyStringToNull()
+            ->setDefaultValue('en');
+    }
+
+    private function ip() {
+        return Column::create(Column::TYPE_STRING)
+            ->convertsEmptyStringToNull()
+            ->setDefaultValue('192.168.1.1');
+    }
+
+    private function role() {
+        return Column::create(Column::TYPE_STRING)
+            ->valueIsNotNullable()
+            ->setDefaultValue('');
+    }
+
+    private function is_active() {
+        return Column::create(Column::TYPE_BOOL)
+            ->valueIsNotNullable()
+            ->setDefaultValue(true);
+    }
+
+    private function name() {
+        return Column::create(Column::TYPE_STRING)
+            ->valueIsNotNullable()
+            ->setDefaultValue('');
+    }
+
+    private function email() {
+        return Column::create(Column::TYPE_STRING)
+            ->valueMustBeUnique(true)
+            ->convertsEmptyStringToNull();
+    }
+
+    private function timezone() {
+        return Column::create(Column::TYPE_STRING)
+            ->valueIsNotNullable()
+            ->setDefaultValue('UTC');
+    }
+
+    private function not_changeable_column() {
+        return Column::create(Column::TYPE_STRING)
+            ->convertsEmptyStringToNull()
+            ->setDefaultValue('not changable');
+    }
+
+}
