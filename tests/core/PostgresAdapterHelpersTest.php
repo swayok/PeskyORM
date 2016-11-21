@@ -840,7 +840,7 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
         $idCol = $description->getColumn('id');
         static::assertEquals('id', $idCol->getName());
         static::assertEquals('int4', $idCol->getDbType());
-        static::assertEquals('integer', $idCol->getOrmType());
+        static::assertEquals(\PeskyORM\ORM\Column::TYPE_INT, $idCol->getOrmType());
         static::assertEquals(DbExpr::create('nextval(\'settings_id_seq\'::regclass)'), $idCol->getDefault());
         static::assertEquals(null, $idCol->getNumberPrecision());
         static::assertEquals(null, $idCol->getLimit());
@@ -852,7 +852,7 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
         $keyCol = $description->getColumn('key');
         static::assertEquals('key', $keyCol->getName());
         static::assertEquals('varchar', $keyCol->getDbType());
-        static::assertEquals('string', $keyCol->getOrmType());
+        static::assertEquals(\PeskyORM\ORM\Column::TYPE_STRING, $keyCol->getOrmType());
         static::assertEquals(null, $keyCol->getDefault());
         static::assertEquals(null, $keyCol->getNumberPrecision());
         static::assertEquals(100, $keyCol->getLimit());
@@ -864,7 +864,7 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
         $valueCol = $description->getColumn('value');
         static::assertEquals('value', $valueCol->getName());
         static::assertEquals('json', $valueCol->getDbType());
-        static::assertEquals('json', $valueCol->getOrmType());
+        static::assertEquals(\PeskyORM\ORM\Column::TYPE_JSON, $valueCol->getOrmType());
         static::assertEquals('{}', $valueCol->getDefault());
         static::assertEquals(null, $valueCol->getNumberPrecision());
         static::assertEquals(null, $valueCol->getLimit());

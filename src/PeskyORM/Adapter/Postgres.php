@@ -38,33 +38,33 @@ class Postgres extends DbAdapter {
     protected static $dbTypeToOrmType = [
         'bool' => Column::TYPE_BOOL,
         'bytea' => Column::TYPE_BLOB,
-        'char' => Column::TYPE_STRING,
-        'name' => Column::TYPE_STRING,
+        'bit' => Column::TYPE_BLOB,
+        'varbit' => Column::TYPE_BLOB,
         'int8' => Column::TYPE_INT,
         'int2' => Column::TYPE_INT,
         'int4' => Column::TYPE_INT,
-        'text' => Column::TYPE_TEXT,
-        'json' => Column::TYPE_JSON,
-        'jsonb' => Column::TYPE_JSONB,
-        'xml' => Column::TYPE_STRING,
         'float4' => Column::TYPE_FLOAT,
         'float8' => Column::TYPE_FLOAT,
+        'numeric' => Column::TYPE_FLOAT,
         'money' => Column::TYPE_FLOAT,
         'macaddr' => Column::TYPE_STRING,
         'inet' => Column::TYPE_STRING,       //< 192.168.0.0 or 192.168.0.0/24
         'cidr' => Column::TYPE_STRING,       //< 192.168.0.0/24 only
+        'char' => Column::TYPE_STRING,
+        'name' => Column::TYPE_STRING,
         'bpchar' => Column::TYPE_STRING,     //< blank-padded char == char, internal use but may happen
         'varchar' => Column::TYPE_STRING,
+        'text' => Column::TYPE_TEXT,
+        'xml' => Column::TYPE_STRING,
+        'json' => Column::TYPE_JSON,
+        'jsonb' => Column::TYPE_JSONB,
+        'uuid' => Column::TYPE_STRING,
         'date' => Column::TYPE_DATE,
         'time' => Column::TYPE_TIME,
         'timestamp' => Column::TYPE_TIMESTAMP,
         'timestamptz' => Column::TYPE_TIMESTAMP_WITH_TZ,
         'interval' => Column::TYPE_STRING,
         'timetz' => Column::TYPE_TIME,
-        'bit' => Column::TYPE_BLOB,
-        'varbit' => Column::TYPE_BLOB,
-        'numeric' => Column::TYPE_FLOAT,
-        'uuid' => Column::TYPE_STRING,
     ];
 
     // types

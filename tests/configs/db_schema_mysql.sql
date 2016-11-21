@@ -14,7 +14,7 @@ CREATE TABLE `admins` (
   `parent_id` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `remember_token` varchar(100) NOT NULL DEFAULT '',
+  `remember_token` varchar(100),
   `is_superadmin` tinyint(1) NOT NULL DEFAULT '0',
   `language` char(2) DEFAULT 'en',
   `ip` varchar(15) DEFAULT '192.168.1.1',

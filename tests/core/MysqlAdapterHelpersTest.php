@@ -1,5 +1,7 @@
 <?php
 
+use PeskyORM\Core\DbExpr;
+
 require_once __DIR__ . '/PostgresAdapterHelpersTest.php';
 
 class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest {
@@ -158,8 +160,148 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest {
         );
     }
 
+    /**
+     * @covers Postgres::extractLimitAndPrecisionForColumnDescription()
+     * @covers Postgres::cleanDefaultValueForColumnDescription()
+     * @covers DbAdapter::describeTable()
+     * @covers Postgres::describeTable()
+     */
     public function testDescribeTable() {
-        // todo: added tests for describe table (MySQL)
+        // Mysql::extractLimitAndPrecisionForColumnDescription()
+        static::assertEquals(
+            [null, null],
+            $this->invokePrivateAdapterMethod('extractLimitAndPrecisionForColumnDescription', 'timestamp')
+        );
+        static::assertEquals(
+            [11, null],
+            $this->invokePrivateAdapterMethod('extractLimitAndPrecisionForColumnDescription', 'int(11)')
+        );
+        static::assertEquals(
+            [200, null],
+            $this->invokePrivateAdapterMethod('extractLimitAndPrecisionForColumnDescription', 'varchar(200)')
+        );
+        static::assertEquals(
+            [8, 2],
+            $this->invokePrivateAdapterMethod('extractLimitAndPrecisionForColumnDescription', 'float(8,2)')
+        );
+        // Mysql::cleanDefaultValueForColumnDescription()
+        static::assertEquals(
+            '',
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', '')
+        );
+        static::assertEquals(
+            ' ',
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', ' ')
+        );
+        static::assertEquals(
+            'a',
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', 'a')
+        );
+        static::assertEquals(
+            null,
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', null)
+        );
+        static::assertEquals(
+            true,
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', 'true')
+        );
+        static::assertEquals(
+            false,
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', 'false')
+        );
+        static::assertEquals(
+            11,
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', '11')
+        );
+        static::assertEquals(
+            11.1,
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', '11.1')
+        );
+        static::assertEquals(
+            "'11.1'",
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'11.1'")
+        );
+        static::assertEquals(
+            DbExpr::create('NOW()'),
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', 'CURRENT_TIMESTAMP')
+        );
+        static::assertEquals(
+            "'",
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'")
+        );
+        static::assertEquals(
+            "test'quote",
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "test'quote")
+        );
+        static::assertEquals(
+            "test'",
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "test'")
+        );
+        static::assertEquals(
+            "'quote",
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'quote")
+        );
+        static::assertEquals(
+            "'quote'",
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'quote'")
+        );
+        static::assertEquals(
+            "'quote'test ' asd'",
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'quote'test ' asd'")
+        );
+        // Mysql::describeTable()
+        $adapter = static::getValidAdapter();
+        $description = $adapter->describeTable('settings');
+        static::assertInstanceOf(\PeskyORM\Core\TableDescription::class, $adapter->describeTable('admins'));
+        static::assertEquals('settings', $description->getName());
+        static::assertEquals(null, $description->getDbSchema());
+        static::assertCount(3, $description->getColumns());
+
+        $idCol = $description->getColumn('id');
+        static::assertEquals('id', $idCol->getName());
+        static::assertEquals('int(11)', $idCol->getDbType());
+        static::assertEquals(\PeskyORM\ORM\Column::TYPE_INT, $idCol->getOrmType());
+        static::assertEquals(null, $idCol->getDefault());
+        static::assertEquals(null, $idCol->getNumberPrecision());
+        static::assertEquals(11, $idCol->getLimit());
+        static::assertTrue($idCol->isPrimaryKey());
+        static::assertFalse($idCol->isUnique());
+        static::assertFalse($idCol->isForeignKey());
+        static::assertFalse($idCol->isNullable());
+
+        $keyCol = $description->getColumn('key');
+        static::assertEquals('key', $keyCol->getName());
+        static::assertEquals('varchar(100)', $keyCol->getDbType());
+        static::assertEquals(\PeskyORM\ORM\Column::TYPE_STRING, $keyCol->getOrmType());
+        static::assertEquals(null, $keyCol->getDefault());
+        static::assertEquals(null, $keyCol->getNumberPrecision());
+        static::assertEquals(100, $keyCol->getLimit());
+        static::assertFalse($keyCol->isPrimaryKey());
+        static::assertTrue($keyCol->isUnique());
+        static::assertFalse($keyCol->isForeignKey());
+        static::assertFalse($keyCol->isNullable());
+
+        $valueCol = $description->getColumn('value');
+        static::assertEquals('value', $valueCol->getName());
+        static::assertEquals('text', $valueCol->getDbType());
+        static::assertEquals(\PeskyORM\ORM\Column::TYPE_TEXT, $valueCol->getOrmType());
+        static::assertEquals(null, $valueCol->getDefault());
+        static::assertEquals(null, $valueCol->getNumberPrecision());
+        static::assertEquals(null, $valueCol->getLimit());
+        static::assertFalse($valueCol->isPrimaryKey());
+        static::assertFalse($valueCol->isUnique());
+        static::assertFalse($valueCol->isForeignKey());
+        static::assertFalse($valueCol->isNullable());
+
+        $description = $adapter->describeTable('admins');
+        static::assertEquals('admins', $description->getName());
+        static::assertEquals(null, $description->getDbSchema());
+        static::assertCount(16, $description->getColumns());
+        static::assertTrue($description->getColumn('login')->isUnique());
+        static::assertTrue($description->getColumn('email')->isUnique());
+        static::assertFalse($description->getColumn('parent_id')->isForeignKey()); //< description does not show this
+        static::assertTrue($description->getColumn('remember_token')->isNullable());
+        static::assertEquals(DbExpr::create('NOW()'), $description->getColumn('created_at')->getDefault());
     }
 
 

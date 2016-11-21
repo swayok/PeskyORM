@@ -1,4 +1,4 @@
-CREATE DATABASE "pesky_orm_test_db" CHARACTER SET = "UTF8" COLLATE "general_ci";
+CREATE DATABASE `pesky_orm_test_db`` CHARACTER SET = "UTF8" COLLATE "utf8_general_ci";
 
 CREATE USER 'pesky_orm_test'@'localhost' IDENTIFIED BY '1111111';
 

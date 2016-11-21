@@ -3,11 +3,14 @@
 namespace PeskyORM\Adapter;
 
 use PeskyORM\Config\Connection\MysqlConfig;
+use PeskyORM\Core\ColumnDescription;
 use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\TableDescription;
 use PeskyORM\Core\Utils;
 use PeskyORM\Exception\DbException;
+use PeskyORM\ORM\Column;
+use Swayok\Utils\ValidateValue;
 
 class Mysql extends DbAdapter {
 
@@ -42,6 +45,40 @@ class Mysql extends DbAdapter {
         '!~*' => 'NOT REGEXP',
         'REGEX' => 'REGEXP',
         'NOT REGEX' => 'NOT REGEXP',
+    ];
+
+    protected static $dbTypeToOrmType = [
+        'bool' => Column::TYPE_BOOL,
+        'blob' => Column::TYPE_BLOB,
+        'tinyblob' => Column::TYPE_BLOB,
+        'mediumblob' => Column::TYPE_BLOB,
+        'longblob' => Column::TYPE_BLOB,
+        'smallint' => Column::TYPE_INT,
+        'mediumint' => Column::TYPE_INT,
+        'bigint' => Column::TYPE_INT,
+        'int' => Column::TYPE_INT,
+        'integer' => Column::TYPE_INT,
+        'decimal' => Column::TYPE_FLOAT,
+        'dec' => Column::TYPE_FLOAT,
+        'float' => Column::TYPE_FLOAT,
+        'double' => Column::TYPE_FLOAT,
+        'double precision' => Column::TYPE_FLOAT,
+        'char' => Column::TYPE_STRING,
+        'binary' => Column::TYPE_STRING,
+        'varchar' => Column::TYPE_STRING,
+        'varbinary' => Column::TYPE_STRING,
+        'enum' => Column::TYPE_STRING,
+        'set' => Column::TYPE_STRING,
+        'text' => Column::TYPE_TEXT,
+        'tinytext' => Column::TYPE_TEXT,
+        'mediumtext' => Column::TYPE_TEXT,
+        'longtext' => Column::TYPE_TEXT,
+        'json' => Column::TYPE_JSON,
+        'date' => Column::TYPE_DATE,
+        'time' => Column::TYPE_TIME,
+        'datetime' => Column::TYPE_TIMESTAMP,
+        'timestamp' => Column::TYPE_TIMESTAMP,
+        'year' => Column::TYPE_INT,
     ];
 
     public function __construct(MysqlConfig $connectionConfig) {
@@ -227,9 +264,76 @@ class Mysql extends DbAdapter {
      * @param string $table
      * @param null $schema - not used for MySQL
      * @return TableDescription
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
      */
     public function describeTable($table, $schema = null) {
-        // todo: implement describeTable
+        $description = new TableDescription($table, $schema);
+        /** @var array $columns */
+        $columns = $this->query(DbExpr::create("SHOW COLUMNS IN `$table`"), Utils::FETCH_ALL);
+        foreach ($columns as $columnInfo) {
+            $columnDescription = new ColumnDescription(
+                $columnInfo['Field'],
+                $columnInfo['Type'],
+                $this->convertDbTypeToOrmType($columnInfo['Type'])
+            );
+            list($limit, $precision) = $this->extractLimitAndPrecisionForColumnDescription($columnInfo['Type']);
+            $columnDescription
+                ->setLimitAndPrecision($limit, $precision)
+                ->setIsNullable(strtolower($columnInfo['Null']) === 'yes')
+                ->setIsPrimaryKey(strtolower($columnInfo['Key']) === 'pri')
+                ->setIsUnique(strtolower($columnInfo['Key']) === 'uni')
+                ->setDefault($this->cleanDefaultValueForColumnDescription($columnInfo['Default']));
+            $description->addColumn($columnDescription);
+        }
+        return $description;
+    }
+
+    /**
+     * @param $dbType
+     * @return string
+     */
+    protected function convertDbTypeToOrmType($dbType) {
+        $dbType = strtolower(preg_replace('%\([^)]+\)$%', '', $dbType));
+        return array_key_exists($dbType, static::$dbTypeToOrmType)
+            ? static::$dbTypeToOrmType[$dbType]
+            : Column::TYPE_STRING;
+    }
+
+    /**
+     * @param string $default
+     * @return mixed
+     */
+    protected function cleanDefaultValueForColumnDescription($default) {
+        if ($default === null || $default === '') {
+            return $default;
+        } else if ($default === 'CURRENT_TIMESTAMP') {
+            return DbExpr::create('NOW()');
+        } else if ($default === 'true') {
+            return true;
+        } else if ($default === 'false') {
+            return false;
+        } else if (ValidateValue::isInteger($default)) {
+            return (int)$default;
+        } else if (ValidateValue::isFloat($default)) {
+            return (float)$default;
+        } else {
+            return $default; //< it seems like there is still no possibility to use functions as default value
+        }
+    }
+
+    /**
+     * @param string $typeDescription
+     * @return array - index 0: limit; index 1: precision
+     */
+    protected function extractLimitAndPrecisionForColumnDescription($typeDescription) {
+        if (preg_match('%\((\d+)(?:,(\d+))?\)$%', $typeDescription, $matches)) {
+            return [(int)$matches[1], !isset($matches[2]) ? null : (int)$matches[2]];
+        } else {
+            return [null, null];
+        }
     }
 
     /**
