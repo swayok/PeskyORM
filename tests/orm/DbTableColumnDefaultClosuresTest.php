@@ -94,7 +94,7 @@ class DbTableColumnDefaultClosuresTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Value format 'nooooo!' is not supported for column 'created_at'
+     * @expectedExceptionMessage Value format 'nooooo!' is not supported for column 'created_at'. Supported formats: date, time, unix_ts
      */
     public function testInvalidFormatInValueGetter1() {
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('created_at'), TestingAdmin::_());
