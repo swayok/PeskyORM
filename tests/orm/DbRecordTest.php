@@ -101,7 +101,6 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
             $adminData['id'] = NormalizeValue::normalizeInteger($adminData['id']);
         } else {
             $adminData['id'] = null;
-            $adminData['password'] = null;
         }
         if ($addNotChangeableCol || $addNotChangeableCol === null) {
             $adminData['not_changeable_column'] = $addNotChangeableCol === null ? null : 'not changable';
@@ -109,6 +108,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         if ($addNotExistingCol) {
             $adminData['not_existing_column'] = null;
         }
+        unset($adminData['password']);
         return $adminData;
     }
 
@@ -606,7 +606,6 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
                 'id' => null,
                 'parent_id' => null,
                 'login' => null,
-                'password' => null,
                 'created_at' => null,
                 'updated_at' => null,
                 'remember_token' => null,
@@ -677,26 +676,26 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         );
 
         $insertedRecords = TestingApp::fillAdminsTable(10);
-        unset($adminNoId['Parent']);
-        $toArrayRelation = $rec->read($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent'], true);
+        unset($adminNoId['Parent'], $insertedRecords[0]['password'], $insertedRecords[1]['password'], $insertedRecords[2]['password']);
+        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent'], true);
         static::assertEquals(
             ['id' => $insertedRecords[1]['id'], 'Parent' => $insertedRecords[0]],
             array_diff_key($toArrayRelation, ['not_existing_column' => ''])
         );
 
-        $toArrayRelation = $rec->read($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent' => ['login']], true);
+        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent' => ['login']], true);
         static::assertEquals(
             ['id' => $insertedRecords[1]['id'], 'Parent' => ['login' => $insertedRecords[0]['login']]],
             $toArrayRelation
         );
 
-        $toArrayRelation = $rec->read($insertedRecords[0]['id'])->toArrayWithoutFiles(['id'], ['Children'], true);
+        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id'], ['Children'], true);
         static::assertEquals(
             ['id' => $insertedRecords[0]['id'], 'Children' => [$insertedRecords[1], $insertedRecords[2]]],
             $toArrayRelation
         );
 
-        $toArrayRelation = $rec->read($insertedRecords[0]['id'])->toArrayWithoutFiles(['id'], ['Children' => ['email']], true);
+        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id'], ['Children' => ['email']], true);
         static::assertEquals(
             [
                 'id' => $insertedRecords[0]['id'],
@@ -755,7 +754,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $columns = array_merge(array_keys($adminWithId), ['password', 'not_existing_column', 'not_changeable_column']);
 
         $rec = TestingAdmin::fromArray([]);
-        static::assertEquals($rec->getDefaults($columns, false), $rec->toArrayWithoutFiles());
+        static::assertEquals($rec->getDefaults($columns, false), array_merge($rec->toArrayWithoutFiles(), ['password' => null]));
 
         $rec = TestingAdmin::fromArray($adminWithoutId, false);
         static::assertFalse($rec->isValueFromDb('parent_id'));
@@ -841,6 +840,8 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertInstanceOf(TestingAdmin::class, $rec->getRelatedRecord('Parent', false));
         static::assertInstanceOf(RecordsArray::class, $relatedRecords['Children']);
         static::assertInstanceOf(RecordsArray::class, $rec->getRelatedRecord('Children', false));
+        static::assertEquals($recordsAdded[0]['password'], $rec->getRelatedRecord('Parent', false)->getValue('password'));
+        unset($recordsAdded[0]['password']);
         static::assertEquals($recordsAdded[0], $rec->getRelatedRecord('Parent', false)->toArrayWithoutFiles());
         static::assertCount(2, $relatedRecords['Children']);
         static::assertCount(2, $rec->getRelatedRecord('Children', false));
@@ -1147,7 +1148,7 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $recordsAdded = TestingApp::fillAdminsTable(10);
         $parentData = $recordsAdded[0];
         $normalColumns = array_diff(array_keys(TestingAdmin::getColumnsThatExistInDb()), ['created_at', 'updated_at']);
-        unset($parentData['created_at'], $parentData['updated_at']);
+        unset($parentData['created_at'], $parentData['updated_at'], $parentData['password']);
 
         $rec = TestingAdmin::fromArray($recordsAdded[1], true);
         static::assertFalse($rec->isRelatedRecordAttached('Parent'));
@@ -1245,6 +1246,8 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $rec->updateValues(['Parent' => $records[0]], true);
         static::assertTrue($rec->isRelatedRecordAttached('Parent'));
         static::assertTrue($rec->getRelatedRecord('Parent', false)->existsInDb(false));
+        static::assertEquals($records[0]['password'], $rec->getRelatedRecord('Parent', false)->getValue('password'));
+        unset($records[0]['password']);
         static::assertEquals($records[0], $rec->getRelatedRecord('Parent', false)->toArrayWithoutFiles());
 
         $rec->merge(['Parent' => [], 'email' => null], false);
@@ -1667,6 +1670,8 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $data = TestingApp::getRecordsForDb('admins', 1)[0];
         $data = array_merge($data, ['not_existing_column' => null]);
         $rec->fromData($data, true); //< it should not fail even if there was no commit() or rollback() after previous begin()
+        static::assertEquals($data['password'], $rec->getValue('password'));
+        unset($data['password']);
         static::assertEquals($data, $rec->toArrayWithoutFiles());
         $rec->begin()->rollback()->begin();
         $rec->updateValue('email', 'email.was@changed.hehe', false);
@@ -2027,6 +2032,8 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertInstanceOf(RecordsArray::class, $rec->Children);
         static::assertInstanceOf(TestingAdmin::class, $rec['Parent']);
         static::assertInstanceOf(RecordsArray::class, $rec['Children']);
+        static::assertEquals($data['password'], $rec->Parent->getValue('password'));
+        unset($data['password']);
         static::assertEquals($data, $rec->Parent->toArray(array_keys($data)));
         static::assertCount(2, $rec->Children);
         static::assertEquals($data, $rec['Parent']->toArray(array_keys($data)));

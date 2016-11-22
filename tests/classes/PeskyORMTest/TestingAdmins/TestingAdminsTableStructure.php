@@ -60,6 +60,7 @@ class TestingAdminsTableStructure extends TableStructure {
                 }
                 return [];
             })
+            ->itIsHiddenFromToArray()
         ;
     }
 

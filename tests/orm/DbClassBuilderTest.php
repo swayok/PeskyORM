@@ -55,20 +55,20 @@ class DbClassBuilderTest extends PHPUnit_Framework_TestCase {
     public function testTableAndRecordClassBuilding() {
         $builder = $this->getBuilder();
         static::assertEquals(
-            file_get_contents(__DIR__ . '/classes_to_test_builder/table_class1.txt'),
-            $builder->buildTableClass('App\\Db')
+            preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/table_class1.txt')),
+            preg_replace("%[\r\n\t]+%", '', $builder->buildTableClass('App\\Db'))
         );
         static::assertEquals(
-            file_get_contents(__DIR__ . '/classes_to_test_builder/table_class2.txt'),
-            $builder->buildTableClass('App\\Db', \PeskyORMTest\TestingBaseTable::class)
+            preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/table_class2.txt')),
+            preg_replace("%[\r\n\t]+%", '', $builder->buildTableClass('App\\Db', \PeskyORMTest\TestingBaseTable::class))
         );
         static::assertEquals(
-            file_get_contents(__DIR__ . '/classes_to_test_builder/record_class1.txt'),
-            $builder->buildRecordClass('App\\Db')
+            preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/record_class1.txt')),
+            preg_replace("%[\r\n\t]+%", '', $builder->buildRecordClass('App\\Db'))
         );
         static::assertEquals(
-            file_get_contents(__DIR__ . '/classes_to_test_builder/record_class2.txt'),
-            $builder->buildRecordClass('App\\Db', \PeskyORMTest\TestingAdmins\TestingAdmin::class)
+            preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/record_class2.txt')),
+            preg_replace("%[\r\n\t]+%", '', $builder->buildRecordClass('App\\Db', \PeskyORMTest\TestingAdmins\TestingAdmin::class))
         );
     }
 
@@ -154,12 +154,12 @@ class DbClassBuilderTest extends PHPUnit_Framework_TestCase {
     public function testDbStructureClassBuilder() {
         $builder = $this->getBuilder();
         static::assertEquals(
-            file_get_contents(__DIR__ . '/classes_to_test_builder/structure_class1.txt'),
-            $builder->buildStructureClass('App\\Db')
+            preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/structure_class1.txt')),
+            preg_replace("%[\r\n\t]+%", '', $builder->buildStructureClass('App\\Db'))
         );
         static::assertEquals(
-            file_get_contents(__DIR__ . '/classes_to_test_builder/structure_class2.txt'),
-            $builder->buildStructureClass('App\\Db', \PeskyORMTest\TestingAdmins\TestingAdminsTableStructure::class)
+            preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/structure_class2.txt')),
+            preg_replace("%[\r\n\t]+%", '', $builder->buildStructureClass('App\\Db', \PeskyORMTest\TestingAdmins\TestingAdminsTableStructure::class))
         );
     }
 }
