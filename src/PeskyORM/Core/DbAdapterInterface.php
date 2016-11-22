@@ -11,6 +11,11 @@ interface DbAdapterInterface {
     public function getConnection();
 
     /**
+     * @return DbConnectionConfigInterface
+     */
+    public function getConnectionConfig();
+
+    /**
      * @return $this
      */
     public function disconnect();

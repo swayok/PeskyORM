@@ -164,7 +164,7 @@ class MysqlConfig implements DbConnectionConfigInterface {
      * @throws \InvalidArgumentException
      */
     public function setDbPort($dbPort) {
-        if (!is_numeric($dbPort) || !preg_match('%^\d+$%', $dbPort)) {
+        if (!is_numeric($dbPort) || !ctype_digit((string)$dbPort)) {
             throw new \InvalidArgumentException('DB port argument must be an integer number');
         }
         $this->dbPort = $dbPort;

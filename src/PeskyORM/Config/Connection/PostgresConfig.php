@@ -16,6 +16,7 @@ class PostgresConfig implements DbConnectionConfigInterface {
     /**
      * @param array $config
      * @return static
+     * @throws \InvalidArgumentException
      */
     static public function fromArray(array $config) {
         $dbName = array_key_exists('name', $config) ? $config['name'] : null;
@@ -38,6 +39,7 @@ class PostgresConfig implements DbConnectionConfigInterface {
      * @param string $dbName
      * @param string $user
      * @param string $password
+     * @throws \InvalidArgumentException
      */
     public function __construct(
         $dbName,
@@ -98,6 +100,7 @@ class PostgresConfig implements DbConnectionConfigInterface {
     /**
      * @param string $dbHost
      * @return $this
+     * @throws \InvalidArgumentException
      */
     public function setDbHost($dbHost) {
         if (empty($dbHost)) {
@@ -122,7 +125,7 @@ class PostgresConfig implements DbConnectionConfigInterface {
      * @throws \InvalidArgumentException
      */
     public function setDbPort($dbPort) {
-        if (!is_numeric($dbPort) || !preg_match('%^\d+$%', $dbPort)) {
+        if (!is_numeric($dbPort) || !ctype_digit((string)$dbPort)) {
             throw new \InvalidArgumentException('DB port argument must be an integer number');
         }
         $this->dbPort = $dbPort;

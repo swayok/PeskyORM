@@ -154,6 +154,11 @@ class Column {
      */
     protected $isValueCanBeSetOrChanged = true;
     /**
+     * When true - value will not be added to the results of Record::toArray() call
+     * @var bool
+     */
+    protected $isHiddenFromToArray = false;
+    /**
      * @var string
      */
     protected $defaultClosuresClass = DefaultColumnClosures::class;
@@ -835,8 +840,6 @@ class Column {
         return $this;
     }
 
-
-
     /**
      * @return \Closure
      */
@@ -853,8 +856,6 @@ class Column {
         $this->valuePreprocessor = $newValuePreprocessor;
         return $this;
     }
-
-
 
     /**
      * Get function that returns a column value
@@ -1085,6 +1086,21 @@ class Column {
      */
     public function isAutoUpdatingValue() {
         return !empty($this->valueAutoUpdater);
+    }
+
+    /**
+     * @return $this
+     */
+    public function itIsHiddenFromToArray() {
+        $this->isHiddenFromToArray = true;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isItHiddenFromToArray() {
+        return $this->isHiddenFromToArray;
     }
 
 }

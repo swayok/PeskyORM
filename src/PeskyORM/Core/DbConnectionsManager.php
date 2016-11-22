@@ -40,6 +40,7 @@ class DbConnectionsManager {
      * @param string $adapterName
      * @param DbConnectionConfigInterface $connectionConfig
      * @return DbAdapter|DbAdapterInterface
+     * @throws \InvalidArgumentException
      */
     static public function createConnection(
         $connectionName,
