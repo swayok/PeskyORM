@@ -28,27 +28,26 @@ class DbClassBuilderTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testBuilderServiceMethods() {
-        $builder1 = $this->getBuilder();
-        $builder2 = $this->getBuilder('some_tables');
-        static::assertEquals('Admins', $this->callObjectMethod($builder1, 'convertTableNameToClassName'));
-        static::assertEquals('SomeTables', $this->callObjectMethod($builder2, 'convertTableNameToClassName'));
-        static::assertEquals('AdminsTable', $this->callObjectMethod($builder1, 'makeTableClassName'));
-        static::assertEquals('SomeTablesTable', $this->callObjectMethod($builder2, 'makeTableClassName'));
-        static::assertEquals('AdminsTableStructure', $this->callObjectMethod($builder1, 'makeTableStructureClassName'));
-        static::assertEquals('SomeTablesTableStructure', $this->callObjectMethod($builder2, 'makeTableStructureClassName'));
-        static::assertEquals('Admin', $this->callObjectMethod($builder1, 'makeRecordClassName'));
-        static::assertEquals('SomeTable', $this->callObjectMethod($builder2, 'makeRecordClassName'));
+        static::assertEquals('Admins', ClassBuilder::convertTableNameToClassName('admins'));
+        static::assertEquals('SomeTables', ClassBuilder::convertTableNameToClassName('some_tables'));
+        static::assertEquals('AdminsTable', ClassBuilder::makeTableClassName('admins'));
+        static::assertEquals('SomeTablesTable', ClassBuilder::makeTableClassName('some_tables'));
+        static::assertEquals('AdminsTableStructure', ClassBuilder::makeTableStructureClassName('admins'));
+        static::assertEquals('SomeTablesTableStructure', ClassBuilder::makeTableStructureClassName('some_tables'));
+        static::assertEquals('Admin', ClassBuilder::makeRecordClassName('admins'));
+        static::assertEquals('SomeTable', ClassBuilder::makeRecordClassName('some_tables'));
+        $builder = $this->getBuilder();
         static::assertEquals(
             'TestingAdmin',
-            $this->callObjectMethod($builder1, 'getShortClassName', \PeskyORMTest\TestingAdmins\TestingAdmin::class)
+            $this->callObjectMethod($builder, 'getShortClassName', \PeskyORMTest\TestingAdmins\TestingAdmin::class)
         );
         static::assertEquals(
             'Column::TYPE_STRING',
-            $this->callObjectMethod($builder1, 'getConstantNameForColumnType', 'string')
+            $this->callObjectMethod($builder, 'getConstantNameForColumnType', 'string')
         );
         static::assertEquals(
             'Column::TYPE_INT',
-            $this->callObjectMethod($builder1, 'getConstantNameForColumnType', 'integer')
+            $this->callObjectMethod($builder, 'getConstantNameForColumnType', 'integer')
         );
     }
 

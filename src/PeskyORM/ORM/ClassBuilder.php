@@ -39,20 +39,20 @@ namespace {$namespace};
 
 use {$parentClass};
 
-class {$this->makeTableClassName()} extends {$this->getShortClassName($parentClass)} {
+class {$this::makeTableClassName($this->tableName)} extends {$this->getShortClassName($parentClass)} {
 
     /**
-     * @return {$this->makeTableStructureClassName()}
+     * @return {$this::makeTableStructureClassName($this->tableName)}
      */
     public function getTableStructure() {
-        return {$this->makeTableStructureClassName()}::getInstance();
+        return {$this::makeTableStructureClassName($this->tableName)}::getInstance();
     }
 
     /**
-     * @return {$this->makeRecordClassName()}
+     * @return {$this::makeRecordClassName($this->tableName)}
      */
     public function newRecord() {
-        return new {$this->makeRecordClassName()}();
+        return new {$this::makeRecordClassName($this->tableName)}();
     }
 
 }
@@ -79,7 +79,7 @@ use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Relation;
 use PeskyORM\Core\DbExpr;
 
-class {$this->makeTableStructureClassName()} extends {$this->getShortClassName($parentClass)} {
+class {$this::makeTableStructureClassName($this->tableName)} extends {$this->getShortClassName($parentClass)} {
 
     static public function getTableName() {
         return '{$this->tableName}';
@@ -108,13 +108,13 @@ namespace {$namespace};
 
 use {$parentClass};
 
-class {$this->makeRecordClassName()} extends {$this->getShortClassName($parentClass)} {
+class {$this::makeRecordClassName($this->tableName)} extends {$this->getShortClassName($parentClass)} {
 
     /**
-     * @return {$this->makeTableClassName()}
+     * @return {$this::makeTableClassName($this->tableName)}
      */
     static public function getTable() {
-        return {$this->makeTableClassName()}::getInstance();
+        return {$this::makeTableClassName($this->tableName)}::getInstance();
     }
 }
 
@@ -122,31 +122,35 @@ VIEW;
     }
 
     /**
+     * @param string $tableName
      * @return string
      */
-    protected function convertTableNameToClassName() {
-        return StringUtils::classify($this->tableName);
+    static public function convertTableNameToClassName($tableName) {
+        return StringUtils::classify($tableName);
     }
 
     /**
+     * @param string $tableName
      * @return string
      */
-    protected function makeTableClassName() {
-        return $this->convertTableNameToClassName() . 'Table';
+    static public function makeTableClassName($tableName) {
+        return static::convertTableNameToClassName($tableName) . 'Table';
     }
 
     /**
+     * @param string $tableName
      * @return string
      */
-    protected function makeTableStructureClassName() {
-        return $this->convertTableNameToClassName() . 'TableStructure';
+    static public function makeTableStructureClassName($tableName) {
+        return static::convertTableNameToClassName($tableName) . 'TableStructure';
     }
 
     /**
+     * @param string $tableName
      * @return string
      */
-    protected function makeRecordClassName() {
-        return StringUtils::singularize($this->convertTableNameToClassName());
+    static public function makeRecordClassName($tableName) {
+        return StringUtils::singularize(static::convertTableNameToClassName($tableName));
     }
 
     /**
