@@ -18,7 +18,7 @@ class TestingInvalidRelationsInTableStructure extends TableStructure {
 
     private function valid() {
         return Column::create(Column::TYPE_INT)
-            ->itIsPrimaryKey();
+            ->primaryKey();
     }
 
 

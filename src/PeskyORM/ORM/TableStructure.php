@@ -247,11 +247,13 @@ abstract class TableStructure implements TableStructureInterface {
         foreach ($description->getColumns() as $columnName => $columnDescription) {
             if (!static::hasColumn($columnName)) {
                 $column = Column::create($columnDescription->getOrmType(), $columnName)
-                    ->setIsNullable($columnDescription->isNullable())
-                    ->valueMustBeUnique($columnDescription->isUnique());
+                    ->setIsNullableValue($columnDescription->isNullable());
                 if ($columnDescription->isPrimaryKey()) {
-                    $column->itIsPrimaryKey();
+                    $column->primaryKey();
                     $this->pk = $column;
+                }
+                if ($columnDescription->isUnique()) {
+                    $column->uniqueValues();
                 }
                 if ($columnDescription->getDefault() !== null) {
                     $column->setDefaultValue($columnDescription->getDefault());

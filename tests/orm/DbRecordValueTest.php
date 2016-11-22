@@ -154,7 +154,7 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Fallback value of the default value for column 'parent_id' is not valid. Errors: Null value is not allowed
      */
     public function testInvalidDefaultValue2() {
-        $valueObj = RecordValue::create($this->getClonedColumn('parent_id')->valueIsNotNullable(), TestingAdmin::_());
+        $valueObj = RecordValue::create($this->getClonedColumn('parent_id')->disallowsNullValues(), TestingAdmin::_());
         $valueObj->getDefaultValue();
     }
 
@@ -164,7 +164,7 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
      */
     public function testInvalidDefaultValue3() {
         $valueObj = RecordValue::create(
-            $this->getClonedColumn('parent_id')->valueIsNotNullable()->setDefaultValue(null),
+            $this->getClonedColumn('parent_id')->disallowsNullValues()->setDefaultValue(null),
             TestingAdmin::_()
         );
         $valueObj->getDefaultValue();
@@ -177,7 +177,7 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
     public function testInvalidDefaultValue4() {
         $valueObj = RecordValue::create(
             $this->getClonedColumn('parent_id')
-                ->valueIsNotNullable()
+                ->disallowsNullValues()
                 ->setValidDefaultValueGetter(function () {
                     return null;
                 }),

@@ -16,23 +16,23 @@ class TestingSettingsTableStructure extends TableStructure {
 
     private function id() {
         return Column::create(Column::TYPE_INT)
-            ->itIsPrimaryKey()
+            ->primaryKey()
             ->convertsEmptyStringToNull()
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
         ;
     }
 
     private function key() {
         return Column::create(Column::TYPE_STRING)
             ->convertsEmptyStringToNull()
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
         ;
     }
 
     private function value() {
         return Column::create(Column::TYPE_JSONB)
             ->convertsEmptyStringToNull()
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue('{}')
         ;
     }

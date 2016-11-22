@@ -16,9 +16,9 @@ class TestingAdmins3TableStructure extends TableStructure {
 
     private function id() {
         return Column::create(Column::TYPE_INT)
-            ->itIsPrimaryKey()
+            ->primaryKey()
             ->convertsEmptyStringToNull()
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue(TestingAdminsTable::getExpressionToSetDefaultValueForAColumn())
         ;
     }
@@ -26,15 +26,15 @@ class TestingAdmins3TableStructure extends TableStructure {
     private function parent_id() {
         return Column::create(Column::TYPE_INT)
             ->convertsEmptyStringToNull()
-            ->valueIsNullable()
+            ->allowsNullValues()
         ;
     }
 
     private function login() {
         return Column::create(Column::TYPE_STRING)
             ->convertsEmptyStringToNull()
-            ->valueIsNotNullable()
-            ->mustTrimValue()
+            ->disallowsNullValues()
+            ->trimsValue()
             ->setValueSavingExtender(function ($valueContainer, $isUpdate) {
                 if ($isUpdate) {
                     throw new \UnexpectedValueException('login: update!');
@@ -46,8 +46,8 @@ class TestingAdmins3TableStructure extends TableStructure {
     private function password() {
         return Column::create(Column::TYPE_PASSWORD)
             ->convertsEmptyStringToNull()
-            ->valueIsNotNullable()
-            ->mustTrimValue()
+            ->disallowsNullValues()
+            ->trimsValue()
             ->setValuePreprocessor(function ($value, $isDbValue, Column $column) {
                 $value = DefaultColumnClosures::valuePreprocessor($value, $isDbValue, $column);
                 if ($isDbValue) {
@@ -70,13 +70,13 @@ class TestingAdmins3TableStructure extends TableStructure {
 
     private function created_at() {
         return Column::create(Column::TYPE_TIMESTAMP)
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue(DbExpr::create('NOW()'));
     }
 
     private function updated_at() {
         return Column::create(Column::TYPE_TIMESTAMP)
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->autoUpdateValueOnEachSaveWith(function () {
                 return DbExpr::create('NOW()');
             });
@@ -85,14 +85,14 @@ class TestingAdmins3TableStructure extends TableStructure {
     private function remember_token() {
         return Column::create(Column::TYPE_STRING)
             ->convertsEmptyStringToNull()
-            ->valueIsNullable()
-            ->mustTrimValue();
+            ->allowsNullValues()
+            ->trimsValue();
     }
 
     private function is_superadmin() {
         return Column::create(Column::TYPE_BOOL)
             ->convertsEmptyStringToNull()
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue(false);
     }
 
@@ -100,13 +100,13 @@ class TestingAdmins3TableStructure extends TableStructure {
         return Column::create(Column::TYPE_ENUM)
             ->setAllowedValues(['en', 'ru', 'de'])
             ->convertsEmptyStringToNull()
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue('en');
     }
 
     private function ip() {
         return Column::create(Column::TYPE_IPV4_ADDRESS)
-            ->valueIsNullable()
+            ->allowsNullValues()
             ->convertsEmptyStringToNull();
     }
 
@@ -114,39 +114,39 @@ class TestingAdmins3TableStructure extends TableStructure {
         return Column::create(Column::TYPE_ENUM)
             ->setAllowedValues(['admin', 'manager', 'guest'])
             ->convertsEmptyStringToNull()
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue('guest');
     }
 
     private function is_active() {
         return Column::create(Column::TYPE_BOOL)
             ->convertsEmptyStringToNull()
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue(true);
     }
 
     private function name() {
         return Column::create(Column::TYPE_STRING)
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue('');
     }
 
     private function email() {
         return Column::create(Column::TYPE_EMAIL)
-            ->valueIsNullable();
+            ->allowsNullValues();
     }
 
     private function timezone() {
         return Column::create(Column::TYPE_STRING)
             ->convertsEmptyStringToNull()
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue('UTC');
     }
 
     private function avatar() {
         return Column::create(Column::TYPE_IMAGE)
-            ->itDoesNotExistInDb()
-            ->valueIsNullable()
+            ->doesNotExistInDb()
+            ->allowsNullValues()
             ->setValueFormatter(function () {
                 return 'not implemented';
             });
@@ -154,8 +154,8 @@ class TestingAdmins3TableStructure extends TableStructure {
 
     private function some_file() {
         return Column::create(Column::TYPE_FILE)
-            ->itDoesNotExistInDb()
-            ->valueIsNullable()
+            ->doesNotExistInDb()
+            ->allowsNullValues()
             ->setValueFormatter(function () {
                 return 'not implemented';
             })
@@ -171,7 +171,7 @@ class TestingAdmins3TableStructure extends TableStructure {
 
     private function not_existing_column() {
         return Column::create(Column::TYPE_STRING)
-            ->itDoesNotExistInDb();
+            ->doesNotExistInDb();
     }
 
     private function Parent() {

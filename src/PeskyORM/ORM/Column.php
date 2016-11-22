@@ -157,7 +157,7 @@ class Column {
      * When true - value will not be added to the results of Record::toArray() call
      * @var bool
      */
-    protected $isHiddenFromToArray = false;
+    protected $isPrivateValue = false;
     /**
      * @var string
      */
@@ -475,7 +475,7 @@ class Column {
     /**
      * @return $this
      */
-    public function valueIsNullable() {
+    public function allowsNullValues() {
         $this->valueCanBeNull = true;
         return $this;
     }
@@ -483,7 +483,7 @@ class Column {
     /**
      * @return $this
      */
-    public function valueIsNotNullable() {
+    public function disallowsNullValues() {
         $this->valueCanBeNull = false;
         return $this;
     }
@@ -492,7 +492,7 @@ class Column {
      * @param bool $bool
      * @return $this
      */
-    public function setIsNullable($bool) {
+    public function setIsNullableValue($bool) {
         $this->valueCanBeNull = (bool)$bool;
         return $this;
     }
@@ -500,7 +500,7 @@ class Column {
     /**
      * @return $this
      */
-    public function mustTrimValue() {
+    public function trimsValue() {
         $this->trimValue = true;
         return $this;
     }
@@ -515,7 +515,7 @@ class Column {
     /**
      * @return $this
      */
-    public function mustLowercaseValue() {
+    public function lowercasesValue() {
         $this->lowercaseValue = true;
         return $this;
     }
@@ -525,6 +525,22 @@ class Column {
      */
     public function isValueLowercasingRequired() {
         return $this->lowercaseValue;
+    }
+
+    /**
+     * Value will not appear in Record->toArray() results
+     * @return $this
+     */
+    public function privateValue() {
+        $this->isPrivateValue = true;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPrivateValue() {
+        return $this->isPrivateValue;
     }
 
     /**
@@ -646,7 +662,7 @@ class Column {
     /**
      * @return $this
      */
-    public function itIsPrimaryKey() {
+    public function primaryKey() {
         $this->isPrimaryKey = true;
         return $this;
     }
@@ -659,18 +675,17 @@ class Column {
     }
 
     /**
-     * @param boolean $isUnique
      * @return $this
      */
-    public function valueMustBeUnique($isUnique) {
-        $this->isValueMustBeUnique = (bool)$isUnique;
+    public function uniqueValues() {
+        $this->isValueMustBeUnique = true;
         return $this;
     }
 
     /**
      * @return $this
      */
-    public function itDoesNotExistInDb() {
+    public function doesNotExistInDb() {
         $this->existsInDb = false;
         return $this;
     }
@@ -1086,21 +1101,6 @@ class Column {
      */
     public function isAutoUpdatingValue() {
         return !empty($this->valueAutoUpdater);
-    }
-
-    /**
-     * @return $this
-     */
-    public function itIsHiddenFromToArray() {
-        $this->isHiddenFromToArray = true;
-        return $this;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isItHiddenFromToArray() {
-        return $this->isHiddenFromToArray;
     }
 
 }

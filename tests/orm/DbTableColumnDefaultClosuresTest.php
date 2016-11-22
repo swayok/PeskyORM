@@ -45,7 +45,7 @@ class DbTableColumnDefaultClosuresTest extends PHPUnit_Framework_TestCase {
         static::assertEquals(1, DefaultColumnClosures::valuePreprocessor(1, false, $column));
         static::assertEquals(-1.23, DefaultColumnClosures::valuePreprocessor(-1.23, false, $column));
         static::assertEquals('1.23', DefaultColumnClosures::valuePreprocessor('1.23', false, $column));
-        $column->mustTrimValue()->mustLowercaseValue()->convertsEmptyStringToNull();
+        $column->trimsValue()->lowercasesValue()->convertsEmptyStringToNull();
         static::assertEquals(null, DefaultColumnClosures::valuePreprocessor('', false, $column));
         static::assertEquals(null, DefaultColumnClosures::valuePreprocessor(' ', false, $column));
         static::assertEquals('a', DefaultColumnClosures::valuePreprocessor(' a ', false, $column));

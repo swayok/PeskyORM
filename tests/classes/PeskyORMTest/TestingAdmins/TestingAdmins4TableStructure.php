@@ -17,7 +17,7 @@ class TestingAdmins4TableStructure extends TableStructure {
 
     private function updated_at() {
         return Column::create(Column::TYPE_TIMESTAMP)
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->autoUpdateValueOnEachSaveWith(function () {
                 return DbExpr::create('NOW()');
             });

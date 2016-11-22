@@ -2,9 +2,9 @@
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\JoinInfo;
+use PeskyORM\Core\AbstractJoinInfo;
 
-class OrmJoinInfo extends JoinInfo {
+class OrmJoinInfo extends AbstractJoinInfo {
 
     /** @var TableInterface */
     protected $dbTable = null;
@@ -69,15 +69,6 @@ class OrmJoinInfo extends JoinInfo {
     }
 
     /**
-     * @param string $tableName
-     * @return $this
-     * @throws \BadMethodCallException
-     */
-    public function setTableName($tableName) {
-        throw new \BadMethodCallException('You must use ' . get_class($this) . '->setDbTable() instead');
-    }
-
-    /**
      * @return string
      */
     public function getTableName() {
@@ -88,7 +79,7 @@ class OrmJoinInfo extends JoinInfo {
      * @return bool
      */
     protected function hasTableName() {
-        return !empty($this->getDbTable());
+        return $this->getDbTable() !== null;
     }
 
     /**
@@ -109,23 +100,10 @@ class OrmJoinInfo extends JoinInfo {
     }
 
     /**
-     * @param string $foreignTableName
-     * @return $this
-     * @throws \BadMethodCallException
-     */
-    public function setForeignTableName($foreignTableName) {
-        throw new \BadMethodCallException('You must use ' . get_class($this) . '->setForeignDbTable() instead');
-    }
-
-    /**
      * @return TableInterface
      */
     public function getForeignDbTable() {
         return $this->foreignDbTable;
-    }
-
-    public function setForeignTableSchema($schema) {
-        throw new \BadMethodCallException('This method cannot be used in ' . get_class($this));
     }
 
     /**
@@ -148,7 +126,7 @@ class OrmJoinInfo extends JoinInfo {
                     throw new \InvalidArgumentException(
                         "\$columns argument contains non-string column name on key '{$columnAlias}' for join named '{$this->getJoinName()}'"
                     );
-                } else if (!$tableStruct->hasColumn($columnName)) {
+                } else if (!$tableStruct::hasColumn($columnName)) {
                     throw new \InvalidArgumentException(
                         "Column with name [{$this->getJoinName()}.{$columnName}]"
                             . (is_int($columnAlias) ? '' : " and alias [{$columnAlias}]")

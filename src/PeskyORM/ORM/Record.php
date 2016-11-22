@@ -1510,7 +1510,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     protected function getColumnValueForToArray($columnName, $returnNullForFiles = false, &$notSet = null) {
         $column = static::getColumn($columnName);
         $notSet = true;
-        if ($column->isItHiddenFromToArray()) {
+        if ($column->isPrivateValue()) {
             return null;
         } else if ($column->isItAFile()) {
             if (!$returnNullForFiles && $this->hasValue($column, false)) {

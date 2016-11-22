@@ -20,11 +20,11 @@ class TestingInvalidColumnsInTableStructure extends TableStructure {
 
     private function pk1() {
         return Column::create(Column::TYPE_INT)
-            ->itIsPrimaryKey();
+            ->primaryKey();
     }
 
     private function pk2() {
         return Column::create(Column::TYPE_INT)
-            ->itIsPrimaryKey();
+            ->primaryKey();
     }
 }

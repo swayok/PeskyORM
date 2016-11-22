@@ -2,11 +2,12 @@
 
 namespace PeskyORM\ORM;
 
+use PeskyORM\Core\AbstractSelect;
+use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\Select;
 use PeskyORM\Core\Utils;
 
-class OrmSelect extends Select {
+class OrmSelect extends AbstractSelect {
 
     /**
      * @var TableInterface
@@ -53,21 +54,36 @@ class OrmSelect extends Select {
      * @throws \UnexpectedValueException
      */
     public function __construct(TableInterface $table) {
-        $this->setTable($table);
-        parent::__construct($table::getName(), $table::getConnection());
+        $this->table = $table;
+        $this->tableStructure = $table::getStructure();
     }
 
     /**
-     * @return Record
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
+     * @return string
      */
-    public function fetchOneAsDbRecord() {
-        return $this->table->newRecord()->fromDbData($this->fetchOne());
+    public function getTableName() {
+        return $this->getTableStructure()->getTableName();
+    }
+
+    /**
+     * @return string
+     */
+    public function getTableAlias() {
+        return $this->getTable()->getAlias();
+    }
+
+    /**
+     * @return string
+     */
+    public function getTableSchemaName() {
+        return $this->getTableStructure()->getSchema();
+    }
+
+    /**
+     * @return DbAdapterInterface
+     */
+    public function getConnection() {
+        return $this->getTable()->getConnection();
     }
 
     /**
@@ -85,29 +101,30 @@ class OrmSelect extends Select {
     }
 
     /**
+     * @return Record
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     */
+    public function fetchOneAsDbRecord() {
+        return $this->table->newRecord()->fromDbData($this->fetchOne());
+    }
+
+    /**
      * @param OrmJoinInfo $joinConfig
      * @param bool $append
      * @return $this
      * @throws \InvalidArgumentException
      */
     public function join(OrmJoinInfo $joinConfig, $append = true) {
-        parent::join($joinConfig, $append);
+        $this->_join($joinConfig, $append);
         return $this;
     }
 
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
-
-    /**
-     * @param TableInterface $table
-     * @throws \BadMethodCallException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
-     */
-    protected function setTable(TableInterface $table) {
-        $this->table = $table;
-        $this->tableStructure = $table::getStructure();
-    }
 
     protected function beforeQueryBuilding() {
         if ($this->isDirty('joins')) {
@@ -364,7 +381,7 @@ class OrmSelect extends Select {
                     ->getJoin($columnInfo['join_name'])
                     ->getForeignDbTable()
                     ->getTableStructure();
-                $isValid = $foreignTableStructure->hasColumn($columnInfo['name']);
+                $isValid = $foreignTableStructure::hasColumn($columnInfo['name']);
                 if (!$isValid) {
                     throw new \UnexpectedValueException(
                         "{$subject}: Column with name [{$columnInfo['join_name']}.{$columnInfo['name']}] not found in "
