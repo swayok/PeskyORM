@@ -16,6 +16,14 @@ interface DbAdapterInterface {
     public function getConnectionConfig();
 
     /**
+     * Run $callback when DB connection created (or right now if connection already established)
+     * @param \Closure $callback
+     * @param null|string $code - callback code to prevent duplicate usage
+     * @return $this
+     */
+    public function onConnect(\Closure $callback, $code = null);
+
+    /**
      * @return $this
      */
     public function disconnect();
@@ -38,6 +46,13 @@ interface DbAdapterInterface {
      * @return \PDOStatement|array
      */
     public function query($query, $fetchData = null);
+
+    /**
+     * Set DB timezone for current session
+     * @param string $timezone
+     * @return $this
+     */
+    public function setTimezone($timezone);
 
     /**
      * @param string $table

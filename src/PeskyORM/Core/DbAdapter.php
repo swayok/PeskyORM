@@ -41,6 +41,11 @@ abstract class DbAdapter implements DbAdapterInterface {
     protected $pdo;
 
     /**
+     * @var array
+     */
+    protected $onConnectCallbacks = [];
+
+    /**
      * Class that wraps PDO connection. Used for debugging
      * function (DbAdapter $adapter, \PDO $pdo) { return $wrappedPdo; }
      *
@@ -86,6 +91,7 @@ abstract class DbAdapter implements DbAdapterInterface {
             $this->pdo = $this->makePdo();
             $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
             $this->wrapConnection();
+            $this->runOnConnectCallbacks($this->onConnectCallbacks);
         }
         return $this->pdo;
     }
@@ -123,6 +129,36 @@ abstract class DbAdapter implements DbAdapterInterface {
     private function wrapConnection() {
         if (is_callable(static::$connectionWrapper)) {
             $this->pdo = call_user_func(static::$connectionWrapper, $this, $this->getConnection());
+        }
+    }
+
+    /**
+     * Run $callback when DB connection created (or right now if connection already established)
+     * @param \Closure $callback
+     * @param null|string $code - callback code to prevent duplicate usage
+     * @return $this
+     */
+    public function onConnect(\Closure $callback, $code = null) {
+        $run = $this->pdo !== null;
+        if (!$code) {
+            $this->onConnectCallbacks[] = $callback;
+        } else if (!isset($this->onConnectCallbacks[$code])) {
+            $this->onConnectCallbacks[$code] = $callback;
+        } else {
+            $run = false;
+        }
+        if ($run) {
+            $this->runOnConnectCallbacks([$callback]);
+        }
+        return $this;
+    }
+
+    /**
+     * @param array $callbacks
+     */
+    protected function runOnConnectCallbacks(array $callbacks) {
+        foreach ($callbacks as $callback) {
+            $callback($this);
         }
     }
 

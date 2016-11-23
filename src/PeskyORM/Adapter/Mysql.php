@@ -93,6 +93,11 @@ class Mysql extends DbAdapter {
         return null;
     }
 
+    public function setTimezone($timezone) {
+        $this->exec(DbExpr::create("SET time_zone = ``$timezone``"));
+        return $this;
+    }
+
     public function addDataTypeCastToExpression($dataType, $expression) {
         if (!is_string($dataType)) {
             throw new \InvalidArgumentException('$dataType must be a string');

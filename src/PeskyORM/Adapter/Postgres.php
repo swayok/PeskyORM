@@ -130,6 +130,11 @@ class Postgres extends DbAdapter {
         return 'public';
     }
 
+    public function setTimezone($timezone) {
+        $this->exec(DbExpr::create("SET SESSION TIME ZONE ``$timezone``"));
+        return $this;
+    }
+
     public function addDataTypeCastToExpression($dataType, $expression) {
         return $expression . '::' . $dataType;
     }
