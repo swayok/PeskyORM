@@ -253,13 +253,14 @@ abstract class AbstractSelect {
     /**
      * Count records matching provided conditions and options
      * @param bool $ignoreLeftJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
+     * @param bool $ignoreLimitAndOffset - true: will ignore LIMIT and OFFSET to count total records
      * @return int
      * @throws \UnexpectedValueException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function fetchCount($ignoreLeftJoins = true) {
-        return (int)$this->getConnection()->query($this->getCountQuery($ignoreLeftJoins), Utils::FETCH_VALUE);
+    public function fetchCount($ignoreLeftJoins = true, $ignoreLimitAndOffset = false) {
+        return (int)$this->getConnection()->query($this->getCountQuery($ignoreLeftJoins, $ignoreLimitAndOffset), Utils::FETCH_VALUE);
     }
 
     /**
@@ -365,13 +366,14 @@ abstract class AbstractSelect {
 
     /**
      * @param bool $ignoreLeftJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
+     * @param bool $ignoreLimitAndOffset - true: will ignore LIMIT and OFFSET to count total records
      * @return string
      * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
      * @throws \PDOException
+     * @throws \InvalidArgumentException
      */
-    public function getCountQuery($ignoreLeftJoins = true) {
-        return $this->getSimplifiedQuery('COUNT(*)', $ignoreLeftJoins);
+    public function getCountQuery($ignoreLeftJoins = true, $ignoreLimitAndOffset = false) {
+        return $this->getSimplifiedQuery('COUNT(*)', $ignoreLeftJoins, $ignoreLimitAndOffset);
     }
 
     /**
@@ -382,19 +384,20 @@ abstract class AbstractSelect {
      * @throws \PDOException
      */
     public function getExistenceQuery($ignoreLeftJoins = true) {
-        return $this->getSimplifiedQuery('1', $ignoreLeftJoins) . ' LIMIT 1';
+        return $this->getSimplifiedQuery('1', $ignoreLeftJoins, true) . ' LIMIT 1';
     }
 
     /**
      * Make a simplified query without LIMIT, OFFSET and ORDER BY
      * @param string $expression - something like "COUNT(*)" or "1" to be selected by the query
      * @param bool $ignoreLeftJoins
+     * @param bool $ignoreLimitAndOffset
      * @return string
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      */
-    protected function getSimplifiedQuery($expression, $ignoreLeftJoins = true) {
+    protected function getSimplifiedQuery($expression, $ignoreLeftJoins = true, $ignoreLimitAndOffset = false) {
         $this->beforeQueryBuilding();
         $table = $this->makeTableNameWithAliasForQuery(
             $this->getTableName(),
@@ -405,9 +408,11 @@ abstract class AbstractSelect {
         $conditions = $this->makeConditions($this->where, 'WHERE');
         $having = $this->makeConditions($this->having, 'HAVING');
         $joins = $this->makeJoins($ignoreLeftJoins);
+        $limit = $ignoreLimitAndOffset ? '' : $this->makeLimit();
+        $offset = $ignoreLimitAndOffset ? '' : $this->makeOffset();
         $this->validateIfThereAreEnoughJoins();
         $this->notDirty();
-        return "SELECT $expression FROM {$table}{$joins}{$conditions}{$group}{$having}";
+        return "SELECT $expression FROM {$table}{$joins}{$conditions}{$group}{$having}{$limit}{$offset}";
     }
 
     /**

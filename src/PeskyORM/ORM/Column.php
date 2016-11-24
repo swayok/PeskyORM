@@ -79,7 +79,7 @@ class Column {
         self::VALUE_MUST_BE_TIMESTAMP_WITH_TZ => 'Value must be a valid timestamp with time zone',
         self::VALUE_MUST_BE_TIME => 'Value must be a valid time',
         self::VALUE_MUST_BE_DATE => 'Value must be a valid date',
-        self::VALUE_IS_NOT_ALLOWED => 'Value is not allowed',
+        self::VALUE_IS_NOT_ALLOWED => 'Value is not allowed: :value',
         self::ONE_OF_VALUES_IS_NOT_ALLOWED => 'One of values in the received array is not allowed',
         self::VALUE_MUST_BE_STRING => 'Value must be a string',
         self::VALUE_MUST_BE_STRING_OR_NUMERIC => 'Value must be a string or a number',

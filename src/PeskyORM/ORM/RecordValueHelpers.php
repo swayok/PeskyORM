@@ -194,7 +194,7 @@ abstract class RecordValueHelpers {
                 return [static::getErrorMessage($errorMessages, Column::ONE_OF_VALUES_IS_NOT_ALLOWED)];
             }
         } else if (!in_array($value, $allowedValues, true)) {
-            return [static::getErrorMessage($errorMessages, Column::VALUE_IS_NOT_ALLOWED)];
+            return [str_replace(':value', $value, static::getErrorMessage($errorMessages, Column::VALUE_IS_NOT_ALLOWED))];
         }
         return [];
     }

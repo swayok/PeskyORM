@@ -13,10 +13,17 @@ class RecordsSet extends RecordsArray {
      */
     protected $selectForOptimizedIteration;
     /**
+     * Count of records affected by LIMIT and OFFSET
      * null - not counted
      * @var null|int
      */
     protected $recordsCount = null;
+    /**
+     * Count of records not affected by LIMIT and OFFSET
+     * null - not counted
+     * @var null|int
+     */
+    protected $recordsCountTotal = null;
     /**
      * Used for optimized iteration that uses pagination to fetch small packs of records instead of fetching all at once
      * @var int
@@ -234,7 +241,7 @@ class RecordsSet extends RecordsArray {
     }
 
     /**
-     * Count elements of an object
+     * Count DB records within LIMIT and OFFSET options
      * @return int
      * @throws \UnexpectedValueException
      * @throws \PDOException
@@ -242,8 +249,23 @@ class RecordsSet extends RecordsArray {
      */
     public function count() {
         if ($this->recordsCount === null) {
-            $this->recordsCount = $this->select->fetchCount();
+            $this->recordsCount = $this->select->fetchCount(true, false);
         }
         return $this->recordsCount;
+    }
+
+    /**
+     * Count DB records ignoring LIMIT and OFFSET options
+     * @return int
+     */
+    public function countTotal() {
+        if ($this->recordsCountTotal === null) {
+            if ($this->select->getLimit() === 0 && $this->select->getOffset() === 0) {
+                $this->recordsCountTotal = $this->count();
+            } else {
+                $this->recordsCountTotal = $this->select->fetchCount(true, true);
+            }
+        }
+        return $this->recordsCountTotal;
     }
 }

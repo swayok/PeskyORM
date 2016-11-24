@@ -16,6 +16,18 @@ interface RecordInterface {
     static public function getTable();
 
     /**
+     * @param string $name
+     * @return bool
+     */
+    static public function hasColumn($name);
+
+    /**
+     * @param string $name
+     * @return Column
+     */
+    static public function getColumn($name);
+
+    /**
      * Resets all values and related records
      * @return $this
      */
