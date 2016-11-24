@@ -386,6 +386,10 @@ abstract class Table implements TableInterface {
         return static::getConnection()->quoteValue($value, $fieldInfoOrType);
     }
 
+    static public function quoteDbExpr(DbExpr $value) {
+        return static::getConnection()->quoteDbExpr($value);
+    }
+
     static public function query($query, $fetchData = null) {
         return static::getConnection()->query($query, $fetchData);
     }

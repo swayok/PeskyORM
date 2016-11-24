@@ -737,7 +737,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         if ($errorInfo['message'] === null) {
             return $originalException;
         }
-        if (preg_match('%syntax error at or near "\$\d+"%i', $errorInfo[2])) {
+        if (preg_match('%syntax error at or near "\$\d+"%i', $errorInfo['message'])) {
             $errorInfo['message'] .= "\n NOTE: PeskyORM do not use prepared statements. You possibly used one of Postgresql jsonb opertaors - '?', '?|' or '?&'."
                 . ' You should use alternative functions: jsonb_exists(jsonb, text), jsonb_exists_any(jsonb, text) or jsonb_exists_all(jsonb, text) respectively';
         }

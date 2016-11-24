@@ -40,7 +40,7 @@ class Relation {
     /**
      * @param string $localColumnName
      * @param string $type
-     * @param string $foreignTableClass
+     * @param string|TableInterface $foreignTableClass
      * @param string $foreignColumnName
      * @return static
      * @throws \UnexpectedValueException
@@ -60,7 +60,7 @@ class Relation {
     /**
      * @param string $localColumnName
      * @param string $type
-     * @param string $foreignTableClass
+     * @param string|TableInterface $foreignTableClass
      * @param string $foreignColumnName
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -171,7 +171,7 @@ class Relation {
     }
 
     /**
-     * @param string $foreignTableClass
+     * @param string|TableInterface $foreignTableClass
      * @return $this
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\OrmException
@@ -179,17 +179,27 @@ class Relation {
      * @throws \InvalidArgumentException
      */
     public function setForeignTableClass($foreignTableClass) {
-        if (!is_string($foreignTableClass)) {
-            throw new \InvalidArgumentException('$foreignTableClass argument must be a string');
+        if ($foreignTableClass instanceof TableInterface) {
+            $this->foreignTable = $foreignTableClass;
+            $this->foreignTableClass = get_class($foreignTableClass);
+        } else {
+            if (!is_string($foreignTableClass)) {
+                throw new \InvalidArgumentException('$foreignTableClass argument must be a string');
+            }
+            if (!class_exists($foreignTableClass)) {
+                throw new \InvalidArgumentException(
+                    "\$foreignTableClass argument contains invalid value: class '$foreignTableClass' does not exist"
+                );
+            }
+            $this->foreignTableClass = $foreignTableClass;
+            /** @var TableInterface $foreignTableClass */
+            $this->foreignTable = $foreignTableClass::getInstance();
+            if (!($this->foreignTable instanceof TableInterface)) {
+                throw new \InvalidArgumentException(
+                    "\$foreignTableClass must implement TableInterface"
+                );
+            }
         }
-        if (!class_exists($foreignTableClass)) {
-            throw new \InvalidArgumentException(
-                "\$foreignTableClass argument contains invalid value: class '$foreignTableClass' does not exist"
-            );
-        }
-        $this->foreignTableClass = $foreignTableClass;
-        /** @var TableInterface $foreignTableClass */
-        $this->foreignTable = $foreignTableClass::getInstance();
         return $this;
     }
 
