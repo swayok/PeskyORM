@@ -1029,7 +1029,9 @@ class DbObject {
         if ($this->_hasField($fieldNameOrAlias)) {
             return $this->_getField($fieldNameOrAlias)->hasValue();
         } else if ($this->_hasRelation($fieldNameOrAlias)) {
-            return $this->_hasRelatedObject($fieldNameOrAlias, true);
+            $this->readRelations([$fieldNameOrAlias]);
+            $object = $this->_getRelatedObject($fieldNameOrAlias, true);
+            return is_array($object) ? count($object) > 0 : $object->exists();
         } else {
             throw new DbObjectException($this, "Unknown DbObject field or relation alias [$fieldNameOrAlias]");
         }
