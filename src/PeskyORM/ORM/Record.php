@@ -701,6 +701,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     public function readRelatedRecord($relationName) {
         $relation = static::getRelation($relationName);
+        if (!$this->isRelatedRecordCanBeRead($relation)) {
+            throw new \BadMethodCallException(
+                "Record has not enough data to read related record '{$relationName}'. "
+                    . "You need to provide a value for '{$relation->getLocalColumnName()}' column."
+            );
+        }
         $relatedTable = $relation->getForeignTable();
         $conditions = array_merge(
             [$relation->getForeignColumnName() => $this->getValue($relation->getLocalColumnName())],
@@ -718,6 +724,22 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             }
         }
         return $this;
+    }
+
+    /**
+     * Testif there are enough data to load related record
+     * @param string|Relation $relationName
+     * @return bool
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    protected function isRelatedRecordCanBeRead($relationName) {
+        $relation = $relationName instanceof Relation
+            ? $relationName
+            : static::getRelation($relationName);
+        return $this->hasValue($relation->getLocalColumnName());
     }
 
     /**
@@ -1650,6 +1672,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @param string $key - column name or relation name
      * @return boolean - true on success or false on failure.
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PDOException
      * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -1657,7 +1681,11 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     public function offsetExists($key) {
         if (static::hasRelation($key)) {
-            return $this->isRelatedRecordAttached($key);
+            if (!$this->isRelatedRecordCanBeRead($key)) {
+                return false;
+            }
+            $record = $this->getRelatedRecord($key, true);
+            return $record instanceof Record ? $record->existsInDb() : $record->count();
         } else if (static::hasColumn($key)) {
             return $this->hasValue($key);
         } else {
@@ -1753,6 +1781,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @param $name - column name or relation name
      * @return bool
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PDOException
      * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException

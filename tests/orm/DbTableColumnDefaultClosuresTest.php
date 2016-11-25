@@ -57,7 +57,7 @@ class DbTableColumnDefaultClosuresTest extends PHPUnit_Framework_TestCase {
             ->setAllowedValues(['a', 'b']);
         static::assertEquals([], DefaultColumnClosures::valueIsAllowedValidator('a', false, $column));
         static::assertEquals(
-            ['Value is not allowed'],
+            ['Value is not allowed: c'],
             DefaultColumnClosures::valueIsAllowedValidator('c', false, $column)
         );
     }
@@ -69,7 +69,7 @@ class DbTableColumnDefaultClosuresTest extends PHPUnit_Framework_TestCase {
                 return $value === 'a' ? ['extender!!!'] : [];
             });
         static::assertEquals(
-            ['Value is not allowed'],
+            ['Value is not allowed: c'],
             DefaultColumnClosures::valueValidator('c', false, $column)
         );
         static::assertEquals(

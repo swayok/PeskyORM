@@ -253,8 +253,8 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         // validate value
         static::assertEquals([], TestingAdmin::validateValue('language', 'ru', true));
         static::assertEquals([], TestingAdmin::validateValue('language', 'ru', false));
-        static::assertEquals(['Value is not allowed'], TestingAdmin::validateValue('language', 'qq', true));
-        static::assertEquals(['Value is not allowed'], TestingAdmin::validateValue('language', 'qq', false));
+        static::assertEquals(['Value is not allowed: qq'], TestingAdmin::validateValue('language', 'qq', true));
+        static::assertEquals(['Value is not allowed: qq'], TestingAdmin::validateValue('language', 'qq', false));
 
         // columns that exist in db or not
         static::assertEquals(['avatar', 'some_file', 'not_existing_column'], array_keys(TestingAdmin::getColumnsThatDoNotExistInDb()));
@@ -1140,8 +1140,16 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
      * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage There is no relation 'InvalidRelation' in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
      */
-    public function testInvalidReadRelatedRecord() {
+    public function testInvalidReadRelatedRecord1() {
         TestingAdmin::newEmptyRecord()->readRelatedRecord('InvalidRelation');
+    }
+
+    /**
+     * @expectedException \BadMethodCallException
+     * @expectedExceptionMessage Record has not enough data to read related record 'Parent'. You need to provide a value for 'parent_id' column.
+     */
+    public function testInvalidReadRelatedRecord2() {
+        TestingAdmin::newEmptyRecord()->readRelatedRecord('Parent');
     }
 
     public function testReadRelatedRecord() {
@@ -2025,9 +2033,13 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertEquals('2015-05-14', $rec['created_at_as_date']);
         // relation
         static::assertTrue(isset($rec->Parent));
+        static::assertFalse(empty($rec->Parent));
         static::assertTrue(isset($rec->Children));
+        static::assertFalse(empty($rec->Children));
         static::assertTrue(isset($rec['Parent']));
+        static::assertFalse(empty($rec['Parent']));
         static::assertTrue(isset($rec['Children']));
+        static::assertFalse(empty($rec['Children']));
         static::assertInstanceOf(TestingAdmin::class, $rec->Parent);
         static::assertInstanceOf(RecordsArray::class, $rec->Children);
         static::assertInstanceOf(TestingAdmin::class, $rec['Parent']);
@@ -2042,16 +2054,37 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         unset($rec->parent_id);
         static::assertFalse($rec->hasValue('parent_id'));
         static::assertFalse(isset($rec->parent_id));
+        static::assertTrue(empty($rec->parent_id));
         unset($rec['language']);
         static::assertFalse($rec->hasValue('parent_id'));
         static::assertFalse(isset($rec['language']));
+        static::assertTrue(empty($rec['language']));
         // relations
         unset($rec->Parent);
         static::assertFalse($rec->isRelatedRecordAttached('Parent'));
         static::assertFalse(isset($rec->Parent));
+        static::assertTrue(empty($rec->Parent));
         unset($rec['Children']);
         static::assertFalse($rec->isRelatedRecordAttached('Children'));
         static::assertFalse(isset($rec['Children']));
+        static::assertTrue(empty($rec['Children']));
+        // specific situations for relations and isset/empty
+        $recordsInserted = TestingApp::fillAdminsTable(10);
+        $rec->fromPrimaryKey($recordsInserted[1]['id']);
+        static::assertTrue($rec->existsInDb());
+        static::assertFalse($rec->isRelatedRecordAttached('Parent'));
+        static::assertFalse($rec->isRelatedRecordAttached('Children'));
+        static::assertTrue(isset($rec['Parent']));
+        static::assertTrue(isset($rec['Children']));
+        static::assertTrue($rec->isRelatedRecordAttached('Parent'));
+        static::assertTrue($rec->isRelatedRecordAttached('Children'));
+        $rec->reload();
+        static::assertFalse($rec->isRelatedRecordAttached('Parent'));
+        static::assertFalse($rec->isRelatedRecordAttached('Children'));
+        static::assertFalse(empty($rec['Parent']));
+        static::assertFalse(empty($rec['Children']));
+        static::assertTrue($rec->isRelatedRecordAttached('Parent'));
+        static::assertTrue($rec->isRelatedRecordAttached('Children'));
     }
 
     /**
