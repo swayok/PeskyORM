@@ -118,6 +118,10 @@ class Postgres extends DbAdapter {
         'NOT REGEX' => '!~*',
     ];
 
+    static public function getConnectionConfigClass() {
+        return PostgresConfig::class;
+    }
+
     public function __construct(PostgresConfig $connectionConfig) {
         parent::__construct($connectionConfig);
     }

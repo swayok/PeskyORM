@@ -81,6 +81,10 @@ class Mysql extends DbAdapter {
         'year' => Column::TYPE_INT,
     ];
 
+    static public function getConnectionConfigClass() {
+        return MysqlConfig::class;
+    }
+
     public function __construct(MysqlConfig $connectionConfig) {
         parent::__construct($connectionConfig);
     }

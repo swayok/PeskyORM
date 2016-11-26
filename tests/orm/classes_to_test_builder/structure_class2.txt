@@ -19,19 +19,19 @@ class AdminsTableStructure extends TestingAdminsTableStructure {
 
     private function id() {
         return Column::create(Column::TYPE_INT)
-            ->itIsPrimaryKey()
-            ->valueIsNotNullable();
+            ->primaryKey()
+            ->disallowsNullValues();
     }
 
     private function login() {
         return Column::create(Column::TYPE_STRING)
-            ->valueMustBeUnique(true)
-            ->valueIsNotNullable();
+            ->uniqueValues()
+            ->disallowsNullValues();
     }
 
     private function password() {
         return Column::create(Column::TYPE_STRING)
-            ->valueIsNotNullable();
+            ->disallowsNullValues();
     }
 
     private function parent_id() {
@@ -41,13 +41,13 @@ class AdminsTableStructure extends TestingAdminsTableStructure {
 
     private function created_at() {
         return Column::create(Column::TYPE_TIMESTAMP_WITH_TZ)
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue(DbExpr::create('now()'));
     }
 
     private function updated_at() {
         return Column::create(Column::TYPE_TIMESTAMP_WITH_TZ)
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue(DbExpr::create('now()'));
     }
 
@@ -59,7 +59,7 @@ class AdminsTableStructure extends TestingAdminsTableStructure {
 
     private function is_superadmin() {
         return Column::create(Column::TYPE_BOOL)
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue(false);
     }
 
@@ -77,31 +77,31 @@ class AdminsTableStructure extends TestingAdminsTableStructure {
 
     private function role() {
         return Column::create(Column::TYPE_STRING)
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue('');
     }
 
     private function is_active() {
         return Column::create(Column::TYPE_BOOL)
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue(true);
     }
 
     private function name() {
         return Column::create(Column::TYPE_STRING)
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue('');
     }
 
     private function email() {
         return Column::create(Column::TYPE_STRING)
-            ->valueMustBeUnique(true)
+            ->uniqueValues()
             ->convertsEmptyStringToNull();
     }
 
     private function timezone() {
         return Column::create(Column::TYPE_STRING)
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue('UTC');
     }
 

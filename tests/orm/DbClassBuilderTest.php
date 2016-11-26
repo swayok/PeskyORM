@@ -2,6 +2,9 @@
 
 use PeskyORM\ORM\ClassBuilder;
 use PeskyORM\ORM\Column;
+use PeskyORMTest\Traits\TestingCreatedAtColumnTrait;
+use PeskyORMTest\Traits\TestingIdColumnTrait;
+use PeskyORMTest\Traits\TestingTimestampColumnsTrait;
 
 class DbClassBuilderTest extends PHPUnit_Framework_TestCase {
 
@@ -160,6 +163,15 @@ class DbClassBuilderTest extends PHPUnit_Framework_TestCase {
         static::assertEquals(
             preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/structure_class2.txt')),
             preg_replace("%[\r\n\t]+%", '', $builder->buildStructureClass('App\\Db', \PeskyORMTest\TestingAdmins\TestingAdminsTableStructure::class))
+        );
+        $traits = [
+            TestingIdColumnTrait::class,
+            TestingTimestampColumnsTrait::class,
+            TestingCreatedAtColumnTrait::class,
+        ];
+        static::assertEquals(
+            preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/structure_class3.txt')),
+            preg_replace("%[\r\n\t]+%", '', $builder->buildStructureClass('App\\Db', \PeskyORMTest\TestingAdmins\TestingAdminsTableStructure::class, $traits))
         );
     }
 }

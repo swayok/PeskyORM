@@ -75,6 +75,10 @@ VIEW;
     /**
      * @param string $namespace
      * @param null|string $parentClass
+     * @param array $traitsForColumns - array (
+     *      NameOfTrait1::class,
+     *      NameOfTrait2::class,
+     * )
      * @return string
      */
     public function buildStructureClass($namespace, $parentClass = null, array $traitsForColumns = []) {
@@ -83,7 +87,7 @@ VIEW;
         }
         $schemaName = $this->dbSchemaName ? "'$this->dbSchemaName'" : 'null';
         $description = $this->connection->describeTable($this->tableName, $this->dbSchemaName);
-        list($traits, $usedColumns) = $this->makeTraitsForTableStructure($description, $traitsForColumns);
+        list($traits, $includes, $usedColumns) = $this->makeTraitsForTableStructure($description, $traitsForColumns);
         return <<<VIEW
 <?php
 
@@ -92,12 +96,10 @@ namespace {$namespace};
 use {$parentClass};
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Relation;
-use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\DbExpr;$includes
 
 class {$this::makeTableStructureClassName($this->tableName)} extends {$this->getShortClassName($parentClass)} {
-
-    {$traits}
-
+{$traits}
     static public function getTableName() {
         return '{$this->tableName}';
     }
@@ -180,19 +182,52 @@ VIEW;
      * @return mixed
      */
     protected function getShortClassName($fullClassName) {
-        return end(explode('\\', $fullClassName));
+        return basename(str_replace('\\', '/', $fullClassName));
     }
 
     /**
      * @param TableDescription $description
      * @param array $traitsForColumns
-     * @return array - [traits:string, used_columns:array]
+     * @return array - [traits:string, class_includes:string, used_columns:array]
      */
     protected function makeTraitsForTableStructure(TableDescription $description, array $traitsForColumns) {
-        // todo: implement makeTraitsForTableStructure
+        if (empty($traitsForColumns)) {
+            return ['', '', []];
+        }
+        $traitsForColumns = array_unique($traitsForColumns);
         $traits = [];
+        $classesToInclude = [];
         $usedColumns = [];
-        return [count($usedColumns) ? "    use \n        " . implode(",\n        ", $traits) . ';' : '', $usedColumns];
+        $columnsNames = array_keys($description->getColumns());
+        foreach ($traitsForColumns as $traitClass) {
+            $traitMethods = (new \ReflectionClass($traitClass))->getMethods(\ReflectionMethod::IS_PRIVATE);
+            if (empty($traitMethods)) {
+                continue;
+            }
+            $traitColumns = [];
+            foreach ($traitMethods as $reflectionMethod) {
+                if (preg_match(Column::NAME_VALIDATION_REGEXP, $reflectionMethod->getName())) {
+                    $traitColumns[] = $reflectionMethod->getName();
+                }
+            }
+            if (count(array_intersect($usedColumns, $traitColumns)) > 0) {
+                // at least one of $traitColumns already replaced by trait
+                continue;
+            }
+            if (!empty($traitColumns) && count(array_intersect($columnsNames, $traitColumns)) === count($traitColumns)) {
+                $classesToInclude[] = $traitClass;
+                $traits[] = $this->getShortClassName($traitClass);
+                foreach ($traitColumns as $traitColumnName) {
+                    $usedColumns[] = $traitColumnName;
+                }
+            }
+        }
+        $usedColumns = array_unique($usedColumns);
+        return [
+            count($usedColumns) ? "\n    use " . implode(",\n        ", $traits) . ";\n" : '',
+            count($usedColumns) ? "\nuse " . implode(";\nuse ", $classesToInclude). ';' : '',
+            $usedColumns
+        ];
     }
 
     /**
@@ -203,7 +238,9 @@ VIEW;
     protected function makeColumnsMethodsForTableStructure(TableDescription $description, array $excludeColumns = []) {
         $columns = [];
         foreach ($description->getColumns() as $columnDescription) {
-
+            if (in_array($columnDescription->getName(), $excludeColumns, true)) {
+                continue;
+            }
             $columns[] = <<<VIEW
     private function {$columnDescription->getName()}() {
         return {$this->makeColumnConfig($columnDescription)};
@@ -221,13 +258,13 @@ VIEW;
     protected function makeColumnConfig(ColumnDescription $columnDescription) {
         $ret = "Column::create({$this->getConstantNameForColumnType($columnDescription->getOrmType())})";
         if ($columnDescription->isPrimaryKey()) {
-            $ret .= "\n            ->itIsPrimaryKey()";
+            $ret .= "\n            ->primaryKey()";
         }
         if ($columnDescription->isUnique()) {
-            $ret .= "\n            ->valueMustBeUnique(true)";
+            $ret .= "\n            ->uniqueValues()";
         }
         if (!$columnDescription->isNullable()) {
-            $ret .= "\n            ->valueIsNotNullable()";
+            $ret .= "\n            ->disallowsNullValues()";
         } else {
             $ret .= "\n            ->convertsEmptyStringToNull()";
         }

@@ -5,6 +5,12 @@ namespace PeskyORM\Core;
 interface DbAdapterInterface {
 
     /**
+     * Class name that implements DbConnectionConfigInterface
+     * @return string
+     */
+    static public function getConnectionConfigClass();
+
+    /**
      * Connect to DB once
      * @return $this
      */

@@ -71,12 +71,14 @@ class DbConnectionsManager {
         if (empty($connectionInfo['driver']) && empty($connectionInfo['adapter'])) {
             throw new \InvalidArgumentException('$connectionInfo must contain a value for key \'driver\' or \'adapter\'');
         }
-        $adapterName = $connectionInfo['adapter'] ?: $connectionInfo['driver'];
+        $adapterName = empty($connectionInfo['adapter']) ? $connectionInfo['driver'] : $connectionInfo['adapter'];
         if (empty($adapterName) || !isset(self::$adapters[$adapterName])) {
             throw new \InvalidArgumentException("DB adapter with name [$adapterName] not found");
         }
+        /** @var DbAdapterInterface $adapterClass */
+        $adapterClass = static::$adapters[$adapterName];
         /** @var DbConnectionConfigInterface $configClass */
-        $configClass = static::$adapters[$adapterName];
+        $configClass = $adapterClass::getConnectionConfigClass();
         $connectionConfig = $configClass::fromArray($connectionInfo);
         return static::createConnection($connectionName, $adapterName, $connectionConfig);
     }
