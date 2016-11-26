@@ -13,6 +13,10 @@ class AdminsTableStructure extends TestingAdminsTableStructure {
         return 'admins';
     }
 
+    static public function getSchema() {
+        return 'public';
+    }
+
     private function id() {
         return Column::create(Column::TYPE_INT)
             ->itIsPrimaryKey()

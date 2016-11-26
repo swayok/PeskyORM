@@ -13,6 +13,10 @@ class AdminsTableStructure extends TableStructure {
         return 'admins';
     }
 
+    static public function getSchema() {
+        return null;
+    }
+
     private function id() {
         return Column::create(Column::TYPE_INT)
             ->itIsPrimaryKey()

@@ -232,7 +232,7 @@ class PostgresConfigTest extends PHPUnit_Framework_TestCase {
      */
     public function testInvalidDbUserFromArray() {
         PostgresConfig::fromArray([
-            'name' => 'test'
+            'database' => 'test'
         ]);
     }
 
@@ -242,8 +242,8 @@ class PostgresConfigTest extends PHPUnit_Framework_TestCase {
      */
     public function testInvalidDbPasswordFromArray() {
         PostgresConfig::fromArray([
-            'name' => 'test',
-            'user' => 'test',
+            'database' => 'test',
+            'username' => 'test',
         ]);
     }
 
@@ -253,8 +253,8 @@ class PostgresConfigTest extends PHPUnit_Framework_TestCase {
      */
     public function testInvalidDbPortFromArray() {
         PostgresConfig::fromArray([
-            'name' => 'test',
-            'user' => 'test',
+            'database' => 'test',
+            'username' => 'test',
             'password' => 'test',
             'port' => 'test'
         ]);
@@ -262,24 +262,24 @@ class PostgresConfigTest extends PHPUnit_Framework_TestCase {
 
     public function testValidConfigFromArray() {
         $test = [
-            'name' => 'dbname',
-            'user' => 'username',
+            'database' => 'dbname',
+            'username' => 'username',
             'password' => 'password',
             'port' => '',
             'host' => '',
             'options' => ''
         ];
         $config = PostgresConfig::fromArray($test);
-        $this->assertEquals("pgsql:host=localhost;port=5432;dbname={$test['name']}", $config->getPdoConnectionString());
-        $this->assertEquals($test['user'], $config->getUserName());
+        $this->assertEquals("pgsql:host=localhost;port=5432;dbname={$test['database']}", $config->getPdoConnectionString());
+        $this->assertEquals($test['username'], $config->getUserName());
         $this->assertEquals($test['password'], $config->getUserPassword());
         $this->assertEquals([], $config->getOptions());
     }
 
     public function testValidConfigFromArray2() {
         $test = [
-            'name' => 'dbname',
-            'user' => 'username',
+            'database' => 'dbname',
+            'username' => 'username',
             'password' => 'password',
             'port' => '1234',
             'host' => '192.168.0.1',
@@ -287,7 +287,7 @@ class PostgresConfigTest extends PHPUnit_Framework_TestCase {
         ];
         $config = PostgresConfig::fromArray($test);
         $this->assertEquals(
-            "pgsql:host={$test['host']};port={$test['port']};dbname={$test['name']}",
+            "pgsql:host={$test['host']};port={$test['port']};dbname={$test['database']}",
             $config->getPdoConnectionString()
         );
         $this->assertEquals($test['options'], $config->getOptions());

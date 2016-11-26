@@ -156,6 +156,7 @@ class DbClassBuilderTest extends PHPUnit_Framework_TestCase {
             preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/structure_class1.txt')),
             preg_replace("%[\r\n\t]+%", '', $builder->buildStructureClass('App\\Db'))
         );
+        $builder->setDbSchemaName('public');
         static::assertEquals(
             preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/structure_class2.txt')),
             preg_replace("%[\r\n\t]+%", '', $builder->buildStructureClass('App\\Db', \PeskyORMTest\TestingAdmins\TestingAdminsTableStructure::class))

@@ -25,8 +25,8 @@ class MysqlAdapterGeneralFunctionalityTest extends PHPUnit_Framework_TestCase {
      */
     public function testConnectionWithInvalidUserName() {
         $config = MysqlConfig::fromArray([
-            'name' => 'totally_not_existing_db',
-            'user' => 'totally_not_existing_user',
+            'database' => 'totally_not_existing_db',
+            'username' => 'totally_not_existing_user',
             'password' => 'this_password_is_for_not_existing_user'
         ]);
         $adapter = new Mysql($config);
@@ -39,8 +39,8 @@ class MysqlAdapterGeneralFunctionalityTest extends PHPUnit_Framework_TestCase {
      */
     public function testConnectionWithInvalidUserName2() {
         $config = MysqlConfig::fromArray([
-            'name' => 'totally_not_existing_db',
-            'user' => self::getValidAdapter()->getConnectionConfig()->getUserName(),
+            'database' => 'totally_not_existing_db',
+            'username' => self::getValidAdapter()->getConnectionConfig()->getUserName(),
             'password' => 'this_password_is_for_not_existing_user'
         ]);
         $adapter = new Mysql($config);
@@ -53,8 +53,8 @@ class MysqlAdapterGeneralFunctionalityTest extends PHPUnit_Framework_TestCase {
      */
     public function testConnectionWithInvalidDbName() {
         $config = MysqlConfig::fromArray([
-            'name' => 'totally_not_existing_db',
-            'user' => self::getValidAdapter()->getConnectionConfig()->getUserName(),
+            'database' => 'totally_not_existing_db',
+            'username' => self::getValidAdapter()->getConnectionConfig()->getUserName(),
             'password' => self::getValidAdapter()->getConnectionConfig()->getUserPassword()
         ]);
         $adapter = new Mysql($config);
@@ -67,8 +67,8 @@ class MysqlAdapterGeneralFunctionalityTest extends PHPUnit_Framework_TestCase {
      */
     public function testConnectionWithInvalidUserPassword() {
         $config = MysqlConfig::fromArray([
-            'name' => self::getValidAdapter()->getConnectionConfig()->getDbName(),
-            'user' => self::getValidAdapter()->getConnectionConfig()->getUserName(),
+            'database' => self::getValidAdapter()->getConnectionConfig()->getDbName(),
+            'username' => self::getValidAdapter()->getConnectionConfig()->getUserName(),
             'password' => 'this_password_is_for_not_existing_user'
         ]);
         $adapter = new Mysql($config);
@@ -78,13 +78,13 @@ class MysqlAdapterGeneralFunctionalityTest extends PHPUnit_Framework_TestCase {
     /**
      * Note: very slow
      */
-    /*public function testConnectionWithInvalidDbPort() {
+    /*public function testConnectionWithInvalidDbPort2() {
         $this->expectException(PDOException::class);
         $this->expectExceptionMessage('SQLSTATE[HY000]');
         $config = MysqlConfig::fromArray([
-            'name' => self::getAdapter()->getConnectionConfig()->getDbName(),
-            'user' => self::getAdapter()->getConnectionConfig()->getUserName(),
-            'password' => self::getAdapter()->getConnectionConfig()->getUserPassword(),
+            'database' => self::getValidAdapter()->getConnectionConfig()->getDbName(),
+            'username' => self::getValidAdapter()->getConnectionConfig()->getUserName(),
+            'password' => self::getValidAdapter()->getConnectionConfig()->getUserPassword(),
             'port' => '9999'
         ]);
         $adapter = new Mysql($config);

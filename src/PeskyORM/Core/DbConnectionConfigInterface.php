@@ -5,6 +5,12 @@ namespace PeskyORM\Core;
 interface DbConnectionConfigInterface {
 
     /**
+     * @param array $config
+     * @return $this
+     */
+    static public function fromArray(array $config);
+
+    /**
      * Get PDO connection string (ex: pgsql:host=localhost;port=5432;dbname=testdb;user=bruce;password=mypass)
      * @return string
      */

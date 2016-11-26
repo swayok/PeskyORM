@@ -5,6 +5,7 @@ namespace PeskyORM\ORM;
 use PeskyORM\Core\ColumnDescription;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\TableDescription;
 use Swayok\Utils\StringUtils;
 
 class ClassBuilder {
@@ -14,6 +15,10 @@ class ClassBuilder {
      */
     protected $tableName;
     /**
+     * @var
+     */
+    protected $dbSchemaName;
+    /**
      * @var DbAdapterInterface
      */
     protected $connection;
@@ -21,6 +26,13 @@ class ClassBuilder {
     public function __construct($tableName, DbAdapterInterface $connection) {
         $this->tableName = $tableName;
         $this->connection = $connection;
+    }
+
+    /**
+     * @param $schema
+     */
+    public function setDbSchemaName($schema) {
+        $this->dbSchemaName = $schema;
     }
 
     /**
@@ -65,10 +77,13 @@ VIEW;
      * @param null|string $parentClass
      * @return string
      */
-    public function buildStructureClass($namespace, $parentClass = null) {
+    public function buildStructureClass($namespace, $parentClass = null, array $traitsForColumns = []) {
         if ($parentClass === null) {
             $parentClass = TableStructure::class;
         }
+        $schemaName = $this->dbSchemaName ? "'$this->dbSchemaName'" : 'null';
+        $description = $this->connection->describeTable($this->tableName, $this->dbSchemaName);
+        list($traits, $usedColumns) = $this->makeTraitsForTableStructure($description, $traitsForColumns);
         return <<<VIEW
 <?php
 
@@ -81,11 +96,17 @@ use PeskyORM\Core\DbExpr;
 
 class {$this::makeTableStructureClassName($this->tableName)} extends {$this->getShortClassName($parentClass)} {
 
+    {$traits}
+
     static public function getTableName() {
         return '{$this->tableName}';
     }
 
-{$this->makeColumnsMethodsForTableStructure()}
+    static public function getSchema() {
+        return {$schemaName};
+    }
+
+{$this->makeColumnsMethodsForTableStructure($description, $usedColumns)}
 
 }
 
@@ -116,6 +137,7 @@ class {$this::makeRecordClassName($this->tableName)} extends {$this->getShortCla
     static public function getTable() {
         return {$this::makeTableClassName($this->tableName)}::getInstance();
     }
+
 }
 
 VIEW;
@@ -162,11 +184,23 @@ VIEW;
     }
 
     /**
+     * @param TableDescription $description
+     * @param array $traitsForColumns
+     * @return array - [traits:string, used_columns:array]
+     */
+    protected function makeTraitsForTableStructure(TableDescription $description, array $traitsForColumns) {
+        // todo: implement makeTraitsForTableStructure
+        $traits = [];
+        $usedColumns = [];
+        return [count($usedColumns) ? "    use \n        " . implode(",\n        ", $traits) . ';' : '', $usedColumns];
+    }
+
+    /**
+     * @param TableDescription $description
+     * @param array $excludeColumns - columns to exclude (already included via traits)
      * @return string
      */
-    protected function makeColumnsMethodsForTableStructure() {
-        $description = $this->connection->describeTable($this->tableName);
-
+    protected function makeColumnsMethodsForTableStructure(TableDescription $description, array $excludeColumns = []) {
         $columns = [];
         foreach ($description->getColumns() as $columnDescription) {
 

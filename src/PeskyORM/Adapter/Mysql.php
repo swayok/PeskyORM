@@ -238,7 +238,7 @@ class Mysql extends DbAdapter {
         }
         $conditionsAndOptions = preg_replace('%^.*?WHERE\s*(.*)$%is', '$1', $updateQuery);
         $selectQuery = DbExpr::create("SELECT {$returning} FROM {$table} WHERE {$conditionsAndOptions}");
-        $stmnt = $this->query($selectQuery, Utils::FETCH_ALL);
+        $stmnt = $this->query($selectQuery);
         if ($stmnt->rowCount() !== $rowsUpdated) {
             throw new DbException(
                 "Received amount of records ({$stmnt->rowCount()}) differs from expected ({$rowsUpdated})"

@@ -239,6 +239,9 @@ class Postgres extends DbAdapter {
      * @throws \InvalidArgumentException
      */
     public function describeTable($table, $schema = 'public') {
+        if (empty($schema)) {
+            $schema = 'public';
+        }
         $description = new TableDescription($table, $schema);
         $query = "
             SELECT  
