@@ -305,7 +305,7 @@ class Mysql extends DbAdapter {
      * @return string
      */
     protected function convertDbTypeToOrmType($dbType) {
-        $dbType = strtolower(preg_replace('%\([^)]+\)$%', '', $dbType));
+        $dbType = strtolower(preg_replace(['%\s*unsigned$%i', '%\([^)]+\)$%'], ['', ''], $dbType));
         return array_key_exists($dbType, static::$dbTypeToOrmType)
             ? static::$dbTypeToOrmType[$dbType]
             : Column::TYPE_STRING;
@@ -338,7 +338,7 @@ class Mysql extends DbAdapter {
      * @return array - index 0: limit; index 1: precision
      */
     protected function extractLimitAndPrecisionForColumnDescription($typeDescription) {
-        if (preg_match('%\((\d+)(?:,(\d+))?\)$%', $typeDescription, $matches)) {
+        if (preg_match('%\((\d+)(?:,(\d+))?\)( unsigned)?$%', $typeDescription, $matches)) {
             return [(int)$matches[1], !isset($matches[2]) ? null : (int)$matches[2]];
         } else {
             return [null, null];

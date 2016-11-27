@@ -20,4 +20,11 @@ class AdminsTable extends Table {
         return new Admin();
     }
 
+    /**
+     * @return string
+     */
+    public function getTableAlias() {
+        return 'Admins';
+    }
+
 }

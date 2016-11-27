@@ -415,6 +415,38 @@ abstract class TableStructure implements TableStructureInterface {
     }
 
     /**
+     * @param string $name
+     * @return Column|Relation
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    public function __get($name) {
+        if (static::hasRelation($name)) {
+            return static::getRelation($name);
+        } else {
+            return static::getColumn($name);
+        }
+    }
+
+    /**
+     * @param string $name
+     * @param Column|Relation $value
+     * @throws \BadMethodCallException
+     */
+    public function __set($name, $value) {
+        throw new \BadMethodCallException('You need to use private methods to setup xolumns');
+    }
+
+    /**
+     * @param string $name
+     * @return bool
+     */
+    public function __isset($name) {
+        return static::hasColumn($name) || static::hasRelation($name);
+    }
+
+    /**
      * Resets class instances (used for testing only, that's why it is private)
      */
     static private function resetInstances() {

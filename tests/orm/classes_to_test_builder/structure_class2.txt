@@ -7,12 +7,36 @@ use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Relation;
 use PeskyORM\Core\DbExpr;
 
+/**
+ * @property-read Column    $id
+ * @property-read Column    $login
+ * @property-read Column    $password
+ * @property-read Column    $parent_id
+ * @property-read Column    $created_at
+ * @property-read Column    $updated_at
+ * @property-read Column    $remember_token
+ * @property-read Column    $is_superadmin
+ * @property-read Column    $language
+ * @property-read Column    $ip
+ * @property-read Column    $role
+ * @property-read Column    $is_active
+ * @property-read Column    $name
+ * @property-read Column    $email
+ * @property-read Column    $timezone
+ * @property-read Column    $not_changeable_column
+ */
 class AdminsTableStructure extends TestingAdminsTableStructure {
 
+    /**
+     * @return string
+     */
     static public function getTableName() {
         return 'admins';
     }
 
+    /**
+     * @return string|null
+     */
     static public function getSchema() {
         return 'public';
     }

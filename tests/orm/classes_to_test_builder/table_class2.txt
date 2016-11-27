@@ -20,4 +20,11 @@ class AdminsTable extends TestingBaseTable {
         return new Admin();
     }
 
+    /**
+     * @return string
+     */
+    public function getTableAlias() {
+        return 'Admins';
+    }
+
 }

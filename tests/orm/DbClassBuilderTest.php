@@ -79,21 +79,21 @@ class DbClassBuilderTest extends PHPUnit_Framework_TestCase {
         $columnDescr = new \PeskyORM\Core\ColumnDescription('test', 'integer', Column::TYPE_INT);
         $columnDescr->setIsPrimaryKey(true);
         static::assertEquals(
-            'Column::create(Column::TYPE_INT)->itIsPrimaryKey()->convertsEmptyStringToNull()',
+            'Column::create(Column::TYPE_INT)->primaryKey()->convertsEmptyStringToNull()',
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
             ->setIsPrimaryKey(false)
             ->setIsUnique(true);
         static::assertEquals(
-            'Column::create(Column::TYPE_INT)->valueMustBeUnique(true)->convertsEmptyStringToNull()',
+            'Column::create(Column::TYPE_INT)->uniqueValues()->convertsEmptyStringToNull()',
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
             ->setIsUnique(false)
             ->setIsNullable(false);
         static::assertEquals(
-            'Column::create(Column::TYPE_INT)->valueIsNotNullable()',
+            'Column::create(Column::TYPE_INT)->disallowsNullValues()',
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
@@ -148,7 +148,7 @@ class DbClassBuilderTest extends PHPUnit_Framework_TestCase {
             ->setDefault(\PeskyORM\Core\DbExpr::create("string with ' quotes \" `"))
             ->setIsPrimaryKey(true);
         static::assertEquals(
-            "Column::create(Column::TYPE_INT)->itIsPrimaryKey()->convertsEmptyStringToNull()",
+            'Column::create(Column::TYPE_INT)->primaryKey()->convertsEmptyStringToNull()',
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
     }
