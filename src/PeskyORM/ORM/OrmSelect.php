@@ -308,14 +308,23 @@ class OrmSelect extends AbstractSelect {
                 } else if (!($columnName instanceof DbExpr)) {
                     $columnInfo = $this->analyzeColumnName($columnName, null, $joinName, $subject);
                     if ($columnInfo['join_name'] === null) {
-                        $errors = $this->getTableStructure()->getColumn($columnInfo['name'])->validateValue($value);
+                        $column = $this->getTableStructure()->getColumn($columnInfo['name']);
                     } else {
-                        $errors = $this
+                        $column = $this
                             ->getJoin($columnInfo['join_name'])
                             ->getForeignDbTable()
                             ->getStructure()
-                            ->getColumn($columnInfo['name'])
-                            ->validateValue($value);
+                            ->getColumn($columnInfo['name']);
+                    }
+                    if (is_array($value)) {
+                        foreach ($value as $arrValue) {
+                            $errors = $column->validateValue($arrValue);
+                            if (!empty($errors)) {
+                                break;
+                            }
+                        }
+                    } else {
+                        $errors = $column->validateValue($value);
                     }
                     if (!empty($errors)) {
                         throw new \UnexpectedValueException(
