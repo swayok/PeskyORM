@@ -368,6 +368,20 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * @param string $columnName
+     * @param mixed $default
+     * @return mixed
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    public function getValueIfExistsInDb($columnName, $default = null) {
+        return ($this->existsInDb() && isset($this->$columnName)) ? $this->$columnName : $default;
+    }
+
+    /**
+     * @param string $columnName
      * @return mixed
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\OrmException
