@@ -353,7 +353,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
 
     /**
-     * @param string|Column $columnName
+     * @param string|Column $column
      * @param null $format
      * @return mixed
      * @throws \PeskyORM\Exception\OrmException
@@ -361,8 +361,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    public function getValue($columnName, $format = null) {
-        $column = $columnName instanceof Column ? $columnName : static::getColumn($columnName);
+    public function getValue($column, $format = null) {
+        $column = $column instanceof Column ? $column : static::getColumn($column);
         return call_user_func($column->getValueGetter(), $this->getValueObject($column), $format);
     }
 
@@ -381,44 +381,44 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
 
     /**
-     * @param string $columnName
+     * @param string|Column $column
      * @return mixed
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    public function getOldValue($columnName) {
-        return $this->getValueObject($columnName)->getOldValue();
+    public function getOldValue($column) {
+        return $this->getValueObject($column)->getOldValue();
     }
 
     /**
-     * @param string $columnName
+     * @param string|Column $column
      * @return bool
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    public function hasOldValue($columnName) {
-        return $this->getValueObject($columnName)->hasOldValue();
+    public function hasOldValue($column) {
+        return $this->getValueObject($column)->hasOldValue();
     }
 
     /**
-     * @param string $columnName
+     * @param string|Column $column
      * @return bool
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    public function isOldValueWasFromDb($columnName) {
-        return $this->getValueObject($columnName)->isOldValueWasFromDb();
+    public function isOldValueWasFromDb($column) {
+        return $this->getValueObject($column)->isOldValueWasFromDb();
     }
 
     /**
      * Check if there is a value for $columnName
-     * @param string|Column $columnName
+     * @param string|Column $column
      * @param bool $trueIfThereIsDefaultValue - true: returns true if there is no value set but column has default value
      * @return bool
      * @throws \BadMethodCallException
@@ -426,8 +426,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      * @throws \PeskyORM\Exception\OrmException
      */
-    public function hasValue($columnName, $trueIfThereIsDefaultValue = false) {
-        return $this->_hasValue($this->getValueObject($columnName), $trueIfThereIsDefaultValue);
+    public function hasValue($column, $trueIfThereIsDefaultValue = false) {
+        return $this->_hasValue($this->getValueObject($column), $trueIfThereIsDefaultValue);
     }
 
     /**
@@ -452,7 +452,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
 
     /**
-     * @param string|Column $columnName
+     * @param string|Column $column
      * @param mixed $value
      * @param boolean $isFromDb
      * @return $this
@@ -463,15 +463,17 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      */
-    public function updateValue($columnName, $value, $isFromDb) {
-        $valueContainer = $this->getValueObject($columnName);
+    public function updateValue($column, $value, $isFromDb) {
+        $valueContainer = $this->getValueObject($column);
         if (!$isFromDb && !$valueContainer->getColumn()->isValueCanBeSetOrChanged()) {
-            throw new \BadMethodCallException("It is forbidden to modify or set value of a '{$columnName}' column");
+            throw new \BadMethodCallException(
+                "It is forbidden to modify or set value of a '{$valueContainer->getColumn()->getName()}' column"
+            );
         }
         if ($this->isCollectingUpdates && $isFromDb) {
             throw new \BadMethodCallException("It is forbidden to set value with \$isFromDb === true after begin()");
         }
-        $column = $columnName instanceof Column ? $columnName : static::getColumn($columnName);
+        $column = $column instanceof Column ? $column : static::getColumn($column);
         if ($column->isItPrimaryKey()) {
             if ($value === null) {
                 return $this->unsetPrimaryKeyValue();
@@ -481,7 +483,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         }
         if ($isFromDb && !$column->isItPrimaryKey() && !$this->existsInDb()) {
             throw new \InvalidArgumentException(
-                "Attempt to set a value for column [{$columnName}] with flag \$isFromDb === true while record does not exist in DB"
+                "Attempt to set a value for column [{$column->getName()}] with flag \$isFromDb === true while record does not exist in DB"
             );
         }
         if ($column->isItPrimaryKey() && $valueContainer->hasValue() && $valueContainer->isItFromDb()) {
@@ -1181,7 +1183,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                         true
                     );
                     if (count($updatedData)) {
-                        $this->updateValues($updatedData[0], true);
+                        $updatedData = $updatedData[0];
+                        $this->updateValues($updatedData, true);
                     } else {
                         // this means that record does not exist anymore
                         $this->reset();
@@ -1259,16 +1262,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \UnexpectedValueException
      */
     protected function runColumnSavingExtenders(array $columnsToSave, array $dataSavedToDb, array $updatesReceivedFromDb, $isUpdate) {
-        foreach ($columnsToSave as $columnName) {
-            $column = static::getColumn($columnName);
-            if (array_key_exists($columnName, $dataSavedToDb) || !$column->isItExistsInDb()) {
-                call_user_func(
-                    static::getColumn($columnName)->getValueSavingExtender(),
-                    $this->getValueObject($columnName),
-                    $isUpdate,
-                    $updatesReceivedFromDb
-                );
-            }
+        foreach ($dataSavedToDb as $columnName => $value) {
+            call_user_func(
+                static::getColumn($columnName)->getValueSavingExtender(),
+                $this->getValueObject($columnName),
+                $isUpdate,
+                $updatesReceivedFromDb
+            );
         }
     }
 
