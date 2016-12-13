@@ -245,7 +245,7 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
     }
 
     /**
-     * @expectedException PHPUnit_Framework_Error
+     * @expectedException TypeError
      * @expectedExceptionMessage must be an instance of PeskyORM\Core\DbExpr, string given
      */
     public function testQuotingOfInvalidDbExpr() {

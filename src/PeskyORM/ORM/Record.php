@@ -1262,7 +1262,11 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \UnexpectedValueException
      */
     protected function runColumnSavingExtenders(array $columnsToSave, array $dataSavedToDb, array $updatesReceivedFromDb, $isUpdate) {
-        foreach ($dataSavedToDb as $columnName => $value) {
+        $updatedColumns = array_merge(
+            array_keys($dataSavedToDb),
+            array_intersect(array_keys(static::getColumnsThatDoNotExistInDb()), $columnsToSave)
+        );
+        foreach ($updatedColumns as $columnName) {
             call_user_func(
                 static::getColumn($columnName)->getValueSavingExtender(),
                 $this->getValueObject($columnName),

@@ -189,7 +189,7 @@ class MysqlConfigTest extends PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @expectedException PHPUnit_Framework_Error
+     * @expectedException TypeError
      * @expectedExceptionMessage setOptions() must be of the type array
      */
     public function testInvalidOptions() {

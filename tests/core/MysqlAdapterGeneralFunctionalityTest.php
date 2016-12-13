@@ -245,7 +245,7 @@ class MysqlAdapterGeneralFunctionalityTest extends PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @expectedException PHPUnit_Framework_Error
+     * @expectedException TypeError
      * @expectedExceptionMessage must be an instance of PeskyORM\Core\DbExpr, string given
      */
     public function testQuotingOfInvalidDbExpr() {
