@@ -253,21 +253,27 @@ class Postgres extends DbAdapter {
                 `f`.`attnotnull` AS `notnull`,
                 `t`.`typname` AS `type`,
                 `pg_catalog`.format_type(`f`.`atttypid`,`f`.`atttypmod`) as `type_description`,  
-                CASE  
-                    WHEN `p`.`contype` = ``p`` THEN true  
-                    ELSE false  
-                END AS `primarykey`,  
-                CASE  
-                    WHEN `p`.`contype` = ``u`` THEN true  
-                    ELSE false
-                END AS `uniquekey`,
-                CASE
-                    WHEN `p`.`contype` = ``f`` THEN true
-                    ELSE false
-                END AS `foreignkey`,
-                CASE
-                    WHEN `p`.`contype` = ``f`` THEN pg_get_constraintdef(`p`.`oid`)
-                END AS `foreignkey_definition`,
+                COALESCE(
+                    (
+                        SELECT true FROM `pg_constraint` as `pk`
+                        WHERE `pk`.`conrelid` = `c`.`oid` AND `f`.`attnum` = ANY (`pk`.`conkey`) AND `pk`.`contype` = ``p``
+                    ),
+                    FALSE
+                ) as `primarykey`,
+                COALESCE(
+                    (
+                        SELECT true FROM `pg_constraint` as `uk`
+                        WHERE `uk`.`conrelid` = `c`.`oid` AND `f`.`attnum` = ANY (`uk`.`conkey`) AND `uk`.`contype` = ``u``
+                    ),
+                    FALSE
+                ) as `uniquekey`,
+                COALESCE(
+                    (
+                        SELECT true FROM `pg_constraint` as `fk`
+                        WHERE `fk`.`conrelid` = `c`.`oid` AND `f`.`attnum` = ANY (`fk`.`conkey`) AND `fk`.`contype` = ``f``
+                    ),
+                    FALSE
+                ) as `foreignkey`,
                 CASE
                     WHEN `f`.`atthasdef` = true THEN `d`.`adsrc`
                 END AS `default`
@@ -276,7 +282,6 @@ class Postgres extends DbAdapter {
                 JOIN `pg_type` `t` ON `t`.`oid` = `f`.`atttypid`  
                 LEFT JOIN `pg_attrdef` `d` ON `d`.adrelid = `c`.`oid` AND `d`.`adnum` = `f`.`attnum`  
                 LEFT JOIN `pg_namespace` `n` ON `n`.`oid` = `c`.`relnamespace`  
-                LEFT JOIN `pg_constraint` `p` ON `p`.`conrelid` = `c`.`oid` AND `f`.`attnum` = ANY (`p`.`conkey`)  
             WHERE `c`.`relkind` = ``r``::char  
                 AND `n`.`nspname` = ``{$schema}``
                 AND `c`.`relname` = ``{$table}``
@@ -329,8 +334,8 @@ class Postgres extends DbAdapter {
             return false;
         } else if (ValidateValue::isInteger($default)) {
             return (int)$default;
-        } else if (ValidateValue::isFloat(trim($default, "'"))) {
-            return (float)trim($default, "'");
+        } else if (strlen($tmp = trim($default, "'")) > 0 && ValidateValue::isFloat($tmp)) {
+            return (float)$tmp;
         } else {
             return DbExpr::create($default);
         }
