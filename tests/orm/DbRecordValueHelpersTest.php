@@ -818,9 +818,11 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
             'size' => filesize(__DIR__ . '/files/test_file.jpg'),
             'error' => 0,
         ];
-        $fileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['size'], $file['error']);
+        $invalidFileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['size'], $file['error']); //< is_uploaded_file() will fail
+        $validFileObj = new SplFileInfo($file['tmp_name']);
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_FILE));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($fileObj, Column::TYPE_FILE));
+        static::assertEquals(['value_must_be_file'], RecordValueHelpers::isValueFitsDataType($invalidFileObj, Column::TYPE_FILE));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($validFileObj, Column::TYPE_FILE));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_FILE));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_FILE));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_FILE));
@@ -876,10 +878,12 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
             'size' => filesize(__DIR__ . '/files/test_file.jpg'),
             'error' => 0,
         ];
-        $fileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['size'], $file['error']);
+        $invalidFileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['size'], $file['error']); //< is_uploaded_file() will fail
+        $validFileObj = new SplFileInfo($file['tmp_name']);
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_FILE));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($fileObj, Column::TYPE_IMAGE));
+        static::assertEquals(['value_must_be_image'], RecordValueHelpers::isValueFitsDataType($invalidFileObj, Column::TYPE_IMAGE));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($validFileObj, Column::TYPE_IMAGE));
         $file['name'] = 'image_jpg';
         $file['type'] = 'image/jpeg';
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE));
@@ -892,9 +896,9 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
 
         $file['type'] = 'text/plain';
         $file['tmp_name'] = __DIR__ . '/files/test_file_jpg';
-        static::assertEquals(['image'], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE, ['value_must_be_image' => 'image']));
         $fileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['size'], $file['error']);
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($fileObj, Column::TYPE_IMAGE));
+        static::assertEquals(['image'], RecordValueHelpers::isValueFitsDataType($fileObj, Column::TYPE_IMAGE, ['value_must_be_image' => 'image']));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE));
     }
 
     public function testIsValidDbColumnValue() {

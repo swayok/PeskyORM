@@ -5,6 +5,7 @@ namespace PeskyORM\ORM;
 use PeskyORM\Core\ColumnDescription;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\TableDescription;
 use Swayok\Utils\StringUtils;
 
 class ClassBuilder {
@@ -14,13 +15,28 @@ class ClassBuilder {
      */
     protected $tableName;
     /**
+     * @var
+     */
+    protected $dbSchemaName;
+    /**
      * @var DbAdapterInterface
      */
     protected $connection;
+    /**
+     * @var TableDescription
+     */
+    protected $tableDescription;
 
     public function __construct($tableName, DbAdapterInterface $connection) {
         $this->tableName = $tableName;
         $this->connection = $connection;
+    }
+
+    /**
+     * @param $schema
+     */
+    public function setDbSchemaName($schema) {
+        $this->dbSchemaName = $schema;
     }
 
     /**
@@ -32,6 +48,7 @@ class ClassBuilder {
         if ($parentClass === null) {
             $parentClass = Table::class;
         }
+        $alias = StringUtils::classify($this->tableName);
         return <<<VIEW
 <?php
 
@@ -55,6 +72,13 @@ class {$this::makeTableClassName($this->tableName)} extends {$this->getShortClas
         return new {$this::makeRecordClassName($this->tableName)}();
     }
 
+    /**
+     * @return string
+     */
+    public function getTableAlias() {
+        return '{$alias}';
+    }
+
 }
 
 VIEW;
@@ -63,12 +87,18 @@ VIEW;
     /**
      * @param string $namespace
      * @param null|string $parentClass
+     * @param array $traitsForColumns - array (
+     *      NameOfTrait1::class,
+     *      NameOfTrait2::class,
+     * )
      * @return string
      */
-    public function buildStructureClass($namespace, $parentClass = null) {
+    public function buildStructureClass($namespace, $parentClass = null, array $traitsForColumns = []) {
         if ($parentClass === null) {
             $parentClass = TableStructure::class;
         }
+        $schemaName = $this->dbSchemaName ? "'$this->dbSchemaName'" : 'null';
+        list($traits, $includes, $usedColumns) = $this->makeTraitsForTableStructure($traitsForColumns);
         return <<<VIEW
 <?php
 
@@ -77,15 +107,28 @@ namespace {$namespace};
 use {$parentClass};
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Relation;
-use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\DbExpr;$includes
 
+/**
+{$this->makePhpDocForTableStructure()}
+ */
 class {$this::makeTableStructureClassName($this->tableName)} extends {$this->getShortClassName($parentClass)} {
-
+{$traits}
+    /**
+     * @return string
+     */
     static public function getTableName() {
         return '{$this->tableName}';
     }
 
-{$this->makeColumnsMethodsForTableStructure()}
+    /**
+     * @return string|null
+     */
+    static public function getSchema() {
+        return {$schemaName};
+    }
+
+{$this->makeColumnsMethodsForTableStructure($usedColumns)}
 
 }
 
@@ -108,6 +151,9 @@ namespace {$namespace};
 
 use {$parentClass};
 
+/**
+{$this->makePhpDocForRecord()}
+ */
 class {$this::makeRecordClassName($this->tableName)} extends {$this->getShortClassName($parentClass)} {
 
     /**
@@ -116,9 +162,20 @@ class {$this::makeRecordClassName($this->tableName)} extends {$this->getShortCla
     static public function getTable() {
         return {$this::makeTableClassName($this->tableName)}::getInstance();
     }
+
 }
 
 VIEW;
+    }
+
+    /**
+     * @return TableDescription
+     */
+    protected function getTableDescription() {
+        if (!$this->tableDescription) {
+            $this->tableDescription = $this->connection->describeTable($this->tableName, $this->dbSchemaName);
+        }
+        return $this->tableDescription;
     }
 
     /**
@@ -158,18 +215,63 @@ VIEW;
      * @return mixed
      */
     protected function getShortClassName($fullClassName) {
-        return end(explode('\\', $fullClassName));
+        return basename(str_replace('\\', '/', $fullClassName));
     }
 
     /**
+     * @param array $traitsForColumns
+     * @return array - [traits:string, class_includes:string, used_columns:array]
+     */
+    protected function makeTraitsForTableStructure(array $traitsForColumns) {
+        if (empty($traitsForColumns)) {
+            return ['', '', []];
+        }
+        $traitsForColumns = array_unique($traitsForColumns);
+        $traits = [];
+        $classesToInclude = [];
+        $usedColumns = [];
+        $columnsNames = array_keys($this->getTableDescription()->getColumns());
+        foreach ($traitsForColumns as $traitClass) {
+            $traitMethods = (new \ReflectionClass($traitClass))->getMethods(\ReflectionMethod::IS_PRIVATE);
+            if (empty($traitMethods)) {
+                continue;
+            }
+            $traitColumns = [];
+            foreach ($traitMethods as $reflectionMethod) {
+                if (preg_match(Column::NAME_VALIDATION_REGEXP, $reflectionMethod->getName())) {
+                    $traitColumns[] = $reflectionMethod->getName();
+                }
+            }
+            if (count(array_intersect($usedColumns, $traitColumns)) > 0) {
+                // at least one of $traitColumns already replaced by trait
+                continue;
+            }
+            if (!empty($traitColumns) && count(array_intersect($columnsNames, $traitColumns)) === count($traitColumns)) {
+                $classesToInclude[] = $traitClass;
+                $traits[] = $this->getShortClassName($traitClass);
+                foreach ($traitColumns as $traitColumnName) {
+                    $usedColumns[] = $traitColumnName;
+                }
+            }
+        }
+        $usedColumns = array_unique($usedColumns);
+        return [
+            count($usedColumns) ? "\n    use " . implode(",\n        ", $traits) . ";\n" : '',
+            count($usedColumns) ? "\nuse " . implode(";\nuse ", $classesToInclude). ';' : '',
+            $usedColumns
+        ];
+    }
+
+    /**
+     * @param array $excludeColumns - columns to exclude (already included via traits)
      * @return string
      */
-    protected function makeColumnsMethodsForTableStructure() {
-        $description = $this->connection->describeTable($this->tableName);
-
+    protected function makeColumnsMethodsForTableStructure(array $excludeColumns = []) {
         $columns = [];
-        foreach ($description->getColumns() as $columnDescription) {
-
+        foreach ($this->getTableDescription()->getColumns() as $columnDescription) {
+            if (in_array($columnDescription->getName(), $excludeColumns, true)) {
+                continue;
+            }
             $columns[] = <<<VIEW
     private function {$columnDescription->getName()}() {
         return {$this->makeColumnConfig($columnDescription)};
@@ -187,13 +289,13 @@ VIEW;
     protected function makeColumnConfig(ColumnDescription $columnDescription) {
         $ret = "Column::create({$this->getConstantNameForColumnType($columnDescription->getOrmType())})";
         if ($columnDescription->isPrimaryKey()) {
-            $ret .= "\n            ->itIsPrimaryKey()";
+            $ret .= "\n            ->primaryKey()";
         }
         if ($columnDescription->isUnique()) {
-            $ret .= "\n            ->valueMustBeUnique(true)";
+            $ret .= "\n            ->uniqueValues()";
         }
         if (!$columnDescription->isNullable()) {
-            $ret .= "\n            ->valueIsNotNullable()";
+            $ret .= "\n            ->disallowsNullValues()";
         } else {
             $ret .= "\n            ->convertsEmptyStringToNull()";
         }
@@ -229,6 +331,84 @@ VIEW;
             );
         }
         return 'Column::' . $typeValueToTypeConstantName[$columnTypeValue];
+    }
+
+    /**
+     * @return string
+     */
+    protected function makePhpDocForRecord() {
+        $description = $this->getTableDescription();
+        $getters = [];
+        $setters = [];
+        foreach ($description->getColumns() as $columnDescription) {
+            $phpTypes = str_pad($this->getPhpTypeByColumnDescription($columnDescription), 11, ' ', STR_PAD_RIGHT);
+            $getters[] = " * @property-read {$phpTypes} \${$columnDescription->getName()}";
+            foreach ($this->getFormattersForOrmType($columnDescription->getOrmType()) as $formaterName => $phpType) {
+                $phpType = str_pad($phpType, 11, ' ', STR_PAD_RIGHT);
+                $getters[] = " * @property-read {$phpType} \${$columnDescription->getName()}_as_{$formaterName}";
+            }
+            $setter = 'set' . StringUtils::classify($columnDescription->getName());
+            $setters[] = " * @method \$this    {$setter}(\$value, \$isFromDb = false)";
+        }
+        return implode("\n", $getters) . "\n *\n" . implode("\n", $setters);
+    }
+
+    /**
+     * @param ColumnDescription $columnDescription
+     * @return string
+     */
+    protected function getPhpTypeByColumnDescription(ColumnDescription $columnDescription) {
+        switch ($columnDescription->getOrmType()) {
+            case Column::TYPE_INT:
+                $type = 'int';
+                break;
+            case Column::TYPE_FLOAT:
+                $type = 'float';
+                break;
+            case Column::TYPE_BOOL:
+                $type = 'bool';
+                break;
+            default:
+                $type = 'string';
+        }
+        return ($columnDescription->isNullable() ? 'null|' : '') . $type;
+    }
+
+    /**
+     * @param $ormType
+     * @return array - key: format name; value: php type
+     */
+    protected function getFormattersForOrmType($ormType) {
+        $formats = RecordValueHelpers::getValueFormatterAndFormatsByType($ormType)[1];
+        $formatToPhpType = [];
+        foreach ($formats as $formatName) {
+            switch ($formatName) {
+                case 'unix_ts':
+                    $formatToPhpType[$formatName] = 'int';
+                    break;
+                case 'array':
+                    $formatToPhpType[$formatName] = 'array';
+                    break;
+                case 'object':
+                    $formatToPhpType[$formatName] = 'object';
+                    break;
+                default:
+                    $formatToPhpType[$formatName] = 'string';
+            }
+        }
+        return $formatToPhpType;
+    }
+
+    /**
+     * @return string
+     */
+    protected function makePhpDocForTableStructure() {
+        $description = $this->getTableDescription();
+        $getters = [];
+        foreach ($description->getColumns() as $columnDescription) {
+            $getters[] = " * @property-read Column    \${$columnDescription->getName()}";
+        }
+        return implode("\n", $getters);
     }
 
 }

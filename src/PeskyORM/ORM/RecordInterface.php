@@ -35,28 +35,28 @@ interface RecordInterface {
 
     /**
      * Get a value from specific $columnName with optional $format
-     * @param string $columnName
+     * @param string|Column $column
      * @param null $format - change value format (list of formats depend on Column type and config)
      * @return mixed
      */
-    public function getValue($columnName, $format = null);
+    public function getValue($column, $format = null);
 
     /**
      * Check if there is a value for $columnName
-     * @param string $columnName
+     * @param string $column
      * @param bool $trueIfThereIsDefaultValue - true: returns true if there is no value set but column has default value
      * @return bool
      */
-    public function hasValue($columnName, $trueIfThereIsDefaultValue = false);
+    public function hasValue($column, $trueIfThereIsDefaultValue = false);
 
     /**
      * Set a $value for $columnName
-     * @param string $columnName
+     * @param string $column
      * @param mixed $value
      * @param boolean $isFromDb
      * @return $this
      */
-    public function updateValue($columnName, $value, $isFromDb);
+    public function updateValue($column, $value, $isFromDb);
 
     /**
      * Get a value of the primary key column

@@ -81,6 +81,10 @@ class Mysql extends DbAdapter {
         'year' => Column::TYPE_INT,
     ];
 
+    static public function getConnectionConfigClass() {
+        return MysqlConfig::class;
+    }
+
     public function __construct(MysqlConfig $connectionConfig) {
         parent::__construct($connectionConfig);
     }
@@ -238,7 +242,7 @@ class Mysql extends DbAdapter {
         }
         $conditionsAndOptions = preg_replace('%^.*?WHERE\s*(.*)$%is', '$1', $updateQuery);
         $selectQuery = DbExpr::create("SELECT {$returning} FROM {$table} WHERE {$conditionsAndOptions}");
-        $stmnt = $this->query($selectQuery, Utils::FETCH_ALL);
+        $stmnt = $this->query($selectQuery);
         if ($stmnt->rowCount() !== $rowsUpdated) {
             throw new DbException(
                 "Received amount of records ({$stmnt->rowCount()}) differs from expected ({$rowsUpdated})"
@@ -301,7 +305,7 @@ class Mysql extends DbAdapter {
      * @return string
      */
     protected function convertDbTypeToOrmType($dbType) {
-        $dbType = strtolower(preg_replace('%\([^)]+\)$%', '', $dbType));
+        $dbType = strtolower(preg_replace(['%\s*unsigned$%i', '%\([^)]+\)$%'], ['', ''], $dbType));
         return array_key_exists($dbType, static::$dbTypeToOrmType)
             ? static::$dbTypeToOrmType[$dbType]
             : Column::TYPE_STRING;
@@ -334,7 +338,7 @@ class Mysql extends DbAdapter {
      * @return array - index 0: limit; index 1: precision
      */
     protected function extractLimitAndPrecisionForColumnDescription($typeDescription) {
-        if (preg_match('%\((\d+)(?:,(\d+))?\)$%', $typeDescription, $matches)) {
+        if (preg_match('%\((\d+)(?:,(\d+))?\)( unsigned)?$%', $typeDescription, $matches)) {
             return [(int)$matches[1], !isset($matches[2]) ? null : (int)$matches[2]];
         } else {
             return [null, null];

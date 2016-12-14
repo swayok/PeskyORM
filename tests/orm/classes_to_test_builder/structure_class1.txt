@@ -7,27 +7,55 @@ use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Relation;
 use PeskyORM\Core\DbExpr;
 
+/**
+ * @property-read Column    $id
+ * @property-read Column    $login
+ * @property-read Column    $password
+ * @property-read Column    $parent_id
+ * @property-read Column    $created_at
+ * @property-read Column    $updated_at
+ * @property-read Column    $remember_token
+ * @property-read Column    $is_superadmin
+ * @property-read Column    $language
+ * @property-read Column    $ip
+ * @property-read Column    $role
+ * @property-read Column    $is_active
+ * @property-read Column    $name
+ * @property-read Column    $email
+ * @property-read Column    $timezone
+ * @property-read Column    $not_changeable_column
+ */
 class AdminsTableStructure extends TableStructure {
 
+    /**
+     * @return string
+     */
     static public function getTableName() {
         return 'admins';
     }
 
+    /**
+     * @return string|null
+     */
+    static public function getSchema() {
+        return null;
+    }
+
     private function id() {
         return Column::create(Column::TYPE_INT)
-            ->itIsPrimaryKey()
-            ->valueIsNotNullable();
+            ->primaryKey()
+            ->disallowsNullValues();
     }
 
     private function login() {
         return Column::create(Column::TYPE_STRING)
-            ->valueMustBeUnique(true)
-            ->valueIsNotNullable();
+            ->uniqueValues()
+            ->disallowsNullValues();
     }
 
     private function password() {
         return Column::create(Column::TYPE_STRING)
-            ->valueIsNotNullable();
+            ->disallowsNullValues();
     }
 
     private function parent_id() {
@@ -37,13 +65,13 @@ class AdminsTableStructure extends TableStructure {
 
     private function created_at() {
         return Column::create(Column::TYPE_TIMESTAMP_WITH_TZ)
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue(DbExpr::create('now()'));
     }
 
     private function updated_at() {
         return Column::create(Column::TYPE_TIMESTAMP_WITH_TZ)
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue(DbExpr::create('now()'));
     }
 
@@ -55,7 +83,7 @@ class AdminsTableStructure extends TableStructure {
 
     private function is_superadmin() {
         return Column::create(Column::TYPE_BOOL)
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue(false);
     }
 
@@ -73,31 +101,31 @@ class AdminsTableStructure extends TableStructure {
 
     private function role() {
         return Column::create(Column::TYPE_STRING)
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue('');
     }
 
     private function is_active() {
         return Column::create(Column::TYPE_BOOL)
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue(true);
     }
 
     private function name() {
         return Column::create(Column::TYPE_STRING)
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue('');
     }
 
     private function email() {
         return Column::create(Column::TYPE_STRING)
-            ->valueMustBeUnique(true)
+            ->uniqueValues()
             ->convertsEmptyStringToNull();
     }
 
     private function timezone() {
         return Column::create(Column::TYPE_STRING)
-            ->valueIsNotNullable()
+            ->disallowsNullValues()
             ->setDefaultValue('UTC');
     }
 

@@ -6,6 +6,8 @@ use PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Relation;
 use PeskyORM\Core\DbExpr;
+use PeskyORMTest\Traits\TestingIdColumnTrait;
+use PeskyORMTest\Traits\TestingTimestampColumnsTrait;
 
 /**
  * @property-read Column    $id
@@ -27,6 +29,9 @@ use PeskyORM\Core\DbExpr;
  */
 class AdminsTableStructure extends TestingAdminsTableStructure {
 
+    use TestingIdColumnTrait,
+        TestingTimestampColumnsTrait;
+
     /**
      * @return string
      */
@@ -39,12 +44,6 @@ class AdminsTableStructure extends TestingAdminsTableStructure {
      */
     static public function getSchema() {
         return 'public';
-    }
-
-    private function id() {
-        return Column::create(Column::TYPE_INT)
-            ->primaryKey()
-            ->disallowsNullValues();
     }
 
     private function login() {
@@ -61,18 +60,6 @@ class AdminsTableStructure extends TestingAdminsTableStructure {
     private function parent_id() {
         return Column::create(Column::TYPE_INT)
             ->convertsEmptyStringToNull();
-    }
-
-    private function created_at() {
-        return Column::create(Column::TYPE_TIMESTAMP_WITH_TZ)
-            ->disallowsNullValues()
-            ->setDefaultValue(DbExpr::create('now()'));
-    }
-
-    private function updated_at() {
-        return Column::create(Column::TYPE_TIMESTAMP_WITH_TZ)
-            ->disallowsNullValues()
-            ->setDefaultValue(DbExpr::create('now()'));
     }
 
     private function remember_token() {

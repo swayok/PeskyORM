@@ -2,6 +2,9 @@
 
 use PeskyORM\ORM\ClassBuilder;
 use PeskyORM\ORM\Column;
+use PeskyORMTest\Traits\TestingCreatedAtColumnTrait;
+use PeskyORMTest\Traits\TestingIdColumnTrait;
+use PeskyORMTest\Traits\TestingTimestampColumnsTrait;
 
 class DbClassBuilderTest extends PHPUnit_Framework_TestCase {
 
@@ -76,21 +79,21 @@ class DbClassBuilderTest extends PHPUnit_Framework_TestCase {
         $columnDescr = new \PeskyORM\Core\ColumnDescription('test', 'integer', Column::TYPE_INT);
         $columnDescr->setIsPrimaryKey(true);
         static::assertEquals(
-            'Column::create(Column::TYPE_INT)->itIsPrimaryKey()->convertsEmptyStringToNull()',
+            'Column::create(Column::TYPE_INT)->primaryKey()->convertsEmptyStringToNull()',
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
             ->setIsPrimaryKey(false)
             ->setIsUnique(true);
         static::assertEquals(
-            'Column::create(Column::TYPE_INT)->valueMustBeUnique(true)->convertsEmptyStringToNull()',
+            'Column::create(Column::TYPE_INT)->uniqueValues()->convertsEmptyStringToNull()',
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
             ->setIsUnique(false)
             ->setIsNullable(false);
         static::assertEquals(
-            'Column::create(Column::TYPE_INT)->valueIsNotNullable()',
+            'Column::create(Column::TYPE_INT)->disallowsNullValues()',
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
@@ -145,7 +148,7 @@ class DbClassBuilderTest extends PHPUnit_Framework_TestCase {
             ->setDefault(\PeskyORM\Core\DbExpr::create("string with ' quotes \" `"))
             ->setIsPrimaryKey(true);
         static::assertEquals(
-            "Column::create(Column::TYPE_INT)->itIsPrimaryKey()->convertsEmptyStringToNull()",
+            'Column::create(Column::TYPE_INT)->primaryKey()->convertsEmptyStringToNull()',
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
     }
@@ -156,9 +159,19 @@ class DbClassBuilderTest extends PHPUnit_Framework_TestCase {
             preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/structure_class1.txt')),
             preg_replace("%[\r\n\t]+%", '', $builder->buildStructureClass('App\\Db'))
         );
+        $builder->setDbSchemaName('public');
         static::assertEquals(
             preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/structure_class2.txt')),
             preg_replace("%[\r\n\t]+%", '', $builder->buildStructureClass('App\\Db', \PeskyORMTest\TestingAdmins\TestingAdminsTableStructure::class))
+        );
+        $traits = [
+            TestingIdColumnTrait::class,
+            TestingTimestampColumnsTrait::class,
+            TestingCreatedAtColumnTrait::class,
+        ];
+        static::assertEquals(
+            preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/structure_class3.txt')),
+            preg_replace("%[\r\n\t]+%", '', $builder->buildStructureClass('App\\Db', \PeskyORMTest\TestingAdmins\TestingAdminsTableStructure::class, $traits))
         );
     }
 }

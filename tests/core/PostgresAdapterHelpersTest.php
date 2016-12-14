@@ -86,7 +86,7 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @expectedException PHPUnit_Framework_Error
+     * @expectedException TypeError
      * @expectedExceptionMessage guardDataArg() must be of the type array
      */
     public function testInvalidData2() {
@@ -102,7 +102,7 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @expectedException PHPUnit_Framework_Error
+     * @expectedException TypeError
      * @expectedExceptionMessage guardColumnsArg() must be of the type array
      */
     public function testInvalidColumns2() {

@@ -21,9 +21,9 @@ class MysqlConfig implements DbConnectionConfigInterface {
      * @throws \InvalidArgumentException
      */
     static public function fromArray(array $config) {
-        $dbName = array_key_exists('name', $config) ? $config['name'] : null;
-        $user = array_key_exists('user', $config) ? $config['user'] : null;
-        $password = array_key_exists('password', $config) ? $config['password'] : null;
+        $dbName = $config['database'] ?: null;
+        $user = $config['username'] ?: null;
+        $password = $config['password'] ?: null;
         $object = new static($dbName, $user, $password);
         if (!empty($config['host'])) {
             $object->setDbHost($config['host']);

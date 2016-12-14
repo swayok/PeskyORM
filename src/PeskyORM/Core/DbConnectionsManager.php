@@ -59,6 +59,44 @@ class DbConnectionsManager {
     }
 
     /**
+     * @param string $connectionName
+     * @param array $connectionInfo
+     *      - required keys: 'driver' or 'adapter' = 'mysql', 'pgsql', ... - any key in DbConnectionsManager::$adapters
+     *      - optional keys (depends on driver): 'database', 'username', 'password', 'charset'
+     *                                           'host', 'port', 'socket', 'options' (array)
+     * @return DbAdapter|DbAdapterInterface
+     * @throws \InvalidArgumentException
+     */
+    static public function createConnectionFromArray($connectionName, array $connectionInfo) {
+        if (empty($connectionInfo['driver']) && empty($connectionInfo['adapter'])) {
+            throw new \InvalidArgumentException('$connectionInfo must contain a value for key \'driver\' or \'adapter\'');
+        }
+        $adapterName = empty($connectionInfo['adapter']) ? $connectionInfo['driver'] : $connectionInfo['adapter'];
+        if (empty($adapterName) || !isset(self::$adapters[$adapterName])) {
+            throw new \InvalidArgumentException("DB adapter with name [$adapterName] not found");
+        }
+        /** @var DbAdapterInterface $adapterClass */
+        $adapterClass = static::$adapters[$adapterName];
+        /** @var DbConnectionConfigInterface $configClass */
+        $configClass = $adapterClass::getConnectionConfigClass();
+        $connectionConfig = $configClass::fromArray($connectionInfo);
+        return static::createConnection($connectionName, $adapterName, $connectionConfig);
+    }
+
+    /**
+     * Add alternative name for existing connection
+     * @param string $connectionName
+     * @param string $alternativeName
+     * @throws \InvalidArgumentException
+     */
+    static public function addAlternativeNameForConnection($connectionName, $alternativeName) {
+        if (isset(self::$connections[$alternativeName])) {
+            throw new \InvalidArgumentException("DB connection with name [$alternativeName] already exists");
+        }
+        self::$connections[$alternativeName] = static::getConnection($connectionName);
+    }
+
+    /**
      * Get connection
      * @param string $connectionName
      * @return DbAdapter|DbAdapterInterface
@@ -79,6 +117,5 @@ class DbConnectionsManager {
             $adapter->disconnect();
         }
     }
-
 
 }

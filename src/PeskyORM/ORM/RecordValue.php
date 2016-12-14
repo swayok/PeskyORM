@@ -183,6 +183,8 @@ class RecordValue {
      * @param mixed $preprocessedValue
      * @param boolean $isFromDb
      * @return $this
+     * @throws \UnexpectedValueException
+     * @throws \BadMethodCallException
      */
     public function setRawValue($rawValue, $preprocessedValue, $isFromDb) {
         $this->setOldValue($this);

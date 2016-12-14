@@ -39,6 +39,14 @@ class TableDescription implements \Serializable {
     }
 
     /**
+     * @param $columnName
+     * @return bool
+     */
+    public function hasColumn($columnName) {
+        return !empty($this->columns[$columnName]);
+    }
+
+    /**
      * @return string
      */
     public function getDbSchema() {
