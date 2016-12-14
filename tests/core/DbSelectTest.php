@@ -908,6 +908,48 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
 
     }
 
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $selectAlias argument must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)
+     */
+    public function testInvalidWith1() {
+        static::getNewSelect()->with(static::getNewSelect(), 'asdas as das das');
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $selectAlias argument must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)
+     */
+    public function testInvalidWith2() {
+        static::getNewSelect()->with(static::getNewSelect(), []);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage $selectAlias argument must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)
+     */
+    public function testInvalidWith3() {
+        static::getNewSelect()->with(static::getNewSelect(), $this);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage WITH query with name 'test' already defined
+     */
+    public function testInvalidWith4() {
+        static::getNewSelect()->with(static::getNewSelect(), 'test')->with(static::getNewSelect(), 'test');
+    }
+
+    public function testWith() {
+        $dbSelect = static::getNewSelect();
+        $dbSelect->with(static::getNewSelect(), 'subselect');
+        static::assertEquals(
+            '_Admins__colname',
+            $dbSelect->getQuery()
+        );
+        // todo: test building queries with WITH
+    }
+
     public function testMakeColumnAlias() {
         $dbSelect = static::getNewSelect();
         static::assertEquals(
@@ -1315,6 +1357,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             'SELECT "Admins"."colname" AS "_Admins__colname", "Admins"."colname2" AS "_Admins__colname2", "Admins"."colname3" AS "_Admins__colname3", "Admins".*, "Test"."admin_id" AS "_Test__admin_id", "Test"."value" AS "_Test__setting_value" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."settings" AS "Test" ON ("Admins"."id" = "Test"."admin_id") WHERE "Admins"."colname" = \'value\' AND ("Admins"."colname2" = \'value2\' OR "Admins"."colname3" = \'value3\') GROUP BY "Admins"."colname", "Test"."admin_id" HAVING "Admins"."colname3" = \'value\' AND "Test"."admin_id" > \'1\' ORDER BY "Admins"."colname" ASC, "Test"."admin_id" DESC LIMIT 10 OFFSET 20',
             static::getNewSelect()->fromConfigsArray($configs)->getQuery()
         );
+        // todo: add tests for WITH
     }
 
     public function testNormalizeRecord() {

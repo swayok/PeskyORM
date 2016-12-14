@@ -127,7 +127,7 @@ class OrmSelect extends AbstractSelect {
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
 
     protected function beforeQueryBuilding() {
-        if ($this->isDirty('joins')) {
+        if ($this->isDirty('joins') || $this->isDirty('with')) {
             $this->setDirty('columns');
             $this->setDirty('where');
             $this->setDirty('having');

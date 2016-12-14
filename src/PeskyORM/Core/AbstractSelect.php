@@ -47,6 +47,10 @@ abstract class AbstractSelect {
      */
     protected $having = [];
     /**
+     * @var AbstractSelect[]
+     */
+    protected $with = [];
+    /**
      * @var int
      */
     protected $limit = 0;
@@ -114,6 +118,26 @@ abstract class AbstractSelect {
      * @throws \UnexpectedValueException
      */
     protected function parseNormalizedConfigsArray(array $conditionsAndOptions) {
+        // WITH
+        if (!empty($conditionsAndOptions['WITH'])) {
+            if (!is_array($conditionsAndOptions['WITH'])) {
+                throw new \InvalidArgumentException(
+                    'WITH key in $conditionsAndOptions argument must a key-value array where key is entity name and value is an instance of AbstractSelect class'
+                );
+            }
+            foreach ($conditionsAndOptions['WITH'] as $selectAlias => $select) {
+                if (!($select instanceof AbstractSelect)) {
+                    throw new \InvalidArgumentException(
+                        "WITH key in \$conditionsAndOptions argument contains invalid value for key {$selectAlias}. Value must be an instance of AbstractSelect class"
+                    );
+                } else if (!$this->getConnection()->isValidDbEntityName($selectAlias)) {
+                    throw new \InvalidArgumentException(
+                        "WITH key in \$conditionsAndOptions argument contains invalid key {$selectAlias}. Key must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)"
+                    );
+                }
+                $this->with($select, $selectAlias);
+            }
+        }
         // JOINS - must be 1st to allow columns validation in OrmSelect or other child class
         if (!empty($conditionsAndOptions['JOINS'])) {
             if (!is_array($conditionsAndOptions['JOINS'])) {
@@ -188,7 +212,7 @@ abstract class AbstractSelect {
         if (!empty($conditionsAndOptions['HAVING'])) {
             if (!is_array($conditionsAndOptions['HAVING'])) {
                 throw new \InvalidArgumentException(
-                    'HAVING key in $conditionsAndOptions argument must be an must be an array like conditions'
+                    'HAVING key in $conditionsAndOptions argument must be an array like conditions'
                 );
             }
             $this->having($conditionsAndOptions['HAVING']);
@@ -351,6 +375,7 @@ abstract class AbstractSelect {
             $this->getTableAlias(),
             $this->getTableSchemaName()
         );
+        $with = $this->makeWithQueries();
         $columns = $this->makeColumnsForQuery();
         $group = $this->makeGroupBy();
         $order = $this->makeOrderBy();
@@ -361,7 +386,7 @@ abstract class AbstractSelect {
         $joins = $this->makeJoins(false);
         $this->validateIfThereAreEnoughJoins();
         $this->notDirty();
-        return "SELECT {$columns} FROM {$table}{$joins}{$conditions}{$group}{$having}{$order}{$limit}{$offset}";
+        return "{$with}SELECT {$columns} FROM {$table}{$joins}{$conditions}{$group}{$having}{$order}{$limit}{$offset}";
     }
 
     /**
@@ -404,6 +429,7 @@ abstract class AbstractSelect {
             $this->getTableAlias(),
             $this->getTableSchemaName()
         );
+        $with = $this->makeWithQueries();
         $group = $this->makeGroupBy();
         $conditions = $this->makeConditions($this->where, 'WHERE');
         $having = $this->makeConditions($this->having, 'HAVING');
@@ -412,7 +438,7 @@ abstract class AbstractSelect {
         $offset = $ignoreLimitAndOffset ? '' : $this->makeOffset();
         $this->validateIfThereAreEnoughJoins();
         $this->notDirty();
-        return "SELECT $expression FROM {$table}{$joins}{$conditions}{$group}{$having}{$limit}{$offset}";
+        return "{$with}SELECT $expression FROM {$table}{$joins}{$conditions}{$group}{$having}{$limit}{$offset}";
     }
 
     /**
@@ -656,6 +682,30 @@ abstract class AbstractSelect {
     public function having(array $conditions) {
         $this->having = $conditions;
         $this->setDirty('having');
+        return $this;
+    }
+
+    /**
+     * @param AbstractSelect $select - a sub select that can be used as "table" in main select
+     * @param string $selectAlias - alias for passed $select (access to the select will be available using this alias)
+     * @param bool $append
+     * @return $this
+     * @throws \InvalidArgumentException
+     */
+    public function with(AbstractSelect $select, $selectAlias, $append = true) {
+        if (!is_string($selectAlias) || !$this->getConnection()->isValidDbEntityName($selectAlias)) {
+            throw new \InvalidArgumentException(
+                "\$selectAlias argument must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)"
+            );
+        }
+        if (!$append) {
+            $this->with = [];
+        }
+        if (array_key_exists($selectAlias, $this->with)) {
+            throw new \InvalidArgumentException("WITH query with name '{$selectAlias}' already defined");
+        }
+        $this->with[$selectAlias] = $select;
+        $this->setDirty('with');
         return $this;
     }
 
@@ -1164,6 +1214,20 @@ abstract class AbstractSelect {
             $joinConfig->getAdditionalJoinConditions()
         );
         return trim($this->makeConditions($conditions, '', $joinConfig->getJoinName()));
+    }
+
+    /**
+     * @return string
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    protected function makeWithQueries() {
+        $queries = [];
+        foreach ($this->with as $alias => $select) {
+            $queries[] = $this->quoteDbEntityName($this->getShortJoinAlias($alias)) . ' AS (' . $select->getQuery() . ')';
+        }
+        return count($queries) ? 'WITH ' . implode(', ', $queries) . ' ' : '';
     }
 
     /**
