@@ -141,9 +141,9 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
         static::assertEquals('admins', $dbSelect->getTableName());
         static::assertEquals('Admins', $dbSelect->getTableAlias());
         static::assertEquals([], $this->getObjectPropertyValue($dbSelect, 'columns')); //< not initialized before query builder launched
-        static::assertEquals('SELECT "Admins".* FROM "public"."admins" AS "Admins"', rtrim($dbSelect->getQuery()));
-        static::assertEquals('SELECT COUNT(*) FROM "public"."admins" AS "Admins"', rtrim($dbSelect->getCountQuery()));
-        static::assertEquals('SELECT 1 FROM "public"."admins" AS "Admins" LIMIT 1', rtrim($dbSelect->getExistenceQuery()));
+        static::assertEquals('SELECT "Admins".* FROM "admins" AS "Admins"', rtrim($dbSelect->getQuery()));
+        static::assertEquals('SELECT COUNT(*) FROM "admins" AS "Admins"', rtrim($dbSelect->getCountQuery()));
+        static::assertEquals('SELECT 1 FROM "admins" AS "Admins" LIMIT 1', rtrim($dbSelect->getExistenceQuery()));
 
         $insertedData = static::fillAdminsTable();
         $testData = static::convertTestDataForAdminsTableAssert($insertedData);
@@ -420,7 +420,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      */
     public function testInvalidColumnsWithJoinName() {
         static::assertEquals(
-            'SELECT "OtherTable"."id" AS "_OtherTable__id" FROM "public"."admins" AS "Admins"',
+            'SELECT "OtherTable"."id" AS "_OtherTable__id" FROM "admins" AS "Admins"',
             rtrim(static::getNewSelect()->columns(['OtherTable.id'])->getQuery())
         );
     }
@@ -431,7 +431,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      */
     public function testInvalidColumnsWithJoinName2() {
         static::assertEquals(
-            'SELECT "OtherTable"."id" AS "_OtherTable__id" FROM "public"."admins" AS "Admins"',
+            'SELECT "OtherTable"."id" AS "_OtherTable__id" FROM "admins" AS "Admins"',
             rtrim(static::getNewSelect()->columns(['OtherTable' => '*'])->getQuery())
         );
     }
@@ -442,7 +442,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      */
     public function testInvalidColumnsWithJoinName3() {
         static::assertEquals(
-            'SELECT "OtherTable"."id" AS "_OtherTable__id" FROM "public"."admins" AS "Admins"',
+            'SELECT "OtherTable"."id" AS "_OtherTable__id" FROM "admins" AS "Admins"',
             rtrim(static::getNewSelect()->columns(['OtherTable' => ['col1']])->getQuery())
         );
     }
@@ -450,50 +450,50 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
     public function testColumns() {
         $dbSelect = static::getNewSelect();
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins".* FROM "admins" AS "Admins"',
             rtrim($dbSelect->columns([])->getQuery())
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins".* FROM "admins" AS "Admins"',
             rtrim($dbSelect->columns(['*'])->getQuery())
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins"',
             rtrim($dbSelect->columns(['id'])->getQuery())
         );
         static::assertEquals(
-            'SELECT "Admins"."id"::integer AS "_Admins__id" FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins"."id"::integer AS "_Admins__id" FROM "admins" AS "Admins"',
             rtrim($dbSelect->columns(['id::integer'])->getQuery())
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins"',
             rtrim($dbSelect->columns(['Admins.id'])->getQuery())
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id", "Admins"."login" AS "_Admins__login" FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins"."id" AS "_Admins__id", "Admins"."login" AS "_Admins__login" FROM "admins" AS "Admins"',
             rtrim($dbSelect->columns(['id', 'login'])->getQuery())
         );
         static::assertEquals(
-            'SELECT "Admins"."id"::int AS "_Admins__id", "Admins"."login" AS "_Admins__login" FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins"."id"::int AS "_Admins__id", "Admins"."login" AS "_Admins__login" FROM "admins" AS "Admins"',
             rtrim($dbSelect->columns('id::int', 'login')->getQuery())
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id", (SUM("id")) FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins"."id" AS "_Admins__id", (SUM("id")) FROM "admins" AS "Admins"',
             rtrim($dbSelect->columns(['id', DbExpr::create('SUM(`id`)')])->getQuery())
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__not_id", (SUM("id")) AS "_Admins__sum" FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins"."id" AS "_Admins__not_id", (SUM("id")) AS "_Admins__sum" FROM "admins" AS "Admins"',
             rtrim($dbSelect->columns(['not_id' => 'id', 'sum' => DbExpr::create('SUM(`id`)')])->getQuery())
         );
         static::assertEquals(
-            'SELECT "Admins".*, (SUM("id")) AS "_Admins__sum" FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins".*, (SUM("id")) AS "_Admins__sum" FROM "admins" AS "Admins"',
             rtrim($dbSelect->columns(['*', 'sum' => DbExpr::create('SUM(`id`)')])->getQuery())
         );
         // test column alias shortening
         $query = $dbSelect->columns(['VeryLongColumnAliasSoItMustBeShortened' => 'id'])->getQuery();
         $shortAlias = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', ['VeryLongColumnAliasSoItMustBeShortened']);
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__' . $shortAlias . '" FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins"."id" AS "_Admins__' . $shortAlias . '" FROM "admins" AS "Admins"',
             $query
         );
         $insertedData = static::fillAdminsTable();
@@ -563,27 +563,27 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
     public function testOrderBy() {
         $dbSelect = static::getNewSelect();
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" ORDER BY "Admins"."id" ASC',
+            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY "Admins"."id" ASC',
             $dbSelect->orderBy('id')->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" ORDER BY "Admins"."id" DESC',
+            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY "Admins"."id" DESC',
             $dbSelect->orderBy('Admins.id', false, true)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" ORDER BY "Admins"."id"::integer ASC',
+            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY "Admins"."id"::integer ASC',
             $dbSelect->orderBy('Admins.id::integer', true, true)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" ORDER BY "Admins"."id" DESC',
+            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY "Admins"."id" DESC',
             $dbSelect->orderBy('Admins.id', false, true)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" ORDER BY "Admins"."id" DESC, "Admins"."email" DESC',
+            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY "Admins"."id" DESC, "Admins"."email" DESC',
             $dbSelect->orderBy('email', false)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" ORDER BY (RANDOM())',
+            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY (RANDOM())',
             $dbSelect->orderBy(DbExpr::create('RANDOM()'), null, false)->getQuery()
         );
     }
@@ -639,19 +639,19 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
     public function testGroupBy() {
         $dbSelect = static::getNewSelect();
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" GROUP BY "Admins"."id"',
+            'SELECT "Admins".* FROM "admins" AS "Admins" GROUP BY "Admins"."id"',
             $dbSelect->groupBy(['id'])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" GROUP BY "Admins"."id"',
+            'SELECT "Admins".* FROM "admins" AS "Admins" GROUP BY "Admins"."id"',
             $dbSelect->groupBy(['Admins.id'])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" GROUP BY "Admins"."id", "Admins"."email"',
+            'SELECT "Admins".* FROM "admins" AS "Admins" GROUP BY "Admins"."id", "Admins"."email"',
             $dbSelect->groupBy(['email'])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" GROUP BY (RANDOM())',
+            'SELECT "Admins".* FROM "admins" AS "Admins" GROUP BY (RANDOM())',
             $dbSelect->groupBy([DbExpr::create('RANDOM()')], false)->getQuery()
         );
     }
@@ -755,35 +755,35 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
     public function testLimitAndOffset() {
         $dbSelect = static::getNewSelect();
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins".* FROM "admins" AS "Admins"',
             $dbSelect->limit(0)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" LIMIT 1',
+            'SELECT "Admins".* FROM "admins" AS "Admins" LIMIT 1',
             $dbSelect->limit(1)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins".* FROM "admins" AS "Admins"',
             $dbSelect->noLimit()->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" LIMIT 1',
+            'SELECT "Admins".* FROM "admins" AS "Admins" LIMIT 1',
             $dbSelect->limit(1)->offset(0)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" LIMIT 1 OFFSET 2',
+            'SELECT "Admins".* FROM "admins" AS "Admins" LIMIT 1 OFFSET 2',
             $dbSelect->limit(1)->offset(2)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" LIMIT 1',
+            'SELECT "Admins".* FROM "admins" AS "Admins" LIMIT 1',
             $dbSelect->limit(1)->offset(0)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" OFFSET 1',
+            'SELECT "Admins".* FROM "admins" AS "Admins" OFFSET 1',
             $dbSelect->limit(0)->offset(1)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" LIMIT 10 OFFSET 9',
+            'SELECT "Admins".* FROM "admins" AS "Admins" LIMIT 10 OFFSET 9',
             $dbSelect->page(10, 9)->getQuery()
         );
     }
@@ -807,19 +807,19 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
     public function testWhereAndHaving() {
         $dbSelect = static::getNewSelect();
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins".* FROM "admins" AS "Admins"',
             $dbSelect->where([])->having([])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" WHERE "Admins"."id"::int = \'1\' HAVING "Admins"."login"::varchar = \'2\'',
+            'SELECT "Admins".* FROM "admins" AS "Admins" WHERE "Admins"."id"::int = \'1\' HAVING "Admins"."login"::varchar = \'2\'',
             $dbSelect->where(['id::int' => '1'])->having(['login::varchar' => '2'])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" WHERE "Admins"."id"::int = \'1\' AND "Admins"."login" = \'3\' HAVING "Admins"."login"::varchar = \'2\' AND "Admins"."email" = \'3\'',
+            'SELECT "Admins".* FROM "admins" AS "Admins" WHERE "Admins"."id"::int = \'1\' AND "Admins"."login" = \'3\' HAVING "Admins"."login"::varchar = \'2\' AND "Admins"."email" = \'3\'',
             $dbSelect->where(['id::int' => '1', 'login' => '3'])->having(['login::varchar' => '2', 'email' => '3'])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" WHERE (SUM("id") > \'1\') HAVING (SUM("id") > \'2\')',
+            'SELECT "Admins".* FROM "admins" AS "Admins" WHERE (SUM("id") > \'1\') HAVING (SUM("id") > \'2\')',
             $dbSelect->where([DbExpr::create('SUM(`id`) > ``1``')])->having([DbExpr::create('SUM(`id`) > ``2``')])->getQuery()
         );
         // conditions assembling tests are in Utils::assembleWhereConditionsFromArray()
@@ -867,7 +867,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             ->setJoinType(JoinInfo::JOIN_INNER)
             ->setForeignColumnsToSelect('key', 'value');
         static::assertEquals(
-            'SELECT "Admins".*, "Test"."key" AS "_Test__key", "Test"."value" AS "_Test__value" FROM "public"."admins" AS "Admins" INNER JOIN "public"."settings" AS "Test" ON ("Admins"."id" = "Test"."id")',
+            'SELECT "Admins".*, "Test"."key" AS "_Test__key", "Test"."value" AS "_Test__value" FROM "admins" AS "Admins" INNER JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."id")',
             $dbSelect->join($joinConfig)->getQuery()
         );
         $joinConfig
@@ -877,14 +877,14 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
                 'key' => 'name'
             ]);
         static::assertEquals(
-            'SELECT "Admins".*, "Test".* FROM "public"."admins" AS "Admins" LEFT JOIN "public"."settings" AS "Test" ON ("Admins"."id" = "Test"."id" AND "Test"."key" = \'name\')',
+            'SELECT "Admins".*, "Test".* FROM "admins" AS "Admins" LEFT JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."id" AND "Test"."key" = \'name\')',
             $dbSelect->join($joinConfig, false)->getQuery()
         );
         $joinConfig
             ->setJoinType(JoinInfo::JOIN_RIGHT)
             ->setForeignColumnsToSelect(['value']);
         static::assertEquals(
-            'SELECT "Admins".*, "Test"."value" AS "_Test__value" FROM "public"."admins" AS "Admins" RIGHT JOIN "public"."settings" AS "Test" ON ("Admins"."id" = "Test"."id" AND "Test"."key" = \'name\')',
+            'SELECT "Admins".*, "Test"."value" AS "_Test__value" FROM "admins" AS "Admins" RIGHT JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."id" AND "Test"."key" = \'name\')',
             $dbSelect->join($joinConfig, false)->getQuery()
         );
         $joinConfig
@@ -892,7 +892,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             ->setAdditionalJoinConditions([])
             ->setForeignColumnsToSelect([]);
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" RIGHT JOIN "public"."settings" AS "Test" ON ("Admins"."id" = "Test"."id")',
+            'SELECT "Admins".* FROM "admins" AS "Admins" RIGHT JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."id")',
             $dbSelect->join($joinConfig, false)->getQuery()
         );
         // test join name shortening
@@ -902,7 +902,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
         $query = $dbSelect->join($joinConfig, false)->getQuery();
         $shortJoinName = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', [$joinConfig->getJoinName()]);
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" RIGHT JOIN "public"."settings" AS "' . $shortJoinName . '" ON ("Admins"."id" = "' . $shortJoinName . '"."id" AND "' . $shortJoinName .'"."parentId" IS NULL)',
+            'SELECT "Admins".* FROM "admins" AS "Admins" RIGHT JOIN "settings" AS "' . $shortJoinName . '" ON ("Admins"."id" = "' . $shortJoinName . '"."id" AND "' . $shortJoinName .'"."parentId" IS NULL)',
             $query
         );
 
@@ -944,10 +944,22 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
         $dbSelect = static::getNewSelect();
         $dbSelect->with(static::getNewSelect(), 'subselect');
         static::assertEquals(
-            '_Admins__colname',
+            'WITH "subselect" AS (SELECT "Admins".* FROM "admins" AS "Admins") SELECT "Admins".* FROM "admins" AS "Admins"',
             $dbSelect->getQuery()
         );
-        // todo: test building queries with WITH
+        $dbSelect->where([
+            'id IN' => Select::from('subselect', static::getValidAdapter())
+        ]);
+        static::assertEquals(
+            'WITH "subselect" AS (SELECT "Admins".* FROM "admins" AS "Admins") SELECT "Admins".* FROM "admins" AS "Admins" WHERE "Admins"."id" IN (SELECT "Subselect".* FROM "subselect" AS "Subselect")',
+            $dbSelect->getQuery()
+        );
+        $dbSelect = Select::from('subselect', static::getValidAdapter())
+            ->with(Select::from('admins', static::getValidAdapter()), 'subselect');
+        static::assertEquals(
+            'WITH "subselect" AS (SELECT "Admins".* FROM "admins" AS "Admins") SELECT "Subselect".* FROM "subselect" AS "Subselect"',
+            $dbSelect->getQuery()
+        );
     }
 
     public function testMakeColumnAlias() {
@@ -996,7 +1008,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
     public function testMakeTableNameWithAliasForQuery() {
         $dbSelect = static::getNewSelect();
         static::assertEquals(
-            '"public"."admins" AS "Admins"',
+            '"admins" AS "Admins"',
             $this->callObjectMethod($dbSelect, 'makeTableNameWithAliasForQuery', ['admins', 'Admins'])
         );
         $expr = $this->callObjectMethod(
@@ -1203,7 +1215,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage HAVING key in $conditionsAndOptions argument must be an must be an array like conditions
+     * @expectedExceptionMessage HAVING key in $conditionsAndOptions argument must be an array like conditions
      */
     public function testInvalidFromConfigsArrayHaving1() {
         static::getNewSelect()->fromConfigsArray([
@@ -1213,7 +1225,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage HAVING key in $conditionsAndOptions argument must be an must be an array like conditions
+     * @expectedExceptionMessage HAVING key in $conditionsAndOptions argument must be an array like conditions
      */
     public function testInvalidFromConfigsArrayHaving2() {
         static::getNewSelect()->fromConfigsArray([
@@ -1323,11 +1335,11 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
 
     public function testFromConfigsArray() {
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins".* FROM "admins" AS "Admins"',
             static::getNewSelect()->fromConfigsArray([])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "public"."admins" AS "Admins" WHERE "Admins"."colname" = \'value\'',
+            'SELECT "Admins".* FROM "admins" AS "Admins" WHERE "Admins"."colname" = \'value\'',
             static::getNewSelect()->fromConfigsArray(['colname' => 'value'])->getQuery()
         );
         $configs = [
@@ -1354,7 +1366,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
             ]
         ];
         static::assertEquals(
-            'SELECT "Admins"."colname" AS "_Admins__colname", "Admins"."colname2" AS "_Admins__colname2", "Admins"."colname3" AS "_Admins__colname3", "Admins".*, "Test"."admin_id" AS "_Test__admin_id", "Test"."value" AS "_Test__setting_value" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."settings" AS "Test" ON ("Admins"."id" = "Test"."admin_id") WHERE "Admins"."colname" = \'value\' AND ("Admins"."colname2" = \'value2\' OR "Admins"."colname3" = \'value3\') GROUP BY "Admins"."colname", "Test"."admin_id" HAVING "Admins"."colname3" = \'value\' AND "Test"."admin_id" > \'1\' ORDER BY "Admins"."colname" ASC, "Test"."admin_id" DESC LIMIT 10 OFFSET 20',
+            'SELECT "Admins"."colname" AS "_Admins__colname", "Admins"."colname2" AS "_Admins__colname2", "Admins"."colname3" AS "_Admins__colname3", "Admins".*, "Test"."admin_id" AS "_Test__admin_id", "Test"."value" AS "_Test__setting_value" FROM "admins" AS "Admins" LEFT JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."admin_id") WHERE "Admins"."colname" = \'value\' AND ("Admins"."colname2" = \'value2\' OR "Admins"."colname3" = \'value3\') GROUP BY "Admins"."colname", "Test"."admin_id" HAVING "Admins"."colname3" = \'value\' AND "Test"."admin_id" > \'1\' ORDER BY "Admins"."colname" ASC, "Test"."admin_id" DESC LIMIT 10 OFFSET 20',
             static::getNewSelect()->fromConfigsArray($configs)->getQuery()
         );
         // todo: add tests for WITH

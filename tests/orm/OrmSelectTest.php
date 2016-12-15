@@ -2,6 +2,7 @@
 
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\Select;
 use PeskyORM\ORM\OrmJoinInfo;
 use PeskyORM\ORM\OrmSelect;
 use PeskyORMTest\TestingAdmins\TestingAdminsTable;
@@ -74,8 +75,8 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
 
 
         static::assertEquals(['id'], $this->getObjectPropertyValue($dbSelect, 'columnsRaw'));
-        static::assertEquals('SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins"', rtrim($dbSelect->getQuery()));
-        static::assertEquals('SELECT COUNT(*) FROM "public"."admins" AS "Admins"', rtrim($dbSelect->getCountQuery()));
+        static::assertEquals('SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins"', rtrim($dbSelect->getQuery()));
+        static::assertEquals('SELECT COUNT(*) FROM "admins" AS "Admins"', rtrim($dbSelect->getCountQuery()));
         $expectedColsInfo = [
             [
                 'name' => 'id',
@@ -194,7 +195,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
 
         $dbSelect->columns([]);
         static::assertEquals(
-            'SELECT ' . $colsInSelect . ' FROM "public"."admins" AS "Admins"',
+            'SELECT ' . $colsInSelect . ' FROM "admins" AS "Admins"',
             rtrim($dbSelect->getQuery())
         );
         static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
@@ -202,7 +203,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
 
         $dbSelect->columns(['*']);
         static::assertEquals(
-            'SELECT ' . $colsInSelect . ' FROM "public"."admins" AS "Admins"',
+            'SELECT ' . $colsInSelect . ' FROM "admins" AS "Admins"',
             rtrim($dbSelect->getQuery())
         );
         static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
@@ -210,38 +211,38 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
 
         $dbSelect->columns('*');
         static::assertEquals(
-            'SELECT ' . $colsInSelect . ' FROM "public"."admins" AS "Admins"',
+            'SELECT ' . $colsInSelect . ' FROM "admins" AS "Admins"',
             rtrim($dbSelect->getQuery())
         );
         static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
         static::assertCount(16, $this->getObjectPropertyValue($dbSelect, 'columns'));
 
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins"',
             rtrim($dbSelect->columns(['id'])->getQuery())
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins"',
             rtrim($dbSelect->columns(['Admins.id'])->getQuery())
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id", "Admins"."login" AS "_Admins__login" FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins"."id" AS "_Admins__id", "Admins"."login" AS "_Admins__login" FROM "admins" AS "Admins"',
             rtrim($dbSelect->columns(['id', 'login'])->getQuery())
         );
         static::assertEquals(
-            'SELECT "Admins"."id"::int AS "_Admins__id", "Admins"."login" AS "_Admins__login" FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins"."id"::int AS "_Admins__id", "Admins"."login" AS "_Admins__login" FROM "admins" AS "Admins"',
             rtrim($dbSelect->columns('id::int', 'login')->getQuery())
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id", (SUM("id")) FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins"."id" AS "_Admins__id", (SUM("id")) FROM "admins" AS "Admins"',
             rtrim($dbSelect->columns(['id', DbExpr::create('SUM(`id`)')])->getQuery())
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__not_id", (SUM("id")) AS "_Admins__sum" FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins"."id" AS "_Admins__not_id", (SUM("id")) AS "_Admins__sum" FROM "admins" AS "Admins"',
             rtrim($dbSelect->columns(['not_id' => 'id', 'sum' => DbExpr::create('SUM(`id`)')])->getQuery())
         );
         static::assertEquals(
-            'SELECT ' . $colsInSelect . ', (SUM("id")) AS "_Admins__sum" FROM "public"."admins" AS "Admins"',
+            'SELECT ' . $colsInSelect . ', (SUM("id")) AS "_Admins__sum" FROM "admins" AS "Admins"',
             rtrim($dbSelect->columns(['*', 'sum' => DbExpr::create('SUM(`id`)')])->getQuery())
         );
     }
@@ -321,19 +322,19 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
     public function testColumnsWithRelations() {
         $dbSelect = static::getNewSelect();
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id", "Parent"."id" AS "_Parent__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id")',
+            'SELECT "Admins"."id" AS "_Admins__id", "Parent"."id" AS "_Parent__id" FROM "admins" AS "Admins" LEFT JOIN "admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id")',
             $dbSelect->columns(['id', 'Parent.id'])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id", "Parent"."id" AS "_Parent__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id")',
+            'SELECT "Admins"."id" AS "_Admins__id", "Parent"."id" AS "_Parent__id" FROM "admins" AS "Admins" LEFT JOIN "admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id")',
             $dbSelect->columns(['id', 'Parent' => ['id']])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id", "Parent"."id" AS "_Parent__id", "Parent"."login" AS "_Parent__login" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id")',
+            'SELECT "Admins"."id" AS "_Admins__id", "Parent"."id" AS "_Parent__id", "Parent"."login" AS "_Parent__login" FROM "admins" AS "Admins" LEFT JOIN "admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id")',
             $dbSelect->columns(['id', 'Parent' => ['id', 'login']])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id", "Parent"."id" AS "_Parent__id", "Parent2"."id" AS "_Parent2__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") LEFT JOIN "public"."admins" AS "Parent2" ON ("Parent"."parent_id" = "Parent2"."id")',
+            'SELECT "Admins"."id" AS "_Admins__id", "Parent"."id" AS "_Parent__id", "Parent2"."id" AS "_Parent2__id" FROM "admins" AS "Admins" LEFT JOIN "admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") LEFT JOIN "admins" AS "Parent2" ON ("Parent"."parent_id" = "Parent2"."id")',
             $dbSelect->columns(['id', 'Parent' => ['id', 'Parent as Parent2' => ['id']]])->getQuery()
         );
         $colsInSelectForParent = [];
@@ -355,12 +356,12 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         $colsInSelectForParent2 = implode(', ', $colsInSelectForParent2);
 
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id", ' . $colsInSelectForParent . ', "Parent2"."id" AS "_Parent2__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") LEFT JOIN "public"."admins" AS "Parent2" ON ("Parent"."parent_id" = "Parent2"."id")',
+            'SELECT "Admins"."id" AS "_Admins__id", ' . $colsInSelectForParent . ', "Parent2"."id" AS "_Parent2__id" FROM "admins" AS "Admins" LEFT JOIN "admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") LEFT JOIN "admins" AS "Parent2" ON ("Parent"."parent_id" = "Parent2"."id")',
             $dbSelect->columns(['id', 'Parent' => ['*', 'Parent as Parent2' => ['id']]])->getQuery()
         );
 
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id", "Parent"."id" AS "_Parent__id", ' . $colsInSelectForParent2 . ' FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") LEFT JOIN "public"."admins" AS "Parent2" ON ("Parent"."parent_id" = "Parent2"."id")',
+            'SELECT "Admins"."id" AS "_Admins__id", "Parent"."id" AS "_Parent__id", ' . $colsInSelectForParent2 . ' FROM "admins" AS "Admins" LEFT JOIN "admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") LEFT JOIN "admins" AS "Parent2" ON ("Parent"."parent_id" = "Parent2"."id")',
             $dbSelect->columns(['id', 'Parent' => ['id', 'Parent as Parent2' => '*']])->getQuery()
         );
 
@@ -373,7 +374,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         $shortColumnName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', ['VeryLongColumnAliasSoItMustBeShortened']);
         $shortColumnName2 = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', ['VeryLongColumnAliasSoItMustBeShortened2']);
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__' . $shortColumnName . '", "' . $shortJoinName .'"."id" AS "_' . $shortJoinName . '__id", "' . $shortJoinName2 .'"."id" AS "_' . $shortJoinName2 . '__' . $shortColumnName2 . '" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "' . $shortJoinName . '" ON ("Admins"."parent_id" = "' . $shortJoinName . '"."id") LEFT JOIN "public"."admins" AS "' . $shortJoinName2 . '" ON ("' . $shortJoinName . '"."parent_id" = "' . $shortJoinName2 . '"."id")',
+            'SELECT "Admins"."id" AS "_Admins__' . $shortColumnName . '", "' . $shortJoinName .'"."id" AS "_' . $shortJoinName . '__id", "' . $shortJoinName2 .'"."id" AS "_' . $shortJoinName2 . '__' . $shortColumnName2 . '" FROM "admins" AS "Admins" LEFT JOIN "admins" AS "' . $shortJoinName . '" ON ("Admins"."parent_id" = "' . $shortJoinName . '"."id") LEFT JOIN "admins" AS "' . $shortJoinName2 . '" ON ("' . $shortJoinName . '"."parent_id" = "' . $shortJoinName2 . '"."id")',
             $query
         );
     }
@@ -461,28 +462,28 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
     public function testWhereAndHaving() {
         $dbSelect = static::getNewSelect()->columns('id');
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins"',
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins"',
             $dbSelect->where([])->having([])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins" WHERE "Admins"."id"::int = \'1\' HAVING "Admins"."login"::varchar = \'2\'',
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins" WHERE "Admins"."id"::int = \'1\' HAVING "Admins"."login"::varchar = \'2\'',
             $dbSelect->where(['id::int' => '1'])->having(['login::varchar' => '2'])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins" WHERE "Admins"."id"::int = \'1\' AND "Admins"."login" = \'3\' HAVING "Admins"."login"::varchar = \'2\' AND "Admins"."email" = \'test@test.ru\'',
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins" WHERE "Admins"."id"::int = \'1\' AND "Admins"."login" = \'3\' HAVING "Admins"."login"::varchar = \'2\' AND "Admins"."email" = \'test@test.ru\'',
             $dbSelect->where(['id::int' => '1', 'login' => '3'])->having(['login::varchar' => '2', 'email' => 'test@test.ru'])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins" WHERE (SUM("id") > \'1\') HAVING (SUM("id") > \'2\')',
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins" WHERE (SUM("id") > \'1\') HAVING (SUM("id") > \'2\')',
             $dbSelect->where([DbExpr::create('SUM(`id`) > ``1``')])->having([DbExpr::create('SUM(`id`) > ``2``')])->getQuery()
         );
         // test relations usage
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") WHERE "Parent"."parent_id" IS NOT NULL',
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins" LEFT JOIN "admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") WHERE "Parent"."parent_id" IS NOT NULL',
             $dbSelect->where(['Parent.parent_id !=' => null])->having([])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") HAVING "Parent"."parent_id" IS NOT NULL',
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins" LEFT JOIN "admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") HAVING "Parent"."parent_id" IS NOT NULL',
             $dbSelect->where([])->having(['Parent.parent_id !=' => null])->getQuery()
         );
         $dbSelect
@@ -491,20 +492,20 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             ->having(['Parent2.parent_id !=' => null])
             ->getQuery();
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id", "Parent2"."id" AS "_Parent2__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") LEFT JOIN "public"."admins" AS "Parent2" ON ("Parent"."parent_id" = "Parent2"."id") WHERE "Parent2"."parent_id" IS NOT NULL HAVING "Parent2"."parent_id" IS NOT NULL',
+            'SELECT "Admins"."id" AS "_Admins__id", "Parent2"."id" AS "_Parent2__id" FROM "admins" AS "Admins" LEFT JOIN "admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") LEFT JOIN "admins" AS "Parent2" ON ("Parent"."parent_id" = "Parent2"."id") WHERE "Parent2"."parent_id" IS NOT NULL HAVING "Parent2"."parent_id" IS NOT NULL',
             $dbSelect->getQuery()
         );
         // test long aliases
         $query = $dbSelect->where(['VeryLongRelationNameSoItMustBeShortened.parent_id !=' => null])->having([])->getQuery();
         $shortAlias = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', ['VeryLongRelationNameSoItMustBeShortened']);
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "' . $shortAlias . '" ON ("Admins"."parent_id" = "' . $shortAlias . '"."id") WHERE "' . $shortAlias . '"."parent_id" IS NOT NULL',
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins" LEFT JOIN "admins" AS "' . $shortAlias . '" ON ("Admins"."parent_id" = "' . $shortAlias . '"."id") WHERE "' . $shortAlias . '"."parent_id" IS NOT NULL',
             $query
         );
         $query = $dbSelect->where([])->having(['VeryLongRelationNameSoItMustBeShortened.parent_id !=' => null])->getQuery();
         $shortAlias = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', ['VeryLongRelationNameSoItMustBeShortened']);
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "' . $shortAlias . '" ON ("Admins"."parent_id" = "' . $shortAlias . '"."id") HAVING "' . $shortAlias . '"."parent_id" IS NOT NULL',
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins" LEFT JOIN "admins" AS "' . $shortAlias . '" ON ("Admins"."parent_id" = "' . $shortAlias . '"."id") HAVING "' . $shortAlias . '"."parent_id" IS NOT NULL',
             $query
         );
         // conditions assembling tests are in Utils::assembleWhereConditionsFromArray()
@@ -539,7 +540,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             ->setJoinType(OrmJoinInfo::JOIN_INNER)
             ->setForeignColumnsToSelect('login', 'email');
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id", "Test"."login" AS "_Test__login", "Test"."email" AS "_Test__email" FROM "public"."admins" AS "Admins" INNER JOIN "public"."admins" AS "Test" ON ("Admins"."parent_id" = "Test"."id")',
+            'SELECT "Admins"."id" AS "_Admins__id", "Test"."login" AS "_Test__login", "Test"."email" AS "_Test__email" FROM "admins" AS "Admins" INNER JOIN "admins" AS "Test" ON ("Admins"."parent_id" = "Test"."id")',
             $dbSelect->join($joinConfig)->getQuery()
         );
 
@@ -560,14 +561,14 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             ]);
 
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id", ' . $colsInSelectForTest . ' FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Test" ON ("Admins"."parent_id" = "Test"."id" AND "Test"."email" = \'test@test.ru\')',
+            'SELECT "Admins"."id" AS "_Admins__id", ' . $colsInSelectForTest . ' FROM "admins" AS "Admins" LEFT JOIN "admins" AS "Test" ON ("Admins"."parent_id" = "Test"."id" AND "Test"."email" = \'test@test.ru\')',
             $dbSelect->join($joinConfig, false)->getQuery()
         );
         $joinConfig
             ->setJoinType(OrmJoinInfo::JOIN_RIGHT)
             ->setForeignColumnsToSelect(['email']);
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id", "Test"."email" AS "_Test__email" FROM "public"."admins" AS "Admins" RIGHT JOIN "public"."admins" AS "Test" ON ("Admins"."parent_id" = "Test"."id" AND "Test"."email" = \'test@test.ru\')',
+            'SELECT "Admins"."id" AS "_Admins__id", "Test"."email" AS "_Test__email" FROM "admins" AS "Admins" RIGHT JOIN "admins" AS "Test" ON ("Admins"."parent_id" = "Test"."id" AND "Test"."email" = \'test@test.ru\')',
             $dbSelect->join($joinConfig, false)->getQuery()
         );
         $joinConfig
@@ -575,7 +576,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             ->setAdditionalJoinConditions([])
             ->setForeignColumnsToSelect([]);
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins" RIGHT JOIN "public"."admins" AS "Test" ON ("Admins"."parent_id" = "Test"."id")',
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins" RIGHT JOIN "admins" AS "Test" ON ("Admins"."parent_id" = "Test"."id")',
             $dbSelect->join($joinConfig, false)->getQuery()
         );
     }
@@ -739,19 +740,43 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         $select = static::getNewSelect()->columns('id');
 
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") ORDER BY "Parent"."id" ASC',
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins" LEFT JOIN "admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") ORDER BY "Parent"."id" ASC',
             $select->orderBy('Parent.id')->getQuery()
         );
 
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") GROUP BY "Parent"."id"',
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins" LEFT JOIN "admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") GROUP BY "Parent"."id"',
             $select->removeOrdering()->groupBy(['Parent.id'])->getQuery()
         );
 
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id" FROM "public"."admins" AS "Admins" LEFT JOIN "public"."admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") GROUP BY "Parent"."id", "Parent"."parent_id" ORDER BY "Parent"."id" ASC',
+            'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins" LEFT JOIN "admins" AS "Parent" ON ("Admins"."parent_id" = "Parent"."id") GROUP BY "Parent"."id", "Parent"."parent_id" ORDER BY "Parent"."id" ASC',
             $select->orderBy('Parent.id')->groupBy(['Parent.id', 'Parent.parent_id'])->getQuery()
         );
     }
+
+    public function testWith() {
+        // todo: test building queries with WITH
+        $dbSelect = static::getNewSelect()->columns('id');
+        $dbSelect->with(Select::from('admins', static::getValidAdapter()), 'subselect');
+        static::assertEquals(
+            'WITH "subselect" AS (SELECT "Admins".* FROM "admins" AS "Admins") SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins"',
+            $dbSelect->getQuery()
+        );
+        $dbSelect->where([
+            'id IN' => Select::from('subselect', static::getValidAdapter())
+        ]);
+        static::assertEquals(
+            'WITH "subselect" AS (SELECT "Admins".* FROM "admins" AS "Admins") SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins" WHERE "Admins"."id" IN (SELECT "Subselect".* FROM "subselect" AS "Subselect")',
+            $dbSelect->getQuery()
+        );
+        $dbSelect = OrmSelect::from('subselect', static::getValidAdapter())
+            ->with(Select::from('admins', static::getValidAdapter()), 'subselect');
+        static::assertEquals(
+            'WITH "subselect" AS (SELECT "Admins".* FROM "admins" AS "Admins") SELECT "Subselect".* FROM "subselect" AS "Subselect"',
+            $dbSelect->getQuery()
+        );
+    }
+
 
 }

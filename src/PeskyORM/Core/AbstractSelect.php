@@ -928,13 +928,12 @@ abstract class AbstractSelect {
      * @param string $tableName
      * @param string $tableAlias
      * @param string|null $tableSchema
-     * @return string - something like "public"."table_name" AS "ShortAlias"
+     * @return string - something like "table_name" AS "ShortAlias" or "schema_name"."table_name" AS "ShortAlias"
      */
     protected function makeTableNameWithAliasForQuery($tableName, $tableAlias, $tableSchema = null) {
-        $schema = '';
-        if ($this->getConnection()->isDbSupportsTableSchemas()) {
-            $schema = $this->quoteDbEntityName($tableSchema ?: $this->getConnection()->getDefaultTableSchema()) . '.';
-        }
+        $schema = !empty($tableSchema) && $this->getConnection()->isDbSupportsTableSchemas()
+            ? $this->quoteDbEntityName($tableSchema) . '.'
+            : '';
         return $schema . $this->quoteDbEntityName($tableName) . ' AS ' . $this->quoteDbEntityName($this->getShortJoinAlias($tableAlias));
     }
 
@@ -1124,6 +1123,7 @@ abstract class AbstractSelect {
      * @param string $subject - can be 'WHERE', 'HAVING' or ''
      * @param null $joinName - string: used when assembling conditions for join
      * @return string
+     * @throws \UnexpectedValueException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
@@ -1137,7 +1137,13 @@ abstract class AbstractSelect {
             },
             'AND',
             function ($columnName, $rawValue) {
-                return $rawValue instanceof DbExpr ? $this->quoteDbExpr($rawValue) : $rawValue;
+                if ($rawValue instanceof DbExpr) {
+                    return $this->quoteDbExpr($rawValue);
+                } else if ($rawValue instanceof AbstractSelect) {
+                    return '(' . $rawValue->getQuery() . ')';
+                } else {
+                    return $rawValue;
+                }
             }
         );
         $assembled = trim($assembled);
@@ -1364,7 +1370,11 @@ abstract class AbstractSelect {
     protected function validateIfThereAreEnoughJoins() {
         $missingJoins = [];
         foreach ($this->shortJoinAliases as $fullAlias => $notUsed) {
-            if ($fullAlias !== $this->getTableAlias() && !$this->hasJoin($fullAlias, false)) {
+            if (
+                $fullAlias !== $this->getTableAlias()
+                && !$this->hasJoin($fullAlias, false)
+                && !$this->hasWithQuery($fullAlias, false)
+            ) {
                 $missingJoins[] = $fullAlias;
             }
         }
@@ -1373,6 +1383,15 @@ abstract class AbstractSelect {
                 'There are no joins with names: ' . implode(', ', $missingJoins)
             );
         }
+    }
+
+    /**
+     * @param string $alias
+     * @param bool $mayBeShort - true: alias may be received from $this->getShortJoinAlias()
+     * @return bool
+     */
+    protected function hasWithQuery($alias, $mayBeShort = false) {
+        return array_key_exists($alias, $this->with) || ($mayBeShort && in_array($alias, $this->shortJoinAliases, true));
     }
 
     /**

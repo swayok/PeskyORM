@@ -956,8 +956,8 @@ abstract class DbAdapter implements DbAdapterInterface {
                         "Condition operator [$operator] does not support list of values"
                     );
             }
-        } else if (!($value instanceof DbExpr) && in_array($operator, ['IN', 'NOT IN'], true)) {
-            // value is not an array and not DbExpr - convert to single-value operator
+        } else if (!is_object($value) && in_array($operator, ['IN', 'NOT IN'], true)) {
+            // value is not an array and not an object (DbExpr or AbstractSelect) - convert to single-value operator
             return $operator === 'IN' ? '=' : '!=';
         } else if (in_array($operator, ['NOT', 'IS NOT'], true)) {
             // NOT and IS NOT cannot be used for non-null values and for comparison of single value

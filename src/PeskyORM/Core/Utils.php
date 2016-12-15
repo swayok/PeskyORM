@@ -72,6 +72,7 @@ class Utils {
      *      }
      *      Note: $rawValue can be DbExpr instance but not any other object
      * @return string
+     * @throws \UnexpectedValueException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
@@ -86,30 +87,44 @@ class Utils {
         if (!in_array($glue, ['AND', 'OR'], true)) {
             throw new \InvalidArgumentException('$glue argument must be "AND" or "OR" (only in upper case)');
         }
-        if (!$columnQuoter) {
-            $columnQuoter = function ($columnName, DbAdapterInterface $connection) {
-                return $connection->quoteDbEntityName($columnName);
-            };
-        }
-        if (!$conditionValuePreprocessor) {
-            $conditionValuePreprocessor = function ($columnName, $rawValue, DbAdapterInterface $connection) {
-                return ($rawValue instanceof DbExpr) ? $connection->quoteDbExpr($rawValue) : $rawValue;
-            };
-        }
         if (empty($conditions)) {
             return '';
         } else {
+            if (!$columnQuoter) {
+                $columnQuoter = function ($columnName, DbAdapterInterface $connection) {
+                    return $connection->quoteDbEntityName($columnName);
+                };
+            }
+            if (!$conditionValuePreprocessor) {
+                $conditionValuePreprocessor = function ($columnName, $rawValue, DbAdapterInterface $connection) {
+                    if ($rawValue instanceof DbExpr) {
+                        return $connection->quoteDbExpr($rawValue);
+                    } else if ($rawValue instanceof AbstractSelect) {
+                        return '(' . $rawValue->getQuery() . ')';
+                    } else {
+                        return $rawValue;
+                    }
+                };
+            }
             $assembled = [];
             foreach ($conditions as $column => $rawValue) {
-                if (is_object($rawValue) && !($rawValue instanceof DbExpr)) {
-                    throw new \InvalidArgumentException(
-                        '$conditions argument may contain only objects of class DbExpr. Other objects are forbidden.'
-                    );
+                $valueIsDbExpr = $valueIsSubSelect = false;
+                if (is_object($rawValue)) {
+                    $valueIsDbExpr = $rawValue instanceof DbExpr;
+                    $valueIsSubSelect = $rawValue instanceof AbstractSelect;
+                    if (!$valueIsDbExpr && !$valueIsSubSelect) {
+                        throw new \InvalidArgumentException(
+                            '$conditions argument may contain only objects of class DbExpr or AbstractSelect. Other objects are forbidden. Key: ' . (string)$column
+                        );
+                    } else if ($valueIsSubSelect && is_numeric($column)) {
+                        throw new \InvalidArgumentException(
+                            '$conditions argument may contain objects of class AbstractSelect only with non-numeric keys. Key: ' . (string)$column
+                        );
+                    }
                 }
                 if (!is_numeric($column) && empty($column)) {
                     throw new \InvalidArgumentException('Empty column name detected in $conditions argument');
                 }
-                $valueIsDbExpr = is_object($rawValue) && ($rawValue instanceof DbExpr);
                 if (is_numeric($column) && $valueIsDbExpr) {
                     // 1 - custom expressions
                     $assembled[] = $conditionValuePreprocessor($column, $rawValue, $connection);
@@ -154,7 +169,7 @@ class Utils {
                         $columnQuoter($column, $connection),
                         $operator,
                         $conditionValuePreprocessor($column, $rawValue, $connection),
-                        $valueIsDbExpr
+                        $valueIsDbExpr || $valueIsSubSelect
                     );
                 }
             }

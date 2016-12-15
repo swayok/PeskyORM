@@ -302,9 +302,11 @@ class OrmSelect extends AbstractSelect {
                 return $this->makeColumnNameForCondition($columnInfo, $subject);
             },
             'AND',
-            function ($columnName, $value) use ($subject, $joinName) {
-                if ($value instanceof DbExpr) {
-                    return $this->quoteDbExpr($value);
+            function ($columnName, $rawValue) use ($subject, $joinName) {
+                if ($rawValue instanceof DbExpr) {
+                    return $this->quoteDbExpr($rawValue);
+                } else if ($rawValue instanceof AbstractSelect) {
+                    return '(' . $rawValue->getQuery() . ')';
                 } else if (!($columnName instanceof DbExpr)) {
                     $columnInfo = $this->analyzeColumnName($columnName, null, $joinName, $subject);
                     if ($columnInfo['join_name'] === null) {
@@ -316,23 +318,23 @@ class OrmSelect extends AbstractSelect {
                             ->getStructure()
                             ->getColumn($columnInfo['name']);
                     }
-                    if (is_array($value)) {
-                        foreach ($value as $arrValue) {
+                    if (is_array($rawValue)) {
+                        foreach ($rawValue as $arrValue) {
                             $errors = $column->validateValue($arrValue);
                             if (!empty($errors)) {
                                 break;
                             }
                         }
                     } else {
-                        $errors = $column->validateValue($value);
+                        $errors = $column->validateValue($rawValue);
                     }
                     if (!empty($errors)) {
                         throw new \UnexpectedValueException(
-                            "Invalid {$subject} condition value provided for column [{$columnName}]. Value: " . print_r($value, true)
+                            "Invalid {$subject} condition value provided for column [{$columnName}]. Value: " . print_r($rawValue, true)
                         );
                     }
                 }
-                return $value;
+                return $rawValue;
             }
         );
         $assembled = trim($assembled);
