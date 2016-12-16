@@ -1724,7 +1724,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     public function offsetGet($key) {
         if (static::hasRelation($key)) {
-            return $this->getRelatedRecord($key);
+            return $this->getRelatedRecord($key, true);
         } else {
             if (!static::hasColumn($key) && preg_match('%^(.+)_as_(.*)$%is', $key, $parts)) {
                 return $this->getValue($parts[1], $parts[2]);
