@@ -362,20 +362,19 @@ abstract class AbstractSelect {
     }
 
     /**
-     * @param bool $skipWithQueries - true: WITH queries will not be added
      * @return string
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      */
-    public function getQuery($skipWithQueries = false) {
+    public function getQuery() {
         $this->beforeQueryBuilding();
         $table = $this->makeTableNameWithAliasForQuery(
             $this->getTableName(),
             $this->getTableAlias(),
             $this->getTableSchemaName()
         );
-        $with = $skipWithQueries ? '' : $this->makeWithQueries();
+        $with = $this->makeWithQueries();
         $columns = $this->makeColumnsForQuery();
         $group = $this->makeGroupBy();
         $order = $this->makeOrderBy();
@@ -417,20 +416,19 @@ abstract class AbstractSelect {
      * @param string $expression - something like "COUNT(*)" or "1" to be selected by the query
      * @param bool $ignoreLeftJoins
      * @param bool $ignoreLimitAndOffset
-     * @param bool $skipWithQueries - true: WITH queries will not be added
      * @return string
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      */
-    protected function getSimplifiedQuery($expression, $ignoreLeftJoins = true, $ignoreLimitAndOffset = false, $skipWithQueries = false) {
+    protected function getSimplifiedQuery($expression, $ignoreLeftJoins = true, $ignoreLimitAndOffset = false) {
         $this->beforeQueryBuilding();
         $table = $this->makeTableNameWithAliasForQuery(
             $this->getTableName(),
             $this->getTableAlias(),
             $this->getTableSchemaName()
         );
-        $with = $skipWithQueries ? '' : $this->makeWithQueries();
+        $with = $this->makeWithQueries();
         $group = $this->makeGroupBy();
         $conditions = $this->makeConditions($this->where, 'WHERE');
         $having = $this->makeConditions($this->having, 'HAVING');
@@ -440,6 +438,32 @@ abstract class AbstractSelect {
         $this->validateIfThereAreEnoughJoins();
         $this->notDirty();
         return "{$with}SELECT $expression FROM {$table}{$joins}{$conditions}{$group}{$having}{$limit}{$offset}";
+    }
+
+    /**
+     * @return string
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
+     */
+    protected function buildQueryToBeUsedInWith() {
+        $this->beforeQueryBuilding();
+        $table = $this->makeTableNameWithAliasForQuery(
+            $this->getTableName(),
+            $this->getTableAlias(),
+            $this->getTableSchemaName()
+        );
+        $columns = $this->makeColumnsForQuery(true);
+        $group = $this->makeGroupBy();
+        $order = $this->makeOrderBy();
+        $limit = $this->makeLimit();
+        $offset = $this->makeOffset();
+        $conditions = $this->makeConditions($this->where, 'WHERE');
+        $having = $this->makeConditions($this->having, 'HAVING');
+        $joins = $this->makeJoins(false);
+        $this->validateIfThereAreEnoughJoins();
+        $this->notDirty();
+        return "SELECT {$columns} FROM {$table}{$joins}{$conditions}{$group}{$having}{$order}{$limit}{$offset}";
     }
 
     /**
@@ -915,9 +939,10 @@ abstract class AbstractSelect {
 
     /**
      * @param array $columnInfo - return of $this->analyzeColumnName($columnName)
+     * @param bool $itIsWithQuery - true: building a query for WITH
      * @return string - something like: "JoinAlias"."column_name"::typecast as "ColumnAlias"
      */
-    protected function makeColumnNameWithAliasForQuery(array $columnInfo) {
+    protected function makeColumnNameWithAliasForQuery(array $columnInfo, $itIsWithQuery = false) {
         $tableAlias = $columnInfo['join_name'] ?: $this->getTableAlias();
         $shortTableAlias = $this->getShortJoinAlias($tableAlias);
         $isDbExpr = $columnInfo['name'] instanceof DbExpr;
@@ -931,6 +956,12 @@ abstract class AbstractSelect {
         }
         if ($columnInfo['name'] === '*' || ($isDbExpr && empty($columnInfo['alias']))) {
             return $columnName;
+        } else if ($itIsWithQuery) {
+            if ($columnInfo['alias']) {
+                return $columnName . ' AS ' . $this->quoteDbEntityName($columnInfo['alias']);
+            } else {
+                return $columnName;
+            }
         } else {
             $columnAlias = $this->quoteDbEntityName($this->makeColumnAlias($columnInfo['alias'] ?: $columnInfo['name'], $tableAlias));
             return $columnName . ' AS ' . $columnAlias;
@@ -1196,6 +1227,7 @@ abstract class AbstractSelect {
     /**
      * @param bool $ignoreLeftJoins
      * @return string
+     * @throws \UnexpectedValueException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
@@ -1246,7 +1278,7 @@ abstract class AbstractSelect {
         $queries = [];
         foreach ($this->with as $alias => $select) {
             $select->replaceWithQueries(array_diff_key($this->with, [$alias => '']));
-            $queries[] = $this->quoteDbEntityName($this->getShortJoinAlias($alias)) . ' AS (' . $select->getQuery(true) . ')';
+            $queries[] = $this->quoteDbEntityName($this->getShortJoinAlias($alias)) . ' AS (' . $select->buildQueryToBeUsedInWith() . ')';
         }
         return count($queries) ? 'WITH ' . implode(', ', $queries) . ' ' : '';
     }
@@ -1265,20 +1297,21 @@ abstract class AbstractSelect {
     }
 
     /**
+     * @param bool $itIsWithQuery - true: building a query for WITH
      * @return string
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      */
-    protected function makeColumnsForQuery() {
+    protected function makeColumnsForQuery($itIsWithQuery = false) {
         $columns = [];
         foreach ($this->columns as $columnInfo) {
             if (is_string($columnInfo)) {
                 $columns[] = $columnInfo;
             } else {
-                $columns[] = $this->makeColumnNameWithAliasForQuery($columnInfo);
+                $columns[] = $this->makeColumnNameWithAliasForQuery($columnInfo, $itIsWithQuery);
             }
         }
-        $columns = array_merge($columns, $this->collectJoinedColumnsForQuery());
+        $columns = array_merge($columns, $this->collectJoinedColumnsForQuery($itIsWithQuery));
         if (empty($columns)) {
             throw new \UnexpectedValueException('There is no columns to select');
         }
@@ -1286,11 +1319,12 @@ abstract class AbstractSelect {
     }
 
     /**
+     * @param bool $itIsWithQuery - true: building a query for WITH
      * @return array
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      */
-    protected function collectJoinedColumnsForQuery() {
+    protected function collectJoinedColumnsForQuery($itIsWithQuery = false) {
         $columns = [];
         foreach ($this->joins as $joinConfig) {
             if (empty($joinConfig->getForeignColumnsToSelect())) {
@@ -1306,7 +1340,7 @@ abstract class AbstractSelect {
                 if (is_string($columnInfo)) {
                     $columns[] = $columnInfo;
                 } else {
-                    $columns[] = $this->makeColumnNameWithAliasForQuery($columnInfo);
+                    $columns[] = $this->makeColumnNameWithAliasForQuery($columnInfo, $itIsWithQuery);
                 }
             }
         }

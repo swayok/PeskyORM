@@ -341,9 +341,9 @@ class OrmSelect extends AbstractSelect {
         return empty($assembled) ? '' : " {$subject} {$assembled}";
     }
 
-    protected function makeColumnNameWithAliasForQuery(array $columnInfo) {
+    protected function makeColumnNameWithAliasForQuery(array $columnInfo, $itIsWithQuery = false) {
         $this->validateColumnInfo($columnInfo, 'SELECT');
-        return parent::makeColumnNameWithAliasForQuery($columnInfo);
+        return parent::makeColumnNameWithAliasForQuery($columnInfo, $itIsWithQuery);
     }
 
     protected function makeColumnNameForCondition(array $columnInfo, $subject = 'WHERE') {

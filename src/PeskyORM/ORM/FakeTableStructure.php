@@ -15,30 +15,50 @@ abstract class FakeTableStructure extends TableStructure {
 
     /**
      * @param string $tableName
-     * @return FakeTableStructure
+     * @param TableStructureInterface $tableStructureToCopy - use this table structure as parent class for a fake one
+     *      but replace its table name
+     * @return FakeTableStructure|TableStructureInterface
      * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
-    static public function makeNewFakeStructure($tableName) {
+    static public function makeNewFakeStructure($tableName, TableStructureInterface $tableStructureToCopy = null) {
         if (!is_string($tableName) || trim($tableName) === '' || !DbAdapter::isValidDbEntityName($tableName)) {
             throw new \InvalidArgumentException(
                 '$tableName argument bust be a not empty string that matches DB entity naming rules (usually alphanumeric with underscores)'
             );
         }
         static::$fakesCreated++;
+        if ($tableStructureToCopy) {
+            $parentClassFullName = get_class($tableStructureToCopy);
+            $classReflection = new \ReflectionClass($tableStructureToCopy);
+            $namespace = $classReflection->getNamespaceName();
+            $parentClassShortName = $classReflection->getShortName();
+            $dbSchema = 'null';
+        } else {
+            $namespace = 'PeskyORM\ORM\Fakes';
+            $parentClassFullName = FakeTableStructure::class;
+            $parentClassShortName = 'FakeTableStructure';
+            $dbSchema = 'parent::getSchema()';
+        }
         $className = 'FakeTableStructure' . static::$fakesCreated . 'For' . StringUtils::classify($tableName);
-        $namespace = 'PeskyORM\ORM\Fakes';
+
         $class = <<<VIEW
 namespace {$namespace};
 
-use PeskyORM\ORM\FakeTableStructure;
+use {$parentClassFullName};
 
-class {$className} extends FakeTableStructure {
+class {$className} extends {$parentClassShortName} {
     /**
      * @return string
      */
     static public function getTableName() {
         return '{$tableName}';
+    }
+    
+    /**
+     * @return string
+     */
+    static public function getSchema() {
+        return {$dbSchema};
     }
 }
 VIEW;
@@ -75,6 +95,9 @@ VIEW;
     /**
      * @param $columnName
      * @return $this
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
     public function markColumnAsPrimaryKey($columnName) {
         static::getColumn($columnName)->primaryKey();
@@ -101,6 +124,7 @@ VIEW;
         $this->fileColumns = array_merge($this->fileColumns, $structure::getFileColumns());
         $this->pk = $structure::getPkColumn();
         $this->connectionName = $structure::getConnectionName();
+        $this->treatAnyColumnNameAsValid = count($this->columns) === 0;
         $this->treatAnyColumnNameAsValid = count($this->columns) === 0;
         return $this;
     }
