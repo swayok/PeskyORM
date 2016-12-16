@@ -2,18 +2,56 @@
 
 namespace PeskyORM\ORM;
 
+use PeskyORM\Core\DbAdapter;
 use Swayok\Utils\StringUtils;
 
 abstract class FakeTableStructure extends TableStructure {
 
     static private $fakesCreated = 0;
+    protected $allColumnsProcessed = true;
+    protected $allRelationsProcessed = true;
+    protected $treatAnyColumnNameAsValid = true;
+    protected $connectionName = 'default';
 
     /**
-     * @return static
+     * @param string $tableName
+     * @return FakeTableStructure
+     * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    static public function getInstance() {
-        throw new \BadMethodCallException('FakeTableStructure cannot be called by FakeTableStructure::getInstance()');
+    static public function makeNewFakeStructure($tableName) {
+        if (!is_string($tableName) || trim($tableName) === '' || !DbAdapter::isValidDbEntityName($tableName)) {
+            throw new \InvalidArgumentException(
+                '$tableName argument bust be a not empty string that matches DB entity naming rules (usually alphanumeric with underscores)'
+            );
+        }
+        static::$fakesCreated++;
+        $className = 'FakeTableStructure' . static::$fakesCreated . 'For' . StringUtils::classify($tableName);
+        $namespace = 'PeskyORM\ORM\Fakes';
+        $class = <<<VIEW
+namespace {$namespace};
+
+use PeskyORM\ORM\FakeTableStructure;
+
+class {$className} extends FakeTableStructure {
+    /**
+     * @return string
+     */
+    static public function getTableName() {
+        return '{$tableName}';
+    }
+}
+VIEW;
+        eval($class);
+        /** @var FakeTableStructure $fullClassName */
+        $fullClassName = $namespace . '\\' . $className;
+        return $fullClassName::getInstance();
+    }
+
+    protected function __construct() {
+        $this->columns['id'] = Column::create(Column::TYPE_INT, 'id')->primaryKey();
+        $this->pk = $this->columns['id'];
+        parent::__construct();
     }
 
     /**
@@ -30,33 +68,77 @@ abstract class FakeTableStructure extends TableStructure {
             }
             $this->columns[$name] = Column::create($type, $name);
         }
+        $this->treatAnyColumnNameAsValid = count($this->columns) === 0;
         return $this;
     }
 
     /**
-     * @param string $tableName
-     * @return FakeTableStructure
+     * @param $columnName
+     * @return $this
      */
-    static public function makeNewFakeStructure($tableName) {
-        static::$fakesCreated++;
-        $suffix = static::$fakesCreated;
-        $tableNameClass = StringUtils::classify($tableName);
-        $class = <<<VIEW
-namespace PeskyORM\ORM\Fakes;
+    public function markColumnAsPrimaryKey($columnName) {
+        static::getColumn($columnName)->primaryKey();
+        return $this;
+    }
 
-use PeskyORM\ORM\FakeTableStructure;
+    /**
+     * @param TableStructure $structure
+     * @param bool $append - true: existing structure will be appended; false - replaced
+     * @return $this
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    public function mimicTableStructure(TableStructure $structure, $append = false) {
+        if (!$append) {
+            $this->columns = [];
+            $this->relations = [];
+            $this->fileColumns = [];
+            $this->pk = null;
+        }
+        $this->columns = array_merge($this->columns, $structure::getColumns());
+        $this->relations = array_merge($this->columns, $structure::getRelations());
+        $this->fileColumns = array_merge($this->fileColumns, $structure::getFileColumns());
+        $this->pk = $structure::getPkColumn();
+        $this->connectionName = $structure::getConnectionName();
+        $this->treatAnyColumnNameAsValid = count($this->columns) === 0;
+        return $this;
+    }
 
-class FakeTableStructure{$suffix}For{$tableNameClass} extends FakeTableStructure {
     /**
      * @return string
      */
-    static public function getTableName() {
-        return '{$tableName}';
+    static public function getConnectionName() {
+        return static::getInstance()->connectionName;
     }
-}
-VIEW;
-        eval($class);
-        /** @var FakeTableStructure $class */
-        return $class::getInstance();
+
+    /**
+     * @param string $colName
+     * @return bool
+     */
+    static public function hasColumn($colName) {
+        return static::getInstance()->treatAnyColumnNameAsValid || parent::hasColumn($colName);
+    }
+
+    /**
+     * @param string $colName
+     * @return Column
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    static public function getColumn($colName) {
+        if (static::getInstance()->treatAnyColumnNameAsValid && !parent::hasColumn($colName)) {
+            static::getInstance()->columns[$colName] = Column::create(Column::TYPE_STRING, $colName);
+        }
+        return parent::getColumn($colName);
+    }
+
+    protected function loadColumnConfigsFromPrivateMethods() {
+
+    }
+
+    protected function createMissingColumnConfigsFromDbTableDescription() {
+
     }
 }

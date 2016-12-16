@@ -3,6 +3,7 @@
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Select;
+use PeskyORM\ORM\FakeTable;
 use PeskyORM\ORM\OrmJoinInfo;
 use PeskyORM\ORM\OrmSelect;
 use PeskyORMTest\TestingAdmins\TestingAdminsTable;
@@ -756,7 +757,6 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testWith() {
-        // todo: test building queries with WITH
         $dbSelect = static::getNewSelect()->columns('id');
         $dbSelect->with(Select::from('admins', static::getValidAdapter()), 'subselect');
         static::assertEquals(
@@ -770,10 +770,21 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             'WITH "subselect" AS (SELECT "Admins".* FROM "admins" AS "Admins") SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins" WHERE "Admins"."id" IN (SELECT "Subselect".* FROM "subselect" AS "Subselect")',
             $dbSelect->getQuery()
         );
-        $dbSelect = OrmSelect::from('subselect', static::getValidAdapter())
-            ->with(Select::from('admins', static::getValidAdapter()), 'subselect');
+        $fakeTable = FakeTable::makeNewFakeTable('subselect');
+        $dbSelect = OrmSelect::from($fakeTable)
+            ->with(Select::from('admins', static::getValidAdapter()), 'subselect')
+            ->where(['created_at > ' => '2016-01-01']);
         static::assertEquals(
-            'WITH "subselect" AS (SELECT "Admins".* FROM "admins" AS "Admins") SELECT "Subselect".* FROM "subselect" AS "Subselect"',
+            'WITH "subselect" AS (SELECT "Admins".* FROM "admins" AS "Admins") SELECT "Subselect"."id" AS "_Subselect__id" FROM "subselect" AS "Subselect" WHERE "Subselect"."created_at" > \'2016-01-01\'',
+            $dbSelect->getQuery()
+        );
+        $fakeTable = FakeTable::makeNewFakeTable('subselect2');
+        $fakeTable->getTableStructure()->mimicTableStructure(\PeskyORMTest\TestingSettings\TestingSettingsTableStructure::getInstance());
+        $dbSelect = OrmSelect::from($fakeTable)
+            ->with(Select::from('settings', static::getValidAdapter()), 'subselect2')
+            ->where(['key' => 'test']);
+        static::assertEquals(
+            'WITH "subselect2" AS (SELECT "Settings".* FROM "settings" AS "Settings") SELECT "Subselect2"."id" AS "_Subselect2__id", "Subselect2"."key" AS "_Subselect2__key", "Subselect2"."value" AS "_Subselect2__value" FROM "subselect2" AS "Subselect2" WHERE "Subselect2"."key" = \'test\'',
             $dbSelect->getQuery()
         );
     }
