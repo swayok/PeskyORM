@@ -787,6 +787,27 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             'WITH "subselect2" AS (SELECT "Settings".* FROM "settings" AS "Settings") SELECT "Subselect2"."id" AS "_Subselect2__id", "Subselect2"."key" AS "_Subselect2__key", "Subselect2"."value" AS "_Subselect2__value" FROM "subselect2" AS "Subselect2" WHERE "Subselect2"."key" = \'test\'',
             $dbSelect->getQuery()
         );
+
+        $fakeTable2 = FakeTable::makeNewFakeTable('subselect3');
+        $fakeTable2->getTableStructure()->mimicTableStructure(\PeskyORMTest\TestingSettings\TestingSettingsTableStructure::getInstance());
+        $dbSelect2 = OrmSelect::from($fakeTable2)
+            ->with(Select::from('settings', static::getValidAdapter()), 'subselect2')
+            ->with(OrmSelect::from($fakeTable), 'subselect3')
+            ->where(['key' => 'test2']);
+        static::assertEquals(
+            'WITH "subselect2" AS (SELECT "Settings".* FROM "settings" AS "Settings"), "subselect3" AS (SELECT "Subselect2"."id" AS "_Subselect2__id", "Subselect2"."key" AS "_Subselect2__key", "Subselect2"."value" AS "_Subselect2__value" FROM "subselect2" AS "Subselect2") SELECT "Subselect3"."id" AS "_Subselect3__id", "Subselect3"."key" AS "_Subselect3__key", "Subselect3"."value" AS "_Subselect3__value" FROM "subselect3" AS "Subselect3" WHERE "Subselect3"."key" = \'test2\'',
+            $dbSelect2->getQuery()
+        );
+
+        $dbSelect = static::getNewSelect()
+            ->columns('id')
+            ->with(Select::from('settings', static::getValidAdapter()), 'subselect2')
+            ->with(OrmSelect::from($fakeTable)->where(['key' => 'test']), 'subselect3')
+            ->where(['id IN' => Select::from('subselect3', static::getValidAdapter())->where(['key' => 'test2'])]);
+        static::assertEquals(
+            'WITH "subselect2" AS (SELECT "Settings".* FROM "settings" AS "Settings"), "subselect3" AS (SELECT "Subselect2"."id" AS "_Subselect2__id", "Subselect2"."key" AS "_Subselect2__key", "Subselect2"."value" AS "_Subselect2__value" FROM "subselect2" AS "Subselect2" WHERE "Subselect2"."key" = \'test\') SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins" WHERE "Admins"."id" IN (SELECT "Subselect3".* FROM "subselect3" AS "Subselect3" WHERE "Subselect3"."key" = \'test2\')',
+            $dbSelect->getQuery()
+        );
     }
 
 

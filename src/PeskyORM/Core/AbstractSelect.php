@@ -362,20 +362,20 @@ abstract class AbstractSelect {
     }
 
     /**
+     * @param bool $skipWithQueries - true: WITH queries will not be added
      * @return string
-     * @throws \UnexpectedValueException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
      * @throws \PDOException
+     * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
      */
-    public function getQuery() {
+    public function getQuery($skipWithQueries = false) {
         $this->beforeQueryBuilding();
         $table = $this->makeTableNameWithAliasForQuery(
             $this->getTableName(),
             $this->getTableAlias(),
             $this->getTableSchemaName()
         );
-        $with = $this->makeWithQueries();
+        $with = $skipWithQueries ? '' : $this->makeWithQueries();
         $columns = $this->makeColumnsForQuery();
         $group = $this->makeGroupBy();
         $order = $this->makeOrderBy();
@@ -417,19 +417,20 @@ abstract class AbstractSelect {
      * @param string $expression - something like "COUNT(*)" or "1" to be selected by the query
      * @param bool $ignoreLeftJoins
      * @param bool $ignoreLimitAndOffset
+     * @param bool $skipWithQueries - true: WITH queries will not be added
      * @return string
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      */
-    protected function getSimplifiedQuery($expression, $ignoreLeftJoins = true, $ignoreLimitAndOffset = false) {
+    protected function getSimplifiedQuery($expression, $ignoreLeftJoins = true, $ignoreLimitAndOffset = false, $skipWithQueries = false) {
         $this->beforeQueryBuilding();
         $table = $this->makeTableNameWithAliasForQuery(
             $this->getTableName(),
             $this->getTableAlias(),
             $this->getTableSchemaName()
         );
-        $with = $this->makeWithQueries();
+        $with = $skipWithQueries ? '' : $this->makeWithQueries();
         $group = $this->makeGroupBy();
         $conditions = $this->makeConditions($this->where, 'WHERE');
         $having = $this->makeConditions($this->having, 'HAVING');
@@ -705,8 +706,20 @@ abstract class AbstractSelect {
             throw new \InvalidArgumentException("WITH query with name '{$selectAlias}' already defined");
         }
         $this->with[$selectAlias] = $select;
+        foreach ($select->getWithQueries() as $subAlias => $subselect) {
+            if (!array_key_exists($subAlias, $this->with)) {
+                $this->with($subselect, $subAlias);
+            }
+        }
         $this->setDirty('with');
         return $this;
+    }
+
+    /**
+     * @return AbstractSelect[]
+     */
+    protected function getWithQueries() {
+        return $this->with;
     }
 
     /**
@@ -1207,6 +1220,7 @@ abstract class AbstractSelect {
     /**
      * @param AbstractJoinInfo $joinConfig
      * @return string
+     * @throws \UnexpectedValueException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
@@ -1231,9 +1245,23 @@ abstract class AbstractSelect {
     protected function makeWithQueries() {
         $queries = [];
         foreach ($this->with as $alias => $select) {
-            $queries[] = $this->quoteDbEntityName($this->getShortJoinAlias($alias)) . ' AS (' . $select->getQuery() . ')';
+            $select->replaceWithQueries(array_diff_key($this->with, [$alias => '']));
+            $queries[] = $this->quoteDbEntityName($this->getShortJoinAlias($alias)) . ' AS (' . $select->getQuery(true) . ')';
         }
         return count($queries) ? 'WITH ' . implode(', ', $queries) . ' ' : '';
+    }
+
+    /**
+     * Replace all WITH queries for this select. Used by main select to populate WITH queries among all WITH queries
+     * so that there will be no problems building queries that depend on other WITH queries.
+     * Make sure to remove current query from $withQueries so there will be no problems
+     * @param array $withQueries
+     * @return $this
+     */
+    protected function replaceWithQueries(array $withQueries) {
+        $this->with = $withQueries;
+        $this->setDirty('with');
+        return $this;
     }
 
     /**
