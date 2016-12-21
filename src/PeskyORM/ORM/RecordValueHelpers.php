@@ -309,7 +309,7 @@ abstract class RecordValueHelpers {
         if (!is_string($format)) {
             throw new \InvalidArgumentException('$format argument must be a string');
         }
-        return $valueContainer->getCustomInfo('as_' . $format, function (RecordValue $valueContainer) use ($format) {
+        return $valueContainer->getCustomInfo('format:' . $format, function (RecordValue $valueContainer) use ($format) {
             $value = static::getSimpleValueFormContainer($valueContainer);
             switch ($format) {
                 case 'date':
@@ -328,7 +328,7 @@ abstract class RecordValueHelpers {
         if (!is_string($format)) {
             throw new \InvalidArgumentException('$format argument must be a string');
         }
-        return $valueContainer->getCustomInfo('as_' . $format, function (RecordValue $valueContainer) use ($format) {
+        return $valueContainer->getCustomInfo('format:' . $format, function (RecordValue $valueContainer) use ($format) {
             if ($format === 'unix_ts') {
                 return strtotime(static::getSimpleValueFormContainer($valueContainer));
             } else {
@@ -341,7 +341,7 @@ abstract class RecordValueHelpers {
         if (!is_string($format)) {
             throw new \InvalidArgumentException('$format argument must be a string');
         }
-        return $valueContainer->getCustomInfo('as_' . $format, function (RecordValue $valueContainer) use ($format) {
+        return $valueContainer->getCustomInfo('format:' . $format, function (RecordValue $valueContainer) use ($format) {
             $value = static::getSimpleValueFormContainer($valueContainer);
             switch ($format) {
                 case 'array':
