@@ -622,6 +622,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array|Record|RecordsArray $relatedRecord
      * @param bool|null $isFromDb - true: marks values as loaded from DB | null: autodetect
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
+     * @return $this
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
@@ -664,6 +665,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             );
         }
         $this->relatedRecords[$relationName] = $relatedRecord;
+        return $this;
     }
 
     /**
