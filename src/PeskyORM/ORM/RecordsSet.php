@@ -102,6 +102,41 @@ class RecordsSet extends RecordsArray {
     }
 
     /**
+     * Returns new RecordsSet with $conditions added to original OrmSelect
+     * @param array $conditions
+     * @return RecordsSet
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    public function filter(array $conditions) {
+        $newSelect = clone $this->select;
+        $newSelect->where($conditions, true);
+        return static::createFromOrmSelect($newSelect);
+    }
+
+    /**
+     * Replace
+     * @param string $column
+     * @param bool $orderAscending
+     * @throws \InvalidArgumentException
+     */
+    public function replaceOrdering($column, $orderAscending = true) {
+        $this->select->orderBy($column, $orderAscending, false);
+        $this->selectForOptimizedIteration->orderBy($column, $orderAscending, false);
+        $this->resetRecords();
+    }
+
+    /**
+     * Reset already fetched data
+     */
+    protected function resetRecords() {
+        $this->records = null;
+        $this->recordsCount = null;
+        $this->recordsCountTotal = null;
+    }
+
+    /**
      * @return $this
      * @throws \UnexpectedValueException
      * @throws \PDOException
@@ -257,6 +292,9 @@ class RecordsSet extends RecordsArray {
     /**
      * Count DB records ignoring LIMIT and OFFSET options
      * @return int
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
      */
     public function countTotal() {
         if ($this->recordsCountTotal === null) {
