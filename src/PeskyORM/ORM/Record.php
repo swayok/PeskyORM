@@ -511,19 +511,20 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
 
     /**
-     * @param string $columnName
+     * @param string|Column $column
      * @return $this
      * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      */
-    public function unsetValue($columnName) {
-        $oldValueObject = $this->getValueObject($columnName);
+    public function unsetValue($column) {
+        $oldValueObject = $this->getValueObject($column);
         if ($oldValueObject->hasValue()) {
-            $this->values[$columnName] = $this->createValueObject(static::getColumn($columnName));
-            $this->values[$columnName]->setOldValue($oldValueObject);
-            if ($columnName === static::getPrimaryKeyColumnName()) {
+            $column = $oldValueObject->getColumn();
+            $this->values[$column->getName()] = $this->createValueObject($column);
+            $this->values[$column->getName()]->setOldValue($oldValueObject);
+            if ($column->getName() === static::getPrimaryKeyColumnName()) {
                 $this->onPrimaryKeyChangeForRecordReceivedFromDb($oldValueObject->getValue());
             }
         }
