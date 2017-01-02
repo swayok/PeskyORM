@@ -287,4 +287,12 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     public function count() {
         return count($this->getRecords());
     }
+
+    /**
+     * Count elements of an object
+     * @return int
+     */
+    public function countTotal() {
+        return $this->count();
+    }
 }

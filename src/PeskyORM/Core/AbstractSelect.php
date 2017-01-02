@@ -524,11 +524,12 @@ abstract class AbstractSelect {
      * will be assembled into ("col3" = 0 AND ("col1" = 1 OR "col2" => 2)).
      * By default - 'AND' is used if you group conditions into array without a key:
      * ['col3 => 0, ['col1' => 1, 'col2' => 2]] will be assembled into ("col3" = 0 AND ("col1" = 1 AND "col2" => 2))
-     * @see Utils::assembleWhereConditionsFromArray() for more details about operators and features
+     * @param bool $append
      * @return $this
+     * @see Utils::assembleWhereConditionsFromArray() for more details about operators and features
      */
-    public function where(array $conditions) {
-        $this->where = $conditions;
+    public function where(array $conditions, $append = false) {
+        $this->where = $append ? array_merge($this->where, $conditions) : $conditions;
         $this->setDirty('where');
         return $this;
     }
