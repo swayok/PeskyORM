@@ -119,6 +119,13 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         static::assertEquals([], $valueObj->getCustomInfo());
     }
 
+    public function testDataForSavingExtender() {
+        $valueObj = RecordValue::create(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
+        $valueObj->setDataForSavingExtender(['test'=> 'i']);
+        static::assertEquals(['test' => 'i'], $valueObj->pullDataForSavingExtender());
+        static::assertNull($valueObj->pullDataForSavingExtender());
+    }
+
     public function testValidationErrors() {
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
         static::assertFalse($valueObj->isValidated());
@@ -320,6 +327,7 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
 
         $valueObj
             ->setCustomInfo(['1'])
+            ->setDataForSavingExtender(['1'])
             ->setValidationErrors(['1']);
         static::assertEquals(['1'], $valueObj->getCustomInfo());
         static::assertEquals(['1'], $valueObj->getValidationErrors());
@@ -335,6 +343,7 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         static::assertEquals('1', $valueObj->getValue());
         static::assertEquals([], $valueObj->getCustomInfo());
         static::assertEquals([], $valueObj->getValidationErrors());
+        static::assertEquals(['1'], $valueObj->pullDataForSavingExtender());
         static::assertFalse($valueObj->isValidated());
 
         $valueObj->setValidationErrors(['test']);
@@ -350,6 +359,7 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         static::assertEquals(1, $valueObj->getValue());
         static::assertEquals('1', $valueObj->getRawValue());
         static::assertEquals([], $valueObj->getValidationErrors());
+        static::assertNull($valueObj->pullDataForSavingExtender());
         static::assertTrue($valueObj->isValidated());
         static::assertTrue($valueObj->isValid());
 
@@ -363,6 +373,7 @@ class DbRecordValueTest extends PHPUnit_Framework_TestCase {
         static::assertEquals('2', $valueObj->getValue());
         static::assertEquals([], $valueObj->getCustomInfo());
         static::assertEquals([], $valueObj->getValidationErrors());
+        static::assertNull($valueObj->pullDataForSavingExtender());
         static::assertFalse($valueObj->isValidated());
 
     }

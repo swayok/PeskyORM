@@ -34,6 +34,10 @@ class RecordValue {
      */
     protected $customInfo = [];
     /**
+     * @var array
+     */
+    protected $dataForSavingExtender;
+    /**
      * @var Column
      */
     protected $column;
@@ -416,6 +420,24 @@ class RecordValue {
             unset($this->customInfo[$key]);
         }
         return $this;
+    }
+
+    /**
+     * @param mixed $data
+     * @return $this
+     */
+    public function setDataForSavingExtender($data) {
+        $this->dataForSavingExtender = $data;
+        return $this;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function pullDataForSavingExtender() {
+        $data = $this->dataForSavingExtender;
+        $this->dataForSavingExtender = null;
+        return $data;
     }
 
     /**

@@ -345,9 +345,12 @@ abstract class RecordValueHelpers {
             $value = static::getSimpleValueFormContainer($valueContainer);
             switch ($format) {
                 case 'array':
-                    return json_decode($value, true);
+                    return is_array($value) ? $value : json_decode($value, true);
                 case 'object':
-                    return json_decode($value);
+                    if (is_array($value)) {
+                        $value = json_encode($value, JSON_UNESCAPED_UNICODE);
+                    }
+                    return is_object($value) ? $value : json_decode($value);
                 default:
                     throw new \InvalidArgumentException("Requested value format '$format' is not implemented");
             }

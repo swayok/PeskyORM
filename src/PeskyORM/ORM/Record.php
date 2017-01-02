@@ -951,7 +951,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      */
     public function updateValues(array $data, $isFromDb = false, $haltOnUnknownColumnNames = true) {
-        $pkColName = $this::getPrimaryKeyColumnName();
+        $pkColName = static::getPrimaryKeyColumnName();
         if ($isFromDb && !$this->existsInDb()) {
             // first set pk column value
             if (array_key_exists($pkColName, $data)) {
@@ -1267,12 +1267,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             array_intersect(array_keys(static::getColumnsThatDoNotExistInDb()), $columnsToSave)
         );
         foreach ($updatedColumns as $columnName) {
+            $valueObject = $this->getValueObject($columnName);
             call_user_func(
                 static::getColumn($columnName)->getValueSavingExtender(),
-                $this->getValueObject($columnName),
+                $valueObject,
                 $isUpdate,
                 $updatesReceivedFromDb
             );
+            $valueObject->pullDataForSavingExtender();
         }
     }
 
