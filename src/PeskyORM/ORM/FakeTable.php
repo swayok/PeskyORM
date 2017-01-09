@@ -132,7 +132,7 @@ VIEW;
      */
     public function newRecord() {
         if (!$this->recordClass) {
-            $this->recordClass = FakeRecord::makeNewFakeRecord($this);
+            $this->recordClass = FakeRecord::makeNewFakeRecordClass($this);
         }
         return new $this->recordClass;
     }

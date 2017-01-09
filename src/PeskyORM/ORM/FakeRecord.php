@@ -22,10 +22,10 @@ abstract class FakeRecord extends Record {
 
     /**
      * @param FakeTable $table
-     * @return string
+     * @return string - class name of a fake record
      * @throws \BadMethodCallException
      */
-    static public function makeNewFakeRecord(FakeTable $table) {
+    static public function makeNewFakeRecordClass(FakeTable $table) {
         static::$fakesCreated++;
         $suffixClass = StringUtils::classify($table->getTableStructure()->getTableName());
         $className = 'FakeRecord' . static::$fakesCreated . 'For' . $suffixClass;
@@ -43,6 +43,6 @@ VIEW;
         /** @var FakeRecord $fullClassName */
         $fullClassName = $namespace . '\\' . $className;
         $fullClassName::setTable($table);
-        return $className;
+        return $fullClassName;
     }
 }

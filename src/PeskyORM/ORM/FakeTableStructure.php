@@ -76,17 +76,33 @@ VIEW;
 
     /**
      * @param array $columns - key-value array where key is column name and value is column type or
-     *          key is int and value is column name
+     *          key is int and value is column name or instance of Column class
      * @return $this
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
     public function setTableColumns(array $columns) {
         $this->columns = [];
-        foreach ($columns as $name => $type) {
+        foreach ($columns as $name => $typeOrColumnInstance) {
             if (is_int($name)) {
-                $name = $type;
-                $type = Column::TYPE_STRING;
+                $name = $typeOrColumnInstance;
+                $typeOrColumnInstance = Column::TYPE_STRING;
             }
-            $this->columns[$name] = Column::create($type, $name);
+            if ($typeOrColumnInstance instanceof Column) {
+                if ($typeOrColumnInstance->hasName()) {
+                    $name = $typeOrColumnInstance->getName();
+                } else {
+                    $typeOrColumnInstance->setName($name);
+                }
+                $this->columns[$name] = $typeOrColumnInstance;
+            } else {
+                $this->columns[$name] = Column::create($typeOrColumnInstance, $name);
+            }
+            if ($this->columns[$name]->isItAFile()) {
+                $this->fileColumns[] = $this->columns[$name];
+            } else if ($this->columns[$name]->isItPrimaryKey()) {
+                $this->pk = $this->columns[$name];
+            }
         }
         $this->treatAnyColumnNameAsValid = count($this->columns) === 0;
         return $this;
@@ -100,7 +116,7 @@ VIEW;
      * @throws \BadMethodCallException
      */
     public function markColumnAsPrimaryKey($columnName) {
-        static::getColumn($columnName)->primaryKey();
+        $this->pk = static::getColumn($columnName)->primaryKey();
         return $this;
     }
 
@@ -124,7 +140,6 @@ VIEW;
         $this->fileColumns = array_merge($this->fileColumns, $structure::getFileColumns());
         $this->pk = $structure::getPkColumn();
         $this->connectionName = $structure::getConnectionName();
-        $this->treatAnyColumnNameAsValid = count($this->columns) === 0;
         $this->treatAnyColumnNameAsValid = count($this->columns) === 0;
         return $this;
     }

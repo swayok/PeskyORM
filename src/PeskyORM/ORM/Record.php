@@ -1172,46 +1172,61 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 throw new InvalidDataException($errors);
             }
 
-            $table = static::getTable();
-            $alreadyInTransaction = $table::inTransaction();
-            if (!$alreadyInTransaction) {
-                $table::beginTransaction();
-            }
-            try {
-                if ($isUpdate) {
-                    /** @var array $updatedData */
-                    $updatedData = static::getTable()->update(
-                        $data,
-                        [static::getPrimaryKeyColumnName() => $this->getPrimaryKeyValue()],
-                        true
-                    );
-                    if (count($updatedData)) {
-                        $updatedData = $updatedData[0];
-                        $this->updateValues($updatedData, true);
-                    } else {
-                        // this means that record does not exist anymore
-                        $this->reset();
-                        return;
-                    }
-                } else {
-                    $this->updateValues(
-                        static::getTable()->insert($data, true),
-                        true
-                    );
-                }
-            } catch (\PDOException $exc) {
-                if ($table::inTransaction()) {
-                    $table::rollBackTransaction();
-                }
-                throw $exc;
-            }
-            if (!$alreadyInTransaction) {
-                $table::commitTransaction();
+            if (!$this->performDataSave($isUpdate, $data)) {
+                return;
             }
         }
         // run column saving extenders
         $this->runColumnSavingExtenders($columnsToSave, $data, $updatedData, $isUpdate);
         $this->afterSave(!$isUpdate);
+    }
+
+    /**
+     * @param bool $isUpdate
+     * @param array $data
+     * @return bool
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     * @throws \PDOException
+     */
+    protected function performDataSave($isUpdate, array $data) {
+        $table = static::getTable();
+        $alreadyInTransaction = $table::inTransaction();
+        if (!$alreadyInTransaction) {
+            $table::beginTransaction();
+        }
+        try {
+            if ($isUpdate) {
+                /** @var array $updatedData */
+                $updatedData = $table->update(
+                    $data,
+                    [static::getPrimaryKeyColumnName() => $this->getPrimaryKeyValue()],
+                    true
+                );
+                if (count($updatedData)) {
+                    $updatedData = $updatedData[0];
+                    $this->updateValues($updatedData, true);
+                } else {
+                    // this means that record does not exist anymore
+                    $this->reset();
+                    return false;
+                }
+            } else {
+                $this->updateValues($table->insert($data, true), true);
+            }
+        } catch (\PDOException $exc) {
+            if ($table::inTransaction()) {
+                $table::rollBackTransaction();
+            }
+            throw $exc;
+        }
+        if (!$alreadyInTransaction) {
+            $table::commitTransaction();
+        }
+        return true;
     }
 
     /**
@@ -1242,10 +1257,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         // collect auto updates
         $autoUpdatingColumns = $this->getAllColumnsWithAutoUpdatingValues();
         foreach ($autoUpdatingColumns as $columnName) {
-            $column = static::getColumn($columnName);
-            if ($column->isItExistsInDb()) {
-                $data[$columnName] = static::getColumn($columnName)->getAutoUpdateForAValue();
-            }
+            $data[$columnName] = static::getColumn($columnName)->getAutoUpdateForAValue();
         }
         // set pk value
         $data[static::getPrimaryKeyColumnName()] = $isUpdate
