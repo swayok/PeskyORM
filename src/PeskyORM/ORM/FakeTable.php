@@ -29,7 +29,14 @@ abstract class FakeTable extends Table {
      * @throws \BadMethodCallException
      */
     static public function mimicTable(TableInterface $tableToMimic, $fakeTableName) {
-        return static::makeNewFakeTable($fakeTableName, $tableToMimic->getTableStructure())
+        $reflection = new \ReflectionClass($tableToMimic);
+        return static::makeNewFakeTable(
+                $fakeTableName,
+                $tableToMimic->getTableStructure(),
+                null,
+                $reflection->getInterfaceNames(),
+                $reflection->getTraitNames()
+            )
             ->setRecordClass($tableToMimic->newRecord());
     }
 
@@ -39,13 +46,22 @@ abstract class FakeTable extends Table {
      *      - array: key-value array where key is column name and value is column type or key is int and value is column name
      *      - TableStructureInterface: table structure to use instead of FakeTableStructure
      * @param DbAdapterInterface $connection
+     * @param array $interfaces - full class names of interfaces that fake table must implement
+     * @param array $traits - full names of traits that fake table must use
      * @return FakeTable
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\OrmException
-     * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
      */
-    static public function makeNewFakeTable($tableName, $columnsOrTableStructure = null, DbAdapterInterface $connection = null) {
+    static public function makeNewFakeTable(
+        $tableName,
+        $columnsOrTableStructure = null,
+        DbAdapterInterface $connection = null,
+        array $interfaces = [],
+        array $traits = [],
+        $classBody = ''
+    ) {
         if (!is_string($tableName) || trim($tableName) === '' || !DbAdapter::isValidDbEntityName($tableName)) {
             throw new \InvalidArgumentException(
                 '$tableName argument bust be a not empty string that matches DB entity naming rules (usually alphanumeric with underscores)'
@@ -54,13 +70,16 @@ abstract class FakeTable extends Table {
         static::$fakesCreated++;
         $namespace = 'PeskyORM\ORM\Fakes';
         $className = 'FakeTable' . static::$fakesCreated . 'For' . StringUtils::classify($tableName);
+        $implemets = !empty($interfaces) ? ' implements \\' . implode(', \\', $interfaces) : '';
+        $use = !empty($traits) ? '    use \\' . implode(', \\', $traits) . ';' : '';
         $class = <<<VIEW
 namespace {$namespace};
 
 use PeskyORM\ORM\FakeTable;
 
-class {$className} extends FakeTable {
-
+class {$className} extends FakeTable{$implemets} {
+{$use}
+{$classBody}
 }
 VIEW;
         eval($class);
