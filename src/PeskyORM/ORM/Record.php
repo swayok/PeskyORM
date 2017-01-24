@@ -1178,6 +1178,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         }
         // run column saving extenders
         $this->runColumnSavingExtenders($columnsToSave, $data, $updatedData, $isUpdate);
+        $this->cleanCacheAfterSave(!$isUpdate);
         $this->afterSave(!$isUpdate);
     }
 
@@ -1307,9 +1308,17 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * For child classes
      * Called after successful save() and commit()
-     * @param boolean $isCreated - true: new record was created; false: old record was updated
+     * @param bool $isCreated - true: new record was created; false: old record was updated
      */
     protected function afterSave($isCreated) {
+
+    }
+
+    /**
+     * Clean cache related to this record after saving it's data to DB
+     * @param bool $isCreated
+     */
+    protected function cleanCacheAfterSave($isCreated) {
 
     }
 
@@ -1453,6 +1462,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 throw $exc;
             }
             $this->afterDelete(); //< transaction may be closed there
+            $this->cleanCacheAfterDelete();
             if (!$alreadyInTransaction && $table::inTransaction()) {
                 $table::commitTransaction();
             }
@@ -1485,6 +1495,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * (for child classes)
      */
     protected function afterDelete() {
+
+    }
+
+    /**
+     * To clean cached data related to record
+     */
+    protected function cleanCacheAfterDelete() {
 
     }
 
