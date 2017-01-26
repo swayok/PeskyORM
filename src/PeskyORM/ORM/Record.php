@@ -854,12 +854,16 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $hasManyRelations = [];
         /** @var Relation[] $relations */
         $relations = [];
-        foreach ($readRelatedRecords as $relationName) {
+        foreach ($readRelatedRecords as $relationName => $realtionColumns) {
+            if (is_int($relationName)) {
+                $relationName = $realtionColumns;
+                $realtionColumns = ['*'];
+            }
             $relations[$relationName] = static::getRelation($relationName);
             if (static::getRelation($relationName)->getType() === Relation::HAS_MANY) {
                 $hasManyRelations[] = $relationName;
             } else {
-                $columnsFromRelations[$relationName] = '*';
+                $columnsFromRelations[$relationName] = (array)$realtionColumns;
             }
         }
         $record = static::getTable()->selectOne(
