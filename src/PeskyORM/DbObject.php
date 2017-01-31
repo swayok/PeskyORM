@@ -129,6 +129,7 @@ class DbObject {
      * @param array|string $fieldNames - list of fields to get
      * @param array|null|string $relations - list of relations to read with object
      * @return $this
+     * @throws \PeskyORM\Exception\DbObjectException
      */
     static public function search($conditions, $fieldNames = '*', $relations = array()) {
         return self::create()->find($conditions, $fieldNames, $relations);
@@ -142,6 +143,7 @@ class DbObject {
      *      false: $data that does not belong to this object will trigger exceptions
      * @param bool $isDbValues - true: indicates that field values passsed via $data as array are db values
      * @throws DbObjectException
+     * @throws \PeskyORM\Exception\DbModelException
      */
     public function __construct($dataOrPkValue = null, $ignoreUnknownData = false, $isDbValues = false, $model = null) {
         if (!empty($model)) {
@@ -185,6 +187,7 @@ class DbObject {
 
     /**
      * @return \PeskyORM\DbTableConfig
+     * @throws \PeskyORM\Exception\DbModelException
      */
     public function _getTableConfig() {
         return $this->_getModel()->getTableConfig();
@@ -278,6 +281,8 @@ class DbObject {
 
     /**
      * @return mixed
+     * @throws \PeskyORM\Exception\DbObjectFieldException
+     * @throws \PeskyORM\Exception\DbObjectException
      */
     public function _getPkValue() {
         return $this->_getPkField()->getValue(null);
@@ -380,6 +385,7 @@ class DbObject {
     /**
      * @param string $alias
      * @return string
+     * @throws \PeskyORM\Exception\DbTableConfigException
      */
     protected function _getLocalFieldNameForRelation($alias) {
         return $this->_getRelationConfig($alias)->getColumn();
@@ -388,6 +394,7 @@ class DbObject {
     /**
      * @param string $alias
      * @return string
+     * @throws \PeskyORM\Exception\DbTableConfigException
      */
     protected function _getForeignFieldNameForRelation($alias) {
         return $this->_getRelationConfig($alias)->getForeignColumn();
@@ -396,6 +403,7 @@ class DbObject {
     /**
      * @param string $alias
      * @return string
+     * @throws \PeskyORM\Exception\DbTableConfigException
      */
     protected function _getForeignTableForRelation($alias) {
         return $this->_getRelationConfig($alias)->getForeignTable();
@@ -404,6 +412,7 @@ class DbObject {
     /**
      * @param string $alias
      * @return string
+     * @throws \PeskyORM\Exception\DbTableConfigException
      */
     protected function _getTypeOfRealation($alias) {
         return $this->_getRelationConfig($alias)->getType();
@@ -463,6 +472,7 @@ class DbObject {
 
     /**
      * Clean all related objects
+     * @throws \PeskyORM\Exception\DbModelException
      */
     protected function _cleanRelatedObjects() {
         foreach ($this->_getModel()->getTableRealtaions() as $alias => $settings) {
@@ -491,6 +501,7 @@ class DbObject {
      * @param bool $ignorePkNotSetError - true: exception '[local_field] is empty' when local_field is primary key will be ignored
      * @param bool $isDbValues
      * @return bool|$this[]|$this - false: for hasMany relation
+     * @throws \PeskyORM\Exception\DbModelException
      * @throws DbObjectException
      */
     protected function _initRelatedObject($relationAlias, $objectOrDataOrPkValue = null, $ignorePkNotSetError = false, $isDbValues = false) {
@@ -516,6 +527,9 @@ class DbObject {
      * @param bool $ignorePkNotSetError
      * @param bool $isDbValues
      * @throws DbObjectException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbUtilsException
      */
     protected function _initOneToOneRelation($relationAlias, $objectOrDataOrPkValue = null, $ignorePkNotSetError = false, $isDbValues = false) {
         $localFieldName = $this->_getLocalFieldNameForRelation($relationAlias);
@@ -568,6 +582,8 @@ class DbObject {
      * @param bool $isDbValues
      * @throws DbObjectException
      * @throws Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbUtilsException
      */
     protected function _initOneToManyRelation($relationAlias, $objectsOrRecordsList, $ignorePkNotSetError = false, $isDbValues = false) {
         // todo: implement DbObjectCollection that works as usual array but has some useful methods like find/sort/filter
@@ -682,6 +698,7 @@ class DbObject {
      * Update fields from $data and mark them as they are gathered from db (used in save())
      * @param array $data
      * @return $this
+     * @throws \PeskyORM\Exception\DbObjectException
      */
     protected function _updateWithDbValues($data) {
         foreach ($data as $key => $value) {
@@ -818,6 +835,7 @@ class DbObject {
      * @param null|string|array $fieldNames - empty: all fields | string: single field | array: only this fields
      * @param bool $forSave - true: allows some specific validations lise isUnique
      * @return array - validation errors
+     * @throws \PeskyORM\Exception\DbObjectException
      */
     public function validate($fieldNames = null, $forSave = false) {
         if (empty($fieldNames) || (!is_array($fieldNames) && !is_string($fieldNames))) {
@@ -1005,6 +1023,7 @@ class DbObject {
     /**
      * Unset field value (accepts multiple field names)
      * @param string $fieldNameOrAlias
+     * @throws \PeskyORM\Exception\DbObjectException
      */
     public function __unset($fieldNameOrAlias) {
         if ($this->_hasField($fieldNameOrAlias)) {
@@ -1040,6 +1059,8 @@ class DbObject {
     /**
      * @param string $alias
      * @return bool
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbObjectException
      */
     protected function _hasRelatedObject($alias, $returnTrueForNotInitiatedHasMany = false) {
         $relation = $this->_getRelationConfig($alias);
@@ -1070,6 +1091,7 @@ class DbObject {
      *      - string: relation
      *      - array: list of relations
      * @return $this
+     * @throws \PeskyORM\Exception\DbObjectException
      */
     public function begin($withRelations = false) {
         $this->cleanUpdatesOfFields();
@@ -1086,6 +1108,7 @@ class DbObject {
      *      - string: relation
      *      - array: list of relations
      * @return bool
+     * @throws \PeskyORM\Exception\DbException
      * @throws DbObjectException
      * @throws DbObjectValidationException
      */
@@ -1112,6 +1135,8 @@ class DbObject {
      *      - string: relation
      *      - array: list of relations
      * @return $this
+     * @throws \PeskyORM\Exception\DbObjectFieldException
+     * @throws \PeskyORM\Exception\DbObjectException
      */
     public function rollback($rollbackRelations = false) {
         // restore db object state before begin()
@@ -1266,6 +1291,7 @@ class DbObject {
      * If commit() was not called - $fieldName will replace $this->updatedFields by array($fieldName)
      * @param string $fieldName
      * @return $this
+     * @throws \PeskyORM\Exception\DbObjectException
      */
     public function fieldUpdated($fieldName) {
         if ($this->_allowFieldsUpdatesTracking) {
@@ -1286,6 +1312,8 @@ class DbObject {
      * @param array|string $fieldNames - list of fields to get
      * @param array|string|null|bool $relations - related objects to read
      * @return $this
+     * @throws \PeskyORM\Exception\DbObjectFieldException
+     * @throws \PeskyORM\Exception\DbObjectException
      */
     public function read($pkValue, $fieldNames = '*', $relations = false) {
         $this->_setFieldValue($this->_getPkFieldName(), $pkValue);
@@ -1328,6 +1356,7 @@ class DbObject {
      * Note: does not work with not existing object
      * @param string|array $fieldNames
      * @return $this
+     * @throws \PeskyORM\Exception\DbObjectException
      */
     public function readFields($fieldNames = '*') {
         if ($this->exists()) {
@@ -1343,6 +1372,7 @@ class DbObject {
      *      false: no relations (just clean)
      *      null|empty|true: all relations
      *      string|array: relation or list of relations
+     * @throws \PeskyORM\Exception\DbObjectException
      */
     public function readRelations($relations = null) {
         $this->_cleanRelatedObjects();
@@ -1408,6 +1438,11 @@ class DbObject {
      * Find related object or list of objects by relation alias
      * @param string $relationAlias
      * @return DbObject|DbObject[]
+     * @throws \PeskyORM\Exception\DbUtilsException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbQueryException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbException
      * @throws DbObjectException when local field is empty but required
      */
     protected function _findRelatedObject($relationAlias) {
@@ -1471,6 +1506,12 @@ class DbObject {
      * @param array|string $fieldNames - list of fields to get
      * @param array|null|string $relations - list of relations to read with object
      * @return $this
+     * @throws \PeskyORM\Exception\DbUtilsException
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbQueryException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PeskyORM\Exception\DbObjectException
      */
     public function find($conditions, $fieldNames = '*', $relations = array()) {
         if (is_array($fieldNames) && !in_array($this->_getPkFieldName(), $fieldNames)) {
@@ -1511,6 +1552,12 @@ class DbObject {
      *      - true: all relations
      *      - array and string - related objects aliases to save
      * @return bool
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbQueryException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PDOException
+     * @throws \PeskyORM\Exception\DbObjectFieldException
      * @throws DbObjectException
      * @throws DbObjectValidationException
      */
@@ -1553,7 +1600,7 @@ class DbObject {
                 if (!empty($dataToSave)) {
                     $this->_allowFieldsUpdatesTracking = false;
                     $ret = $model->update($dataToSave, $this->getFindByPkConditions(), '*');
-                    if (!empty($ret) && count($ret) == 1) {
+                    if (!empty($ret) && count($ret) === 1) {
                         $ret = $ret[0];
                         $this->_updateWithDbValues($ret);
                     } else if (count($ret) > 1) {
@@ -1641,6 +1688,12 @@ class DbObject {
      * @params format: saveUpdates(array) | saveUpdates(field1 [,field2])
      * @param array|string|null $fieldNames
      * @return bool
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbQueryException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PDOException
+     * @throws \PeskyORM\Exception\DbObjectFieldException
+     * @throws \PeskyORM\Exception\DbException
      * @throws DbObjectException
      * @throws DbObjectValidationException
      */
@@ -1669,7 +1722,16 @@ class DbObject {
         unset($dataToSave[$this->_getPkFieldName()]);
         if (!empty($dataToSave)) {
             try {
-                $ret = $model->update($dataToSave, $this->getFindByPkConditions());
+                $this->_allowFieldsUpdatesTracking = false;
+                $ret = $model->update($dataToSave, $this->getFindByPkConditions(), '*');
+                if (!empty($ret) && count($ret) === 1) {
+                    $ret = $ret[0];
+                    $this->_updateWithDbValues($ret);
+                } else if (count($ret) > 1) {
+                    $model->rollback();
+                    throw new DbObjectException($this, 'Attempt to update [' . count($ret) . '] records instead of 1: ' . $model->getLastQuery());
+                }
+                $this->_allowFieldsUpdatesTracking = true;
             } catch (\PDOException $exc) {
                 $model->rollback();
                 throw $exc;
@@ -1704,6 +1766,11 @@ class DbObject {
      * @param bool $resetFields - true: will reset DbFields (default) | false: only primary key will be reset
      * @param bool $ignoreIfNotExists - true: will not throw exception if object not exists
      * @return $this
+     * @throws \PeskyORM\Exception\DbTableConfigException
+     * @throws \PeskyORM\Exception\DbQueryException
+     * @throws \PeskyORM\Exception\DbModelException
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PDOException
      * @throws DbObjectException
      * @throws \Exception
      */
@@ -1743,6 +1810,8 @@ class DbObject {
 
     /**
      * Delete all files attached to DbObject fields
+     * @throws \PeskyORM\Exception\DbObjectException
+     * @throws \PeskyORM\Exception\DbObjectFieldException
      */
     public function deleteFilesAfterObjectDeleted() {
         if (!$this->exists()) {
@@ -1845,6 +1914,8 @@ class DbObject {
      * @param array|string|bool $relations - array and string: relations to return | true: all relations | false: without relations
      * @param bool $forceRelationsRead - true: relations will be read before processing | false: only previously read relations will be returned
      * @return array
+     * @throws \PeskyORM\Exception\DbObjectFieldException
+     * @throws \PeskyORM\Exception\DbObjectException
      */
     public function toPublicArray($fieldNames = null, $relations = false, $forceRelationsRead = true) {
         $values = array();
@@ -1976,6 +2047,8 @@ class DbObject {
      * Collect values of all fields avoiding exceptions
      * Fields that were not set will be ignored
      * @return array
+     * @throws \PeskyORM\Exception\DbObjectFieldException
+     * @throws \PeskyORM\Exception\DbObjectException
      */
     public function getFieldsValues() {
         $values = array();
