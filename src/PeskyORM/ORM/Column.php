@@ -498,6 +498,23 @@ class Column {
     }
 
     /**
+     * Computed value that indicates if value must be not empty
+     * @return bool
+     * @throws \UnexpectedValueException
+     * @throws \BadMethodCallException
+     */
+    public function isValueRequiredToBeNotEmpty() {
+        return (
+            !$this->isValueCanBeNull()
+            && (
+                $this->isEmptyStringMustBeConvertedToNull()
+                || !$this->hasDefaultValue()
+                || !empty($this->getValidDefaultValue(''))
+            )
+        );
+    }
+
+    /**
      * @return $this
      */
     public function trimsValue() {
