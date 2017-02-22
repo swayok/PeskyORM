@@ -30,6 +30,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @var int
      */
     protected $iteratorIdx = 0;
+    /**
+     * @var bool
+     */
+    protected $trustDbDataMode = false;
 
     /**
      * Create new record with values from $data array
@@ -278,6 +282,27 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
 
     /**
+     * All values marked as "received from DB" will not be normalized and validated but record
+     * will be not allowed to be saved to prevent possible issues.
+     * This mode is designed to speed up DB data processing when you need to iterate over large number of records
+     * where values are not intended to be modified and saved.
+     * @return $this
+     */
+    public function enableTrustModeForDbData() {
+        $this->trustDbDataMode = true;
+        return $this;
+    }
+
+    /**
+     * All values marked as "received from DB" will be normalized and validated (record is allowed to be saved)
+     * @return $this
+     */
+    public function disableTrustModeForDbData() {
+        $this->trustDbDataMode = false;
+        return $this;
+    }
+
+    /**
      * Resets all values and related records
      * @return $this
      * @throws \PeskyORM\Exception\OrmException
@@ -493,7 +518,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         if ($this->isCollectingUpdates && !array_key_exists($column->getName(), $this->valuesBackup)) {
             $this->valuesBackup[$column->getName()] = clone $valueContainer;
         }
-        call_user_func($column->getValueSetter(), $value, (bool) $isFromDb, $this->getValueObject($column));
+        call_user_func($column->getValueSetter(), $value, (bool) $isFromDb, $this->getValueObject($column), $this->trustDbDataMode);
         if (!$valueContainer->isValid()) {
             throw new InvalidDataException([$column->getName() => $valueContainer->getValidationErrors()]);
         }
@@ -1147,6 +1172,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \UnexpectedValueException
      */
     protected function saveToDb(array $columnsToSave = []) {
+        if ($this->trustDbDataMode) {
+            throw new \BadMethodCallException('Saving is not alowed when trusted mode for DB data is enabled');
+        }
         if (empty($columnsToSave)) {
             // nothing to save
             return;

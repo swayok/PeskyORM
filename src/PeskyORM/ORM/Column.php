@@ -299,9 +299,9 @@ class Column {
             $class = $this->getClosuresClass();
             return $class::valueExistenceChecker($valueContainer, $checkDefaultValue);
         });
-        $this->setValueSetter(function ($newValue, $isFromDb, RecordValue $valueContainer) {
+        $this->setValueSetter(function ($newValue, $isFromDb, RecordValue $valueContainer, $trustDataReceivedFromDb) {
             $class = $this->getClosuresClass();
-            return $class::valueSetter($newValue, $isFromDb, $valueContainer);
+            return $class::valueSetter($newValue, $isFromDb, $valueContainer, $trustDataReceivedFromDb);
         });
         $this->setValueValidator(function ($value, $isFromDb, Column $column) {
             $class = $this->getClosuresClass();
@@ -325,11 +325,11 @@ class Column {
         });
         $this->setValueSavingExtender(function (RecordValue $valueContainer, $isUpdate, array $savedData) {
             $class = $this->getClosuresClass();
-            return $class::valueSavingExtender($valueContainer, $isUpdate, $savedData);
+            $class::valueSavingExtender($valueContainer, $isUpdate, $savedData);
         });
         $this->setValueDeleteExtender(function (RecordValue $valueContainer, $deleteFiles) {
             $class = $this->getClosuresClass();
-            return $class::valueDeleteExtender($valueContainer, $deleteFiles);
+            $class::valueDeleteExtender($valueContainer, $deleteFiles);
         });
         $this->setValueFormatter(function (RecordValue $valueContainer, $format) {
             $class = $this->getClosuresClass();
@@ -864,7 +864,7 @@ class Column {
 
     /**
      * Sets new value. Called after value validation
-     * @param \Closure $valueSetter = function ($newValue, $isFromDb, RecordValue $valueContainer) { modify $valueContainer }
+     * @param \Closure $valueSetter = function ($newValue, $isFromDb, RecordValue $valueContainer, $trustDataReceivedFromDb) { modify $valueContainer }
      * @return $this
      */
     public function setValueSetter(\Closure $valueSetter) {

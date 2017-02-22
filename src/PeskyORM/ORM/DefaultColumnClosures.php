@@ -8,46 +8,50 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
      * @param mixed $newValue
      * @param boolean $isFromDb
      * @param RecordValue $valueContainer
+     * @param bool $trustDataReceivedFromDb
      * @return RecordValue
-     * @throws \PDOException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
+     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      */
-    static public function valueSetter($newValue, $isFromDb, RecordValue $valueContainer) {
+    static public function valueSetter($newValue, $isFromDb, RecordValue $valueContainer, $trustDataReceivedFromDb) {
         $column = $valueContainer->getColumn();
         if (!$isFromDb && !$column->isValueCanBeSetOrChanged()) {
             throw new \BadMethodCallException(
                 "Column '{$column->getName()}' restricts value modification"
             );
         }
-        $preprocessedValue = call_user_func($column->getValuePreprocessor(), $newValue, $isFromDb, $column);
-        if (
-            $valueContainer->hasValue()
-            && (
-                $valueContainer->getRawValue() === $preprocessedValue
-                || $valueContainer->getValue() === $preprocessedValue
-            )
-        ) {
-            // received same value as current one (raw or normalized)
-            if ($isFromDb && !$valueContainer->isItFromDb()) {
-                // value has changed its satatus to 'received from db'
-                $valueContainer->setIsFromDb(true);
-            }
+        if ($isFromDb && $trustDataReceivedFromDb) {
+            $valueContainer->setRawValue($newValue, $newValue, true);
+            $valueContainer->setValidValue($newValue, $newValue);
         } else {
-            $valueContainer->setRawValue($newValue, $preprocessedValue, $isFromDb);
-            $errors = $column->validateValue($valueContainer, $isFromDb);
-            if (count($errors) > 0) {
-                $valueContainer->setValidationErrors($errors);
+            $preprocessedValue = call_user_func($column->getValuePreprocessor(), $newValue, $isFromDb, $column);
+            if (
+                $valueContainer->hasValue()
+                && (
+                    $valueContainer->getRawValue() === $preprocessedValue
+                    || $valueContainer->getValue() === $preprocessedValue
+                )
+            ) {
+                // received same value as current one (raw or normalized)
+                if ($isFromDb && !$valueContainer->isItFromDb()) {
+                    // value has changed its satatus to 'received from db'
+                    $valueContainer->setIsFromDb(true);
+                }
             } else {
-                $normalziedValue = call_user_func(
-                    $column->getValueNormalizer(),
-                    $preprocessedValue,
-                    $isFromDb,
-                    $column
-                );
-                $valueContainer->setValidValue($normalziedValue, $newValue);
+                $valueContainer->setRawValue($newValue, $preprocessedValue, $isFromDb);
+                $errors = $column->validateValue($valueContainer, $isFromDb);
+                if (count($errors) > 0) {
+                    $valueContainer->setValidationErrors($errors);
+                } else {
+                    $normalziedValue = call_user_func(
+                        $column->getValueNormalizer(),
+                        $preprocessedValue,
+                        $isFromDb,
+                        $column
+                    );
+                    $valueContainer->setValidValue($normalziedValue, $newValue);
+                }
             }
         }
         return $valueContainer;

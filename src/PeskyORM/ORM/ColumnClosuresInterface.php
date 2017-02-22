@@ -9,9 +9,11 @@ interface ColumnClosuresInterface {
      * @param mixed $newValue
      * @param boolean $isFromDb
      * @param RecordValue $valueContainer
+     * @param bool $trustDataReceivedFromDb - tells setter that $newValue is trusted when $isFromDb === true
+     *      This usually means that normalization and validation not needed
      * @return RecordValue
      */
-    static public function valueSetter($newValue, $isFromDb, RecordValue $valueContainer);
+    static public function valueSetter($newValue, $isFromDb, RecordValue $valueContainer, $trustDataReceivedFromDb);
 
     /**
      * Slightly modify value before validation. Uses $column->isEmptyStringMustBeConvertedToNull(),

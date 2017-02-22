@@ -6,7 +6,7 @@ use PeskyORM\ORM\OrmJoinInfo;
 use Swayok\Utils\ValidateValue;
 
 /**
- * @method join(AbstractJoinInfo $joinConfig, $append = true)
+ * @method join(AbstractJoinInfo $joinInfo, $append = true)
  */
 abstract class AbstractSelect {
 
@@ -1394,12 +1394,25 @@ abstract class AbstractSelect {
         $nested = array_key_exists($this->getTableAlias(), $dataBlocks) ? $dataBlocks[$this->getTableAlias()] : [];
         foreach ($this->joins as $joinConfig) {
             if (!empty($dataBlocks[$joinConfig->getJoinName()])) {
-                $nested[$joinConfig->getJoinName()] = $dataBlocks[$joinConfig->getJoinName()];
+                $nested[$joinConfig->getJoinName()] = $this->normalizeJoinDataForRecord(
+                    $joinConfig,
+                    $dataBlocks[$joinConfig->getJoinName()]
+                );
             } else {
                 $nested[$joinConfig->getJoinName()] = [];
             }
         }
         return $nested;
+    }
+
+    /**
+     * Normalize data received for related record or join
+     * @param AbstractJoinInfo $joinInfo
+     * @param array $data
+     * @return array
+     */
+    protected function normalizeJoinDataForRecord(AbstractJoinInfo $joinInfo, array $data) {
+        return $data;
     }
 
     /**

@@ -90,13 +90,13 @@ class Select extends AbstractSelect {
     }
 
     /**
-     * @param JoinInfo $joinConfig
+     * @param JoinInfo $joinInfo
      * @param bool $append
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function join(JoinInfo $joinConfig, $append = true) {
-        $this->_join($joinConfig, $append);
+    public function join(JoinInfo $joinInfo, $append = true) {
+        $this->_join($joinInfo, $append);
         return $this;
     }
 

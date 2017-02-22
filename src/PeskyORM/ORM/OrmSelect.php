@@ -2,9 +2,11 @@
 
 namespace PeskyORM\ORM;
 
+use PeskyORM\Core\AbstractJoinInfo;
 use PeskyORM\Core\AbstractSelect;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\JoinInfo;
 use PeskyORM\Core\Utils;
 
 class OrmSelect extends AbstractSelect {
@@ -114,17 +116,29 @@ class OrmSelect extends AbstractSelect {
     }
 
     /**
-     * @param OrmJoinInfo $joinConfig
+     * @param OrmJoinInfo $joinInfo
      * @param bool $append
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function join(OrmJoinInfo $joinConfig, $append = true) {
-        $this->_join($joinConfig, $append);
+    public function join(OrmJoinInfo $joinInfo, $append = true) {
+        $this->_join($joinInfo, $append);
         return $this;
     }
 
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
+    
+    protected function normalizeJoinDataForRecord(AbstractJoinInfo $joinInfo, array $data) {
+        $data = parent::normalizeJoinDataForRecord($joinInfo, $data);
+        if ($joinInfo instanceof OrmJoinInfo) {
+            $pkName = $joinInfo->getForeignDbTable()->getPkColumnName();
+            if (array_key_exists($pkName, $data) && $data[$pkName] === null) {
+                 // not existing related record
+                return [];
+            }
+        }
+        return $data;
+    }
 
     protected function beforeQueryBuilding() {
         if ($this->isDirty('joins') || $this->isDirty('with')) {
