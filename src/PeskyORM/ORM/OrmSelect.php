@@ -344,7 +344,8 @@ class OrmSelect extends AbstractSelect {
                     }
                     if (!empty($errors)) {
                         throw new \UnexpectedValueException(
-                            "Invalid {$subject} condition value provided for column [{$columnName}]. Value: " . print_r($rawValue, true)
+                            "Invalid {$subject} condition value provided for column [{$columnName}]. Value: "
+                                . var_export($rawValue, true) . '; Errors: ' . implode('; ', $errors)
                         );
                     }
                 }
