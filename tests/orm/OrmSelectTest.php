@@ -7,6 +7,7 @@ use PeskyORM\ORM\FakeTable;
 use PeskyORM\ORM\OrmJoinInfo;
 use PeskyORM\ORM\OrmSelect;
 use PeskyORMTest\TestingAdmins\TestingAdminsTable;
+use PeskyORMTest\TestingAdmins\TestingAdminsTableLongAlias;
 use PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use PeskyORMTest\TestingApp;
 use Swayok\Utils\Set;
@@ -378,6 +379,8 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             'SELECT "Admins"."id" AS "_Admins__' . $shortColumnName . '", "' . $shortJoinName .'"."id" AS "_' . $shortJoinName . '__id", "' . $shortJoinName2 .'"."id" AS "_' . $shortJoinName2 . '__' . $shortColumnName2 . '" FROM "admins" AS "Admins" LEFT JOIN "admins" AS "' . $shortJoinName . '" ON ("Admins"."parent_id" = "' . $shortJoinName . '"."id") LEFT JOIN "admins" AS "' . $shortJoinName2 . '" ON ("' . $shortJoinName . '"."parent_id" = "' . $shortJoinName2 . '"."id")',
             $query
         );
+
+
     }
 
     /**
@@ -587,7 +590,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Test: Column with name [qqq] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
      */
     public function testInvalidValidateColumnInfo1() {
-        $this->callObjectMethod($this->getNewSelect(), 'validateColumnInfo', [
+        $this->callObjectMethod(static::getNewSelect(), 'validateColumnInfo', [
             [
                 'name' => 'qqq',
                 'join_name' => null,
@@ -603,7 +606,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Test: Column with name [Parent.qqq] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
      */
     public function testInvalidValidateColumnInfo2() {
-        $this->callObjectMethod($this->getNewSelect(), 'validateColumnInfo', [
+        $this->callObjectMethod(static::getNewSelect(), 'validateColumnInfo', [
             [
                 'name' => 'qqq',
                 'join_name' => 'Parent',
@@ -810,6 +813,21 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         );
         // todo: update tests
         // todo: add tests for AbstractSelect's buildQueryToBeUsedInWith, makeColumnsForQuery, makeColumnNameWithAliasForQuery, collectJoinedColumnsForQuery
+    }
+
+    public function testAnalyzeColumnNameForLongTableAlias() {
+        $select = OrmSelect::from(TestingAdminsTableLongAlias::getInstance())
+            ->columns('id');
+
+        static::assertRegExp(
+            '%^SELECT "(.+?)"."id" AS "_\1__id" FROM "admins" AS "\1"$%',
+            $select->getQuery()
+        );
+        $shortAlias = preg_replace('%^SELECT "(.+?)"."id" AS "_\1__id" FROM "admins" AS "\1"$%', '$1', $select->getQuery());
+        static::assertNotEquals(
+            $shortAlias,
+            TestingAdminsTableLongAlias::getAlias()
+        );
     }
 
 

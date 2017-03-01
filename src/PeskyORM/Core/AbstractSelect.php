@@ -917,7 +917,13 @@ abstract class AbstractSelect {
                 $columnAlias = null;
             }
         }
-        if ($joinName === $this->getTableAlias()) {
+        if (
+            $joinName === $this->getTableAlias()
+            || (
+                in_array($joinName, $this->shortJoinAliases, true)
+                && array_flip($this->shortJoinAliases)[$joinName] === $this->getTableAlias()
+            )
+        ) {
             $joinName = null;
         }
         return [
