@@ -823,9 +823,8 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             '%^SELECT "(.+?)"."id" AS "_\1__id" FROM "admins" AS "\1"$%',
             $select->getQuery()
         );
-        $shortAlias = preg_replace('%^SELECT "(.+?)"."id" AS "_\1__id" FROM "admins" AS "\1"$%', '$1', $select->getQuery());
         static::assertNotEquals(
-            $shortAlias,
+            preg_replace('%^SELECT "(.+?)"."id",*$%', '$1', $select->getQuery()),
             TestingAdminsTableLongAlias::getAlias()
         );
     }
