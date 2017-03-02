@@ -30,6 +30,6 @@
         "crazycodr/standard-exceptions": "*"
     },
     "require-dev": {
-        "phpunit/phpunit": "5.5.*"
+        "phpunit/phpunit": "5.*"
     }
 }
