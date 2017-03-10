@@ -171,7 +171,18 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
             if ($isFromDb === null) {
                 $isFromDb = $this->autodetectIfRecordIsFromDb($data);
             }
-            return $this->table->newRecord()->fromData($data, $isFromDb);
+            $record = $this->table->newRecord();
+            $pkColumnName = $this->table->getTableStructure()->getPkColumnName();
+            if (!$isFromDb && !empty($data[$pkColumnName])) {
+                // primary key value is set but $isFromDb === false. This usually means that all data except
+                // primery key is not from db
+                $record->updateValue($pkColumnName, $data[$pkColumnName], true);
+                unset($data[$pkColumnName]);
+                $record->updateValues($data, false);
+            } else {
+                $record->fromData($data, $isFromDb);
+            }
+            return $record;
         }
         return $this->dbRecords[$index];
     }

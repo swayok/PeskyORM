@@ -1003,7 +1003,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 $this->updateRelatedRecord(
                     $columnNameOrRelationName,
                     $value,
-                    $isFromDb || $this->hasPrimaryKeyValue() ? null : false,
+                    $isFromDb ? null : false,
                     $haltOnUnknownColumnNames
                 );
             } else if ($haltOnUnknownColumnNames) {
