@@ -49,7 +49,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * Class that wraps PDO connection. Used for debugging
      * function (DbAdapter $adapter, \PDO $pdo) { return $wrappedPdo; }
      *
-     * @var null|callable
+     * @var null|\Closure
      */
     static protected $connectionWrapper = null;
 
@@ -61,9 +61,9 @@ abstract class DbAdapter implements DbAdapterInterface {
 
     /**
      * Set a wrapper to PDO connection. Wrapper called on any new DB connection
-     * @param callable $wrapper
+     * @param \Closure $wrapper
      */
-    static public function setConnectionWrapper(callable $wrapper) {
+    static public function setConnectionWrapper(\Closure $wrapper) {
         static::$connectionWrapper = $wrapper;
     }
 
@@ -127,7 +127,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @throws \PDOException
      */
     private function wrapConnection() {
-        if (is_callable(static::$connectionWrapper)) {
+        if (static::$connectionWrapper instanceof \Closure) {
             $this->pdo = call_user_func(static::$connectionWrapper, $this, $this->getConnection());
         }
     }
@@ -872,8 +872,8 @@ abstract class DbAdapter implements DbAdapterInterface {
                         $realType = 'Boolean [' . ($value ? 'true' : 'false') . ']';
                     } else if (is_resource($value)) {
                         $realType = 'Resource';
-                    } else if (is_callable($value)) {
-                        $realType = 'Callable';
+                    } else if ($value instanceof \Closure) {
+                        $realType = '\Closure';
                     } else {
                         $realType = 'Value of unknown type';
                     }
