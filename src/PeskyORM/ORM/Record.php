@@ -1561,7 +1561,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $loadRelatedRecordsIfNotSet = false,
         $withFilesInfo = true
     ) {
-        if (empty($columnsNames)) {
+        if (empty($columnsNames) || (count($columnsNames) === 1 && $columnsNames[0] === '*')) {
             $columnsNames = array_keys($this->values);
         }
         $data = [];
