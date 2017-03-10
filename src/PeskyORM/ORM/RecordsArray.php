@@ -23,7 +23,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     /**
      * @var bool
      */
-    protected $isFromDb = false;
+    protected $isFromDb = null;
     /**
      * @var bool
      */

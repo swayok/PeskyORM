@@ -1000,7 +1000,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             if (static::hasColumn($columnNameOrRelationName)) {
                 $this->updateValue($columnNameOrRelationName, $value, $isFromDb);
             } else if (static::hasRelation($columnNameOrRelationName)) {
-                $this->updateRelatedRecord($columnNameOrRelationName, $value, $isFromDb ? null : false, $haltOnUnknownColumnNames);
+                $this->updateRelatedRecord(
+                    $columnNameOrRelationName,
+                    $value,
+                    $isFromDb || $this->hasPrimaryKeyValue() ? null : false,
+                    $haltOnUnknownColumnNames
+                );
             } else if ($haltOnUnknownColumnNames) {
                 throw new \InvalidArgumentException(
                     "\$data argument contains unknown column name or relation name: '$columnNameOrRelationName'"
@@ -1084,7 +1089,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    public function commit() {
+    public function commit($relationsToSave = []) {
         if (!$this->isCollectingUpdates) {
             throw new \BadMethodCallException(
                 'It is impossible to commit changed values: changes collecting was not started'
@@ -1093,6 +1098,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $columnsToSave = array_keys($this->valuesBackup);
         $this->cleanUpdates();
         $this->saveToDb($columnsToSave);
+        if (!empty($relationsToSave)) {
+            $this->saveRelations($relationsToSave);
+        }
         return $this;
     }
 
@@ -1241,6 +1249,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 );
                 if (count($updatedData)) {
                     $updatedData = $updatedData[0];
+                    $unknownColumns = array_diff_key($updatedData, static::getColumns());
+                    if (count($unknownColumns) > 0) {
+                        throw new \UnexpectedValueException(
+                            'Database table "' . static::getTableStructure()->getTableName()
+                                . '" contains columns that are not described in ' . get_class(static::getTableStructure())
+                                . '. Unknown columns: "' . implode('", "', array_keys($unknownColumns)) . '"'
+                        );
+                    }
                     $this->updateValues($updatedData, true);
                 } else {
                     // this means that record does not exist anymore
@@ -1250,7 +1266,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             } else {
                 $this->updateValues($table->insert($data, true), true);
             }
-        } catch (\PDOException $exc) {
+        } catch (\Exception $exc) {
             if ($table::inTransaction()) {
                 $table::rollBackTransaction();
             }
@@ -1425,11 +1441,15 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             );
         }
         $relations = static::getRelations();
-        $diff = array_diff($relationsToSave, array_keys($relations));
-        if (count($diff)) {
-            throw new \InvalidArgumentException(
-                '$relationsToSave argument contains unknown relations: ' .implode(', ', $diff)
-            );
+        if (count($relationsToSave) === 1 && $relationsToSave[0] === '*') {
+            $relationsToSave = array_keys($relations);
+        } else {
+            $diff = array_diff($relationsToSave, array_keys($relations));
+            if (count($diff)) {
+                throw new \InvalidArgumentException(
+                    '$relationsToSave argument contains unknown relations: ' . implode(', ', $diff)
+                );
+            }
         }
         foreach ($relationsToSave as $relationName) {
             if ($this->isRelatedRecordAttached($relationName)) {
