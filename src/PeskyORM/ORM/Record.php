@@ -1583,12 +1583,23 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     ) {
         if (empty($columnsNames) || (count($columnsNames) === 1 && $columnsNames[0] === '*')) {
             $columnsNames = array_keys($this->values);
+        } else if (in_array('*', $columnsNames, true)) {
+            $columnsNames = array_diff(array_merge($columnsNames, array_keys($this->values)), ['*']);
         }
         $data = [];
-        foreach ($columnsNames as $columnName) {
-            $data[$columnName] = $this->getColumnValueForToArray($columnName, !$withFilesInfo, $notSet);
-            if ($notSet) {
-                unset($data[$columnName]);
+        foreach ($columnsNames as $index => $columnName) {
+            if (!is_int($index) || is_array($columnName) || static::hasRelation($columnName)) {
+                // it is actually relation
+                if (is_int($index)) {
+                    $relatedRecordsNames[] = $columnName;
+                } else {
+                    $relatedRecordsNames[$index] = $columnName;
+                }
+            } else {
+                $data[$columnName] = $this->getColumnValueForToArray($columnName, !$withFilesInfo, $notSet);
+                if ($notSet) {
+                    unset($data[$columnName]);
+                }
             }
         }
         foreach ($relatedRecordsNames as $relatedRecordName => $relatedRecordColumns) {
