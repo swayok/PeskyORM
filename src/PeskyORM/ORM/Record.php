@@ -1616,16 +1616,16 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             $relatedRecord = $this->getRelatedRecord($relatedRecordName, $loadRelatedRecordsIfNotSet);
             if ($relatedRecord instanceof Record) {
                 $data[$relatedRecordName] = $withFilesInfo
-                    ? $relatedRecord->toArray($relatedRecordColumns)
-                    : $relatedRecord->toArrayWithoutFiles($relatedRecordColumns);
+                    ? $relatedRecord->toArray($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet)
+                    : $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
             } else {
                 /** @var RecordsSet $relatedRecord*/
                 $relatedRecord->enableDbRecordInstanceReuseDuringIteration();
                 $data[$relatedRecordName] = [];
                 foreach ($relatedRecord as $relRecord) {
                     $data[$relatedRecordName][] = $withFilesInfo
-                        ? $relRecord->toArray($relatedRecordColumns)
-                        : $relRecord->toArrayWithoutFiles($relatedRecordColumns);
+                        ? $relRecord->toArray($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet)
+                        : $relRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
                 }
             }
         }

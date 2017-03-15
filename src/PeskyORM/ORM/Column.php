@@ -899,6 +899,7 @@ class Column {
 
     /**
      * @param \Closure $valueGetter = function (RecordValue $value, $format = null) { return $value->getValue(); }
+     * Note: do not forget to provide valueExistenceChecker in case of columns that do not exist in db
      * @return $this
      */
     public function setValueGetter(\Closure $valueGetter) {
