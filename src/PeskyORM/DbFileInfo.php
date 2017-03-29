@@ -18,10 +18,14 @@ class DbFileInfo {
     protected $fileExtension = null;
     protected $fileNameWithoutExtension = null;
     protected $fileNameWithExtension = null;
+    protected $originalFileNameWithExtension = null;
+    protected $originalFileNameWithoutExtension = null;
 
     protected $jsonMap = array(
         'file_name' => 'fileNameWithoutExtension',
         'full_file_name' => 'fileNameWithExtension',
+        'original_file_name' => 'originalFileNameWithoutExtension',
+        'original_full_file_name' => 'originalFileNameWithExtension',
         'ext' => 'fileExtension',
     );
 
@@ -104,23 +108,59 @@ class DbFileInfo {
      * @return $this
      */
     public function setFileNameWithoutExtension($fileNameWithoutExtension) {
-        $this->fileNameWithoutExtension = $fileNameWithoutExtension;
+        $this->fileNameWithoutExtension = rtrim($fileNameWithoutExtension, '.');
         return $this;
     }
 
     /**
-     * @return null
+     * @return string
      */
     public function getFileNameWithExtension() {
         return $this->fileNameWithExtension;
     }
 
     /**
-     * @param null $fileNameWithExtension
+     * @param string $fileNameWithExtension
      * @return $this
      */
     public function setFileNameWithExtension($fileNameWithExtension) {
-        $this->fileNameWithExtension = $fileNameWithExtension;
+        $this->fileNameWithExtension = rtrim($fileNameWithExtension, '.');
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getOriginalFileNameWithExtension() {
+        return empty($this->originalFileNameWithExtension)
+            ? $this->getFileNameWithExtension()
+            : $this->originalFileNameWithExtension;
+    }
+
+    /**
+     * @param string $fileNameWithExtension
+     * @return $this
+     */
+    public function setOriginalFileNameWithExtension($fileNameWithExtension) {
+        $this->originalFileNameWithExtension = rtrim($fileNameWithExtension, '.');
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getOriginalFileNameWithoutExtension() {
+        return empty($this->originalFileNameWithoutExtension)
+            ? $this->getFileNameWithoutExtension()
+            : $this->originalFileNameWithoutExtension;
+    }
+
+    /**
+     * @param string $fileNameWithoutExtension
+     * @return $this
+     */
+    public function setOriginalFileNameWithoutExtension($fileNameWithoutExtension) {
+        $this->originalFileNameWithoutExtension = rtrim($fileNameWithoutExtension, '.');
         return $this;
     }
 

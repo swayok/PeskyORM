@@ -182,6 +182,7 @@ class FileField extends DbObjectField {
 
     /**
      * @return bool
+     * @throws \PeskyORM\Exception\DbObjectFieldException
      */
     public function isFileExists() {
         return File::exist($this->getFilePath());
@@ -216,6 +217,7 @@ class FileField extends DbObjectField {
     /**
      * Get absolute FS path to file dir
      * @return string
+     * @throws \PeskyORM\Exception\DbObjectException
      * @throws DbObjectFieldException
      */
     public function getFileDirPath() {
@@ -238,6 +240,7 @@ class FileField extends DbObjectField {
     /**
      * Get relative URL to file dir
      * @return string
+     * @throws \PeskyORM\Exception\DbObjectException
      * @throws DbObjectFieldException
      */
     public function getFileDirRelativeUrl() {
@@ -265,6 +268,7 @@ class FileField extends DbObjectField {
     /**
      * Get absolute URL to file dir
      * @return string
+     * @throws \PeskyORM\Exception\DbObjectException
      * @throws DbObjectFieldException
      */
     public function getFileDirAbsoluteUrl() {
@@ -305,6 +309,8 @@ class FileField extends DbObjectField {
      * Get subdir to files based on primary key and maybe some other custom things
      * @param string $directorySeparator - directory separator
      * @return string
+     * @throws \PeskyORM\Exception\DbObjectException
+     * @throws \PeskyORM\Exception\DbColumnConfigException
      * @throws DbObjectFieldException
      */
     public function getFilesSubdir($directorySeparator = DIRECTORY_SEPARATOR) {
@@ -332,6 +338,7 @@ class FileField extends DbObjectField {
 
     /**
      * @return string
+     * @throws \PeskyORM\Exception\DbColumnConfigException
      */
     public function getBaseUrlToFiles() {
         return $this->dbColumnConfig->getBaseUrlToFiles();
@@ -359,6 +366,7 @@ class FileField extends DbObjectField {
     /**
      * Get file name with extension
      * @return string
+     * @throws \PeskyORM\Exception\DbObjectFieldException
      */
     public function getFullFileName() {
         $fileInfo = $this->getFileInfo(true, true);
@@ -440,6 +448,7 @@ class FileField extends DbObjectField {
 
     /**
      * @return string
+     * @throws \PeskyORM\Exception\DbObjectException
      * @throws DbObjectFieldException
      */
     public function getFileExtension() {
@@ -465,6 +474,7 @@ class FileField extends DbObjectField {
 
     /**
      * @return null|string|bool - null: not an upload | string: FS path fo file | false: invalid file uploaded (validation error)
+     * @throws \PeskyORM\Exception\DbObjectException
      * @throws DbObjectFieldException
      */
     public function saveUploadedFile() {
@@ -495,14 +505,19 @@ class FileField extends DbObjectField {
      * Save file to FS + collect information
      * @param array $uploadedFileInfo - uploaded file info
      * @return bool|array - array: information about file same as when you get by callings $this->getFileInfoFromInfoFile()
+     * @throws \PeskyORM\Exception\DbObjectFieldException
      */
     protected function analyzeUploadedFileAndSaveToFS(array $uploadedFileInfo) {
         $pathToFiles = $this->getFileDirPath();
         if (!is_dir($pathToFiles)) {
             Folder::add($pathToFiles, 0777);
         }
-        $fileName = $this->getFileNameWithoutExtension();
         $fileInfo = $this->createFileInfoObject();
+
+        $fileInfo->setOriginalFileNameWithoutExtension(preg_replace('%\.[a-zA-Z0-9]{1,6}$%', '', $uploadedFileInfo['name']));
+        $fileInfo->setOriginalFileNameWithExtension($uploadedFileInfo['name']);
+
+        $fileName = $this->getFileNameWithoutExtension();
         $fileInfo->setFileNameWithoutExtension($fileName);
         $fileInfo->setFileNameWithExtension($fileName);
         try {
@@ -514,6 +529,7 @@ class FileField extends DbObjectField {
                 $fileName .= '.' . $ext;
                 $fileInfo->setFileExtension($ext);
                 $fileInfo->setFileNameWithExtension($fileName);
+                $fileInfo->setOriginalFileNameWithExtension($fileInfo->getOriginalFileNameWithoutExtension() . '.' . $ext);
             }
             // note: ext could be an empty string
         } catch (DbObjectFieldException $exc) {
