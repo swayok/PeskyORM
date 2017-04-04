@@ -385,6 +385,20 @@ class FileField extends DbObjectField {
     }
 
     /**
+     * Get original file name with extension
+     * @return string
+     * @throws \PeskyORM\Exception\DbObjectFieldException
+     */
+    public function getOriginalFullFileName() {
+        $fileInfo = $this->getFileInfo(true, true);
+        if (!empty($fileInfo->getOriginalFileNameWithExtension())) {
+            return $fileInfo->getOriginalFileNameWithExtension();
+        } else {
+            return $this->getFullFileName();
+        }
+    }
+
+    /**
      * @return string
      */
     public function getDefaultFileExtension() {
