@@ -12,6 +12,9 @@ use PeskyORM\Exception\DbException;
 use PeskyORM\ORM\Column;
 use Swayok\Utils\ValidateValue;
 
+/**
+ * @property PostgresConfig $connectionConfig
+ */
 class Postgres extends DbAdapter {
 
     const TRANSACTION_TYPE_READ_COMMITTED = 'READ COMMITTED';
@@ -126,12 +129,21 @@ class Postgres extends DbAdapter {
         parent::__construct($connectionConfig);
     }
 
+    public function disconnect() {
+        try {
+            $this->query('SELECT pg_terminate_backend(pg_backend_pid());');
+        } catch (\PDOException $exc) {
+            throw new $exc;
+        }
+        return parent::disconnect();
+    }
+
     public function isDbSupportsTableSchemas() {
         return true;
     }
 
     public function getDefaultTableSchema() {
-        return 'public';
+        return $this->connectionConfig->getDefaultSchemaName();
     }
 
     public function setTimezone($timezone) {

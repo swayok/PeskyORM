@@ -2,6 +2,7 @@
 
 namespace PeskyORM\Config\Connection;
 
+use PDO;
 use PeskyORM\Core\DbConnectionConfigInterface;
 
 class PostgresConfig implements DbConnectionConfigInterface {
@@ -11,7 +12,16 @@ class PostgresConfig implements DbConnectionConfigInterface {
     protected $dbPassword;
     protected $dbHost = 'localhost';
     protected $dbPort = '5432';
-    protected $options = [];
+    protected $options = [
+        PDO::ATTR_CASE => PDO::CASE_NATURAL,
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_ORACLE_NULLS => PDO::NULL_NATURAL,
+        PDO::ATTR_STRINGIFY_FETCHES => false,
+    ];
+    protected $defaultSchemaName = 'public';
+    protected $charset = 'UTF8';
+    protected $timezone;
+    protected $sslConfigs = [];
 
     /**
      * @param array $config
@@ -31,6 +41,20 @@ class PostgresConfig implements DbConnectionConfigInterface {
         }
         if (!empty($config['options'])) {
             $object->setOptions($config['options']);
+        }
+        if (!empty($config['schema'])) {
+            $object->setDefaultSchemaName($config['schema']);
+        }
+        if (!empty($config['timezone'])) {
+            $object->setTimezone($config['timezone']);
+        }
+        if (!empty($config['charset']) || !empty($config['encoding'])) {
+            $object->setCharset(!empty($config['charset']) ? $config['charset'] : $config['encoding']);
+        }
+        foreach (['sslmode', 'sslcert', 'sslkey', 'sslrootcert'] as $option) {
+            if (isset($config[$option])) {
+                $object->sslConfigs[$option] = $config[$option];
+            }
         }
         return $object;
     }
@@ -73,7 +97,11 @@ class PostgresConfig implements DbConnectionConfigInterface {
      * @return string
      */
     public function getPdoConnectionString() {
-        return 'pgsql:host=' . $this->dbHost . ';port=' . $this->dbPort . ';dbname=' . $this->dbName;
+        $dsn = 'pgsql:host=' . $this->dbHost . ';port=' . $this->dbPort . ';dbname=' . $this->dbName;
+        foreach ($this->sslConfigs as $option => $value) {
+            $dsn .= ";{$option}={$value}";
+        }
+        return $dsn;
     }
 
     /**
@@ -142,9 +170,11 @@ class PostgresConfig implements DbConnectionConfigInterface {
     /**
      * Set options for PDO connection (key-value)
      * @param array $options
+     * @return $this
      */
     public function setOptions(array $options) {
         $this->options = $options;
+        return $this;
     }
 
     /**
@@ -156,9 +186,56 @@ class PostgresConfig implements DbConnectionConfigInterface {
     }
 
     /**
-     * @return null
+     * @return string
      */
-    public function getCharset() {
-        return null;
+    public function getDefaultSchemaName() {
+        return $this->defaultSchemaName;
+    }
+
+    /**
+     * @param string $defaultSchemaName
+     * @return $this
+     */
+    public function setDefaultSchemaName($defaultSchemaName) {
+        $this->defaultSchemaName = $defaultSchemaName;
+        return $this;
+    }
+
+    /**
+     * @param $charset
+     * @return $this
+     * @throws \InvalidArgumentException
+     */
+    public function setCharset($charset) {
+        if (empty($charset)) {
+            throw new \InvalidArgumentException('DB charset argument cannot be empty');
+        } else if (!is_string($charset)) {
+            throw new \InvalidArgumentException('DB charset argument must be a string');
+        }
+        $this->charset = $charset;
+        return $this;
+    }
+
+    /**
+     * @param string|null $timezone
+     * @return $this
+     */
+    public function setTimezone($timezone) {
+        $this->timezone = $timezone;
+        return $this;
+    }
+
+    /**
+     * Do some action on connect (set charset, default db schema, etc)
+     * @param PDO $connection
+     * @return $this
+     */
+    public function onConnect(PDO $connection) {
+        $connection->prepare("SET NAMES '{$this->charset}'")->execute();
+        $connection->prepare("SET search_path TO {$this->defaultSchemaName}")->execute();
+        if (isset($this->timezone)) {
+            $connection->prepare("SET TIME ZONE '{$this->timezone}'")->execute();
+        }
+        return $this;
     }
 }

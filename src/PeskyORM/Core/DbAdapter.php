@@ -90,6 +90,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         if ($this->pdo === null) {
             $this->pdo = $this->makePdo();
             $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+            $this->connectionConfig->onConnect($this->pdo);
             $this->wrapConnection();
             $this->runOnConnectCallbacks($this->onConnectCallbacks);
         }

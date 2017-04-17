@@ -44,6 +44,7 @@ interface DbConnectionConfigInterface {
     /**
      * Set options for PDO connection (key-value)
      * @param array $options
+     * @return $this
      */
     public function setOptions(array $options);
 
@@ -54,8 +55,22 @@ interface DbConnectionConfigInterface {
     public function getOptions();
 
     /**
-     * @return null|string
+     * @param $charset
+     * @return $this
      */
-    public function getCharset();
+    public function setCharset($charset);
+
+    /**
+     * @param string|null $timezone
+     * @return $this
+     */
+    public function setTimezone($timezone);
+
+    /**
+     * Do some action on connect (set charset, default db schema, etc)
+     * @param \PDO $connection
+     * @return $this
+     */
+    public function onConnect(\PDO $connection);
 
 }
