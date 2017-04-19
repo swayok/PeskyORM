@@ -97,18 +97,20 @@ VIEW;
         if ($parentClass === null) {
             $parentClass = TableStructure::class;
         }
-        $schemaName = $this->dbSchemaName ? "'$this->dbSchemaName'" : 'null';
         list($traits, $includes, $usedColumns) = $this->makeTraitsForTableStructure($traitsForColumns);
-        $schema = empty($this->dbSchemaName) ? '' : <<<VIEW
+        $getSchemaMethod = '';
+        if ($this->dbSchemaName && $this->dbSchemaName !== $this->connection->getDefaultTableSchema()) {
+            $getSchemaMethod = <<<VIEW
         
     /**
      * @return string|null
      */
     static public function getSchema() {
-        return {$schemaName};
+        return {$this->dbSchemaName};
     }
     
 VIEW;
+        }
         return <<<VIEW
 <?php
 
@@ -130,7 +132,7 @@ class {$this::makeTableStructureClassName($this->tableName)} extends {$this->get
     static public function getTableName() {
         return '{$this->tableName}';
     }
-$schema
+$getSchemaMethod
 {$this->makeColumnsMethodsForTableStructure($usedColumns)}
 
 }
