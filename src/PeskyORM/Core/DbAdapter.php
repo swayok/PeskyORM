@@ -2,6 +2,7 @@
 
 namespace PeskyORM\Core;
 
+use PeskyORM\Core\Utils as OrmUtils;
 use PeskyORM\Exception\DbException;
 use Swayok\Utils\Utils;
 
@@ -17,6 +18,11 @@ abstract class DbAdapter implements DbAdapterInterface {
 
     // db-specific value for unlimited amount of query results (ex: SELECT .. OFFSET 10 LIMIT 0)
     const NO_LIMIT = '0';
+
+    const FETCH_ALL = OrmUtils::FETCH_ALL;
+    const FETCH_FIRST = OrmUtils::FETCH_FIRST;
+    const FETCH_VALUE = OrmUtils::FETCH_VALUE;
+    const FETCH_COLUMN = OrmUtils::FETCH_COLUMN;
 
     /**
      * Traces of all transactions (required for debug)
@@ -205,7 +211,7 @@ abstract class DbAdapter implements DbAdapterInterface {
             if (!$fetchData) {
                 return $stmnt;
             } else {
-                return \PeskyORM\Core\Utils::getDataFromStatement($stmnt, $fetchData);
+                return OrmUtils::getDataFromStatement($stmnt, $fetchData);
             }
         } catch (\PDOException $exc) {
             $exc = $this->getDetailedException($query, null, $exc);
@@ -1057,7 +1063,7 @@ abstract class DbAdapter implements DbAdapterInterface {
     public function select($table, array $columns = [], $conditionsAndOptions = null) {
         return $this->query(
             $this->makeSelectQuery($table, $columns, $conditionsAndOptions),
-            \PeskyORM\Core\Utils::FETCH_ALL
+            OrmUtils::FETCH_ALL
         );
     }
 
@@ -1081,7 +1087,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         }
         return $this->query(
             $this->makeSelectQuery($table, [$column], $conditionsAndOptions),
-            \PeskyORM\Core\Utils::FETCH_COLUMN
+            OrmUtils::FETCH_COLUMN
         );
     }
 
@@ -1110,7 +1116,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         }
         $records = $this->query(
             $this->makeSelectQuery($table, [$keysColumn, $valuesColumn], $conditionsAndOptions),
-            \PeskyORM\Core\Utils::FETCH_ALL
+            OrmUtils::FETCH_ALL
         );
         $assoc = [];
         foreach ($records as $record) {
@@ -1133,7 +1139,7 @@ abstract class DbAdapter implements DbAdapterInterface {
     public function selectOne($table, array $columns = [], $conditionsAndOptions = null) {
         return $this->query(
             $this->makeSelectQuery($table, $columns, $conditionsAndOptions),
-            \PeskyORM\Core\Utils::FETCH_FIRST
+            OrmUtils::FETCH_FIRST
         );
     }
 
@@ -1151,7 +1157,7 @@ abstract class DbAdapter implements DbAdapterInterface {
     public function selectValue($table, DbExpr $expression, $conditionsAndOptions = null) {
         return $this->query(
             $this->makeSelectQuery($table, [$expression], $conditionsAndOptions),
-            \PeskyORM\Core\Utils::FETCH_VALUE
+            OrmUtils::FETCH_VALUE
         );
     }
 

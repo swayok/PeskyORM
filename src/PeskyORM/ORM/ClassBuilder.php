@@ -99,6 +99,16 @@ VIEW;
         }
         $schemaName = $this->dbSchemaName ? "'$this->dbSchemaName'" : 'null';
         list($traits, $includes, $usedColumns) = $this->makeTraitsForTableStructure($traitsForColumns);
+        $schema = empty($this->dbSchemaName) ? '' : <<<VIEW
+        
+    /**
+     * @return string|null
+     */
+    static public function getSchema() {
+        return {$schemaName};
+    }
+    
+VIEW;
         return <<<VIEW
 <?php
 
@@ -120,14 +130,7 @@ class {$this::makeTableStructureClassName($this->tableName)} extends {$this->get
     static public function getTableName() {
         return '{$this->tableName}';
     }
-
-    /**
-     * @return string|null
-     */
-    static public function getSchema() {
-        return {$schemaName};
-    }
-
+$schema
 {$this->makeColumnsMethodsForTableStructure($usedColumns)}
 
 }

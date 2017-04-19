@@ -326,6 +326,14 @@ interface DbAdapterInterface {
     public function describeTable($table, $schema = null);
 
     /**
+     * Search for $table in $schema
+     * @param string $table
+     * @param null|string $schema - name of DB schema that contains $table (for PostgreSQL)
+     * @return bool
+     */
+    public function hasTable($table, $schema = null);
+
+    /**
      * Return DbExpr to set default value for a column.
      * Example for MySQL and PostgreSQL: DbExpr::create('DEFAULT') and used for updates and inserts
      * Note: throw exception if adapter does not support this feature
