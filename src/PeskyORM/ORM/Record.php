@@ -1626,7 +1626,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     : $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
             } else {
                 /** @var RecordsSet $relatedRecord*/
-                $relatedRecord->enableDbRecordInstanceReuseDuringIteration();
+                $relatedRecord->enableDbRecordInstanceReuseDuringIteration($this->trustDbDataMode);
                 $data[$relatedRecordName] = [];
                 foreach ($relatedRecord as $relRecord) {
                     $data[$relatedRecordName][] = $withFilesInfo
