@@ -1584,7 +1584,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         if (empty($columnsNames) || (count($columnsNames) === 1 && $columnsNames[0] === '*')) {
             $columnsNames = array_keys($this->values);
         } else if (in_array('*', $columnsNames, true)) {
-            $columnsNames = array_diff(array_merge($columnsNames, array_keys($this->values)), ['*']);
+            $columnsNames = array_merge($columnsNames, array_keys($this->values));
+            foreach ($columnsNames as $index => $colName) {
+                if ($colName === '*') {
+                    unset($columnsNames[$index]);
+                    break;
+                }
+            }
         }
         $data = [];
         foreach ($columnsNames as $index => $columnName) {

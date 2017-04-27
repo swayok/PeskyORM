@@ -1398,17 +1398,57 @@ abstract class AbstractSelect {
         }
         // make record nested + add missing child records
         $nested = array_key_exists($this->getTableAlias(), $dataBlocks) ? $dataBlocks[$this->getTableAlias()] : [];
+        $deepNestedJoins = [];
         foreach ($this->joins as $joinConfig) {
             if (!empty($dataBlocks[$joinConfig->getJoinName()])) {
-                $nested[$joinConfig->getJoinName()] = $this->normalizeJoinDataForRecord(
-                    $joinConfig,
-                    $dataBlocks[$joinConfig->getJoinName()]
-                );
+                $data = $this->normalizeJoinDataForRecord($joinConfig, $dataBlocks[$joinConfig->getJoinName()]);
+                if ($joinConfig->getTableAlias() === $this->getTableAlias()) {
+                    $nested[$joinConfig->getJoinName()] = $data;
+                } else {
+                    $deepNestedJoins[] = [
+                        'config' => $joinConfig,
+                        'data' => $data
+                    ];
+                }
             } else {
-                $nested[$joinConfig->getJoinName()] = [];
+                if ($joinConfig->getTableAlias() === $this->getTableAlias()) {
+                    $nested[$joinConfig->getJoinName()] = [];
+                } else {
+                    $deepNestedJoins[] = [
+                        'config' => $joinConfig,
+                        'data' => []
+                    ];
+                }
             }
         }
+        if (count($deepNestedJoins) > 0) {
+            $this->placeDataOfDeepNestedJoinsIntoRecord($deepNestedJoins, $nested);
+        }
         return $nested;
+    }
+
+    /**
+     * Insert deeply nested joins data into record data
+     * @param array $joins
+     * @param array $data
+     */
+    protected function placeDataOfDeepNestedJoinsIntoRecord(array $joins, array &$data) {
+        /** @var JoinInfo[] $usedJoins */
+        $usedJoins = [];
+        foreach ($joins as $index => $join) {
+            /** @var JoinInfo $config */
+            $config = $join['config'];
+            if (array_key_exists($config->getTableAlias(), $data)) {
+                $data[$config->getTableAlias()][$config->getJoinName()] = $join['data'];
+                $usedJoins[] = $config;
+                unset($joins[$index]);
+            }
+        }
+        if (count($joins) > 0 && count($usedJoins) > 0) {
+            foreach ($usedJoins as $config) {
+                $this->placeDataOfDeepNestedJoinsIntoRecord($joins, $data[$config->getJoinName()]);
+            }
+        }
     }
 
     /**
