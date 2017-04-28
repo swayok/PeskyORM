@@ -277,14 +277,13 @@ abstract class AbstractSelect {
     /**
      * Count records matching provided conditions and options
      * @param bool $ignoreLeftJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
-     * @param bool $ignoreLimitAndOffset - true: will ignore LIMIT and OFFSET to count total records
      * @return int
      * @throws \UnexpectedValueException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function fetchCount($ignoreLeftJoins = true, $ignoreLimitAndOffset = false) {
-        return (int)$this->getConnection()->query($this->getCountQuery($ignoreLeftJoins, $ignoreLimitAndOffset), Utils::FETCH_VALUE);
+    public function fetchCount($ignoreLeftJoins = true) {
+        return (int)$this->getConnection()->query($this->getCountQuery($ignoreLeftJoins), Utils::FETCH_VALUE);
     }
 
     /**
@@ -390,14 +389,13 @@ abstract class AbstractSelect {
 
     /**
      * @param bool $ignoreLeftJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
-     * @param bool $ignoreLimitAndOffset - true: will ignore LIMIT and OFFSET to count total records
      * @return string
      * @throws \UnexpectedValueException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function getCountQuery($ignoreLeftJoins = true, $ignoreLimitAndOffset = false) {
-        return $this->getSimplifiedQuery('COUNT(*)', $ignoreLeftJoins, $ignoreLimitAndOffset);
+    public function getCountQuery($ignoreLeftJoins = true) {
+        return $this->getSimplifiedQuery('COUNT(*)', $ignoreLeftJoins, true);
     }
 
     /**

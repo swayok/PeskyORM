@@ -125,6 +125,7 @@ class RecordsSet extends RecordsArray {
         $this->select->orderBy($column, $orderAscending, false);
         $this->selectForOptimizedIteration->orderBy($column, $orderAscending, false);
         $this->resetRecords();
+        return $this;
     }
 
     /**
@@ -276,7 +277,8 @@ class RecordsSet extends RecordsArray {
     }
 
     /**
-     * Count DB records within LIMIT and OFFSET options
+     * Count amount of DB records to be fetched
+     * Note: not same as countTotal() - that one does not take in account LIMIT and OFFSET
      * @return int
      * @throws \UnexpectedValueException
      * @throws \PDOException
@@ -284,7 +286,16 @@ class RecordsSet extends RecordsArray {
      */
     public function count() {
         if ($this->recordsCount === null) {
-            $this->recordsCount = $this->select->fetchCount(true, false);
+            if ($this->select->getOffset() === 0 && $this->select->getLimit() === 0) {
+                $this->recordsCount = $this->countTotal();
+            } else {
+                $recordsCountAfterOffset = $this->countTotal() - $this->select->getOffset();
+                if ($this->select->getLimit() === 0) {
+                    $this->recordsCount = $recordsCountAfterOffset;
+                } else {
+                    $this->recordsCount = min($recordsCountAfterOffset, $this->select->getLimit());
+                }
+            }
         }
         return $this->recordsCount;
     }
@@ -298,11 +309,7 @@ class RecordsSet extends RecordsArray {
      */
     public function countTotal() {
         if ($this->recordsCountTotal === null) {
-            if ($this->select->getLimit() === 0 && $this->select->getOffset() === 0) {
-                $this->recordsCountTotal = $this->count();
-            } else {
-                $this->recordsCountTotal = $this->select->fetchCount(true, true);
-            }
+            $this->recordsCountTotal = $this->select->fetchCount(true);
         }
         return $this->recordsCountTotal;
     }
