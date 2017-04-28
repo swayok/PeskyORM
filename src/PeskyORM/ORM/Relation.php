@@ -31,7 +31,7 @@ class Relation {
     /** @var string */
     protected $foreignColumnName;
 
-    /** @var string */
+    /** @var string|\Closure */
     protected $displayColumnName;
 
     /** @var array */
@@ -268,13 +268,13 @@ class Relation {
     }
 
     /**
-     * @param string $displayColumnName
+     * @param string|\Closure $displayColumnName
      * @return $this
      * @throws \InvalidArgumentException
      */
     public function setDisplayColumnName($displayColumnName) {
-        if (!is_string($displayColumnName)) {
-            throw new \InvalidArgumentException('$displayColumnName argument must be a string');
+        if (!is_string($displayColumnName) && !($displayColumnName instanceof \Closure)) {
+            throw new \InvalidArgumentException('$displayColumnName argument must be a string or closure');
         }
         $this->displayColumnName = $displayColumnName;
         return $this;

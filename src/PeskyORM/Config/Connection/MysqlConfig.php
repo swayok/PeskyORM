@@ -14,6 +14,7 @@ class MysqlConfig implements DbConnectionConfigInterface {
     protected $charset = 'utf8';
     protected $unixSocket;
     protected $options = [];
+    protected $timezone;
 
     /**
      * @param array $config
@@ -31,14 +32,17 @@ class MysqlConfig implements DbConnectionConfigInterface {
         if (!empty($config['port'])) {
             $object->setDbPort($config['port']);
         }
-        if (!empty($config['charset'])) {
-            $object->setCharset($config['charset']);
+        if (!empty($config['charset']) || !empty($config['encoding'])) {
+            $object->setCharset(!empty($config['charset']) ? $config['charset'] : $config['encoding']);
         }
         if (!empty($config['socket'])) {
             $object->setUnixSocket($config['socket']);
         }
         if (!empty($config['options'])) {
             $object->setOptions($config['options']);
+        }
+        if (!empty($config['timezone'])) {
+            $object->setTimezone($config['timezone']);
         }
         return $object;
     }
@@ -130,13 +134,6 @@ class MysqlConfig implements DbConnectionConfigInterface {
     }
 
     /**
-     * @return null|string
-     */
-    public function getCharset() {
-        return $this->charset;
-    }
-
-    /**
      * @param string $dbHost
      * @return $this
      * @throws \InvalidArgumentException
@@ -211,4 +208,26 @@ class MysqlConfig implements DbConnectionConfigInterface {
     public function getOptions() {
         return $this->options;
     }
+
+    /**
+     * @param string|null $timezone
+     * @return $this
+     */
+    public function setTimezone($timezone) {
+        $this->timezone = $timezone;
+        return $this;
+    }
+
+    /**
+     * Do some action on connect (set charset, default db schema, etc)
+     * @param \PDO $connection
+     * @return $this
+     */
+    public function onConnect(\PDO $connection) {
+        if (isset($this->timezone)) {
+            $connection->prepare('set time_zone="' . $this->timezone . '"')->execute();
+        }
+        return $this;
+    }
+
 }

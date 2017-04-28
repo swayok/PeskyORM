@@ -12,6 +12,10 @@ use PeskyORM\Exception\DbException;
 use PeskyORM\ORM\Column;
 use Swayok\Utils\ValidateValue;
 
+/**
+ * @property PostgresConfig $connectionConfig
+ * @method PostgresConfig getConnectionConfig()
+ */
 class Postgres extends DbAdapter {
 
     const TRANSACTION_TYPE_READ_COMMITTED = 'READ COMMITTED';
@@ -126,12 +130,21 @@ class Postgres extends DbAdapter {
         parent::__construct($connectionConfig);
     }
 
+    public function disconnect() {
+        try {
+            $this->query('SELECT pg_terminate_backend(pg_backend_pid());');
+        } catch (\PDOException $exc) {
+            throw new $exc;
+        }
+        return parent::disconnect();
+    }
+
     public function isDbSupportsTableSchemas() {
         return true;
     }
 
     public function getDefaultTableSchema() {
-        return 'public';
+        return $this->getConnectionConfig()->getDefaultSchemaName();
     }
 
     public function setTimezone($timezone) {
@@ -242,9 +255,9 @@ class Postgres extends DbAdapter {
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function describeTable($table, $schema = 'public') {
+    public function describeTable($table, $schema = null) {
         if (empty($schema)) {
-            $schema = 'public';
+            $schema = $this->getDefaultTableSchema();
         }
         $description = new TableDescription($table, $schema);
         $query = "
@@ -435,6 +448,26 @@ class Postgres extends DbAdapter {
         } else {
             return parent::assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted);
         }
+    }
+
+    /**
+     * Search for $table in $schema
+     * @param string $table
+     * @param null|string $schema - name of DB schema that contains $table (for PostgreSQL)
+     * @return bool
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    public function hasTable($table, $schema = null) {
+        if (empty($schema)) {
+            $schema = $this->getDefaultTableSchema();
+        }
+        $exists = $this->query(
+            DbExpr::create("SELECT true FROM `information_schema`.`tables` WHERE `table_schema` = ``$schema`` and `table_name` = ``$table``"),
+            static::FETCH_VALUE
+        );
+        return !empty($exists);
     }
 
 }

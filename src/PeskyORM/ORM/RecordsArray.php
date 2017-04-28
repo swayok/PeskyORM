@@ -29,6 +29,10 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      */
     protected $dbRecordInstanceReuseEnabled = false;
     /**
+     * @var bool
+     */
+    protected $dbRecordInstanceDisablesValidation = false;
+    /**
      * @var Record
      */
     protected $dbRecordForIteration = null;
@@ -64,6 +68,11 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
         if ($this->dbRecordForIteration === null) {
             $this->dbRecordForIteration = $this->table->newRecord();
         }
+        if ($this->isDbRecordInstanceHasDisabledDbDataValidation()) {
+            $this->dbRecordForIteration->enableTrustModeForDbData();
+        } else {
+            $this->dbRecordForIteration->disableTrustModeForDbData();
+        }
         return $this->dbRecordForIteration;
     }
 
@@ -87,10 +96,13 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     }
 
     /**
+     * @param bool $disableDataValidationInRecord - true: also disable DB data validation in record to speedup
+     * iteration even more
      * @return $this
      */
-    public function enableDbRecordInstanceReuseDuringIteration() {
+    public function enableDbRecordInstanceReuseDuringIteration($disableDataValidationInRecord = false) {
         $this->dbRecordInstanceReuseEnabled = true;
+        $this->dbRecordInstanceDisablesValidation = (bool)$disableDataValidationInRecord;
         return $this;
     }
 
@@ -99,6 +111,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      */
     public function disableDbRecordInstanceReuseDuringIteration() {
         $this->dbRecordInstanceReuseEnabled = false;
+        $this->dbRecordInstanceDisablesValidation = false;
         return $this;
     }
 
@@ -107,6 +120,13 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      */
     public function isDbRecordInstanceReuseDuringIterationEnabled() {
         return $this->dbRecordInstanceReuseEnabled;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function isDbRecordInstanceHasDisabledDbDataValidation() {
+        return $this->dbRecordInstanceDisablesValidation;
     }
 
     /**

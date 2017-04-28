@@ -461,4 +461,21 @@ class Mysql extends DbAdapter {
         }
     }
 
+    /**
+     * Search for $table in $schema
+     * @param string $table
+     * @param null|string $schema - name of DB schema that contains $table (for PostgreSQL)
+     * @return bool
+     * @throws \PeskyORM\Exception\DbException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    public function hasTable($table, $schema = null) {
+        $exists = (bool)$this->query(
+            DbExpr::create("SELECT true FROM `information_schema`.`tables` WHERE `table_name` = ``$table``"),
+            static::FETCH_VALUE
+        );
+        return !empty($exists);
+    }
+
 }
