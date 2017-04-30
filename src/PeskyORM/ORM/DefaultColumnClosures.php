@@ -26,6 +26,9 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
             $valueContainer->setValidValue($newValue, $newValue);
         } else {
             $preprocessedValue = call_user_func($column->getValuePreprocessor(), $newValue, $isFromDb, $column);
+            if ($preprocessedValue === null && $column->hasDefaultValue()) {
+                $preprocessedValue = $column->getValidDefaultValue();
+            }
             if (
                 $valueContainer->hasValue()
                 && (
