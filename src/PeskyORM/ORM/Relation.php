@@ -75,7 +75,7 @@ class Relation {
     ) {
         $this
             ->setLocalColumnName($localColumnName)
-            ->setDisplayColumnName($localColumnName)
+            ->setDisplayColumnName($foreignColumnName)
             ->setType($type)
             ->setForeignTableClass($foreignTableClass)
             ->setForeignColumnName($foreignColumnName)
