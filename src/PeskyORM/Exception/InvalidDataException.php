@@ -2,6 +2,8 @@
 
 namespace PeskyORM\Exception;
 
+use Swayok\Utils\Set;
+
 class InvalidDataException extends OrmException {
 
     protected $errors = [];
@@ -14,7 +16,7 @@ class InvalidDataException extends OrmException {
                 $errorMsg = '[' . $key . '] ';
             }
             if (is_array($error)) {
-                $error = implode(', ', $error);
+                $error = implode(', ', Set::flatten($error));
             }
             $errorMsg .= $error;
             $message[] = $errorMsg;
