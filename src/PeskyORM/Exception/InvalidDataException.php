@@ -26,10 +26,26 @@ class InvalidDataException extends OrmException {
     }
 
     /**
+     * @param bool $flatten - false: return errors as is; true: flatten errors (2 levels only)
+     * Example: $errors = ['images' => ['source.0' => ['error message1', 'error message 2'], 'source.1' => ['err']];
+     * returned array will be: ['images.source.0' => ['error message1', 'error message 2'], 'images.source.1' => ['err']]
      * @return array
      */
-    public function getErrors() {
-        return $this->errors;
+    public function getErrors($flatten = true) {
+        if (!$flatten) {
+            return $this->errors;
+        }
+        $flatErrors = [];
+        foreach ($this->errors as $columnName => $errors) {
+            if (isset($errors[0])) {
+                $flatErrors[$columnName] = $errors;
+            } else {
+                foreach ($errors as $subKey => $realErrors) {
+                    $flatErrors[$columnName . '.' . $subKey] = $realErrors;
+                }
+            }
+        }
+        return $flatErrors;
     }
 
 }
