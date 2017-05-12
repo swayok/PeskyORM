@@ -337,7 +337,7 @@ class Postgres extends DbAdapter {
      * @return mixed
      */
     protected function cleanDefaultValueForColumnDescription($default) {
-        if ($default === null || $default === '') {
+        if ($default === null || $default === '' || preg_match('%^NULL::%is', $default)) {
             return null;
         } else if (preg_match("%^'((?:[^']|'')*?)'(?:::(bpchar|character varying|char|jsonb?|xml|macaddr|varchar|inet|cidr|text|uuid))?$%", $default, $matches)) {
             return str_replace("''", "'", $matches[1]);

@@ -774,6 +774,10 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
             $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', null)
         );
         static::assertEquals(
+            null,
+            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', 'NULL::character varying')
+        );
+        static::assertEquals(
             true,
             $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', 'true')
         );
