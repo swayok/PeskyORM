@@ -217,6 +217,8 @@ abstract class RecordValueHelpers {
     static public function normalizeValue($value, $type) {
         if ($value === null) {
             return null;
+        } else if ($value instanceof DbExpr) {
+            return $value;
         }
         switch ($type) {
             case Column::TYPE_BOOL:
