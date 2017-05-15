@@ -95,6 +95,16 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
 
     /**
+     * Create new empty record with enabled TrustModeForDbData
+     * @return static
+     */
+    static public function newEmptyRecordForTrustedDbData() {
+        $record = static::newEmptyRecord();
+        $record->enableTrustModeForDbData();
+        return $record;
+    }
+
+    /**
      * Create new empty record (shortcut)
      * @return static
      */
