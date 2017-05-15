@@ -261,7 +261,7 @@ abstract class Table implements TableInterface {
      * @throws \InvalidArgumentException
      */
     static public function selectAssoc($keysColumn, $valuesColumn, array $conditions = [], \Closure $configurator = null) {
-        return static::makeSelect(['key' => $keysColumn, 'value' => $valuesColumn], $conditions, $configurator)
+        return static::makeSelect([], $conditions, $configurator)
             ->fetchAssoc($keysColumn, $valuesColumn);
     }
 
