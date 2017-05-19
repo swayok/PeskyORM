@@ -2,6 +2,8 @@
 
 namespace PeskyORM\ORM;
 
+use Psr\Log\InvalidArgumentException;
+
 class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
@@ -17,7 +19,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      */
     protected $position = 0;
     /**
-     * @var Record[]
+     * @var RecordInterface[]
      */
     protected $dbRecords = [];
     /**
@@ -33,7 +35,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      */
     protected $dbRecordInstanceDisablesValidation = false;
     /**
-     * @var Record
+     * @var RecordInterface
      */
     protected $dbRecordForIteration = null;
     /**
@@ -62,7 +64,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     }
 
     /**
-     * @return Record
+     * @return RecordInterface
      */
     protected function getDbRecordObjectForIteration() {
         if ($this->dbRecordForIteration === null) {
@@ -156,7 +158,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     }
 
     /**
-     * @return Record[]
+     * @return RecordInterface[]
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\OrmException
@@ -175,8 +177,45 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     }
 
     /**
+     * Get some specific data from each object
+     * @param string|\Closure $closureOrObjectsMethod
+     *  - string: object's method name. You can provide additional args via $argumentsForMethod
+     *  - \Closure: function (RecordInterface $record) { return $record->toArray(); }
+     * @param array $argumentsForMethod - pass this arguments to object's method. Not used if $argumentsForMethod is closure
+     * @param bool $disableDbRecordDataValidation - true: disable DB data validation in record to speedup
+     * @return array
+     * @throws \Psr\Log\InvalidArgumentException
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    public function getDataFromEachObject($closureOrObjectsMethod, array $argumentsForMethod = [], $disableDbRecordDataValidation = true) {
+        $closure = $closureOrObjectsMethod;
+        if (is_string($closure)) {
+            $closure = function (RecordInterface $record) use ($closureOrObjectsMethod, $argumentsForMethod) {
+                return call_user_func_array([$record, $closureOrObjectsMethod], $argumentsForMethod);
+            };
+        } else if (!($closure instanceof \Closure)) {
+            throw new InvalidArgumentException('$callback argument must be a string (method name) or closure');
+        }
+        $data = [];
+        $backupReuse = $this->dbRecordInstanceReuseEnabled;
+        $backupValidation = $this->dbRecordInstanceDisablesValidation;
+        $this->enableDbRecordInstanceReuseDuringIteration($disableDbRecordDataValidation);
+        for ($i = 0; $i < $this->countTotal(); $i++) {
+            $data[] = $closure($this->offsetGet($i));
+        }
+        $this->dbRecordInstanceReuseEnabled = $backupReuse;
+        $this->dbRecordInstanceDisablesValidation = $backupValidation;
+        return $data;
+    }
+
+    /**
      * @param int $index - record's index
-     * @return Record
+     * @return RecordInterface
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\OrmException
@@ -209,7 +248,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
      * Return the current element
-     * @return Record
+     * @return RecordInterface
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\OrmException
@@ -267,7 +306,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
      * @param int $index - The offset to retrieve.
-     * @return Record
+     * @return RecordInterface
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\OrmException

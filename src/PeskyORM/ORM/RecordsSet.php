@@ -102,6 +102,13 @@ class RecordsSet extends RecordsArray {
     }
 
     /**
+     * @return OrmSelect
+     */
+    public function getOrmSelect() {
+        return $this->select;
+    }
+
+    /**
      * Returns new RecordsSet with $conditions added to original OrmSelect
      * @param array $conditions
      * @return RecordsSet
@@ -116,9 +123,11 @@ class RecordsSet extends RecordsArray {
     }
 
     /**
-     * Replace
+     * Replace records ordering
+     * Note: deletes already selected records and selects new
      * @param string $column
      * @param bool $orderAscending
+     * @return $this
      * @throws \InvalidArgumentException
      */
     public function replaceOrdering($column, $orderAscending = true) {
@@ -200,7 +209,17 @@ class RecordsSet extends RecordsArray {
     protected function getRecords() {
         return $this->optimizeIterationOverLargeAmountOfRecords
             ? $this->selectForOptimizedIteration->fetchMany()
-            : $this->select->fetchMany();
+            : $this->getAllRecords();
+    }
+
+    /**
+     * @return array
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     */
+    protected function getAllRecords() {
+        return $this->select->fetchMany();
     }
 
     /**
@@ -210,15 +229,8 @@ class RecordsSet extends RecordsArray {
      * @throws \InvalidArgumentException
      */
     public function toArrays() {
-        if (
-            $this->optimizeIterationOverLargeAmountOfRecords
-            && (
-                $this->records === null
-                || $this->count() !== count($this->records))
-            ) {
-            $this->records = $this->select->fetchMany();
-        } else if ($this->records === null) {
-            $this->records = $this->getRecords();
+        if ($this->records === null || $this->count() !== count($this->records)) {
+            $this->records = $this->getAllRecords();
         }
         return $this->records;
     }
