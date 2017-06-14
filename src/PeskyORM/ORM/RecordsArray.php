@@ -2,8 +2,6 @@
 
 namespace PeskyORM\ORM;
 
-use Psr\Log\InvalidArgumentException;
-
 class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
@@ -184,12 +182,11 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @param array $argumentsForMethod - pass this arguments to object's method. Not used if $argumentsForMethod is closure
      * @param bool $disableDbRecordDataValidation - true: disable DB data validation in record to speedup
      * @return array
-     * @throws \Psr\Log\InvalidArgumentException
+     * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\OrmException
      * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PDOException
-     * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
     public function getDataFromEachObject($closureOrObjectsMethod, array $argumentsForMethod = [], $disableDbRecordDataValidation = true) {
@@ -199,7 +196,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
                 return call_user_func_array([$record, $closureOrObjectsMethod], $argumentsForMethod);
             };
         } else if (!($closure instanceof \Closure)) {
-            throw new InvalidArgumentException('$callback argument must be a string (method name) or closure');
+            throw new \InvalidArgumentException('$callback argument must be a string (method name) or closure');
         }
         $data = [];
         $backupReuse = $this->dbRecordInstanceReuseEnabled;
