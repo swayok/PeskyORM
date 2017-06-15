@@ -134,7 +134,7 @@ class Postgres extends DbAdapter {
         try {
             $this->query('SELECT pg_terminate_backend(pg_backend_pid());');
         } catch (\PDOException $exc) {
-            throw new $exc;
+            throw $exc;
         }
         return parent::disconnect();
     }
