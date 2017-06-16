@@ -450,6 +450,7 @@ class FileField extends DbObjectField {
         } else {
             $receivedExt = $this->getDefaultFileExtension();
         }
+        $receivedExt = strtolower($receivedExt);
         if (!$this->isFileExtensionAllowed($receivedExt)) {
             throw new DbObjectFieldException(
                 $this,
