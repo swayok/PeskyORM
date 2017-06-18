@@ -236,8 +236,18 @@ class RecordsSet extends RecordsArray {
     }
 
     /**
+     * Reads all matching records from DB.
+     * This prevents lazy loading
+     * @return $this
+     */
+    public function fetch() {
+        $this->getAllRecords();
+        return $this;
+    }
+
+    /**
      * Whether a record with specified index exists
-     * @param mixed $index - an offset to check for.
+     * @param int $index - an offset to check for.
      * @return boolean - true on success or false on failure.
      * @throws \UnexpectedValueException
      * @throws \PDOException
@@ -248,8 +258,8 @@ class RecordsSet extends RecordsArray {
     }
 
     /**
-     * @param $index
-     * @return mixed
+     * @param int $index
+     * @return array|null
      * @throws \UnexpectedValueException
      * @throws \PDOException
      * @throws \InvalidArgumentException
@@ -284,6 +294,12 @@ class RecordsSet extends RecordsArray {
             } else {
                 $this->records = $this->getRecords();
             }
+        } else if (
+            $this->optimizeIterationOverLargeAmountOfRecords
+            && !isset($this->records[$index + 1])
+        ) {
+            // recount records when optimized iteration is enabled and next record is not loaded
+            $this->invalidateCount();
         }
         return $this->records[$index];
     }
@@ -324,5 +340,15 @@ class RecordsSet extends RecordsArray {
             $this->recordsCountTotal = $this->select->fetchCount(true);
         }
         return $this->recordsCountTotal;
+    }
+
+    /**
+     * Invalidate counts
+     * @return $this
+     */
+    protected function invalidateCount() {
+        $this->recordsCount = null;
+        $this->recordsCountTotal = null;
+        return $this;
     }
 }
