@@ -15,7 +15,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     /**
      * @var
      */
-    protected $position = 0;
+    protected $iteratorPosition = 0;
     /**
      * @var RecordInterface[]
      */
@@ -254,24 +254,24 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @throws \BadMethodCallException
      */
     public function current() {
-        if (!$this->offsetExists($this->position)) {
+        if (!$this->offsetExists($this->iteratorPosition)) {
             return null;
         }
-        return $this->offsetGet($this->position);
+        return $this->offsetGet($this->iteratorPosition);
     }
 
     /**
      * Move forward to next element
      */
     public function next() {
-        $this->position++;
+        $this->iteratorPosition++;
     }
 
     /**
      * Return the key of the current element
      */
     public function key() {
-        return $this->position;
+        return $this->iteratorPosition;
     }
 
     /**
@@ -282,14 +282,14 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @throws \InvalidArgumentException
      */
     public function valid() {
-        return $this->offsetExists($this->position);
+        return $this->offsetExists($this->iteratorPosition);
     }
 
     /**
      * Rewind the Iterator to the first element
      */
     public function rewind() {
-        $this->position = 0;
+        $this->iteratorPosition = 0;
     }
 
     /**
@@ -314,13 +314,14 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     public function offsetGet($index) {
         if ($this->isDbRecordInstanceReuseDuringIterationEnabled()) {
             $dbRecord = $this->getDbRecordObjectForIteration();
-            if ($this->position !== $this->currentDbRecordIndex) {
-                $data = $this->getRecordDataByIndex($this->position);
+            if ($index !== $this->currentDbRecordIndex) {
+                $data = $this->getRecordDataByIndex($index);
                 $isFromDb = $this->isRecordsFromDb();
                 if ($isFromDb === null) {
                     $isFromDb = $this->autodetectIfRecordIsFromDb($data);
                 }
                 $dbRecord->fromData($data, $isFromDb);
+                $this->currentDbRecordIndex = $index;
             }
             return $dbRecord;
         } else {
