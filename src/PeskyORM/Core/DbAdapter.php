@@ -116,12 +116,17 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @throws \PDOException
      */
     protected function makePdo() {
-        return new \PDO(
-            $this->connectionConfig->getPdoConnectionString(),
-            $this->connectionConfig->getUserName(),
-            $this->connectionConfig->getUserPassword(),
-            $this->connectionConfig->getOptions()
-        );
+        try {
+            return new \PDO(
+                $this->connectionConfig->getPdoConnectionString(),
+                $this->connectionConfig->getUserName(),
+                $this->connectionConfig->getUserPassword(),
+                $this->connectionConfig->getOptions()
+            );
+        } catch (\Exception $exc) {
+            // hide connection settings
+            throw new \PDOException($exc->getMessage(), $exc->getCode());
+        }
     }
 
     public function disconnect() {
