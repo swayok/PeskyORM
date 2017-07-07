@@ -179,6 +179,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @param string|\Closure $closureOrObjectsMethod
      *  - string: object's method name. You can provide additional args via $argumentsForMethod
      *  - \Closure: function (RecordInterface $record) { return $record->toArray(); }
+     *  - \Closure: function (RecordInterface $record) { return \PeskyORM\ORM\KeyValuePair::create($record->id, $record->toArray()); }
      * @param array $argumentsForMethod - pass this arguments to object's method. Not used if $argumentsForMethod is closure
      * @param bool $disableDbRecordDataValidation - true: disable DB data validation in record to speedup
      * @return array
@@ -203,7 +204,12 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
         $backupValidation = $this->dbRecordInstanceDisablesValidation;
         $this->enableDbRecordInstanceReuseDuringIteration($disableDbRecordDataValidation);
         for ($i = 0; $i < $this->count(); $i++) {
-            $data[] = $closure($this->offsetGet($i));
+            $value = $closure($this->offsetGet($i));
+            if ($value instanceof KeyValuePair) {
+                $data[$value->getKey()] = $value->getValue();
+            } else {
+                $data[] = $value;
+            }
         }
         $this->dbRecordInstanceReuseEnabled = $backupReuse;
         $this->dbRecordInstanceDisablesValidation = $backupValidation;
@@ -290,6 +296,32 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      */
     public function rewind() {
         $this->iteratorPosition = 0;
+    }
+
+    /**
+     * Get first record
+     * @param string|null $key - null: return record; string - return value for the key from record
+     * @return array
+     */
+    public function first($key = null) {
+        if ($this->count() === 0) {
+            throw new \BadMethodCallException('There is no records');
+        }
+        $record = $this->offsetGet(0);
+        return $key === null ? $record : $record[$key];
+    }
+
+    /**
+     * Get last record
+     * @param string|null $key - null: return record; string - return value for the key from record
+     * @return array
+     */
+    public function last($key = null) {
+        if ($this->count() === 0) {
+            throw new \BadMethodCallException('There is no records');
+        }
+        $record = $this->offsetGet(count($this->getRecords()) - 1);
+        return $key === null ? $record : $record[$key];
     }
 
     /**

@@ -109,17 +109,22 @@ class RecordsSet extends RecordsArray {
     }
 
     /**
-     * Returns new RecordsSet with $conditions added to original OrmSelect
+     * Create new RecordsSet with $conditions added to original OrmSelect
      * @param array $conditions
+     * @param bool $cleanCurrentRecoredsSet - true: will remove all fetched data from current records set
      * @return RecordsSet
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    public function filter(array $conditions) {
+    public function filter(array $conditions, $cleanCurrentRecoredsSet = false) {
         $newSelect = clone $this->select;
         $newSelect->where($conditions, true);
-        return static::createFromOrmSelect($newSelect);
+        $newSet = static::createFromOrmSelect($newSelect);
+        if ($cleanCurrentRecoredsSet) {
+            $this->resetRecords();
+        }
+        return $newSet;
     }
 
     /**
@@ -139,11 +144,13 @@ class RecordsSet extends RecordsArray {
 
     /**
      * Reset already fetched data
+     * @return $this
      */
-    protected function resetRecords() {
+    public function resetRecords() {
         $this->records = null;
-        $this->recordsCount = null;
-        $this->recordsCountTotal = null;
+        $this->rewind();
+        $this->invalidateCount();
+        return $this;
     }
 
     /**
@@ -306,7 +313,7 @@ class RecordsSet extends RecordsArray {
 
     /**
      * Count amount of DB records to be fetched
-     * Note: not same as countTotal() - that one does not take in account LIMIT and OFFSET
+     * Note: not same as totalCount() - that one does not take in account LIMIT and OFFSET
      * @return int
      * @throws \UnexpectedValueException
      * @throws \PDOException
