@@ -202,7 +202,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
         $backupReuse = $this->dbRecordInstanceReuseEnabled;
         $backupValidation = $this->dbRecordInstanceDisablesValidation;
         $this->enableDbRecordInstanceReuseDuringIteration($disableDbRecordDataValidation);
-        for ($i = 0; $i < $this->countTotal(); $i++) {
+        for ($i = 0; $i < $this->count(); $i++) {
             $data[] = $closure($this->offsetGet($i));
         }
         $this->dbRecordInstanceReuseEnabled = $backupReuse;
@@ -360,7 +360,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * Count elements of an object
      * @return int
      */
-    public function countTotal() {
+    public function totalCount() {
         return $this->count();
     }
 }

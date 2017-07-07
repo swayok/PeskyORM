@@ -315,9 +315,9 @@ class RecordsSet extends RecordsArray {
     public function count() {
         if ($this->recordsCount === null) {
             if ($this->select->getOffset() === 0 && $this->select->getLimit() === 0) {
-                $this->recordsCount = $this->countTotal();
+                $this->recordsCount = $this->totalCount();
             } else {
-                $recordsCountAfterOffset = $this->countTotal() - $this->select->getOffset();
+                $recordsCountAfterOffset = $this->totalCount() - $this->select->getOffset();
                 if ($this->select->getLimit() === 0) {
                     $this->recordsCount = $recordsCountAfterOffset;
                 } else {
@@ -335,7 +335,7 @@ class RecordsSet extends RecordsArray {
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function countTotal() {
+    public function totalCount() {
         if ($this->recordsCountTotal === null) {
             $this->recordsCountTotal = $this->select->fetchCount(true);
         }
