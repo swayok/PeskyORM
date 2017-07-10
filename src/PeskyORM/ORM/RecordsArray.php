@@ -27,11 +27,11 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     /**
      * @var bool
      */
-    protected $dbRecordInstanceReuseEnabled = false;
+    protected $isDbRecordInstanceReuseEnabled = false;
     /**
      * @var bool
      */
-    protected $dbRecordInstanceDisablesValidation = false;
+    protected $isDbRecordDataValidationDisabled = false;
     /**
      * @var RecordInterface
      */
@@ -68,7 +68,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
         if ($this->dbRecordForIteration === null) {
             $this->dbRecordForIteration = $this->table->newRecord();
         }
-        if ($this->isDbRecordInstanceHasDisabledDbDataValidation()) {
+        if ($this->isDbRecordDataValidationDisabled()) {
             $this->dbRecordForIteration->enableTrustModeForDbData();
         } else {
             $this->dbRecordForIteration->disableTrustModeForDbData();
@@ -96,13 +96,20 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     }
 
     /**
-     * @param bool $disableDataValidationInRecord - true: also disable DB data validation in record to speedup
-     * iteration even more
+     * Optimize iteration to reuse Db\Record instance and disable validation for data received from DB
      * @return $this
      */
-    public function enableDbRecordInstanceReuseDuringIteration($disableDataValidationInRecord = false) {
-        $this->dbRecordInstanceReuseEnabled = true;
-        $this->dbRecordInstanceDisablesValidation = (bool)$disableDataValidationInRecord;
+    public function optimizeIteration() {
+        $this->enableDbRecordInstanceReuseDuringIteration();
+        $this->disableDbRecordDataValidation();
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function enableDbRecordInstanceReuseDuringIteration() {
+        $this->isDbRecordInstanceReuseEnabled = true;
         return $this;
     }
 
@@ -110,8 +117,8 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @return $this
      */
     public function disableDbRecordInstanceReuseDuringIteration() {
-        $this->dbRecordInstanceReuseEnabled = false;
-        $this->dbRecordInstanceDisablesValidation = false;
+        $this->isDbRecordInstanceReuseEnabled = false;
+        $this->dbRecordForIteration = null;
         return $this;
     }
 
@@ -119,14 +126,30 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @return bool
      */
     public function isDbRecordInstanceReuseDuringIterationEnabled() {
-        return $this->dbRecordInstanceReuseEnabled;
+        return $this->isDbRecordInstanceReuseEnabled;
     }
 
     /**
-     * @return mixed
+     * @return $this
      */
-    public function isDbRecordInstanceHasDisabledDbDataValidation() {
-        return $this->dbRecordInstanceDisablesValidation;
+    public function enableDbRecordDataValidation() {
+        $this->isDbRecordDataValidationDisabled = false;
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function disableDbRecordDataValidation() {
+        $this->isDbRecordDataValidationDisabled = true;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isDbRecordDataValidationDisabled() {
+        return $this->isDbRecordDataValidationDisabled;
     }
 
     /**
@@ -200,19 +223,33 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
             throw new \InvalidArgumentException('$callback argument must be a string (method name) or closure');
         }
         $data = [];
-        $backupReuse = $this->dbRecordInstanceReuseEnabled;
-        $backupValidation = $this->dbRecordInstanceDisablesValidation;
-        $this->enableDbRecordInstanceReuseDuringIteration($disableDbRecordDataValidation);
+        $backupReuse = $this->isDbRecordInstanceReuseEnabled;
+        $backupValidation = $this->isDbRecordDataValidationDisabled;
+        $this->enableDbRecordInstanceReuseDuringIteration();
+        if ($disableDbRecordDataValidation) {
+            $this->disableDbRecordDataValidation();
+        }
         for ($i = 0; $i < $this->count(); $i++) {
-            $value = $closure($this->offsetGet($i));
+            $record = $this->offsetGet($i);
+            $value = $closure($record);
             if ($value instanceof KeyValuePair) {
-                $data[$value->getKey()] = $value->getValue();
+                $valueForKey = $value->getValue();
+                if (
+                    !$this->isDbRecordInstanceReuseDuringIterationEnabled()
+                    && is_object($valueForKey)
+                    && (get_class($valueForKey) === get_class($record))
+                ) {
+                    // disable db record instance reuse when $valueForKey is $record.
+                    // Otherwise it will cause unexpected problems
+                    $this->disableDbRecordInstanceReuseDuringIteration();
+                }
+                $data[$value->getKey()] = $valueForKey;
             } else {
                 $data[] = $value;
             }
         }
-        $this->dbRecordInstanceReuseEnabled = $backupReuse;
-        $this->dbRecordInstanceDisablesValidation = $backupValidation;
+        $this->isDbRecordInstanceReuseEnabled = $backupReuse;
+        $this->isDbRecordDataValidationDisabled = $backupValidation;
         return $data;
     }
 
@@ -235,6 +272,9 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
             }
             $record = $this->table->newRecord();
             $pkColumnName = $this->table->getTableStructure()->getPkColumnName();
+            if ($this->isDbRecordDataValidationDisabled()) {
+                $record->enableTrustModeForDbData();
+            }
             if (!$isFromDb && !empty($data[$pkColumnName])) {
                 // primary key value is set but $isFromDb === false. This usually means that all data except
                 // primery key is not from db

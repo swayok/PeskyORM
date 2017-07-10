@@ -1636,13 +1636,17 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     : $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
             } else {
                 /** @var RecordsSet $relatedRecord*/
-                $relatedRecord->enableDbRecordInstanceReuseDuringIteration($this->trustDbDataMode);
+                $relatedRecord->enableDbRecordInstanceReuseDuringIteration();
+                if ($this->trustDbDataMode) {
+                    $relatedRecord->disableDbRecordDataValidation();
+                }
                 $data[$relatedRecordName] = [];
                 foreach ($relatedRecord as $relRecord) {
                     $data[$relatedRecordName][] = $withFilesInfo
                         ? $relRecord->toArray($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet)
                         : $relRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
                 }
+                $relatedRecord->disableDbRecordInstanceReuseDuringIteration();
             }
         }
         return $data;
