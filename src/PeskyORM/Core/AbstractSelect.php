@@ -527,6 +527,9 @@ abstract class AbstractSelect {
      * @see Utils::assembleWhereConditionsFromArray() for more details about operators and features
      */
     public function where(array $conditions, $append = false) {
+        if (!is_bool($append)) {
+            throw new \InvalidArgumentException('$append argument must be a boolean');
+        }
         $this->where = $append ? array_merge($this->where, $conditions) : $conditions;
         $this->setDirty('where');
         return $this;
@@ -543,6 +546,12 @@ abstract class AbstractSelect {
     public function orderBy($columnName, $isAscending = true, $append = true) {
         if (empty($columnName)) {
             throw new \InvalidArgumentException('$columnName argument cannot be empty');
+        }
+        if (!is_bool($append)) {
+            throw new \InvalidArgumentException('$append argument must be a boolean');
+        }
+        if (!is_bool($isAscending)) {
+            throw new \InvalidArgumentException('$isAscending argument must be a boolean');
         }
         $isDbExpr = $columnName instanceof DbExpr;
         if (!is_string($columnName) && !$isDbExpr) {
@@ -598,6 +607,9 @@ abstract class AbstractSelect {
      * @throws \InvalidArgumentException
      */
     public function groupBy(array $columns, $append = true) {
+        if (!is_bool($append)) {
+            throw new \InvalidArgumentException('$append argument must be a boolean');
+        }
         if (!$append) {
             $this->groupBy = [];
         }
@@ -717,6 +729,9 @@ abstract class AbstractSelect {
      * @throws \InvalidArgumentException
      */
     public function with(AbstractSelect $select, $selectAlias, $append = true) {
+        if (!is_bool($append)) {
+            throw new \InvalidArgumentException('$append argument must be a boolean');
+        }
         if (!is_string($selectAlias) || !$this->getConnection()->isValidDbEntityName($selectAlias)) {
             throw new \InvalidArgumentException(
                 "\$selectAlias argument must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)"
@@ -752,6 +767,9 @@ abstract class AbstractSelect {
      * @throws \InvalidArgumentException
      */
     protected function _join(AbstractJoinInfo $joinConfig, $append = true) {
+        if (!is_bool($append)) {
+            throw new \InvalidArgumentException('$append argument must be a boolean');
+        }
         if (!$joinConfig->isValid()) {
             throw new \InvalidArgumentException("Join config with name '{$joinConfig->getJoinName()}' is not valid");
         }
@@ -948,6 +966,9 @@ abstract class AbstractSelect {
      * @return string - something like: "JoinAlias"."column_name"::typecast as "ColumnAlias"
      */
     protected function makeColumnNameWithAliasForQuery(array $columnInfo, $itIsWithQuery = false) {
+        if (!is_bool($itIsWithQuery)) {
+            throw new \InvalidArgumentException('$itIsWithQuery argument must be a boolean');
+        }
         $tableAlias = $columnInfo['join_name'] ?: $this->getTableAlias();
         $shortTableAlias = $this->getShortJoinAlias($tableAlias);
         $isDbExpr = $columnInfo['name'] instanceof DbExpr;
@@ -1067,6 +1088,9 @@ abstract class AbstractSelect {
      * @throws \UnexpectedValueException
      */
     protected function normalizeColumnsList(array $columns, $joinName = null, $allowSubJoins = false, $subject = 'SELECT') {
+        if (!is_bool($allowSubJoins)) {
+            throw new \InvalidArgumentException('$allowSubJoins argument must be a boolean');
+        }
         if (count($columns) === 1 && is_array($columns[0])) {
             /** @var array $columns */
             $columns = $columns[0];
@@ -1155,6 +1179,9 @@ abstract class AbstractSelect {
      * @throws \UnexpectedValueException
      */
     protected function resolveColumnsToBeSelectedForJoin($joinName, $columns, $parentJoinName = null, $appendColumnsToExisting = false) {
+        if (!is_bool($appendColumnsToExisting)) {
+            throw new \InvalidArgumentException('$appendColumnsToExisting argument must be a boolean');
+        }
         throw new \UnexpectedValueException(
             "You must use JoinInfo->setForeignColumnsToSelect() to set the columns list to select for join named '{$joinName}'"
         );
