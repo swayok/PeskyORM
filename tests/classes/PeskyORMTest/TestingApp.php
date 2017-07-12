@@ -44,6 +44,7 @@ class TestingApp {
                 DbConnectionsManager::ADAPTER_POSTGRES,
                 PostgresConfig::fromArray(static::getGlobalConfigs()['pgsql'])
             );
+            DbConnectionsManager::addAlternativeNameForConnection('default', 'writable');
             static::getPgsqlConnection()->exec(file_get_contents(__DIR__ . '/../../configs/db_schema_pgsql.sql'));
             static::$pgsqlConnection->query('SET LOCAL TIME ZONE "UTC"');
             date_default_timezone_set('UTC');

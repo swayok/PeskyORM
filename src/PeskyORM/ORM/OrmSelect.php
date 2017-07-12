@@ -85,7 +85,7 @@ class OrmSelect extends AbstractSelect {
      * @return DbAdapterInterface
      */
     public function getConnection() {
-        return $this->getTable()->getConnection();
+        return $this->getTable()->getConnection(false);
     }
 
     /**

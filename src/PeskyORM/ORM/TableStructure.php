@@ -77,9 +77,10 @@ abstract class TableStructure implements TableStructureInterface {
     }
 
     /**
+     * @param bool $writable - true: connection must have access to write data into DB
      * @return string
      */
-    static public function getConnectionName() {
+    static public function getConnectionName($writable) {
         return 'default';
     }
 
@@ -242,7 +243,7 @@ abstract class TableStructure implements TableStructureInterface {
      * @throws \InvalidArgumentException
      */
     protected function createMissingColumnConfigsFromDbTableDescription() {
-        $description = DbConnectionsManager::getConnection(static::getConnectionName())
+        $description = DbConnectionsManager::getConnection(static::getConnectionName(false))
             ->describeTable(static::getTableName(), static::getSchema());
         foreach ($description->getColumns() as $columnName => $columnDescription) {
             if (!static::hasColumn($columnName)) {

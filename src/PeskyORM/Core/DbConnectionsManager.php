@@ -118,4 +118,11 @@ class DbConnectionsManager {
         }
     }
 
+    /**
+     * @return DbAdapter[]|DbAdapterInterface[]
+     */
+    static public function getAll() {
+        return self::$connections;
+    }
+
 }

@@ -479,22 +479,22 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         $this->insertMinimalTestDataToAdminsTable();
 
         $rec = new TestingAdmin();
-        $prevQuery = TestingAdminsTable::getLastQuery();
+        $prevQuery = TestingAdminsTable::getLastQuery(false);
         static::assertFalse($rec->existsInDb());
         static::assertFalse($rec->existsInDb(true));
-        static::assertEquals($prevQuery, TestingAdminsTable::getLastQuery());
+        static::assertEquals($prevQuery, TestingAdminsTable::getLastQuery(false));
 
         $rec->updateValue('id', 1, true);
-        $prevQuery = TestingAdminsTable::getLastQuery();
+        $prevQuery = TestingAdminsTable::getLastQuery(false);
         static::assertTrue($rec->existsInDb());
         static::assertTrue($rec->existsInDb(true));
-        static::assertNotEquals($prevQuery, TestingAdminsTable::getLastQuery());
+        static::assertNotEquals($prevQuery, TestingAdminsTable::getLastQuery(false));
 
         $rec->updateValue('id', 888, true);
-        $prevQuery = TestingAdminsTable::getLastQuery();
+        $prevQuery = TestingAdminsTable::getLastQuery(false);
         static::assertTrue($rec->existsInDb());
         static::assertFalse($rec->existsInDb(true));
-        static::assertNotEquals($prevQuery, TestingAdminsTable::getLastQuery());
+        static::assertNotEquals($prevQuery, TestingAdminsTable::getLastQuery(false));
     }
 
     public function testGetDefaults() {
@@ -1162,22 +1162,22 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($rec->isRelatedRecordAttached('Parent'));
         static::assertFalse($rec->isRelatedRecordAttached('Children'));
         static::assertEquals($parentData['id'], $rec->getValue('parent_id'));
-        $prevSqlQuery = TestingAdminsTable::getLastQuery();
+        $prevSqlQuery = TestingAdminsTable::getLastQuery(false);
         static::assertTrue($rec->getRelatedRecord('Parent', true)->existsInDb());
-        static::assertNotEquals($prevSqlQuery, TestingAdminsTable::getLastQuery());
+        static::assertNotEquals($prevSqlQuery, TestingAdminsTable::getLastQuery(false));
         static::assertTrue($rec->isRelatedRecordAttached('Parent'));
         static::assertEquals($parentData, $rec->getRelatedRecord('Parent', false)->toArray($normalColumns));
-        $prevSqlQuery = TestingAdminsTable::getLastQuery();
+        $prevSqlQuery = TestingAdminsTable::getLastQuery(false);
         static::assertInstanceOf(\PeskyORM\ORM\RecordsSet::class, $rec->getRelatedRecord('Children', true));
-        static::assertEquals($prevSqlQuery, TestingAdminsTable::getLastQuery()); //< RecordsSet is lazy - query is still the same
+        static::assertEquals($prevSqlQuery, TestingAdminsTable::getLastQuery(false)); //< RecordsSet is lazy - query is still the same
         static::assertCount(2, $rec->getRelatedRecord('Children', true));
-        static::assertNotEquals($prevSqlQuery, TestingAdminsTable::getLastQuery()); //< count mades a query
-        $prevSqlQuery = TestingAdminsTable::getLastQuery();
+        static::assertNotEquals($prevSqlQuery, TestingAdminsTable::getLastQuery(false)); //< count mades a query
+        $prevSqlQuery = TestingAdminsTable::getLastQuery(false);
         static::assertEquals(
             [$recordsAdded[3]['id'], $recordsAdded[7]['id']],
             \Swayok\Utils\Set::extract('/id', $rec->getRelatedRecord('Children', false)->toArrays())
         );
-        static::assertNotEquals($prevSqlQuery, TestingAdminsTable::getLastQuery()); //< and now it was a query to get records data
+        static::assertNotEquals($prevSqlQuery, TestingAdminsTable::getLastQuery(false)); //< and now it was a query to get records data
 
         // change id and test if relations were erased
         $rec->updateValue('id', $parentData['id'], true);

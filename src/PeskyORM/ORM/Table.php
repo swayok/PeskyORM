@@ -56,14 +56,15 @@ abstract class Table implements TableInterface {
     }
 
     /**
+     * @param bool $writable - true: connection must have access to write data into DB
      * @return DbAdapterInterface
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    static public function getConnection() {
-        return DbConnectionsManager::getConnection(static::getStructure()->getConnectionName());
+    static public function getConnection($writable = false) {
+        return DbConnectionsManager::getConnection(static::getStructure()->getConnectionName($writable));
     }
 
     /**
@@ -192,7 +193,7 @@ abstract class Table implements TableInterface {
                 'Trying to call abstract method ' . __CLASS__ . '::getConnection(). Use child classes to do that'
             );
         }
-        return static::getConnection()->getExpressionToSetDefaultValueForAColumn();
+        return static::getConnection(true)->getExpressionToSetDefaultValueForAColumn();
     }
 
     /**
@@ -352,50 +353,87 @@ abstract class Table implements TableInterface {
     }
 
     /**
+     * @param bool $useWritableConnection
      * @return null|string
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    static public function getLastQuery() {
-        return static::getConnection()->getLastQuery();
+    static public function getLastQuery($useWritableConnection) {
+        return static::getConnection($useWritableConnection)->getLastQuery();
     }
-    
+
+    /**
+     * @param bool $readOnly
+     * @param null|string $transactionType
+     * @return void
+     */
     static public function beginTransaction($readOnly = false, $transactionType = null) {
-        static::getConnection()->begin($readOnly, $transactionType);
+        static::getConnection(true)->begin($readOnly, $transactionType);
     }
 
+    /**
+     * @return bool
+     */
     static public function inTransaction() {
-        return static::getConnection()->inTransaction();
+        return static::getConnection(true)->inTransaction();
     }
 
+    /**
+     * @return void
+     */
     static public function commitTransaction() {
-        static::getConnection()->commit();
+        static::getConnection(true)->commit();
     }
 
+    /**
+     * @return void
+     */
     static public function rollBackTransaction() {
-        static::getConnection()->rollBack();
+        static::getConnection(true)->rollBack();
     }
 
+    /**
+     * @param string $name
+     * @return string
+     */
     static public function quoteDbEntityName($name) {
-        return static::getConnection()->quoteDbEntityName($name);
+        return static::getConnection(true)->quoteDbEntityName($name);
     }
 
+    /**
+     * @param mixed $value
+     * @param int $fieldInfoOrType
+     * @return string
+     */
     static public function quoteValue($value, $fieldInfoOrType = \PDO::PARAM_STR) {
-        return static::getConnection()->quoteValue($value, $fieldInfoOrType);
+        return static::getConnection(true)->quoteValue($value, $fieldInfoOrType);
     }
 
+    /**
+     * @param DbExpr $value
+     * @return string
+     */
     static public function quoteDbExpr(DbExpr $value) {
-        return static::getConnection()->quoteDbExpr($value);
+        return static::getConnection(true)->quoteDbExpr($value);
     }
 
+    /**
+     * @param string|DbExpr $query
+     * @param string|null $fetchData - null: return PDOStatement; string: one of \PeskyORM\Core\Utils::FETCH_*
+     * @return \PDOStatement|array
+     */
     static public function query($query, $fetchData = null) {
-        return static::getConnection()->query($query, $fetchData);
+        return static::getConnection(true)->query($query, $fetchData);
     }
 
+    /**
+     * @param string|DbExpr $query
+     * @return int|array = array: returned if $returning argument is not empty
+     */
     static public function exec($query) {
-        return static::getConnection()->exec($query);
+        return static::getConnection(true)->exec($query);
     }
 
     /**
@@ -412,7 +450,7 @@ abstract class Table implements TableInterface {
      * @throws \InvalidArgumentException
      */
     static public function insert(array $data, $returning = false) {
-        return static::getConnection()->insert(
+        return static::getConnection(true)->insert(
             static::getName(),
             $data,
             static::getPdoDataTypesForColumns(),
@@ -435,7 +473,7 @@ abstract class Table implements TableInterface {
      * @throws \PDOException
      */
     static public function insertMany(array $columns, array $rows, $returning = false) {
-        return static::getConnection()->insertMany(
+        return static::getConnection(true)->insertMany(
             static::getName(),
             $columns,
             $rows,
@@ -461,10 +499,10 @@ abstract class Table implements TableInterface {
      * @throws \InvalidArgumentException
      */
     static public function update(array $data, array $conditions, $returning = false) {
-        return static::getConnection()->update(
+        return static::getConnection(true)->update(
             static::getName(),
             $data,
-            Utils::assembleWhereConditionsFromArray(static::getConnection(), $conditions),
+            Utils::assembleWhereConditionsFromArray(static::getConnection(true), $conditions),
             static::getPdoDataTypesForColumns(),
             $returning
         );
@@ -484,7 +522,7 @@ abstract class Table implements TableInterface {
      * @throws \PDOException
      */
     static public function delete(array $conditions = [], $returning = false) {
-        return static::getConnection()->delete(
+        return static::getConnection(true)->delete(
             static::getName(),
             Utils::assembleWhereConditionsFromArray(static::getConnection(), $conditions),
             $returning

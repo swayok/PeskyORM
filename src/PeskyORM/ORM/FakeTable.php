@@ -104,14 +104,15 @@ VIEW;
     }
 
     /**
+     * @param bool $writable - true: connection must have access to write data into DB
      * @return DbAdapterInterface
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    static public function getConnection() {
-        return static::getInstance()->connection ?: parent::getConnection();
+    static public function getConnection($writable = false) {
+        return static::getInstance()->connection ?: parent::getConnection($writable);
     }
 
     /**

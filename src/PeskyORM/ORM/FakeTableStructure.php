@@ -12,6 +12,7 @@ abstract class FakeTableStructure extends TableStructure {
     protected $allRelationsProcessed = true;
     protected $treatAnyColumnNameAsValid = true;
     protected $connectionName = 'default';
+    protected $connectionNameWritable = 'default';
 
     /**
      * @param string $tableName
@@ -139,16 +140,18 @@ VIEW;
         $this->relations = array_merge($this->columns, $structure::getRelations());
         $this->fileColumns = array_merge($this->fileColumns, $structure::getFileColumns());
         $this->pk = $structure::getPkColumn();
-        $this->connectionName = $structure::getConnectionName();
+        $this->connectionName = $structure::getConnectionName(false);
+        $this->connectionNameWritable = $structure::getConnectionName(true);
         $this->treatAnyColumnNameAsValid = count($this->columns) === 0;
         return $this;
     }
 
     /**
+     * @param bool $writable - true: connection must have access to write data into DB
      * @return string
      */
-    static public function getConnectionName() {
-        return static::getInstance()->connectionName;
+    static public function getConnectionName($writable) {
+        return $writable ? static::getInstance()->connectionNameWritable : static::getInstance()->connectionName;
     }
 
     /**

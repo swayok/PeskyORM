@@ -14,6 +14,10 @@ class TestingAdminsTableStructure extends TableStructure {
         return 'admins';
     }
 
+    static public function getConnectionName($writable) {
+        return $writable ? 'writable' : parent::getConnectionName(false);
+    }
+
     private function id() {
         return Column::create(Column::TYPE_INT)
             ->primaryKey()

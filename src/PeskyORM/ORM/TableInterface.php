@@ -21,9 +21,10 @@ interface TableInterface {
     static public function getAlias();
 
     /**
+     * @param bool $writable - true: connection must have access to write data into DB
      * @return DbAdapterInterface
      */
-    static public function getConnection();
+    static public function getConnection($writable = false);
 
     /**
      * @return TableInterface
@@ -71,9 +72,10 @@ interface TableInterface {
     public function newRecord();
 
     /**
+     * @param bool $useWritableConnection
      * @return null|string
      */
-    static public function getLastQuery();
+    static public function getLastQuery($useWritableConnection);
 
     /**
      * @param string|array $columns

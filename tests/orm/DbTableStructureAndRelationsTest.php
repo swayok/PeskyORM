@@ -22,7 +22,8 @@ class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testTableStructureCore() {
-        static::assertEquals('default', TestingAdminsTableStructure::getConnectionName());
+        static::assertEquals('default', TestingAdminsTableStructure::getConnectionName(false));
+        static::assertEquals('writable', TestingAdminsTableStructure::getConnectionName(true));
         static::assertEquals(null, TestingAdminsTableStructure::getSchema());
         static::assertEquals('admins', TestingAdminsTableStructure::getTableName());
     }

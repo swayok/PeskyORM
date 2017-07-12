@@ -10,9 +10,10 @@ interface TableStructureInterface {
     static public function getInstance();
 
     /**
+     * @param bool $writable - true: connection must have access to write data into DB
      * @return string
      */
-    static public function getConnectionName();
+    static public function getConnectionName($writable);
 
     /**
      * @return string
