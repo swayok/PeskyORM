@@ -881,7 +881,7 @@ class Column {
 
     /**
      * Function to preprocess raw value for validation and normalization
-     * @param \Closure $newValuePreprocessor = function ($value, $isFromDb, Column $column, $defaultProcessor) { return $value }
+     * @param \Closure $newValuePreprocessor = function ($value, $isFromDb, Column $column) { return $value }
      * @return $this
      */
     public function setValuePreprocessor($newValuePreprocessor) {
