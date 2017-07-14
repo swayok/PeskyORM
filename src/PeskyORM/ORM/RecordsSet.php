@@ -280,13 +280,8 @@ class RecordsSet extends RecordsArray {
             $this->records = [];
         }
         if (!array_key_exists($index, $this->records)) {
-            /*if (
-                $this->optimizeIterationOverLargeAmountOfRecords
-                && $this->count() < $this->minRecordsCountForOptimizedIteration
-            ) {
-                $this->optimizeIterationOverLargeAmountOfRecords = false;
-            }*/
             if ($this->optimizeIterationOverLargeAmountOfRecords) {
+                $this->invalidateCount();
                 $page = (int)floor($index / $this->recordsLimitPerPageForOptimizedIteration);
                 $this->localOffsetForOptimizedIteration = $page * $this->recordsLimitPerPageForOptimizedIteration;
                 $this->selectForOptimizedIteration->page(
