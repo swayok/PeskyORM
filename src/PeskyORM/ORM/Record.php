@@ -1089,6 +1089,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * Save values changed since begin() to DB
+     * Note: throws exception if used without begin()
+     * @param array $relationsToSave
+     * @param bool $deleteNotListedRelatedRecords - works only for HAS MANY relations
+     *      - true: delete related records that exist in db if their pk value is not listed in current set of records
+     *      - false: ignore related records that exist in db but their pk value is not listed in current set of records
+     *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
+     *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      * @return $this
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\InvalidTableColumnConfigException
@@ -1099,7 +1106,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    public function commit($relationsToSave = []) {
+    public function commit(array $relationsToSave = [], $deleteNotListedRelatedRecords = false) {
         if (!$this->isCollectingUpdates) {
             throw new \BadMethodCallException(
                 'It is impossible to commit changed values: changes collecting was not started'
@@ -1109,7 +1116,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $this->cleanUpdates();
         $this->saveToDb($columnsToSave);
         if (!empty($relationsToSave)) {
-            $this->saveRelations($relationsToSave);
+            $this->saveRelations($relationsToSave, $deleteNotListedRelatedRecords);
         }
         return $this;
     }
@@ -1155,6 +1162,11 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Save all values and requested relations to Db
      * Note: throws exception if used after begin() but before commit() or rollback()
      * @param array $relationsToSave
+     * @param bool $deleteNotListedRelatedRecords - works only for HAS MANY relations
+     *      - true: delete related records that exist in db if their pk value is not listed in current set of records
+     *      - false: ignore related records that exist in db but their pk value is not listed in current set of records
+     *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
+     *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      * @return $this
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\InvalidTableColumnConfigException
@@ -1165,7 +1177,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    public function save(array $relationsToSave = []) {
+    public function save(array $relationsToSave = [], $deleteNotListedRelatedRecords = false) {
         if ($this->isCollectingUpdates) {
             throw new \BadMethodCallException(
                 'Attempt to save data after begin(). You must call commit() or rollback()'
@@ -1173,7 +1185,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         }
         $this->saveToDb($this->getAllColumnsWithUpdatableValues());
         if (!empty($relationsToSave)) {
-            $this->saveRelations($relationsToSave);
+            $this->saveRelations($relationsToSave, $deleteNotListedRelatedRecords);
         }
         return $this;
     }
@@ -1433,8 +1445,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * Save requested relations to DB
-     * Note: this Record must exist in DB
      * @param array $relationsToSave
+     * @param bool $deleteNotListedRelatedRecords - works only for HAS MANY relations
+     *      - true: delete related records that exist in db if their pk value is not listed in current set of records
+     *      - false: ignore related records that exist in db but their pk value is not listed in current set of records
+     *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
+     *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \PeskyORM\Exception\InvalidTableColumnConfigException
@@ -1444,7 +1460,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \PeskyORM\Exception\DbException
      * @throws \UnexpectedValueException
      */
-    public function saveRelations(array $relationsToSave = []) {
+    public function saveRelations(array $relationsToSave = [], $deleteNotListedRelatedRecords = false) {
         if (!$this->existsInDb()) {
             throw new \BadMethodCallException(
                 'It is impossible to save related objects of a record that does not exist in DB'
@@ -1480,13 +1496,23 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     );
                     $this->saveToDb([$relations[$relationName]->getLocalColumnName()]);
                 } else {
+                    $pkValues = [];
+                    $fkColName = $relations[$relationName]->getForeignColumnName();
+                    $fkValue = $this->getValue($relations[$relationName]->getLocalColumnName());
                     foreach ($relatedRecord as $recordObj) {
-                        $recordObj->updateValue(
-                            $relations[$relationName]->getForeignColumnName(),
-                            $this->getValue($relations[$relationName]->getLocalColumnName()),
-                            false
-                        );
+                        $recordObj->updateValue($fkColName, $fkValue, false);
                         $recordObj->save();
+                        $pkValues[] = $recordObj->getPrimaryKeyValue();
+                    }
+                    if ($deleteNotListedRelatedRecords) {
+                        // delete related records that are not listed in current records list but exist in DB
+                        $conditions = [
+                            $fkColName => $fkValue,
+                        ];
+                        if (!empty($pkValues)) {
+                            $conditions[$relations[$relationName]->getForeignTable()->getPkColumnName() . ' !='] = $pkValues;
+                        }
+                        $relations[$relationName]->getForeignTable()->delete($conditions);
                     }
                 }
             }

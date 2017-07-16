@@ -194,27 +194,42 @@ interface RecordInterface {
     /**
      * Save values changed since begin() to DB
      * Note: throws exception if used without begin()
+     * @param array $relationsToSave
+     * @param bool $deleteNotListedRelatedRecords - works only for HAS MANY relations
+     *      - true: delete related records that exist in db if their pk value is not listed in current set of records
+     *      - false: ignore related records that exist in db but their pk value is not listed in current set of records
+     *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
+     *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      * @return $this
      * @throws \BadMethodCallException
      */
-    public function commit();
+    public function commit(array $relationsToSave = [], $deleteNotListedRelatedRecords = false);
 
     /**
      * Save all values and requested relations to Db
      * Note: throws exception if used after begin() but before commit() or rollback()
      * @param array $relationsToSave
+     * @param bool $deleteNotListedRelatedRecords - works only for HAS MANY relations
+     *      - true: delete related records that exist in db if their pk value is not listed in current set of records
+     *      - false: ignore related records that exist in db but their pk value is not listed in current set of records
+     *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
+     *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      * @return $this
      * @throws \BadMethodCallException
      */
-    public function save(array $relationsToSave = []);
+    public function save(array $relationsToSave = [], $deleteNotListedRelatedRecords = false);
 
     /**
      * Save requested relations to DB
-     * Note: this Record must exist in DB
      * @param array $relationsToSave
+     * @param bool $deleteNotListedRelatedRecords - works only for HAS MANY relations
+     *      - true: delete related records that exist in db if their pk value is not listed in current set of records
+     *      - false: ignore related records that exist in db but their pk value is not listed in current set of records
+     *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
+     *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      * @throws \BadMethodCallException
      */
-    public function saveRelations(array $relationsToSave = []);
+    public function saveRelations(array $relationsToSave = [], $deleteNotListedRelatedRecords = false);
 
     /**
      * Delete current Record from DB
