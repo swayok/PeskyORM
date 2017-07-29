@@ -1601,6 +1601,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      *  - array: contains key-value or index-value pairs:
      *      key-value: key is relation name and value is array containing column names of related record to return
      *      index-value or value without key: value is relation name, will return all columns of the related record
+     *      '*' as the value for index 0: add all related records (if $loadRelatedRecordsIfNotSet === false - only loaded records will be added)
      * @param bool $loadRelatedRecordsIfNotSet - true: read all missing related objects from DB
      * @param bool $withFilesInfo - true: add info about files attached to a record (url, path, file_name, full_file_name, ext)
      * @return array
@@ -1617,17 +1618,31 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $loadRelatedRecordsIfNotSet = false,
         $withFilesInfo = true
     ) {
+        // normalize column names
         if (empty($columnsNames) || (count($columnsNames) === 1 && $columnsNames[0] === '*')) {
             $columnsNames = array_keys($this->values);
         } else if (in_array('*', $columnsNames, true)) {
             $columnsNames = array_merge($columnsNames, array_keys($this->values));
-            foreach ($columnsNames as $index => $colName) {
-                if ($colName === '*') {
+            foreach ($columnsNames as $index => $relationName) {
+                if ($relationName === '*') {
                     unset($columnsNames[$index]);
                     break;
                 }
             }
         }
+        // normalize relation names
+        if (
+            array_key_exists(0, $relatedRecordsNames)
+            && count($relatedRecordsNames) === 1
+            && $relatedRecordsNames[0] === '*'
+        ) {
+            if ($loadRelatedRecordsIfNotSet) {
+                $relatedRecordsNames = array_keys(static::getTableStructure()->getRelations());
+            } else {
+                $relatedRecordsNames = array_keys($this->relatedRecords);
+            }
+        }
+        // collect data for columns
         $data = [];
         foreach ($columnsNames as $index => $columnName) {
             if (!is_int($index) || is_array($columnName) || static::hasRelation($columnName)) {
@@ -1644,6 +1659,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 }
             }
         }
+        // collect data for relations
         foreach ($relatedRecordsNames as $relatedRecordName => $relatedRecordColumns) {
             if (is_int($relatedRecordName)) {
                 $relatedRecordName = $relatedRecordColumns;
