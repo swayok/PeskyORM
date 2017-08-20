@@ -1496,15 +1496,15 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     );
                     $this->saveToDb([$relations[$relationName]->getLocalColumnName()]);
                 } else {
-                    $pkValues = [];
                     $fkColName = $relations[$relationName]->getForeignColumnName();
                     $fkValue = $this->getValue($relations[$relationName]->getLocalColumnName());
-                    foreach ($relatedRecord as $recordObj) {
-                        $recordObj->updateValue($fkColName, $fkValue, false);
-                        $recordObj->save();
-                        $pkValues[] = $recordObj->getPrimaryKeyValue();
-                    }
                     if ($deleteNotListedRelatedRecords) {
+                        $pkValues = [];
+                        foreach ($relatedRecord as $recordObj) {
+                            if ($recordObj->hasPrimaryKeyValue()) {
+                                $pkValues[] = $recordObj->getPrimaryKeyValue();
+                            }
+                        }
                         // delete related records that are not listed in current records list but exist in DB
                         $conditions = [
                             $fkColName => $fkValue,
@@ -1513,6 +1513,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                             $conditions[$relations[$relationName]->getForeignTable()->getPkColumnName() . ' !='] = $pkValues;
                         }
                         $relations[$relationName]->getForeignTable()->delete($conditions);
+                    }
+                    foreach ($relatedRecord as $recordObj) {
+                        // placed here to avoid uniqueness fails connected to deleted records
+                        $recordObj
+                            ->updateValue($fkColName, $fkValue, false)
+                            ->save();
                     }
                 }
             }
