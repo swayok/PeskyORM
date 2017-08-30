@@ -111,6 +111,7 @@ interface RecordInterface {
     /**
      * Remove related record
      * @param string $name
+     * @return $this
      */
     public function unsetRelatedRecord($name);
 

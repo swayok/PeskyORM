@@ -711,10 +711,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
+     * @return $this
      */
     public function unsetRelatedRecord($name) {
         static::getRelation($name);
         unset($this->relatedRecords[$name]);
+        return $this;
     }
 
     /**

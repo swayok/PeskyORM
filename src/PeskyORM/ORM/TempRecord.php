@@ -172,6 +172,26 @@ class TempRecord implements RecordInterface {
     }
 
     /**
+     * @param string $relationName
+     * @param array|Record|RecordsArray $relatedRecord
+     * @param bool|null $isFromDb - true: marks values as loaded from DB | null: autodetect
+     * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
+     * @return $this
+     */
+    public function updateRelatedRecord($relationName, $relatedRecord, $isFromDb = null, $haltOnUnknownColumnNames = true) {
+        return $this;
+    }
+
+    /**
+     * Remove related record
+     * @param string $name
+     * @return $this
+     */
+    public function unsetRelatedRecord($name) {
+        return $this;
+    }
+
+    /**
      * Fill record values from passed $data.
      * Note: all existing record values will be removed
      * @param array $data
