@@ -265,6 +265,11 @@ class Column {
      * @var bool
      */
     protected $isForeignKey = false;
+    /**
+     * relation that stores values for this column
+     * @var Relation|null
+     */
+    protected $foreignKeyRelation;
 
     // service params
     static public $fileTypes = array(
@@ -280,10 +285,11 @@ class Column {
      * @param string $name
      * @param string $type
      * @return $this
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
     static public function create($type, $name = null) {
-        $className = get_called_class();
-        return new $className($name, $type);
+        return new static($name, $type);
     }
 
     /**
@@ -376,6 +382,7 @@ class Column {
      * same closure provided by class
      * @param string $class - class that implements ColumnClosuresInterface
      * @return $this
+     * @throws \ReflectionException
      * @throws \InvalidArgumentException
      */
     public function setClosuresClass($class) {
@@ -573,6 +580,7 @@ class Column {
     /**
      * Get default value set via $this->setDefaultValue()
      * @return mixed - may be a \Closure: function() { return 'default value'; }
+     * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      */
     public function getDefaultValueAsIs() {
@@ -781,6 +789,13 @@ class Column {
     }
 
     /**
+     * @return null|Relation
+     */
+    public function getForeignKeyRelation() {
+        return $this->foreignKeyRelation;
+    }
+
+    /**
      * @param $relationName
      * @return bool
      */
@@ -806,7 +821,7 @@ class Column {
         }
         $this->relations[$relationName] = $relation;
         if ($relation->getType() === Relation::BELONGS_TO) {
-            $this->itIsForeignKey();
+            $this->itIsForeignKey($relation);
         }
         return $this;
     }
@@ -849,10 +864,21 @@ class Column {
     }
 
     /**
+     * @param Relation $relation - relation that stores values for this column
      * @return $this
+     * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
      */
-    protected function itIsForeignKey() {
+    protected function itIsForeignKey(Relation $relation) {
+        if ($this->isForeignKey) {
+            throw new \InvalidArgumentException(
+                'Conflict detected: relation ' . $relation->getName() . ' pretends to be the source of '
+                . 'values for this foreign key but there is already another relation for this: '
+                . $this->foreignKeyRelation->getName()
+            );
+        }
         $this->isForeignKey = true;
+        $this->foreignKeyRelation = $relation;
         return $this;
     }
 
