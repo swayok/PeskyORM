@@ -135,6 +135,16 @@ class Column {
      */
     protected $isValueMustBeUnique = false;
     /**
+     * Should value uniqueness be case sensitive or not?
+     * @var bool
+     */
+    protected $isUniqueContraintCaseSensitive = true;
+    /**
+     * Other columns used in uniqueness constraint (multi-column uniqueness)
+     * @var array
+     */
+    protected $uniqueContraintAdditonalColumns = [];
+    /**
      * This column is private for the object and will be excluded from iteration, toArray(), etc.
      * Access to this column's value is only by its name. For example $user->password
      * @var bool
@@ -692,10 +702,31 @@ class Column {
     }
 
     /**
+     * @return bool
+     */
+    public function isUniqueContraintCaseSensitive() {
+        return $this->isUniqueContraintCaseSensitive;
+    }
+
+    /**
+     * @return array
+     */
+    public function getUniqueContraintAdditonalColumns() {
+        return $this->uniqueContraintAdditonalColumns;
+    }
+
+    /**
+     * Note: there is no automatic uniqueness validation in DefaultColumnClosures class!
+     * @param bool $caseSensitive - true: compare values as is; false: compare lowercased values (emails for example)
+     * @param array $withinColumns - used to provide list of columns for cases when uniqueness constraint in DB
+     *      uses 2 or more columns.
+     *      For example: when 'title' column must be unique within 'category' (category_id column)
      * @return $this
      */
-    public function uniqueValues() {
+    public function uniqueValues($caseSensitive = true, ...$withinColumns) {
         $this->isValueMustBeUnique = true;
+        $this->isUniqueContraintCaseSensitive = (bool)$caseSensitive;
+        $this->uniqueContraintAdditonalColumns = $withinColumns;
         return $this;
     }
 
