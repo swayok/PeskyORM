@@ -108,7 +108,7 @@ class Postgres extends DbAdapter {
      * @var bool - false: transaction queries like BEGIN TRANSACTION, COMMIT and ROLLBACK will not be remembered
      * into $this->lastQuery
      */
-    public $rememberTransactionQueries = true;
+    public $rememberTransactionQueries = false;
 
     /**
      * @var bool
