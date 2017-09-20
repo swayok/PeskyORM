@@ -1266,6 +1266,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         try {
             if ($isUpdate) {
                 /** @var array $updatedData */
+                unset($data[static::getPrimaryKeyColumnName()]);
                 $updatedData = $table->update(
                     $data,
                     [static::getPrimaryKeyColumnName() => $this->getPrimaryKeyValue()],
