@@ -40,7 +40,7 @@ class DbExpr {
         $this->expression = $expression;
         if ($wrapInBrackets === null) {
             $wrapInBrackets = !preg_match(
-                '%^\s*(SELECT|INSERT|WITH|UPDATE|DELETE|DROP|ALTER|ORDER|GROUP|HAVING|LIMIT|OFFSET|WHERE)\s%i',
+                '%^\s*(SELECT|INSERT|WITH|UPDATE|DELETE|DROP|ALTER|ORDER|GROUP|HAVING|LIMIT|OFFSET|WHERE|CREATE)\s%i',
                 $expression
             );
         }
