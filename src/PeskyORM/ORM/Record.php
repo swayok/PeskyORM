@@ -1313,7 +1313,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      * @throws InvalidDataException
      */
-    protected function collectValuesForSave(array $columnsToSave, $isUpdate) {
+    protected function collectValuesForSave(array &$columnsToSave, $isUpdate) {
         $data = [];
         // collect values that are not from DB
         foreach ($columnsToSave as $columnName) {
@@ -1369,6 +1369,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * Called after all data collected and validated
+     * Warning: $data is not modifiable here! Use $this->collectValuesForSave() if you need to modify it
      * @param array $columnsToSave
      * @param array $data
      * @param bool $isUpdate
