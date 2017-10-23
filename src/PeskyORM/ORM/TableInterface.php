@@ -78,6 +78,19 @@ interface TableInterface {
     static public function getLastQuery($useWritableConnection);
 
     /**
+     * @param string|DbExpr $query
+     * @return int|array = array: returned if $returning argument is not empty
+     */
+    static public function exec($query);
+
+    /**
+     * @param string|DbExpr $query
+     * @param string|null $fetchData - null: return PDOStatement; string: one of \PeskyORM\Core\Utils::FETCH_*
+     * @return \PDOStatement|array
+     */
+    static public function query($query, $fetchData = null);
+
+    /**
      * @param string|array $columns
      * @param array $conditions
      * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
