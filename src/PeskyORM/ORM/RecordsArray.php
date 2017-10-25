@@ -254,6 +254,36 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     }
 
     /**
+     * Get $columnName values from all records
+     * @param string $columnName
+     * @param mixed $defaultValue
+     * @param null|\Closure $filter - closure compatible with array_filter()
+     * @return array
+     */
+    public function getValuesForColumn($columnName, $defaultValue = null, \Closure $filter = null) {
+        $records = $this->toArrays();
+        $ret = [];
+        foreach ($records as $data) {
+            if (array_key_exists($columnName, $data)) {
+                $ret[] = $data[$columnName];
+            } else {
+                $ret[] = $defaultValue;
+            }
+        }
+        return $filter ? array_filter($ret, $filter) : $ret;
+    }
+
+    /**
+     * Filter records and create new RecordsArray from remaining records
+     * @param \Closure $filter - closure compatible with array_filter()
+     * @return RecordsArray
+     * @throws \InvalidArgumentException
+     */
+    public function filterRecords(\Closure $filter) {
+        return new self($this->table, array_filter($this->getRecords(), $filter), $this->isFromDb);
+    }
+
+    /**
      * @param int $index - record's index
      * @return RecordInterface
      * @throws \PDOException
@@ -342,6 +372,12 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * Get first record
      * @param string|null $key - null: return record; string - return value for the key from record
      * @return array
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
     public function first($key = null) {
         if ($this->count() === 0) {
@@ -355,6 +391,12 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * Get last record
      * @param string|null $key - null: return record; string - return value for the key from record
      * @return array
+     * @throws \UnexpectedValueException
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
     public function last($key = null) {
         if ($this->count() === 0) {
