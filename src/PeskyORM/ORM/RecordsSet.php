@@ -117,7 +117,7 @@ class RecordsSet extends RecordsArray {
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    public function filter(array $conditions, $cleanCurrentRecoredsSet = false) {
+    public function filterUsingConditions(array $conditions, $cleanCurrentRecoredsSet = false) {
         $newSelect = clone $this->select;
         $newSelect->where($conditions, true);
         $newSet = static::createFromOrmSelect($newSelect);
