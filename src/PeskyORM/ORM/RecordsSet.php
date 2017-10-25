@@ -72,7 +72,7 @@ class RecordsSet extends RecordsArray {
      * @throws \InvalidArgumentException
      */
     static public function createFromOrmSelect(OrmSelect $dbSelect) {
-        return new RecordsSet($dbSelect->getTable(), $dbSelect, true);
+        return new self($dbSelect->getTable(), $dbSelect);
     }
 
     /**
