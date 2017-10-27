@@ -72,21 +72,33 @@ class RecordsSet extends RecordsArray {
      * @throws \InvalidArgumentException
      */
     static public function createFromOrmSelect(OrmSelect $dbSelect) {
-        return new self($dbSelect->getTable(), $dbSelect);
+        return new self($dbSelect);
     }
 
     /**
-     * @param TableInterface $table
      * @param OrmSelect $dbSelect - it will be cloned to avoid possible problems when original object
      *      is changed outside RecordsSet + to allow optimised iteration via pagination
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      */
-    public function __construct(TableInterface $table, OrmSelect $dbSelect) {
-        parent::__construct($table, [], true);
-        $this->records = null;
-        $this->select = clone $dbSelect;
+    public function __construct(OrmSelect $dbSelect) {
+        parent::__construct($dbSelect->getTable(), [], true);
+        $this->setOrmSelect($dbSelect);
+    }
+
+    /**
+     * For internal use only!
+     * @param OrmSelect $dbSelect
+     * @return $this
+     * @throws \UnexpectedValueException
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     */
+    protected function setOrmSelect(OrmSelect $dbSelect) {
+        $this->resetRecords();
+        $this->select = $dbSelect;
+        $this->selectForOptimizedIteration = null;
         $this->optimizeIterationOverLargeAmountOfRecords = (
             $this->select->getLimit() === 0
             || $this->select->getLimit() > $this->minRecordsCountForOptimizedIteration
@@ -99,6 +111,7 @@ class RecordsSet extends RecordsArray {
                 $this->selectForOptimizedIteration->orderBy($pkCol, true);
             }
         }
+        return $this;
     }
 
     /**
@@ -131,8 +144,8 @@ class RecordsSet extends RecordsArray {
             }
             return $newSet;
         } else {
-            $this->resetRecords();
-            $this->select->where($conditions, true);
+            // update OrmSelect and reset RecordSet
+            $this->setOrmSelect($this->select->where($conditions, true));
             return $this;
         }
     }
