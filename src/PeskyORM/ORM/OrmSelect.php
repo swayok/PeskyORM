@@ -311,9 +311,8 @@ class OrmSelect extends AbstractSelect {
         $assembled = Utils::assembleWhereConditionsFromArray(
             $this->getConnection(),
             $conditions,
-            function ($columnName) use ($subject, $joinName) {
-                $columnInfo = $this->analyzeColumnName($columnName, null, $joinName, $subject);
-                return $this->makeColumnNameForCondition($columnInfo, $subject);
+            function ($columnName) use ($joinName, $subject) {
+                return $this->columnQuoterForConditions($columnName, $joinName, $subject);
             },
             'AND',
             function ($columnName, $rawValue) use ($subject, $joinName) {

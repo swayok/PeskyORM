@@ -63,6 +63,13 @@ abstract class AbstractSelect {
      */
     protected $joins = [];
     /**
+     * List of JOINs names that are mentioned in WHERE and HAVING conditions.
+     * This is used in simplified query builder so it won't drop LEFT JOINs if
+     * they are required for query to be successful
+     * @var array
+     */
+    protected $joinsUsedInWhereAndHavingConditions = [];
+    /**
      * @var array
      */
     protected $analyzedColumns = [];
@@ -533,6 +540,7 @@ abstract class AbstractSelect {
         }
         $this->where = $append ? array_merge($this->where, $conditions) : $conditions;
         $this->setDirty('where');
+        $this->setDirty('joins');
         return $this;
     }
 
@@ -817,6 +825,9 @@ abstract class AbstractSelect {
 
     protected function beforeQueryBuilding() {
         $this->shortJoinAliases = [];
+        if ($this->isDirty('where') || $this->isDirty('having')) {
+            $this->joinsUsedInWhereAndHavingConditions = [];
+        }
         if ($this->isDirty('columns')) {
             $this->processRawColumns();
         }
@@ -1211,8 +1222,7 @@ abstract class AbstractSelect {
             $this->getConnection(),
             $conditions,
             function ($columnName) use ($joinName, $subject) {
-                $columnInfo = $this->analyzeColumnName($columnName, null, $joinName, $subject);
-                return $this->makeColumnNameForCondition($columnInfo, $subject);
+                return $this->columnQuoterForConditions($columnName, $joinName, $subject);
             },
             'AND',
             function ($columnName, $rawValue) {
@@ -1227,6 +1237,21 @@ abstract class AbstractSelect {
         );
         $assembled = trim($assembled);
         return empty($assembled) ? '' : " {$subject} {$assembled}";
+    }
+
+    /**
+     * @param string $columnName
+     * @param string|null $joinName
+     * @param string $subject - 'WHERE', 'HAVING', etc - the part of a query we are qouting the column for
+     * @return string
+     * @throws \InvalidArgumentException
+     */
+    protected function columnQuoterForConditions($columnName, $joinName, $subject) {
+        $columnInfo = $this->analyzeColumnName($columnName, null, $joinName, $subject);
+        if (!empty($columnInfo['join_name']) && in_array($subject, ['WHERE', 'HAVING'], true)) {
+            $this->joinsUsedInWhereAndHavingConditions[] = $columnInfo['join_name'];
+        }
+        return $this->makeColumnNameForCondition($columnInfo, $subject);
     }
 
     /**
@@ -1269,7 +1294,11 @@ abstract class AbstractSelect {
     protected function makeJoins($ignoreLeftJoins = false) {
         $joins = [];
         foreach ($this->joins as $joinConfig) {
-            if ($ignoreLeftJoins && $joinConfig->getJoinType() === $joinConfig::JOIN_LEFT) {
+            if (
+                $ignoreLeftJoins
+                && $joinConfig->getJoinType() === $joinConfig::JOIN_LEFT
+                && !$this->isJoinUsedInWhereOrHavingConditions($joinConfig)
+            ) {
                 continue;
             }
             $type = strtoupper($joinConfig->getJoinType()) . ' JOIN';
@@ -1282,6 +1311,17 @@ abstract class AbstractSelect {
             $joins[] = "$type $table ON ($conditions)";
         }
         return count($joins) ? ' ' . implode(' ', $joins) : '';
+    }
+
+    /**
+     * @param AbstractJoinInfo $joinInfo
+     * @return bool
+     */
+    protected function isJoinUsedInWhereOrHavingConditions(AbstractJoinInfo $joinInfo) {
+        return (
+            in_array($this->getShortJoinAlias($joinInfo->getJoinName()), $this->joinsUsedInWhereAndHavingConditions)
+            || in_array($joinInfo->getJoinName(), $this->joinsUsedInWhereAndHavingConditions)
+        );
     }
 
     /**
