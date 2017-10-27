@@ -109,22 +109,32 @@ class RecordsSet extends RecordsArray {
     }
 
     /**
-     * Create new RecordsSet with $conditions added to original OrmSelect
+     * Append conditions
      * @param array $conditions
-     * @param bool $cleanCurrentRecoredsSet - true: will remove all fetched data from current records set
+     * @param bool $returnNewRecordSet
+     *      - true: will return new RecordSet with new OrmSelect instead of changing current RecordSet
+     *      - false: append conditions to current RecordSet; this will reset current state of RecordSet (count, records)
+     * @param bool $resetOriginalRecordSet - true: used only when $returnNewRecordSet is true and will reset
+     *      Current RecordSet (count, records)
      * @return RecordsSet
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    public function filterUsingConditions(array $conditions, $cleanCurrentRecoredsSet = false) {
-        $newSelect = clone $this->select;
-        $newSelect->where($conditions, true);
-        $newSet = static::createFromOrmSelect($newSelect);
-        if ($cleanCurrentRecoredsSet) {
+    public function appendConditions(array $conditions, $returnNewRecordSet, $resetOriginalRecordSet = false) {
+        if ($returnNewRecordSet) {
+            $newSelect = clone $this->select;
+            $newSelect->where($conditions, true);
+            $newSet = static::createFromOrmSelect($newSelect);
+            if ($resetOriginalRecordSet) {
+                $this->resetRecords();
+            }
+            return $newSet;
+        } else {
             $this->resetRecords();
+            $this->select->where($conditions, true);
+            return $this;
         }
-        return $newSet;
     }
 
     /**
@@ -246,6 +256,9 @@ class RecordsSet extends RecordsArray {
      * Reads all matching records from DB.
      * This prevents lazy loading
      * @return $this
+     * @throws \UnexpectedValueException
+     * @throws \PDOException
+     * @throws \InvalidArgumentException
      */
     public function fetch() {
         $this->getAllRecords();

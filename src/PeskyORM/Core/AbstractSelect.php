@@ -524,6 +524,7 @@ abstract class AbstractSelect {
      * ['col3 => 0, ['col1' => 1, 'col2' => 2]] will be assembled into ("col3" = 0 AND ("col1" = 1 AND "col2" => 2))
      * @param bool $append
      * @return $this
+     * @throws \InvalidArgumentException
      * @see Utils::assembleWhereConditionsFromArray() for more details about operators and features
      */
     public function where(array $conditions, $append = false) {
@@ -964,6 +965,7 @@ abstract class AbstractSelect {
      * @param array $columnInfo - return of $this->analyzeColumnName($columnName)
      * @param bool $itIsWithQuery - true: building a query for WITH
      * @return string - something like: "JoinAlias"."column_name"::typecast as "ColumnAlias"
+     * @throws \InvalidArgumentException
      */
     protected function makeColumnNameWithAliasForQuery(array $columnInfo, $itIsWithQuery = false) {
         if (!is_bool($itIsWithQuery)) {
@@ -1177,6 +1179,7 @@ abstract class AbstractSelect {
      * @param string $parentJoinName
      * @param bool $appendColumnsToExisting - true: $columns will be appended | false: $columns will replace existing ones
      * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
      */
     protected function resolveColumnsToBeSelectedForJoin($joinName, $columns, $parentJoinName = null, $appendColumnsToExisting = false) {
         if (!is_bool($appendColumnsToExisting)) {
