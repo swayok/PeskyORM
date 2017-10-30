@@ -170,8 +170,7 @@ class RecordsSet extends RecordsArray {
      * @return $this
      */
     public function resetRecords() {
-        $this->records = null;
-        $this->rewind();
+        parent::resetRecords();
         $this->invalidateCount();
         return $this;
     }

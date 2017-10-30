@@ -9,9 +9,13 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      */
     protected $table;
     /**
-     * @var array
+     * @var array[]|RecordInterface[]
      */
     protected $records = [];
+    /**
+     * @var bool
+     */
+    protected $isRecordsContinObjects = false;
     /**
      * @var
      */
@@ -43,17 +47,26 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
      * @param TableInterface $table
-     * @param array $records
+     * @param array|RecordInterface[] $records
      * @param bool $isFromDb|null - true: records are from db | null - autodetect
      * @throws \InvalidArgumentException
      */
     public function __construct(TableInterface $table, array $records, $isFromDb = null) {
         $this->table = $table;
         if (count($records)) {
+            $recordClass = get_class($this->table->newRecord());
+            /** @var array|RecordInterface[] $records */
+            $records = array_values($records);
             /** @noinspection ForeachSourceInspection */
-            foreach ($records as $record) {
-                if (!is_array($record)) {
-                    throw new \InvalidArgumentException('$dbSelectOrRecords must contain only arrays');
+            foreach ($records as $index => $record) {
+                if (is_array($record)) {
+                    $this->records[$index] = $record;
+                } else if ($record instanceof $recordClass) {
+                    $this->records[$index] = $record;
+                    $this->dbRecords[$index] = $record;
+                    $this->isRecordsContinObjects = true;
+                } else {
+                    throw new \InvalidArgumentException('$dbSelectOrRecords must contain only arrays or objects of class ' . $recordClass);
                 }
             }
             $this->records = array_values($records);
@@ -77,6 +90,19 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     }
 
     /**
+     * Reset stored data
+     * Note: RecordsArray instance won't be usable after this while RecordsSet can fetch data again
+     * @return $this
+     */
+    public function resetRecords() {
+        $this->records = [];
+        $this->dbRecords = [];
+        $this->rewind();
+        $this->currentDbRecordIndex = -1;
+        return $this;
+    }
+
+    /**
      * @return array
      */
     protected function getRecords() {
@@ -84,13 +110,16 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     }
 
     /**
-     * @param $index
+     * @param int $index
      * @return mixed
      * @throws \InvalidArgumentException
      */
     protected function getRecordDataByIndex($index) {
         if (!$this->offsetExists($index)) {
             throw new \InvalidArgumentException("Array does not contain index '{$index}'");
+        }
+        if (!is_array($this->records[$index])) {
+            $this->records[$index] = $this->records[$index]->toArray();
         }
         return $this->records[$index];
     }
@@ -175,6 +204,14 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @return array[]
      */
     public function toArrays() {
+        if ($this->isRecordsContinObjects) {
+            /** @var array|RecordInterface $data */
+            foreach ($this->records as $index => $data) {
+                if (!is_array($data)) {
+                    $this->records[$index] = $data->toArray();
+                }
+            }
+        }
         return $this->getRecords();
     }
 
@@ -276,11 +313,16 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     /**
      * Filter records and create new RecordsArray from remaining records
      * @param \Closure $filter - closure compatible with array_filter()
+     * @param bool $resetOriginalRecordSet - true: reset this RecordsArray after filtering to save memory
      * @return RecordsArray
      * @throws \InvalidArgumentException
      */
-    public function filterRecords(\Closure $filter) {
-        return new self($this->table, array_filter($this->getRecords(), $filter), $this->isFromDb);
+    public function filterRecords(\Closure $filter, $resetOriginalRecordsArray = false) {
+        $newArray = new self($this->table, array_filter($this->toObjects(), $filter), $this->isFromDb);
+        if ($resetOriginalRecordsArray) {
+            $this->resetRecords();
+        }
+        return $newArray;
     }
 
     /**
@@ -314,7 +356,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
             } else {
                 $record->fromData($data, $isFromDb);
             }
-            return $record;
+            $this->dbRecords[$index] = $record;
         }
         return $this->dbRecords[$index];
     }
