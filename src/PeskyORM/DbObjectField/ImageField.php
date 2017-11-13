@@ -116,6 +116,8 @@ class ImageField extends FileField {
             foreach ($relativeUrl as $version => $url) {
                 if (!preg_match('%^(https?|ftp)://%is', $url)) {
                     $ret[$version] = $serverUrl . $url;
+                } else {
+                    $ret[$version] = $url;
                 }
             }
             return $ret;
