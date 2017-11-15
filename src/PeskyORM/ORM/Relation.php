@@ -245,17 +245,36 @@ class Relation {
     }
 
     /**
+     * @param TableInterface $localTable
+     * @param null|string $localTableAlias
      * @return array
+     * @throws \UnexpectedValueException
      */
-    public function getAdditionalJoinConditions() {
-        return $this->additionalJoinConditions;
+    public function getAdditionalJoinConditions(TableInterface $localTable, $localTableAlias = null) {
+        if ($this->additionalJoinConditions instanceof \Closure) {
+            $conditions = call_user_func($this->additionalJoinConditions, $this, $localTable, $localTableAlias);
+            if (!is_array($conditions)) {
+                throw new \UnexpectedValueException(
+                    'Relation->additionalJoinConditions closure must return array. '
+                        . gettype($conditions) . ' received. Relation name: ' . $this->getName()
+                );
+            }
+            return $conditions;
+        } else {
+            return $this->additionalJoinConditions;
+        }
     }
 
     /**
-     * @param array $additionalJoinConditions
+     * @param array|\Closure $additionalJoinConditions
+     *      - \Closure: function (Relation $relation, TableInterface $localTable, $localTableAlias = null) { return []; }
      * @return $this
+     * @throws \InvalidArgumentException
      */
-    public function setAdditionalJoinConditions(array $additionalJoinConditions) {
+    public function setAdditionalJoinConditions($additionalJoinConditions) {
+        if (!is_array($additionalJoinConditions) && !($additionalJoinConditions instanceof \Closure)) {
+            throw new \InvalidArgumentException('$additionalJoinConditions argument must be an array or \Closure');
+        }
         $this->additionalJoinConditions = $additionalJoinConditions;
         return $this;
     }
@@ -319,7 +338,7 @@ class Relation {
             ->setConfigForLocalTable($localTable, $this->getLocalColumnName())
             ->setConfigForForeignTable($this->getForeignTable(), $this->getForeignColumnName())
             ->setJoinType($this->getJoinType())
-            ->setAdditionalJoinConditions($this->getAdditionalJoinConditions())
+            ->setAdditionalJoinConditions($this->getAdditionalJoinConditions($localTable, $localTableAlias))
             ->setTableAlias($localTableAlias ?: $localTable::getAlias());
     }
 

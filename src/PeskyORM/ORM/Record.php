@@ -766,7 +766,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $relatedTable = $relation->getForeignTable();
         $conditions = array_merge(
             [$relation->getForeignColumnName() => $this->getValue($relation->getLocalColumnName())],
-            $relation->getAdditionalJoinConditions()
+            $relation->getAdditionalJoinConditions(static::getTable())
         );
         if ($relation->getType() === Relation::HAS_MANY) {
             $this->relatedRecords[$relationName] = $relatedTable->select('*', $conditions, function (OrmSelect $select) use ($relatedTable) {
