@@ -270,6 +270,7 @@ class Postgres extends DbAdapter {
                     (
                         SELECT true FROM `pg_constraint` as `pk`
                         WHERE `pk`.`conrelid` = `c`.`oid` AND `f`.`attnum` = ANY (`pk`.`conkey`) AND `pk`.`contype` = ``p``
+                        LIMIT 1
                     ),
                     FALSE
                 ) as `primarykey`,
@@ -277,6 +278,7 @@ class Postgres extends DbAdapter {
                     (
                         SELECT true FROM `pg_constraint` as `uk`
                         WHERE `uk`.`conrelid` = `c`.`oid` AND `f`.`attnum` = ANY (`uk`.`conkey`) AND `uk`.`contype` = ``u``
+                        LIMIT 1
                     ),
                     FALSE
                 ) as `uniquekey`,
@@ -284,6 +286,7 @@ class Postgres extends DbAdapter {
                     (
                         SELECT true FROM `pg_constraint` as `fk`
                         WHERE `fk`.`conrelid` = `c`.`oid` AND `f`.`attnum` = ANY (`fk`.`conkey`) AND `fk`.`contype` = ``f``
+                        LIMIT 1
                     ),
                     FALSE
                 ) as `foreignkey`,
