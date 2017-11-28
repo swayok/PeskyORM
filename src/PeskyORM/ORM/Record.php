@@ -763,20 +763,25 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     . "You need to provide a value for '{$relation->getLocalColumnName()}' column."
             );
         }
+        $fkValue = $this->getValue($relation->getLocalColumnName());
         $relatedTable = $relation->getForeignTable();
-        $conditions = array_merge(
-            [$relation->getForeignColumnName() => $this->getValue($relation->getLocalColumnName())],
-            $relation->getAdditionalJoinConditions(static::getTable())
-        );
-        if ($relation->getType() === Relation::HAS_MANY) {
-            $this->relatedRecords[$relationName] = $relatedTable->select('*', $conditions, function (OrmSelect $select) use ($relatedTable) {
-                $select->orderBy($relatedTable->getPkColumnName(), true);
-            });
-        } else {
+        if ($fkValue === null) {
             $this->relatedRecords[$relationName] = $relatedTable->newRecord();
-            $data = $relatedTable->selectOne('*', $conditions);
-            if (!empty($data)) {
-                $this->relatedRecords[$relationName]->fromData($data, true, true);
+        } else {
+            $conditions = array_merge(
+                [$relation->getForeignColumnName() => $this->getValue($relation->getLocalColumnName())],
+                $relation->getAdditionalJoinConditions(static::getTable())
+            );
+            if ($relation->getType() === Relation::HAS_MANY) {
+                $this->relatedRecords[$relationName] = $relatedTable->select('*', $conditions, function (OrmSelect $select) use ($relatedTable) {
+                    $select->orderBy($relatedTable->getPkColumnName(), true);
+                });
+            } else {
+                $this->relatedRecords[$relationName] = $relatedTable->newRecord();
+                $data = $relatedTable->selectOne('*', $conditions);
+                if (!empty($data)) {
+                    $this->relatedRecords[$relationName]->fromData($data, true, true);
+                }
             }
         }
         return $this;
@@ -1683,9 +1688,11 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             }
             $relatedRecord = $this->getRelatedRecord($relatedRecordName, $loadRelatedRecordsIfNotSet);
             if ($relatedRecord instanceof Record) {
-                $data[$relatedRecordName] = $withFilesInfo
-                    ? $relatedRecord->toArray($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet)
-                    : $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
+                if ($relatedRecord->existsInDb()) {
+                    $data[$relatedRecordName] = $withFilesInfo
+                        ? $relatedRecord->toArray($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet)
+                        : $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
+                }
             } else {
                 /** @var RecordsSet $relatedRecord*/
                 $relatedRecord->enableDbRecordInstanceReuseDuringIteration();
