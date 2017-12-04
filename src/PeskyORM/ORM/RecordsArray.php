@@ -266,7 +266,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
         if ($disableDbRecordDataValidation) {
             $this->disableDbRecordDataValidation();
         }
-        for ($i = 0; $i < $this->count(); $i++) {
+        for ($i = 0, $count = $this->count(); $i < $count; $i++) {
             $record = $this->offsetGet($i);
             $value = $closure($record);
             if ($value instanceof KeyValuePair) {
