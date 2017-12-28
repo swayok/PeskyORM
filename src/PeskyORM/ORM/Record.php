@@ -1139,7 +1139,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     protected function getAllColumnsWithUpdatableValues() {
         $columnsNames = [];
         foreach (static::getColumns() as $columnName => $column) {
-            if ($column->isValueCanBeSetOrChanged() && ($column->isItExistsInDb() || $column->isItAFile())) {
+            if ($column->isValueCanBeSetOrChanged() && $column->isItExistsInDb()) {
                 $columnsNames[] = $columnName;
             }
         }
