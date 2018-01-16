@@ -60,30 +60,37 @@ class Column {
     const ONE_OF_VALUES_IS_NOT_ALLOWED = 'one_of_values_is_not_allowed';
     const VALUE_MUST_BE_STRING = 'value_must_be_string';
     const VALUE_MUST_BE_STRING_OR_NUMERIC = 'value_must_be_string_or_numeric';
+    const VALUE_MUST_BE_ARRAY = 'value_must_be_array';
 
     /**
      * @var array
      */
-    static protected $validationErrorsLocalization = [
-        self::VALUE_CANNOT_BE_NULL => 'Null value is not allowed',
-        self::VALUE_MUST_BE_BOOLEAN => 'Value must be of a boolean data type',
-        self::VALUE_MUST_BE_INTEGER => 'Value must be of an integer data type',
-        self::VALUE_MUST_BE_FLOAT => 'Value must be of a numeric data type',
-        self::VALUE_MUST_BE_IMAGE => 'Value must be an uploaded image info',
-        self::VALUE_MUST_BE_FILE => 'Value must be an uploaded file info',
-        self::VALUE_MUST_BE_JSON => 'Value must be of a json data type',
-        self::VALUE_MUST_BE_IPV4_ADDRESS => 'Value must be an IPv4 address',
-        self::VALUE_MUST_BE_EMAIL => 'Value must be an email',
-        self::VALUE_MUST_BE_TIMEZONE_OFFSET => 'Value must be a valid timezone offset',
-        self::VALUE_MUST_BE_TIMESTAMP => 'Value must be a valid timestamp',
-        self::VALUE_MUST_BE_TIMESTAMP_WITH_TZ => 'Value must be a valid timestamp with time zone',
-        self::VALUE_MUST_BE_TIME => 'Value must be a valid time',
-        self::VALUE_MUST_BE_DATE => 'Value must be a valid date',
-        self::VALUE_IS_NOT_ALLOWED => 'Value is not allowed: :value',
-        self::ONE_OF_VALUES_IS_NOT_ALLOWED => 'One of values in the received array is not allowed',
-        self::VALUE_MUST_BE_STRING => 'Value must be a string',
-        self::VALUE_MUST_BE_STRING_OR_NUMERIC => 'Value must be a string or a number',
+    static protected $defaultValidationErrorsMessages = [
+        self::VALUE_CANNOT_BE_NULL => 'Null value is not allowed.',
+        self::VALUE_MUST_BE_BOOLEAN => 'Value must be of a boolean data type.',
+        self::VALUE_MUST_BE_INTEGER => 'Value must be of an integer data type.',
+        self::VALUE_MUST_BE_FLOAT => 'Value must be of a numeric data type.',
+        self::VALUE_MUST_BE_IMAGE => 'Value must be an uploaded image info.',
+        self::VALUE_MUST_BE_FILE => 'Value must be an uploaded file info.',
+        self::VALUE_MUST_BE_JSON => 'Value must be of a json data type.',
+        self::VALUE_MUST_BE_IPV4_ADDRESS => 'Value must be an IPv4 address.',
+        self::VALUE_MUST_BE_EMAIL => 'Value must be an email.',
+        self::VALUE_MUST_BE_TIMEZONE_OFFSET => 'Value must be a valid timezone offset.',
+        self::VALUE_MUST_BE_TIMESTAMP => 'Value must be a valid timestamp.',
+        self::VALUE_MUST_BE_TIMESTAMP_WITH_TZ => 'Value must be a valid timestamp with time zone.',
+        self::VALUE_MUST_BE_TIME => 'Value must be a valid time.',
+        self::VALUE_MUST_BE_DATE => 'Value must be a valid date.',
+        self::VALUE_IS_NOT_ALLOWED => 'Value is not allowed: :value.',
+        self::ONE_OF_VALUES_IS_NOT_ALLOWED => 'One of values in the received array is not allowed.',
+        self::VALUE_MUST_BE_STRING => 'Value must be a string.',
+        self::VALUE_MUST_BE_STRING_OR_NUMERIC => 'Value must be a string or a number.',
+        self::VALUE_MUST_BE_ARRAY => 'Value must be an array.',
     ];
+
+    /**
+     * @var array
+     */
+    static protected $validationErrorsMessages = [];
 
     // params that can be set directly or calculated
     /**
@@ -900,16 +907,22 @@ class Column {
     /**
      * @return array
      */
-    static public function getValidationErrorsLocalization() {
-        return static::$validationErrorsLocalization;
+    static public function getValidationErrorsMessages() {
+        return static::$validationErrorsMessages ?: static::$defaultValidationErrorsMessages;
     }
 
     /**
-     * All errors are listed in static::$validationErrorsLocalization
-     * @param array $validationErrorsLocalization
+     * Provide custom validation errors messages.
+     * Default errors are listed in static::$defaultValidationErrorsLocalization
+     * @param array $validationErrorsMessages
      */
-    static public function setValidationErrorsLocalization(array $validationErrorsLocalization) {
-        static::$validationErrorsLocalization = $validationErrorsLocalization;
+    static public function setValidationErrorsMessages(array $validationErrorsMessages) {
+        if (!empty($validationErrorsMessages)) {
+            static::$validationErrorsMessages = array_merge(
+                static::$defaultValidationErrorsMessages,
+                $validationErrorsMessages
+            );
+        }
     }
 
     /**
