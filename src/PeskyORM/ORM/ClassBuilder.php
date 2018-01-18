@@ -318,14 +318,14 @@ VIEW;
         return $ret;
     }
 
+    private $typeValueToTypeConstantName;
     /**
      * @param string $columnTypeValue - like 'string', 'integer', etc..
      * @return string like Column::TYPE_*
      */
     protected function getConstantNameForColumnType($columnTypeValue) {
-        static $typeValueToTypeConstantName = null;
-        if ($typeValueToTypeConstantName === null) {
-            $typeValueToTypeConstantName = array_flip(
+        if ($this->typeValueToTypeConstantName === null) {
+            $this->typeValueToTypeConstantName = array_flip(
                 array_filter(
                     (new \ReflectionClass(Column::class))->getConstants(),
                     function ($key) {
@@ -335,7 +335,7 @@ VIEW;
                 )
             );
         }
-        return 'Column::' . $typeValueToTypeConstantName[$columnTypeValue];
+        return 'Column::' . $this->typeValueToTypeConstantName[$columnTypeValue];
     }
 
     /**
