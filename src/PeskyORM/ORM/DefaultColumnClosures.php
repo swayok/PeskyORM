@@ -168,6 +168,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
         return RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn(
             $column,
             $value,
+            $isFromDb,
             $column::getValidationErrorsMessages()
         );
     }

@@ -37,19 +37,19 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         static::assertFalse($column->isValueTrimmingRequired());
         static::assertFalse($column->isEmptyStringMustBeConvertedToNull());
         static::assertFalse($column->isValueLowercasingRequired());
-        static::assertEquals(' ', RecordValueHelpers::preprocessColumnValue($column, ' '));
+        static::assertEquals(' ', RecordValueHelpers::preprocessColumnValue($column, ' ', false));
         $column->trimsValue();
         static::assertTrue($column->isValueTrimmingRequired());
-        static::assertEquals('', RecordValueHelpers::preprocessColumnValue($column, ' '));
-        static::assertEquals('A', RecordValueHelpers::preprocessColumnValue($column, ' A '));
+        static::assertEquals('', RecordValueHelpers::preprocessColumnValue($column, ' ', false));
+        static::assertEquals('A', RecordValueHelpers::preprocessColumnValue($column, ' A ', false));
         $column->convertsEmptyStringToNull();
         static::assertTrue($column->isEmptyStringMustBeConvertedToNull());
-        static::assertEquals(null, RecordValueHelpers::preprocessColumnValue($column, null));
-        static::assertEquals(null, RecordValueHelpers::preprocessColumnValue($column, ' '));
-        static::assertEquals('A', RecordValueHelpers::preprocessColumnValue($column, ' A '));
+        static::assertEquals(null, RecordValueHelpers::preprocessColumnValue($column, null, false));
+        static::assertEquals(null, RecordValueHelpers::preprocessColumnValue($column, ' ', false));
+        static::assertEquals('A', RecordValueHelpers::preprocessColumnValue($column, ' A ', false));
         $column->lowercasesValue();
         static::assertTrue($column->isValueLowercasingRequired());
-        static::assertEquals('upper', RecordValueHelpers::preprocessColumnValue($column, 'UPPER'));
+        static::assertEquals('upper', RecordValueHelpers::preprocessColumnValue($column, 'UPPER', false));
     }
 
     public function testNormalizeBoolValue() {
@@ -931,7 +931,7 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
      */
     public function testInvalidColumnAllowedValuesForEnum() {
         $column = Column::create(Column::TYPE_ENUM, 'test');
-        RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test');
+        RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test', false);
     }
 
     /**
@@ -941,7 +941,7 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
     public function testInvalidValueForAllowedValues() {
         $column = Column::create(Column::TYPE_ENUM, 'test')
             ->setAllowedValues(['test']);
-        RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, $column);
+        RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, $column, false);
     }
 
     /**
@@ -951,7 +951,7 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
     public function testInvalidValueForAllowedValues2() {
         $column = Column::create(Column::TYPE_STRING, 'test')
             ->setAllowedValues(['test']);
-        RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, $column);
+        RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, $column, false);
     }
 
     /**
@@ -962,7 +962,7 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         $column = Column::create(Column::TYPE_ENUM, 'test')
             ->setAllowedValues(['test'])
             ->disallowsNullValues();
-        RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, null);
+        RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, null, false);
     }
 
     /**
@@ -973,7 +973,7 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         $column = Column::create(Column::TYPE_STRING, 'test')
             ->disallowsNullValues()
             ->setAllowedValues(['test']);
-        RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, null);
+        RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, null, false);
     }
 
     public function testIsValueWithinTheAllowedValuesOfTheEnumColumn() {
@@ -982,52 +982,53 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         $column = Column::create(Column::TYPE_ENUM, 'test')
             ->allowsNullValues()
             ->setAllowedValues(['test' , 'test2']);
-        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test'));
-        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test2'));
-        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test']));
-        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test2']));
-        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'test2']));
-        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'test']));
-        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, null));
-        static::assertEquals($message1, RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'ups'));
-        static::assertEquals($message1, RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ''));
-        static::assertEquals($message2, RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['ups']));
-        static::assertEquals($message2, RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'ups']));
+        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test', false));
+        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test2', false));
+        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test'], false));
+        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test2'], false));
+        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'test2'], false));
+        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'test'], false));
+        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, null, false));
+        static::assertEquals($message1, RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'ups', false));
+        static::assertEquals($message1, RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, '', false));
+        static::assertEquals($message2, RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['ups'], false));
+        static::assertEquals($message2, RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'ups'], false));
     }
 
     public function testIsValueWithinTheAllowedValuesOfTheNotEnumColumn() {
         $column = Column::create(Column::TYPE_STRING, 'test')
             ->allowsNullValues()
             ->setAllowedValues(['test' , 'test2']);
-        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test'));
-        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test2'));
-        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test']));
-        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test2']));
-        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'test2']));
-        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'test']));
-        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, null));
+        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test', false));
+        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test2', false));
+        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test'], false));
+        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test2'], false));
+        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'test2'], false));
+        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'test'], false));
+        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, null, false));
         static::assertEquals(
             ['value_is_not_allowed'],
-            RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'ups')
+            RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'ups', false)
         );
         static::assertEquals(
             ['one_of_values_is_not_allowed'],
-            RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['ups'])
+            RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['ups'], false)
         );
         static::assertEquals(
             ['bad value'],
             RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn(
                 $column,
                 ['test', 'ups'],
+                false,
                 ['one_of_values_is_not_allowed' => 'bad value']
             )
         );
         static::assertEquals(
             ['no-no!'],
-            RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, '', ['value_is_not_allowed' => 'no-no!'])
+            RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, '', false, ['value_is_not_allowed' => 'no-no!'])
         );
         $column->convertsEmptyStringToNull();
-        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ''));
+        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, '', false));
     }
 
 }

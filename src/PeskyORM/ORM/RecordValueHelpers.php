@@ -43,7 +43,7 @@ abstract class RecordValueHelpers {
      * @param bool $isDbValue
      * @return mixed
      */
-    static public function preprocessColumnValue(Column $column, $value, $isDbValue = false) {
+    static public function preprocessColumnValue(Column $column, $value, $isDbValue) {
         return call_user_func($column->getValuePreprocessor(), $value, $isDbValue, $column);
     }
 
@@ -154,16 +154,16 @@ abstract class RecordValueHelpers {
      *   - validation will be ignored when $column->isValueCanBeNull() === true and value is null or
      *     empty string with option $column->isEmptyStringMustBeConvertedToNull() === true;
      *
-     * @param string|int|float|array $value
      * @param Column $column
+     * @param string|int|float|array $value
+     * @param bool $isFromDb
      * @param array $errorMessages
      * @return array
-     * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
      */
     static public function isValueWithinTheAllowedValuesOfTheColumn(
         Column $column,
         $value,
+        $isFromDb,
         array $errorMessages = []
     ) {
         $allowedValues = $column->getAllowedValues();
@@ -177,7 +177,7 @@ abstract class RecordValueHelpers {
                 return [];
             }
         }
-        $value = static::preprocessColumnValue($column, $value);
+        $value = static::preprocessColumnValue($column, $value, $isFromDb);
         // column is nullable and value is null or should be converted to null
         if ($value === null && $column->isValueCanBeNull()) {
             return [];
