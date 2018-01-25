@@ -12,14 +12,15 @@ abstract class RecordValueHelpers {
     /**
      * @param Column $column
      * @param mixed $value
+     * @param bool $isFromDb
      * @param array $errorMessages
      * @return array
      */
-    static public function isValidDbColumnValue(Column $column, $value, array $errorMessages = []) {
+    static public function isValidDbColumnValue(Column $column, $value, $isFromDb, array $errorMessages = []) {
         if ($value instanceof DbExpr) {
             return [];
         }
-        $value = static::preprocessColumnValue($column, $value);
+        $value = static::preprocessColumnValue($column, $value, $isFromDb);
         // null value?
         if ($value === null) {
             return $column->isValueCanBeNull()

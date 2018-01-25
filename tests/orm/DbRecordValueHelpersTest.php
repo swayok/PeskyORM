@@ -905,24 +905,24 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         $column = Column::create(Column::TYPE_STRING, 'test')
             ->disallowsNullValues()
             ->setAllowedValues(['abrakadabra']);
-        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, 'test'));
-        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, ''));
-        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, \PeskyORM\Core\DbExpr::create('test')));
+        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, 'test', false));
+        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, '', false));
+        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, \PeskyORM\Core\DbExpr::create('test'), false));
         static::assertEquals(
             ['not null'],
-            RecordValueHelpers::isValidDbColumnValue($column, null, ['value_cannot_be_null' => 'not null'])
+            RecordValueHelpers::isValidDbColumnValue($column, null, false, ['value_cannot_be_null' => 'not null'])
         );
         $column->convertsEmptyStringToNull();
-        static::assertEquals(['value_cannot_be_null'], RecordValueHelpers::isValidDbColumnValue($column, ''));
+        static::assertEquals(['value_cannot_be_null'], RecordValueHelpers::isValidDbColumnValue($column, '', false));
         $column->allowsNullValues();
-        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, null));
-        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, ''));
-        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, \PeskyORM\Core\DbExpr::create('test')));
+        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, null, false));
+        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, '', false));
+        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, \PeskyORM\Core\DbExpr::create('test'), false));
         // invalid valie
         $column = Column::create(Column::TYPE_INT, 'test')
             ->disallowsNullValues()
             ->setAllowedValues(['abrakadabra']);
-        static::assertEquals(['value_must_be_integer'], RecordValueHelpers::isValidDbColumnValue($column, 'not_int'));
+        static::assertEquals(['value_must_be_integer'], RecordValueHelpers::isValidDbColumnValue($column, 'not_int', false));
     }
 
     /**
