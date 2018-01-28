@@ -287,7 +287,7 @@ class Relation {
     }
 
     /**
-     * @param string|\Closure $displayColumnName
+     * @param string|\Closure $displayColumnName - function(array $relationData) { return $relationData['column']; };
      * @return $this
      * @throws \InvalidArgumentException
      */

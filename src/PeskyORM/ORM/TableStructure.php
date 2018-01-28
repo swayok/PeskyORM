@@ -24,11 +24,19 @@ abstract class TableStructure implements TableStructureInterface {
     /**
      * @var null|Column
      */
-    protected $pk = null;
+    protected $pk;
     /**
      * @var Column[]
      */
     protected $fileColumns = [];
+    /**
+     * @var Column[]
+     */
+    protected $columsThatExistInDb = [];
+    /**
+     * @var Column[]
+     */
+    protected $columsThatDoNotExistInDb = [];
 
     /**
      * At first it contains only ReflectionMethod objects and lazy-loads Column objects later
@@ -44,6 +52,8 @@ abstract class TableStructure implements TableStructureInterface {
 
     /**
      * @return $this
+     * @throws \PeskyORM\Exception\OrmException
+     * @throws \BadMethodCallException
      */
     static public function getInstance() {
         $class = get_called_class();
@@ -184,6 +194,28 @@ abstract class TableStructure implements TableStructureInterface {
     }
 
     /**
+     * @return Column[]
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    static public function getColumnsThatExistInDb() {
+        static::i()->_loadAllColumnsConfigs();
+        return static::i()->columsThatExistInDb;
+    }
+
+    /**
+     * @return Column[]
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    static public function getColumnsThatDoNotExistInDb() {
+        static::i()->_loadAllColumnsConfigs();
+        return static::i()->columsThatDoNotExistInDb;
+    }
+
+    /**
      * @param $relationName
      * @return bool
      */
@@ -240,6 +272,7 @@ abstract class TableStructure implements TableStructureInterface {
 
     /**
      * Use table description received from DB to automatically create column configs
+     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     protected function createMissingColumnConfigsFromDbTableDescription() {
@@ -308,6 +341,11 @@ abstract class TableStructure implements TableStructureInterface {
             }
             if ($config->isItAFile()) {
                 $this->fileColumns[$config->getName()] = $config;
+            }
+            if ($config->isItExistsInDb()) {
+                $this->columsThatExistInDb[$config->getName()] = $config;
+            } else {
+                $this->columsThatDoNotExistInDb[$config->getName()] = $config;
             }
         }
         return $this->columns[$colName];

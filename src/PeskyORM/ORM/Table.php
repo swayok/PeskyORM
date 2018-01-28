@@ -361,7 +361,11 @@ abstract class Table implements TableInterface {
      * @throws \InvalidArgumentException
      */
     static public function getLastQuery($useWritableConnection) {
-        return static::getConnection($useWritableConnection)->getLastQuery();
+        try {
+            return static::getConnection($useWritableConnection)->getLastQuery();
+        } catch (\Exception $exception) {
+            return $exception->getMessage() . '. ' . $exception->getTraceAsString();
+        }
     }
 
     /**

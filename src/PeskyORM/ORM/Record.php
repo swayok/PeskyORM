@@ -154,38 +154,18 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      */
     static public function getColumnsThatExistInDb() {
-        static $columns = null;
-        if ($columns === null) {
-            $columns = [];
-            $allColumns = static::getColumns();
-            foreach ($allColumns as $name => $column) {
-                if ($column->isItExistsInDb()) {
-                    $columns[$name] = $column;
-                }
-            }
-        }
-        return $columns;
+        return static::getTableStructure()->getColumnsThatExistInDb();
     }
 
     /**
-     * @return array
+     * @return Column[] - key = column name
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
     static public function getColumnsThatDoNotExistInDb() {
-        static $columns = null;
-        if ($columns === null) {
-            $columns = [];
-            $allColumns = static::getColumns();
-            foreach ($allColumns as $name => $column) {
-                if (!$column->isItExistsInDb()) {
-                    $columns[$name] = $column;
-                }
-            }
-        }
-        return $columns;
+        return static::getTableStructure()->getColumnsThatDoNotExistInDb();
     }
 
     /**
@@ -1139,7 +1119,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     protected function getAllColumnsWithUpdatableValues() {
         $columnsNames = [];
         foreach (static::getColumns() as $columnName => $column) {
-            if ($column->isValueCanBeSetOrChanged() && ($column->isItExistsInDb() || $column->isItAFile())) {
+            if ($column->isValueCanBeSetOrChanged() && $column->isItExistsInDb()) {
                 $columnsNames[] = $columnName;
             }
         }

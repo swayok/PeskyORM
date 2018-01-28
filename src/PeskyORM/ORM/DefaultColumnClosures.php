@@ -137,7 +137,8 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
         $errors = RecordValueHelpers::isValidDbColumnValue(
             $column,
             $value,
-            $column::getValidationErrorsLocalization()
+            $isFromDb,
+            $column::getValidationErrorsMessages()
         );
         if (count($errors) > 0) {
             return $errors;
@@ -167,7 +168,8 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
         return RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn(
             $column,
             $value,
-            $column::getValidationErrorsLocalization()
+            $isFromDb,
+            $column::getValidationErrorsMessages()
         );
     }
 

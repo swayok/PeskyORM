@@ -388,7 +388,7 @@ class TempRecord implements RecordInterface {
         } else {
             $ret = [];
             foreach ($columnsNames as $key) {
-                $ret[$key] =$this->getValue($key);
+                $ret[$key] = $this->getValue($key);
             }
             return $ret;
         }
