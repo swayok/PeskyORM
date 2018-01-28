@@ -28,12 +28,12 @@ class RecordsSet extends RecordsArray {
      * Used for optimized iteration that uses pagination to fetch small packs of records instead of fetching all at once
      * @var int
      */
-    protected $recordsLimitPerPageForOptimizedIteration = 50;
+    protected $recordsLimitPerPageForOptimizedIteration = 1000;
     /**
      * Automatically activates optimized iteration when records count is expected to be higher then this value
      * @var int
      */
-    protected $minRecordsCountForOptimizedIteration = 200;
+    protected $minRecordsCountForOptimizedIteration = 2000;
     /**
      * Use pagination to fetch small packs of records instead of fetching all at once?
      * Automatically enabed when there is no limit/offset in Select or when
@@ -46,7 +46,7 @@ class RecordsSet extends RecordsArray {
      * problems
      * @var int
      */
-    protected $maxRecordsToStoreDuringOptimizedIteration = 1000;
+    protected $maxRecordsToStoreDuringOptimizedIteration = 10000;
     /**
      * @var int
      */
@@ -104,12 +104,37 @@ class RecordsSet extends RecordsArray {
             || $this->select->getLimit() > $this->minRecordsCountForOptimizedIteration
         );
         if ($this->optimizeIterationOverLargeAmountOfRecords) {
+            $this->setOptimizeIterationOverLargeAmountOfRecords(true);
+        }
+        return $this;
+    }
+
+    /**
+     * @param bool $enable
+     * @param null|int $recordsPerRequest - how many records should be fetched per DB query (Default: 1000)
+     * @param null|int $maxRecordsToHold - max amount of records to be stored in $this->records (Default: 10000)
+     * @return $this
+     * @throws \UnexpectedValueException
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     */
+    public function setOptimizeIterationOverLargeAmountOfRecords($enable, $recordsPerRequest = null, $maxRecordsToHold = null) {
+        $this->optimizeIterationOverLargeAmountOfRecords = (bool) $enable;
+        if ($this->optimizeIterationOverLargeAmountOfRecords) {
+            if ((int)$recordsPerRequest > 0) {
+                $this->recordsLimitPerPageForOptimizedIteration = (int)$recordsPerRequest;
+            }
+            if ((int)$maxRecordsToHold > 0) {
+                $this->maxRecordsToStoreDuringOptimizedIteration = (int)$maxRecordsToHold;
+            }
             $this->selectForOptimizedIteration = clone $this->select;
             $this->selectForOptimizedIteration->limit($this->recordsLimitPerPageForOptimizedIteration);
             $pkCol = $this->selectForOptimizedIteration->getTableStructure()->getPkColumnName();
             if (!$this->selectForOptimizedIteration->hasOrderingForColumn($pkCol)) {
                 $this->selectForOptimizedIteration->orderBy($pkCol, true);
             }
+        } else {
+            $this->selectForOptimizedIteration = null;
         }
         return $this;
     }
@@ -236,18 +261,6 @@ class RecordsSet extends RecordsArray {
      * @throws \InvalidArgumentException
      */
     protected function getRecords() {
-        return $this->optimizeIterationOverLargeAmountOfRecords
-            ? $this->selectForOptimizedIteration->fetchMany()
-            : $this->getAllRecords();
-    }
-
-    /**
-     * @return array
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
-     */
-    protected function getAllRecords() {
         return $this->select->fetchMany();
     }
 
@@ -259,7 +272,7 @@ class RecordsSet extends RecordsArray {
      */
     public function toArrays() {
         if ($this->records === null || $this->count() !== count($this->records)) {
-            $this->records = $this->getAllRecords();
+            $this->records = $this->getRecords();
         }
         return $this->records;
     }
@@ -273,7 +286,7 @@ class RecordsSet extends RecordsArray {
      * @throws \InvalidArgumentException
      */
     public function fetch() {
-        $this->getAllRecords();
+        $this->getRecords();
         return $this;
     }
 
@@ -313,11 +326,15 @@ class RecordsSet extends RecordsArray {
                     $this->recordsLimitPerPageForOptimizedIteration,
                     $this->select->getOffset() + $this->localOffsetForOptimizedIteration
                 );
-                $newRecords = $this->getRecords();
+                $newRecords = $this->selectForOptimizedIteration->fetchMany();
+                if (count($newRecords) != $this->selectForOptimizedIteration->getLimit()) {
+                    $this->invalidateCount();
+                    $this->count();
+                }
                 if (count($this->records) + $this->recordsLimitPerPageForOptimizedIteration >= $this->maxRecordsToStoreDuringOptimizedIteration) {
                     $this->records = [];
                 }
-                array_splice($this->records, $this->localOffsetForOptimizedIteration, $this->recordsLimitPerPageForOptimizedIteration, $newRecords);
+                array_splice($this->records, $this->localOffsetForOptimizedIteration, $this->selectForOptimizedIteration->getLimit(), $newRecords);
             } else {
                 $this->records = $this->getRecords();
             }
