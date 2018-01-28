@@ -6,15 +6,22 @@ interface DbConnectionConfigInterface {
 
     /**
      * @param array $config
+     * @param null $name
      * @return $this
      */
-    static public function fromArray(array $config);
+    static public function fromArray(array $config, $name = null);
 
     /**
      * Get PDO connection string (ex: pgsql:host=localhost;port=5432;dbname=testdb;user=bruce;password=mypass)
      * @return string
      */
     public function getPdoConnectionString();
+
+    /**
+     * Connection name (Default: DB name)
+     * @return string
+     */
+    public function getName();
 
     /**
      * @return string

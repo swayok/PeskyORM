@@ -7,6 +7,7 @@ use PeskyORM\Core\DbConnectionConfigInterface;
 
 class PostgresConfig implements DbConnectionConfigInterface {
 
+    protected $name;
     protected $dbName;
     protected $dbUser;
     protected $dbPassword;
@@ -25,14 +26,18 @@ class PostgresConfig implements DbConnectionConfigInterface {
 
     /**
      * @param array $config
+     * @param null $name
      * @return static
      * @throws \InvalidArgumentException
      */
-    static public function fromArray(array $config) {
+    static public function fromArray(array $config, $name = null) {
         $dbName = $config['database'] ?: null;
         $user = $config['username'] ?: null;
         $password = $config['password'] ?: null;
         $object = new static($dbName, $user, $password);
+        if ($name) {
+            $object->setName($name);
+        }
         if (!empty($config['host'])) {
             $object->setDbHost($config['host']);
         }
@@ -102,6 +107,22 @@ class PostgresConfig implements DbConnectionConfigInterface {
             $dsn .= ";{$option}={$value}";
         }
         return $dsn;
+    }
+
+    /**
+     * @return string
+     */
+    public function getName() {
+        return $this->name ?: $this->dbName;
+    }
+
+    /**
+     * @param string $name
+     * @return $this
+     */
+    public function setName($name) {
+        $this->name = $name;
+        return $this;
     }
 
     /**

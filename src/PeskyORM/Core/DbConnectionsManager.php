@@ -79,7 +79,7 @@ class DbConnectionsManager {
         $adapterClass = static::$adapters[$adapterName];
         /** @var DbConnectionConfigInterface $configClass */
         $configClass = $adapterClass::getConnectionConfigClass();
-        $connectionConfig = $configClass::fromArray($connectionInfo);
+        $connectionConfig = $configClass::fromArray($connectionInfo, $connectionName);
         return static::createConnection($connectionName, $adapterName, $connectionConfig);
     }
 
