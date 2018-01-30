@@ -2,12 +2,25 @@
 
 namespace PeskyORM\Profiling;
 
+use PeskyORM\Core\DbAdapter;
+use PeskyORM\Core\DbAdapterInterface;
+
 class PeskyOrmPdoProfiler {
 
     /**
      * @var TraceablePDO[]
      */
     static protected $connections;
+
+    /**
+     * Init PDO profiling
+     */
+    static public function init() {
+        DbAdapter::setConnectionWrapper(function (DbAdapterInterface $adapter, \PDO $pdo) {
+            $name = $adapter->getConnectionConfig()->getName() . ' (DB: ' . $adapter->getConnectionConfig()->getDbName() . ')';
+            return new TraceablePDO($pdo, $name);
+        });
+    }
 
     /**
      * Adds a new PDO instance to be collector
