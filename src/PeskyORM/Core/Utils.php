@@ -145,7 +145,9 @@ class Utils {
                         $subGlue,
                         $conditionValuePreprocessor
                     );
-                    $assembled[] = '(' . $subConditons . ')';
+                    if (!empty($subConditons)) {
+                        $assembled[] = '(' . $subConditons . ')';
+                    }
                 } else {
                     $operator = '=';
                     // find and prepare operator
