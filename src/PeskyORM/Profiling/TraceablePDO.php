@@ -206,7 +206,7 @@ class TraceablePDO extends PDO {
             $ex = new PDOException($error[2], $error[0]);
         }
 
-        $trace->end($ex);
+        $trace->end($ex, $result instanceof \PDOStatement ? $result->rowCount() : 0);
         $this->addExecutedStatement($trace);
 
         if ($this->pdo->getAttribute(PDO::ATTR_ERRMODE) === PDO::ERRMODE_EXCEPTION && $ex !== null) {
@@ -238,7 +238,7 @@ class TraceablePDO extends PDO {
     }
 
     /**
-     * Returns the peak memory usage while performing statements
+     * Returns overall memory usage after performing all statements
      *
      * @return int
      */

@@ -52,8 +52,8 @@ class PeskyOrmPdoProfiler {
             'statements_count' => 0,
             'failed_statements_count' => 0,
             'accumulated_duration' => 0,
-            'memory_usage' => 0,
-            'peak_memory_usage' => 0,
+//            'accumulated_memory_usage' => 0,
+            'max_memory_usage' => 0,
             'statements' => [],
         ];
 
@@ -62,15 +62,11 @@ class PeskyOrmPdoProfiler {
             $data['statements_count'] += $pdodata['statements_count'];
             $data['failed_statements_count'] += $pdodata['failed_statements_count'];
             $data['accumulated_duration'] += $pdodata['accumulated_duration'];
-            $data['memory_usage'] += $pdodata['memory_usage'];
-            $data['peak_memory_usage'] = max($data['peak_memory_usage'], $pdodata['peak_memory_usage']);
+//            $data['accumulated_memory_usage'] += $pdodata['accumulated_memory_usage'];
+            $data['max_memory_usage'] = max($data['max_memory_usage'], $pdodata['max_memory_usage']);
             /** @noinspection SlowArrayOperationsInLoopInspection */
             $data['statements'][$name] = $pdodata['statements'];
         }
-
-        $data['accumulated_duration_str'] = static::formatDuration($data['accumulated_duration']);
-        $data['memory_usage_str'] = static::formatBytes($data['memory_usage']);
-        $data['peak_memory_usage_str'] = static::formatBytes($data['peak_memory_usage']);
 
         return $data;
     }
@@ -89,15 +85,13 @@ class PeskyOrmPdoProfiler {
 //                'sql' => $this->renderSqlWithParams ? $stmt->getSqlWithParams() : $stmt->getSql(),
                 'sql' => $stmt->getSql(),
                 'row_count' => $stmt->getRowCount(),
-                'stmt_id' => $stmt->getPreparedId(),
-//                'prepared_stmt' => $stmt->getSql(),
-                'params' => (object)$stmt->getParameters(),
+                'prepared_statement_id' => $stmt->getPreparedId(),
+//                'prepared_statement' => $stmt->getSql(),
+                'params' => $stmt->getParameters(),
                 'duration' => $stmt->getDuration(),
-                'duration_str' => static::formatDuration($stmt->getDuration()),
-                'memory' => $stmt->getMemoryUsage(),
-                'memory_str' => static::formatBytes($stmt->getMemoryUsage()),
-                'end_memory' => $stmt->getEndMemory(),
-                'end_memory_str' => static::formatBytes($stmt->getEndMemory()),
+                'memory_before' => $stmt->getStartMemory(),
+                'memory_used' => $stmt->getMemoryUsage(),
+                'memory_after' => $stmt->getEndMemory(),
                 'is_success' => $stmt->isSuccess(),
                 'error_code' => $stmt->getErrorCode(),
                 'error_message' => $stmt->getErrorMessage(),
@@ -110,11 +104,8 @@ class PeskyOrmPdoProfiler {
             'statements_count' => count($stmts),
             'failed_statements_count' => count($pdo->getFailedExecutedStatements()),
             'accumulated_duration' => $pdo->getAccumulatedStatementsDuration(),
-//            'accumulated_duration_str' => static::formatDuration($pdo->getAccumulatedStatementsDuration()),
-            'memory_usage' => $pdo->getMemoryUsage(),
-//            'memory_usage_str' => static::formatBytes($pdo->getPeakMemoryUsage()),
-            'peak_memory_usage' => $pdo->getPeakMemoryUsage(),
-//            'peak_memory_usage_str' => static::formatBytes($pdo->getPeakMemoryUsage()),
+//            'accumulated_memory_usage' => $pdo->getMemoryUsage(),
+            'max_memory_usage' => $pdo->getPeakMemoryUsage(),
             'statements' => $stmts,
         ];
     }
