@@ -296,9 +296,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $this->relatedRecords = [];
         $this->iteratorIdx = 0;
         $this->cleanUpdates();
-        foreach (static::getTableStructure()->getColumns() as $columnName => $column) {
-            $this->values[$columnName] = $this->createValueObject($column);
-        }
         return $this;
     }
 
@@ -318,11 +315,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      */
     protected function resetValue($column) {
-        if (is_string($column)) {
-            $this->values[$column] = $this->createValueObject(static::getColumn($column));
-        } else {
-            $this->values[$column->getName()] = $this->createValueObject($column);
-        }
+        unset($this->values[is_string($column) ? $column : $column->getName()]);
         return $this;
     }
 
@@ -344,11 +337,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     protected function getValueObject($column) {
         if (is_string($column)) {
-            static::getColumn($column); // to validate if there is such column
-            return $this->values[$column];
-        } else {
-            return $this->values[$column->getName()];
+            $column = static::getColumn($column);
         }
+        $colName = $column->getName();
+        if (!isset($this->values[$colName])) {
+            $this->values[$colName] = $this->createValueObject($column);
+        }
+        return $this->values[$colName];
     }
 
     /**
@@ -1569,9 +1564,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     ) {
         // normalize column names
         if (empty($columnsNames) || (count($columnsNames) === 1 && $columnsNames[0] === '*')) {
-            $columnsNames = array_keys($this->values);
+            $columnsNames = array_keys(static::getColumns());
         } else if (in_array('*', $columnsNames, true)) {
-            $columnsNames = array_merge($columnsNames, array_keys($this->values));
+            $columnsNames = array_merge($columnsNames, array_keys(static::getColumns()));
             foreach ($columnsNames as $index => $relationName) {
                 if ($relationName === '*') {
                     unset($columnsNames[$index]);
@@ -1719,7 +1714,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     public function getDefaults(array $columns = [], $ignoreColumnsThatDoNotExistInDB = true, $nullifyDbExprValues = true) {
         if (count($columns) === 0) {
-            $columns = array_keys($this->values);
+            $columns = array_keys(static::getColumns());
         }
         $values = array();
         foreach ($columns as $columnName) {
@@ -2020,7 +2015,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $this->reset();
         /** @var array $data */
         foreach ($data as $name => $value) {
-            $this->values[$name]->unserialize($value);
+            $this->getValueObject($name)->unserialize($value);
         }
     }
 
