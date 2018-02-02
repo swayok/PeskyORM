@@ -6,7 +6,6 @@ use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbConnectionsManager;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
-use PeskyORM\Exception\OrmException;
 use Swayok\Utils\StringUtils;
 
 abstract class Table implements TableInterface {
@@ -21,14 +20,12 @@ abstract class Table implements TableInterface {
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
-     * @throws OrmException
      */
     final static public function getInstance() {
-        $class = get_called_class();
-        if (!array_key_exists($class, self::$instances)) {
-            self::$instances[$class] = new static();
+        if (!isset(self::$instances[static::class])) {
+            self::$instances[static::class] = new static();
         }
-        return self::$instances[$class];
+        return self::$instances[static::class];
     }
 
     /**
@@ -37,7 +34,6 @@ abstract class Table implements TableInterface {
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
-     * @throws OrmException
      */
     final static public function i() {
         return static::getInstance();
@@ -47,7 +43,6 @@ abstract class Table implements TableInterface {
      * Get table name
      * @return string
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -59,7 +54,6 @@ abstract class Table implements TableInterface {
      * @param bool $writable - true: connection must have access to write data into DB
      * @return DbAdapterInterface
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -71,7 +65,6 @@ abstract class Table implements TableInterface {
      * @return TableStructure
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      */
     static public function getStructure() {
@@ -82,7 +75,6 @@ abstract class Table implements TableInterface {
      * @return string
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      */
     static public function getAlias() {
@@ -93,7 +85,6 @@ abstract class Table implements TableInterface {
      * @return string
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      */
     public function getTableAlias() {
@@ -105,7 +96,6 @@ abstract class Table implements TableInterface {
 
     /**
      * @return bool
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -116,7 +106,6 @@ abstract class Table implements TableInterface {
 
     /**
      * @return Column
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -127,7 +116,6 @@ abstract class Table implements TableInterface {
 
     /**
      * @return string
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -139,7 +127,6 @@ abstract class Table implements TableInterface {
     /**
      * @param string $relationName - alias for relation defined in TableStructure
      * @return TableInterface
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -155,7 +142,6 @@ abstract class Table implements TableInterface {
      * @param string|null $joinName - string: specific join name; null: $relationName is used
      * @return OrmJoinInfo
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -172,7 +158,6 @@ abstract class Table implements TableInterface {
      * @return bool
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      */
     static public function hasRelation($relationName) {
@@ -182,7 +167,6 @@ abstract class Table implements TableInterface {
     /**
      * @return DbExpr
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @throws \PeskyORM\Exception\DbException
@@ -211,7 +195,7 @@ abstract class Table implements TableInterface {
             ->fromConfigsArray($conditions)
             ->columns($columns);
         if ($configurator !== null) {
-            call_user_func($configurator, $select);
+            $configurator($select);
         }
         return $select;
     }
@@ -356,7 +340,6 @@ abstract class Table implements TableInterface {
      * @param bool $useWritableConnection
      * @return null|string
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -447,7 +430,6 @@ abstract class Table implements TableInterface {
      *          - false: do not return anything
      *          - array: list of columns to return values for
      * @return array|bool - array returned only if $returning is not empty
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \PDOException
@@ -470,7 +452,6 @@ abstract class Table implements TableInterface {
      *          - false: do not return anything
      *          - array: list of columns to return values for
      * @return array|bool - array returned only if $returning is not empty
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -497,7 +478,6 @@ abstract class Table implements TableInterface {
      *          - int: number of modified rows (when $returning === false)
      *          - array: modified records (when $returning !== false)
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -520,7 +500,6 @@ abstract class Table implements TableInterface {
      *          - array: list of columns to return values for
      * @return int|array - int: number of deleted records | array: returned only if $returning is not empty
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @throws \PDOException
@@ -537,7 +516,6 @@ abstract class Table implements TableInterface {
      * Get list of PDO data types for requested $columns
      * @param array $columns
      * @return array
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -566,6 +544,7 @@ abstract class Table implements TableInterface {
         return $pdoDataTypes;
     }
 
+    /** @noinspection PhpUnusedPrivateMethodInspection */
     /**
      * Resets class instances (used for testing only, that's why it is private)
      */

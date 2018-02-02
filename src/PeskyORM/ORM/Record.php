@@ -129,7 +129,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Exception\OrmException
      */
     static public function getTableStructure() {
         return static::getTable()->getStructure();
@@ -1037,7 +1036,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * - commit() and rollback() will throw exception if used without begin()
      * - save() will throw exception if used after begin()
      * @return $this
-     * @throws \PeskyORM\Exception\RecordNotFoundException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \PDOException
@@ -1185,7 +1183,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \PeskyORM\Exception\OrmException
      * @throws \PeskyORM\Exception\DbException
      * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PeskyORM\Exception\InvalidTableColumnConfigException
      * @throws \UnexpectedValueException
      */
     protected function saveToDb(array $columnsToSave = []) {
@@ -1236,8 +1233,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $data
      * @return bool
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @throws \PDOException
@@ -1296,7 +1291,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
-     * @throws InvalidDataException
      */
     protected function collectValuesForSave(array &$columnsToSave, $isUpdate) {
         $data = [];
@@ -1424,7 +1418,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             } else {
                 $value = null;
             }
-            $columnErrors = $this->validateValue($column, $value, false);
+            $columnErrors = static::validateValue($column, $value, false);
             if (!empty($columnErrors)) {
                 $errors[$columnName] = $columnErrors;
             }
