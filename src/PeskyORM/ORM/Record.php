@@ -136,7 +136,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * @return Column[] - key = column name
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -148,7 +147,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @return Column[] - key = column name
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -159,7 +157,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @return Column[] - key = column name
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -170,7 +167,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @param string $name
      * @return Column
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -182,7 +178,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @param string $name
      * @return bool
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -193,7 +188,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * @return Column
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -204,7 +198,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * @return string
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -215,7 +208,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * @return Relation[]
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -227,7 +219,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @param string $name
      * @return Relation
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -239,7 +230,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @param string $name
      * @return bool
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -250,7 +240,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * @return Column[]
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -261,7 +250,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * @return bool
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -294,7 +282,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * Resets all values and related records
      * @return $this
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -326,7 +313,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @param string|Column $column
      * @return $this
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -352,7 +338,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Warning: do not use it to get/set/check value!
      * @param string|Column $column
      * @return RecordValue
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -370,7 +355,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param string|Column $column
      * @param null $format
      * @return mixed
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -385,7 +369,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param mixed $default
      * @return mixed
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -398,7 +381,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param string|Column $column
      * @return mixed
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -410,7 +392,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param string|Column $column
      * @return bool
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -422,7 +403,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param string|Column $column
      * @return bool
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -438,7 +418,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Exception\OrmException
      */
     public function hasValue($column, $trueIfThereIsDefaultValue = false) {
         return $this->_hasValue($this->getValueObject($column), $trueIfThereIsDefaultValue);
@@ -457,7 +436,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param string|Column $column
      * @return bool
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -527,7 +505,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @param string|Column $column
      * @return $this
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
@@ -549,7 +526,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Unset primary key value
      * @return $this
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -563,7 +539,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param string|int|float $prevPkValue
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      */
     protected function onPrimaryKeyChangeForRecordReceivedFromDb($prevPkValue) {
@@ -578,7 +553,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * @return mixed
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -589,7 +563,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * @return bool
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -604,7 +577,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return bool
      * @throws \UnexpectedValueException
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -619,7 +591,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * Check if current Record exists in DB using DB query
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -668,7 +639,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             } else {
                 $relatedRecord = $relationTable->newRecord();
             }
-        } else if ($relatedRecord instanceof Record) {
+        } else if ($relatedRecord instanceof self) {
             if ($relatedRecord::getTable()->getName() !== $relationTable) {
                 throw new \InvalidArgumentException(
                     "\$relatedRecord argument must be an instance of Record class for the '{$relationTable->getName()}' DB table"
@@ -688,7 +659,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param string $name
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @return $this
      */
@@ -771,7 +741,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param string|Relation $relationName
      * @return bool
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -786,7 +755,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Check if related object(s) are stored in this Record
      * @param string $relationName
      * @return bool
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -1039,7 +1007,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      */
     public function begin() {
@@ -1109,7 +1076,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * Get names of all columns that can be saved to db
      * @return array
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -1128,7 +1094,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Get names of all columns that should automatically update values on each save
      * Note: throws exception if used without begin()
      * @return array
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -1288,7 +1253,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param bool $isUpdate
      * @return array
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -1326,7 +1290,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param $isUpdate
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      */
     protected function runColumnSavingExtenders(array $columnsToSave, array $dataSavedToDb, array $updatesReceivedFromDb, $isUpdate) {
@@ -1381,7 +1344,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param mixed $value
      * @param bool $isFromDb
      * @return array - errors
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
@@ -1399,7 +1361,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $columnsNames - column names to validate. If col
      * @param bool $isUpdate
      * @return array
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -1515,7 +1476,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param bool $deleteFiles - true: delete all attached files | false: do not delete attached files
      * @return $this
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -1661,7 +1621,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 );
             }
             $relatedRecord = $this->getRelatedRecord($relatedRecordName, $loadRelatedRecordsIfNotSet);
-            if ($relatedRecord instanceof Record) {
+            if ($relatedRecord instanceof self) {
                 if ($relatedRecord->existsInDb()) {
                     $data[$relatedRecordName] = $withFilesInfo
                         ? $relatedRecord->toArray($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet)
@@ -1693,7 +1653,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return mixed
      * @throws \PDOException
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -1754,7 +1713,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param bool $ignoreColumnsThatDoNotExistInDB - true: if column does not exist in DB - its value will not be returned
      * @param bool $nullifyDbExprValues - true: if default value is DbExpr - replace it by null
      * @return array
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -1782,7 +1740,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Return the current element
      * @return mixed
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -1805,7 +1762,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * Return the key of the current element
      * @return mixed scalar on success, or null on failure.
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -1821,7 +1777,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * Checks if current position is valid
      * @return boolean
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -1853,7 +1808,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 return false;
             }
             $record = $this->getRelatedRecord($key, true);
-            return $record instanceof Record ? $record->existsInDb() : $record->count();
+            return $record instanceof self ? $record->existsInDb() : $record->count();
         } else if (static::hasColumn($key)) {
             return $this->hasValue($key);
         } else {
@@ -1907,7 +1862,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return Record
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      */
     public function offsetUnset($key) {
@@ -1964,7 +1918,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param string $name - column name or relation name
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      */
     public function __unset($name) {
@@ -2007,7 +1960,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 )
                 || (
                     is_object($value)
-                    && !($value instanceof Record)
+                    && !($value instanceof self)
                     && !($value instanceof RecordsSet)
                 )
             ) {
@@ -2055,7 +2008,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * </p>
      * @return void
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @since 5.1.0
