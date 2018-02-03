@@ -1153,7 +1153,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             // nothing to save
             return;
         }
-        $diff = array_diff($columnsToSave, array_keys($this->values));
+        $diff = array_diff($columnsToSave, array_keys(static::getColumns()));
         if (count($diff)) {
             throw new \InvalidArgumentException(
                 '$columnsToSave argument contains unknown columns: ' . implode(', ', $diff)
