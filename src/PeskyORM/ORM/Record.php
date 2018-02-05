@@ -10,11 +10,20 @@ use Swayok\Utils\StringUtils;
 abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Serializable {
 
     /**
+     * @var TableStructureInterface[]
+     */
+    private static $tableStructures = [];
+    /**
+     * @var array
+     */
+    private static $columns = [];
+
+    /**
      * @var RecordValue[]
      */
     protected $values = [];
     /**
-     * @var Record[]|RecordsSet[]
+     * @var Record[]|RecordInterface[]|RecordsSet[]
      */
     protected $relatedRecords = [];
     /**
@@ -125,13 +134,16 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
 
     /**
-     * @return TableStructure
+     * @return TableStructure|TableStructureInterface
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      */
     static public function getTableStructure() {
-        return static::getTable()->getStructure();
+        if (!isset(self::$tableStructures[static::class])) {
+            self::$tableStructures[static::class] = static::getTable()->getStructure();
+        }
+        return self::$tableStructures[static::class];
     }
 
     /**
@@ -141,7 +153,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      */
     static public function getColumns() {
-        return static::getTableStructure()->getColumns();
+        return self::getCachedColumnsOrRelations();
     }
 
     /**
@@ -151,7 +163,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      */
     static public function getColumnsThatExistInDb() {
-        return static::getTableStructure()->getColumnsThatExistInDb();
+        return self::getCachedColumnsOrRelations('db_columns');
     }
 
     /**
@@ -161,18 +173,41 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      */
     static public function getColumnsThatDoNotExistInDb() {
-        return static::getTableStructure()->getColumnsThatDoNotExistInDb();
+        return self::getCachedColumnsOrRelations('not_db_columns');
+    }
+
+    /**
+     * @param string $key
+     * @return Column[]|Column|Relation[]
+     */
+    static private function getCachedColumnsOrRelations($key = 'columns') {
+        // significantly decreases execution time on heavy ORM usage (proved by profilig with xdebug)
+        if (!isset(self::$columns[static::class])) {
+            self::$columns[static::class] = [
+                'columns' => static::getTableStructure()->getColumns(),
+                'db_columns' => static::getTableStructure()->getColumnsThatExistInDb(),
+                'not_db_columns' => static::getTableStructure()->getColumnsThatDoNotExistInDb(),
+                'file_columns' => static::getTableStructure()->getFileColumns(),
+                'pk_column' => static::getTableStructure()->getPkColumn(),
+                'relations' => static::getTableStructure()->getRelations(),
+            ];
+        }
+        return self::$columns[static::class][$key];
     }
 
     /**
      * @param string $name
      * @return Column
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function getColumn($name) {
-        return static::getTableStructure()->getColumn($name);
+        $columns = static::getColumns();
+        if (!isset($columns[$name])) {
+            throw new \InvalidArgumentException(
+                "There is no column '$name' in " . get_class(static::getTableStructure())
+            );
+        }
+        return $columns[$name];
     }
 
     /**
@@ -183,7 +218,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      */
     static public function hasColumn($name) {
-        return static::getTableStructure()->hasColumn($name);
+        return isset(static::getCachedColumnsOrRelations()[$name]);
     }
 
     /**
@@ -193,7 +228,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      */
     static public function getPrimaryKeyColumn() {
-        return static::getTableStructure()->getPkColumn();
+        return static::getCachedColumnsOrRelations('pk_column');
     }
 
     /**
@@ -213,7 +248,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      */
     static public function getRelations() {
-        return static::getTableStructure()->getRelations();
+        return static::getCachedColumnsOrRelations('relations');
     }
 
     /**
@@ -224,7 +259,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      */
     static public function getRelation($name) {
-        return static::getTableStructure()->getRelation($name);
+        $relations = static::getRelations();
+        if (!isset($relations[$name])) {
+            throw new \InvalidArgumentException(
+                "There is no relation '$name' in " . get_class(static::getTableStructure())
+            );
+        }
+        return $relations[$name];
     }
 
     /**
@@ -235,7 +276,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      */
     static public function hasRelation($name) {
-        return static::getTableStructure()->hasRelation($name);
+        return isset(static::getRelations()[$name]);
     }
 
     /**
@@ -245,7 +286,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      */
     static public function getFileColumns() {
-        return static::getTableStructure()->getFileColumns();
+        return static::getCachedColumnsOrRelations('file_columns');
     }
 
     /**
@@ -255,7 +296,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      */
     static public function hasFileColumns() {
-        return static::getTableStructure()->hasFileColumns();
+        return count(static::getFileColumns()) > 0;
     }
 
     /**
@@ -300,11 +341,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
 
     /**
-     * @param Column $column
+     * @param Column|string $column
      * @return RecordValue
      */
-    protected function createValueObject(Column $column) {
-        return RecordValue::create($column, $this);
+    protected function createValueObject($column) {
+        if (is_string($column)) {
+            $column = static::getColumn($column);
+        }
+        return new RecordValue($column, $this);
     }
 
     /**
@@ -336,10 +380,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      */
     protected function getValueObject($column) {
-        if (is_string($column)) {
-            $column = static::getColumn($column);
-        }
-        $colName = $column->getName();
+        $colName = is_string($column) ? $column : $column->getName();
         if (!isset($this->values[$colName])) {
             $this->values[$colName] = $this->createValueObject($column);
         }

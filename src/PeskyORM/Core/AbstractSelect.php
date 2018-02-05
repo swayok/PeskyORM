@@ -595,7 +595,7 @@ abstract class AbstractSelect {
      */
     public function hasOrderingForColumn($columnName) {
         $columnInfo = $this->analyzeColumnName($columnName, null, null, 'ORDER BY');
-        return array_key_exists($this->makeKeyForOrderBy($columnInfo), $this->orderBy);
+        return isset($this->orderBy[$this->makeKeyForOrderBy($columnInfo)]);
     }
 
     /**
@@ -906,7 +906,7 @@ abstract class AbstractSelect {
         }
         /** @var DbExpr|string $columnName */
         $cacheKey = ($isDbExpr ? $columnName->get() : $columnName) . "_{$columnAlias}_{$joinName}";
-        if (array_key_exists($cacheKey, $this->analyzedColumns)) {
+        if (isset($this->analyzedColumns[$cacheKey])) {
             return $this->analyzedColumns[$cacheKey];
         }
         if ($columnAlias !== null && !is_string($columnAlias)) {
@@ -1052,7 +1052,7 @@ abstract class AbstractSelect {
      * @return string
      */
     protected function getShortJoinAlias($alias) {
-        if (!array_key_exists($alias, $this->shortJoinAliases)) {
+        if (!isset($this->shortJoinAliases[$alias])) {
             // maybe it is already an alias?
             if (preg_match('%^[a-z][a-zA-Z0-9]{8}\d$%', $alias) && in_array($alias, $this->shortJoinAliases, true)) {
                 return $alias;
@@ -1070,7 +1070,7 @@ abstract class AbstractSelect {
      * @return string
      */
     protected function getShortColumnAlias($alias) {
-        if (!array_key_exists($alias, $this->shortColumnAliases)) {
+        if (!isset($this->shortColumnAliases[$alias])) {
             $this->shortColumnAliases[$alias] = mb_strlen($alias) > 16
                 ? chr(mt_rand(97, 122)) . hash('crc32b', $alias) . mt_rand(0, 9)
                 : $alias;
@@ -1450,10 +1450,10 @@ abstract class AbstractSelect {
         foreach ($record as $columnAlias => $value) {
             if (preg_match('%^_(.+?)__(.+?)$%', $columnAlias, $colInfo)) {
                 list(, $tableAlias, $column) = $colInfo;
-                if (array_key_exists($tableAlias, $shortJoinAliasToAlias)) {
+                if (isset($shortJoinAliasToAlias[$tableAlias])) {
                     $tableAlias = $shortJoinAliasToAlias[$tableAlias];
                 }
-                if (array_key_exists($column, $shortColumnAliasToAlias)) {
+                if (isset($shortColumnAliasToAlias[$column])) {
                     $column = $shortColumnAliasToAlias[$column];
                 }
                 if (empty($dataBlocks[$tableAlias])) {
