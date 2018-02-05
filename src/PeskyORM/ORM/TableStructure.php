@@ -47,6 +47,9 @@ abstract class TableStructure implements TableStructureInterface {
     /** @var Relation[] */
     protected $relations = [];
 
+    /** @var array */
+    protected $columnsRelations = [];
+
     /** @var TableStructure[]  */
     static private $instances = [];
 
@@ -54,7 +57,7 @@ abstract class TableStructure implements TableStructureInterface {
      * @return $this
      * @throws \BadMethodCallException
      */
-    static public function getInstance() {
+    final static public function getInstance() {
         if (!isset(self::$instances[static::class])) {
             new static();
         }
@@ -64,12 +67,12 @@ abstract class TableStructure implements TableStructureInterface {
     /**
      * @return $this
      */
-    static public function i() {
+    final static public function i() {
         return static::getInstance();
     }
 
     protected function __construct() {
-        if (array_key_exists(static::class, self::$instances)) {
+        if (isset(self::$instances[static::class])) {
             throw new \BadMethodCallException('Attempt to create 2nd instance of class ' . __CLASS__);
         }
         self::$instances[static::class] = $this;
@@ -77,9 +80,7 @@ abstract class TableStructure implements TableStructureInterface {
         if (static::$autodetectColumnConfigs) {
             $this->createMissingColumnConfigsFromDbTableDescription();
         }
-        // todo: remove this and refactor Column class so that it loads relations only when they are really required, not always
-        $this->_loadAllRelationsConfigs();
-        if (!$this->_findPkColumn(false)) {
+        if ($this->pk === null) {
             throw new OrmException('Table schema must contain primary key', OrmException::CODE_INVALID_TABLE_SCHEMA);
         }
     }
@@ -115,7 +116,7 @@ abstract class TableStructure implements TableStructureInterface {
      * @throws \InvalidArgumentException
      */
     static public function getColumn($colName) {
-        return static::getInstance()->_loadColumnConfig($colName);
+        return static::getInstance()->_getColumn($colName);
     }
 
     /**
@@ -125,7 +126,7 @@ abstract class TableStructure implements TableStructureInterface {
      * @throws \InvalidArgumentException
      */
     static public function getColumns() {
-        return static::getInstance()->_loadAllColumnsConfigs();
+        return static::getInstance()->columns;
     }
 
     /**
@@ -145,7 +146,7 @@ abstract class TableStructure implements TableStructureInterface {
      * @throws \InvalidArgumentException
      */
     static public function getPkColumn() {
-        return static::getInstance()->_findPkColumn();
+        return static::getInstance()->pk;
     }
 
     /**
@@ -155,7 +156,7 @@ abstract class TableStructure implements TableStructureInterface {
      * @throws \InvalidArgumentException
      */
     static public function hasPkColumn() {
-        return static::getInstance()->_findPkColumn(false) !== null;
+        return static::getInstance()->pk !== null;
     }
 
     /**
@@ -165,7 +166,6 @@ abstract class TableStructure implements TableStructureInterface {
      * @throws \InvalidArgumentException
      */
     static public function hasFileColumns() {
-        static::getInstance()->_loadAllColumnsConfigs();
         return count(static::getInstance()->fileColumns) > 0;
     }
 
@@ -177,8 +177,7 @@ abstract class TableStructure implements TableStructureInterface {
      * @throws \InvalidArgumentException
      */
     static public function hasFileColumn($colName) {
-        $instance = static::getInstance();
-        return $instance->_hasColumn($colName) && $instance->_loadColumnConfig($colName)->isItAFile();
+        return static::getInstance()->_getColumn($colName)->isItAFile();
     }
 
     /**
@@ -188,9 +187,7 @@ abstract class TableStructure implements TableStructureInterface {
      * @throws \InvalidArgumentException
      */
     static public function getFileColumns() {
-        $instance = static::getInstance();
-        $instance->_loadAllColumnsConfigs();
-        return $instance->fileColumns;
+        return static::getInstance()->fileColumns;
     }
 
     /**
@@ -200,9 +197,7 @@ abstract class TableStructure implements TableStructureInterface {
      * @throws \BadMethodCallException
      */
     static public function getColumnsThatExistInDb() {
-        $instance = static::getInstance();
-        $instance->_loadAllColumnsConfigs();
-        return $instance->columsThatExistInDb;
+        return static::getInstance()->columsThatExistInDb;
     }
 
     /**
@@ -212,9 +207,7 @@ abstract class TableStructure implements TableStructureInterface {
      * @throws \BadMethodCallException
      */
     static public function getColumnsThatDoNotExistInDb() {
-        $instance = static::getInstance();
-        $instance->_loadAllColumnsConfigs();
-        return $instance->columsThatDoNotExistInDb;
+        return static::getInstance()->columsThatDoNotExistInDb;
     }
 
     /**
@@ -233,7 +226,7 @@ abstract class TableStructure implements TableStructureInterface {
      * @throws \InvalidArgumentException
      */
     static public function getRelation($relationName) {
-        return static::getInstance()->_loadRelationConfig($relationName);
+        return static::getInstance()->_getRelation($relationName);
     }
 
     /**
@@ -243,7 +236,17 @@ abstract class TableStructure implements TableStructureInterface {
      * @throws \InvalidArgumentException
      */
     static public function getRelations() {
-        return static::getInstance()->_loadAllRelationsConfigs();
+        return static::getInstance()->relations;
+    }
+
+    /**
+     * @param string $colName
+     * @return Relation[]
+     */
+    static public function getColumnRelations($colName) {
+        $instance = static::getInstance();
+        $instance->_getColumn($colName);
+        return isset($instance->columnsRelations[$colName]) ? $instance->columnsRelations[$colName] : [];
     }
 
     /**
@@ -259,16 +262,19 @@ abstract class TableStructure implements TableStructureInterface {
     protected function loadColumnConfigsFromPrivateMethods() {
         $objectReflection = new \ReflectionObject($this);
         $methods = $objectReflection->getMethods(\ReflectionMethod::IS_PRIVATE);
-        //$relations = array();
         foreach ($methods as $method) {
             if ($method->isStatic()) {
                 continue;
             }
             if (preg_match(Column::NAME_VALIDATION_REGEXP, $method->getName())) {
-                $this->columns[$method->getName()] = $method;
+                $this->loadColumnConfigFromMethodReflection($method->getName(), $method);
             } else if (preg_match(JoinInfo::NAME_VALIDATION_REGEXP, $method->getName())) {
-                $this->relations[$method->getName()] = $method;
+                $this->loadRelationConfigFromMethodReflection($method->getName(), $method);
             }
+        }
+        foreach ($this->relations as $relationConfig) {
+            $this->_getColumn($relationConfig->getLocalColumnName()); //< validate local column existance
+            $this->columnsRelations[$relationConfig->getLocalColumnName()][] = $relationConfig;
         }
     }
 
@@ -301,56 +307,55 @@ abstract class TableStructure implements TableStructureInterface {
     }
 
     /**
-     * Make Column object for private method (if not made yet) and return it
      * @param string $colName
      * @return Column
-     * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
      */
-    protected function _loadColumnConfig($colName) {
+    protected function _getColumn($colName) {
         if (!$this->_hasColumn($colName)) {
             throw new \InvalidArgumentException("Table does not contain column named '{$colName}'");
         }
-        if ($this->columns[$colName] instanceof \ReflectionMethod) {
-            /** @var \ReflectionMethod $method */
-            $method = $this->columns[$colName];
-            $method->setAccessible(true);
-            $config = $method->invoke($this);
-            $method->setAccessible(false);
-            if (!($config instanceof Column)) {
+        return $this->columns[$colName];
+    }
+
+    /**
+     * Make Column object for private method (if not made yet) and return it
+     * @param string $colName
+     * @param \ReflectionMethod $method
+     */
+    protected function loadColumnConfigFromMethodReflection($colName, \ReflectionMethod $method) {
+        $method->setAccessible(true);
+        $config = $method->invoke($this);
+        $method->setAccessible(false);
+        if (!($config instanceof Column)) {
+            throw new \UnexpectedValueException(
+                "Method '{$method->getName()}' must return instance of \\PeskyORM\\ORM\\Column class"
+            );
+        }
+        if (!$config->hasName()) {
+            $config->setName($method->getName());
+        }
+        /** @var Column $config */
+        $config->setTableStructure($this);
+        if ($colName !== $config->getName()) {
+            unset($this->columns[$colName]);
+        }
+        $this->columns[$config->getName()] = $config;
+        if ($config->isItPrimaryKey()) {
+            if (!empty($this->pk)) {
                 throw new \UnexpectedValueException(
-                    "Method '{$method->getName()}' must return instance of \\PeskyORM\\ORM\\Column class"
+                    '2 primary keys in one table is forbidden: \'' . $this->pk->getName() . " and '{$config->getName()}'"
                 );
             }
-            if (!$config->hasName()) {
-                $config->setName($method->getName());
-            }
-            /** @var Column $config */
-            $config->setTableStructure($this);
-            unset($method);
-            if ($colName !== $config->getName()) {
-                unset($this->columns[$colName]);
-            }
-            $this->columns[$config->getName()] = $config;
-            if ($config->isItPrimaryKey()) {
-                if (!empty($this->pk)) {
-                    throw new \UnexpectedValueException(
-                        '2 primary keys in one table is forbidden: \'' . $this->pk->getName() . " and '{$config->getName()}'"
-                    );
-                }
-                $this->pk = $config;
-            }
-            if ($config->isItAFile()) {
-                $this->fileColumns[$config->getName()] = $config;
-            }
-            if ($config->isItExistsInDb()) {
-                $this->columsThatExistInDb[$config->getName()] = $config;
-            } else {
-                $this->columsThatDoNotExistInDb[$config->getName()] = $config;
-            }
+            $this->pk = $config;
         }
-        return $this->columns[$colName];
+        if ($config->isItAFile()) {
+            $this->fileColumns[$config->getName()] = $config;
+        }
+        if ($config->isItExistsInDb()) {
+            $this->columsThatExistInDb[$config->getName()] = $config;
+        } else {
+            $this->columsThatDoNotExistInDb[$config->getName()] = $config;
+        }
     }
 
     /**
@@ -358,117 +363,42 @@ abstract class TableStructure implements TableStructureInterface {
      * @return bool
      */
     protected function _hasColumn($colName) {
-        return is_string($colName) && array_key_exists($colName, $this->columns);
+        return isset($this->columns[$colName]);
     }
 
     /**
-     * Run static::_loadColumnConfig() method for all $this->columns and return updated $this->columns
-     * @return Column[]
-     * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
+     * @param $relationName
+     * @return Relation
      */
-    protected function _loadAllColumnsConfigs() {
-        if (!$this->allColumnsProcessed) {
-            foreach ($this->columns as $columnName => $column) {
-                if (!($column instanceof Column)) {
-                    $this->_loadColumnConfig($columnName);
-                }
-            }
-            $this->allColumnsProcessed = true;
+    protected function _getRelation($relationName) {
+        if (!$this->_hasRelation($relationName)) {
+            throw new \InvalidArgumentException("There is no relation '{$relationName}' in " . static::class);
         }
-        return $this->columns;
+        return $this->relations[$relationName];
     }
 
     protected function _hasRelation($relationName) {
-        return is_string($relationName) && array_key_exists($relationName, $this->relations);
+        return isset($this->relations[$relationName]);
     }
 
     /**
      * Make Relation object for private method (if not made yet) and return it
      * @param string $relationName
-     * @return Relation
-     * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
+     * @param \ReflectionMethod $method
      */
-    protected function _loadRelationConfig($relationName) {
-        if (!$this->_hasRelation($relationName)) {
-            throw new \InvalidArgumentException("There is no relation '{$relationName}' in " . get_class($this));
+    protected function loadRelationConfigFromMethodReflection($relationName, \ReflectionMethod $method) {
+        /** @var \ReflectionMethod $method */
+        $method->setAccessible(true);
+        $config = $method->invoke($this);
+        $method->setAccessible(false);
+        if (!($config instanceof Relation)) {
+            throw new \UnexpectedValueException(
+                "Method '{$method->getName()}' must return instance of \\PeskyORM\\ORM\\Relation class"
+            );
         }
-        if ($this->relations[$relationName] instanceof \ReflectionMethod) {
-            /** @var \ReflectionMethod $method */
-            $method = $this->relations[$relationName];
-            $method->setAccessible(true);
-            $config = $method->invoke($this);
-            $method->setAccessible(false);
-            if (!($config instanceof Relation)) {
-                throw new \UnexpectedValueException(
-                    "Method '{$method->getName()}' must return instance of \\PeskyORM\\ORM\\Relation class"
-                );
-            }
-            /** @var Relation $config */
-            if (!$this->_hasColumn($config->getLocalColumnName())) {
-                $tableName = static::getTableName();
-                throw new \UnexpectedValueException(
-                    "Table '{$tableName}' has no column '{$config->getLocalColumnName()}' or column is not defined yet"
-                );
-            }
-            if (!$config->getForeignTable()->getStructure()->hasColumn($config->getForeignColumnName())) {
-                throw new \UnexpectedValueException(
-                    "Table '{$config->getForeignTable()->getName()}' has no column '{$config->getForeignColumnName()}' or column is not defined yet"
-                );
-            }
-            $config->setName($relationName);
-            $this->relations[$relationName] = $config;
-            $this->_loadColumnConfig($config->getLocalColumnName())->addRelation($config);
-        }
-        return $this->relations[$relationName];
-    }
-
-    /**
-     * Run static::_loadRelationConfig() method for all $this->relations and return updated $this->relations
-     * @return Relation[]
-     * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
-     */
-    protected function _loadAllRelationsConfigs() {
-        if (!$this->allRelationsProcessed) {
-            foreach ($this->relations as $relationName => $relation) {
-                if (!($relation instanceof Relation)) {
-                    $this->_loadRelationConfig($relationName);
-                }
-            }
-            $this->allRelationsProcessed = true;
-        }
-        return $this->relations;
-    }
-
-    /**
-     * Find PK column config (if not known yet) by loading all not-loaded column configs
-     * @param bool $throwExceptionIfNotFound
-     * @return null|Column
-     * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
-     */
-    protected function _findPkColumn($throwExceptionIfNotFound = true) {
-        if ($this->pk === null) {
-            if (isset($this->columns['id']) && $this->_loadColumnConfig('id')->isItPrimaryKey()) {
-                return $this->pk;
-            } else {
-                foreach ($this->columns as $columnName => $column) {
-                    if ($this->_loadColumnConfig($columnName)->isItPrimaryKey()) {
-                        return $this->pk;
-                    }
-                }
-            }
-            if ($throwExceptionIfNotFound) {
-                throw new \UnexpectedValueException('Table has no primary key column or it is not defined yet');
-            }
-        }
-        return $this->pk;
+        /** @var Relation $config */
+        $config->setName($relationName);
+        $this->relations[$relationName] = $config;
     }
 
     /**
@@ -492,7 +422,7 @@ abstract class TableStructure implements TableStructureInterface {
      * @throws \BadMethodCallException
      */
     public function __set($name, $value) {
-        throw new \BadMethodCallException('You need to use private methods to setup xolumns');
+        throw new \BadMethodCallException('You need to use private methods to setup columns');
     }
 
     /**

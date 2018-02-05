@@ -100,7 +100,7 @@ class Column {
     /**
      * @var Relation[]
      */
-    protected $relations = [];
+    protected $relations = null;
     /**
      * @var string
      */
@@ -274,9 +274,10 @@ class Column {
     protected $isForeignKey = false;
     /**
      * relation that stores values for this column
+     * Note: false value means "needs detection"
      * @var Relation|null
      */
-    protected $foreignKeyRelation;
+    protected $foreignKeyRelation = false;
 
     // service params
     static public $fileTypes = array(
@@ -780,6 +781,10 @@ class Column {
      * @return Relation[]
      */
     public function getRelations() {
+        if ($this->relations === null) {
+            /** @noinspection StaticInvocationViaThisInspection */
+            $this->relations = $this->tableStructure->getColumnRelations($this->getName());
+        }
         return $this->relations;
     }
 
@@ -790,7 +795,9 @@ class Column {
      */
     public function getRelation($relationName) {
         if (!$this->hasRelation($relationName)) {
-            throw new \InvalidArgumentException("Relation '{$relationName}' does not exist");
+            throw new \InvalidArgumentException(
+                "Column '{$this->getName()}' is not linked with '{$relationName}' relation"
+            );
         }
         return $this->relations[$relationName];
     }
@@ -799,6 +806,14 @@ class Column {
      * @return null|Relation
      */
     public function getForeignKeyRelation() {
+        if ($this->foreignKeyRelation === false) {
+            foreach ($this->getRelations() as $relation) {
+                if ($relation->getType() === Relation::BELONGS_TO) {
+                    $this->itIsForeignKey($relation);
+                    // don't break here - let it validate if there are no multiple foreign keys here
+                }
+            }
+        }
         return $this->foreignKeyRelation;
     }
 
@@ -807,30 +822,7 @@ class Column {
      * @return bool
      */
     public function hasRelation($relationName) {
-        return !empty($this->relations[$relationName]);
-    }
-
-    /**
-     * @param Relation $relation
-     * @return $this
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
-     */
-    public function addRelation(Relation $relation) {
-        $colName = $this->getName();
-        $relationName = $relation->getName();
-        if ($relation->getLocalColumnName() !== $colName) {
-            throw new \InvalidArgumentException("Relation '{$relationName}' is not connected to column '{$colName}'");
-        }
-        if (!empty($this->relations[$relationName])) {
-            throw new \InvalidArgumentException("Relation '{$relationName}' already defined for column '{$colName}'");
-        }
-        $this->relations[$relationName] = $relation;
-        if ($relation->getType() === Relation::BELONGS_TO) {
-            $this->itIsForeignKey($relation);
-        }
-        return $this;
+        return isset($this->getRelations()[$relationName]);
     }
 
     /**
