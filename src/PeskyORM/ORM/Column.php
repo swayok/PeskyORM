@@ -271,7 +271,7 @@ class Column {
     /**
      * @var bool
      */
-    protected $isForeignKey = false;
+    protected $isForeignKey = null;
     /**
      * relation that stores values for this column
      * Note: false value means "needs detection"
@@ -789,6 +789,14 @@ class Column {
     }
 
     /**
+     * @param $relationName
+     * @return bool
+     */
+    public function hasRelation($relationName) {
+        return isset($this->getRelations()[$relationName]);
+    }
+
+    /**
      * @param string $relationName
      * @return Relation
      * @throws \InvalidArgumentException
@@ -807,6 +815,7 @@ class Column {
      */
     public function getForeignKeyRelation() {
         if ($this->foreignKeyRelation === false) {
+            $this->foreignKeyRelation = null;
             foreach ($this->getRelations() as $relation) {
                 if ($relation->getType() === Relation::BELONGS_TO) {
                     $this->itIsForeignKey($relation);
@@ -818,11 +827,28 @@ class Column {
     }
 
     /**
-     * @param $relationName
-     * @return bool
+     * @return boolean
      */
-    public function hasRelation($relationName) {
-        return isset($this->getRelations()[$relationName]);
+    public function isItAForeignKey() {
+        return $this->getForeignKeyRelation() !== null;
+    }
+
+    /**
+     * @param Relation $relation - relation that stores values for this column
+     * @return $this
+     * @throws \InvalidArgumentException
+     * @throws \UnexpectedValueException
+     */
+    protected function itIsForeignKey(Relation $relation) {
+        if ($this->foreignKeyRelation) {
+            throw new \InvalidArgumentException(
+                'Conflict detected: relation ' . $relation->getName() . ' pretends to be the source of '
+                . 'values for this foreign key but there is already another relation for this: '
+                . $this->foreignKeyRelation->getName()
+            );
+        }
+        $this->foreignKeyRelation = $relation;
+        return $this;
     }
 
     /**
@@ -852,32 +878,6 @@ class Column {
      */
     protected function itIsImage() {
         $this->isImage = true;
-        return $this;
-    }
-
-    /**
-     * @return boolean
-     */
-    public function isItAForeignKey() {
-        return $this->isForeignKey;
-    }
-
-    /**
-     * @param Relation $relation - relation that stores values for this column
-     * @return $this
-     * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
-     */
-    protected function itIsForeignKey(Relation $relation) {
-        if ($this->isForeignKey) {
-            throw new \InvalidArgumentException(
-                'Conflict detected: relation ' . $relation->getName() . ' pretends to be the source of '
-                . 'values for this foreign key but there is already another relation for this: '
-                . $this->foreignKeyRelation->getName()
-            );
-        }
-        $this->isForeignKey = true;
-        $this->foreignKeyRelation = $relation;
         return $this;
     }
 
