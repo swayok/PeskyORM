@@ -441,7 +441,7 @@ abstract class TableStructure implements TableStructureInterface {
                 "Method '{$method->getName()}' must return instance of \\PeskyORM\\ORM\\Relation class"
             );
         }
-        if ($config->hasName()) {
+        if (!$config->hasName()) {
             $config->setName($method->getName());
         }
         $this->addRelation($config);
