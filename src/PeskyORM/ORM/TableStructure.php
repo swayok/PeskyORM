@@ -113,7 +113,7 @@ abstract class TableStructure implements TableStructureInterface {
     protected function analyze() {
         foreach ($this->relations as $relationConfig) {
             $this->_getColumn($relationConfig->getLocalColumnName()); //< validate local column existance
-            $this->columnsRelations[$relationConfig->getLocalColumnName()][] = $relationConfig;
+            $this->columnsRelations[$relationConfig->getLocalColumnName()][$relationConfig->getName()] = $relationConfig;
         }
     }
 
