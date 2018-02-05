@@ -183,13 +183,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     static private function getCachedColumnsOrRelations($key = 'columns') {
         // significantly decreases execution time on heavy ORM usage (proved by profilig with xdebug)
         if (!isset(self::$columns[static::class])) {
+            $tableStructure = static::getTableStructure();
             self::$columns[static::class] = [
-                'columns' => static::getTableStructure()->getColumns(),
-                'db_columns' => static::getTableStructure()->getColumnsThatExistInDb(),
-                'not_db_columns' => static::getTableStructure()->getColumnsThatDoNotExistInDb(),
-                'file_columns' => static::getTableStructure()->getFileColumns(),
-                'pk_column' => static::getTableStructure()->getPkColumn(),
-                'relations' => static::getTableStructure()->getRelations(),
+                'columns' => $tableStructure::getColumns(),
+                'db_columns' => $tableStructure::getColumnsThatExistInDb(),
+                'not_db_columns' => $tableStructure::getColumnsThatDoNotExistInDb(),
+                'file_columns' => $tableStructure::getFileColumns(),
+                'pk_column' => $tableStructure::getPkColumn(),
+                'relations' => $tableStructure::getRelations(),
             ];
         }
         return self::$columns[static::class][$key];
