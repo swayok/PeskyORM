@@ -715,7 +715,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $relationTable = $relation->getForeignTable();
         if ($relation->getType() === Relation::HAS_MANY) {
             if (is_array($relatedRecord)) {
-                $relatedRecord = RecordsSet::createFromArray($relationTable, $relatedRecord, $isFromDb);
+                $relatedRecord = RecordsSet::createFromArray($relationTable, $relatedRecord, $isFromDb, $this->trustDbDataMode);
             } else if (!($relatedRecord instanceof RecordsArray)) {
                 throw new \InvalidArgumentException(
                     '$relatedRecord argument for HAS MANY relation must be array or instance of ' . RecordsArray::class
@@ -726,18 +726,22 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 $pkName = $relationTable->getPkColumnName();
                 $isFromDb = array_key_exists($pkName, $relatedRecord) && $relatedRecord[$pkName] !== null;
             }
-            if (!empty($relatedRecord)) {
-                $relatedRecord = $relationTable
-                    ->newRecord()
-                    ->fromData($relatedRecord, $isFromDb, $haltOnUnknownColumnNames);
-            } else {
-                $relatedRecord = $relationTable->newRecord();
+            $data = $relatedRecord;
+            $relatedRecord = $relationTable->newRecord();
+            if ($this->trustDbDataMode) {
+                $relatedRecord->enableTrustModeForDbData();
+            }
+            if (!empty($data)) {
+                $relatedRecord->fromData($data, $isFromDb, $haltOnUnknownColumnNames);
             }
         } else if ($relatedRecord instanceof self) {
             if ($relatedRecord::getTable()->getName() !== $relationTable) {
                 throw new \InvalidArgumentException(
                     "\$relatedRecord argument must be an instance of Record class for the '{$relationTable->getName()}' DB table"
                 );
+            }
+            if ($this->trustDbDataMode) {
+                $relatedRecord->enableTrustModeForDbData();
             }
         } else {
             throw new \InvalidArgumentException(

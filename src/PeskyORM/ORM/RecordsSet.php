@@ -25,11 +25,12 @@ class RecordsSet extends RecordsArray {
      * @param TableInterface $table
      * @param array $records
      * @param boolean|null $isFromDb - null: autodetect by primary key value existence
+     * @param bool $trustDataReceivedFromDb
      * @return RecordsArray
      * @throws \InvalidArgumentException
      */
-    static public function createFromArray(TableInterface $table, array $records, $isFromDb = null) {
-        return new RecordsArray($table, $records, $isFromDb === null ? null : (bool)$isFromDb);
+    static public function createFromArray(TableInterface $table, array $records, $isFromDb = null, $trustDataReceivedFromDb = false) {
+        return new RecordsArray($table, $records, $isFromDb === null ? null : (bool)$isFromDb, (bool)$trustDataReceivedFromDb);
     }
 
     /**
@@ -47,12 +48,13 @@ class RecordsSet extends RecordsArray {
     /**
      * @param OrmSelect $dbSelect - it will be cloned to avoid possible problems when original object
      *      is changed outside RecordsSet + to allow optimised iteration via pagination
+     * @param bool $disableDbRecordDataValidation
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      */
-    public function __construct(OrmSelect $dbSelect) {
-        parent::__construct($dbSelect->getTable(), [], true);
+    public function __construct(OrmSelect $dbSelect, $disableDbRecordDataValidation = false) {
+        parent::__construct($dbSelect->getTable(), [], true, $disableDbRecordDataValidation);
         $this->setOrmSelect($dbSelect);
     }
 

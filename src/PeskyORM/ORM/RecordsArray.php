@@ -9,19 +9,19 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      */
     protected $table;
     /**
-     * @var array[]|RecordInterface[]
+     * @var array[]|Record[]
      */
     protected $records = [];
     /**
      * @var bool
      */
-    protected $isRecordsContinObjects = false;
+    protected $isRecordsContainObjects = false;
     /**
      * @var
      */
     protected $iteratorPosition = 0;
     /**
-     * @var RecordInterface[]
+     * @var Record[]
      */
     protected $dbRecords = [];
     /**
@@ -37,7 +37,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      */
     protected $isDbRecordDataValidationDisabled = false;
     /**
-     * @var RecordInterface
+     * @var Record
      */
     protected $dbRecordForIteration = null;
     /**
@@ -47,12 +47,14 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
      * @param TableInterface $table
-     * @param array|RecordInterface[] $records
-     * @param bool $isFromDb|null - true: records are from db | null - autodetect
+     * @param array|RecordInterface[]|Record[] $records
+     * @param bool $isFromDb |null - true: records are from db | null - autodetect
+     * @param bool $disableDbRecordDataValidation
      * @throws \InvalidArgumentException
      */
-    public function __construct(TableInterface $table, array $records, $isFromDb = null) {
+    public function __construct(TableInterface $table, array $records, $isFromDb = null, $disableDbRecordDataValidation = false) {
         $this->table = $table;
+        $this->setIsDbRecordDataValidationDisabled($disableDbRecordDataValidation);
         if (count($records)) {
             $recordClass = get_class($this->table->newRecord());
             /** @var array|RecordInterface[] $records */
@@ -62,9 +64,15 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
                 if (is_array($record)) {
                     $this->records[$index] = $record;
                 } else if ($record instanceof $recordClass) {
+                    /** @var Record $record */
+                    if ($this->isDbRecordDataValidationDisabled()) {
+                        $record->enableTrustModeForDbData();
+                    } else {
+                        $record->disableTrustModeForDbData();
+                    }
                     $this->records[$index] = $record;
                     $this->dbRecords[$index] = $record;
-                    $this->isRecordsContinObjects = true;
+                    $this->isRecordsContainObjects = true;
                 } else {
                     throw new \InvalidArgumentException('$dbSelectOrRecords must contain only arrays or objects of class ' . $recordClass);
                 }
@@ -80,11 +88,11 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     protected function getDbRecordObjectForIteration() {
         if ($this->dbRecordForIteration === null) {
             $this->dbRecordForIteration = $this->table->newRecord();
-        }
-        if ($this->isDbRecordDataValidationDisabled()) {
-            $this->dbRecordForIteration->enableTrustModeForDbData();
-        } else {
-            $this->dbRecordForIteration->disableTrustModeForDbData();
+            if ($this->isDbRecordDataValidationDisabled()) {
+                $this->dbRecordForIteration->enableTrustModeForDbData();
+            } else {
+                $this->dbRecordForIteration->disableTrustModeForDbData();
+            }
         }
         return $this->dbRecordForIteration;
     }
@@ -112,6 +120,8 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     /**
      * @param int $index
      * @return mixed
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      */
     protected function getRecordDataByIndex($index) {
@@ -162,7 +172,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @return $this
      */
     public function enableDbRecordDataValidation() {
-        $this->isDbRecordDataValidationDisabled = false;
+        $this->setIsDbRecordDataValidationDisabled(false);
         return $this;
     }
 
@@ -170,7 +180,23 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @return $this
      */
     public function disableDbRecordDataValidation() {
-        $this->isDbRecordDataValidationDisabled = true;
+        $this->setIsDbRecordDataValidationDisabled(true);
+        return $this;
+    }
+
+    /**
+     * @param bool $isDisabled
+     * @return RecordsArray
+     */
+    protected function setIsDbRecordDataValidationDisabled($isDisabled) {
+        $this->isDbRecordDataValidationDisabled = (bool)$isDisabled;
+        if ($this->dbRecordForIteration) {
+            if ($this->isDbRecordDataValidationDisabled()) {
+                $this->dbRecordForIteration->enableTrustModeForDbData();
+            } else {
+                $this->dbRecordForIteration->disableTrustModeForDbData();
+            }
+        }
         return $this;
     }
 
@@ -204,7 +230,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @return array[]
      */
     public function toArrays() {
-        if ($this->isRecordsContinObjects) {
+        if ($this->isRecordsContainObjects) {
             /** @var array|RecordInterface $data */
             foreach ($this->records as $index => $data) {
                 if (!is_array($data)) {
@@ -313,9 +339,10 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     /**
      * Filter records and create new RecordsArray from remaining records
      * @param \Closure $filter - closure compatible with array_filter()
-     * @param bool $resetOriginalRecordSet - true: reset this RecordsArray after filtering to save memory
+     * @param bool $resetOriginalRecordsArray
      * @return RecordsArray
-     * @throws \InvalidArgumentException
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\OrmException
      */
     public function filterRecords(\Closure $filter, $resetOriginalRecordsArray = false) {
         $newArray = new self($this->table, array_filter($this->toObjects(), $filter), $this->isFromDb);
@@ -459,7 +486,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
      * @param int $index - The offset to retrieve.
-     * @return RecordInterface
+     * @return RecordInterface|Record
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\OrmException
