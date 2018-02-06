@@ -121,7 +121,6 @@ class RecordValue {
     /**
      * @return bool
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -159,7 +158,6 @@ class RecordValue {
     /**
      * @return boolean
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -216,7 +214,6 @@ class RecordValue {
 
     /**
      * @return mixed
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -356,7 +353,7 @@ class RecordValue {
         } else {
             if (!is_string($key) && !is_numeric($key)) {
                 throw new \InvalidArgumentException(
-                    "\$key argument for custom info must be a string or number but " . gettype($key) . ' received'
+                    '$key argument for custom info must be a string or number but ' . gettype($key) . ' received'
                         . " (column: '{$this->getColumn()->getName()}')"
                 );
             }
@@ -393,7 +390,7 @@ class RecordValue {
     public function addCustomInfo($key, $value) {
         if (!is_string($key) && !is_numeric($key)) {
             throw new \InvalidArgumentException(
-                "\$key argument for custom info must be a string or number but " . gettype($key) . ' received'
+                '$key argument for custom info must be a string or number but ' . gettype($key) . ' received'
                     . " (column: '{$this->getColumn()->getName()}')"
             );
         }
@@ -413,7 +410,7 @@ class RecordValue {
         } else {
             if (!is_string($key) && !is_numeric($key)) {
                 throw new \InvalidArgumentException(
-                    "\$key argument for custom info must be a string or number but " . gettype($key) . ' received'
+                    '$key argument for custom info must be a string or number but ' . gettype($key) . ' received'
                         . " (column: '{$this->getColumn()->getName()}')"
                 );
             }
