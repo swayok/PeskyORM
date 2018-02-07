@@ -255,6 +255,32 @@ abstract class RecordValueHelpers {
         }
     }
 
+    /**
+     * Normalize $value received form DB according to expected data type ($type)
+     * Note: lighter version of normalizeValue() to optimize processing of large amount of records
+     * @param mixed $value
+     * @param string $type - one of Column::TYPE_*
+     * @return null|string|UploadedFile
+     */
+    static public function normalizeValueReceivedFromDb($value, $type) {
+        if ($value === null) {
+            return null;
+        } else if ($value instanceof DbExpr) {
+            return $value;
+        }
+        switch ($type) {
+            case Column::TYPE_BOOL:
+                return NormalizeValue::normalizeBoolean($value);
+            case Column::TYPE_INT:
+            case Column::TYPE_UNIX_TIMESTAMP:
+                return NormalizeValue::normalizeInteger($value);
+            case Column::TYPE_FLOAT:
+                return NormalizeValue::normalizeFloat($value);
+            default:
+                return $value;
+        }
+    }
+
     static public function normalizeFile($value) {
         if ($value instanceof UploadedFile) {
             return $value;

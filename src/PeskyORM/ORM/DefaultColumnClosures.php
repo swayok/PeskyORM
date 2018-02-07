@@ -174,7 +174,9 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
      * @return mixed
      */
     static public function valueNormalizer($value, $isFromDb, Column $column) {
-        return RecordValueHelpers::normalizeValue($value, $column->getType());
+        return $isFromDb
+            ? RecordValueHelpers::normalizeValueReceivedFromDb($value, $column->getType())
+            : RecordValueHelpers::normalizeValue($value, $column->getType());
     }
 
     /**
