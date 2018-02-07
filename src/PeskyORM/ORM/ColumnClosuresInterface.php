@@ -35,11 +35,11 @@ interface ColumnClosuresInterface {
 
     /**
      * Tests if value is set
-     * @param RecordValue $value
+     * @param RecordValue $valueContainer
      * @param bool $checkDefaultValue
      * @return bool
      */
-    static public function valueExistenceChecker(RecordValue $value, $checkDefaultValue = false);
+    static public function valueExistenceChecker(RecordValue $valueContainer, $checkDefaultValue = false);
 
     /**
      * Validates value. Uses valueValidatorExtender

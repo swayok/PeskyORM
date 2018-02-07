@@ -41,6 +41,7 @@ class Column {
     const NAME_VALIDATION_REGEXP = '%^[a-z][a-z0-9_]*$%';    //< snake_case
 
     const DEFAULT_VALUE_NOT_SET = '___NOT_SET___';
+    const VALID_DEFAULT_VALUE_UNDEFINED = '___UNDEFINED___';
 
     const VALUE_CANNOT_BE_NULL = 'value_cannot_be_null';
     const VALUE_MUST_BE_BOOLEAN = 'value_must_be_boolean';
@@ -91,6 +92,10 @@ class Column {
      * @var array
      */
     static protected $validationErrorsMessages = [];
+    /**
+     * @var null|array
+     */
+    static protected $defaultClosures;
 
     // params that can be set directly or calculated
     /**
@@ -133,6 +138,14 @@ class Column {
      * @var mixed - can be a \Closure
      */
     protected $defaultValue = self::DEFAULT_VALUE_NOT_SET;
+    /**
+     * @var null|bool
+     */
+    protected $hasDefaultValue = null;
+    /**
+     * @var string
+     */
+    protected $validDefaultValue = self::DEFAULT_VALUE_NOT_SET;
     /**
      * @var bool
      */
@@ -314,51 +327,74 @@ class Column {
         $this->setDefaultClosures();
     }
 
+    /**
+     * @return \Closure[]
+     */
+    static protected function getDefaultClosures() {
+        if (self::$defaultClosures === null) {
+            self::$defaultClosures = [
+                'valueGetter' => function (RecordValue $valueContainer, $format = null) {
+                    $class = $valueContainer->getColumn()->getClosuresClass();
+                    return $class::valueGetter($valueContainer, $format);
+                },
+                'valueExistenceChecker' => function (RecordValue $valueContainer, $checkDefaultValue = false) {
+                    $class = $valueContainer->getColumn()->getClosuresClass();
+                    return $class::valueExistenceChecker($valueContainer, $checkDefaultValue);
+                },
+                'valueSetter' => function ($newValue, $isFromDb, RecordValue $valueContainer, $trustDataReceivedFromDb) {
+                    $class = $valueContainer->getColumn()->getClosuresClass();
+                    return $class::valueSetter($newValue, $isFromDb, $valueContainer, $trustDataReceivedFromDb);
+                },
+                'valueValidator' => function ($value, $isFromDb, Column $column) {
+                    $class = $column->getClosuresClass();
+                    return $class::valueValidator($value, $isFromDb, $column);
+                },
+                'valueIsAllowedValidator' => function ($value, $isFromDb, Column $column) {
+                    $class = $column->getClosuresClass();
+                    return $class::valueIsAllowedValidator($value, $isFromDb, $column);
+                },
+                'valueValidatorExtender' => function ($value, $isFromDb, Column $column) {
+                    $class = $column->getClosuresClass();
+                    return $class::valueValidatorExtender($value, $isFromDb, $column);
+                },
+                'valueNormalizer' => function ($value, $isFromDb, Column $column) {
+                    $class = $column->getClosuresClass();
+                    return $class::valueNormalizer($value, $isFromDb, $column);
+                },
+                'valuePreprocessor' => function ($newValue, $isFromDb, Column $column) {
+                    $class = $column->getClosuresClass();
+                    return $class::valuePreprocessor($newValue, $isFromDb, $column);
+                },
+                'valueSavingExtender' => function (RecordValue $valueContainer, $isUpdate, array $savedData) {
+                    $class = $valueContainer->getColumn()->getClosuresClass();
+                    $class::valueSavingExtender($valueContainer, $isUpdate, $savedData);
+                },
+                'valueDeleteExtender' => function (RecordValue $valueContainer, $deleteFiles) {
+                    $class = $valueContainer->getColumn()->getClosuresClass();
+                    $class::valueDeleteExtender($valueContainer, $deleteFiles);
+                },
+                'valueFormatter' => function (RecordValue $valueContainer, $format) {
+                    $class = $valueContainer->getColumn()->getClosuresClass();
+                    return $class::valueFormatter($valueContainer, $format);
+                },
+            ];
+        }
+        return self::$defaultClosures;
+    }
+
     protected function setDefaultClosures() {
-        $this->setValueGetter(function (RecordValue $valueContainer, $format = null) {
-            $class = $this->getClosuresClass();
-            return $class::valueGetter($valueContainer, $format);
-        });
-        $this->setValueExistenceChecker(function (RecordValue $valueContainer, $checkDefaultValue = false) {
-            $class = $this->getClosuresClass();
-            return $class::valueExistenceChecker($valueContainer, $checkDefaultValue);
-        });
-        $this->setValueSetter(function ($newValue, $isFromDb, RecordValue $valueContainer, $trustDataReceivedFromDb) {
-            $class = $this->getClosuresClass();
-            return $class::valueSetter($newValue, $isFromDb, $valueContainer, $trustDataReceivedFromDb);
-        });
-        $this->setValueValidator(function ($value, $isFromDb, Column $column) {
-            $class = $this->getClosuresClass();
-            return $class::valueValidator($value, $isFromDb, $column);
-        });
-        $this->setValueIsAllowedValidator(function ($value, $isFromDb, Column $column) {
-            $class = $this->getClosuresClass();
-            return $class::valueIsAllowedValidator($value, $isFromDb, $column);
-        });
-        $this->setValueValidatorExtender(function ($value, $isFromDb, Column $column) {
-            $class = $this->getClosuresClass();
-            return $class::valueValidatorExtender($value, $isFromDb, $column);
-        });
-        $this->setValueNormalizer(function ($value, $isFromDb, Column $column) {
-            $class = $this->getClosuresClass();
-            return $class::valueNormalizer($value, $isFromDb, $column);
-        });
-        $this->setValuePreprocessor(function ($newValue, $isFromDb, Column $column) {
-            $class = $this->getClosuresClass();
-            return $class::valuePreprocessor($newValue, $isFromDb, $column);
-        });
-        $this->setValueSavingExtender(function (RecordValue $valueContainer, $isUpdate, array $savedData) {
-            $class = $this->getClosuresClass();
-            $class::valueSavingExtender($valueContainer, $isUpdate, $savedData);
-        });
-        $this->setValueDeleteExtender(function (RecordValue $valueContainer, $deleteFiles) {
-            $class = $this->getClosuresClass();
-            $class::valueDeleteExtender($valueContainer, $deleteFiles);
-        });
-        $this->setValueFormatter(function (RecordValue $valueContainer, $format) {
-            $class = $this->getClosuresClass();
-            return $class::valueFormatter($valueContainer, $format);
-        });
+        $closures = static::getDefaultClosures();
+        $this->setValueGetter($closures['valueGetter']);
+        $this->setValueExistenceChecker($closures['valueExistenceChecker']);
+        $this->setValueSetter($closures['valueSetter']);
+        $this->setValueValidator($closures['valueValidator']);
+        $this->setValueIsAllowedValidator($closures['valueIsAllowedValidator']);
+        $this->setValueValidatorExtender($closures['valueValidatorExtender']);
+        $this->setValueNormalizer($closures['valueNormalizer']);
+        $this->setValuePreprocessor($closures['valuePreprocessor']);
+        $this->setValueSavingExtender($closures['valueSavingExtender']);
+        $this->setValueDeleteExtender($closures['valueDeleteExtender']);
+        $this->setValueFormatter($closures['valueFormatter']);
     }
 
     /**
@@ -390,7 +426,6 @@ class Column {
      * same closure provided by class
      * @param string $class - class that implements ColumnClosuresInterface
      * @return $this
-     * @throws \ReflectionException
      * @throws \InvalidArgumentException
      */
     public function setClosuresClass($class) {
@@ -605,26 +640,29 @@ class Column {
      * @throws \UnexpectedValueException
      */
     public function getValidDefaultValue($fallbackValue = null) {
-        if ($this->validDefaultValueGetter) {
-            $defaultValue = call_user_func($this->validDefaultValueGetter, $fallbackValue, $this);
-            $excPrefix = 'Default value received from validDefaultValueGetter closure';
-        } else if ($this->hasDefaultValue()) {
-            $defaultValue = $this->defaultValue;
-            $excPrefix = 'Default value';
-        } else {
-            $defaultValue = $fallbackValue;
-            $excPrefix = 'Fallback value of the default value';
+        if ($this->validDefaultValue === self::VALID_DEFAULT_VALUE_UNDEFINED) {
+            if ($this->validDefaultValueGetter) {
+                $defaultValue = call_user_func($this->validDefaultValueGetter, $fallbackValue, $this);
+                $excPrefix = 'Default value received from validDefaultValueGetter closure';
+            } else if ($this->hasDefaultValue()) {
+                $defaultValue = $this->defaultValue;
+                $excPrefix = 'Default value';
+            } else {
+                $defaultValue = $fallbackValue;
+                $excPrefix = 'Fallback value of the default value';
+            }
+            if ($defaultValue instanceof \Closure) {
+                $defaultValue = $defaultValue();
+            }
+            $errors = $this->validateValue($defaultValue, false);
+            if (!($defaultValue instanceof DbExpr) && count($errors) > 0) {
+                throw new \UnexpectedValueException(
+                    "{$excPrefix} for column '{$this->getName()}' is not valid. Errors: " . implode(', ', $errors)
+                );
+            }
+            $this->validDefaultValue = $defaultValue;
         }
-        if ($defaultValue instanceof \Closure) {
-            $defaultValue = $defaultValue();
-        }
-        $errors = $this->validateValue($defaultValue, false);
-        if (!($defaultValue instanceof DbExpr) && count($errors) > 0) {
-            throw new \UnexpectedValueException(
-                "{$excPrefix} for column '{$this->getName()}' is not valid. Errors: " . implode(', ', $errors)
-            );
-        }
-        return $defaultValue;
+        return $this->validDefaultValue;
     }
 
     /**
@@ -640,7 +678,10 @@ class Column {
      * @return bool
      */
     public function hasDefaultValue() {
-        return $this->defaultValue !== self::DEFAULT_VALUE_NOT_SET || $this->validDefaultValueGetter;
+        if ($this->hasDefaultValue === null) {
+            return $this->defaultValue !== self::DEFAULT_VALUE_NOT_SET || $this->validDefaultValueGetter;
+        }
+        return $this->hasDefaultValue();
     }
 
     /**
@@ -1061,6 +1102,9 @@ class Column {
      * Validates a new value
      * @param mixed|RecordValue $value
      * @param bool $isFromDb - true: value received from DB
+     *  - true: value is normalzed (trim, strolower, etc)
+     *  - false: value is not normalzed (trim, strolower, etc)
+     *  - null: value is normalized if $isFromDb === true
      * @return array
      * @throws \UnexpectedValueException
      */

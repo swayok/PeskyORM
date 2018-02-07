@@ -28,6 +28,7 @@ class RecordValue {
     protected $hasOldValue = false;
     protected $isValidated = false;
     protected $validationErrors = [];
+    protected $isDefaultValueCanBeSet = null;
 
     /**
      * @var array
@@ -163,14 +164,17 @@ class RecordValue {
      * @throws \BadMethodCallException
      */
     public function isDefaultValueCanBeSet() {
-        if (!$this->hasDefaultValue()) {
-            return false;
+        if ($this->isDefaultValueCanBeSet === null) {
+            if (!$this->hasDefaultValue()) {
+                return false;
+            }
+            if ($this->getColumn()->isItPrimaryKey()) {
+                return $this->hasValue ? false : ($this->getDefaultValue() instanceof DbExpr);
+            } else {
+                return !$this->getRecord()->existsInDb();
+            }
         }
-        if ($this->getColumn()->isItPrimaryKey()) {
-            return $this->hasValue ? false : ($this->getDefaultValue() instanceof DbExpr);
-        } else {
-            return !$this->getRecord()->existsInDb();
-        }
+        return $this->isDefaultValueCanBeSet;
     }
 
     /**
@@ -193,6 +197,7 @@ class RecordValue {
         $this->rawValue = $rawValue;
         $this->value = $preprocessedValue;
         $this->hasValue = true;
+        $this->isDefaultValueCanBeSet = null;
         $this->isFromDb = (bool)$isFromDb;
         $this->customInfo = [];
         $this->validationErrors = [];

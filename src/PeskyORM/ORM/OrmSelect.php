@@ -333,13 +333,13 @@ class OrmSelect extends AbstractSelect {
                     }
                     if (is_array($rawValue)) {
                         foreach ($rawValue as $arrValue) {
-                            $errors = $column->validateValue($arrValue);
+                            $errors = $column->validateValue($arrValue, false);
                             if (!empty($errors)) {
                                 break;
                             }
                         }
                     } else {
-                        $errors = $column->validateValue($rawValue);
+                        $errors = $column->validateValue($rawValue, false);
                     }
                     if (!empty($errors)) {
                         throw new \UnexpectedValueException(

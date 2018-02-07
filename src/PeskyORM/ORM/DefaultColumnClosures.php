@@ -43,7 +43,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
                 }
             } else {
                 $valueContainer->setRawValue($newValue, $preprocessedValue, $isFromDb);
-                $errors = $column->validateValue($valueContainer, $isFromDb);
+                $errors = $column->validateValue($valueContainer->getValue(), $isFromDb);
                 if (count($errors) > 0) {
                     $valueContainer->setValidationErrors($errors);
                 } else {
@@ -69,13 +69,13 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
      */
     static public function valuePreprocessor($value, $isFromDb, Column $column) {
         if (is_string($value)) {
-            if ($column->isValueTrimmingRequired()) {
+            if (!$isFromDb && $column->isValueTrimmingRequired()) {
                 $value = trim($value);
             }
             if ($value === '' && $column->isEmptyStringMustBeConvertedToNull()) {
                 return null;
             }
-            if ($column->isValueLowercasingRequired()) {
+            if (!$isFromDb && $column->isValueLowercasingRequired()) {
                 $value = mb_strtolower($value);
             }
         }
@@ -87,7 +87,6 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
      * @param null|string $format
      * @return mixed
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -106,34 +105,29 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
     }
 
     /**
-     * @param RecordValue $value
+     * @param RecordValue $valueContainer
      * @param bool $checkDefaultValue
      * @return bool
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      */
-    static public function valueExistenceChecker(RecordValue $value, $checkDefaultValue = false) {
-        return $checkDefaultValue ? $value->hasValueOrDefault() : $value->hasValue();
+    static public function valueExistenceChecker(RecordValue $valueContainer, $checkDefaultValue = false) {
+        return $checkDefaultValue ? $valueContainer->hasValueOrDefault() : $valueContainer->hasValue();
     }
 
     /**
-     * @param RecordValue|mixed $value
+     * @param mixed $value
      * @param bool $isFromDb
      * @param Column $column
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      */
     static public function valueValidator($value, $isFromDb, Column $column) {
-        if ($value instanceof RecordValue) {
-            $value = $value->getValue();
-        }
         $errors = RecordValueHelpers::isValidDbColumnValue(
             $column,
             $value,

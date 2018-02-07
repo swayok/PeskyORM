@@ -552,7 +552,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             );
         }
         if ($this->isCollectingUpdates && $isFromDb) {
-            throw new \BadMethodCallException("It is forbidden to set value with \$isFromDb === true after begin()");
+            throw new \BadMethodCallException('It is forbidden to set value with $isFromDb === true after begin()');
         }
 
         if ($column->isItPrimaryKey()) {
@@ -573,10 +573,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             // backup pk value only if it was from db
             $prevPkValue = $valueContainer->getValue();
         }
-        if ($this->isCollectingUpdates && !array_key_exists($colName, $this->valuesBackup)) {
+        if ($this->isCollectingUpdates && !isset($this->valuesBackup[$colName])) {
             $this->valuesBackup[$colName] = clone $valueContainer;
         }
-        call_user_func($column->getValueSetter(), $value, (bool) $isFromDb, $valueContainer, $this->trustDbDataMode);
+        call_user_func($column->getValueSetter(), $value, (bool)$isFromDb, $valueContainer, $this->trustDbDataMode);
         if (!$valueContainer->isValid()) {
             throw new InvalidDataException([$colName => $valueContainer->getValidationErrors()]);
         }
@@ -1447,7 +1447,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \UnexpectedValueException
      */
     static public function validateValue($column, $value, $isFromDb = false) {
-        if (!($column instanceof Column)) {
+        if (!is_string($column)) {
             $column = static::getColumn($column);
         }
         return $column->validateValue($value, $isFromDb);
@@ -1477,7 +1477,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             } else {
                 $value = null;
             }
-            $columnErrors = static::validateValue($column, $value, false);
+            $columnErrors = $column->validateValue($value, false);
             if (!empty($columnErrors)) {
                 $errors[$columnName] = $columnErrors;
             }
@@ -1902,14 +1902,18 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      */
     public function offsetExists($key) {
-        if (static::hasRelation($key)) {
+        if (static::hasColumn($key)) {
+            return $this->_hasValue(static::getColumn($key), false);
+        } else if (static::hasRelation($key)) {
             if (!$this->isRelatedRecordCanBeRead($key)) {
                 return false;
             }
             $record = $this->getRelatedRecord($key, true);
-            return $record instanceof self ? $record->existsInDb() : $record->count();
+            return $record instanceof RecordInterface ? $record->existsInDb() : $record->count();
         } else {
-            return $this->_hasValue(static::getColumn($key), false);
+            throw new \InvalidArgumentException(
+                'There is no column or relation with name ' . $key . ' in ' . static::class
+            );
         }
     }
 
@@ -1924,14 +1928,16 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      */
     public function offsetGet($key) {
-        if (static::hasRelation($key)) {
+        if (static::hasColumn($key)) {
+            return $this->_getValue(static::getColumn($key), null);
+        } else if (static::hasRelation($key)) {
             return $this->getRelatedRecord($key, true);
+        } else if (preg_match('%^(.+)_as_(.*)$%is', $key, $parts)) {
+            return $this->_getValue(static::getColumn($parts[1]), $parts[2]);
         } else {
-            if (!static::hasColumn($key) && preg_match('%^(.+)_as_(.*)$%is', $key, $parts)) {
-                return $this->_getValue(static::getColumn($parts[1]), $parts[2]);
-            } else {
-                return $this->_getValue(static::getColumn($key), null);
-            }
+            throw new \InvalidArgumentException(
+                'There is no column or relation with name ' . $key . ' in ' . static::class
+            );
         }
     }
 
@@ -1946,10 +1952,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \PDOException
      */
     public function offsetSet($key, $value) {
-        if (static::hasRelation($key)) {
+        if (static::hasColumn($key)) {
+            $this->_updateValue(static::getColumn($key), $value, $key === static::getPrimaryKeyColumnName());
+        } else if (static::hasRelation($key)) {
             $this->updateRelatedRecord($key, $value, null);
         } else {
-            $this->_updateValue(static::getColumn($key), $value, $key === static::getPrimaryKeyColumnName());
+            throw new \InvalidArgumentException(
+                'There is no column or relation with name ' . $key . ' in ' . static::class
+            );
         }
     }
 
@@ -1961,10 +1971,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \UnexpectedValueException
      */
     public function offsetUnset($key) {
-        if (static::hasRelation($key)) {
+        if (static::hasColumn($key)) {
+            return $this->unsetValue($key);
+        } else if (static::hasRelation($key)) {
             return $this->unsetRelatedRecord($key);
         } else {
-            return $this->unsetValue($key);
+            throw new \InvalidArgumentException(
+                'There is no column or relation with name ' . $key . ' in ' . static::class
+            );
         }
     }
 
