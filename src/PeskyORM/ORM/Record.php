@@ -564,23 +564,22 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         }
 
         if ($column->isItPrimaryKey()) {
-            $this->existsInDb = true;
-            $this->existsInDbReally = null;
             if ($value === null) {
                 return $this->unsetPrimaryKeyValue();
             } else if (!$isFromDb) {
                 throw new \InvalidArgumentException('It is forbidden to set primary key value when $isFromDb === false');
             }
-        }
-        if ($isFromDb && !$column->isItPrimaryKey() && !$this->existsInDb()) {
+            $this->existsInDb = true;
+            $this->existsInDbReally = null;
+        } else if ($isFromDb && !$this->existsInDb()) {
             throw new \InvalidArgumentException(
                 "Attempt to set a value for column [{$column->getName()}] with flag \$isFromDb === true while record does not exist in DB"
             );
         }
         $colName = $column->getName();
         $prevPkValue = null;
-        if ($column->isItPrimaryKey() && $valueContainer->hasValue() && $valueContainer->isItFromDb()) {
-            // backup pk value only if it was from db
+        // backup existing pk value
+        if ($column->isItPrimaryKey() && $valueContainer->hasValue() /*&& $valueContainer->isItFromDb()*/) {
             $prevPkValue = $valueContainer->getValue();
         }
         if ($this->isCollectingUpdates && !isset($this->valuesBackup[$colName])) {
