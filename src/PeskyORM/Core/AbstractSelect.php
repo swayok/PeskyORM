@@ -78,6 +78,10 @@ abstract class AbstractSelect {
      * @var null|array - null: all dirty | array - only some items are dirty
      */
     protected $isDirty = null;
+    /**
+     * @var array
+     */
+    protected $columnNameWithAliasToColumnInfo = [];
 
     /**
      * @return string
@@ -357,11 +361,15 @@ abstract class AbstractSelect {
         if (in_array($selectionType, [Utils::FETCH_COLUMN, Utils::FETCH_VALUE], true)) {
             return $data;
         } else if ($selectionType === Utils::FETCH_FIRST) {
-            return $this->normalizeRecord($data);
+            $shortColumnAliasToAlias = array_flip($this->shortColumnAliases);
+            $shortJoinAliasToAlias = array_flip($this->shortJoinAliases);
+            return $this->normalizeRecord($data, $shortColumnAliasToAlias, $shortJoinAliasToAlias);
         } else {
             $records = [];
+            $shortColumnAliasToAlias = array_flip($this->shortColumnAliases);
+            $shortJoinAliasToAlias = array_flip($this->shortJoinAliases);
             foreach ($data as $record) {
-                $records[] = $this->normalizeRecord($record);
+                $records[] = $this->normalizeRecord($record, $shortColumnAliasToAlias, $shortJoinAliasToAlias);
             }
             return $records;
         }
@@ -834,6 +842,7 @@ abstract class AbstractSelect {
     }
 
     protected function processRawColumns() {
+        $this->columnNameWithAliasToColumnInfo = [];
         $this->columns = $this->normalizeColumnsList($this->columnsRaw, null, true, 'SELECT');
         if (empty($this->columns)) {
             throw new \UnexpectedValueException(
@@ -1383,7 +1392,9 @@ abstract class AbstractSelect {
             if (is_string($columnInfo)) {
                 $columns[] = $columnInfo;
             } else {
-                $columns[] = $this->makeColumnNameWithAliasForQuery($columnInfo, $itIsWithQuery);
+                $colNameWithAlias = $this->makeColumnNameWithAliasForQuery($columnInfo, $itIsWithQuery);
+                $this->columnNameWithAliasToColumnInfo[$colNameWithAlias] = $columnInfo;
+                $columns[] = $colNameWithAlias;
             }
         }
         $columns = array_merge($columns, $this->collectJoinedColumnsForQuery($itIsWithQuery));
@@ -1440,15 +1451,19 @@ abstract class AbstractSelect {
      * Convert key-value array received from DB to nested array with joins data stored under join names inside
      * main array. Also decodes columns aliases (keys in original array)
      * @param array $record
+     * @param array $shortColumnAliasToAlias = $shortColumnAliasToAlias = array_flip($this->shortColumnAliases);
+     * @param array $shortJoinAliasToAlias = $shortJoinAliasToAlias = array_flip($this->shortJoinAliases);
      * @return array - ['col1' => 'val1', 'col2' => 'val2', 'Join1Name' => ['jcol1' => 'jvalue1', ...], ...]
      */
-    private function normalizeRecord(array $record) {
+    private function normalizeRecord(array $record, array $shortColumnAliasToAlias, array $shortJoinAliasToAlias) {
         $dataBlocks = [$this->getTableAlias() => []];
         // process record's column aliases and group column values by table alias
-        $shortJoinAliasToAlias = array_flip($this->shortJoinAliases);
-        $shortColumnAliasToAlias = array_flip($this->shortColumnAliases);
         foreach ($record as $columnAlias => $value) {
-            if (preg_match('%^_(.+?)__(.+?)$%', $columnAlias, $colInfo)) {
+            if (isset($this->columnNameWithAliasToColumnInfo[$columnAlias])) {
+                $colInfo = $this->columnNameWithAliasToColumnInfo[$columnAlias];
+                $group = $colInfo['join_name'] ? $colInfo['join_name'] : $this->getTableAlias();
+                $dataBlocks[$group][$colInfo['name']] = $value;
+            } else if (preg_match('%^_(.+?)__(.+?)$%', $columnAlias, $colInfo)) {
                 list(, $tableAlias, $column) = $colInfo;
                 if (isset($shortJoinAliasToAlias[$tableAlias])) {
                     $tableAlias = $shortJoinAliasToAlias[$tableAlias];
