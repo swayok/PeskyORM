@@ -277,6 +277,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @throws \BadMethodCallException
      */
     public function getDataFromEachObject($closureOrObjectsMethod, array $argumentsForMethod = [], $disableDbRecordDataValidation = true) {
+        // todo: invent a way to optimize iteration for related records
         $closure = $closureOrObjectsMethod;
         if (is_string($closure)) {
             $closure = function (RecordInterface $record) use ($closureOrObjectsMethod, $argumentsForMethod) {
@@ -503,7 +504,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
                 if ($isFromDb === null) {
                     $isFromDb = $this->autodetectIfRecordIsFromDb($data);
                 }
-                $dbRecord->fromData($data, $isFromDb);
+                $dbRecord->reset()->fromData($data, $isFromDb);
                 $this->currentDbRecordIndex = $index;
             }
             return $dbRecord;

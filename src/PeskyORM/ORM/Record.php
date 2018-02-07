@@ -28,6 +28,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     protected $relatedRecords = [];
     /**
+     * @var null|bool
+     */
+    private $existsInDb = null;
+    /**
+     * @var null
+     */
+    private $existsInDbReally = null;
+    /**
      * @var bool
      */
     protected $isCollectingUpdates = false;
@@ -556,6 +564,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         }
 
         if ($column->isItPrimaryKey()) {
+            $this->existsInDb = true;
+            $this->existsInDbReally = null;
             if ($value === null) {
                 return $this->unsetPrimaryKeyValue();
             } else if (!$isFromDb) {
@@ -607,7 +617,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             $colName = $column->getName();
             $this->values[$colName] = $this->createValueObject($column);
             $this->values[$colName]->setOldValue($oldValueObject);
-            if ($colName === static::getPrimaryKeyColumnName()) {
+            if ($column->isItPrimaryKey()) {
                 $this->onPrimaryKeyChangeForRecordReceivedFromDb($oldValueObject->getValue());
             }
         }
@@ -622,6 +632,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      */
     public function unsetPrimaryKeyValue() {
+        $this->existsInDb = false;
+        $this->existsInDbReally = false;
         return $this->unsetValue(static::getPrimaryKeyColumn());
     }
 
@@ -635,6 +647,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     protected function onPrimaryKeyChangeForRecordReceivedFromDb($prevPkValue) {
         $this->relatedRecords = [];
+        $this->existsInDb = null;
+        $this->existsInDbReally = null;
         $pkColName = static::getPrimaryKeyColumnName();
         foreach ($this->values as $colName => $valueContainer) {
             if ($colName !== $pkColName && $valueContainer->hasValue()) {
@@ -674,12 +688,24 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      */
     public function existsInDb($useDbQuery = false) {
-        $pkColumn = static::getPrimaryKeyColumn();
-        return (
-            $this->_hasValue($pkColumn, false)
-//            && $this->getValueContainerByColumnConfig($pkColumn)->isItFromDb() //< pk cannot be not from db
-            && (!$useDbQuery || $this->_existsInDbViaQuery())
-        );
+        if ($useDbQuery) {
+            if ($this->existsInDbReally === null) {
+                $this->existsInDb = $this->existsInDbReally = (
+                    $this->_hasValue(static::getPrimaryKeyColumn(), false)
+                    && $this->_existsInDbViaQuery()
+                );
+            }
+            return $this->existsInDbReally;
+        } else {
+            if ($this->existsInDb === null) {
+                $this->existsInDb = (
+                    $this->_hasValue(static::getPrimaryKeyColumn(), false)
+        //            && $this->getValueContainerByColumnConfig($pkColumn)->isItFromDb() //< pk cannot be not from db
+                    && (!$useDbQuery || $this->_existsInDbViaQuery())
+                );
+            }
+            return $this->existsInDb;
+        }
     }
 
     /**
