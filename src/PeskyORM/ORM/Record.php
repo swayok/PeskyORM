@@ -2,12 +2,14 @@
 
 namespace PeskyORM\ORM;
 
-use Assetic\Extension\Twig\ValueContainer;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Exception\InvalidDataException;
 use PeskyORM\Exception\RecordNotFoundException;
 use Swayok\Utils\StringUtils;
 
+/**
+ * @method static Table getTable()
+ */
 abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Serializable {
 
     /**
@@ -52,6 +54,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @var bool
      */
     protected $trustDbDataMode = false;
+    /**
+     * @var bool
+     */
+    protected $isReadOnly = false;
+    /**
+     * @var array
+     */
+    protected $readOnlyData = [];
 
     /**
      * Create new record with values from $data array
@@ -60,11 +70,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param bool $haltOnUnknownColumnNames
      * @return static
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws InvalidDataException
      */
     static public function fromArray(array $data, $isFromDb = false, $haltOnUnknownColumnNames = true) {
         return static::newEmptyRecord()->fromData($data, $isFromDb, $haltOnUnknownColumnNames);
@@ -78,7 +87,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return static
      * @throws \UnexpectedValueException
      * @throws \PeskyORM\Exception\OrmException
-     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -93,12 +101,11 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $columns
      * @param array $readRelatedRecords
      * @return static
-     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
+     * @throws \PeskyORM\Exception\OrmException
      */
     static public function find(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = []) {
         return static::newEmptyRecord()->fromDb($conditionsAndOptions, $columns, $readRelatedRecords);
@@ -344,6 +351,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             );
         }
         $this->values = [];
+        $this->readOnlyData = [];
         $this->relatedRecords = [];
         $this->iteratorIdx = 0;
         $this->cleanUpdates();
@@ -526,14 +534,15 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param mixed $value
      * @param boolean $isFromDb
      * @return $this
-     * @throws \PDOException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
+     * @throws InvalidDataException
      */
     public function updateValue($column, $value, $isFromDb) {
+        if ($this->isReadOnly) {
+            throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
+        }
         if (is_string($column)) {
             $column = static::getColumn($column);
         }
@@ -545,12 +554,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param mixed $value
      * @param boolean $isFromDb
      * @return $this
-     * @throws \PDOException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
+     * @throws InvalidDataException
      */
     public function _updateValue(Column $column, $value, $isFromDb) {
         $valueContainer = $this->getValueContainerByColumnConfig($column);
@@ -676,6 +683,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         return $this->_hasValue(static::getPrimaryKeyColumn(), false);
     }
 
+    /** @noinspection PhpDocMissingThrowsInspection */
     /**
      * Check if current Record exists in DB
      * @param bool $useDbQuery - false: use only primary key value to check existence | true: use db query
@@ -714,6 +722,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      * @throws \PDOException
      * @throws \UnexpectedValueException
+     * @throws \PeskyORM\Exception\OrmException
      */
     protected function _existsInDbViaQuery() {
         return static::getTable()->hasMatchingRecord([
@@ -730,9 +739,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PDOException
+     * @throws InvalidDataException
      */
     public function updateRelatedRecord($relationName, $relatedRecord, $isFromDb = null, $haltOnUnknownColumnNames = true) {
         /** @var Relation $relation */
@@ -797,8 +805,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param bool $loadIfNotSet - true: read relation data if it is not set
      * @return Record|RecordsSet
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -893,11 +899,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param bool $haltOnUnknownColumnNames - exception will be thrown if there are unknown column names in $data
      * @return $this
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws InvalidDataException
      */
     public function fromData(array $data, $isFromDb = false, $haltOnUnknownColumnNames = true) {
         $this->reset();
@@ -911,11 +916,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $data
      * @return $this
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws InvalidDataException
      */
     public function fromDbData(array $data) {
         return $this->fromData($data, true, true);
@@ -927,9 +931,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $columns - empty: get all columns
      * @param array $readRelatedRecords - also read related records
      * @return $this
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
+     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -946,9 +949,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $columns - empty: get all columns
      * @param array $readRelatedRecords - also read related records
      * @return $this
-     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PeskyORM\Exception\OrmException
-     * @throws \UnexpectedValueException
      * @throws \UnexpectedValueException
      * @throws \PDOException
      * @throws \BadMethodCallException
@@ -1008,7 +1009,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $columns - columns to read
      * @param array $readRelatedRecords - also read related records
      * @return $this
-     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PeskyORM\Exception\RecordNotFoundException
      * @throws \UnexpectedValueException
      * @throws \PDOException
@@ -1028,7 +1028,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Read values for specific columns
      * @param array $columns - columns to read
      * @return $this
-     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \PDOException
@@ -1061,13 +1060,21 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
      * @return $this
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws InvalidDataException
      */
     public function updateValues(array $data, $isFromDb = false, $haltOnUnknownColumnNames = true) {
+        if ($this->isReadOnly) {
+            if (!$isFromDb) {
+                throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
+            } else {
+                $this->readOnlyData = $data;
+                return $this;
+            }
+        }
+
         $pkColumn = static::getPrimaryKeyColumn();
         if ($isFromDb && !$this->existsInDb()) {
             // first set pk column value
@@ -1110,11 +1117,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
      * @return $this
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws InvalidDataException
      */
     public function merge(array $data, $isFromDb = false, $haltOnUnknownColumnNames = true) {
         return $this->updateValues($data, $isFromDb, $haltOnUnknownColumnNames);
@@ -1133,7 +1139,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      */
     public function begin() {
-        if ($this->isCollectingUpdates) {
+        if ($this->isReadOnly) {
+            throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
+        } else if ($this->isCollectingUpdates) {
             throw new \BadMethodCallException('Attempt to begin collecting changes when already collecting changes');
         } else if (!$this->existsInDb()) {
             throw new \BadMethodCallException('Trying to begin collecting changes on not existing record');
@@ -1180,6 +1188,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
+     * @throws \Exception
      */
     public function commit(array $relationsToSave = [], $deleteNotListedRelatedRecords = false) {
         if (!$this->isCollectingUpdates) {
@@ -1249,6 +1258,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws \Exception
      */
     public function save(array $relationsToSave = [], $deleteNotListedRelatedRecords = false) {
         if ($this->isCollectingUpdates) {
@@ -1272,9 +1282,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \PeskyORM\Exception\DbException
      * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \UnexpectedValueException
+     * @throws \Exception
      */
     protected function saveToDb(array $columnsToSave = []) {
-        if ($this->trustDbDataMode) {
+        if ($this->isReadOnly) {
+            throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
+        } else if ($this->trustDbDataMode) {
             throw new \BadMethodCallException('Saving is not alowed when trusted mode for DB data is enabled');
         }
         if (empty($columnsToSave)) {
@@ -1324,6 +1337,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @throws \PDOException
+     * @throws \Exception
      */
     protected function performDataSave($isUpdate, array $data) {
         $table = static::getTable();
@@ -1333,9 +1347,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         }
         try {
             if ($isUpdate) {
-                /** @var array $updatedData */
                 unset($data[static::getPrimaryKeyColumnName()]);
-                $updatedData = $table->update(
+                $updatedData = (array)$table::update(
                     $data,
                     [static::getPrimaryKeyColumnName() => $this->getPrimaryKeyValue()],
                     true
@@ -1357,7 +1370,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     return false;
                 }
             } else {
-                $this->updateValues($table->insert($data, true), true);
+                $this->updateValues($table::insert($data, true), true);
             }
         } catch (\Exception $exc) {
             if ($table::inTransaction()) {
@@ -1384,10 +1397,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         // collect values that are not from DB
         foreach ($columnsToSave as $columnName) {
             $column = static::getColumn($columnName);
-            if ($column->isItExistsInDb() && !$column->isItPrimaryKey()) {
-                if ($this->_hasValue($column, true) && !$this->getValueContainerByColumnConfig($column)->isItFromDb()) {
-                    $data[$columnName] = $this->_getValue($column, null);
-                }
+            if (
+                $column->isItExistsInDb()
+                && !$column->isItPrimaryKey()
+                && $this->_hasValue($column, true)
+                && !$this->getValueContainerByColumnConfig($column)->isItFromDb()
+            ) {
+                $data[$columnName] = $this->_getValue($column, null);
             }
         }
         if (count($data) === 0) {
@@ -1526,6 +1542,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \PeskyORM\Exception\OrmException
      * @throws \PeskyORM\Exception\DbException
      * @throws \UnexpectedValueException
+     * @throws \Exception
      */
     public function saveRelations(array $relationsToSave = [], $deleteNotListedRelatedRecords = false) {
         if (!$this->existsInDb()) {
@@ -1604,7 +1621,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      */
     public function delete($resetAllValuesAfterDelete = true, $deleteFiles = true) {
-        if (!$this->hasPrimaryKeyValue()) {
+        if ($this->isReadOnly) {
+            throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
+        } else if (!$this->hasPrimaryKeyValue()) {
             throw new \BadMethodCallException('It is impossible to delete record has no primary key value');
         } else {
             $this->beforeDelete();
@@ -1614,7 +1633,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 $table::beginTransaction();
             }
             try {
-                $table->delete([static::getPrimaryKeyColumnName() => $this->getPrimaryKeyValue()]);
+                $table::delete([static::getPrimaryKeyColumnName() => $this->getPrimaryKeyValue()]);
             } catch (\PDOException $exc) {
                 if ($table::inTransaction()) {
                     $table::rollBackTransaction();
@@ -1678,11 +1697,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param bool $withFilesInfo - true: add info about files attached to a record (url, path, file_name, full_file_name, ext)
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Exception\OrmException
      */
     public function toArray(
         array $columnsNames = [],
@@ -1816,11 +1833,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param bool $loadRelatedRecordsIfNotSet - true: read required missing related objects from DB
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Exception\OrmException
      */
     public function toArrayWithoutFiles(
         array $columnsNames = [],
@@ -1919,9 +1934,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @param string $key - column name or relation name
      * @return boolean - true on success or false on failure.
-     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -1942,18 +1955,47 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         }
     }
 
+    /** @noinspection PhpDocMissingThrowsInspection */
     /**
      * @param mixed $key - column name, column name with format (ex: created_at_as_date) or relation name
      * @return mixed
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     public function offsetGet($key) {
-        if (static::hasColumn($key)) {
+        if ($this->isReadOnly) {
+            if (array_key_exists($key, $this->readOnlyData)) {
+                if (is_array($this->readOnlyData[$key]) && static::hasRelation($key)) {
+                    $relation = static::getRelation($key);
+                    if ($relation->getType() === $relation::HAS_MANY) {
+                        $relatedRecord = RecordsSet::createFromArray(static::getTable(), $this->readOnlyData[$key], true);
+                        $relatedRecord->enableReadOnlyMode();
+                    } else {
+                        $relatedRecord = $relation
+                            ->getForeignTable()
+                            ->newRecord()
+                            ->enableReadOnlyMode()
+                            ->fromDbData($this->readOnlyData[$key]);
+                    }
+                    $this->readOnlyData[$key] = $relatedRecord;
+                }
+                return $this->readOnlyData[$key];
+            } else if (preg_match('%^(.+)_as_(.*)$%is', $key, $parts)) {
+                list(, $colName, $format) = $parts;
+                if (array_key_exists($colName, $this->readOnlyData)) {
+                    $value = $this->readOnlyData[$colName];
+                    $column = static::getColumn($colName);
+                    $valueContainer = $this->createValueObject($column)->setRawValue($value, $value, true);
+                    return call_user_func($column->getValueFormatter(), $valueContainer, $format);
+                } else {
+                    return null;
+                }
+            } else {
+                return null;
+            }
+        } else if (static::hasColumn($key)) {
             return $this->_getValue(static::getColumn($key), null);
         } else if (static::hasRelation($key)) {
             return $this->getRelatedRecord($key, true);
@@ -1972,12 +2014,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PDOException
+     * @throws InvalidDataException
      */
     public function offsetSet($key, $value) {
-        if (static::hasColumn($key)) {
+        if ($this->isReadOnly) {
+            throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
+        } else if (static::hasColumn($key)) {
             $this->_updateValue(static::getColumn($key), $value, $key === static::getPrimaryKeyColumnName());
         } else if (static::hasRelation($key)) {
             $this->updateRelatedRecord($key, $value, null);
@@ -1996,7 +2039,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \UnexpectedValueException
      */
     public function offsetUnset($key) {
-        if (static::hasColumn($key)) {
+        if ($this->isReadOnly) {
+            throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
+        } else if (static::hasColumn($key)) {
             return $this->unsetValue($key);
         } else if (static::hasRelation($key)) {
             return $this->unsetRelatedRecord($key);
@@ -2011,8 +2056,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param $name - column name, column name with format (ex: created_at_as_date) or relation name
      * @return mixed
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -2027,9 +2070,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PDOException
+     * @throws InvalidDataException
      */
     public function __set($name, $value) {
         return $this->offsetSet($name, $value);
@@ -2038,9 +2080,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @param $name - column name or relation name
      * @return bool
-     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -2065,11 +2105,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $arguments - 1 required, 2 accepted. 1st - value, 2nd - $isFromDb
      * @return $this
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws InvalidDataException
      */
     public function __call($name, array $arguments) {
         $isValidName = preg_match('%^set([A-Z][a-zA-Z0-9]*)$%', $name, $nameParts);
@@ -2158,6 +2197,44 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         foreach ($data as $name => $value) {
             $this->getValueContainerByColumnName($name)->unserialize($value);
         }
+    }
+
+    /**
+     * Enable read only mode. In this mode incoming data is not processed in any way and Record works like an array
+     * but maintains most getters functionality including relations.
+     * Usage of value formatters are allowed ({column}_as_array, {column}_as_object, etc.)
+     * Relations returned as similar read only Records or RecordArrays.
+     * In this mode you're able to use Record's methods that do not modify Record's data.
+     * @return $this
+     */
+    public function enableReadOnlyMode() {
+        if ($this->existsInDb()) {
+            $this->readOnlyData = $this->toArray([], ['*']);
+        }
+        $this->isReadOnly = true;
+        return $this;
+    }
+
+    /**
+     * Disable read only mode.
+     * @return $this
+     * @throws InvalidDataException
+     */
+    public function disableReadOnlyMode() {
+        $this->isReadOnly = true;
+        $this->reset();
+        if (!empty($this->readOnlyData)) {
+            $this->updateValues($this->readOnlyData, true);
+        }
+        $this->readOnlyData = [];
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isReadOnly() {
+        return $this->isReadOnly;
     }
 
 }

@@ -44,6 +44,10 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @var int
      */
     protected $currentDbRecordIndex = -1;
+    /**
+     * @var bool
+     */
+    protected $readOnlyMode = false;
 
     /**
      * @param TableInterface $table
@@ -88,10 +92,15 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     protected function getDbRecordObjectForIteration() {
         if ($this->dbRecordForIteration === null) {
             $this->dbRecordForIteration = $this->table->newRecord();
-            if ($this->isDbRecordDataValidationDisabled()) {
-                $this->dbRecordForIteration->enableTrustModeForDbData();
+            if ($this->isReadOnlyModeEnabled()) {
+                $this->dbRecordForIteration->enableReadOnlyMode();
             } else {
-                $this->dbRecordForIteration->disableTrustModeForDbData();
+                $this->dbRecordForIteration->disableReadOnlyMode();
+                if ($this->isDbRecordDataValidationDisabled()) {
+                    $this->dbRecordForIteration->enableTrustModeForDbData();
+                } else {
+                    $this->dbRecordForIteration->disableTrustModeForDbData();
+                }
             }
         }
         return $this->dbRecordForIteration;
@@ -267,7 +276,8 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      *  - \Closure: function (RecordInterface $record) { return $record->toArray(); }
      *  - \Closure: function (RecordInterface $record) { return \PeskyORM\ORM\KeyValuePair::create($record->id, $record->toArray()); }
      * @param array $argumentsForMethod - pass this arguments to object's method. Not used if $argumentsForMethod is closure
-     * @param bool $disableDbRecordDataValidation - true: disable DB data validation in record to speedup
+     * @param bool $enableReadOnlyMode - true: disable all processing of Record's data so it will work much faster on
+     *  large sets of Records and allow using Record's methods but will disable Record's data modification
      * @return array
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
@@ -276,8 +286,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @throws \PDOException
      * @throws \BadMethodCallException
      */
-    public function getDataFromEachObject($closureOrObjectsMethod, array $argumentsForMethod = [], $disableDbRecordDataValidation = true) {
-        // todo: invent a way to optimize iteration for related records
+    public function getDataFromEachObject($closureOrObjectsMethod, array $argumentsForMethod = [], $enableReadOnlyMode = true) {
         $closure = $closureOrObjectsMethod;
         if (is_string($closure)) {
             $closure = function (RecordInterface $record) use ($closureOrObjectsMethod, $argumentsForMethod) {
@@ -290,7 +299,9 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
         $backupReuse = $this->isDbRecordInstanceReuseEnabled;
         $backupValidation = $this->isDbRecordDataValidationDisabled;
         $this->enableDbRecordInstanceReuseDuringIteration();
-        if ($disableDbRecordDataValidation) {
+        if ($enableReadOnlyMode) {
+            $this->enableReadOnlyMode();
+        } else {
             $this->disableDbRecordDataValidation();
         }
         for ($i = 0, $count = $this->count(); $i < $count; $i++) {
@@ -299,8 +310,8 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
             if ($value instanceof KeyValuePair) {
                 $valueForKey = $value->getValue();
                 if (
-                    !$this->isDbRecordInstanceReuseDuringIterationEnabled()
-                    && is_object($valueForKey)
+                    is_object($valueForKey)
+                    && $this->isDbRecordInstanceReuseDuringIterationEnabled()
                     && (get_class($valueForKey) === get_class($record))
                 ) {
                     // disable db record instance reuse when $valueForKey is $record.
@@ -372,8 +383,13 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
             }
             $record = $this->table->newRecord();
             $pkColumnName = $this->table->getTableStructure()->getPkColumnName();
-            if ($this->isDbRecordDataValidationDisabled()) {
-                $record->enableTrustModeForDbData();
+            if ($this->isReadOnlyModeEnabled()) {
+                $record->enableReadOnlyMode();
+            } else {
+                $record->disableReadOnlyMode();
+                if ($this->isDbRecordDataValidationDisabled()) {
+                    $record->enableTrustModeForDbData();
+                }
             }
             if (!$isFromDb && !empty($data[$pkColumnName])) {
                 // primary key value is set but $isFromDb === false. This usually means that all data except
@@ -546,5 +562,29 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      */
     public function totalCount() {
         return $this->count();
+    }
+
+    /**
+     * @return $this
+     */
+    public function enableReadOnlyMode() {
+        $this->readOnlyMode = true;
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function disableReadOnlyMode() {
+        $this->readOnlyMode = false;
+        $this->dbRecordForIteration = null;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isReadOnlyModeEnabled() {
+        return $this->readOnlyMode;
     }
 }
