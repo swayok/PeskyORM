@@ -129,8 +129,6 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     /**
      * @param int $index
      * @return mixed
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \InvalidArgumentException
      */
     protected function getRecordDataByIndex($index) {

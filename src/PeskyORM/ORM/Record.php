@@ -403,6 +403,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return RecordValue
      */
     protected function getValueContainerByColumnName($colName) {
+        if ($this->isReadOnly()) {
+            throw new \BadMethodCallException('Record is in read only mode.');
+        }
         if (!isset($this->values[$colName])) {
             $this->values[$colName] = $this->createValueObject(static::getColumn($colName));
         }
@@ -415,6 +418,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return RecordValue
      */
     protected function getValueContainerByColumnConfig(Column $column) {
+        if ($this->isReadOnly()) {
+            throw new \BadMethodCallException('Record is in read only mode.');
+        }
         $colName = $column->getName();
         if (!isset($this->values[$colName])) {
             $this->values[$colName] = $this->createValueObject($column);
@@ -2238,13 +2244,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         return $this;
     }
 
+    /** @noinspection PhpDocMissingThrowsInspection */
     /**
      * Disable read only mode.
      * @return $this
-     * @throws InvalidDataException
      */
     public function disableReadOnlyMode() {
-        $this->isReadOnly = true;
+        $this->isReadOnly = false;
         $this->reset();
         if (!empty($this->readOnlyData)) {
             $this->updateValues($this->readOnlyData, true);
