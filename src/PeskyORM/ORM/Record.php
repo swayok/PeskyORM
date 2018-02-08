@@ -1223,7 +1223,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
-     * @throws \Exception
      */
     public function commit(array $relationsToSave = [], $deleteNotListedRelatedRecords = false) {
         if (!$this->isCollectingUpdates) {
@@ -1293,7 +1292,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
-     * @throws \Exception
      */
     public function save(array $relationsToSave = [], $deleteNotListedRelatedRecords = false) {
         if ($this->isCollectingUpdates) {
@@ -1317,7 +1315,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \PeskyORM\Exception\DbException
      * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \UnexpectedValueException
-     * @throws \Exception
      */
     protected function saveToDb(array $columnsToSave = []) {
         if ($this->isReadOnly()) {
@@ -1364,6 +1361,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $this->afterSave(!$isUpdate);
     }
 
+    /** @noinspection PhpDocMissingThrowsInspection */
     /**
      * @param bool $isUpdate
      * @param array $data
@@ -1372,7 +1370,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @throws \PDOException
-     * @throws \Exception
      */
     protected function performDataSave($isUpdate, array $data) {
         $table = static::getTable();
@@ -1577,7 +1574,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \PeskyORM\Exception\OrmException
      * @throws \PeskyORM\Exception\DbException
      * @throws \UnexpectedValueException
-     * @throws \Exception
      */
     public function saveRelations(array $relationsToSave = [], $deleteNotListedRelatedRecords = false) {
         if (!$this->existsInDb()) {

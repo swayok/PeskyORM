@@ -145,7 +145,7 @@ class Column {
     /**
      * @var string
      */
-    protected $validDefaultValue = self::DEFAULT_VALUE_NOT_SET;
+    protected $validDefaultValue = self::VALID_DEFAULT_VALUE_UNDEFINED;
     /**
      * @var bool
      */
