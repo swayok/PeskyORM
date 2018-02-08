@@ -511,11 +511,15 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return mixed
      */
     protected function _hasValue(Column $column, $trueIfThereIsDefaultValue) {
-        return call_user_func(
-            $column->getValueExistenceChecker(),
-            $this->getValueContainerByColumnConfig($column),
-            $trueIfThereIsDefaultValue
-        );
+        if ($this->isReadOnly()) {
+            return array_key_exists($column->getName(), $this->readOnlyData);
+        } else {
+            return call_user_func(
+                $column->getValueExistenceChecker(),
+                $this->getValueContainerByColumnConfig($column),
+                $trueIfThereIsDefaultValue
+            );
+        }
     }
 
     /**
@@ -540,7 +544,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws InvalidDataException
      */
     public function updateValue($column, $value, $isFromDb) {
-        if ($this->isReadOnly) {
+        if ($this->isReadOnly()) {
             throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
         }
         if (is_string($column)) {
@@ -1066,7 +1070,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws InvalidDataException
      */
     public function updateValues(array $data, $isFromDb = false, $haltOnUnknownColumnNames = true) {
-        if ($this->isReadOnly) {
+        if ($this->isReadOnly()) {
             if (!$isFromDb) {
                 throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
             } else {
@@ -1139,7 +1143,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      */
     public function begin() {
-        if ($this->isReadOnly) {
+        if ($this->isReadOnly()) {
             throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
         } else if ($this->isCollectingUpdates) {
             throw new \BadMethodCallException('Attempt to begin collecting changes when already collecting changes');
@@ -1285,7 +1289,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \Exception
      */
     protected function saveToDb(array $columnsToSave = []) {
-        if ($this->isReadOnly) {
+        if ($this->isReadOnly()) {
             throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
         } else if ($this->trustDbDataMode) {
             throw new \BadMethodCallException('Saving is not alowed when trusted mode for DB data is enabled');
@@ -1621,7 +1625,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      */
     public function delete($resetAllValuesAfterDelete = true, $deleteFiles = true) {
-        if ($this->isReadOnly) {
+        if ($this->isReadOnly()) {
             throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
         } else if (!$this->hasPrimaryKeyValue()) {
             throw new \BadMethodCallException('It is impossible to delete record has no primary key value');
@@ -1940,7 +1944,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      */
     public function offsetExists($key) {
-        if (static::hasColumn($key)) {
+        if ($this->isReadOnly()) {
+            return array_key_exists($key, $this->readOnlyData);
+        } else if (static::hasColumn($key)) {
             return $this->_hasValue(static::getColumn($key), false);
         } else if (static::hasRelation($key)) {
             if (!$this->isRelatedRecordCanBeRead($key)) {
@@ -1965,7 +1971,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      */
     public function offsetGet($key) {
-        if ($this->isReadOnly) {
+        if ($this->isReadOnly()) {
             if (array_key_exists($key, $this->readOnlyData)) {
                 if (is_array($this->readOnlyData[$key]) && static::hasRelation($key)) {
                     $relation = static::getRelation($key);
@@ -2018,7 +2024,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws InvalidDataException
      */
     public function offsetSet($key, $value) {
-        if ($this->isReadOnly) {
+        if ($this->isReadOnly()) {
             throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
         } else if (static::hasColumn($key)) {
             $this->_updateValue(static::getColumn($key), $value, $key === static::getPrimaryKeyColumnName());
@@ -2039,7 +2045,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \UnexpectedValueException
      */
     public function offsetUnset($key) {
-        if ($this->isReadOnly) {
+        if ($this->isReadOnly()) {
             throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
         } else if (static::hasColumn($key)) {
             return $this->unsetValue($key);
