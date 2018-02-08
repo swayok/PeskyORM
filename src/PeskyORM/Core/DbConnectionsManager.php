@@ -39,22 +39,27 @@ class DbConnectionsManager {
      * @param string $connectionName
      * @param string $adapterName
      * @param DbConnectionConfigInterface $connectionConfig
+     * @param bool $ignoreDuplicate - true: will ignore duplicate connections
      * @return DbAdapter|DbAdapterInterface
      * @throws \InvalidArgumentException
      */
     static public function createConnection(
         $connectionName,
         $adapterName,
-        DbConnectionConfigInterface $connectionConfig
+        DbConnectionConfigInterface $connectionConfig,
+        $ignoreDuplicate = false
     ) {
         if (empty($adapterName) || !isset(self::$adapters[$adapterName])) {
             throw new \InvalidArgumentException("DB adapter with name [$adapterName] not found");
         }
         $connectionName = strtolower($connectionName);
         if (isset(self::$connections[$connectionName])) {
-            throw new \InvalidArgumentException("DB connection with name [$connectionName] already exists");
+            if (!$ignoreDuplicate) {
+                throw new \InvalidArgumentException("DB connection with name [$connectionName] already exists");
+            }
+        } else {
+            self::$connections[$connectionName] = new self::$adapters[$adapterName]($connectionConfig);
         }
-        self::$connections[$connectionName] = new self::$adapters[$adapterName]($connectionConfig);
         return self::$connections[$connectionName];
     }
 
@@ -64,10 +69,11 @@ class DbConnectionsManager {
      *      - required keys: 'driver' or 'adapter' = 'mysql', 'pgsql', ... - any key in DbConnectionsManager::$adapters
      *      - optional keys (depends on driver): 'database', 'username', 'password', 'charset'
      *                                           'host', 'port', 'socket', 'options' (array)
+     * @param bool $ignoreDuplicate - true: will ignore duplicate connections
      * @return DbAdapter|DbAdapterInterface
      * @throws \InvalidArgumentException
      */
-    static public function createConnectionFromArray($connectionName, array $connectionInfo) {
+    static public function createConnectionFromArray($connectionName, array $connectionInfo, $ignoreDuplicate = false) {
         if (empty($connectionInfo['driver']) && empty($connectionInfo['adapter'])) {
             throw new \InvalidArgumentException('$connectionInfo must contain a value for key \'driver\' or \'adapter\'');
         }
@@ -80,17 +86,18 @@ class DbConnectionsManager {
         /** @var DbConnectionConfigInterface $configClass */
         $configClass = $adapterClass::getConnectionConfigClass();
         $connectionConfig = $configClass::fromArray($connectionInfo, $connectionName);
-        return static::createConnection($connectionName, $adapterName, $connectionConfig);
+        return static::createConnection($connectionName, $adapterName, $connectionConfig, $ignoreDuplicate);
     }
 
     /**
      * Add alternative name for existing connection
      * @param string $connectionName
      * @param string $alternativeName
+     * @param bool $ignoreDuplicate - true: will ignore duplicate connections
      * @throws \InvalidArgumentException
      */
-    static public function addAlternativeNameForConnection($connectionName, $alternativeName) {
-        if (isset(self::$connections[$alternativeName])) {
+    static public function addAlternativeNameForConnection($connectionName, $alternativeName, $ignoreDuplicate = false) {
+        if (isset(self::$connections[$alternativeName]) && !$ignoreDuplicate) {
             throw new \InvalidArgumentException("DB connection with name [$alternativeName] already exists");
         }
         self::$connections[$alternativeName] = static::getConnection($connectionName);
