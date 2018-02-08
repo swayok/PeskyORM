@@ -443,7 +443,17 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      */
     protected function _getValue(Column $column, $format) {
-        return call_user_func($column->getValueGetter(), $this->getValueContainerByColumnConfig($column), $format);
+        if ($this->isReadOnly()) {
+            return array_key_exists($column->getName(), $this->readOnlyData)
+                ? $this->readOnlyData[$column->getName()]
+                : null;
+        } else {
+            return call_user_func(
+                $column->getValueGetter(),
+                $this->getValueContainerByColumnConfig($column),
+                $format
+            );
+        }
     }
 
     /**
@@ -1801,6 +1811,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      */
     protected function getColumnValueForToArray($columnName, $returnNullForFiles = false, &$notSet = null) {
+        if ($this->isReadOnly()) {
+            if (array_key_exists($columnName, $this->readOnlyData)) {
+                return $this->readOnlyData[$columnName];
+            } else {
+                return $this->createValueObject(static::getColumn($columnName))->getDefaultValue();
+            }
+        }
         $column = static::getColumn($columnName);
         $notSet = true;
         if ($column->isPrivateValue()) {
