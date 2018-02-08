@@ -850,6 +850,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
+     * @throws InvalidDataException
      */
     public function readRelatedRecord($relationName) {
         $relation = static::getRelation($relationName);
@@ -862,23 +863,37 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $fkValue = $this->getValue($relation->getLocalColumnName());
         $relatedTable = $relation->getForeignTable();
         if ($fkValue === null) {
-            $this->relatedRecords[$relationName] = $relatedTable->newRecord();
+            $relatedRecord = $relatedTable->newRecord();
+            if ($this->isReadOnly()) {
+                $relatedRecord->enableReadOnlyMode();
+            }
         } else {
             $conditions = array_merge(
                 [$relation->getForeignColumnName() => $this->getValue($relation->getLocalColumnName())],
                 $relation->getAdditionalJoinConditions(static::getTable())
             );
             if ($relation->getType() === Relation::HAS_MANY) {
-                $this->relatedRecords[$relationName] = $relatedTable->select('*', $conditions, function (OrmSelect $select) use ($relatedTable) {
+                $relatedRecord = $relatedTable->select('*', $conditions, function (OrmSelect $select) use ($relatedTable) {
                     $select->orderBy($relatedTable->getPkColumnName(), true);
                 });
+                if ($this->isReadOnly()) {
+                    $relatedRecord->enableReadOnlyMode();
+                }
             } else {
-                $this->relatedRecords[$relationName] = $relatedTable->newRecord();
+                $relatedRecord = $relatedTable->newRecord();
                 $data = $relatedTable->selectOne('*', $conditions);
+                if ($this->isReadOnly()) {
+                    $relatedRecord->enableReadOnlyMode();
+                }
                 if (!empty($data)) {
-                    $this->relatedRecords[$relationName]->fromData($data, true, true);
+                    $relatedRecord->fromData($data, true, true);
                 }
             }
+        }
+        if ($this->isReadOnly()) {
+            $this->relatedRecords[$relationName] = $relatedRecord;
+        } else {
+            $this->readOnlyData[$relationName] = $relatedRecord;
         }
         return $this;
     }
@@ -908,7 +923,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     public function isRelatedRecordAttached($relationName) {
         static::getRelation($relationName);
-        return array_key_exists($relationName, $this->relatedRecords);
+        return array_key_exists($relationName, $this->isReadOnly() ? $this->readOnlyData : $this->relatedRecords);
     }
 
     /**
@@ -2021,6 +2036,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 } else {
                     return null;
                 }
+            } else if (self::hasRelation($key)) {
+                return $this->getRelatedRecord($key, true);
             } else {
                 return null;
             }
