@@ -839,7 +839,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 );
             }
         }
-        return $this->relatedRecords[$relationName];
+        return $this->isReadOnly() ? $this->readOnlyData[$relationName] : $this->relatedRecords[$relationName];
     }
 
     /**
@@ -891,9 +891,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             }
         }
         if ($this->isReadOnly()) {
-            $this->relatedRecords[$relationName] = $relatedRecord;
-        } else {
             $this->readOnlyData[$relationName] = $relatedRecord;
+        } else {
+            $this->relatedRecords[$relationName] = $relatedRecord;
         }
         return $this;
     }
