@@ -69,10 +69,9 @@ VIEW;
         return $fullClassName::getInstance();
     }
 
-    protected function __construct() {
-        $this->columns['id'] = Column::create(Column::TYPE_INT, 'id')->primaryKey();
-        $this->pk = $this->columns['id'];
-        parent::__construct();
+    protected function loadConfigs() {
+        $this->pk = $this->columns['id'] = Column::create(Column::TYPE_INT, 'id')->primaryKey();
+        parent::loadConfigs();
     }
 
     /**
