@@ -20,6 +20,10 @@ class RecordsSet extends RecordsArray {
      * @var null|int
      */
     protected $recordsCountTotal = null;
+    /**
+     * @var array[] - keys: relation names; values: arrays ['relation' => Relation; 'columns' => array]
+     */
+    protected $hasManyRelationsToInject = [];
 
     /**
      * @param TableInterface $table
@@ -57,6 +61,22 @@ class RecordsSet extends RecordsArray {
         parent::__construct($dbSelect->getTable(), [], true, $disableDbRecordDataValidation);
         $this->setOrmSelect($dbSelect);
     }
+
+    /**
+     * @param Relation $relation
+     * @param array $columnsToSelect
+     *
+     */
+    protected function injectHasManyRelationDataIntoRecords(Relation $relation, array $columnsToSelect = ['*']) {
+        $this->hasManyRelationsToInject[$relation->getName()] = [
+            'relation' => $relation,
+            'columns' => $columnsToSelect
+        ];
+        if (is_array($this->records)) {
+            parent::injectHasManyRelationDataIntoRecords($relation, $columnsToSelect);
+        }
+    }
+
 
     /**
      * For internal use only!
@@ -141,8 +161,7 @@ class RecordsSet extends RecordsArray {
      */
     public function nextPage() {
         $this->rewind();
-        $this->records = $this->select->fetchNextPage();
-        $this->recordsCount = count($this->records);
+        $this->setRecords($this->select->fetchNextPage());
         return $this;
     }
 
@@ -155,8 +174,7 @@ class RecordsSet extends RecordsArray {
      */
     public function prevPage() {
         $this->rewind();
-        $this->records = $this->select->fetchPrevPage();
-        $this->recordsCount = count($this->records);
+        $this->setRecords($this->select->fetchPrevPage());
         return $this;
     }
 
@@ -184,10 +202,23 @@ class RecordsSet extends RecordsArray {
      */
     protected function getRecords($reload = false) {
         if ($reload || $this->recordsCount === null) {
-            $this->records = $this->select->fetchMany();
-            $this->recordsCount = count($this->records);
+            $this->setRecords($this->select->fetchMany());
         }
         return $this->records;
+    }
+
+    /**
+     * @param array $records
+     * @return $this
+     */
+    protected function setRecords(array $records) {
+        $this->records = $records;
+        $this->recordsCount = count($this->records);
+        $this->hasManyRelationsInjected = [];
+        foreach ($this->hasManyRelationsToInject as $injectionConfig) {
+            parent::injectHasManyRelationDataIntoRecords($injectionConfig['relation'], $injectionConfig['columns']);
+        }
+        return $this;
     }
 
     /**

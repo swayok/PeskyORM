@@ -2,6 +2,8 @@
 
 namespace PeskyORM\ORM;
 
+use Swayok\Utils\Set;
+
 class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
@@ -48,6 +50,10 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @var bool
      */
     protected $readOnlyMode = false;
+    /**
+     * @var string[] - relation names
+     */
+    protected $hasManyRelationsInjected = [];
 
     /**
      * @param TableInterface $table
@@ -84,6 +90,62 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
             $this->records = array_values($records);
         }
         $this->isFromDb = $isFromDb;
+    }
+
+    /**
+     * Inject data from HAS MANY relation into records
+     * @param string $relationName
+     * @param array $columnsToSelect - see \PeskyORM\Core\AbstractSelect::columns()
+     * @return RecordsArray
+     * @throws \BadMethodCallException
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     */
+    public function injectHasManyRelationData($relationName, array $columnsToSelect = ['*']) {
+        $relation = $this->table->getTableStructure()->getRelation($relationName);
+        if ($relation->getType() !== $relation::HAS_MANY) {
+            throw new \InvalidArgumentException(
+                'Relation must be of a \'' . $relation::HAS_MANY . "' type but relation '$relationName' is of type '{$relation->getType()}'"
+            );
+        }
+        if (!in_array($relationName, $this->hasManyRelationsInjected, true)) {
+            $this->injectHasManyRelationDataIntoRecords($relation, $columnsToSelect);
+        }
+        return $this;
+    }
+
+    /**
+     * @param Relation $relation
+     * @param array $columnsToSelect
+     */
+    protected function injectHasManyRelationDataIntoRecords(Relation $relation, array $columnsToSelect = ['*']) {
+        $relationName = $relation->getName();
+        $localColumnName = $relation->getLocalColumnName();
+        $ids = $this->getValuesForColumn($localColumnName, null, function ($value) {
+            return !empty($value);
+        });
+        if (count($ids)) {
+            $relatedRecordsGrouped = Set::combine(
+                $relation->getForeignTable()
+                    ->select($columnsToSelect, [$relation->getForeignColumnName() => $ids])
+                    ->toArrays(),
+                '/@',
+                '/',
+                '/' . $relation->getForeignColumnName()
+            );
+            foreach ($this->getRecords() as $index => $record) {
+                $relatedRecords = array_get($relatedRecordsGrouped, array_get($record, $localColumnName, null), null);
+                if (!is_array($relatedRecords)) {
+                    $relatedRecords = [];
+                }
+                if ($record instanceof RecordInterface) {
+                    $this->records[$index] = $this->records[$index]->toArray([], ['*'], false);
+                    unset($this->dbRecords[$index]);
+                }
+                $this->records[$index][$relationName] = array_values($relatedRecords);
+            }
+        }
+        $this->hasManyRelationsInjected[] = $relationName;
     }
 
     /**
@@ -136,7 +198,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
             throw new \InvalidArgumentException("Array does not contain index '{$index}'");
         }
         if (!is_array($this->records[$index])) {
-            $this->records[$index] = $this->records[$index]->toArray();
+            $this->records[$index] = $this->records[$index]->toArray([], ['*'], false);
         }
         return $this->records[$index];
     }
