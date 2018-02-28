@@ -53,6 +53,7 @@ class Mysql extends DbAdapter {
         'tinyblob' => Column::TYPE_BLOB,
         'mediumblob' => Column::TYPE_BLOB,
         'longblob' => Column::TYPE_BLOB,
+        'tinyint' => Column::TYPE_INT,
         'smallint' => Column::TYPE_INT,
         'mediumint' => Column::TYPE_INT,
         'bigint' => Column::TYPE_INT,
