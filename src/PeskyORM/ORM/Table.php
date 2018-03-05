@@ -2,6 +2,7 @@
 
 namespace PeskyORM\ORM;
 
+use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbConnectionsManager;
 use PeskyORM\Core\DbExpr;
@@ -442,6 +443,36 @@ abstract class Table implements TableInterface {
             static::getPdoDataTypesForColumns(),
             $returning
         );
+    }
+
+    /**
+     * Insert new record or update existing one if duplicate value found for $columnName
+     * @param array $data
+     * @param string $columnName - column to detect duplicates (only 1 column allowed!)
+     * @return RecordInterface
+     * @throws \PeskyORM\Exception\InvalidDataException
+     * @throws \PeskyORM\Exception\InvalidTableColumnConfigException
+     * @throws \PeskyORM\Exception\OrmException
+     */
+    static public function upsert(array $data, $columnName) {
+        if (!isset($data[$columnName])) {
+            throw new \InvalidArgumentException("There is no value for column {$columnName} in passed \$data");
+        }
+        $record = static::getInstance()->newRecord();
+        $record->updateValue($columnName, $data[$columnName], false); //< to validate and normalize value
+        $record->fromDb([
+            $columnName => $record->getValue($columnName)
+        ]);
+        if ($record->existsInDb()) {
+            unset($data[$columnName]);
+            $record
+                ->begin()
+                ->updateValues($data, false)
+                ->commit();
+        } else {
+            $record->reset()->fromData($data)->save();
+        }
+        return $record;
     }
 
     /**
