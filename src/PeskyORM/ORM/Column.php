@@ -127,9 +127,9 @@ class Column {
      */
     protected $lowercaseValue = false;
     /**
-     * @var bool
+     * @var bool|null - null means autodetect (true if column accepts null values; false - otherwise)
      */
-    protected $convertEmptyStringToNull = false;
+    protected $convertEmptyStringToNull = null;
     /**
      * @var array|\Closure
      */
@@ -697,7 +697,11 @@ class Column {
      * @return boolean
      */
     public function isEmptyStringMustBeConvertedToNull() {
-        return $this->convertEmptyStringToNull;
+        if ($this->convertEmptyStringToNull === null) {
+            return $this->isValueCanBeNull();
+        } else {
+            return $this->convertEmptyStringToNull;
+        }
     }
 
     /**
