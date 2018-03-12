@@ -301,7 +301,6 @@ VIEW;
         }
         if (!$columnDescription->isNullable()) {
             $ret .= "\n            ->disallowsNullValues()";
-        } else {
             $ret .= "\n            ->convertsEmptyStringToNull()";
         }
         $default = $columnDescription->getDefault();
