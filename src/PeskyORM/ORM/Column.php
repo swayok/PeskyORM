@@ -63,6 +63,9 @@ class Column {
     const VALUE_MUST_BE_STRING_OR_NUMERIC = 'value_must_be_string_or_numeric';
     const VALUE_MUST_BE_ARRAY = 'value_must_be_array';
 
+    const CASE_SENSITIVE = true;
+    const CASE_INSENSITIVE = false;
+
     /**
      * @var array
      */
@@ -778,13 +781,14 @@ class Column {
 
     /**
      * Note: there is no automatic uniqueness validation in DefaultColumnClosures class!
-     * @param bool $caseSensitive - true: compare values as is; false: compare lowercased values (emails for example)
+     * @param bool $caseSensitive - true: compare values as is; false: compare lowercased values (emails for example);
+     *      Note that case insensitive mode uses more resources than case sensitive!
      * @param array $withinColumns - used to provide list of columns for cases when uniqueness constraint in DB
      *      uses 2 or more columns.
      *      For example: when 'title' column must be unique within 'category' (category_id column)
      * @return $this
      */
-    public function uniqueValues($caseSensitive = true, ...$withinColumns) {
+    public function uniqueValues($caseSensitive = self::CASE_SENSITIVE, ...$withinColumns) {
         $this->isValueMustBeUnique = true;
         $this->isUniqueContraintCaseSensitive = (bool)$caseSensitive;
         $this->uniqueContraintAdditonalColumns = $withinColumns;
