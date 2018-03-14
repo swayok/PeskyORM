@@ -1495,8 +1495,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
 
     /**
-     * For child classes
-     * Called after successful save() and commit()
+     * Called after successful save() and commit() even if nothing was really saved to database
      * @param bool $isCreated - true: new record was created; false: old record was updated
      */
     protected function afterSave($isCreated) {
@@ -1504,7 +1503,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
 
     /**
-     * Clean cache related to this record after saving it's data to DB
+     * Clean cache related to this record after saving it's data to DB.
+     * Called before afterSave()
      * @param bool $isCreated
      */
     protected function cleanCacheAfterSave($isCreated) {
