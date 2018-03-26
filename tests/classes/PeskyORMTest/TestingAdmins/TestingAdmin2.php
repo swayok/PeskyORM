@@ -20,7 +20,7 @@ class TestingAdmin2 extends Record {
         return [];
     }
 
-    protected function afterSave($isCreated) {
+    protected function afterSave($isCreated, array $updatedColumns = []) {
         throw new \BadMethodCallException('after: no-no-no!');
     }
 

@@ -1358,7 +1358,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         // run column saving extenders
         $this->runColumnSavingExtenders($columnsToSave, $data, $updatedData, $isUpdate);
         $this->cleanCacheAfterSave(!$isUpdate);
-        $this->afterSave(!$isUpdate);
+        $this->afterSave(!$isUpdate, $columnsToSave);
     }
 
     /** @noinspection PhpDocMissingThrowsInspection */
@@ -1497,8 +1497,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * Called after successful save() and commit() even if nothing was really saved to database
      * @param bool $isCreated - true: new record was created; false: old record was updated
+     * @param array $updatedColumns - list of updated columns
      */
-    protected function afterSave($isCreated) {
+    protected function afterSave($isCreated, array $updatedColumns = []) {
 
     }
 
