@@ -117,6 +117,14 @@ class DbConnectionsManager {
     }
 
     /**
+     * @param string $connectionName
+     * @return bool
+     */
+    static public function hasConnection($connectionName) {
+        return isset(self::$connections[$connectionName]);
+    }
+
+    /**
      * Disconnect all adapters
      */
     static public function disconnectAll() {
