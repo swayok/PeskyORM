@@ -351,9 +351,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             );
         }
         $this->values = [];
+        $this->valuesBackup = [];
         $this->readOnlyData = [];
         $this->relatedRecords = [];
         $this->iteratorIdx = 0;
+        $this->existsInDb = null;
+        $this->existsInDbReally = null;
         $this->cleanUpdates();
         return $this;
     }
