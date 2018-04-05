@@ -394,7 +394,7 @@ VIEW;
                     $formatToPhpType[$formatName] = 'array';
                     break;
                 case 'object':
-                    $formatToPhpType[$formatName] = 'object';
+                    $formatToPhpType[$formatName] = '\stdClass';
                     break;
                 default:
                     $formatToPhpType[$formatName] = 'string';
