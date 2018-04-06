@@ -1994,6 +1994,11 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             }
             $record = $this->getRelatedRecord($key, true);
             return $record instanceof RecordInterface ? $record->existsInDb() : $record->count();
+        } else if (preg_match('%^(.+)_as_(.*)$%is', $key, $parts)) {
+            if (!$this->_hasValue(static::getColumn($parts[1]), false)) {
+                return false;
+            }
+            return $this->offsetGet($key) !== null;
         } else {
             throw new \InvalidArgumentException(
                 'There is no column or relation with name ' . $key . ' in ' . static::class
