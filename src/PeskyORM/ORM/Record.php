@@ -453,9 +453,18 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     protected function _getValue(Column $column, $format) {
         if ($this->isReadOnly()) {
-            return array_key_exists($column->getName(), $this->readOnlyData)
+            $value = array_key_exists($column->getName(), $this->readOnlyData)
                 ? $this->readOnlyData[$column->getName()]
                 : null;
+            if (empty($format)) {
+                return $value;
+            } else {
+                return call_user_func(
+                    $column->getValueGetter(),
+                    $this->createValueObject($column)->setRawValue($value, $value, true),
+                    $format
+                );
+            }
         } else {
             return call_user_func(
                 $column->getValueGetter(),
@@ -1985,7 +1994,17 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     public function offsetExists($key) {
         if ($this->isReadOnly()) {
-            return array_key_exists($key, $this->readOnlyData);
+            $exists = array_key_exists($key, $this->readOnlyData);
+            if ($exists) {
+                return true;
+            }
+            if (preg_match('%^(.+)_as_(.+)$%is', $key, $parts) && array_key_exists($parts[1], $this->readOnlyData)) {
+                if (!$this->_hasValue(static::getColumn($parts[1]), false)) {
+                    return false;
+                }
+                return $this->offsetGet($key) !== null;
+            }
+            return false;
         } else if (static::hasColumn($key)) {
             return $this->_hasValue(static::getColumn($key), false);
         } else if (static::hasRelation($key)) {
@@ -1994,7 +2013,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             }
             $record = $this->getRelatedRecord($key, true);
             return $record instanceof RecordInterface ? $record->existsInDb() : $record->count();
-        } else if (preg_match('%^(.+)_as_(.*)$%is', $key, $parts)) {
+        } else if (preg_match('%^(.+)_as_(.+)$%is', $key, $parts)) {
             if (!$this->_hasValue(static::getColumn($parts[1]), false)) {
                 return false;
             }
@@ -2033,7 +2052,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     $this->readOnlyData[$key] = $relatedRecord;
                 }
                 return $this->readOnlyData[$key];
-            } else if (preg_match('%^(.+)_as_(.*)$%is', $key, $parts)) {
+            } else if (preg_match('%^(.+)_as_(.+)$%is', $key, $parts)) {
                 list(, $colName, $format) = $parts;
                 if (array_key_exists($colName, $this->readOnlyData)) {
                     $value = $this->readOnlyData[$colName];
@@ -2052,7 +2071,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             return $this->_getValue(static::getColumn($key), null);
         } else if (static::hasRelation($key)) {
             return $this->getRelatedRecord($key, true);
-        } else if (preg_match('%^(.+)_as_(.*)$%is', $key, $parts)) {
+        } else if (preg_match('%^(.+)_as_(.+)$%is', $key, $parts)) {
             return $this->_getValue(static::getColumn($parts[1]), $parts[2]);
         } else {
             throw new \InvalidArgumentException(
