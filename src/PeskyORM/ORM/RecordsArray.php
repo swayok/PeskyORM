@@ -96,7 +96,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * Inject data from HAS MANY relation into records
      * @param string $relationName
      * @param array $columnsToSelect - see \PeskyORM\Core\AbstractSelect::columns()
-     * @return RecordsArray
+     * @return $this
      * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -255,7 +255,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
      * @param bool $isDisabled
-     * @return RecordsArray
+     * @return $this
      */
     protected function setIsDbRecordDataValidationDisabled($isDisabled) {
         $this->isDbRecordDataValidationDisabled = (bool)$isDisabled;
@@ -412,7 +412,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * Filter records and create new RecordsArray from remaining records
      * @param \Closure $filter - closure compatible with array_filter()
      * @param bool $resetOriginalRecordsArray
-     * @return RecordsArray
+     * @return $this
      * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PeskyORM\Exception\OrmException
      */
