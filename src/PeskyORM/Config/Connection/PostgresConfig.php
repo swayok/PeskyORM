@@ -19,7 +19,7 @@ class PostgresConfig implements DbConnectionConfigInterface {
         PDO::ATTR_ORACLE_NULLS => PDO::NULL_NATURAL,
         PDO::ATTR_STRINGIFY_FETCHES => false,
     ];
-    protected $defaultSchemaName = 'public';
+    protected $defaultSchemaName = ['public'];
     protected $charset = 'UTF8';
     protected $timezone;
     protected $sslConfigs = [];
@@ -214,11 +214,11 @@ class PostgresConfig implements DbConnectionConfigInterface {
     }
 
     /**
-     * @param string $defaultSchemaName
+     * @param string|array $defaultSchemaName
      * @return $this
      */
     public function setDefaultSchemaName($defaultSchemaName) {
-        $this->defaultSchemaName = $defaultSchemaName;
+        $this->defaultSchemaName = (array)$defaultSchemaName;
         return $this;
     }
 
@@ -253,7 +253,8 @@ class PostgresConfig implements DbConnectionConfigInterface {
      */
     public function onConnect(PDO $connection) {
         $connection->prepare("SET NAMES '{$this->charset}'")->execute();
-        $connection->prepare("SET search_path TO {$this->defaultSchemaName}")->execute();
+        $searchPath = implode(',', $this->defaultSchemaName);
+        $connection->prepare("SET search_path TO {$searchPath}")->execute();
         if (isset($this->timezone)) {
             $connection->prepare("SET TIME ZONE '{$this->timezone}'")->execute();
         }
