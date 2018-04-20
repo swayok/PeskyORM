@@ -6,7 +6,6 @@ use PeskyORM\Core\AbstractJoinInfo;
 use PeskyORM\Core\AbstractSelect;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\JoinInfo;
 use PeskyORM\Core\Utils;
 
 class OrmSelect extends AbstractSelect {

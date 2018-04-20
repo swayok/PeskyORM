@@ -555,7 +555,7 @@ abstract class AbstractSelect {
     /**
      * Add ORDER BY
      * @param string|DbExpr $columnName - 'field1', 'JoinName.field1', DbExpr::create('RAND()')
-     * @param bool $isAscending - true: 'ASC'; false: 'DESC'; Ignore if $columnName instance of DbExpr
+     * @param bool|string $isAscending - true: 'ASC'; false: 'DESC'; Ignored if $columnName instance of DbExpr
      * @param bool $append - true: append to existing orders | false: replace existsing orders
      * @return $this
      * @throws \InvalidArgumentException
@@ -568,7 +568,11 @@ abstract class AbstractSelect {
             throw new \InvalidArgumentException('$append argument must be a boolean');
         }
         if (!is_bool($isAscending)) {
-            throw new \InvalidArgumentException('$isAscending argument must be a boolean');
+            if (is_string($isAscending) && in_array(strtolower($isAscending), ['asc', 'desc'], true)) {
+                $isAscending = strtolower($isAscending) === 'asc';
+            } else {
+                throw new \InvalidArgumentException('$isAscending argument must be a boolean or string ("ASC" or "DESC")');
+            }
         }
         $isDbExpr = $columnName instanceof DbExpr;
         if (!is_string($columnName) && !$isDbExpr) {
