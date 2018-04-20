@@ -344,6 +344,8 @@ class Postgres extends DbAdapter {
             return null;
         } else if (preg_match("%^'((?:[^']|'')*?)'(?:::(bpchar|character varying|char|jsonb?|xml|macaddr|varchar|inet|cidr|text|uuid))?$%", $default, $matches)) {
             return str_replace("''", "'", $matches[1]);
+        } else if (preg_match("%^'(\d+(?:\.\d*)?)'(?:::(numeric|decimal|(?:small|medium|big)?int(?:eger)?(?:2|4|8)?))?$%", $default, $matches)) {
+            return (float)$matches[1];
         } else if ($default === 'true') {
             return true;
         } else if ($default === 'false') {
