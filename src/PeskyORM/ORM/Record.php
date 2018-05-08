@@ -1368,9 +1368,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             }
         }
         // run column saving extenders
-        $this->runColumnSavingExtenders($columnsToSave, $data, $updatedData, $isUpdate);
-        $this->cleanCacheAfterSave(!$isUpdate);
-        $this->afterSave(!$isUpdate, $columnsToSave);
+        try {
+            $this->runColumnSavingExtenders($columnsToSave, $data, $updatedData, $isUpdate);
+            $this->cleanCacheAfterSave(!$isUpdate);
+            $this->afterSave(!$isUpdate, $columnsToSave);
+        } catch (\Exception $exc) {
+            static::getTable()::rollBackTransactionIfExists();
+            throw $exc;
+        }
     }
 
     /** @noinspection PhpDocMissingThrowsInspection */
@@ -1417,9 +1422,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 $this->updateValues($table::insert($data, true), true);
             }
         } catch (\Exception $exc) {
-            if ($table::inTransaction()) {
-                $table::rollBackTransaction();
-            }
+            $table::rollBackTransactionIfExists();
             throw $exc;
         }
         if (!$alreadyInTransaction) {
@@ -1681,9 +1684,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             try {
                 $table::delete([static::getPrimaryKeyColumnName() => $this->getPrimaryKeyValue()]);
             } catch (\PDOException $exc) {
-                if ($table::inTransaction()) {
-                    $table::rollBackTransaction();
-                }
+                $table::rollBackTransactionIfExists();
                 throw $exc;
             }
             $this->afterDelete(); //< transaction may be closed there

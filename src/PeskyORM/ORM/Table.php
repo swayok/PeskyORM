@@ -383,6 +383,15 @@ abstract class Table implements TableInterface {
     }
 
     /**
+     * @return void
+     */
+    static public function rollBackTransactionIfExists() {
+        if (static::inTransaction()) {
+            static::rollBackTransaction();
+        }
+    }
+
+    /**
      * @param string $name
      * @return string
      */
