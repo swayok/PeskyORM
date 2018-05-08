@@ -1531,9 +1531,14 @@ abstract class AbstractSelect {
                 unset($joins[$index]);
             }
         }
-        if (count($joins) > 0 && count($usedJoins) > 0) {
+        if (count($usedJoins) > 0) {
             foreach ($usedJoins as $config) {
-                $this->placeDataOfDeepNestedJoinsIntoRecord($joins, $data[$config->getJoinName()]);
+                if (count($joins) > 0) {
+                    $this->placeDataOfDeepNestedJoinsIntoRecord($joins, $data[$config->getTableAlias()][$config->getJoinName()]);
+                }
+                if (empty($data[$config->getTableAlias()][$config->getJoinName()])) {
+                    unset($data[$config->getTableAlias()][$config->getJoinName()]);
+                }
             }
         }
     }
