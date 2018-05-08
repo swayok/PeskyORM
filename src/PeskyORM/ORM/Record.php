@@ -1117,7 +1117,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             if (!$isFromDb) {
                 throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
             } else {
-                $this->readOnlyData = $data;
+                $this->readOnlyData = static::normalizeReadOnlyData($data);
                 return $this;
             }
         }
@@ -2308,6 +2308,28 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     public function isReadOnly() {
         return $this->isReadOnly;
+    }
+
+    /**
+     * Normalizes readonly data so that numeric and bool values will not be strings
+     * @param array $data
+     * @return array
+     */
+    static public function normalizeReadOnlyData(array $data) {
+        $columns = static::getColumns();
+        $relations = static::getRelations();
+        foreach ($data as $key => $value) {
+            if (isset($columns[$key])) {
+                $data[$key] = RecordValueHelpers::normalizeValueReceivedFromDb($value, static::getColumn($key)->getType());
+            } else if (isset($relations[$key])) {
+                if (!is_array($value)) {
+                    $data[$key] = $value;
+                } else {
+                    $data[$key] = $relations[$key]->getForeignTable()->newRecord()->normalizeReadOnlyData($value);
+                }
+            }
+        }
+        return $data;
     }
 
 }

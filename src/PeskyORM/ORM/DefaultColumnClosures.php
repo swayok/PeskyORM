@@ -22,8 +22,9 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
             );
         }
         if ($isFromDb && $trustDataReceivedFromDb) {
-            $valueContainer->setRawValue($newValue, $newValue, true);
-            $valueContainer->setValidValue($newValue, $newValue);
+            $normalziedValue = RecordValueHelpers::normalizeValueReceivedFromDb($newValue, $column->getType());
+            $valueContainer->setRawValue($newValue, $normalziedValue, true);
+            $valueContainer->setValidValue($normalziedValue, $newValue);
         } else {
             $preprocessedValue = call_user_func($column->getValuePreprocessor(), $newValue, $isFromDb, $column);
             if ($preprocessedValue === null && $column->hasDefaultValue()) {
