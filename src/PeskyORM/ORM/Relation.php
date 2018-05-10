@@ -191,6 +191,11 @@ class Relation {
                     "\$foreignTableClass argument contains invalid value: class '$foreignTableClass' does not exist"
                 );
             }
+            if (!is_subclass_of($foreignTableClass, TableInterface::class)) {
+                throw new \InvalidArgumentException(
+                    "\$foreignTableClass $foreignTableClass must implement " . TableInterface::class . ' interface'
+                );
+            }
             $this->foreignTableClass = $foreignTableClass;
             /** @var TableInterface $foreignTableClass */
             $this->foreignTable = $foreignTableClass::getInstance();
