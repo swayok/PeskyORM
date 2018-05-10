@@ -2,7 +2,6 @@
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbConnectionsManager;
 use PeskyORM\Core\DbExpr;
@@ -334,7 +333,12 @@ abstract class Table implements TableInterface {
      * @throws \InvalidArgumentException
      */
     static public function count(array $conditions = [], \Closure $configurator = null, $removeNotInnerJoins = false) {
-        return static::makeSelect([], $conditions, $configurator)->fetchCount($removeNotInnerJoins);
+        return static::makeSelect(
+                [static::getInstance()->getTableStructure()->getPkColumnName()],
+                $conditions,
+                $configurator
+            )
+            ->fetchCount($removeNotInnerJoins);
     }
 
     /**
