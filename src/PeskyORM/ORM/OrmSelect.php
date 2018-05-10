@@ -181,15 +181,15 @@ class OrmSelect extends AbstractSelect {
 
     protected function normalizeWildcardColumn($joinName = null) {
         if ($joinName === null) {
-            $normalizedColumns = [];
-            foreach ($this->getTableStructure()->getColumns() as $columnName => $config) {
-                if ($config->isItExistsInDb()) {
-                    $normalizedColumns[] = $this->analyzeColumnName($columnName, null, null, 'SELECT');
-                }
-            }
-            return $normalizedColumns;
+            $tableStructure = $this->getTableStructure();
+        } else {
+            $tableStructure = $this->getJoin($joinName)->getForeignDbTable()->getTableStructure();
         }
-        return parent::normalizeWildcardColumn($joinName);
+        $normalizedColumns = [];
+        foreach ($tableStructure::getColumnsThatExistInDb() as $columnName => $config) {
+            $normalizedColumns[] = $this->analyzeColumnName($columnName, null, $joinName, 'SELECT');
+        }
+        return $normalizedColumns;
     }
 
     protected function resolveColumnsToBeSelectedForJoin($joinName, $columns, $parentJoinName = null, $appendColumnsToExisting = false) {
@@ -291,6 +291,11 @@ class OrmSelect extends AbstractSelect {
                 $joinConfig = $foreignTable->getJoinConfigForRelation($relationName, $parentJoin->getJoinName(), $joinName);
             }
             $this->joinsAddedByRelations[] = $joinName;
+            $joinConfig->setForeignColumnsToSelect(
+                empty($this->columnsToSelectFromJoinedRelations[$joinName])
+                    ? []
+                    : $this->columnsToSelectFromJoinedRelations[$joinName]
+            );
             $this->join($joinConfig);
         }
         return $this;

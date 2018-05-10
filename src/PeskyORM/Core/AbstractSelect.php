@@ -1417,7 +1417,8 @@ abstract class AbstractSelect {
     protected function collectJoinedColumnsForQuery($itIsWithQuery = false) {
         $columns = [];
         foreach ($this->joins as $joinConfig) {
-            if (empty($joinConfig->getForeignColumnsToSelect())) {
+            $columnsToJoin = $joinConfig->getForeignColumnsToSelect();
+            if (empty($columnsToJoin)) {
                 continue;
             }
             $joinColumns = $this->normalizeColumnsList(
