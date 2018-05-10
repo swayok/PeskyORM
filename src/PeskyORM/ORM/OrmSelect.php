@@ -337,7 +337,7 @@ class OrmSelect extends AbstractSelect {
                                 break;
                             }
                         }
-                    } else {
+                    } else if ($rawValue !== null) {
                         $errors = $column->validateValue($rawValue, false);
                     }
                     if (!empty($errors)) {
@@ -405,7 +405,7 @@ class OrmSelect extends AbstractSelect {
                     ->getJoin($columnInfo['join_name'])
                     ->getForeignDbTable()
                     ->getTableStructure();
-                $isValid = $foreignTableStructure::hasColumn($columnInfo['name']);
+                $isValid = $columnInfo['name'] === '*' || $foreignTableStructure::hasColumn($columnInfo['name']);
                 if (!$isValid) {
                     throw new \UnexpectedValueException(
                         "{$subject}: Column with name [{$columnInfo['join_name']}.{$columnInfo['name']}] not found in "
