@@ -1289,7 +1289,7 @@ abstract class AbstractSelect {
         $orders = [];
         foreach ($this->orderBy as $columnInfo) {
             if ($columnInfo instanceof DbExpr) {
-                $orders[] = $this->quoteDbExpr($columnInfo);
+                $orders[] = $this->quoteDbExpr($columnInfo->setWrapInBrackets(false));
             } else {
                 $orders[] = $this->makeColumnNameForCondition($columnInfo, 'ORDER BY') . ' ' . $columnInfo['direction'];
             }
