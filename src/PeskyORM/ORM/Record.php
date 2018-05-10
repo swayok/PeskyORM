@@ -338,6 +338,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
 
     /**
+     * @return bool
+     */
+    protected function isTrustDbDataMode() {
+        return $this->trustDbDataMode;
+    }
+
+    /**
      * Resets all values and related records
      * @return $this
      * @throws \UnexpectedValueException
@@ -624,7 +631,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         if ($this->isCollectingUpdates && !isset($this->valuesBackup[$colName])) {
             $this->valuesBackup[$colName] = clone $valueContainer;
         }
-        call_user_func($column->getValueSetter(), $value, (bool)$isFromDb, $valueContainer, $this->trustDbDataMode);
+        call_user_func($column->getValueSetter(), $value, (bool)$isFromDb, $valueContainer, $this->isTrustDbDataMode());
         if (!$valueContainer->isValid()) {
             throw new InvalidDataException([$colName => $valueContainer->getValidationErrors()]);
         }
@@ -780,7 +787,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $relationTable = $relation->getForeignTable();
         if ($relation->getType() === Relation::HAS_MANY) {
             if (is_array($relatedRecord)) {
-                $relatedRecord = RecordsSet::createFromArray($relationTable, $relatedRecord, $isFromDb, $this->trustDbDataMode);
+                $relatedRecord = RecordsSet::createFromArray($relationTable, $relatedRecord, $isFromDb, $this->isTrustDbDataMode());
+                if ($this->isReadOnly()) {
+                    $relatedRecord->enableReadOnlyMode();
+                }
             } else if (!($relatedRecord instanceof RecordsArray)) {
                 throw new \InvalidArgumentException(
                     '$relatedRecord argument for HAS MANY relation must be array or instance of ' . RecordsArray::class
@@ -793,8 +803,11 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             }
             $data = $relatedRecord;
             $relatedRecord = $relationTable->newRecord();
-            if ($this->trustDbDataMode) {
+            if ($this->isTrustDbDataMode()) {
                 $relatedRecord->enableTrustModeForDbData();
+            }
+            if ($this->isReadOnly()) {
+                $relatedRecord->enableReadOnlyMode();
             }
             if (!empty($data)) {
                 $relatedRecord->fromData($data, $isFromDb, $haltOnUnknownColumnNames);
@@ -805,8 +818,11 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     "\$relatedRecord argument must be an instance of Record class for the '{$relationTable->getName()}' DB table"
                 );
             }
-            if ($this->trustDbDataMode) {
+            if ($this->isTrustDbDataMode()) {
                 $relatedRecord->enableTrustModeForDbData();
+            }
+            if ($this->isReadOnly()) {
+                $relatedRecord->enableReadOnlyMode();
             }
         } else {
             throw new \InvalidArgumentException(
@@ -840,6 +856,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @throws InvalidDataException
      */
     public function getRelatedRecord($relationName, $loadIfNotSet = false) {
         if (!$this->isRelatedRecordAttached($relationName)) {
@@ -850,8 +867,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     "Related record with name '$relationName' is not set and autoloading is disabled"
                 );
             }
+        } else if ($this->isReadOnly() && !isset($this->relatedRecords[$relationName])) {
+            $this->updateRelatedRecord($relationName, $this->readOnlyData[$relationName], true, true);
         }
-        return $this->isReadOnly() ? $this->readOnlyData[$relationName] : $this->relatedRecords[$relationName];
+        return $this->relatedRecords[$relationName];
     }
 
     /**
@@ -902,11 +921,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 }
             }
         }
-        if ($this->isReadOnly()) {
-            $this->readOnlyData[$relationName] = $relatedRecord;
-        } else {
-            $this->relatedRecords[$relationName] = $relatedRecord;
-        }
+        $this->relatedRecords[$relationName] = $relatedRecord;
         return $this;
     }
 
@@ -935,7 +950,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     public function isRelatedRecordAttached($relationName) {
         static::getRelation($relationName);
-        return array_key_exists($relationName, $this->isReadOnly() ? $this->readOnlyData : $this->relatedRecords);
+        if ($this->isReadOnly() && isset($this->readOnlyData[$relationName])) {
+            return true;
+        }
+        return isset($this->relatedRecords[$relationName]);
     }
 
     /**
@@ -1331,7 +1349,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     protected function saveToDb(array $columnsToSave = []) {
         if ($this->isReadOnly()) {
             throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
-        } else if ($this->trustDbDataMode) {
+        } else if ($this->isTrustDbDataMode()) {
             throw new \BadMethodCallException('Saving is not alowed when trusted mode for DB data is enabled');
         }
         if (empty($columnsToSave)) {
@@ -1775,7 +1793,15 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             if ($loadRelatedRecordsIfNotSet) {
                 $relatedRecordsNames = array_keys(static::getTableStructure()->getRelations());
             } else {
-                $relatedRecordsNames = array_keys($this->relatedRecords);
+                $relatedRecordsNames = array_keys(static::getTableStructure()->getRelations());
+                if ($this->isReadOnly()) {
+                    $relatedRecordsNames = array_intersect(
+                        $relatedRecordsNames,
+                        array_merge(array_keys($this->relatedRecords), array_keys($this->readOnlyData))
+                    );
+                } else {
+                    $relatedRecordsNames = array_keys($this->relatedRecords);
+                }
             }
         }
         // collect data for columns
@@ -1817,7 +1843,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             } else {
                 /** @var RecordsSet $relatedRecord*/
                 $relatedRecord->enableDbRecordInstanceReuseDuringIteration();
-                if ($this->trustDbDataMode) {
+                if ($this->isTrustDbDataMode()) {
                     $relatedRecord->disableDbRecordDataValidation();
                 }
                 $data[$relatedRecordName] = [];
@@ -1992,10 +2018,11 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
+     * @throws InvalidDataException
      */
     public function offsetExists($key) {
         if ($this->isReadOnly()) {
-            $exists = array_key_exists($key, $this->readOnlyData);
+            $exists = array_key_exists($key, $this->readOnlyData) || isset($this->relatedRecords[$key]);
             if ($exists) {
                 return true;
             }
@@ -2030,6 +2057,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @param mixed $key - column name, column name with format (ex: created_at_as_date) or relation name
      * @return mixed
+     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
@@ -2037,21 +2065,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     public function offsetGet($key) {
         if ($this->isReadOnly()) {
-            if (array_key_exists($key, $this->readOnlyData)) {
-                if (is_array($this->readOnlyData[$key]) && static::hasRelation($key)) {
-                    $relation = static::getRelation($key);
-                    if ($relation->getType() === $relation::HAS_MANY) {
-                        $relatedRecord = RecordsSet::createFromArray(static::getTable(), $this->readOnlyData[$key], true);
-                        $relatedRecord->enableReadOnlyMode();
-                    } else {
-                        $relatedRecord = $relation
-                            ->getForeignTable()
-                            ->newRecord()
-                            ->enableReadOnlyMode()
-                            ->fromDbData($this->readOnlyData[$key]);
-                    }
-                    $this->readOnlyData[$key] = $relatedRecord;
-                }
+            if (self::hasRelation($key)) {
+                return $this->getRelatedRecord($key, true);
+            } else if (array_key_exists($key, $this->readOnlyData)) {
                 return $this->readOnlyData[$key];
             } else if (preg_match('%^(.+)_as_(.+)$%is', $key, $parts)) {
                 list(, $colName, $format) = $parts;
@@ -2063,8 +2079,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 } else {
                     return null;
                 }
-            } else if (self::hasRelation($key)) {
-                return $this->getRelatedRecord($key, true);
             } else {
                 return null;
             }
