@@ -184,13 +184,13 @@ abstract class AbstractSelect {
             foreach ($conditionsAndOptions['ORDER'] as $columnName => $direction) {
                 if ($direction instanceof DbExpr || is_int($columnName)) {
                     $this->orderBy($direction);
-                } else if (!in_array(strtolower($direction), ['asc', 'desc'], true)) {
+                } else if (!preg_match('%^(asc|desc)\s*(nulls)\s*(first|last)$%i', $direction)) {
                     throw new \InvalidArgumentException(
                         "ORDER key contains invalid direction '{$direction}' for a column '{$columnName}'. "
-                            . "'ASC' or 'DESC' expected"
+                            . "'ASC' or 'DESC' with optional 'NULLS FIRST' or 'NULLS LAST' expected"
                     );
                 } else {
-                    $this->orderBy($columnName, strtolower($direction) === 'asc');
+                    $this->orderBy($columnName, $direction);
                 }
             }
         }
@@ -555,24 +555,25 @@ abstract class AbstractSelect {
     /**
      * Add ORDER BY
      * @param string|DbExpr $columnName - 'field1', 'JoinName.field1', DbExpr::create('RAND()')
-     * @param bool|string $isAscending - true: 'ASC'; false: 'DESC'; Ignored if $columnName instance of DbExpr
+     * @param bool|string $direction - 'ASC' or true; 'DESC' or false; Optional suffixes: 'NULLS LAST' or 'NULLS FIRST';
+     *      Ignored if $columnName instance of DbExpr
      * @param bool $append - true: append to existing orders | false: replace existsing orders
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function orderBy($columnName, $isAscending = true, $append = true) {
+    public function orderBy($columnName, $direction = 'asc', $append = true) {
         if (empty($columnName)) {
             throw new \InvalidArgumentException('$columnName argument cannot be empty');
         }
         if (!is_bool($append)) {
             throw new \InvalidArgumentException('$append argument must be a boolean');
         }
-        if (!is_bool($isAscending)) {
-            if (is_string($isAscending) && in_array(strtolower($isAscending), ['asc', 'desc'], true)) {
-                $isAscending = strtolower($isAscending) === 'asc';
-            } else {
-                throw new \InvalidArgumentException('$isAscending argument must be a boolean or string ("ASC" or "DESC")');
-            }
+        if (is_bool($direction)) {
+            $direction = $direction ? 'asc' : 'desc';
+        } else if (!preg_match('%^(asc|desc)\s*(nulls)\s*(first|last)$%i', $direction)) {
+            throw new \InvalidArgumentException(
+                '$direction argument must be a boolean or string ("ASC" or "DESC" with optional "NULLS LAST" or "NULLS FIRST")'
+            );
         }
         $isDbExpr = $columnName instanceof DbExpr;
         if (!is_string($columnName) && !$isDbExpr) {
@@ -585,7 +586,7 @@ abstract class AbstractSelect {
             $this->orderBy[] = $columnName;
         } else {
             $columnInfo = $this->analyzeColumnName($columnName, null, null, 'ORDER BY');
-            $columnInfo['direction'] = $isAscending ? 'ASC' : 'DESC';
+            $columnInfo['direction'] = $direction;
             $this->orderBy[$this->makeKeyForOrderBy($columnInfo)] = $columnInfo;
         }
         $this->setDirty('orderBy');
