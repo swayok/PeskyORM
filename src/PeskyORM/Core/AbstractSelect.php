@@ -184,7 +184,7 @@ abstract class AbstractSelect {
             foreach ($conditionsAndOptions['ORDER'] as $columnName => $direction) {
                 if ($direction instanceof DbExpr || is_int($columnName)) {
                     $this->orderBy($direction);
-                } else if (!preg_match('%^(asc|desc)\s*(nulls)\s*(first|last)$%i', $direction)) {
+                } else if (!preg_match('%^(asc|desc)(\s*(nulls)\s*(first|last))?$%i', $direction)) {
                     throw new \InvalidArgumentException(
                         "ORDER key contains invalid direction '{$direction}' for a column '{$columnName}'. "
                             . "'ASC' or 'DESC' with optional 'NULLS FIRST' or 'NULLS LAST' expected"
@@ -568,16 +568,16 @@ abstract class AbstractSelect {
         if (!is_bool($append)) {
             throw new \InvalidArgumentException('$append argument must be a boolean');
         }
-        if (is_bool($direction)) {
-            $direction = $direction ? 'asc' : 'desc';
-        } else if (!preg_match('%^(asc|desc)\s*(nulls)\s*(first|last)$%i', $direction)) {
-            throw new \InvalidArgumentException(
-                '$direction argument must be a boolean or string ("ASC" or "DESC" with optional "NULLS LAST" or "NULLS FIRST")'
-            );
-        }
         $isDbExpr = $columnName instanceof DbExpr;
         if (!is_string($columnName) && !$isDbExpr) {
             throw new \InvalidArgumentException('$columnName argument must be a string or instance of DbExpr class');
+        }
+        if (is_bool($direction)) {
+            $direction = $direction ? 'asc' : 'desc';
+        } else if (!preg_match('%^(asc|desc)(\s*(nulls)\s*(first|last))?$%i', $direction)) {
+            throw new \InvalidArgumentException(
+                '$direction argument must be a boolean or string ("ASC" or "DESC" with optional "NULLS LAST" or "NULLS FIRST")'
+            );
         }
         if (!$append) {
            $this->removeOrdering();
