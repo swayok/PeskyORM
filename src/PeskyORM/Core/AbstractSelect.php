@@ -1462,6 +1462,9 @@ abstract class AbstractSelect {
      * @return array - ['col1' => 'val1', 'col2' => 'val2', 'Join1Name' => ['jcol1' => 'jvalue1', ...], ...]
      */
     private function normalizeRecord(array $record, array $shortColumnAliasToAlias, array $shortJoinAliasToAlias) {
+        if (empty($record)) {
+            return [];
+        }
         $dataBlocks = [$this->getTableAlias() => []];
         // process record's column aliases and group column values by table alias
         foreach ($record as $columnAlias => $value) {
