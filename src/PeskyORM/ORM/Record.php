@@ -2119,7 +2119,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             if ($column->getName() !== $key) {
                 $parts = explode('_as_', $key, 2);
                 if (count($parts) === 2) {
-                    $format = $parts[2];
+                    $format = $parts[1];
                 }
             }
             return $this->_getValue(static::getColumn($key), $format);
