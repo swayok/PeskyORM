@@ -228,4 +228,13 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
         }
         return call_user_func($formatter, $valueContainer, $format);
     }
+
+    /**
+     * @param Column $column
+     * @return array
+     */
+    static public function getValueFormats(Column $column) {
+        list (, $formats) = RecordValueHelpers::getValueFormatterAndFormatsByType($column->getType());
+        return $formats;
+    }
 }

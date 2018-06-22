@@ -102,4 +102,11 @@ interface ColumnClosuresInterface {
      */
     static public function valueFormatter(RecordValue $valueContainer, $format);
 
+    /**
+     * List of available formatters for a column. Required for service purposes.
+     * @param Column $column
+     * @return array
+     */
+    static public function getValueFormats(Column $column);
+
 }

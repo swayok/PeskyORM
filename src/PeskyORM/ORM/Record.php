@@ -12,6 +12,8 @@ use Swayok\Utils\StringUtils;
  */
 abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Serializable {
 
+    const COLUMN_NAME_WITH_FORMAT_REGEXP = '%^(.+)_as_(.+)$%is';
+
     /**
      * @var TableStructureInterface[]
      */
@@ -163,13 +165,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
 
     /**
+     * @param bool $includeFormats - include columns formats ({column}_as_array, etc.)
      * @return Column[] - key = column name
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    static public function getColumns() {
-        return self::getCachedColumnsOrRelations();
+    static public function getColumns($includeFormats = false) {
+        return self::getCachedColumnsOrRelations($includeFormats ? 'columns_and_formats' : 'columns');
     }
 
     /**
@@ -200,14 +203,24 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         // significantly decreases execution time on heavy ORM usage (proved by profilig with xdebug)
         if (!isset(self::$columns[static::class])) {
             $tableStructure = static::getTableStructure();
+            $columns = $tableStructure::getColumns();
             self::$columns[static::class] = [
-                'columns' => $tableStructure::getColumns(),
+                'columns' => $columns,
+                'columns_and_formats' => $columns,
                 'db_columns' => $tableStructure::getColumnsThatExistInDb(),
                 'not_db_columns' => $tableStructure::getColumnsThatDoNotExistInDb(),
                 'file_columns' => $tableStructure::getFileColumns(),
                 'pk_column' => $tableStructure::getPkColumn(),
                 'relations' => $tableStructure::getRelations(),
             ];
+            foreach ($columns as $columnName => $column) {
+                /** @var ColumnClosuresInterface $closuresClass */
+                $closuresClass = $column->getClosuresClass();
+                $formats = $closuresClass::getValueFormats($column);
+                foreach ($formats as $format) {
+                    self::$columns[static::class]['columns_and_formats'][$columnName . '_as_' . $format] = $column;
+                }
+            }
         }
         return self::$columns[static::class][$key];
     }
@@ -218,15 +231,11 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      */
     static public function getColumn($name) {
-        $columns = static::getColumns();
+        $columns = static::getColumns(true);
         if (!isset($columns[$name])) {
-            if (preg_match('%^(.+)_as_(.+)$%is', $name, $parts) && isset($columns[$parts[1]])) {
-                $name = $parts[1];
-            } else {
-                throw new \InvalidArgumentException(
-                    "There is no column '$name' in " . get_class(static::getTableStructure())
-                );
-            }
+            throw new \InvalidArgumentException(
+                "There is no column '$name' in " . get_class(static::getTableStructure())
+            );
         }
         return $columns[$name];
     }
@@ -239,11 +248,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      */
     static public function hasColumn($name) {
-        $columns = static::getColumns();
-        return (
-            isset($columns[$name])
-            || (preg_match('%^(.+)_as_(.+)$%is', $name, $parts) && isset($columns[$parts[1]]))
-        );
+        return isset(static::getColumns(true)[$name]);
     }
 
     /**
@@ -1868,7 +1873,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * Get column value if it is set or null in any other cases
-     * @param string $columnName
+     * @param string $columnName - value may be modiied to real column name instead of column name with format (like 'created_at_as_time')
      * @param bool $returnNullForFiles - false: return file information for file column | true: return null for file column
      * @param bool $notSet
      * @return mixed
@@ -1877,15 +1882,33 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    protected function getColumnValueForToArray($columnName, $returnNullForFiles = false, &$notSet = null) {
+    protected function getColumnValueForToArray(&$columnName, $returnNullForFiles = false, &$notSet = null) {
         if ($this->isReadOnly()) {
             if (array_key_exists($columnName, $this->readOnlyData)) {
                 return $this->readOnlyData[$columnName];
-            } else {
-                return $this->createValueObject(static::getColumn($columnName))->getDefaultValue();
+            } else if (preg_match(static::COLUMN_NAME_WITH_FORMAT_REGEXP, $columnName, $parts)) {
+                list(, $columnName, $format) = $parts;
+                $column = static::getColumn($columnName);
+                $valueContainer = $this->createValueObject($column);
+                /** @noinspection NotOptimalIfConditionsInspection */
+                if (array_key_exists($columnName, $this->readOnlyData)) {
+                    $value = $this->readOnlyData[$columnName];
+                    $valueContainer->setRawValue($value, $value, true);
+                    return call_user_func($column->getValueFormatter(), $valueContainer, $format);
+                } else {
+                    return $valueContainer->getDefaultValue();
+                }
             }
         }
         $column = static::getColumn($columnName);
+        $format = null;
+        if ($columnName !== $column->getName()) {
+            $parts = explode('_as_', $columnName, 2);
+            if (count($parts) === 2) {
+                $format = $parts[1];
+            }
+        }
+        $columnName = $column->getName();
         $notSet = true;
         if ($column->isPrivateValue()) {
             return null;
@@ -1893,20 +1916,20 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         if ($column->isItAFile()) {
             if (!$returnNullForFiles && $this->_hasValue($column, false)) {
                 $notSet = false;
-                return $this->_getValue($column, 'array');
+                return $this->_getValue($column, $format ?: 'array');
             }
         } else {
             if ($this->existsInDb()) {
                 if ($this->_hasValue($column, false)) {
                     $notSet = false;
-                    $val = $this->_getValue($column, null);
+                    $val = $this->_getValue($column, $format);
                     return ($val instanceof DbExpr) ? null : $val;
                 }
             } else {
                 $notSet = false; //< there is always a value when record does not eist in DB
                 // if default value not provided directly it is considered to be null when record does not exist is DB
                 if ($this->_hasValue($column, true)) {
-                    $val = $this->_getValue($column, null);
+                    $val = $this->_getValue($column, $format);
                     return ($val instanceof DbExpr) ? null : $val;
                 }
             }
@@ -2034,7 +2057,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             if ($exists) {
                 return true;
             }
-            if (preg_match('%^(.+)_as_(.+)$%is', $key, $parts) && array_key_exists($parts[1], $this->readOnlyData)) {
+            if (preg_match(static::COLUMN_NAME_WITH_FORMAT_REGEXP, $key, $parts) && array_key_exists($parts[1], $this->readOnlyData)) {
                 if (!$this->_hasValue(static::getColumn($parts[1]), false)) {
                     return false;
                 }
@@ -2049,7 +2072,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             }
             $record = $this->getRelatedRecord($key, true);
             return $record instanceof RecordInterface ? $record->existsInDb() : $record->count();
-        } else if (preg_match('%^(.+)_as_(.+)$%is', $key, $parts)) {
+        } else if (preg_match(static::COLUMN_NAME_WITH_FORMAT_REGEXP, $key, $parts)) {
             if (!$this->_hasValue(static::getColumn($parts[1]), false)) {
                 return false;
             }
@@ -2063,7 +2086,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /** @noinspection PhpDocMissingThrowsInspection */
     /**
-     * @param mixed $key - column name, column name with format (ex: created_at_as_date) or relation name
+     * @param mixed $key - column name or column name with format (ex: created_at_as_date) or relation name
      * @return mixed
      * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PDOException
@@ -2077,7 +2100,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 return $this->getRelatedRecord($key, true);
             } else if (array_key_exists($key, $this->readOnlyData)) {
                 return $this->readOnlyData[$key];
-            } else if (preg_match('%^(.+)_as_(.+)$%is', $key, $parts)) {
+            } else if (preg_match(static::COLUMN_NAME_WITH_FORMAT_REGEXP, $key, $parts)) {
                 list(, $colName, $format) = $parts;
                 if (array_key_exists($colName, $this->readOnlyData)) {
                     $value = $this->readOnlyData[$colName];
@@ -2091,10 +2114,18 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 return null;
             }
         } else if (static::hasColumn($key)) {
-            return $this->_getValue(static::getColumn($key), null);
+            $column = static::getColumn($key);
+            $format = null;
+            if ($column->getName() !== $key) {
+                $parts = explode('_as_', $key, 2);
+                if (count($parts) === 2) {
+                    $format = $parts[2];
+                }
+            }
+            return $this->_getValue(static::getColumn($key), $format);
         } else if (static::hasRelation($key)) {
             return $this->getRelatedRecord($key, true);
-        } else if (preg_match('%^(.+)_as_(.+)$%is', $key, $parts)) {
+        } else if (preg_match(static::COLUMN_NAME_WITH_FORMAT_REGEXP, $key, $parts)) {
             return $this->_getValue(static::getColumn($parts[1]), $parts[2]);
         } else {
             throw new \InvalidArgumentException(
@@ -2148,7 +2179,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
 
     /**
-     * @param $name - column name, column name with format (ex: created_at_as_date) or relation name
+     * @param $name - column name or column name with format (ex: created_at_as_date) or relation name
      * @return mixed
      * @throws \PDOException
      * @throws \UnexpectedValueException
