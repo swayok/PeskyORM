@@ -220,9 +220,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     static public function getColumn($name) {
         $columns = static::getColumns();
         if (!isset($columns[$name])) {
-            throw new \InvalidArgumentException(
-                "There is no column '$name' in " . get_class(static::getTableStructure())
-            );
+            if (preg_match('%^(.+)_as_(.+)$%is', $name, $parts) && isset($columns[$parts[1]])) {
+                $name = $parts[1];
+            } else {
+                throw new \InvalidArgumentException(
+                    "There is no column '$name' in " . get_class(static::getTableStructure())
+                );
+            }
         }
         return $columns[$name];
     }
@@ -235,7 +239,11 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      */
     static public function hasColumn($name) {
-        return isset(static::getCachedColumnsOrRelations()[$name]);
+        $columns = static::getColumns();
+        return (
+            isset($columns[$name])
+            || (preg_match('%^(.+)_as_(.+)$%is', $name, $parts) && isset($columns[$parts[1]]))
+        );
     }
 
     /**
