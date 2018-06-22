@@ -221,6 +221,8 @@ class PostgresConfig implements DbConnectionConfigInterface {
     public function setDefaultSchemaName($defaultSchemaName) {
         if (is_array($defaultSchemaName)) {
             $this->defaultSchemaName = array_values($defaultSchemaName)[0];
+        } else {
+            $this->defaultSchemaName = $defaultSchemaName;
         }
         $this->searchPath = implode(',', (array)$defaultSchemaName);
         return $this;

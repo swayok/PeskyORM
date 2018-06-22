@@ -74,6 +74,17 @@ interface DbConnectionConfigInterface {
     public function setTimezone($timezone);
 
     /**
+     * @return string|null
+     */
+    public function getDefaultSchemaName();
+
+    /**
+     * @param string|array $defaultSchemaName
+     * @return $this
+     */
+    public function setDefaultSchemaName($defaultSchemaName);
+
+    /**
      * Do some action on connect (set charset, default db schema, etc)
      * @param \PDO $connection
      * @return $this

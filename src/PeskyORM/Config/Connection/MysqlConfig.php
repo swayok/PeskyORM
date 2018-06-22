@@ -251,4 +251,18 @@ class MysqlConfig implements DbConnectionConfigInterface {
         return $this;
     }
 
+    /**
+     * @return string|null
+     */
+    public function getDefaultSchemaName() {
+        return null;
+    }
+
+    /**
+     * @param string|array $defaultSchemaName
+     * @return $this
+     */
+    public function setDefaultSchemaName($defaultSchemaName) {
+        return $this;
+    }
 }
