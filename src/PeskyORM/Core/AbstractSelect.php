@@ -1098,7 +1098,7 @@ abstract class AbstractSelect {
      * @return DbExpr
      */
     protected function modifyTableAliasAndJoinNamesInDbExpr(DbExpr $dbExpr) {
-        $replaces = ["%`{$this->getTableAlias()}`\.%" => '`' . $this->getShortJoinAlias($this->getTableAlias()) . '``.'];
+        $replaces = ["%`{$this->getTableAlias()}`\.%" => '`' . $this->getShortJoinAlias($this->getTableAlias()) . '`.'];
         foreach ($this->joins as $joinConfig) {
             $replaces["%`{$joinConfig->getJoinName()}`\.%"] = '`' . $this->getShortJoinAlias($joinConfig->getJoinName()) . '`.';
         }
