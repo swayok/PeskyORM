@@ -58,24 +58,15 @@ use {$parentClass};
 
 class {$this::makeTableClassName($this->tableName)} extends {$this->getShortClassName($parentClass)} {
 
-    /**
-     * @return {$this::makeTableStructureClassName($this->tableName)}
-     */
-    public function getTableStructure() {
+    public function getTableStructure(): {$this::makeTableStructureClassName($this->tableName)} {
         return {$this::makeTableStructureClassName($this->tableName)}::getInstance();
     }
 
-    /**
-     * @return {$this::makeRecordClassName($this->tableName)}
-     */
-    public function newRecord() {
+    public function newRecord(): {$this::makeRecordClassName($this->tableName)} {
         return new {$this::makeRecordClassName($this->tableName)}();
     }
 
-    /**
-     * @return string
-     */
-    public function getTableAlias() {
+    public function getTableAlias(): string {
         return '{$alias}';
     }
 
@@ -102,10 +93,7 @@ VIEW;
         if ($this->dbSchemaName && $this->dbSchemaName !== $this->connection->getDefaultTableSchema()) {
             $getSchemaMethod = <<<VIEW
         
-    /**
-     * @return string|null
-     */
-    static public function getSchema() {
+    static public function getSchema(): ?string {
         return {$this->dbSchemaName};
     }
     
@@ -126,10 +114,7 @@ use PeskyORM\Core\DbExpr;$includes
  */
 class {$this::makeTableStructureClassName($this->tableName)} extends {$this->getShortClassName($parentClass)} {
 {$traits}
-    /**
-     * @return string
-     */
-    static public function getTableName() {
+    static public function getTableName(): string {
         return '{$this->tableName}';
     }
 $getSchemaMethod
@@ -161,10 +146,7 @@ use {$parentClass};
  */
 class {$this::makeRecordClassName($this->tableName)} extends {$this->getShortClassName($parentClass)} {
 
-    /**
-     * @return {$this::makeTableClassName($this->tableName)}
-     */
-    static public function getTable() {
+    static public function getTable(): {$this::makeTableClassName($this->tableName)} {
         return {$this::makeTableClassName($this->tableName)}::getInstance();
     }
 
@@ -278,7 +260,7 @@ VIEW;
                 continue;
             }
             $columns[] = <<<VIEW
-    private function {$columnDescription->getName()}() {
+    private function {$columnDescription->getName()}(): Column {
         return {$this->makeColumnConfig($columnDescription)};
     }
 VIEW;
