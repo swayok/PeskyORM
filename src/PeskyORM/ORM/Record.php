@@ -826,7 +826,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 $relatedRecord->fromData($data, $isFromDb, $haltOnUnknownColumnNames);
             }
         } else if ($relatedRecord instanceof self) {
-            if ($relatedRecord::getTable()->getName() !== $relationTable) {
+            if ($relatedRecord::getTable()->getName() !== $relationTable::getName()) {
                 throw new \InvalidArgumentException(
                     "\$relatedRecord argument must be an instance of Record class for the '{$relationTable->getName()}' DB table"
                 );
