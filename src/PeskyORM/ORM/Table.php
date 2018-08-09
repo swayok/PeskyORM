@@ -451,7 +451,7 @@ abstract class Table implements TableInterface {
      */
     static public function insert(array $data, $returning = false) {
         return static::getConnection(true)->insert(
-            static::getName(),
+            static::getNameWithSchema(),
             $data,
             static::getPdoDataTypesForColumns(),
             $returning
@@ -503,7 +503,7 @@ abstract class Table implements TableInterface {
      */
     static public function insertMany(array $columns, array $rows, $returning = false) {
         return static::getConnection(true)->insertMany(
-            static::getName(),
+            static::getNameWithSchema(),
             $columns,
             $rows,
             static::getPdoDataTypesForColumns($columns),
@@ -528,7 +528,7 @@ abstract class Table implements TableInterface {
      */
     static public function update(array $data, array $conditions, $returning = false) {
         return static::getConnection(true)->update(
-            static::getName(),
+            static::getNameWithSchema(),
             $data,
             Utils::assembleWhereConditionsFromArray(static::getConnection(true), $conditions),
             static::getPdoDataTypesForColumns(),
@@ -550,10 +550,20 @@ abstract class Table implements TableInterface {
      */
     static public function delete(array $conditions = [], $returning = false) {
         return static::getConnection(true)->delete(
-            static::getName(),
+            static::getNameWithSchema(),
             Utils::assembleWhereConditionsFromArray(static::getConnection(), $conditions),
             $returning
         );
+    }
+
+    /**
+     * Table name with schema.
+     * Example: 'public.users'
+     * @return string
+     */
+    static public function getNameWithSchema(): string {
+        $tableStructure = static::getInstance()->getTableStructure();
+        return ltrim($tableStructure::getSchema() . '.' . $tableStructure::getTableName(), '.');
     }
 
     /**
