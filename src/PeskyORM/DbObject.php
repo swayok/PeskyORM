@@ -1589,13 +1589,13 @@ class DbObject {
         try {
             if (!$exists) {
                 $this->_allowFieldsUpdatesTracking = false;
-                $ret = $model->insert($this->toStrictArray(), '*');
+                $ret = $model->insert($this->getDataForSave(), '*');
                 if (!empty($ret)) {
                     $this->_updateWithDbValues($ret);
                 }
                 $this->_allowFieldsUpdatesTracking = true;
             } else {
-                $dataToSave = $this->toStrictArray(null, true);
+                $dataToSave = $this->getDataForSave(null, true);
                 unset($dataToSave[$this->_getPkFieldName()]);
                 if (!empty($dataToSave)) {
                     $this->_allowFieldsUpdatesTracking = false;
@@ -1718,7 +1718,7 @@ class DbObject {
             $model->begin();
             $localTransaction = true;
         }
-        $dataToSave = $this->toStrictArray($fieldNames, true);
+        $dataToSave = $this->getDataForSave($fieldNames, true);
         unset($dataToSave[$this->_getPkFieldName()]);
         if (!empty($dataToSave)) {
             try {
@@ -1904,6 +1904,18 @@ class DbObject {
             }
         }
         return $values;
+    }
+
+    /**
+     * Needed to make on-save modifications to data.
+     * Be careful - data will not be validated
+     * @param null $fieldNames
+     * @param bool $onlyUpdatedFields
+     * @return array
+     * @throws DbObjectException
+     */
+    protected function getDataForSave($fieldNames = null, $onlyUpdatedFields = false) {
+        return static::toStrictArray($fieldNames, $onlyUpdatedFields);
     }
 
     /**
