@@ -64,7 +64,8 @@ class DbQuery {
     }
 
     protected function getFullTableName(DbModel $model) {
-        return "{$model->getTableConfig()->getSchema()}.{$model->getTableConfig()->getName()}";
+        $schema = $model->getTableConfig()->getSchema();
+        return ($schema ? $schema . '.' : '') . $model->getTableConfig()->getName();
     }
 
     protected function mapAliasToTable($alias, $table) {
@@ -996,7 +997,9 @@ class DbQuery {
             $this->query .= ' ORDER BY ' . implode(', ', $sorting) . ' ';
         }
         // limit and offset
-        if (!empty($this->limit)) {
+        if ($typeOrExpression === Db::FETCH_FIRST) {
+            $this->query .= ' LIMIT 1 ';
+        } else if (!empty($this->limit)) {
             $this->query .= " LIMIT {$this->limit} ";
         }
         if (!empty($this->offset)) {

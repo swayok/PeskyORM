@@ -22,17 +22,20 @@ class Db {
     const FETCH_COLUMN = 'column';
 
     static public $transactionTypes = array(
-        self::PGSQL => array(
+        self::MYSQL => [],
+        self::SQLITE => [],
+        self::PGSQL => [
             self::PGSQL_TRANSACTION_TYPE_READ_COMMITTED,
             self::PGSQL_TRANSACTION_TYPE_REPEATABLE_READ,
             self::PGSQL_TRANSACTION_TYPE_SERIALIZABLE
-        )
+        ]
     );
 
     protected $dbEngine = self::PGSQL;
     protected $dbName = '';
     protected $dbUser = '';
     protected $dbHost = '';
+    protected $dbPort = null;
     protected $dontRememberNextQuery = '';
 
     static $inTransaction = false;
@@ -80,17 +83,19 @@ class Db {
      * @param null|string $user - user name
      * @param null|string $password - user password
      * @param string $server - server address in format 'host.name' or 'ddd.ddd.ddd.ddd', can contain port ':ddddd' (default: 'localhost')
+     * @param int|null $port - server port; null = default port for driver
      */
-    public function __construct($dbType, $dbName = null, $user = null, $password = null, $server = 'localhost') {
+    public function __construct($dbType, $dbName = null, $user = null, $password = null, $server = 'localhost', $port = null) {
         $this->dbEngine = strtolower($dbType);
         $this->dbName = $dbName;
         $this->dbUser = $user;
         $this->dbHost = $server;
+        $this->dbPort = $port;
         switch ($this->dbEngine) {
             case self::MYSQL:
             case self::PGSQL:
                 $this->pdo = new \PDO(
-                    $this->dbEngine . ':host=' . $server . (!empty($dbName) ? ';dbname=' . $dbName : ''),
+                    $this->dbEngine . ':host=' . $server . (!empty($port) ? ';port=' . $port : '') . (!empty($dbName) ? ';dbname=' . $dbName : ''),
                     $user,
                     $password,
                     [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]
@@ -150,6 +155,13 @@ class Db {
      */
     public function getDbHost() {
         return $this->dbHost;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDbPort() {
+        return $this->dbPort;
     }
 
     /**
@@ -331,26 +343,30 @@ class Db {
     /* Transactions */
 
     public function begin($readOnly = false, $transactionType = null) {
-        if (!empty($transactionType) && !in_array($transactionType, self::$transactionTypes[$this->dbEngine])) {
-            throw new DbException($this, "Unknown transaction type [{$transactionType}] for DB engine [{$this->dbEngine}]");
-        }
-        if (!$readOnly && (empty($transactionType) || $transactionType === self::PGSQL_TRANSACTION_TYPE_DEFAULT)) {
-            try {
-                $this->pdo->beginTransaction();
-            } catch (\Exception $exc) {
-                self::$transactionsTraces['current'] = Utils::getBackTrace(true, false);
-                throw new DbException($this, 'Already in transaction: ' . Utils::printToStr(self::$transactionsTraces));
+        if ($this->dbEngine === self::PGSQL) {
+            if (!empty($transactionType) && !in_array($transactionType, self::$transactionTypes[$this->dbEngine])) {
+                throw new DbException($this, "Unknown transaction type [{$transactionType}] for DB engine [{$this->dbEngine}]");
+            }
+            if (!$readOnly && (empty($transactionType) || $transactionType === self::PGSQL_TRANSACTION_TYPE_DEFAULT)) {
+                try {
+                    $this->pdo->beginTransaction();
+                } catch (\Exception $exc) {
+                    self::$transactionsTraces['current'] = Utils::getBackTrace(true, false);
+                    throw new DbException($this, 'Already in transaction: ' . Utils::printToStr(self::$transactionsTraces));
+                }
+            } else {
+                self::$inTransaction = true;
+                $this->dontRememberNextQuery = true;
+                $this->exec('BEGIN ISOLATION LEVEL ' . $transactionType . ' ' . ($readOnly ? 'READ ONLY' : ''));
+            }
+            if (
+                $transactionType !== self::PGSQL_TRANSACTION_TYPE_REPEATABLE_READ
+                && function_exists('\dbt')
+            ) {
+                self::$transactionsTraces[] = Utils::getBackTrace(true, false);
             }
         } else {
-            self::$inTransaction = true;
-            $this->dontRememberNextQuery = true;
-            $this->exec('BEGIN ISOLATION LEVEL ' . $transactionType . ' ' . ($readOnly ? 'READ ONLY' : ''));
-        }
-        if (
-            $transactionType !== self::PGSQL_TRANSACTION_TYPE_REPEATABLE_READ
-            && function_exists('\dbt')
-        ) {
-            self::$transactionsTraces[] = Utils::getBackTrace(true, false);
+            $this->pdo->beginTransaction();
         }
     }
 

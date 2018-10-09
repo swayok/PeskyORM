@@ -599,8 +599,12 @@ abstract class DbModel {
                 self::$dbConnectionConfigs[$alias]->getDbName(),
                 self::$dbConnectionConfigs[$alias]->getUserName(),
                 self::$dbConnectionConfigs[$alias]->getPassword(),
-                self::$dbConnectionConfigs[$alias]->getHost()
+                self::$dbConnectionConfigs[$alias]->getHost(),
+                self::$dbConnectionConfigs[$alias]->getPort()
             );
+            foreach (self::$dbConnectionConfigs[$alias]->getOnConnectClosures() as $closure) {
+                self::$dataSources[$alias]->onConnect($closure);
+            }
         }
         return self::$dataSources[$alias];
     }

@@ -15,9 +15,12 @@ class DbConnectionConfig {
         self::MYSQL,
 //        self::SQLITE,
     );
-
+    /** @var array  */
+    protected $onConnect = [];
     /** @var string */
     private $host = 'localhost';
+    /** @var null|int */
+    private $port = null;
     /** @var string */
     private $driver = self::POSTGRESQL;
     /** @var string */
@@ -49,6 +52,22 @@ class DbConnectionConfig {
      */
     public function getHost() {
         return $this->host;
+    }
+
+    /**
+     * @param int $port
+     * @return $this
+     */
+    public function setPort($port) {
+        $this->port = (int)$port;
+        return $this;
+    }
+
+    /**
+     * @return int|null
+     */
+    public function getPort() {
+        return $this->port;
     }
 
     /**
@@ -151,6 +170,22 @@ class DbConnectionConfig {
             throw new DbConnectionConfigException($this, 'User Password for DB connection cannot be empty');
         }
         return $this->password;
+    }
+
+    /**
+     * @param \Closure $closure - accepts 1 argument - instance of \PeskyORM\Db class
+     * @return $this
+     */
+    public function setOnConnect(\Closure $closure) {
+        $this->onConnect[] = $closure;
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getOnConnectClosures() {
+        return $this->onConnect;
     }
 
 
