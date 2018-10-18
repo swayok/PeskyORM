@@ -59,7 +59,7 @@ class DbConnectionConfig {
      * @return $this
      */
     public function setPort($port) {
-        $this->port = (int)$port;
+        $this->port = $port ? (int)$port : null;
         return $this;
     }
 
