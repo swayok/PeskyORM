@@ -116,6 +116,7 @@ class DbQuery {
                 // get only non-virtual fields
                 foreach ($model->getTableColumns() as $fieldName => $settings) {
                     if ($settings->isExistsInDb()) {
+                        /** @noinspection UnsupportedStringOffsetOperationsInspection */
                         $fields[] = $fieldName;
                     }
                 }
@@ -315,9 +316,9 @@ class DbQuery {
      */
     public function removeJoin($alias) {
         if (!empty($alias)) {
-            if (strtolower($alias) == 'all') {
-                foreach($this->joins as $alias => $info) {
-                    unset($this->aliasToTable[$alias], $this->fields[$alias]);
+            if (strtolower($alias) === 'all') {
+                foreach($this->joins as $joinAalias => $info) {
+                    unset($this->aliasToTable[$joinAalias], $this->fields[$joinAalias]);
                 }
                 $this->joins = array();
             } else if (isset($this->joins[$alias])) {
@@ -708,12 +709,10 @@ class DbQuery {
         $returning = $this->buildReturning($returning);
         if ($this->db->hasReturning && !empty($returning)) {
             $this->query .= $returning;
-            //$this->quoteQueryExpressions();
             $statement = $this->db->query($this->query);
             $result = $this->processRecords($statement, Db::FETCH_ALL);
             return $result;
         } else {
-            //$this->quoteQueryExpressions();
             return $this->db->exec($this->query);
         }
     }
@@ -754,7 +753,6 @@ class DbQuery {
         if (is_string($returning)) {
             $this->query .= $returning;
         }
-        //$this->quoteQueryExpressions();
         $statement = $this->db->query($this->query);
         if (!$statement || !$statement->rowCount()) {
             return false;
@@ -820,11 +818,9 @@ class DbQuery {
         // add returnng query
         $returning = $this->buildReturning($returning);
         if (empty($returning) || !$this->db->hasReturning) {
-//            $this->quoteQueryExpressions();
             return $this->db->exec($this->query);
         } else {
             $this->query .= $returning;
-//            $this->quoteQueryExpressions();
             $statement = $this->db->query($this->query);
             if (!$statement || !$statement->rowCount()) {
                 return 0;
@@ -880,11 +876,9 @@ class DbQuery {
         }
         $returning = $this->buildReturning($returning);
         if (empty($returning) || !$this->db->hasReturning) {
-//            $this->quoteQueryExpressions();
             return $this->db->exec($this->query);
         } else {
             $this->query .= $returning;
-//            $this->quoteQueryExpressions();
             $statement = $this->db->query($this->query);
             $result = $this->processRecords($statement, Db::FETCH_ALL);
             if (empty($result)) {
@@ -983,7 +977,7 @@ class DbQuery {
         }
         // group by
         if (!empty($this->groupBy)) {
-            $this->query .= ' GROUP BY ' . implode(', ', $this->groupBy) . ' ';
+            $this->query .= ' GROUP BY ' . $this->replaceQuotes(implode(', ', $this->groupBy)) . ' ';
         }
         // order by
         if (empty($this->orderBy) && $autoAddOrderBy) {
@@ -994,7 +988,7 @@ class DbQuery {
             foreach ($this->orderBy as $field => $direction) {
                 $sorting[] = " $field $direction ";
             }
-            $this->query .= ' ORDER BY ' . implode(', ', $sorting) . ' ';
+            $this->query .= ' ORDER BY ' . $this->replaceQuotes(implode(', ', $sorting)) . ' ';
         }
         // limit and offset
         if ($typeOrExpression === Db::FETCH_FIRST) {
@@ -1005,8 +999,6 @@ class DbQuery {
         if (!empty($this->offset)) {
             $this->query .= " OFFSET {$this->offset} ";
         }
-        // quote expressions
-        //$this->quoteQueryExpressions();
         return $this->query;
     }
 
@@ -1213,13 +1205,6 @@ class DbQuery {
     }
 
     /**
-     * Quote expressions in $this->query
-     */
-    protected function quoteQueryExpressions() {
-        $this->query = $this->replaceQuotes($this->query);
-    }
-
-    /**
      * @param string $expression
      * @return string
      */
@@ -1360,7 +1345,7 @@ class DbQuery {
                     }
                     $assembled[] = "{$columnAssembled} {$operator} {$value}";
                 } else if (
-                    is_string($column) && in_array(strtolower(trim($column)), array('and', 'or'))
+                    (is_string($column) && in_array(strtolower(trim($column)), array('and', 'or')))
                     || (is_numeric($column) && is_array($value))
                 ) {
                     // 3: 3.1 and 3.2 - recursion
