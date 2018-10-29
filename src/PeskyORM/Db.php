@@ -245,8 +245,11 @@ class Db {
      * @throws DbException
      */
     public function setTimezone($timezone) {
-        if ($this->dbEngine === self::PGSQL) {
-            return $this->exec(DbExpr::create("SET SESSION TIME ZONE ``$timezone``"));
+        switch ($this->dbEngine) {
+            case self::PGSQL:
+                return $this->exec(DbExpr::create("SET SESSION TIME ZONE ``$timezone``"));
+            case self::MYSQL:
+                return $this->exec(DbExpr::create("SET time_zone = ``$timezone``"));
         }
         throw new DbException($this, "setTimezone() is not supported by {$this->dbEngine} DB engine");
     }
