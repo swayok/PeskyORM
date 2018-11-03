@@ -145,6 +145,7 @@ class FileField extends DbObjectField {
             $this->resetValue();
         } else {
             $this->values['rawValue'] = $this->values['value'] = $this->fixUploadInfo($value);
+            $this->dbObject->fieldUpdated($this->getName());
         }
         $this->validate();
         return $this;

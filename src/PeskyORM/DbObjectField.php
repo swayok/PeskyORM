@@ -381,7 +381,7 @@ abstract class DbObjectField {
      * @return bool
      */
     public function isValueReceivedFromDb() {
-        return $this->values['isDbValue'];
+        return !empty($this->values['isDbValue']);
     }
 
     /**
