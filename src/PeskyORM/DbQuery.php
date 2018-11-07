@@ -136,7 +136,7 @@ class DbQuery {
             }
             if (is_object($fieldName) && $fieldName instanceof DbExpr) {
                 // check if alias is in expression
-                if (preg_match('%^(.+?)\s+as\s+`?(.+?)`?$%is', $fieldName->get(), $matches)) {
+                if (preg_match('%^(.+?)\s+as\s+`?([a-zA-Z0-9_]+?)`?$%is', $fieldName->get(), $matches)) {
                     $fieldName = DbExpr::create($matches[1]);
                     if (empty($fieldAlias) || is_numeric($fieldAlias)) {
                         $fieldAlias = $matches[2];
