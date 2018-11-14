@@ -1195,14 +1195,11 @@ class DbQuery {
     /**
      * Quote set of values
      * @param array $values
+     * @param int|array $fieldInfoOrType - one of \PDO::PARAM_* or Model->field[$col]
      * @return array
      */
-    public function quoteValues($values) {
-        $ret = array();
-        foreach ($values as $value) {
-            $ret[] = $this->quoteValue($value);
-        }
-        return $ret;
+    public function quoteValues($values, $fieldInfoOrType = \PDO::PARAM_STR) {
+        return $this->db->quoteValues($values, $fieldInfoOrType);
     }
 
     /**

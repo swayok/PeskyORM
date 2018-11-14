@@ -448,6 +448,20 @@ class Db {
     }
 
     /**
+     * Quote set of values
+     * @param array $values
+     * @param int|array $fieldInfoOrType - one of \PDO::PARAM_* or Model->field[$col]
+     * @return array
+     */
+    public function quoteValues(array $values, $fieldInfoOrType = \PDO::PARAM_STR) {
+        $ret = array();
+        foreach ($values as $value) {
+            $ret[] = $this->quoteValue($value, $fieldInfoOrType);
+        }
+        return $ret;
+    }
+
+    /**
      * @param string $expression
      * @return string
      */
