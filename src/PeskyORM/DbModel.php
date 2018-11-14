@@ -1,12 +1,9 @@
 <?php
 
 namespace PeskyORM;
-use PeskyORM\DbColumnConfig;
-use PeskyORM\Exception\DbException;
 use PeskyORM\Exception\DbModelException;
 use PeskyORM\Exception\DbQueryException;
 use PeskyORM\Exception\DbUtilsException;
-use Swayok\Utils\Set;
 use Swayok\Utils\StringUtils;
 
 /**
@@ -27,7 +24,7 @@ abstract class DbModel {
     /** @var DbTableConfig */
     protected $tableConfig;
     /** @var string */
-    private $namespace;
+    protected $namespace;
     /** @var null|string */
     protected $alias = null;
     /** @var string|null */

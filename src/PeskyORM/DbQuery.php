@@ -656,7 +656,7 @@ class DbQuery {
         }
         $this->fields($fields);
         if ($this->db->hasReturning) {
-            return ' RETURNING ' . $this->buildFieldsList(false, true);
+            return ' RETURNING ' . $this->buildFieldsList($this->fields, false, true);
         } else {
             return $this;
         }
@@ -944,7 +944,7 @@ class DbQuery {
                     }
                 }
             }
-            $this->query .= $this->buildFieldsList($autoAddPkField);
+            $this->query .= $this->buildFieldsList($this->fields, $autoAddPkField);
         } else if ($typeOrExpression instanceof DbExpr) {
             $this->query .= " {$this->replaceQuotes($typeOrExpression->get())} ";
             $autoAddOrderBy = false;
@@ -1004,19 +1004,20 @@ class DbQuery {
 
     /**
      * Assemble fields list for query
+     * @param array $fields
      * @param bool $autoAddPkField - true: add pk field if it is absent
      * @param bool $doNotAddAnyAliases - true: will not add table alias and column alias to fields, leave only plain field_name
      * @return string
      * @throws \PeskyORM\Exception\DbException
      * @throws \PeskyORM\Exception\DbQueryException
      */
-    protected function buildFieldsList($autoAddPkField, $doNotAddAnyAliases = false) {
+    public function buildFieldsList(array $fields, $autoAddPkField, $doNotAddAnyAliases = false) {
         $allColumns = array();
-        foreach ($this->fields as $tableAlias => $fields) {
+        foreach ($fields as $tableAlias => $tableFields) {
             if ($autoAddPkField) {
-                $fields = $this->addPkField($fields, $tableAlias);
+                $tableFields = $this->addPkField($tableFields, $tableAlias);
             }
-            foreach ($fields as $colAlias => $fieldName) {
+            foreach ($tableFields as $colAlias => $fieldName) {
                 if ((is_object($fieldName) && $fieldName instanceof DbExpr) || $doNotAddAnyAliases) {
                     $fieldName = $this->quoteName($fieldName);
                 } else {
