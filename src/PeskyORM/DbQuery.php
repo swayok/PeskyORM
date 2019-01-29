@@ -371,11 +371,12 @@ class DbQuery {
         }
         if (!empty($orderBy)) {
             if (is_string($orderBy)) {
-                $orderBy = preg_split('%\s*,\s*%is', $orderBy);
+                $orderBy = preg_split('%\s*,\s*%i', $orderBy);
             } else if (is_object($orderBy)) {
                 $orderBy = array($orderBy);
             }
-            $orderDirectionRegexp = '%^(.*?)\s+(ASC|DESC)%is';
+            $orderDirectionRegexp = '%^(.*?)\s+((ASC|DESC)(\s*NULLS\s*(?:FIRST|LAST))?)%is';
+            $orderDirectionVariantsRegexp = '%^(ASC|DESC)(\s*NULLS\s*(?:FIRST|LAST))?$%i';
             foreach ($orderBy as $orderField => $direction) {
                 $parse = false;
                 if (is_numeric($orderField)) {
@@ -383,7 +384,7 @@ class DbQuery {
                     $orderField = $direction;
                     $direction = false;
                 }
-                if (empty($direction) || !in_array(strtolower($direction), array('asc', 'desc'))) {
+                if (empty($direction) || !preg_match($orderDirectionVariantsRegexp, $direction)) {
                     $direction = 'ASC';
                 }
                 if (!is_object($orderField)) {
