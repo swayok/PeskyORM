@@ -1764,13 +1764,19 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * Get required values as array
-     * @param array $columnsNames - empty: return all columns
+     * @param array $columnsNames
+     *  - empty array: return values for all columns
+     *  - array: contains index-string, key-string, key-array pairs:
+     *      index-string: value is column name or relation name (returns all data from related record)
+     *      key-string (renaming): key is a column name and value is a column alias (alters column name in resulting array)
+     *      key-array (relation data): key is a relation name and value is an array containing column names of the relation
+     *      '*' as the value for index 0: add all related records (if $loadRelatedRecordsIfNotSet === false - only loaded records will be added)
      * @param array $relatedRecordsNames
      *  - empty: do not add any relations
-     *  - array: contains key-value or index-value pairs:
-     *      key-value: key is relation name and value is array containing column names of related record to return
-     *      index-value or value without key: value is relation name, will return all columns of the related record
-     *      '*' as the value for index 0: add all related records (if $loadRelatedRecordsIfNotSet === false - only loaded records will be added)
+     *  - array: contains index-string, key-string, key-array pairs or single value = '*':
+     *      '*' as the value for index === 0: add all related records (if $loadRelatedRecordsIfNotSet === false - only already loaded records will be added)
+     *      index-string: value is relation name (returns all data from related record)
+     *      key-array: key is relation name and value is array containing column names of related record to return
      * @param bool $loadRelatedRecordsIfNotSet - true: read all missing related objects from DB
      * @param bool $withFilesInfo - true: add info about files attached to a record (url, path, file_name, full_file_name, ext)
      * @return array
@@ -1820,17 +1826,23 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         // collect data for columns
         $data = [];
         foreach ($columnsNames as $index => $columnName) {
-            if (!is_int($index) || is_array($columnName) || static::hasRelation($columnName)) {
+            if ((!is_int($index) && is_array($columnName)) || static::hasRelation($columnName)) {
                 // it is actually relation
                 if (is_int($index)) {
+                    // get all data from related record
                     $relatedRecordsNames[] = $columnName;
                 } else {
+                    // get certain data form related record
                     $relatedRecordsNames[$index] = $columnName;
                 }
             } else {
-                $data[$columnName] = $this->getColumnValueForToArray($columnName, !$withFilesInfo, $notSet);
+                $columnAlias = $columnName;
+                if (!is_int($index)) {
+                    $columnName = $index;
+                }
+                $data[$columnAlias] = $this->getColumnValueForToArray($columnName, !$withFilesInfo, $notSet);
                 if ($notSet) {
-                    unset($data[$columnName]);
+                    unset($data[$columnAlias]);
                 }
             }
         }
@@ -1848,10 +1860,17 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             }
             $relatedRecord = $this->getRelatedRecord($relatedRecordName, $loadRelatedRecordsIfNotSet);
             if ($relatedRecord instanceof self) {
+                // ignore related records without non-default data
                 if ($relatedRecord->existsInDb()) {
                     $data[$relatedRecordName] = $withFilesInfo
                         ? $relatedRecord->toArray($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet)
                         : $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
+                } else {
+                    $relatedData = $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
+                    // check if DbRecord contains not only default values
+                    if (count(array_diff_assoc($relatedData, $relatedRecord->getDefaults([], false)))) {
+                        $data[$relatedRecordName] = $relatedData;
+                    }
                 }
             } else {
                 /** @var RecordsSet $relatedRecord*/
@@ -2294,9 +2313,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @since 5.1.0
      */
     public function serialize() {
-        $data = [];
+        $data = [
+            'props' => [
+                'existsInDb' => $this->existsInDb
+            ],
+            'values' => []
+        ];
         foreach ($this->values as $name => $value) {
-            $data[$name] = $value->serialize();
+            $data['values'][$name] = $value->serialize();
         }
         return json_encode($data);
     }
@@ -2319,8 +2343,11 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             throw new \InvalidArgumentException('$serialized argument must be a json-encoded array');
         }
         $this->reset();
+        foreach ($data['props'] as $name => $value) {
+            $this->$name = $value;
+        }
         /** @var array $data */
-        foreach ($data as $name => $value) {
+        foreach ($data['values'] as $name => $value) {
             $this->getValueContainerByColumnName($name)->unserialize($value);
         }
     }

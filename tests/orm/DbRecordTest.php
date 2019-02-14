@@ -12,8 +12,9 @@ use PeskyORMTest\TestingSettings\TestingSetting;
 use PeskyORMTest\TestingSettings\TestingSettingsTable;
 use PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 use Swayok\Utils\NormalizeValue;
+use PHPUnit\Framework\TestCase;
 
-class DbRecordTest extends PHPUnit_Framework_TestCase {
+class DbRecordTest extends TestCase {
 
     public static function setUpBeforeClass() {
         TestingApp::cleanInstancesOfDbTablesAndStructures();
@@ -556,10 +557,26 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException BadMethodCallException
+     * @expectedExceptionMessage Related record with name 'Parent' is not set and autoloading is disabled
+     */
+    public function testInvalidRelationRequestInToArray1Alt() {
+        TestingAdmin::fromArray(['id' => 1], true)->toArrayWithoutFiles(['id', 'Parent']);
+    }
+
+    /**
+     * @expectedException BadMethodCallException
      * @expectedExceptionMessage Related record with name 'Children' is not set and autoloading is disabled
      */
     public function testInvalidRelationRequestInToArray2() {
         TestingAdmin::fromArray(['id' => 1], true)->toArrayWithoutFiles(['id'], ['Children']);
+    }
+
+    /**
+     * @expectedException BadMethodCallException
+     * @expectedExceptionMessage Related record with name 'Children' is not set and autoloading is disabled
+     */
+    public function testInvalidRelationRequestInToArray2Alt() {
+        TestingAdmin::fromArray(['id' => 1], true)->toArrayWithoutFiles(['id', 'Children']);
     }
 
     /**
@@ -568,6 +585,14 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
      */
     public function testInvalidRelationRequestInToArray3() {
         TestingAdmin::fromArray(['id' => 1], true)->toArrayWithoutFiles(['id'], ['Invalid']);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     * @expectedExceptionMessage There is no column 'Invalid' in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
+     */
+    public function testInvalidRelationRequestInToArray3Alt() {
+        TestingAdmin::fromArray(['id' => 1], true)->toArrayWithoutFiles(['id', 'Invalid']);
     }
 
     /**
@@ -595,10 +620,8 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
     /**
      * @covers Record::toArray()
      * @covers Record::toArrayWithoutFiles()
-     * @covers Record::serialize()
-     * @covers Record::unserialize()
      */
-    public function testToArrayAndSerializattion() {
+    public function testToArray1() {
         // toArray, toArrayWithoutFiles
         $rec = TestingAdmin::fromArray([]);
         static::assertEquals(
@@ -632,31 +655,113 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
             $toArray
         );
         static::assertEquals(array_intersect_key($adminNormalized, $toArrayPartial), $toArrayPartial);
+    }
 
-        $recSerialized = serialize($rec);
-        static::assertEquals(
-            'C:39:"PeskyORMTest\TestingAdmins\TestingAdmin":4003:{{"id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"parent_id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"login":{"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","rawValue":"2AE351AF-131D-6654-9DB2-79B8F273986C","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"password":{"value":null,"rawValue":null,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":false,"hasOldValue":false,"isValidated":false,"validationErrors":[],"customInfo":[]},"created_at":{"value":"2015-05-14 02:12:05","rawValue":"2015-05-14 02:12:05","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"updated_at":{"value":"2015-06-10 19:30:24","rawValue":"2015-06-10 19:30:24","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"remember_token":{"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","rawValue":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"is_superadmin":{"value":true,"rawValue":true,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"language":{"value":"en","rawValue":"en","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"ip":{"value":"192.168.0.1","rawValue":"192.168.0.1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"role":{"value":"admin","rawValue":"admin","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"is_active":{"value":true,"rawValue":"1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"name":{"value":"Lionel Freeman","rawValue":"Lionel Freeman","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"email":{"value":"diam.at.pretium@idmollisnec.co.uk","rawValue":"diam.at.pretium@idmollisnec.co.uk","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"timezone":{"value":"Europe\/Moscow","rawValue":"Europe\/Moscow","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"avatar":{"value":null,"rawValue":null,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":false,"hasOldValue":false,"isValidated":false,"validationErrors":[],"customInfo":[]},"some_file":{"value":null,"rawValue":null,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":false,"hasOldValue":false,"isValidated":false,"validationErrors":[],"customInfo":[]},"not_changeable_column":{"value":null,"rawValue":null,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":false,"hasOldValue":false,"isValidated":false,"validationErrors":[],"customInfo":[]},"not_existing_column":{"value":null,"rawValue":null,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":false,"hasOldValue":false,"isValidated":false,"validationErrors":[],"customInfo":[]}}}',
-            $recSerialized
-        );
-        /** @var TestingAdmin $recUnserialized */
-        $recUnserialized = unserialize($recSerialized);
-        static::assertInstanceOf(Record::class, $recUnserialized);
-        static::assertEquals($rec, $recUnserialized);
-        static::assertEquals($this->getObjectPropertyValue($rec, 'values'), $this->getObjectPropertyValue($recUnserialized, 'values'));
-        static::assertEquals($rec->toArrayWithoutFiles(), $recUnserialized->toArrayWithoutFiles());
-        static::assertEquals($rec->isValueFromDb('parent_id'), $recUnserialized->isValueFromDb('parent_id'));
-        static::assertEquals($rec->existsInDb(), $recUnserialized->existsInDb());
-
+    /**
+     * @covers Record::toArray()
+     * @covers Record::toArrayWithoutFiles()
+     */
+    public function testToArray2() {
+        $rec = TestingAdmin::new1();
         $adminNoId = $this->getDataForSingleAdmin(false);
         $adminNoIdNormalized = $this->normalizeAdmin($adminNoId, null);
         $toArray = $rec->fromData($adminNoId)->toArrayWithoutFiles();
         $toArrayPartial = $rec->toArrayWithoutFiles(['id', 'parent_id', 'login', 'role']);
+        $expected = array_merge(['id' => null], $adminNoIdNormalized);
+        static::assertEquals($expected, $toArray);
+        $expected = array_intersect_key($expected, $toArrayPartial);
+        static::assertEquals($expected, $toArrayPartial);
+        // using column alias
+        $toArrayPartial = $rec->toArrayWithoutFiles(['id', 'parent_id', 'login' => 'alias', 'role']);
+        $expected['alias'] = $expected['login'];
+        unset($expected['login']);
         static::assertEquals(array_merge(['id' => null], $adminNoIdNormalized), $toArray);
-        static::assertEquals(array_intersect_key(array_merge(['id' => null], $adminNoIdNormalized), $toArrayPartial), $toArrayPartial);
 
+        // has one / belongs to relations (not existing in db)
+        $rec->updateRelatedRecord('Parent', [], false);
+        $toArrayRelation = $rec->toArrayWithoutFiles(['id'], ['Parent']);
+        static::assertEquals(['id' => null], $toArrayRelation);
+
+        $toArrayRelation = $rec->toArrayWithoutFiles(['id', 'Parent']);
+        static::assertEquals(['id' => null], $toArrayRelation);
+
+        $adminNoId['Parent'] = $adminNoId;
+        $expected = ['id' => null, 'Parent' => array_merge(['id' => null], $adminNoIdNormalized)];
+        $toArrayRelation = $rec->fromData($adminNoId)->toArrayWithoutFiles(['id'], ['Parent']);
+        static::assertEquals($expected, $toArrayRelation);
+
+        $toArrayRelation = $rec->fromData($adminNoId)->toArrayWithoutFiles(['id', 'Parent']);
+        static::assertEquals($expected, $toArrayRelation);
+
+        // has one / belongs to relations (existing in db)
+        $insertedRecords = TestingApp::fillAdminsTable(10);
+        unset($adminNoId['Parent'], $insertedRecords[0]['password'], $insertedRecords[1]['password'], $insertedRecords[2]['password']);
+        $expected = ['id' => $insertedRecords[1]['id'], 'Parent' => $insertedRecords[0]];
+        $expected['Parent']['created_at'].= '+00';
+        $expected['Parent']['updated_at'].= '+00';
+        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent'], true);
+        unset($toArrayRelation['not_existing_column']);
+        static::assertEquals($expected, $toArrayRelation);
+
+        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id', 'Parent'], [], true);
+        unset($toArrayRelation['not_existing_column']);
+        static::assertEquals($expected, $toArrayRelation);
+
+        $expected = ['id' => $insertedRecords[1]['id'], 'Parent' => ['login' => $insertedRecords[0]['login']]];
+        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent' => ['login']], true);
+        static::assertEquals($expected, $toArrayRelation);
+
+        $expected = ['id' => $insertedRecords[1]['id'], 'Parent' => ['alias' => $insertedRecords[0]['login']]];
+        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent' => ['login' => 'alias']], true);
+        static::assertEquals($expected, $toArrayRelation);
+        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id', 'Parent' => ['login' => 'alias']], [], true);
+        static::assertEquals($expected, $toArrayRelation);
+
+        // has many relations
+        $expected = ['id' => $insertedRecords[0]['id'], 'Children' => [$insertedRecords[1], $insertedRecords[2]]];
+        $expected['Children'][0]['created_at'].= '+00';
+        $expected['Children'][0]['updated_at'].= '+00';
+        $expected['Children'][1]['created_at'].= '+00';
+        $expected['Children'][1]['updated_at'].= '+00';
+        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id'], ['Children'], true);
+        static::assertEquals($expected, $toArrayRelation);
+        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id', 'Children'], [], true);
+        static::assertEquals($expected, $toArrayRelation);
+
+        $expected = [
+            'id' => $insertedRecords[0]['id'],
+            'Children' => [
+                ['email' => $insertedRecords[1]['email']],
+                ['email' => $insertedRecords[2]['email']]
+            ]
+        ];
+        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id'], ['Children' => ['email']], true);
+        static::assertEquals($expected, $toArrayRelation);
+        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id', 'Children' => ['email']], [], true);
+        static::assertEquals($expected, $toArrayRelation);
+
+        $expected = [
+            'id' => $insertedRecords[0]['id'],
+            'Children' => [
+                ['alias' => $insertedRecords[1]['email']],
+                ['alias' => $insertedRecords[2]['email']]
+            ]
+        ];
+        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id'], ['Children' => ['email' => 'alias']], true);
+        static::assertEquals($expected, $toArrayRelation);
+        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id', 'Children' => ['email' => 'alias']], [], true);
+        static::assertEquals($expected, $toArrayRelation);
+    }
+
+    /**
+     * @covers Record::serialize()
+     * @covers Record::unserialize()
+     */
+    public function testSerialization() {
+        $rec = TestingAdmin::fromArray($this->getDataForSingleAdmin(true), true);
         $recSerialized = serialize($rec);
         static::assertEquals(
-            'C:39:"PeskyORMTest\TestingAdmins\TestingAdmin":4025:{{"id":{"value":null,"rawValue":null,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":false,"hasOldValue":false,"isValidated":false,"validationErrors":[],"customInfo":[]},"parent_id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"login":{"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","rawValue":"2AE351AF-131D-6654-9DB2-79B8F273986C","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"password":{"value":null,"rawValue":null,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":false,"hasOldValue":false,"isValidated":false,"validationErrors":[],"customInfo":[]},"created_at":{"value":"2015-05-14 02:12:05","rawValue":"2015-05-14 02:12:05","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"updated_at":{"value":"2015-06-10 19:30:24","rawValue":"2015-06-10 19:30:24","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"remember_token":{"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","rawValue":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"is_superadmin":{"value":true,"rawValue":true,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"language":{"value":"en","rawValue":"en","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"ip":{"value":"192.168.0.1","rawValue":"192.168.0.1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"role":{"value":"admin","rawValue":"admin","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"is_active":{"value":true,"rawValue":"1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"name":{"value":"Lionel Freeman","rawValue":"Lionel Freeman","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"email":{"value":"diam.at.pretium@idmollisnec.co.uk","rawValue":"diam.at.pretium@idmollisnec.co.uk","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"timezone":{"value":"Europe\/Moscow","rawValue":"Europe\/Moscow","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"customInfo":[]},"avatar":{"value":null,"rawValue":null,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":false,"hasOldValue":false,"isValidated":false,"validationErrors":[],"customInfo":[]},"some_file":{"value":null,"rawValue":null,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":false,"hasOldValue":false,"isValidated":false,"validationErrors":[],"customInfo":[]},"not_changeable_column":{"value":null,"rawValue":null,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":false,"hasOldValue":false,"isValidated":false,"validationErrors":[],"customInfo":[]},"not_existing_column":{"value":null,"rawValue":null,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":false,"hasOldValue":false,"isValidated":false,"validationErrors":[],"customInfo":[]}}}',
+            'C:39:"PeskyORMTest\TestingAdmins\TestingAdmin":3870:{{"props":{"existsInDb":true},"values":{"id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"login":{"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","rawValue":"2AE351AF-131D-6654-9DB2-79B8F273986C","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"parent_id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"created_at":{"value":"2015-05-14 02:12:05","rawValue":"2015-05-14 02:12:05","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"updated_at":{"value":"2015-06-10 19:30:24","rawValue":"2015-06-10 19:30:24","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"remember_token":{"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","rawValue":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_superadmin":{"value":true,"rawValue":true,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"language":{"value":"en","rawValue":"en","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"ip":{"value":"192.168.0.1","rawValue":"192.168.0.1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"role":{"value":"admin","rawValue":"admin","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_active":{"value":true,"rawValue":"1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"name":{"value":"Lionel Freeman","rawValue":"Lionel Freeman","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"email":{"value":"diam.at.pretium@idmollisnec.co.uk","rawValue":"diam.at.pretium@idmollisnec.co.uk","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"timezone":{"value":"Europe\/Moscow","rawValue":"Europe\/Moscow","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null}}}}',
             $recSerialized
         );
         /** @var TestingAdmin $recUnserialized */
@@ -668,44 +773,20 @@ class DbRecordTest extends PHPUnit_Framework_TestCase {
         static::assertEquals($rec->isValueFromDb('parent_id'), $recUnserialized->isValueFromDb('parent_id'));
         static::assertEquals($rec->existsInDb(), $recUnserialized->existsInDb());
 
-        $adminNoId['Parent'] = $adminNoId;
-        $toArrayRelation = $rec->fromData($adminNoId)->toArrayWithoutFiles(['id'], ['Parent']);
+        $rec->fromData($this->getDataForSingleAdmin(false), false);
+        $recSerialized = serialize($rec);
         static::assertEquals(
-            ['id' => null, 'Parent' => array_merge(['id' => null], $adminNoIdNormalized)],
-            $toArrayRelation
+            'C:39:"PeskyORMTest\TestingAdmins\TestingAdmin":3644:{{"props":{"existsInDb":null},"values":{"login":{"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","rawValue":"2AE351AF-131D-6654-9DB2-79B8F273986C","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"parent_id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"created_at":{"value":"2015-05-14 02:12:05","rawValue":"2015-05-14 02:12:05","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"updated_at":{"value":"2015-06-10 19:30:24","rawValue":"2015-06-10 19:30:24","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"remember_token":{"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","rawValue":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_superadmin":{"value":true,"rawValue":true,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"language":{"value":"en","rawValue":"en","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"ip":{"value":"192.168.0.1","rawValue":"192.168.0.1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"role":{"value":"admin","rawValue":"admin","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_active":{"value":true,"rawValue":"1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"name":{"value":"Lionel Freeman","rawValue":"Lionel Freeman","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"email":{"value":"diam.at.pretium@idmollisnec.co.uk","rawValue":"diam.at.pretium@idmollisnec.co.uk","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"timezone":{"value":"Europe\/Moscow","rawValue":"Europe\/Moscow","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null}}}}',
+            $recSerialized
         );
-
-        $insertedRecords = TestingApp::fillAdminsTable(10);
-        unset($adminNoId['Parent'], $insertedRecords[0]['password'], $insertedRecords[1]['password'], $insertedRecords[2]['password']);
-        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent'], true);
-        static::assertEquals(
-            ['id' => $insertedRecords[1]['id'], 'Parent' => $insertedRecords[0]],
-            array_diff_key($toArrayRelation, ['not_existing_column' => ''])
-        );
-
-        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent' => ['login']], true);
-        static::assertEquals(
-            ['id' => $insertedRecords[1]['id'], 'Parent' => ['login' => $insertedRecords[0]['login']]],
-            $toArrayRelation
-        );
-
-        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id'], ['Children'], true);
-        static::assertEquals(
-            ['id' => $insertedRecords[0]['id'], 'Children' => [$insertedRecords[1], $insertedRecords[2]]],
-            $toArrayRelation
-        );
-
-        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id'], ['Children' => ['email']], true);
-        static::assertEquals(
-            [
-                'id' => $insertedRecords[0]['id'],
-                'Children' => [
-                    ['email' => $insertedRecords[1]['email']],
-                    ['email' => $insertedRecords[2]['email']]
-                ]
-            ],
-            $toArrayRelation
-        );
+        /** @var TestingAdmin $recUnserialized */
+        $recUnserialized = unserialize($recSerialized);
+        static::assertInstanceOf(Record::class, $recUnserialized);
+        static::assertEquals($rec->existsInDb(), $recUnserialized->existsInDb());
+        static::assertEquals($rec, $recUnserialized);
+        static::assertEquals($this->getObjectPropertyValue($rec, 'values'), $this->getObjectPropertyValue($recUnserialized, 'values'));
+        static::assertEquals($rec->toArrayWithoutFiles(), $recUnserialized->toArrayWithoutFiles());
+        static::assertEquals($rec->isValueFromDb('parent_id'), $recUnserialized->isValueFromDb('parent_id'));
     }
 
     public function testIsValueFromDb() {
