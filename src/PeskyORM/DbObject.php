@@ -1724,12 +1724,14 @@ class DbObject {
             try {
                 $this->_allowFieldsUpdatesTracking = false;
                 $ret = $model->update($dataToSave, $this->getFindByPkConditions(), '*');
-                if (!empty($ret) && count($ret) === 1) {
-                    $ret = $ret[0];
-                    $this->_updateWithDbValues($ret);
-                } else if (count($ret) > 1) {
-                    $model->rollback();
-                    throw new DbObjectException($this, 'Attempt to update [' . count($ret) . '] records instead of 1: ' . $model->getLastQuery());
+                if (!empty($ret)) {
+                    if (count($ret) === 1) {
+                        $ret = $ret[0];
+                        $this->_updateWithDbValues($ret);
+                    } else if (count($ret) > 1) {
+                        $model->rollback();
+                        throw new DbObjectException($this, 'Attempt to update [' . count($ret) . '] records instead of 1: ' . $model->getLastQuery());
+                    }
                 }
                 $this->_allowFieldsUpdatesTracking = true;
             } catch (\PDOException $exc) {
