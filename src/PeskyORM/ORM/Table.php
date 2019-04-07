@@ -528,7 +528,7 @@ abstract class Table implements TableInterface {
      */
     static public function update(array $data, array $conditions, $returning = false) {
         return static::getConnection(true)->update(
-            static::getNameWithSchema(),
+            static::getNameWithSchema() . ' AS ' . static::getInstance()->getTableAlias(),
             $data,
             Utils::assembleWhereConditionsFromArray(static::getConnection(true), $conditions),
             static::getPdoDataTypesForColumns(),

@@ -418,14 +418,20 @@ abstract class DbAdapter implements DbAdapterInterface {
         $this->guardTableNameArg($table);
         $this->guardDataArg($data);
         $this->guardConditionsArg($conditions);
-        $query = 'UPDATE ' . $this->quoteDbEntityName($table)  . ' SET ' . $this->buildValuesListForUpdate($data, $dataTypes)
+        list($tableName, $tableAlias) = preg_split('%\s*AS\s*%i', $table, 2);
+        if (empty($tableAlias) || trim($tableAlias) === '') {
+            $tableAlias = '';
+        } else {
+            $tableAlias = ' AS ' . $this->quoteDbEntityName($tableAlias);
+        }
+        $query = 'UPDATE ' . $this->quoteDbEntityName($tableName) . $tableAlias . ' SET ' . $this->buildValuesListForUpdate($data, $dataTypes)
             . ' WHERE ' . ($conditions instanceof DbExpr ? $this->quoteDbExpr($conditions) : $conditions);
         if (empty($returning)) {
             return $this->exec($query);
         } else {
             $records = $this->resolveQueryWithReturningColumns(
                 $query,
-                $table,
+                $tableName,
                 array_keys($data),
                 $data,
                 $dataTypes,
