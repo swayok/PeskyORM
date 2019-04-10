@@ -5,6 +5,7 @@ namespace PeskyORMTest\TestingAdmins;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\DefaultColumnClosures;
+use PeskyORM\ORM\RecordValue;
 use PeskyORM\ORM\Relation;
 use PeskyORM\ORM\TableStructure;
 
@@ -169,6 +170,27 @@ class TestingAdminsTableStructure extends TableStructure {
     private function not_existing_column() {
         return Column::create(Column::TYPE_STRING)
             ->doesNotExistInDb();
+    }
+
+    private function not_existing_column_with_default_value() {
+        return Column::create(Column::TYPE_STRING)
+            ->doesNotExistInDb()
+            ->disallowsNullValues()
+            ->setDefaultValue('default');
+    }
+
+    private function not_existing_column_with_calculated_value() {
+        return Column::create(Column::TYPE_STRING)
+            ->doesNotExistInDb()
+            ->valueCannotBeSetOrChanged()
+            ->disallowsNullValues()
+            ->setValueGetter(function (RecordValue $value, $format = null) {
+                $record = $value->getRecord();
+                return 'calculated-' . ($record->existsInDb() ? $value->getRecord()->getPrimaryKeyValue() : '');
+            })
+            ->setValueExistenceChecker(function () {
+                return true;
+            });
     }
 
     private function Parent() {

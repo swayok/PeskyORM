@@ -108,6 +108,8 @@ class DbRecordTest extends TestCase {
         }
         if ($addNotExistingCol) {
             $adminData['not_existing_column'] = null;
+            $adminData['not_existing_column_with_default_value'] = 'default';
+            $adminData['not_existing_column_with_calculated_value'] = 'calculated-' . $adminData['id'];
         }
         unset($adminData['password']);
         return $adminData;
@@ -641,7 +643,9 @@ class DbRecordTest extends TestCase {
                 'email' => null,
                 'timezone' => 'UTC',
                 'not_changeable_column' => null,
-                'not_existing_column' => null
+                'not_existing_column' => null,
+                'not_existing_column_with_default_value' => 'default',
+                'not_existing_column_with_calculated_value' => 'calculated-'
             ],
             $rec->toArrayWithoutFiles()
         );
@@ -650,11 +654,25 @@ class DbRecordTest extends TestCase {
         $adminNormalized = $this->normalizeAdmin($admin, null);
         $toArray = $rec->fromData($admin, true)->toArray();
         $toArrayPartial = $rec->toArray(['id', 'parent_id', 'login', 'role']);
-        static::assertEquals(
-            array_diff_key($adminNormalized, array_flip(['not_changeable_column', 'not_existing_column', 'password'])),
-            $toArray
-        );
+        $notExpectedColumns = [
+            'not_changeable_column',
+            'not_existing_column',
+            'password',
+            'not_existing_column_with_default_value'
+        ];
+        static::assertEquals(array_diff_key($adminNormalized, array_flip($notExpectedColumns)), $toArray);
         static::assertEquals(array_intersect_key($adminNormalized, $toArrayPartial), $toArrayPartial);
+
+        $rec->fromData($admin, true);
+        $rec->updateValue('not_existing_column_with_default_value', 'custom', true);
+        $adminNormalized['not_existing_column_with_default_value'] = 'custom';
+        $toArray = $rec->toArray();
+        $notExpectedColumns = [
+            'not_changeable_column',
+            'not_existing_column',
+            'password',
+        ];
+        static::assertEquals(array_diff_key($adminNormalized, array_flip($notExpectedColumns)), $toArray);
     }
 
     /**
@@ -665,6 +683,7 @@ class DbRecordTest extends TestCase {
         $rec = TestingAdmin::new1();
         $adminNoId = $this->getDataForSingleAdmin(false);
         $adminNoIdNormalized = $this->normalizeAdmin($adminNoId, null);
+
         $toArray = $rec->fromData($adminNoId)->toArrayWithoutFiles();
         $toArrayPartial = $rec->toArrayWithoutFiles(['id', 'parent_id', 'login', 'role']);
         $expected = array_merge(['id' => null], $adminNoIdNormalized);
@@ -699,12 +718,11 @@ class DbRecordTest extends TestCase {
         $expected = ['id' => $insertedRecords[1]['id'], 'Parent' => $insertedRecords[0]];
         $expected['Parent']['created_at'].= '+00';
         $expected['Parent']['updated_at'].= '+00';
+        $expected['Parent']['not_existing_column_with_calculated_value'] = 'calculated-' . $expected['Parent']['id'];
         $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent'], true);
-        unset($toArrayRelation['not_existing_column']);
         static::assertEquals($expected, $toArrayRelation);
 
         $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id', 'Parent'], [], true);
-        unset($toArrayRelation['not_existing_column']);
         static::assertEquals($expected, $toArrayRelation);
 
         $expected = ['id' => $insertedRecords[1]['id'], 'Parent' => ['login' => $insertedRecords[0]['login']]];
@@ -721,8 +739,10 @@ class DbRecordTest extends TestCase {
         $expected = ['id' => $insertedRecords[0]['id'], 'Children' => [$insertedRecords[1], $insertedRecords[2]]];
         $expected['Children'][0]['created_at'].= '+00';
         $expected['Children'][0]['updated_at'].= '+00';
+        $expected['Children'][0]['not_existing_column_with_calculated_value'] = 'calculated-' . $expected['Children'][0]['id'];
         $expected['Children'][1]['created_at'].= '+00';
         $expected['Children'][1]['updated_at'].= '+00';
+        $expected['Children'][1]['not_existing_column_with_calculated_value'] = 'calculated-' . $expected['Children'][1]['id'];
         $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id'], ['Children'], true);
         static::assertEquals($expected, $toArrayRelation);
         $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id', 'Children'], [], true);
@@ -751,6 +771,11 @@ class DbRecordTest extends TestCase {
         static::assertEquals($expected, $toArrayRelation);
         $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id', 'Children' => ['email' => 'alias']], [], true);
         static::assertEquals($expected, $toArrayRelation);
+    }
+
+    public function testToArray3() {
+        $rec = TestingAdmin::new1();
+
     }
 
     /**

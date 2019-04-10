@@ -1840,8 +1840,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 if (!is_int($index)) {
                     $columnName = $index;
                 }
-                $data[$columnAlias] = $this->getColumnValueForToArray($columnName, !$withFilesInfo, $notSet);
-                if ($notSet) {
+                $data[$columnAlias] = $this->getColumnValueForToArray($columnName, !$withFilesInfo, $isset);
+                if (is_bool($isset) && !$isset) {
                     unset($data[$columnAlias]);
                 }
             }
@@ -1865,14 +1865,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     $data[$relatedRecordName] = $withFilesInfo
                         ? $relatedRecord->toArray($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet)
                         : $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
-                } else if ($this->isReadOnly()) {
-                    $data[$relatedRecordName] = [];
-                } else {
-                    $relatedData = $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
-                    // check if DbRecord contains not only default values
-                    if (count(array_diff_assoc($relatedData, $relatedRecord->getDefaults([], false)))) {
-                        $data[$relatedRecordName] = $relatedData;
-                    }
+                } else if ($relatedRecord->hasAnyNonDefaultValues()) {
+                    // return related record only if there are any non-default value (column that do not exist in db are ignored)
+                    $data[$relatedRecordName] = $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
                 }
             } else {
                 /** @var RecordsSet $relatedRecord*/
@@ -1892,20 +1887,32 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         return $data;
     }
 
+    protected function hasAnyNonDefaultValues() {
+        $columnsNames = static::getColumns();
+        foreach ($columnsNames as $columnName => $column) {
+            if ($column->isItExistsInDb() && $this->hasValue($column, false)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Get column value if it is set or null in any other cases
      * @param string $columnName - value may be modiied to real column name instead of column name with format (like 'created_at_as_time')
      * @param bool $returnNullForFiles - false: return file information for file column | true: return null for file column
-     * @param bool $notSet
+     * @param bool $isset - true: value is set | false: value is not set
      * @return mixed
      * @throws \PDOException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    protected function getColumnValueForToArray(&$columnName, $returnNullForFiles = false, &$notSet = null) {
+    protected function getColumnValueForToArray(&$columnName, $returnNullForFiles = false, &$isset = null) {
+        $isset = false;
         if ($this->isReadOnly()) {
             if (array_key_exists($columnName, $this->readOnlyData)) {
+                $isset = true;
                 return $this->readOnlyData[$columnName];
             } else if (preg_match(static::COLUMN_NAME_WITH_FORMAT_REGEXP, $columnName, $parts)) {
                 list(, $columnName, $format) = $parts;
@@ -1913,11 +1920,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 $valueContainer = $this->createValueObject($column);
                 /** @noinspection NotOptimalIfConditionsInspection */
                 if (array_key_exists($columnName, $this->readOnlyData)) {
+                    $isset = true;
                     $value = $this->readOnlyData[$columnName];
                     $valueContainer->setRawValue($value, $value, true);
                     return call_user_func($column->getValueFormatter(), $valueContainer, $format);
                 } else {
-                    return $valueContainer->getDefaultValue();
+                    $isset = true;
+                    return null;
                 }
             }
         }
@@ -1930,24 +1939,23 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             }
         }
         $columnName = $column->getName();
-        $notSet = true;
         if ($column->isPrivateValue()) {
             return null;
         }
         if ($column->isItAFile()) {
             if (!$returnNullForFiles && $this->_hasValue($column, false)) {
-                $notSet = false;
+                $isset = true;
                 return $this->_getValue($column, $format ?: 'array');
             }
         } else {
             if ($this->existsInDb()) {
                 if ($this->_hasValue($column, false)) {
-                    $notSet = false;
+                    $isset = true;
                     $val = $this->_getValue($column, $format);
                     return ($val instanceof DbExpr) ? null : $val;
                 }
             } else {
-                $notSet = false; //< there is always a value when record does not eist in DB
+                $isset = true; //< there is always a value when record does not exist in DB
                 // if default value not provided directly it is considered to be null when record does not exist is DB
                 if ($this->_hasValue($column, true)) {
                     $val = $this->_getValue($column, $format);
