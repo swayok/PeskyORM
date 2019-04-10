@@ -1502,7 +1502,7 @@ abstract class AbstractSelect {
                         'data' => $data
                     ];
                 }
-            } else {
+            } else if (count($joinConfig->getForeignColumnsToSelect()) > 0) {
                 if ($joinConfig->getTableAlias() === $this->getTableAlias()) {
                     $nested[$joinConfig->getJoinName()] = [];
                 } else {
