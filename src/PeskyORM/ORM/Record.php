@@ -1865,6 +1865,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     $data[$relatedRecordName] = $withFilesInfo
                         ? $relatedRecord->toArray($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet)
                         : $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
+                } else if ($this->isReadOnly()) {
+                    $data[$relatedRecordName] = [];
                 } else {
                     $relatedData = $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
                     // check if DbRecord contains not only default values
