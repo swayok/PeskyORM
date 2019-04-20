@@ -418,7 +418,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         $this->guardTableNameArg($table);
         $this->guardDataArg($data);
         $this->guardConditionsArg($conditions);
-        list($tableName, $tableAlias) = preg_split('%\s*AS\s*%i', $table, 2);
+        list($tableName, $tableAlias) = preg_split('%\s+AS\s+%i', $table, 2);
         if (empty($tableAlias) || trim($tableAlias) === '') {
             $tableAlias = '';
         } else {
