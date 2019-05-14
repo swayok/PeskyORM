@@ -48,23 +48,24 @@ abstract class FakeTable extends Table {
      * @param DbAdapterInterface $connection
      * @param array $interfaces - full class names of interfaces that fake table must implement
      * @param array $traits - full names of traits that fake table must use
+     * @param string $classBody
      * @return FakeTable
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function makeNewFakeTable(
-        $tableName,
+        string $tableName,
         $columnsOrTableStructure = null,
         DbAdapterInterface $connection = null,
         array $interfaces = [],
         array $traits = [],
-        $classBody = ''
+        string $classBody = ''
     ) {
-        if (!is_string($tableName) || trim($tableName) === '' || !DbAdapter::isValidDbEntityName($tableName)) {
+        $tableName = trim($tableName);
+        if ($tableName === '' || !DbAdapter::isValidDbEntityName($tableName)) {
             throw new \InvalidArgumentException(
-                '$tableName argument bust be a not empty string that matches DB entity naming rules (usually alphanumeric with underscores)'
+                '$tableName argument must be a not empty string that matches DB entity naming rules (usually alphanumeric with underscores)'
             );
         }
         static::$fakesCreated++;
