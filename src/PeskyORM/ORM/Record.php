@@ -1175,7 +1175,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 $this->updateRelatedRecord(
                     $relations[$columnNameOrRelationName],
                     $value,
-                    $isFromDb ? null : false,
+                    null,
                     $haltOnUnknownColumnNames
                 );
             } else if ($haltOnUnknownColumnNames) {
