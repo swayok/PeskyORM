@@ -1588,7 +1588,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $withFilesInfo = true
     ) {
         // normalize column names
-        if (empty($columnsNames) || (count($columnsNames) === 1 && $columnsNames[0] === '*')) {
+        if (empty($columnsNames) || (count($columnsNames) === 1 && isset($columnsNames[0]) && $columnsNames[0] === '*')) {
             $columnsNames = array_keys(static::getColumns());
         } else if (in_array('*', $columnsNames, true)) {
             $columnsNames = array_merge($columnsNames, array_keys(static::getColumns()));
