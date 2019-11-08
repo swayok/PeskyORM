@@ -209,6 +209,11 @@ class OrmSelectTest extends \PHPUnit\Framework\TestCase {
             }
 
         }
+        $colsInSelectWithoutLastOne = $colsInSelect;
+        array_pop($colsInSelectWithoutLastOne);
+        $colsInSelectWithoutLastOne = implode(', ', $colsInSelectWithoutLastOne);
+        $expectedColsInfoWithoutLastOne = $expectedColsInfo;
+        $excludedColumnInfo = array_pop($expectedColsInfoWithoutLastOne);
         $colsInSelect = implode(', ', $colsInSelect);
         $bigDataColsInSelect = implode(', ' , $bigDataColsInSelect);
         static::assertGreaterThanOrEqual(1, count($expectedColsInfo));
@@ -237,6 +242,7 @@ class OrmSelectTest extends \PHPUnit\Framework\TestCase {
         static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
         static::assertCount(count($expectedColsInfo), $this->getObjectPropertyValue($dbSelect, 'columns'));
 
+        // test adding heavy valued column explicitely
         static::assertGreaterThanOrEqual(1, count($bigDataColsNames));
         $dbSelect->columns(array_merge(['*'], $bigDataColsNames));
         static::assertEquals(
@@ -245,6 +251,24 @@ class OrmSelectTest extends \PHPUnit\Framework\TestCase {
         );
         static::assertEquals(array_merge($expectedColsInfo, $bigDataColsInfo), $this->getObjectPropertyValue($dbSelect, 'columns'));
         static::assertCount(count($expectedColsInfo) + count($bigDataColsInfo), $this->getObjectPropertyValue($dbSelect, 'columns'));
+
+        // test excluding a column (string value)
+        $dbSelect->columns(['*' => $excludedColumnInfo['name']]);
+        static::assertEquals(
+            'SELECT ' . $colsInSelectWithoutLastOne . ' FROM "admins" AS "Admins"',
+            rtrim($dbSelect->getQuery())
+        );
+        static::assertEquals($expectedColsInfoWithoutLastOne, $this->getObjectPropertyValue($dbSelect, 'columns'));
+        static::assertCount(count($expectedColsInfoWithoutLastOne), $this->getObjectPropertyValue($dbSelect, 'columns'));
+
+        // test excluding a column (array value)
+        $dbSelect->columns(['*' => [$excludedColumnInfo['name']]]);
+        static::assertEquals(
+            'SELECT ' . $colsInSelectWithoutLastOne . ' FROM "admins" AS "Admins"',
+            rtrim($dbSelect->getQuery())
+        );
+        static::assertEquals($expectedColsInfoWithoutLastOne, $this->getObjectPropertyValue($dbSelect, 'columns'));
+        static::assertCount(count($expectedColsInfoWithoutLastOne), $this->getObjectPropertyValue($dbSelect, 'columns'));
 
         static::assertEquals(
             'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins"',

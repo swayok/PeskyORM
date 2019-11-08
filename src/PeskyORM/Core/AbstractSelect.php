@@ -949,7 +949,7 @@ abstract class AbstractSelect {
             }
             if (preg_match('%^(\w+)\.(\w+|\*)$%i', trim($columnName), $columnParts)) {
                 // 'JoinName.column' or 'JoinName.*'
-                list(, $joinName, $columnName) = $columnParts;
+                [, $joinName, $columnName] = $columnParts;
             }
             if (!$this->getConnection()->isValidDbEntityName($columnName)) {
                 throw new \InvalidArgumentException("{$errorsPrefix}Invalid column name or json selector: [$columnName]");
@@ -1131,7 +1131,15 @@ abstract class AbstractSelect {
         }
         $normalizedColumns = [];
         foreach ($columns as $columnAlias => $columnName) {
-            if (
+            if ($columnAlias === '*') {
+                if (!is_string($columnName) && !is_array($columnName)) {
+                    throw new \InvalidArgumentException(
+                        "Invalid excluded columns list for a key '$columnAlias'. "
+                        . 'Value must be a string or array.'
+                    );
+                }
+                // we're goo to go - no more validation needed
+            } else if (
                 !is_numeric($columnAlias)
                 && (
                     is_array($columnName)
@@ -1152,7 +1160,7 @@ abstract class AbstractSelect {
             }
             if (empty($columnAlias) && $columnAlias !== 0) {
                 throw new \InvalidArgumentException(
-                    "\$columns argument contains an empty column alias"
+                    '$columns argument contains an empty column alias'
                 );
             }
             $columnAlias = is_int($columnAlias) ? null : $columnAlias;
@@ -1160,7 +1168,13 @@ abstract class AbstractSelect {
                 /** @noinspection SlowArrayOperationsInLoopInspection */
                 $normalizedColumns = array_merge(
                     $normalizedColumns,
-                    $this->normalizeWildcardColumn($joinName)
+                    $this->normalizeWildcardColumn($joinName, [])
+                );
+            } else if ($columnAlias === '*') {
+                /** @noinspection SlowArrayOperationsInLoopInspection */
+                $normalizedColumns = array_merge(
+                    $normalizedColumns,
+                    $this->normalizeWildcardColumn($joinName, (array)$columnName)
                 );
             } else {
                 $columnInfo = $this->analyzeColumnName($columnName, $columnAlias, $joinName, $subject);
@@ -1190,10 +1204,11 @@ abstract class AbstractSelect {
     /**
      * Normalize '*' column name
      * @param null|string $joinName
+     * @param null|array $excludeColumns - list of columns to exclude from wildcard (handled only by OrmSelect)
      * @return array - returns list of $this->analyzeColumnName() results
      * @throws \InvalidArgumentException
      */
-    protected function normalizeWildcardColumn($joinName = null) {
+    protected function normalizeWildcardColumn($joinName = null, ?array $excludeColumns = null) {
         return [$this->analyzeColumnName('*', null, $joinName, 'SELECT')];
     }
 
@@ -1350,7 +1365,7 @@ abstract class AbstractSelect {
         $conditions = array_merge(
             [
                 $this->getShortJoinAlias($joinConfig->getTableAlias()) . '.' . $joinConfig->getColumnName()
-                    => DbExpr::create("`{$shortJoinName}`.`{$joinConfig->getForeignColumnName()}`", false)
+                    => DbExpr::create("`{$shortJoinName}`.`{$joinConfig->getForeignColumnName()}`", false),
             ],
             $joinConfig->getAdditionalJoinConditions()
         );
@@ -1473,7 +1488,7 @@ abstract class AbstractSelect {
                 $group = $colInfo['join_name'] ? $colInfo['join_name'] : $this->getTableAlias();
                 $dataBlocks[$group][$colInfo['name']] = $value;
             } else if (preg_match('%^_(.+?)__(.+?)$%', $columnAlias, $colInfo)) {
-                list(, $tableAlias, $column) = $colInfo;
+                [, $tableAlias, $column] = $colInfo;
                 if (isset($shortJoinAliasToAlias[$tableAlias])) {
                     $tableAlias = $shortJoinAliasToAlias[$tableAlias];
                 }
@@ -1499,7 +1514,7 @@ abstract class AbstractSelect {
                 } else {
                     $deepNestedJoins[] = [
                         'config' => $joinConfig,
-                        'data' => $data
+                        'data' => $data,
                     ];
                 }
             } else if (count($joinConfig->getForeignColumnsToSelect()) > 0) {
@@ -1508,7 +1523,7 @@ abstract class AbstractSelect {
                 } else {
                     $deepNestedJoins[] = [
                         'config' => $joinConfig,
-                        'data' => []
+                        'data' => [],
                     ];
                 }
             }

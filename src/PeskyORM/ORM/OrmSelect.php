@@ -179,15 +179,18 @@ class OrmSelect extends AbstractSelect {
         return $this;
     }
 
-    protected function normalizeWildcardColumn($joinName = null) {
+    protected function normalizeWildcardColumn($joinName = null, ?array $excludeColumns = null) {
         if ($joinName === null) {
             $tableStructure = $this->getTableStructure();
         } else {
             $tableStructure = $this->getJoin($joinName)->getForeignDbTable()->getTableStructure();
         }
         $normalizedColumns = [];
+        if (!$excludeColumns) {
+            $excludeColumns = [];
+        }
         foreach ($tableStructure::getColumnsThatExistInDb() as $columnName => $config) {
-            if (!$config->isValueHeavy()) {
+            if (!$config->isValueHeavy() && !in_array($columnName, $excludeColumns, true)) {
                 $normalizedColumns[] = $this->analyzeColumnName($columnName, null, $joinName, 'SELECT');
             }
         }
