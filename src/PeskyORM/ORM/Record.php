@@ -1910,13 +1910,16 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     protected function getColumnValueForToArray(&$columnName, $returnNullForFiles = false, &$isset = null) {
         $isset = false;
+        $column = static::getColumn($columnName);
+        if ($column->isPrivateValue()) {
+            return null;
+        }
         if ($this->isReadOnly()) {
             if (array_key_exists($columnName, $this->readOnlyData)) {
                 $isset = true;
                 return $this->readOnlyData[$columnName];
             } else if (preg_match(static::COLUMN_NAME_WITH_FORMAT_REGEXP, $columnName, $parts)) {
                 list(, $columnName, $format) = $parts;
-                $column = static::getColumn($columnName);
                 $valueContainer = $this->createValueObject($column);
                 /** @noinspection NotOptimalIfConditionsInspection */
                 if (array_key_exists($columnName, $this->readOnlyData)) {
@@ -1930,17 +1933,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 }
             }
         }
-        $column = static::getColumn($columnName);
         $format = null;
         if ($columnName !== $column->getName()) {
             $parts = explode('_as_', $columnName, 2);
             if (count($parts) === 2) {
                 $format = $parts[1];
             }
-        }
-        $columnName = $column->getName();
-        if ($column->isPrivateValue()) {
-            return null;
         }
         if ($column->isItAFile()) {
             if (!$returnNullForFiles && $this->_hasValue($column, false)) {
