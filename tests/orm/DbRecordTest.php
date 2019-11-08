@@ -16,16 +16,16 @@ use PHPUnit\Framework\TestCase;
 
 class DbRecordTest extends TestCase {
 
-    public static function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
         TestingApp::cleanInstancesOfDbTablesAndStructures();
     }
 
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         TestingApp::clearTables(static::getValidAdapter());
         TestingApp::cleanInstancesOfDbTablesAndStructures();
     }
 
-    protected function setUp() {
+    protected function setUp(): void {
         TestingApp::clearTables(static::getValidAdapter());
         TestingApp::cleanInstancesOfDbTablesAndStructures();
     }
@@ -88,7 +88,8 @@ class DbRecordTest extends TestCase {
             'is_active' => '1',
             'name' => 'Lionel Freeman',
             'email' => 'diam.at.pretium@idmollisnec.co.uk',
-            'timezone' => 'Europe/Moscow'
+            'timezone' => 'Europe/Moscow',
+            'big_data' => 'biiiig data'
         ]);
     }
 
@@ -645,15 +646,16 @@ class DbRecordTest extends TestCase {
                 'not_changeable_column' => null,
                 'not_existing_column' => null,
                 'not_existing_column_with_default_value' => 'default',
-                'not_existing_column_with_calculated_value' => 'calculated-'
+                'not_existing_column_with_calculated_value' => 'calculated-',
+                'big_data' => null
             ],
             $rec->toArrayWithoutFiles()
         );
 
         $admin = $this->getDataForSingleAdmin(true);
         $adminNormalized = $this->normalizeAdmin($admin, null);
+        // get all columns
         $toArray = $rec->fromData($admin, true)->toArray();
-        $toArrayPartial = $rec->toArray(['id', 'parent_id', 'login', 'role']);
         $notExpectedColumns = [
             'not_changeable_column',
             'not_existing_column',
@@ -661,8 +663,22 @@ class DbRecordTest extends TestCase {
             'not_existing_column_with_default_value'
         ];
         static::assertEquals(array_diff_key($adminNormalized, array_flip($notExpectedColumns)), $toArray);
+
+        // get only several columns
+        $toArrayPartial = $rec->toArray(['id', 'parent_id', 'login', 'role']);
         static::assertEquals(array_intersect_key($adminNormalized, $toArrayPartial), $toArrayPartial);
 
+        // column exclusion from wildcard (string)
+        $toArrayPartial = $rec->fromData($admin, true)->toArray(['*' => 'big_data']);
+        $notExpectedColumns[] = 'big_data';
+        static::assertEquals(array_diff_key($adminNormalized, array_flip($notExpectedColumns)), $toArrayPartial);
+
+        // column exclusion from wildcard (array)
+        $toArrayPartial = $rec->fromData($admin, true)->toArray(['*' => ['big_data', 'language']]);
+        $notExpectedColumns[] = 'language';
+        static::assertEquals(array_diff_key($adminNormalized, array_flip($notExpectedColumns)), $toArrayPartial);
+
+        // update not_existing_column_with_default_value and see if it will be in resulting array
         $rec->fromData($admin, true);
         $rec->updateValue('not_existing_column_with_default_value', 'custom', true);
         $adminNormalized['not_existing_column_with_default_value'] = 'custom';

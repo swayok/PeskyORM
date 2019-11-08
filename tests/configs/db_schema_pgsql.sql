@@ -15,7 +15,8 @@ CREATE TABLE "public"."admins" (
 "name" varchar(200) COLLATE "default" DEFAULT ''::character varying NOT NULL,
 "email" varchar(100) COLLATE "default",
 "timezone" varchar(50) COLLATE "default" DEFAULT 'UTC'::character varying NOT NULL,
-"not_changeable_column" varchar(50) COLLATE "default" DEFAULT 'not changable'
+"not_changeable_column" varchar(50) COLLATE "default" DEFAULT 'not changable',
+"big_data" text  COLLATE "default" NOT NULL DEFAULT 'biiiiiiig data'
 )
 WITH (OIDS=FALSE)
 ;

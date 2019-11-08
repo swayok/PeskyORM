@@ -1811,6 +1811,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     break;
                 }
             }
+        } else if (isset($columnsNames['*'])) {
+            // exclude some columns from wildcard
+            $columnsNames = array_merge(
+                array_diff(array_keys(static::getColumns()), (array)$columnsNames['*']),
+                $columnsNames
+            );
+            unset($columnsNames['*']);
         }
         // normalize relation names
         if (
