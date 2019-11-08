@@ -206,7 +206,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             $columns = $tableStructure::getColumns();
             self::$columns[static::class] = [
                 'columns' => $columns,
-                'columns_and_formats' => $columns,
+                'columns_and_formats' => [],
                 'db_columns' => $tableStructure::getColumnsThatExistInDb(),
                 'not_db_columns' => $tableStructure::getColumnsThatDoNotExistInDb(),
                 'file_columns' => $tableStructure::getFileColumns(),
@@ -214,11 +214,18 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 'relations' => $tableStructure::getRelations(),
             ];
             foreach ($columns as $columnName => $column) {
+                self::$columns[static::class]['columns_and_formats'][$columnName] = [
+                    'format' => null,
+                    'column' => $column
+                ];
                 /** @var ColumnClosuresInterface $closuresClass */
                 $closuresClass = $column->getClosuresClass();
                 $formats = $closuresClass::getValueFormats($column);
                 foreach ($formats as $format) {
-                    self::$columns[static::class]['columns_and_formats'][$columnName . '_as_' . $format] = $column;
+                    self::$columns[static::class]['columns_and_formats'][$columnName . '_as_' . $format] = [
+                        'format' => $format,
+                        'column' => $column
+                    ];
                 }
             }
         }
@@ -227,17 +234,19 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * @param string $name
+     * @param string|null $format - filled when $name is something like 'timestamp_as_date' (returns 'date')
      * @return Column
      * @throws \InvalidArgumentException
      */
-    static public function getColumn($name) {
+    static public function getColumn($name, string &$format = null) {
         $columns = static::getColumns(true);
         if (!isset($columns[$name])) {
             throw new \InvalidArgumentException(
                 "There is no column '$name' in " . get_class(static::getTableStructure())
             );
         }
-        return $columns[$name];
+        $format = $columns[$name]['format'];
+        return $columns[$name]['column'];
     }
 
     /**
@@ -1910,7 +1919,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     protected function getColumnValueForToArray(&$columnName, $returnNullForFiles = false, &$isset = null) {
         $isset = false;
-        $column = static::getColumn($columnName);
+        $column = static::getColumn($columnName, $format);
         if ($column->isPrivateValue()) {
             return null;
         }
@@ -1918,26 +1927,17 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             if (array_key_exists($columnName, $this->readOnlyData)) {
                 $isset = true;
                 return $this->readOnlyData[$columnName];
-            } else if (preg_match(static::COLUMN_NAME_WITH_FORMAT_REGEXP, $columnName, $parts)) {
-                list(, $columnName, $format) = $parts;
+            } else if ($format) {
                 $valueContainer = $this->createValueObject($column);
-                /** @noinspection NotOptimalIfConditionsInspection */
-                if (array_key_exists($columnName, $this->readOnlyData)) {
+                if (array_key_exists($column->getName(), $this->readOnlyData)) {
                     $isset = true;
-                    $value = $this->readOnlyData[$columnName];
+                    $value = $this->readOnlyData[$column->getName()];
                     $valueContainer->setRawValue($value, $value, true);
                     return call_user_func($column->getValueFormatter(), $valueContainer, $format);
                 } else {
                     $isset = true;
                     return null;
                 }
-            }
-        }
-        $format = null;
-        if ($columnName !== $column->getName()) {
-            $parts = explode('_as_', $columnName, 2);
-            if (count($parts) === 2) {
-                $format = $parts[1];
             }
         }
         if ($column->isItAFile()) {

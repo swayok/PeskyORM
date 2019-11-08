@@ -46,9 +46,10 @@ class TempRecord implements RecordInterface {
 
     /**
      * @param string $name
+     * @param string|null $format - filled when $name is something like 'timestamp_as_date' (returns 'date')
      * @return Column
      */
-    static public function getColumn($name) {
+    static public function getColumn($name, string &$format = null) {
         return null;
     }
 
