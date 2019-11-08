@@ -193,6 +193,12 @@ class TestingAdminsTableStructure extends TableStructure {
             });
     }
 
+    private function big_data() {
+        return Column::create(Column::TYPE_TEXT)
+            ->disallowsNullValues()
+            ->valueIsHeavy();
+    }
+
     private function Parent() {
         return Relation::create('parent_id', Relation::BELONGS_TO, TestingAdminsTable::class, 'id');
     }

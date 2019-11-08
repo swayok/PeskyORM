@@ -192,6 +192,11 @@ class Column {
      */
     protected $isPrivateValue = false;
     /**
+     * Then true - value contains a lot of data and should not be fetched by '*' selects
+     * @var bool
+     */
+    protected $isHeavy = false;
+    /**
      * @var string
      */
     protected $defaultClosuresClass = DefaultColumnClosures::class;
@@ -824,6 +829,22 @@ class Column {
      */
     public function isValueCanBeSetOrChanged() {
         return $this->isValueCanBeSetOrChanged;
+    }
+
+    /**
+     * Value contains a lot of data and should not be fetched by '*' selects
+     * @return $this
+     */
+    public function valueIsHeavy() {
+        $this->isHeavy = true;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isValueHeavy(): bool {
+        return $this->isHeavy;
     }
 
     /**

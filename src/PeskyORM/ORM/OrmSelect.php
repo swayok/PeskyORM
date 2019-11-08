@@ -126,7 +126,7 @@ class OrmSelect extends AbstractSelect {
     }
 
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
-    
+
     protected function normalizeJoinDataForRecord(AbstractJoinInfo $joinInfo, array $data) {
         $data = parent::normalizeJoinDataForRecord($joinInfo, $data);
         if ($joinInfo instanceof OrmJoinInfo) {
@@ -187,7 +187,9 @@ class OrmSelect extends AbstractSelect {
         }
         $normalizedColumns = [];
         foreach ($tableStructure::getColumnsThatExistInDb() as $columnName => $config) {
-            $normalizedColumns[] = $this->analyzeColumnName($columnName, null, $joinName, 'SELECT');
+            if (!$config->isValueHeavy()) {
+                $normalizedColumns[] = $this->analyzeColumnName($columnName, null, $joinName, 'SELECT');
+            }
         }
         return $normalizedColumns;
     }
@@ -288,7 +290,7 @@ class OrmSelect extends AbstractSelect {
                             . 'Select that records outside of OrmSelect.'
                     );
                 }
-                $joinConfig = $foreignTable->getJoinConfigForRelation($relationName, $parentJoin->getJoinName(), $joinName);
+                $joinConfig = $foreignTable::getJoinConfigForRelation($relationName, $parentJoin->getJoinName(), $joinName);
             }
             $this->joinsAddedByRelations[] = $joinName;
             $joinConfig->setForeignColumnsToSelect(

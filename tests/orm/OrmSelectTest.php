@@ -12,13 +12,13 @@ use PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use PeskyORMTest\TestingApp;
 use Swayok\Utils\Set;
 
-class OrmSelectTest extends \PHPUnit_Framework_TestCase {
+class OrmSelectTest extends \PHPUnit\Framework\TestCase {
 
-    static public function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
         TestingApp::clearTables(static::getValidAdapter());
     }
 
-    static public function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         TestingApp::clearTables(static::getValidAdapter());
     }
 
@@ -181,9 +181,24 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
         $dbSelect = static::getNewSelect();
         $expectedColsInfo = [];
         $colsInSelect = [];
+        $bigDataColsInfo = [];
+        $bigDataColsInSelect = [];
+        $bigDataColsNames = [];
         foreach ($dbSelect->getTable()->getTableStructure()->getColumns() as $column) {
-            if ($column->isItExistsInDb()) {
-                $shortName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', [$column->getName()]);
+            if (!$column->isItExistsInDb()) {
+                continue;
+            }
+            $shortName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', [$column->getName()]);
+            if ($column->isValueHeavy()) {
+                $bigDataColsInfo[] = [
+                    'name' => $column->getName(),
+                    'alias' => null,
+                    'join_name' => null,
+                    'type_cast' => null,
+                ];
+                $bigDataColsInSelect[] = '"Admins"."' . $column->getName() . '" AS "_Admins__' . $shortName . '"';
+                $bigDataColsNames[] = $column->getName();
+            } else {
                 $expectedColsInfo[] = [
                     'name' => $column->getName(),
                     'alias' => null,
@@ -192,8 +207,11 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
                 ];
                 $colsInSelect[] = '"Admins"."' . $column->getName() . '" AS "_Admins__' . $shortName . '"';
             }
+
         }
         $colsInSelect = implode(', ', $colsInSelect);
+        $bigDataColsInSelect = implode(', ' , $bigDataColsInSelect);
+        static::assertGreaterThanOrEqual(1, count($expectedColsInfo));
 
         $dbSelect->columns([]);
         static::assertEquals(
@@ -201,7 +219,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             rtrim($dbSelect->getQuery())
         );
         static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
-        static::assertCount(16, $this->getObjectPropertyValue($dbSelect, 'columns'));
+        static::assertCount(count($expectedColsInfo), $this->getObjectPropertyValue($dbSelect, 'columns'));
 
         $dbSelect->columns(['*']);
         static::assertEquals(
@@ -209,7 +227,7 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             rtrim($dbSelect->getQuery())
         );
         static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
-        static::assertCount(16, $this->getObjectPropertyValue($dbSelect, 'columns'));
+        static::assertCount(count($expectedColsInfo), $this->getObjectPropertyValue($dbSelect, 'columns'));
 
         $dbSelect->columns('*');
         static::assertEquals(
@@ -217,7 +235,16 @@ class OrmSelectTest extends \PHPUnit_Framework_TestCase {
             rtrim($dbSelect->getQuery())
         );
         static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
-        static::assertCount(16, $this->getObjectPropertyValue($dbSelect, 'columns'));
+        static::assertCount(count($expectedColsInfo), $this->getObjectPropertyValue($dbSelect, 'columns'));
+
+        static::assertGreaterThanOrEqual(1, count($bigDataColsNames));
+        $dbSelect->columns(array_merge(['*'], $bigDataColsNames));
+        static::assertEquals(
+            'SELECT ' . $colsInSelect . ', ' . $bigDataColsInSelect . ' FROM "admins" AS "Admins"',
+            rtrim($dbSelect->getQuery())
+        );
+        static::assertEquals(array_merge($expectedColsInfo, $bigDataColsInfo), $this->getObjectPropertyValue($dbSelect, 'columns'));
+        static::assertCount(count($expectedColsInfo) + count($bigDataColsInfo), $this->getObjectPropertyValue($dbSelect, 'columns'));
 
         static::assertEquals(
             'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins"',
