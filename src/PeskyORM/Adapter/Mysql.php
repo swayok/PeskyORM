@@ -121,7 +121,7 @@ class Mysql extends DbAdapter {
             return 'CHAR';
         }
     }
-    
+
     public function getConditionOperatorsMap() {
         return static::$conditionOperatorsMap;
     }
@@ -289,7 +289,7 @@ class Mysql extends DbAdapter {
                 $columnInfo['Type'],
                 $this->convertDbTypeToOrmType($columnInfo['Type'])
             );
-            list($limit, $precision) = $this->extractLimitAndPrecisionForColumnDescription($columnInfo['Type']);
+            [$limit, $precision] = $this->extractLimitAndPrecisionForColumnDescription($columnInfo['Type']);
             $columnDescription
                 ->setLimitAndPrecision($limit, $precision)
                 ->setIsNullable(strtolower($columnInfo['Null']) === 'yes')
@@ -477,6 +477,19 @@ class Mysql extends DbAdapter {
             static::FETCH_VALUE
         );
         return !empty($exists);
+    }
+
+    /**
+     * Listen for DB notifications (mostly for PostgreSQL LISTEN...NOTIFY)
+     * @param string $channel
+     * @param \Closure $handler - payload handler:
+     *      function(string $payload): boolean { return true; } - if it returns false: listener will stop
+     * @param int $sleepIfNoNotificationMs - miliseconds to sleep if there were no notifications last time
+     * @param int $sleepAfterNotificationMs - miliseconds to sleep after notification consumed
+     * @return void
+     */
+    public function listen(string $channel, \Closure $handler, int $sleepIfNoNotificationMs = 1000, int $sleepAfterNotificationMs = 0) {
+        throw new \BadMethodCallException('MySQL does not support notifications');
     }
 
 }

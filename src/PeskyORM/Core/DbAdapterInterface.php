@@ -54,6 +54,17 @@ interface DbAdapterInterface {
     public function query($query, $fetchData = null);
 
     /**
+     * Listen for DB notifications (mostly for PostgreSQL LISTEN...NOTIFY)
+     * @param string $channel
+     * @param \Closure $handler - payload handler:
+     *      function(string $payload): boolean { return true; } - if it returns false: listener will stop
+     * @param int $sleepIfNoNotificationMs - miliseconds to sleep if there were no notifications last time
+     * @param int $sleepAfterNotificationMs - miliseconds to sleep after notification consumed
+     * @return void
+     */
+    public function listen(string $channel, \Closure $handler, int $sleepIfNoNotificationMs = 1000, int $sleepAfterNotificationMs = 0);
+
+    /**
      * Set DB timezone for current session
      * @param string $timezone
      * @return $this
@@ -126,7 +137,7 @@ interface DbAdapterInterface {
      * @throws \InvalidArgumentException
      */
     public function delete($table, $conditions, $returning = false);
-    
+
     /**
      * @return bool
      */
@@ -138,12 +149,12 @@ interface DbAdapterInterface {
      * @return $this
      */
     public function begin($readOnly = false, $transactionType = null);
-    
+
     /**
      * @return $this
      */
     public function commit();
-    
+
     /**
      * @return $this
      */
@@ -154,7 +165,7 @@ interface DbAdapterInterface {
      * @return array
      */
     public function getPdoError($pdoStatement = null);
-    
+
     /**
      * Quote DB entity name (column, table, alias, schema)
      * @param string|array $name - array: list of names to quote.
@@ -180,7 +191,7 @@ interface DbAdapterInterface {
      * @return string
      */
     public function quoteValue($value, $valueDataType = null);
-    
+
     /**
      * @param DbExpr $expression
      * @return string

@@ -418,7 +418,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         $this->guardTableNameArg($table);
         $this->guardDataArg($data);
         $this->guardConditionsArg($conditions);
-        list($tableName, $tableAlias) = preg_split('%\s+AS\s+%i', $table, 2);
+        [$tableName, $tableAlias] = preg_split('%\s+AS\s+%i', $table, 2);
         if (empty($tableAlias) || trim($tableAlias) === '') {
             $tableAlias = '';
         } else {
@@ -775,7 +775,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         } else if (!($pdoStatement instanceof \PDOStatement) && !($pdoStatement instanceof \PDO)) {
             throw new \InvalidArgumentException('$pdoStatement argument should be instance of \PDOStatement or \PDO');
         }
-        list($ret['sql_code'], $ret['code'], $ret['message']) = $pdoStatement->errorInfo();
+        [$ret['sql_code'], $ret['code'], $ret['message']] = $pdoStatement->errorInfo();
         return $ret;
     }
 
@@ -828,9 +828,17 @@ abstract class DbAdapter implements DbAdapterInterface {
     static public function isValidDbEntityName($name, $canBeAJsonSelector = true) {
         return (
             $name === '*'
-            || preg_match('%^[a-zA-Z_][a-zA-Z_0-9]*(\.[a-zA-Z_0-9]+|\.\*)?$%i', $name) > 0
+            || static::_isValidDbEntityName($name)
             || ($canBeAJsonSelector && static::isValidJsonSelector($name))
         );
+    }
+
+    /**
+     * @param $name
+     * @return bool
+     */
+    static protected function _isValidDbEntityName($name) {
+        return preg_match('%^[a-zA-Z_][a-zA-Z_0-9]*(\.[a-zA-Z_0-9]+|\.\*)?$%i', $name) > 0;
     }
 
     /**

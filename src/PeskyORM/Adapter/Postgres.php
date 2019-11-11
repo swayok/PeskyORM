@@ -126,6 +126,12 @@ class Postgres extends DbAdapter {
         return PostgresConfig::class;
     }
 
+    static protected function _isValidDbEntityName($name) {
+        // $name can literally be anything when quoted and it is always quoted unless developer skips quotes
+        // https://www.postgresql.org/docs/10/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
+        return preg_match('%^[a-zA-Z_].*$%', $name) > 0;
+    }
+
     public function __construct(PostgresConfig $connectionConfig) {
         parent::__construct($connectionConfig);
     }
@@ -206,7 +212,7 @@ class Postgres extends DbAdapter {
             $this->lastQuery = $lastQuery;
         }
     }
-    
+
     protected function resolveQueryWithReturningColumns(
         $query,
         $table,
@@ -261,11 +267,11 @@ class Postgres extends DbAdapter {
         }
         $description = new TableDescription($table, $schema);
         $query = "
-            SELECT  
-                `f`.`attname` AS `name`,  
+            SELECT
+                `f`.`attname` AS `name`,
                 `f`.`attnotnull` AS `notnull`,
                 `t`.`typname` AS `type`,
-                `pg_catalog`.format_type(`f`.`atttypid`,`f`.`atttypmod`) as `type_description`,  
+                `pg_catalog`.format_type(`f`.`atttypid`,`f`.`atttypmod`) as `type_description`,
                 COALESCE(
                     (
                         SELECT true FROM `pg_constraint` as `pk`
@@ -293,15 +299,15 @@ class Postgres extends DbAdapter {
                 CASE
                     WHEN `f`.`atthasdef` = true THEN `d`.`adsrc`
                 END AS `default`
-            FROM pg_attribute f  
-                JOIN `pg_class` `c` ON `c`.`oid` = `f`.`attrelid`  
-                JOIN `pg_type` `t` ON `t`.`oid` = `f`.`atttypid`  
-                LEFT JOIN `pg_attrdef` `d` ON `d`.adrelid = `c`.`oid` AND `d`.`adnum` = `f`.`attnum`  
-                LEFT JOIN `pg_namespace` `n` ON `n`.`oid` = `c`.`relnamespace`  
-            WHERE `c`.`relkind` = ``r``::char  
+            FROM pg_attribute f
+                JOIN `pg_class` `c` ON `c`.`oid` = `f`.`attrelid`
+                JOIN `pg_type` `t` ON `t`.`oid` = `f`.`atttypid`
+                LEFT JOIN `pg_attrdef` `d` ON `d`.adrelid = `c`.`oid` AND `d`.`adnum` = `f`.`attnum`
+                LEFT JOIN `pg_namespace` `n` ON `n`.`oid` = `c`.`relnamespace`
+            WHERE `c`.`relkind` = ``r``::char
                 AND `n`.`nspname` = ``{$schema}``
                 AND `c`.`relname` = ``{$table}``
-                AND `f`.`attnum` > 0 
+                AND `f`.`attnum` > 0
             ORDER BY `f`.`attnum`
         ";
         /** @var array $columns */
@@ -312,7 +318,7 @@ class Postgres extends DbAdapter {
                 $columnInfo['type'],
                 $this->convertDbTypeToOrmType($columnInfo['type'])
             );
-            list($limit, $precision) = $this->extractLimitAndPrecisionForColumnDescription($columnInfo['type_description']);
+            [$limit, $precision] = $this->extractLimitAndPrecisionForColumnDescription($columnInfo['type_description']);
             $columnDescription
                 ->setLimitAndPrecision($limit, $precision)
                 ->setIsNullable(!(bool)$columnInfo['notnull'])
@@ -330,7 +336,7 @@ class Postgres extends DbAdapter {
      * @return string
      */
     protected function convertDbTypeToOrmType($dbType) {
-        return array_key_exists($dbType, static::$dbTypeToOrmType) 
+        return array_key_exists($dbType, static::$dbTypeToOrmType)
             ? static::$dbTypeToOrmType[$dbType]
             : Column::TYPE_STRING;
     }
@@ -473,6 +479,32 @@ class Postgres extends DbAdapter {
             static::FETCH_VALUE
         );
         return !empty($exists);
+    }
+
+    /**
+     * Listen for DB notifications (mostly for PostgreSQL LISTEN...NOTIFY)
+     * @param string $channel
+     * @param \Closure $handler - payload handler:
+     *      function(?string $payload, ?int $pid): boolean { return true; } - if it returns false: listener will stop
+     * @param int $sleepIfNoNotificationMs - miliseconds to sleep if there were no notifications last time
+     * @param int $sleepAfterNotificationMs - miliseconds to sleep after notification consumed
+     * @return void
+     */
+    public function listen(string $channel, \Closure $handler, int $sleepIfNoNotificationMs = 1000, int $sleepAfterNotificationMs = 0) {
+        $this->exec(DbExpr::create("LISTEN `$channel`"));
+        while (1) {
+            $result = $this->getConnection()->pgsqlGetNotify(\PDO::FETCH_ASSOC, $sleepIfNoNotificationMs);
+            if ($result) {
+                $continue = $handler($result['payload'] ?: null, $result['pid'] ?: null);
+                if ($continue === false) {
+                    $this->exec(DbExpr::create("UNLISTEN `$channel`"));
+                    return;
+                }
+                if ($sleepAfterNotificationMs > 0) {
+                    sleep($sleepAfterNotificationMs / 1000);
+                }
+            }
+        }
     }
 
 }
