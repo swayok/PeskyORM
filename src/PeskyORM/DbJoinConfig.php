@@ -4,9 +4,6 @@
 namespace PeskyORM;
 
 
-use PeskyORM\Exception\DbQueryException;
-use PeskyORM\Exception\DbUtilsException;
-
 class DbJoinConfig {
 
     const HAS_ONE = 'has_one';
@@ -21,6 +18,8 @@ class DbJoinConfig {
     protected $joinAlias = null;
     /** @var DbModel|null */
     protected $model = null;
+    /** @var string|null */
+    protected $modelAlias = null;
     /** @var string|null */
     protected $column = null;
     /** @var string|null */
@@ -65,10 +64,11 @@ class DbJoinConfig {
     /**
      * @param DbModel $model
      * @param string $column
+     * @param string|null $modelAlias
      * @return $this
      */
-    public function setConfigForLocalTable(DbModel $model, $column) {
-        return $this->setModel($model)->setColumn($column);
+    public function setConfigForLocalTable(DbModel $model, $column, $modelAlias = null) {
+        return $this->setModel($model, $modelAlias)->setColumn($column);
     }
 
     /**
@@ -89,7 +89,7 @@ class DbJoinConfig {
             'table1_model' => $this->getForeignModel(),
             'table1_field' => $this->getForeignColumn(),
             'table1_alias' => $this->getJoinAlias(),
-            'table2_alias' => $this->getModel()->getAlias(),
+            'table2_alias' => $this->getModelAlias(),
             'table2_field' => $this->getColumn(),
             'conditions' => $this->getAdditionalJoinConditions(),
             'fields' => $this->getForeignColumnsToSelect()
@@ -184,11 +184,20 @@ class DbJoinConfig {
     }
 
     /**
+     * @return string
+     */
+    public function getModelAlias() {
+        return $this->modelAlias ?: $this->getModel()->getAlias();
+    }
+
+    /**
      * @param null|DbModel $model
+     * @param null|string $alias
      * @return $this
      */
-    public function setModel($model) {
+    public function setModel($model, $alias = null) {
         $this->model = $model;
+        $this->modelAlias = $alias;
         return $this;
     }
 

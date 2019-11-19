@@ -643,12 +643,13 @@ abstract class DbModel {
     /**
      * Build valid 'JOIN' settings from 'CONTAIN' table aliases
      * @param array $where
+     * @param string|null $aliasForSubContains
      * @return mixed $where
      * @throws \PeskyORM\Exception\DbUtilsException
      * @throws \PeskyORM\Exception\DbTableConfigException
      * @throws DbModelException
      */
-    public function resolveContains($where) {
+    public function resolveContains($where, $aliasForSubContains = null) {
         if (is_array($where)) {
             if (!empty($where['CONTAIN'])) {
                 if (!is_array($where['CONTAIN'])) {
@@ -689,7 +690,7 @@ abstract class DbModel {
                         }
 
                         $where['JOIN'][$alias] = DbJoinConfig::create($alias)
-                            ->setConfigForLocalTable($this, $relationConfig->getColumn())
+                            ->setConfigForLocalTable($this, $relationConfig->getColumn(), $aliasForSubContains)
                             ->setJoinType($joinType)
                             ->setConfigForForeignTable($model, $relationConfig->getForeignColumn())
                             ->setAdditionalJoinConditions($additionalConditions)
@@ -697,7 +698,7 @@ abstract class DbModel {
                             ->getConfigsForDbQuery();
 
                         if (!empty($subContains)) {
-                            $subJoins = $model->resolveContains($subContains);
+                            $subJoins = $model->resolveContains($subContains, $alias);
                             $where['JOIN'] = array_merge($where['JOIN'], $subJoins['JOIN']);
                         }
                     }
