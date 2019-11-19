@@ -1408,37 +1408,93 @@ class DbQuery {
      * @return array
      */
     protected function convertDbDataToNestedArray($data, $withRootTableAlias = true) {
-        $nested = array();
+        $dataByAliases = array();
         // process record's column aliases and group column values by table alias
         $shortAliasToAlias = array_flip($this->shortAliases);
         foreach ($data as $colAlias => $value) {
-            if (preg_match('%^_(.+?)__(.+?)$%is', $colAlias, $colInfo)) {
-                list(, $tableAlias, $column) = $colInfo;
+            if (preg_match('%^_(.+?)__(.+?)$%s', $colAlias, $colInfo)) {
+                [, $tableAlias, $column] = $colInfo;
                 if (isset($shortAliasToAlias[$tableAlias])) {
                     $tableAlias = $shortAliasToAlias[$tableAlias];
                 }
-                if (empty($nested[$tableAlias])) {
-                    $nested[$tableAlias] = array();
+                if (empty($dataByAliases[$tableAlias])) {
+                    $dataByAliases[$tableAlias] = array();
                 }
-                $nested[$tableAlias][$column] = $value;
+                $dataByAliases[$tableAlias][$column] = $value;
             } else {
-                $nested[$colAlias] = $value;
+                $dataByAliases[$colAlias] = $value;
             }
         }
+        unset($data); //< save a bit of RAM
         // make record nested + add missing child records
-        foreach ($this->aliasToTable as $tableAlias => $table) {
-            if ($tableAlias != $this->alias) {
-                if (!empty($nested[$tableAlias])) {
-                    $nested[$this->alias][$tableAlias] = $nested[$tableAlias];
-                    unset($nested[$tableAlias]);
-                } else {
-                    $nested[$this->alias][$tableAlias] = array();
-                }
-            }
-        }
+        $nested[$this->alias] = $dataByAliases[$this->alias];
+        unset($dataByAliases[$this->alias]);
+        $remainingAliases = $this->aliasToTable;
+        unset($remainingAliases[$this->alias]);
+        $nested[$this->alias] = array_merge(
+            $nested[$this->alias],
+            $this->nestRelatedRecords($dataByAliases, $this->alias, $remainingAliases)
+        );
         if (!$withRootTableAlias && isset($nested[$this->alias])) {
             $nested = $nested[$this->alias];
         }
         return $nested;
+    }
+
+    /**
+     * @param array $data
+     * @param string $alias
+     * @param array $remainingAliases
+     * @return array
+     */
+    protected function nestRelatedRecords(array &$data, $alias, array &$remainingAliases) {
+        $ret = [];
+        $model = $this->models[ $this->aliasToTable[$alias] ];
+        $relations = $model->getTableRealtaions();
+        $nestedAliases = [];
+        foreach ($remainingAliases as $tableAlias => $table) {
+            if (isset($relations[$tableAlias])) {
+                if (!empty($data[$tableAlias])) {
+                    $pkName = $this->models[ $this->aliasToTable[$tableAlias] ]->getPkColumnName();
+                    if (array_key_exists($pkName, $data[$tableAlias]) && $data[$tableAlias][$pkName] === null) {
+                        // primary key === null means no record - return empty array
+                        $ret[$tableAlias] = array();
+                    } else {
+                        $ret[$tableAlias] = $data[$tableAlias];
+                    }
+                    unset($data[$tableAlias]);
+                } else {
+                    $ret[$tableAlias] = array();
+                }
+                $nestedAliases[] = $tableAlias;
+            }
+        }
+        foreach ($nestedAliases as $modelAlias) {
+            unset($remainingAliases[$modelAlias]);
+        }
+        if (!empty($data)) {
+            // we have some nested data
+            foreach ($ret as $relationAlias => $relationData) {
+                $relatedModel = $this->models[ $this->aliasToTable[$relationAlias] ];
+                $subRelations = $relatedModel->getTableRealtaions();
+                $intersected = array_intersect_key($subRelations, $remainingAliases);
+                if (count($intersected)) {
+                    if (empty($relationData)) {
+                        foreach($intersected as $aliasToRemove => $relation) {
+                            unset($remainingAliases[$aliasToRemove], $data[$aliasToRemove]);
+                        }
+                    } else {
+                        $ret[$relationAlias] = array_merge(
+                            $ret[$relationAlias],
+                            $this->nestRelatedRecords($data, $relationAlias, $remainingAliases)
+                        );
+                        if (empty($data)) {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return $ret;
     }
 }
