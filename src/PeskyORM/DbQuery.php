@@ -1447,7 +1447,7 @@ class DbQuery {
      * @param array $remainingAliases
      * @return array
      */
-    protected function nestRelatedRecords(array &$data, $alias, array &$remainingAliases) {
+    protected function nestRelatedRecords(array &$data, $alias, array &$remainingAliases, $isRecursion = false) {
         $ret = [];
         $model = $this->models[ $this->aliasToTable[$alias] ];
         $relations = $model->getTableRealtaions();
@@ -1486,13 +1486,17 @@ class DbQuery {
                     } else {
                         $ret[$relationAlias] = array_merge(
                             $ret[$relationAlias],
-                            $this->nestRelatedRecords($data, $relationAlias, $remainingAliases)
+                            $this->nestRelatedRecords($data, $relationAlias, $remainingAliases, true)
                         );
                         if (empty($data)) {
                             break;
                         }
                     }
                 }
+            }
+            if (!$isRecursion && !empty($data)) {
+                // add remaining relations to root (such relations produced by manually added joins)
+                $ret = array_merge($ret, $data);
             }
         }
         return $ret;
