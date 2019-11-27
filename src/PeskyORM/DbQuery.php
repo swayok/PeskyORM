@@ -881,7 +881,7 @@ class DbQuery {
         } else {
             $this->query .= $returning;
             $statement = $this->db->query($this->query);
-            $result = $this->processRecords($statement, Db::FETCH_ALL);
+            $result = $this->processRecords($statement, Db::FETCH_ALL, false);
             if (empty($result)) {
                 return $statement->rowCount();
             } else {
@@ -1422,7 +1422,7 @@ class DbQuery {
                 }
                 $dataByAliases[$tableAlias][$column] = $value;
             } else {
-                $dataByAliases[$colAlias] = $value;
+                $dataByAliases[$this->alias][$colAlias] = $value;
             }
         }
         unset($data); //< save a bit of RAM
