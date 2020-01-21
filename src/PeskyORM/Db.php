@@ -420,7 +420,7 @@ class Db {
      */
     public function quoteValue($value, $fieldInfoOrType = \PDO::PARAM_STR) {
         if (is_object($value) && $value instanceof DbExpr) {
-            return self::replaceQuotes($value->get());
+            return $this->replaceQuotes($value->get());
         } else {
             if (is_array($value)) {
                 $value = $this->serializeArray($value);
@@ -442,6 +442,10 @@ class Db {
                             return $value ? $this->boolTrue : $this->boolFalse;
                     }
                 }
+            }
+            if ($type === \PDO::PARAM_STR) {
+                // prevent "\" at the end of a string
+                $value = preg_replace('%([\\\]+)$%', '$1$1', $value);
             }
             return $this->pdo->quote($value, $type);
         }
