@@ -58,11 +58,11 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     /**
      * @param TableInterface $table
      * @param array|RecordInterface[]|Record[] $records
-     * @param bool $isFromDb |null - true: records are from db | null - autodetect
+     * @param bool|null $isFromDb - true: records are from db | null - autodetect
      * @param bool $disableDbRecordDataValidation
      * @throws \InvalidArgumentException
      */
-    public function __construct(TableInterface $table, array $records, $isFromDb = null, $disableDbRecordDataValidation = false) {
+    public function __construct(TableInterface $table, array $records, ?bool $isFromDb = null, bool $disableDbRecordDataValidation = false) {
         $this->table = $table;
         $this->setIsDbRecordDataValidationDisabled($disableDbRecordDataValidation);
         if (count($records)) {
@@ -97,8 +97,6 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @param string $relationName
      * @param array $columnsToSelect - see \PeskyORM\Core\AbstractSelect::columns()
      * @return $this
-     * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      */
     public function injectHasManyRelationData($relationName, array $columnsToSelect = ['*']) {
@@ -149,7 +147,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     }
 
     /**
-     * @return RecordInterface
+     * @return RecordInterface|Record
      */
     protected function getDbRecordObjectForIteration() {
         if ($this->dbRecordForIteration === null) {
@@ -181,10 +179,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
         return $this;
     }
 
-    /**
-     * @return array
-     */
-    protected function getRecords() {
+    protected function getRecords(): array {
         return $this->records;
     }
 
@@ -257,7 +252,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @param bool $isDisabled
      * @return $this
      */
-    protected function setIsDbRecordDataValidationDisabled($isDisabled) {
+    protected function setIsDbRecordDataValidationDisabled(bool $isDisabled) {
         $this->isDbRecordDataValidationDisabled = (bool)$isDisabled;
         if ($this->dbRecordForIteration) {
             if ($this->isDbRecordDataValidationDisabled()) {
@@ -269,37 +264,38 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
         return $this;
     }
 
-    /**
-     * @return bool
-     */
-    public function isDbRecordDataValidationDisabled() {
+    public function isDbRecordDataValidationDisabled(): bool {
         return $this->isDbRecordDataValidationDisabled;
     }
 
     /**
      * @return bool|null - null: mixed
      */
-    public function isRecordsFromDb() {
+    public function isRecordsFromDb(): ?bool {
         return $this->isFromDb;
     }
 
-    /**
-     * @param array $data
-     * @return bool
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
-     */
-    protected function autodetectIfRecordIsFromDb(array $data) {
+    protected function autodetectIfRecordIsFromDb(array $data): bool {
         $pkName = $this->table->getTableStructure()->getPkColumnName();
         return array_key_exists($pkName, $data) && $data[$pkName] !== null;
     }
 
     /**
+     * @param null|string|\Closure $closureOrObjectsMethod
+     *  - null: returns selected records as is
+     *  - string: get record data processed by ORM Record's method name. You can provide additional args via $argumentsForMethod
+     *  - \Closure: function (RecordInterface $record) { return $record->toArray(); }
+     *  - \Closure: function (RecordInterface $record) { return \PeskyORM\ORM\KeyValuePair::create($record->id, $record->toArray()); }
+     * @param array $argumentsForMethod - pass this arguments to ORM Record's method. Not used if $argumentsForMethod is Closure
+     * @param bool $enableReadOnlyMode - true: disable all processing of Record's data during Record object creations so
+     *  it will work much faster on large sets of Records and allow using Record's methods but will disable
+     *  Record's data modification
      * @return array[]
      */
-    public function toArrays() {
-        if ($this->isRecordsContainObjects) {
+    public function toArrays($closureOrObjectsMethod = null, array $argumentsForMethod = [], bool $enableReadOnlyMode = true): array {
+        if ($closureOrObjectsMethod) {
+            return $this->getDataFromEachObject($closureOrObjectsMethod, $argumentsForMethod, $enableReadOnlyMode);
+        } else if ($this->isRecordsContainObjects) {
             /** @var array|RecordInterface $data */
             foreach ($this->records as $index => $data) {
                 if (!is_array($data)) {
@@ -312,14 +308,8 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
      * @return RecordInterface[]
-     * @throws \PDOException
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
-    public function toObjects() {
+    public function toObjects(): array {
         $count = $this->count();
         if ($count !== count($this->dbRecords)) {
             for ($i = 0; $i < $count; $i++) {
@@ -332,21 +322,17 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     /**
      * Get some specific data from each object
      * @param string|\Closure $closureOrObjectsMethod
-     *  - string: object's method name. You can provide additional args via $argumentsForMethod
+     *  - string: get record data processed by ORM Record's method name. You can provide additional args via $argumentsForMethod
      *  - \Closure: function (RecordInterface $record) { return $record->toArray(); }
      *  - \Closure: function (RecordInterface $record) { return \PeskyORM\ORM\KeyValuePair::create($record->id, $record->toArray()); }
-     * @param array $argumentsForMethod - pass this arguments to object's method. Not used if $argumentsForMethod is closure
-     * @param bool $enableReadOnlyMode - true: disable all processing of Record's data so it will work much faster on
-     *  large sets of Records and allow using Record's methods but will disable Record's data modification
+     * @param array $argumentsForMethod - pass this arguments to ORM Record's method. Not used if $argumentsForMethod is Closure
+     * @param bool $enableReadOnlyMode - true: disable all processing of Record's data during Record object creations so
+     *  it will work much faster on large sets of Records and allow using Record's methods but will disable
+     *  Record's data modification
      * @return array
      * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PDOException
-     * @throws \BadMethodCallException
      */
-    public function getDataFromEachObject($closureOrObjectsMethod, array $argumentsForMethod = [], $enableReadOnlyMode = true) {
+    public function getDataFromEachObject($closureOrObjectsMethod, array $argumentsForMethod = [], bool $enableReadOnlyMode = true): array {
         $closure = $closureOrObjectsMethod;
         if (is_string($closure)) {
             $closure = function (RecordInterface $record) use ($closureOrObjectsMethod, $argumentsForMethod) {
@@ -395,7 +381,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @param null|\Closure $filter - closure compatible with array_filter()
      * @return array
      */
-    public function getValuesForColumn($columnName, $defaultValue = null, \Closure $filter = null) {
+    public function getValuesForColumn($columnName, $defaultValue = null, \Closure $filter = null): array {
         $records = $this->toArrays();
         $ret = [];
         foreach ($records as $data) {
@@ -412,9 +398,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * Filter records and create new RecordsArray from remaining records
      * @param \Closure $filter - closure compatible with array_filter()
      * @param bool $resetOriginalRecordsArray
-     * @return $this
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PeskyORM\Exception\OrmException
+     * @return $this - new RecordsArray or RecordsSet with applied filters
      */
     public function filterRecords(\Closure $filter, $resetOriginalRecordsArray = false) {
         $newArray = new self($this->table, array_filter($this->toObjects(), $filter), $this->isFromDb);
@@ -426,13 +410,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
      * @param int $index - record's index
-     * @return RecordInterface
-     * @throws \PDOException
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
+     * @return RecordInterface|Record
      */
     protected function convertToObject($index) {
         if (empty($this->dbRecords[$index])) {
@@ -467,13 +445,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
      * Return the current element
-     * @return RecordInterface
-     * @throws \PDOException
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
+     * @return RecordInterface|Record
      */
     public function current() {
         if (!$this->offsetExists($this->iteratorPosition)) {
@@ -499,9 +471,6 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     /**
      * Checks if current position is valid
      * @return boolean - true on success or false on failure.
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
     public function valid() {
         return $this->offsetExists($this->iteratorPosition);
@@ -517,12 +486,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     /**
      * Get first record
      * @param string|null $key - null: return record; string - return value for the key from record
-     * @return array
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
+     * @return RecordInterface|Record|mixed
      * @throws \BadMethodCallException
      */
     public function first($key = null) {
@@ -536,12 +500,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     /**
      * Get last record
      * @param string|null $key - null: return record; string - return value for the key from record
-     * @return array
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
+     * @return RecordInterface|Record|mixed
      * @throws \BadMethodCallException
      */
     public function last($key = null) {
@@ -564,12 +523,6 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     /**
      * @param int $index - The offset to retrieve.
      * @return RecordInterface|Record
-     * @throws \PDOException
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
     public function offsetGet($index) {
         if ($this->isDbRecordInstanceReuseDuringIterationEnabled()) {

@@ -2,6 +2,8 @@
 
 namespace PeskyORM\ORM;
 
+use PeskyORM\Core\DbExpr;
+
 class RecordsSet extends RecordsArray {
 
     /**
@@ -31,9 +33,8 @@ class RecordsSet extends RecordsArray {
      * @param boolean|null $isFromDb - null: autodetect by primary key value existence
      * @param bool $trustDataReceivedFromDb
      * @return RecordsArray
-     * @throws \InvalidArgumentException
      */
-    static public function createFromArray(TableInterface $table, array $records, $isFromDb = null, $trustDataReceivedFromDb = false) {
+    static public function createFromArray(TableInterface $table, array $records, ?bool $isFromDb = null, bool $trustDataReceivedFromDb = false) {
         return new RecordsArray($table, $records, $isFromDb === null ? null : (bool)$isFromDb, (bool)$trustDataReceivedFromDb);
     }
 
@@ -41,9 +42,6 @@ class RecordsSet extends RecordsArray {
      * @param OrmSelect $dbSelect - it will be cloned to avoid possible problems when original object
      *      is changed outside RecordsSet + to allow optimised iteration via pagination
      * @return RecordsSet
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      */
     static public function createFromOrmSelect(OrmSelect $dbSelect) {
         return new self($dbSelect);
@@ -53,11 +51,8 @@ class RecordsSet extends RecordsArray {
      * @param OrmSelect $dbSelect - it will be cloned to avoid possible problems when original object
      *      is changed outside RecordsSet + to allow optimised iteration via pagination
      * @param bool $disableDbRecordDataValidation
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
      */
-    public function __construct(OrmSelect $dbSelect, $disableDbRecordDataValidation = false) {
+    public function __construct(OrmSelect $dbSelect, bool $disableDbRecordDataValidation = false) {
         parent::__construct($dbSelect->getTable(), [], true, $disableDbRecordDataValidation);
         $this->setOrmSelect($dbSelect);
     }
@@ -82,9 +77,6 @@ class RecordsSet extends RecordsArray {
      * For internal use only!
      * @param OrmSelect $dbSelect
      * @return $this
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      */
     protected function setOrmSelect(OrmSelect $dbSelect) {
         $this->resetRecords();
@@ -108,11 +100,8 @@ class RecordsSet extends RecordsArray {
      * @param bool $resetOriginalRecordSet - true: used only when $returnNewRecordSet is true and will reset
      *      Current RecordSet (count, records)
      * @return RecordsSet
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
-    public function appendConditions(array $conditions, $returnNewRecordSet, $resetOriginalRecordSet = false) {
+    public function appendConditions(array $conditions, bool $returnNewRecordSet, bool $resetOriginalRecordSet = false) {
         if ($returnNewRecordSet) {
             $newSelect = clone $this->select;
             $newSelect->where($conditions, true);
@@ -131,12 +120,11 @@ class RecordsSet extends RecordsArray {
     /**
      * Replace records ordering
      * Note: deletes already selected records and selects new
-     * @param string $column
+     * @param string|DbExpr $column
      * @param bool $orderAscending
      * @return $this
-     * @throws \InvalidArgumentException
      */
-    public function replaceOrdering($column, $orderAscending = true) {
+    public function replaceOrdering($column, bool $orderAscending = true) {
         $this->select->orderBy($column, $orderAscending, false);
         $this->resetRecords();
         return $this;
@@ -154,10 +142,6 @@ class RecordsSet extends RecordsArray {
 
     /**
      * @return $this
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
     public function nextPage() {
         $this->rewind();
@@ -167,10 +151,6 @@ class RecordsSet extends RecordsArray {
 
     /**
      * @return $this
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
     public function prevPage() {
         $this->rewind();
@@ -183,7 +163,7 @@ class RecordsSet extends RecordsArray {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    protected function changeBaseOffset($newBaseOffset) {
+    protected function changeBaseOffset(int $newBaseOffset) {
         if ($newBaseOffset < 0) {
             throw new \InvalidArgumentException('Negative offset is not allowed');
         }
@@ -196,11 +176,8 @@ class RecordsSet extends RecordsArray {
     /**
      * @param bool $reload
      * @return array
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
-    protected function getRecords($reload = false) {
+    protected function getRecords(bool $reload = false): array {
         if ($reload || $this->recordsCount === null) {
             $this->setRecords($this->select->fetchMany());
         }
@@ -222,22 +199,29 @@ class RecordsSet extends RecordsArray {
     }
 
     /**
+     * @param null|string|\Closure $closureOrObjectsMethod
+     *  - null: returns selected records as is
+     *  - string: get record data processed by ORM Record's method name. You can provide additional args via $argumentsForMethod
+     *  - \Closure: function (RecordInterface $record) { return $record->toArray(); }
+     *  - \Closure: function (RecordInterface $record) { return \PeskyORM\ORM\KeyValuePair::create($record->id, $record->toArray()); }
+     * @param array $argumentsForMethod - pass this arguments to ORM Record's method. Not used if $argumentsForMethod is Closure
+     * @param bool $enableReadOnlyMode - true: disable all processing of Record's data during Record object creations so
+     *  it will work much faster on large sets of Records and allow using Record's methods but will disable
+     *  Record's data modification
      * @return array[]
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
-    public function toArrays() {
-        return $this->getRecords();
+    public function toArrays($closureOrObjectsMethod = null, array $argumentsForMethod = [], bool $enableReadOnlyMode = true): array {
+        if ($closureOrObjectsMethod) {
+            return $this->getDataFromEachObject($closureOrObjectsMethod, $argumentsForMethod, $enableReadOnlyMode);
+        } else {
+            return $this->getRecords();
+        }
     }
 
     /**
      * Whether a record with specified index exists
      * @param int $index - an offset to check for.
      * @return boolean - true on success or false on failure.
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
     public function offsetExists($index) {
         return is_int($index) && $index >= 0 && $index < $this->count();
@@ -246,8 +230,6 @@ class RecordsSet extends RecordsArray {
     /**
      * @param int $index
      * @return array|null
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
      * @throws \InvalidArgumentException
      */
     protected function getRecordDataByIndex($index) {
@@ -261,9 +243,6 @@ class RecordsSet extends RecordsArray {
      * Count amount of DB records to be fetched
      * Note: not same as totalCount() - that one does not take in account LIMIT and OFFSET
      * @return int
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
     public function count() {
         if ($this->recordsCount === null) {
@@ -271,6 +250,7 @@ class RecordsSet extends RecordsArray {
                 $this->recordsCount = $this->totalCount();
             } else {
                 $recordsCountAfterOffset = $this->totalCount() - $this->select->getOffset();
+                /** @noinspection NotOptimalIfConditionsInspection */
                 if ($this->select->getLimit() === 0) {
                     $this->recordsCount = $recordsCountAfterOffset;
                 } else {
@@ -287,9 +267,6 @@ class RecordsSet extends RecordsArray {
     /**
      * Count DB records ignoring LIMIT and OFFSET options
      * @return int
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
     public function totalCount() {
         if ($this->recordsCountTotal === null) {
