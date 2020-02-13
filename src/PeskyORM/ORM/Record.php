@@ -1643,7 +1643,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 if (!is_int($index)) {
                     $columnName = $index;
                 }
-                $data[$columnAlias] = $this->getColumnValueForToArray($columnName, !$withFilesInfo, $isset);
+                if (!static::hasColumn($columnName) && count($parts = explode('.', $columnName)) > 1) {
+                    // $columnName = 'Relaion.column' or 'Relation.Subrelation.column'
+                    $data[$columnAlias] = $this->getNestedValueForToArray($parts, $loadRelatedRecordsIfNotSet, !$withFilesInfo, $isset);
+                } else {
+                    $data[$columnAlias] = $this->getColumnValueForToArray($columnName, !$withFilesInfo, $isset);
+                }
                 if (is_bool($isset) && !$isset) {
                     unset($data[$columnAlias]);
                 }
@@ -1752,6 +1757,36 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             }
         }
         return null;
+    }
+
+    /**
+     * Get nested value if it is set or null in any other cases
+     * @param array $parts - parts of nested path ('Relation.Subrelation.column' => ['Relation', 'Subrelation', 'column']
+     * @param bool $loadRelatedRecordsIfNotSet - true: read required missing related objects from DB
+     * @param bool $returnNullForFiles - false: return file information for file column | true: return null for file column
+     * @param bool|null $isset - true: value is set | false: value is not set
+     * @return mixed
+     */
+    protected function getNestedValueForToArray(array $parts, bool $loadRelatedRecordsIfNotSet, bool $returnNullForFiles = false, ?bool &$isset = null) {
+        $relationName = array_shift($parts);
+        $relatedRecord = $this->getRelatedRecord($relationName, $loadRelatedRecordsIfNotSet);
+        if ($relatedRecord instanceof self) {
+            // ignore related records without non-default data
+            if ($relatedRecord->existsInDb() || $relatedRecord->hasAnyNonDefaultValues()) {
+                if (count($parts) === 1) {
+                    return $relatedRecord->getColumnValueForToArray($parts[0], $returnNullForFiles, $isset);
+                } else {
+                    return $relatedRecord->getNestedValueForToArray($parts, $loadRelatedRecordsIfNotSet, $returnNullForFiles, $isset);
+                }
+            }
+            $isset = false;
+            return null;
+        } else {
+            // record set - not supported
+            throw new \InvalidArgumentException(
+                'Has many relations are not supported. Trying to resolve: ' . $relationName . '.' . implode('.', $parts)
+            );
+        }
     }
 
     /**
