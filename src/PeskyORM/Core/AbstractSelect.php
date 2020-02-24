@@ -363,7 +363,7 @@ abstract class AbstractSelect {
         $fromTableAndOthers = $this->buildQueryPartsAfterSelectColumns($ignoreLeftJoins, false, $ignoreLimitAndOffset);
         $this->validateIfThereAreEnoughJoins();
         $this->notDirty();
-        return "{$with}SELECT $expression FROM {$fromTableAndOthers}";
+        return "{$with}SELECT $expression {$fromTableAndOthers}";
     }
 
     /**
