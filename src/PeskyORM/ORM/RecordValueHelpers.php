@@ -13,22 +13,23 @@ abstract class RecordValueHelpers {
      * @param Column $column
      * @param mixed $value
      * @param bool $isFromDb
+     * @param bool $isForCondition
      * @param array $errorMessages
      * @return array
      */
-    static public function isValidDbColumnValue(Column $column, $value, $isFromDb, array $errorMessages = []) {
+    static public function isValidDbColumnValue(Column $column, $value, $isFromDb, $isForCondition, array $errorMessages = []) {
         if ($value instanceof DbExpr) {
             return [];
         }
         $value = static::preprocessColumnValue($column, $value, $isFromDb);
         // null value?
         if ($value === null) {
-            return $column->isValueCanBeNull()
+            return $column->isValueCanBeNull() || $isForCondition
                 ? []
                 : [static::getErrorMessage($errorMessages, $column::VALUE_CANNOT_BE_NULL)];
         }
         // data type validation
-        $errors = static::isValueFitsDataType($value, $column->getType(), $errorMessages);
+        $errors = static::isValueFitsDataType($value, $column->getType(), $isForCondition, $errorMessages);
         if (!empty($errors)) {
             return $errors;
         }
@@ -51,10 +52,11 @@ abstract class RecordValueHelpers {
      * Test if $value fits data type ($type)
      * @param mixed $value
      * @param string $type - one of Column::TYPE_*
+     * @param bool $isForCondition - true: validate less strictly | false: validate strictly
      * @param array $errorMessages
      * @return array
      */
-    static public function isValueFitsDataType($value, $type, array $errorMessages = []) {
+    static public function isValueFitsDataType($value, $type, $isForCondition, array $errorMessages = []) {
         switch ($type) {
             case Column::TYPE_BOOL:
                 if (!ValidateValue::isBoolean($value)) {
@@ -110,7 +112,9 @@ abstract class RecordValueHelpers {
             case Column::TYPE_JSON:
             case Column::TYPE_JSONB:
                 if (!ValidateValue::isJson($value)) {
-                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_JSON)];
+                    return $isForCondition && is_string($value)
+                        ? []
+                        : [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_JSON)];
                 }
                 break;
             case Column::TYPE_FILE:
@@ -348,7 +352,7 @@ abstract class RecordValueHelpers {
                 case 'unix_ts':
                     return strtotime($value);
                 default:
-                    throw new \InvalidArgumentException("Requested value format '$format' is not implemented"); 
+                    throw new \InvalidArgumentException("Requested value format '$format' is not implemented");
             }
         }, true);
     }

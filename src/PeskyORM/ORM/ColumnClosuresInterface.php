@@ -45,10 +45,11 @@ interface ColumnClosuresInterface {
      * Validates value. Uses valueValidatorExtender
      * @param RecordValue|mixed $value
      * @param bool $isFromDb
+     * @param bool $isForCondition
      * @param Column $column
      * @return array
      */
-    static public function valueValidator($value, $isFromDb, Column $column);
+    static public function valueValidator($value, $isFromDb, $isForCondition, Column $column);
 
     /**
      * Extends value validation in addition to valueValidator

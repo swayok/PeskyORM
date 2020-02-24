@@ -1384,7 +1384,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         if (!is_string($column)) {
             $column = static::getColumn($column);
         }
-        return $column->validateValue($value, $isFromDb);
+        return $column->validateValue($value, $isFromDb, false);
     }
 
     /**
@@ -1408,7 +1408,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             } else {
                 $value = null;
             }
-            $columnErrors = $column->validateValue($value, false);
+            $columnErrors = $column->validateValue($value, false, false);
             if (!empty($columnErrors)) {
                 $errors[$columnName] = $columnErrors;
             }

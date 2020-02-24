@@ -353,9 +353,9 @@ class Column {
                     $class = $valueContainer->getColumn()->getClosuresClass();
                     return $class::valueSetter($newValue, $isFromDb, $valueContainer, $trustDataReceivedFromDb);
                 },
-                'valueValidator' => function ($value, $isFromDb, Column $column) {
+                'valueValidator' => function ($value, $isFromDb, $isForCondition, Column $column) {
                     $class = $column->getClosuresClass();
-                    return $class::valueValidator($value, $isFromDb, $column);
+                    return $class::valueValidator($value, $isFromDb, $isForCondition, $column);
                 },
                 'valueIsAllowedValidator' => function ($value, $isFromDb, Column $column) {
                     $class = $column->getClosuresClass();
@@ -662,7 +662,7 @@ class Column {
             if ($defaultValue instanceof \Closure) {
                 $defaultValue = $defaultValue();
             }
-            $errors = $this->validateValue($defaultValue, false);
+            $errors = $this->validateValue($defaultValue, false, false);
             if (!($defaultValue instanceof DbExpr) && count($errors) > 0) {
                 throw new \UnexpectedValueException(
                     "{$excPrefix} for column '{$this->getName()}' is not valid. Errors: " . implode(', ', $errors)
@@ -1066,7 +1066,7 @@ class Column {
     }
 
     /**
-     * @param \Closure $validator = function ($value, $isFromDb, Column $column) { return ['validation error 1', ...]; }
+     * @param \Closure $validator = function ($value, $isFromDb, $isForCondition, Column $column) { return ['validation error 1', ...]; }
      * Notes:
      * - value is mixed or a RecordValue instance. If value is mixed - it should be preprocessed
      * - defalut validator uses $this->getValueIsAllowedValidator() and  $this->getValueValidatorExtender(). Make sure
@@ -1134,11 +1134,12 @@ class Column {
      *  - true: value is normalzed (trim, strolower, etc)
      *  - false: value is not normalzed (trim, strolower, etc)
      *  - null: value is normalized if $isFromDb === true
+     * @param bool $isForCondition - true: value is for condition (less strict) | false: value is for column
      * @return array
      * @throws \UnexpectedValueException
      */
-    public function validateValue($value, $isFromDb = false) {
-        $errors = call_user_func($this->getValueValidator(), $value, $isFromDb, $this);
+    public function validateValue($value, $isFromDb = false, $isForCondition = false) {
+        $errors = call_user_func($this->getValueValidator(), $value, $isFromDb, $isForCondition, $this);
         if (!is_array($errors)) {
             throw new \UnexpectedValueException('Validator closure must return an array');
         }

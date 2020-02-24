@@ -11,8 +11,6 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
      * @param bool $trustDataReceivedFromDb
      * @return RecordValue
      * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
      */
     static public function valueSetter($newValue, $isFromDb, RecordValue $valueContainer, $trustDataReceivedFromDb) {
         $column = $valueContainer->getColumn();
@@ -44,7 +42,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
                 }
             } else {
                 $valueContainer->setRawValue($newValue, $preprocessedValue, $isFromDb);
-                $errors = $column->validateValue($valueContainer->getValue(), $isFromDb);
+                $errors = $column->validateValue($valueContainer->getValue(), $isFromDb, false);
                 if (count($errors) > 0) {
                     $valueContainer->setValidationErrors($errors);
                 } else {
@@ -87,10 +85,6 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
      * @param RecordValue $value
      * @param null|string $format
      * @return mixed
-     * @throws \PDOException
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      */
     static public function valueGetter(RecordValue $value, $format = null) {
         if ($format !== null) {
@@ -109,10 +103,6 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
      * @param RecordValue $valueContainer
      * @param bool $checkDefaultValue
      * @return bool
-     * @throws \PDOException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
      */
     static public function valueExistenceChecker(RecordValue $valueContainer, $checkDefaultValue = false) {
         return $checkDefaultValue ? $valueContainer->hasValueOrDefault() : $valueContainer->hasValue();
@@ -121,18 +111,17 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
     /**
      * @param mixed $value
      * @param bool $isFromDb
+     * @param bool $isForCondition
      * @param Column $column
      * @return array
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
      */
-    static public function valueValidator($value, $isFromDb, Column $column) {
+    static public function valueValidator($value, $isFromDb, $isForCondition, Column $column) {
         $errors = RecordValueHelpers::isValidDbColumnValue(
             $column,
             $value,
             $isFromDb,
+            $isForCondition,
             $column::getValidationErrorsMessages()
         );
         if (count($errors) > 0) {
@@ -156,8 +145,6 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
      * @param bool $isFromDb
      * @param Column $column
      * @return array
-     * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
      */
     static public function valueIsAllowedValidator($value, $isFromDb, Column $column) {
         return RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn(
@@ -214,7 +201,6 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
      * @param RecordValue $valueContainer
      * @param string $format
      * @return mixed
-     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      */
     static public function valueFormatter(RecordValue $valueContainer, $format) {
@@ -226,7 +212,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
                     . ' Supported formats: ' . (count($formats) ? implode(', ', $formats) : 'none')
             );
         }
-        return call_user_func($formatter, $valueContainer, $format);
+        return $formatter($valueContainer, $format);
     }
 
     /**
