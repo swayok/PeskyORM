@@ -136,7 +136,7 @@ abstract class TableStructure implements TableStructureInterface {
     }
 
     /**
-     * @return string
+     * @return string|null
      */
     static public function getSchema() {
         return null;

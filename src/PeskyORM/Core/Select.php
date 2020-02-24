@@ -12,7 +12,7 @@ class Select extends AbstractSelect {
      */
     protected $tableName;
     /**
-     * @var string
+     * @var string|null
      */
     protected $dbSchema;
     /**
@@ -30,7 +30,7 @@ class Select extends AbstractSelect {
      * @return static
      * @throws \InvalidArgumentException
      */
-    static public function from($tableName, DbAdapterInterface $connection) {
+    static public function from(string $tableName, DbAdapterInterface $connection) {
         return new static($tableName, $connection);
     }
 
@@ -39,7 +39,7 @@ class Select extends AbstractSelect {
      * @param DbAdapterInterface $connection
      * @throws \InvalidArgumentException
      */
-    public function __construct($tableName, DbAdapterInterface $connection) {
+    public function __construct(string $tableName, DbAdapterInterface $connection) {
         if (!is_string($tableName) || empty($tableName)) {
             throw new \InvalidArgumentException('$tableName argument must be a not-empty string');
         }
@@ -53,7 +53,7 @@ class Select extends AbstractSelect {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setTableSchemaName($schema) {
+    public function setTableSchemaName(string $schema) {
         if (!is_string($schema) || empty($schema)) {
             throw new \InvalidArgumentException('$schema argument must be a not-empty string');
         }
@@ -61,31 +61,19 @@ class Select extends AbstractSelect {
         return $this;
     }
 
-    /**
-     * @return string
-     */
-    public function getTableSchemaName() {
+    public function getTableSchemaName(): ?string {
         return $this->dbSchema;
     }
 
-    /**
-     * @return string
-     */
-    public function getTableName() {
+    public function getTableName(): string {
         return $this->tableName;
     }
 
-    /**
-     * @return string
-     */
-    public function getTableAlias() {
+    public function getTableAlias(): string {
         return $this->tableAlias;
     }
 
-    /**
-     * @return DbAdapterInterface
-     */
-    public function getConnection() {
+    public function getConnection(): DbAdapterInterface {
         return $this->connection;
     }
 
@@ -95,7 +83,7 @@ class Select extends AbstractSelect {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function join(JoinInfo $joinInfo, $append = true) {
+    public function join(JoinInfo $joinInfo, bool $append = true) {
         $this->_join($joinInfo, $append);
         return $this;
     }

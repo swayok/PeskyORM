@@ -38,10 +38,6 @@ class OrmSelect extends AbstractSelect {
     /**
      * @param TableInterface $table
      * @return static
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
     static public function from(TableInterface $table) {
         return new static($table);
@@ -49,68 +45,40 @@ class OrmSelect extends AbstractSelect {
 
     /**
      * @param TableInterface $table - table name or Table object
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \UnexpectedValueException
      */
     public function __construct(TableInterface $table) {
         $this->table = $table;
         $this->tableStructure = $table::getStructure();
     }
 
-    /**
-     * @return string
-     */
-    public function getTableName() {
+    public function getTableName(): string {
         return $this->getTableStructure()->getTableName();
     }
 
-    /**
-     * @return string
-     */
-    public function getTableAlias() {
+    public function getTableAlias(): string {
         return $this->getTable()->getAlias();
     }
 
-    /**
-     * @return string
-     */
-    public function getTableSchemaName() {
+    public function getTableSchemaName(): ?string {
         return $this->getTableStructure()->getSchema();
     }
 
-    /**
-     * @return DbAdapterInterface
-     */
-    public function getConnection() {
+    public function getConnection(): DbAdapterInterface {
         return $this->getTable()->getConnection(false);
     }
 
-    /**
-     * @return TableInterface
-     */
-    public function getTable() {
+    public function getTable(): TableInterface {
         return $this->table;
     }
 
-    /**
-     * @return TableStructure
-     */
-    public function getTableStructure() {
+    public function getTableStructure(): TableStructure {
         return $this->tableStructure;
     }
 
     /**
-     * @return Record
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
+     * @return Record|RecordInterface
      */
-    public function fetchOneAsDbRecord() {
+    public function fetchOneAsDbRecord(): RecordInterface {
         return $this->table->newRecord()->fromDbData($this->fetchOne());
     }
 
@@ -120,14 +88,14 @@ class OrmSelect extends AbstractSelect {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function join(OrmJoinInfo $joinInfo, $append = true) {
+    public function join(OrmJoinInfo $joinInfo, bool $append = true) {
         $this->_join($joinInfo, $append);
         return $this;
     }
 
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
 
-    protected function normalizeJoinDataForRecord(AbstractJoinInfo $joinInfo, array $data) {
+    protected function normalizeJoinDataForRecord(AbstractJoinInfo $joinInfo, array $data): array {
         $data = parent::normalizeJoinDataForRecord($joinInfo, $data);
         if ($joinInfo instanceof OrmJoinInfo) {
             $pkName = $joinInfo->getForeignDbTable()->getPkColumnName();
@@ -179,7 +147,7 @@ class OrmSelect extends AbstractSelect {
         return $this;
     }
 
-    protected function normalizeWildcardColumn($joinName = null, ?array $excludeColumns = null) {
+    protected function normalizeWildcardColumn(?string $joinName = null, ?array $excludeColumns = null): array {
         if ($joinName === null) {
             $tableStructure = $this->getTableStructure();
         } else {
@@ -197,7 +165,12 @@ class OrmSelect extends AbstractSelect {
         return $normalizedColumns;
     }
 
-    protected function resolveColumnsToBeSelectedForJoin($joinName, $columns, $parentJoinName = null, $appendColumnsToExisting = false) {
+    protected function resolveColumnsToBeSelectedForJoin(
+        string $joinName,
+        $columns,
+        ?string $parentJoinName = null,
+        bool $appendColumnsToExisting = false
+    ) {
         if (is_array($columns) && !empty($columns)) {
             $filteredColumns = [];
             /** @var array $columns */
@@ -221,7 +194,7 @@ class OrmSelect extends AbstractSelect {
             list(, $relationName, $joinName) = $matches;
         }
         $this->joinNameToRelationName[$joinName] = $relationName;
-        if ($appendColumnsToExisting && array_key_exists($joinName, $this->columnsToSelectFromJoinedRelations)) {
+        if ($appendColumnsToExisting && isset($this->columnsToSelectFromJoinedRelations[$joinName])) {
             $this->columnsToSelectFromJoinedRelations[$joinName] = array_merge(
                 $this->columnsToSelectFromJoinedRelations[$joinName],
                 $filteredColumns
@@ -235,15 +208,12 @@ class OrmSelect extends AbstractSelect {
     /**
      * @param string $joinName
      * @return OrmJoinInfo
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      */
-    protected function getJoin($joinName) {
+    protected function getJoin(string $joinName) {
         if (
             !$this->hasJoin($joinName, true)
             && (
-                array_key_exists($joinName, $this->joinedRelationsParents)
+                array_key_exists($joinName, $this->joinedRelationsParents) //< array_key_exists is correct
                 || $this->getTableStructure()->hasRelation($joinName)
             )
         ) {
@@ -256,14 +226,12 @@ class OrmSelect extends AbstractSelect {
      * Load relation and all its parents
      * @param string $joinName
      * @return $this
-     * @throws \BadMethodCallException
      * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
      */
-    protected function addJoinFromRelation($joinName) {
+    protected function addJoinFromRelation(string $joinName) {
         if (!$this->hasJoin($joinName, false)) {
             if (
-                !array_key_exists($joinName, $this->joinedRelationsParents)
+                !array_key_exists($joinName, $this->joinedRelationsParents) //< array_key_exists is correct
                 && $this->getTableStructure()->hasRelation($joinName)
             ) {
                 // this may happen only when relation is used in WHERE or HAVING
@@ -271,7 +239,7 @@ class OrmSelect extends AbstractSelect {
                 $this->joinNameToRelationName[$joinName] = $joinName;
                 $this->columnsToSelectFromJoinedRelations[$joinName] = [];
             }
-            $relationName = $this->getRelationByJoinName($joinName);
+            $relationName = $this->getRelationNameByJoinName($joinName);
             $parentJoinName = $this->joinedRelationsParents[$joinName];
             if ($parentJoinName === null) {
                 // join on base table
@@ -309,14 +277,11 @@ class OrmSelect extends AbstractSelect {
     /**
      * @param array $conditions
      * @param string $subject
-     * @param null $joinName - string: used when assembling conditions for join
+     * @param null|string $joinName - string: used when assembling conditions for join
      * @return string
-     * @throws \PDOException
      * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
-    protected function makeConditions(array $conditions, $subject = 'WHERE', $joinName = null) {
+    protected function makeConditions(array $conditions, string $subject = 'WHERE', ?string $joinName = null): string {
         $assembled = Utils::assembleWhereConditionsFromArray(
             $this->getConnection(),
             $conditions,
@@ -364,18 +329,23 @@ class OrmSelect extends AbstractSelect {
         return empty($assembled) ? '' : " {$subject} {$assembled}";
     }
 
-    protected function makeColumnNameWithAliasForQuery(array $columnInfo, $itIsWithQuery = false) {
+    protected function makeColumnNameWithAliasForQuery(array $columnInfo, bool $itIsWithQuery = false): string {
         $this->validateColumnInfo($columnInfo, 'SELECT');
         return parent::makeColumnNameWithAliasForQuery($columnInfo, $itIsWithQuery);
     }
 
-    protected function makeColumnNameForCondition(array $columnInfo, $subject = 'WHERE') {
+    protected function makeColumnNameForCondition(array $columnInfo, string $subject = 'WHERE'): string {
         $this->validateColumnInfo($columnInfo, $subject);
         return parent::makeColumnNameForCondition($columnInfo);
     }
 
-    protected function getRelationByJoinName($joinName) {
-        if (!array_key_exists($joinName, $this->joinNameToRelationName)) {
+    /**
+     * @param string $joinName
+     * @return string
+     * @throws \InvalidArgumentException
+     */
+    protected function getRelationNameByJoinName(string $joinName): string {
+        if (!isset($joinName, $this->joinNameToRelationName)) {
             throw new \InvalidArgumentException("There is no known relation for join named '{$joinName}'");
         }
         return $this->joinNameToRelationName[$joinName];
@@ -385,10 +355,8 @@ class OrmSelect extends AbstractSelect {
      * @param array $columnInfo
      * @param string $subject - used in exceptions, can be 'SELECT', 'ORDER BY', 'GROUP BY', 'WHERE' or 'HAVING'
      * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      */
-    protected function validateColumnInfo(array $columnInfo, $subject) {
+    protected function validateColumnInfo(array $columnInfo, string $subject) {
         if ($columnInfo['name'] instanceof DbExpr) {
             if (
                 $columnInfo['name']->isValidationAllowed()
