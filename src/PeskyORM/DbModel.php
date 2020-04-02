@@ -727,7 +727,8 @@ abstract class DbModel {
      */
     public function selectColumn($column, $conditionsAndOptions = null) {
         return $this->builder()
-            ->fromOptions($this->prepareSelect(['value' => $column], $conditionsAndOptions))
+            ->fromOptions($this->prepareSelect([], $conditionsAndOptions))
+            ->singleField($column)
             ->find(Db::FETCH_COLUMN);
     }
 
