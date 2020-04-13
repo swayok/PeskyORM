@@ -1307,11 +1307,11 @@ class DbObject {
             if ($relations === null) {
                 $relations = array();
                 foreach ($this->_relatedObjects as $alias => $object) {
-                    if (!empty($object)) {
+                    if ($object !== false) {
                         if (
                             is_array($object)
                             || (
-                                $object instanceof DbObject
+                                $object instanceof self
                                 && $object->exists()
                             )
                         ) {
