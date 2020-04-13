@@ -95,17 +95,6 @@ abstract class DbModel {
     }
 
     /**
-     * @param $relationAlias
-     * @return array
-     */
-    public function getAdditionalConditionsForRelation($relationAlias) {
-        if (!empty($this->relationsConditions[$relationAlias])) {
-            return $this->relationsConditions[$relationAlias];
-        }
-        return [];
-    }
-
-    /**
      * @return string
      */
     public function getNamespace() {
@@ -626,7 +615,7 @@ abstract class DbModel {
                         throw new DbModelException($this, "Queries with one-to-many joins are not allowed via 'CONTAIN' key");
                     } else {
                         $model = $this->getRelatedModel($alias);
-                        $additionalConditions = $relationConfig->getAdditionalJoinConditions();
+                        $additionalConditions = $relationConfig->getAdditionalJoinConditions(false);
                         $joinType = $relationConfig->getJoinType();
                         if (is_array($fields)) {
                             if (isset($fields['TYPE'])) {

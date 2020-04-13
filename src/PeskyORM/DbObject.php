@@ -37,16 +37,6 @@ class DbObject {
      * @var string[]
      */
     protected $_relationAliasToClassName = array();
-    /**
-     * associative list that maps related object alias to relation join conditions
-     * @var array
-     */
-    protected $_aliasToJoinConditions = array();
-    /**
-     * associative list that maps related object alias to relation select conditions with data inserts
-     * @var array
-     */
-    protected $_aliasToSelectConditions = array();
 
     /**
      * associative list that maps related object aliases to their DbObject (has one / belongs to) or array of DbObject (has many)
@@ -166,7 +156,7 @@ class DbObject {
         // initiate related objects
         /** @var DbRelationConfig $settings */
         foreach ($this->_model->getTableRealtaions() as $alias => $settings) {
-            [$this->_aliasToJoinConditions[$alias], $this->_aliasToSelectConditions[$alias]] = $this->_buildRelationConditions($alias, $settings);
+            /** @noinspection StaticInvocationViaThisInspection */
             $this->_relationAliasToClassName[$alias] = $this->_model->getFullDbObjectClass($settings->getForeignTable());
         }
         $this->_cleanRelatedObjects();
@@ -405,43 +395,16 @@ class DbObject {
     }
 
     /**
-     * Build conditions similar to JOIN ON conditions
      * @param string $relationAlias
-     * @param DbRelationConfig $relationSettings
      * @return array
      */
-    protected function _buildRelationConditions($relationAlias, DbRelationConfig $relationSettings) {
-        $joinConditions = $selectConditions = $this->_getModel()->getAdditionalConditionsForRelation($relationAlias);
-        $joinConditions[$relationAlias . '.' . $relationSettings->getForeignColumn()] = $this->_getModelAlias() . '.' . $relationSettings->getColumn();
-        $selectConditions[$relationAlias . '.' . $relationSettings->getForeignColumn()] = ':' . $relationSettings->getColumn();
-        return array($joinConditions, $selectConditions);
-    }
-
-    /**
-     * Insert values into conditions instead of "$this->alias"."field_name" and "field_name"
-     * @param $conditions
-     * @return array
-     */
-    protected function _insertDataIntoRelationConditions($relationAlias) {
-        $dbObject = $this;
-        $replacer = function ($matches) use ($dbObject) {
-            if ($dbObject->_hasField($matches[1])) {
-                return $dbObject->{$matches[1]};
-            } else {
-                return $matches[0];
-            }
-        };
-        $conditions = $this->_aliasToSelectConditions[$relationAlias];
-        $newConditions = array();
-        $fields = array_keys($this->_fields);
-        foreach ($conditions as $key => $value) {
-            foreach ($fields as $name) {
-                $key = preg_replace_callback("%:({$name})%is", $replacer, $key);
-                $value = preg_replace_callback("%:({$name})%is", $replacer, $value);
-            }
-            $newConditions[$key] = $value;
-        }
-        return $newConditions;
+    protected function _getRelationConditions(string $relationAlias) {
+        $relationConfig = $this->_getModel()->getTableRealtaion($relationAlias);
+        $conditions = [
+            $relationAlias . '.' . $relationConfig->getForeignColumn() => $this->_getFieldValue($relationConfig->getColumn())
+        ];
+        $joinConditions = $relationConfig->getAdditionalJoinConditions(true, $this);
+        return array_merge($conditions, $joinConditions);
     }
 
     /**
@@ -1434,7 +1397,7 @@ class DbObject {
             }
         } else {
             // load object[s]
-            $conditions = $this->_insertDataIntoRelationConditions($relationAlias);
+            $conditions = $this->_getRelationConditions($relationAlias);
             if ($relationType === DbRelationConfig::HAS_MANY) {
                 $model = $this->_getModel()->getRelatedModel($relationAlias);
                 // change model alias for some time
