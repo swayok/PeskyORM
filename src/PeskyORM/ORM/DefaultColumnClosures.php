@@ -127,13 +127,13 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
         if (count($errors) > 0) {
             return $errors;
         }
-        $errors = call_user_func($column->getValueIsAllowedValidator(), $value, $isFromDb, $column);
+        $errors = call_user_func($column->getValueIsAllowedValidator(), $value, $isFromDb, $isForCondition, $column);
         if (!is_array($errors)) {
             throw new \UnexpectedValueException('Allowed value validator closure must return an array');
         } else if (count($errors) > 0) {
             return $errors;
         }
-        $errors = call_user_func($column->getValueValidatorExtender(), $value, $isFromDb, $column);
+        $errors = call_user_func($column->getValueValidatorExtender(), $value, $isFromDb, $isForCondition, $column);
         if (!is_array($errors)) {
             throw new \UnexpectedValueException('Value validator extender closure must return an array');
         }
@@ -205,7 +205,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
      */
     static public function valueFormatter(RecordValue $valueContainer, $format) {
         $column = $valueContainer->getColumn();
-        list ($formatter, $formats) = RecordValueHelpers::getValueFormatterAndFormatsByType($column->getType());
+        [$formatter, $formats] = RecordValueHelpers::getValueFormatterAndFormatsByType($column->getType());
         if (!in_array($format, $formats, true)) {
             throw new \InvalidArgumentException(
                 "Value format '{$format}' is not supported for column '{$column->getName()}'."
@@ -220,7 +220,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
      * @return array
      */
     static public function getValueFormats(Column $column) {
-        list (, $formats) = RecordValueHelpers::getValueFormatterAndFormatsByType($column->getType());
+        [, $formats] = RecordValueHelpers::getValueFormatterAndFormatsByType($column->getType());
         return $formats;
     }
 }
