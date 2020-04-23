@@ -252,12 +252,20 @@ class Relation {
     /**
      * @param TableInterface $localTable
      * @param null|string $localTableAlias
+     * @param bool $forStandaloneSelect
+     * @param Record|null $localRecord
      * @return array
-     * @throws \UnexpectedValueException
      */
-    public function getAdditionalJoinConditions(TableInterface $localTable, $localTableAlias = null) {
+    public function getAdditionalJoinConditions(TableInterface $localTable, ?string $localTableAlias, bool $forStandaloneSelect, ?Record $localRecord = null): array {
         if ($this->additionalJoinConditions instanceof \Closure) {
-            $conditions = call_user_func($this->additionalJoinConditions, $this, $localTable, $localTableAlias);
+            $conditions = call_user_func(
+                $this->additionalJoinConditions,
+                $this,
+                $localTable,
+                $localTableAlias,
+                $forStandaloneSelect,
+                $localRecord
+            );
             if (!is_array($conditions)) {
                 throw new \UnexpectedValueException(
                     'Relation->additionalJoinConditions closure must return array. '
@@ -272,7 +280,7 @@ class Relation {
 
     /**
      * @param array|\Closure $additionalJoinConditions
-     *      - \Closure: function (Relation $relation, TableInterface $localTable, $localTableAlias = null) { return []; }
+     *      - \Closure: function (Relation $relation, TableInterface $localTable, ?string $localTableAlias, bool $forStandaloneSelect, ?Record $localRecord = null) { return []; }
      * @return $this
      * @throws \InvalidArgumentException
      */
@@ -343,7 +351,7 @@ class Relation {
             ->setConfigForLocalTable($localTable, $this->getLocalColumnName())
             ->setConfigForForeignTable($this->getForeignTable(), $this->getForeignColumnName())
             ->setJoinType($this->getJoinType())
-            ->setAdditionalJoinConditions($this->getAdditionalJoinConditions($localTable, $localTableAlias))
+            ->setAdditionalJoinConditions($this->getAdditionalJoinConditions($localTable, $localTableAlias, false))
             ->setTableAlias($localTableAlias ?: $localTable::getAlias());
     }
 
