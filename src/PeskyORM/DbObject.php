@@ -7,8 +7,6 @@ use PeskyORM\DbObjectField\ImageField;
 use PeskyORM\DbObjectField\JsonField;
 use PeskyORM\DbObjectField\PasswordField;
 use PeskyORM\DbObjectField\TimestampField;
-use PeskyORM\Exception\DbObjectException;
-use PeskyORM\Exception\DbObjectValidationException;
 use Swayok\Utils\Folder;
 use Swayok\Utils\StringUtils;
 
@@ -403,7 +401,7 @@ class DbObject {
         $conditions = [
             $relationAlias . '.' . $relationConfig->getForeignColumn() => $this->_getFieldValue($relationConfig->getColumn())
         ];
-        $joinConditions = $relationConfig->getAdditionalJoinConditions(true, $this);
+        $joinConditions = $relationConfig->getAdditionalJoinConditions($this->_getModel(), null, true, $this);
         return array_merge($conditions, $joinConditions);
     }
 

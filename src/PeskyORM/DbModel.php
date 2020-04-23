@@ -66,7 +66,7 @@ abstract class DbModel extends Table {
      * @return string
      */
     public function getTableName() {
-        return $this->getTableConfig()->getName();
+        return static::getName();
     }
 
     /**
@@ -485,7 +485,7 @@ abstract class DbModel extends Table {
                     throw new \UnexpectedValueException("Queries with one-to-many joins are not allowed via 'CONTAIN' key");
                 } else {
                     $model = $this->getRelatedModel($alias);
-                    $additionalConditions = $relationConfig->getAdditionalJoinConditions(false);
+                    $additionalConditions = $relationConfig->getAdditionalJoinConditions($this, $aliasForSubContains, false);
                     $joinType = $relationConfig->getJoinType();
                     if (is_array($fields)) {
                         if (isset($fields['TYPE'])) {
