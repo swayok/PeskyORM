@@ -33,20 +33,20 @@ abstract class DbModel extends Table {
      */
     protected $configClass = null;
     protected $configsNamespace;
-    /**
-     * @var array - additional conditions for relations to be used in JOINs = ['RelationAlias' => [condition1, condition2]]
-     */
-    public $relationsConditions = [];
 
     static protected $tablesConfigsDirName = 'TableConfig';
+    static protected $tableConfigClassSuffix = 'TableConfig';
+    static protected $objectsClassesDirName = 'Object';
     static protected $modelClassSuffix = 'Model';
 
     static public function getModelClassSuffix() {
+        /** @var self $calledClass */
         $calledClass = get_called_class();
         return $calledClass::$modelClassSuffix;
     }
 
     static public function getTableConfigClassSuffix() {
+        /** @var self $calledClass */
         $calledClass = get_called_class();
         return $calledClass::$tableConfigClassSuffix;
     }
@@ -77,6 +77,10 @@ abstract class DbModel extends Table {
     }
     
     public static function getStructure() {
+        return static::getInstance()->getTableConfig();
+    }
+    
+    public function getTableStructure() {
         return static::getInstance()->getTableConfig();
     }
     
@@ -349,6 +353,7 @@ abstract class DbModel extends Table {
     }
 
     static public function getObjectsNamespace() {
+        /** @var self $calledClass */
         $calledClass = get_called_class();
         return preg_replace(
             '%[a-zA-Z0-9_]+\\\$%',
@@ -380,8 +385,9 @@ abstract class DbModel extends Table {
     }
 
     static public function getTableConfigNameByObjectName($objectName) {
+        /** @var DbModel $calledClass */
         $calledClass = get_called_class();
-        return $objectName . $calledClass::$tableConfigClassSuffix;
+        return $objectName . $calledClass::getTableConfigClassSuffix();
     }
 
     static public function getTableConfigNameByTableName($tableName) {
