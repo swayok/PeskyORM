@@ -394,7 +394,7 @@ abstract class DbModel extends Table {
 
     /**
      * @param $objectClass
-     * @return string
+     * @return DbModel
      */
     static public function getModelByObjectClass($objectClass) {
         return call_user_func([get_called_class(), 'getModel'], preg_replace('%^.*\\\%', '', $objectClass));
@@ -485,7 +485,6 @@ abstract class DbModel extends Table {
                     throw new \UnexpectedValueException("Queries with one-to-many joins are not allowed via 'CONTAIN' key");
                 } else {
                     $model = $this->getRelatedModel($alias);
-                    $additionalConditions = $relationConfig->getAdditionalJoinConditions($this, $aliasForSubContains, false);
                     $joinType = $relationConfig->getJoinType();
                     if (is_array($fields)) {
                         if (isset($fields['TYPE'])) {
@@ -493,7 +492,7 @@ abstract class DbModel extends Table {
                         }
                         unset($fields['TYPE']);
                         if (isset($fields['CONDITIONS'])) {
-                            $additionalConditions = array_replace_recursive($additionalConditions, $fields['CONDITIONS']);
+                            throw new \UnexpectedValueException('CONDITIONS key is not supported in CONTAIN');
                         }
                         unset($fields['CONDITIONS']);
                         if (!empty($fields['CONTAIN'])) {
@@ -505,13 +504,7 @@ abstract class DbModel extends Table {
                         }
                     }
 
-                    $where['JOIN'][$alias] = DbJoinConfig::create($alias)
-                        ->setConfigForLocalTable($this, $relationConfig->getColumn(), $aliasForSubContains)
-                        ->setJoinType($joinType)
-                        ->setConfigForForeignTable($model, $relationConfig->getForeignColumn())
-                        ->setAdditionalJoinConditions($additionalConditions)
-                        ->setForeignColumnsToSelect($fields)
-                        ->getConfigsForDbQuery();
+                    $where['JOIN'][$alias] = $relationConfig->toOrmJoinConfig($this, $aliasForSubContains, $alias);
 
                     if (!empty($subContains)) {
                         $subJoins = $model->resolveContains(['CONTAIN' => $subContains], $alias);
