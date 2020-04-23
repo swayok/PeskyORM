@@ -1086,7 +1086,7 @@ class Column {
     }
 
     /**
-     * @param \Closure $validator = function ($value, $isFromDb, Column $column) { return ['validation error 1', ...]; }
+     * @param \Closure $validator = function ($value, $isFromDb, $isForCondition, Column $column) { return ['validation error 1', ...]; }
      * Notes:
      * - If you do not use not default value validator - you'll need to call this one manually
      * @return $this
@@ -1106,7 +1106,7 @@ class Column {
 
     /**
      * Additional validation called after
-     * @param \Closure $extender - function ($value, $isFromDb, Column $column) { return ['validation error 1', ...]; }
+     * @param \Closure $extender - function ($value, $isFromDb, $isForCondition, Column $column) { return ['validation error 1', ...]; }
      * Notes:
      * - Value has mixed type, not a RecordValue instance;
      * - If there is no errors - return empty array
