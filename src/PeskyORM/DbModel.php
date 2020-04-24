@@ -3,7 +3,6 @@
 namespace PeskyORM;
 use http\Exception\UnexpectedValueException;
 use PeskyORM\ORM\Column;
-use PeskyORM\ORM\OrmSelect;
 use PeskyORM\ORM\Relation;
 use PeskyORM\ORM\Table;
 use Swayok\Utils\StringUtils;
@@ -450,11 +449,12 @@ abstract class DbModel extends Table {
 
     /**
      * Build valid 'JOIN' settings from 'CONTAIN' table aliases
+     * @param array $columnsToSelect
      * @param array $conditionsAndOptions
      * @param string|null $aliasForSubContains
      * @return array $additionalColumnsToSelect
      */
-    static public function resolveContains(array &$conditionsAndOptions, $aliasForSubContains = null) {
+    static public function resolveContains(array $columnsToSelect, array $conditionsAndOptions, $aliasForSubContains = null) {
         if (!empty($conditionsAndOptions['CONTAIN'])) {
             if (!is_array($conditionsAndOptions['CONTAIN'])) {
                 $conditionsAndOptions['CONTAIN'] = [$conditionsAndOptions['CONTAIN']];
@@ -463,10 +463,12 @@ abstract class DbModel extends Table {
                 $conditionsAndOptions['JOIN'] = [];
             }
 
-            foreach ($conditionsAndOptions['CONTAIN'] as $alias => $columnsToSelect) {
+            foreach ($conditionsAndOptions['CONTAIN'] as $alias => $columnsToSelectForRelation) {
                 if (is_int($alias)) {
-                    $alias = $columnsToSelect;
-                    $columnsToSelect = !empty($relation['fields']) ? $relation['fields'] : ['*'];
+                    $alias = $columnsToSelectForRelation;
+                    $columnsToSelectForRelation = ['*'];
+                } else {
+                    $columnsToSelectForRelation = [];
                 }
                 $relationConfig = static::getStructure()->getRelation($alias);
                 if ($relationConfig->getType() === DbRelationConfig::HAS_MANY) {
@@ -474,21 +476,21 @@ abstract class DbModel extends Table {
                 } else {
                     $model = $relationConfig->getForeignTable();
                     $joinType = $relationConfig->getJoinType();
-                    if (is_array($columnsToSelect)) {
-                        if (isset($columnsToSelect['TYPE'])) {
-                            $joinType = $columnsToSelect['TYPE'];
+                    if (is_array($columnsToSelectForRelation)) {
+                        if (isset($columnsToSelectForRelation['TYPE'])) {
+                            $joinType = $columnsToSelectForRelation['TYPE'];
                         }
-                        unset($columnsToSelect['TYPE']);
-                        if (isset($columnsToSelect['CONDITIONS'])) {
+                        unset($columnsToSelectForRelation['TYPE']);
+                        if (isset($columnsToSelectForRelation['CONDITIONS'])) {
                             throw new \UnexpectedValueException('CONDITIONS key is not supported in CONTAIN');
                         }
-                        unset($columnsToSelect['CONDITIONS']);
-                        if (!empty($columnsToSelect['CONTAIN'])) {
-                            $subContains = $columnsToSelect['CONTAIN'];
+                        unset($columnsToSelectForRelation['CONDITIONS']);
+                        if (!empty($columnsToSelectForRelation['CONTAIN'])) {
+                            $subContains = $columnsToSelectForRelation['CONTAIN'];
                         }
-                        unset($columnsToSelect['CONTAIN']);
-                        if (empty($columnsToSelect)) {
-                            $columnsToSelect = ['*'];
+                        unset($columnsToSelectForRelation['CONTAIN']);
+                        if (empty($columnsToSelectForRelation)) {
+                            $columnsToSelectForRelation = [];
                         }
                     }
 
@@ -497,85 +499,64 @@ abstract class DbModel extends Table {
                         $aliasForSubContains,
                         $alias,
                         $joinType
-                    );
+                    )->setForeignColumnsToSelect($columnsToSelectForRelation);
 
                     if (!empty($subContains)) {
-                        $subOptions = ['CONTAIN' => $subContains];
-                        $columnsToSelect = array_merge_recursive($columnsToSelect, $model::resolveContains($subOptions, $alias));
-                        //$conditionsAndOptions['JOIN'] = array_merge($conditionsAndOptions['JOIN'], $subJoins['JOIN']);
+                        [$columnsToSelectForRelation, $subJoins] = $model::resolveContains(
+//                            $columnsToSelectForRelation,
+                            [],
+                            ['CONTAIN' => $subContains],
+                            $alias
+                        );
+                        $conditionsAndOptions['JOIN'] = array_merge($conditionsAndOptions['JOIN'], $subJoins['JOIN']);
                     }
+                    //$columnsToSelect[$alias] = $columnsToSelectForRelation;
                 }
             }
-//            if (empty($conditionsAndOptions['JOIN'])) {
-//                unset($conditionsAndOptions['JOIN']);
-//            }
+            if (empty($conditionsAndOptions['JOIN'])) {
+                unset($conditionsAndOptions['JOIN']);
+            }
         }
         unset($conditionsAndOptions['CONTAIN']);
-        return $conditionsAndOptions;
-    }
-
-    /**
-     * Add columns into options and resolve contains
-     * @param mixed $columns
-     * @param array $options
-     * @return array
-     */
-    protected function prepareSelect($columns, array $options): array {
-        $options = $this->resolveContains($options);
-        if (!empty($columns)) {
-            $options['FIELDS'] = $columns;
-        }
-        return $options;
+        return [$columnsToSelect, $conditionsAndOptions];
     }
 
     /* Queries */
 
-    /**
-     * Create query builder
-     * @return OrmSelect
-     */
-    public function builder() {
-        // todo: refactor usages
-        return new OrmSelect($this);
-    }
-
     static public function select($columns = '*', $conditionsAndOptions = null, $asObjects = false, $withRootAlias = false) {
-        // todo: resolve options in $conditionsAndOptions?
+        [$columns, $conditionsAndOptions] = static::resolveContains((array)$columns, $conditionsAndOptions);
         $records = parent::select($columns, $conditionsAndOptions, null);
         return $asObjects ? $records : $records->toArrays();
     }
 
     static public function selectColumn($column, array $conditionsAndOptions = [], \Closure $configurator = null) {
-        // todo: resolve options in $conditionsAndOptions?
+        [, $conditionsAndOptions] = static::resolveContains([], $conditionsAndOptions);
         return parent::selectColumn($column, $conditionsAndOptions);
     }
 
     static public function selectAssoc($keysColumn, $valuesColumn, array $conditionsAndOptions = [], \Closure $configurator = null) {
-        // todo: resolve options in $conditionsAndOptions?
+        [, $conditionsAndOptions] = static::resolveContains([], $conditionsAndOptions);
         return parent::selectAssoc($keysColumn, $valuesColumn, $conditionsAndOptions);
     }
 
     /**
+     * @deprecated
      * Runs Select query with count
-     * @param string $columns
+     * @param array $columns
      * @param null|array $conditionsAndOptions
      * @param bool $asObjects - true: return DbObject | false: return array
      * @return array - 'count' => int, 'records' => array)
      */
-    public function selectWithCount($columns, array $conditionsAndOptions = [], $asObjects = false) {
-        $conditionsAndOptions = $this->prepareSelect($columns, $conditionsAndOptions);
-        $count = $this->count($conditionsAndOptions);
+    static public function selectWithCount(array $columns = ['*'], array $conditionsAndOptions = []) {
+        [$columns, $conditionsAndOptions] = static::resolveContains((array)$columns, $conditionsAndOptions);
+        $count = static::count($conditionsAndOptions);
         if (empty($count)) {
             return ['records' => [], 'count' => 0];
         }
-        $results = [
+        return [
             'records' => static::select($columns, $conditionsAndOptions),
             'count' => $count
         ];
-        if ($asObjects) {
-            $results['records'] = $this->recordsToObjects($results['records']);
-        }
-        return $results;
     }
 
     /**
@@ -589,7 +570,7 @@ abstract class DbModel extends Table {
      * @return array|bool|DbObject
      */
     static public function selectOne($columns, array $conditionsAndOptions, $asObject = false, $withRootAlias = false) {
-        // todo: resolve options in $conditionsAndOptions?
+        [$columns, $conditionsAndOptions] = static::resolveContains((array)$columns, $conditionsAndOptions);
         return parent::selectOne($columns, $conditionsAndOptions);
     }
 
@@ -600,49 +581,70 @@ abstract class DbModel extends Table {
      * @return string|int|float|bool
      */
     static public function expression($expression, array $conditionsAndOptions = []) {
-        if (($expression instanceof \PeskyORM\Core\DbExpr)) {
+        if (!($expression instanceof \PeskyORM\Core\DbExpr)) {
             $expression = new \PeskyORM\Core\DbExpr($expression);
         }
-        // todo: maybe use $this->resolveContains($conditionsAndOptions)
+        [, $conditionsAndOptions] = static::resolveContains([], $conditionsAndOptions);
         return static::selectValue($expression, $conditionsAndOptions);
     }
-
+    
+    /**
+     * @deprecated
+     */
     static public function exists($conditionsAndOptions) {
         $conditionsAndOptions['LIMIT'] = 1;
         return (int)static::expression('1', $conditionsAndOptions) === 1;
     }
     
-    static public function count(array $conditions = [], \Closure $configurator = null, $removeNotInnerJoins = false) {
-        // todo: fix old args list usage: static public function count($conditionsAndOptions = null, $removeNotInnerJoins = false) {
-        return parent::count($conditions, $configurator, $removeNotInnerJoins);
-    }
-
+    /**
+     * @deprecated
+     */
     static public function sum($column, $conditionsAndOptions = null) {
         return 0 + static::expression("SUM(`$column`)", $conditionsAndOptions);
     }
     
+    /**
+     * @deprecated
+     */
     static public function max($column, $conditionsAndOptions = null) {
         return 0 + static::expression("MAX(`$column`)", $conditionsAndOptions);
     }
     
+    /**
+     * @deprecated
+     */
     static public function min($column, $conditionsAndOptions = null) {
         return 0 + static::expression("MIN(`$column`)", $conditionsAndOptions);
     }
     
+    /**
+     * @deprecated
+     */
     static public function avg($column, $conditionsAndOptions = null) {
         return 0 + static::expression("AVG(`$column`)", $conditionsAndOptions);
     }
     
+    /**
+     * @deprecated
+     * @param bool $readOnly
+     * @param null $transactionType
+     */
     static public function begin($readOnly = false, $transactionType = null) {
-        static::getConnection()->begin($readOnly, $transactionType);
+        static::beginTransaction($readOnly, $transactionType);
     }
     
+    /**
+     * @deprecated
+     */
     static public function commit() {
-        static::getConnection()->commit();
+        static::commitTransaction();
     }
-
+    
+    /**
+     * @deprecated
+     */
     static public function rollback() {
-        static::getConnection()->rollback();
+        static::rollBackTransaction();
     }
 
 }
