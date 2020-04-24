@@ -2,7 +2,9 @@
 
 namespace PeskyORM;
 use http\Exception\UnexpectedValueException;
+use PeskyORM\ORM\Column;
 use PeskyORM\ORM\OrmSelect;
+use PeskyORM\ORM\Relation;
 use PeskyORM\ORM\Table;
 use Swayok\Utils\StringUtils;
 
@@ -38,13 +40,21 @@ abstract class DbModel extends Table {
     static protected $tableConfigClassSuffix = 'TableConfig';
     static protected $objectsClassesDirName = 'Object';
     static protected $modelClassSuffix = 'Model';
-
+    
+    /**
+     * @deprecated
+     * @return string
+     */
     static public function getModelClassSuffix() {
         /** @var self $calledClass */
         $calledClass = get_called_class();
         return $calledClass::$modelClassSuffix;
     }
-
+    
+    /**
+     * @deprecated
+     * @return string
+     */
     static public function getTableConfigClassSuffix() {
         /** @var self $calledClass */
         $calledClass = get_called_class();
@@ -56,6 +66,7 @@ abstract class DbModel extends Table {
     }
 
     /**
+     * @deprecated
      * @return string
      */
     public function getNamespace() {
@@ -63,6 +74,7 @@ abstract class DbModel extends Table {
     }
 
     /**
+     * @deprecated
      * @return string
      */
     public function getTableName() {
@@ -70,6 +82,7 @@ abstract class DbModel extends Table {
     }
 
     /**
+     * @deprecated
      * @return DbTableConfig
      */
     public function getTableConfig() {
@@ -77,33 +90,26 @@ abstract class DbModel extends Table {
     }
     
     public static function getStructure() {
-        return static::getInstance()->getTableConfig();
+        return static::getInstance()->getTableStructure();
     }
     
     public function getTableStructure() {
-        return static::getInstance()->getTableConfig();
+        return $this->tableConfig;
     }
     
     /**
-     * @return bool
-     */
-    public function hasTableConfig() {
-        return !empty($this->tableConfig);
-    }
-
-    /**
-     * @return DbRelationConfig[]
+     * @return DbRelationConfig[]|Relation[]
      */
     public function getTableRealtaions() {
-        return $this->getTableConfig()->getRelations();
+        return $this->getTableStructure()->getRelations();
     }
 
     /**
      * @param string $alias
-     * @return DbRelationConfig
+     * @return DbRelationConfig|Relation
      */
     public function getTableRealtaion($alias) {
-        return $this->getTableConfig()->getRelation($alias);
+        return $this->getTableStructure()->getRelation($alias);
     }
 
     /**
@@ -111,22 +117,22 @@ abstract class DbModel extends Table {
      * @return bool
      */
     public function hasTableRelation($alias) {
-        return $this->getTableConfig()->hasRelation($alias);
+        return $this->getTableStructure()->hasRelation($alias);
     }
 
     /**
-     * @return DbColumnConfig[]
+     * @return DbColumnConfig[]|Column[]
      */
     public function getTableColumns() {
-        return $this->getTableConfig()->getColumns();
+        return $this->getTableStructure()->getColumns();
     }
 
     /**
      * @param string $colName
-     * @return DbColumnConfig
+     * @return DbColumnConfig|Column
      */
     public function getTableColumn($colName) {
-        return $this->getTableConfig()->getColumn($colName);
+        return $this->getTableStructure()->getColumn($colName);
     }
 
     /**
@@ -134,35 +140,21 @@ abstract class DbModel extends Table {
      * @return bool
      */
     public function hasTableColumn($colName) {
-        return $this->getTableConfig()->hasColumn($colName);
+        return $this->getTableStructure()->hasColumn($colName);
     }
 
     /**
-     * @return string
-     */
-    public function getTableAlias() {
-        return $this->alias;
-    }
-
-    /**
-     * @param string $alias
-     * @return $this
-     */
-    public function setAlias($alias) {
-        $this->alias = $alias;
-        return $this;
-    }
-
-    /**
+     * @deprecated
      * @param DbTableConfig $tableConfig
      * @return $this
      */
-    public function setTableConfig($tableConfig) {
+    protected function setTableConfig($tableConfig) {
         $this->tableConfig = $tableConfig;
         return $this;
     }
 
     /**
+     * @deprecated
      * @return null|string
      */
     public function getOrderField() {
@@ -170,6 +162,7 @@ abstract class DbModel extends Table {
     }
 
     /**
+     * @deprecated
      * @return string
      */
     public function getOrderDirection() {
@@ -177,6 +170,7 @@ abstract class DbModel extends Table {
     }
 
     /**
+     * @deprecated
      * Load config class
      * @param string $modelName
      */
@@ -196,53 +190,36 @@ abstract class DbModel extends Table {
     }
 
     /**
-     * Loads models by class name. Example: Model::User() will create object of class User (or pick existing if already exists)
-     * @param $modelOrObjectName - class name or table name (UserTokenModel, UserToken or user_tokens)
-     * @param array $objectArgs - used only for DbObjects to pass data array or primary key value
-     * @return DbModel|DbObject|$this
-     */
-    /*static public function __callStatic($modelOrObjectName, $objectArgs = []) {
-        $calledClass = get_called_class();
-        if (preg_match('%^(.*)' . $calledClass::$modelClassSuffix . '$%s', $modelOrObjectName, $matches)) {
-            // model requested
-            return call_user_func([$calledClass, 'getModel'], $modelOrObjectName);
-        } else {
-            // db object requested
-            return call_user_func(
-                [$calledClass, 'createDbObject'],
-                $modelOrObjectName,
-                !empty($objectArgs) ? $objectArgs[0] : null,
-                !empty($objectArgs) && isset($objectArgs[1]) ? $objectArgs[1] : null
-            );
-        }
-    }*/
-
-    /**
+     * @deprecated
      * Load and return requested Model
      * @param string $modelNameOrObjectName - base class name (UserToken or UserTokenModel or User)
      * @return DbModel
      */
     static public function getModel($modelNameOrObjectName) {
-        $calledClass = get_called_class();
-        $modelClass = call_user_func([$calledClass, 'getFullModelClassNameByName'], $modelNameOrObjectName);
-        return call_user_func([$calledClass, 'getModelByClassName'], $modelClass);
+        /** @var DbModel $calledClass */
+        $calledClass = static::class;
+        $modelClass = $calledClass::getFullModelClassNameByName($modelNameOrObjectName);
+        return $calledClass::getModelByClassName($modelClass);
     }
 
     /**
+     * @deprecated
      * @param string $modelNameOrObjectName - base class name (UserToken or UserTokenModel or User)
      * @return string
      */
     static public function getFullModelClassNameByName($modelNameOrObjectName) {
-        $calledClass = get_called_class();
+        /** @var DbModel $calledClass */
+        $calledClass = static::class;
         $modelNameOrObjectName = preg_replace(
             '%' . $calledClass::$modelClassSuffix . '$%i',
             $calledClass::$modelClassSuffix,
             $modelNameOrObjectName
         );
-        return call_user_func([$calledClass, 'getModelsNamespace']) . $modelNameOrObjectName;
+        return $calledClass::getModelsNamespace() . $modelNameOrObjectName;
     }
 
     /**
+     * @deprecated
      * @param string $modelClass
      * @return $this
      */
@@ -257,70 +234,31 @@ abstract class DbModel extends Table {
     }
 
     /**
-     * @param string $tableName
-     * @return $this
-     */
-    static public function getModelByTableName($tableName) {
-        $modelClass = static::getFullModelClassByTableName($tableName);
-        return static::getModelByClassName($modelClass);
-    }
-
-    /**
-     * Get related model by relation alias
-     * @param string $relationAlias
-     * @return DbModel
-     */
-    public function getRelatedModel($relationAlias) {
-        if (!$this->hasTableRelation($relationAlias)) {
-            throw new \InvalidArgumentException("Unknown relation with alias [$relationAlias]");
-        }
-        $foreignTable = $this->getTableRealtaion($relationAlias)->getForeignTable();
-        $relatedModelClass = static::getFullModelClassByTableName($foreignTable);
-        if (!class_exists($relatedModelClass)) {
-            throw new \InvalidArgumentException("Related model class [{$relatedModelClass}] not found for relation [{$relationAlias}]");
-        }
-        return static::getModelByClassName(static::getFullModelClassByTableName($foreignTable));
-    }
-
-    /**
-     * @param DbRelationConfig $relation
-     * @return DbObject
-     */
-    public function getRelatedObject($relationAlias) {
-        return $this->getRelatedModel($relationAlias)->getOwnDbObject();
-    }
-
-    /**
-     * Convert get_class($this) to db object class name (without namespace)
-     * @return string
-     */
-    public function dbObjectName() {
-        return static::dbObjectNameByModelClassName(get_class($this));
-    }
-
-    /**
+     * @deprecated
      * Convert get_class($this) to db object class name (without namespace)
      * @param string $class - class name. Must end on 'Model'
      * @return string
      */
     static public function dbObjectNameByModelClassName($class) {
-        $calledClass = get_called_class();
+        /** @var DbModel $calledClass */
+        $calledClass = static::class;
         return preg_replace(
             [
                 '%^.*[\\\]%is',
                 '%' . $calledClass::$modelClassSuffix . '$%',
-                '%^' . preg_quote(addslashes(call_user_func([$calledClass, 'getModelsNamespace'])), '%') . '/%'
+                '%^' . preg_quote(addslashes($calledClass::getModelsNamespace()), '%') . '/%'
             ],
             [
                 '',
                 '',
-                call_user_func([$calledClass, 'getObjectsNamespace']) . '/'
+                $calledClass::getObjectsNamespace() . '/'
             ],
             $class
         );
     }
 
     /**
+     * @deprecated
      * Load DbObject class and create new instance of it
      * @param string $dbObjectNameOrTableName - class name or table name (UserToken or user_tokens)
      * @param null|array|string|int $data - null: do nothing | int and string: is primary key (read db) | array: object data
@@ -338,75 +276,123 @@ abstract class DbModel extends Table {
         $model = static::getModel(StringUtils::modelize($dbObjectNameOrTableName));
         return new $dbObjectClass($data, $filter, $isDbValues, $model);
     }
-
+    
     /**
+     * @deprecated
      * Get DbObject class with name space
      * @param string $dbObjectNameOrTableName - object class or db table name.
      * @return string
      */
     static public function getFullDbObjectClass($dbObjectNameOrTableName) {
-        return call_user_func([get_called_class(), 'getObjectsNamespace']) . StringUtils::modelize($dbObjectNameOrTableName);
+        /** @var DbModel $calledClass */
+        $calledClass = static::class;
+        return $calledClass::getObjectsNamespace() . StringUtils::modelize($dbObjectNameOrTableName);
     }
-
+    
+    /**
+     * @deprecated
+     * @return string|string[]|null
+     */
     static public function getModelsNamespace() {
         return preg_replace('%[a-zA-Z0-9_]+$%', '', get_called_class());
     }
-
+    
+    /**
+     * @deprecated
+     * @return string|string[]|null
+     */
     static public function getObjectsNamespace() {
-        /** @var self $calledClass */
-        $calledClass = get_called_class();
+        /** @var DbModel $calledClass */
+        $calledClass = static::class;
         return preg_replace(
             '%[a-zA-Z0-9_]+\\\$%',
             $calledClass::$objectsClassesDirName . '\\',
-            call_user_func([$calledClass, 'getModelsNamespace'])
+            $calledClass::getModelsNamespace()
         );
     }
-
+    
+    /**
+     * @deprecated
+     * @return string
+     */
     protected function getConfigsNamespace() {
         if (empty($this->configsNamespace)) {
             $this->configsNamespace = preg_replace('%^(.*)\\\.+?$%s', '$1', $this->namespace) . '\\' . $this::$tablesConfigsDirName .'\\';
         }
         return $this->configsNamespace;
     }
-
+    
+    /**
+     * @deprecated
+     * @param $tableName
+     * @return string
+     */
     static public function getFullModelClassByTableName($tableName) {
-        $calledClass = get_called_class();
-        $ns = call_user_func([$calledClass, 'getModelsNamespace']);
-        return $ns . call_user_func([$calledClass, 'getModelNameByTableName'], $tableName);
+        /** @var DbModel $calledClass */
+        $calledClass = static::class;
+        $ns = $calledClass::getModelsNamespace();
+        return $ns . $calledClass::getModelNameByTableName($tableName);
     }
-
+    
+    /**
+     * @deprecated
+     * @param $tableName
+     * @return string
+     */
     static public function getModelNameByTableName($tableName) {
-        $calledClass = get_called_class();
-        return call_user_func([$calledClass, 'getObjectNameByTableName'], $tableName) . $calledClass::$modelClassSuffix;
+        /** @var DbModel $calledClass */
+        $calledClass = static::class;
+        return $calledClass::getObjectNameByTableName($tableName) . $calledClass::$modelClassSuffix;
     }
-
+    
+    /**
+     * @deprecated
+     * @param $tableName
+     * @return string
+     */
     static public function getObjectNameByTableName($tableName) {
         return StringUtils::modelize($tableName);
     }
-
+    
+    /**
+     * @deprecated
+     * @param $objectName
+     * @return string
+     */
     static public function getTableConfigNameByObjectName($objectName) {
         /** @var DbModel $calledClass */
-        $calledClass = get_called_class();
+        $calledClass = static::class;
         return $objectName . $calledClass::getTableConfigClassSuffix();
     }
-
+    
+    /**
+     * @deprecated
+     * @param $tableName
+     * @return mixed
+     */
     static public function getTableConfigNameByTableName($tableName) {
-        $calledClass = get_called_class();
+        /** @var DbModel $calledClass */
+        $calledClass = static::class;
         return call_user_func(
-            [$calledClass, 'getTableConfigNameByObjectName'],
-            call_user_func([$calledClass, 'getObjectNameByTableName'], $tableName)
+            $calledClass::getTableConfigNameByObjectName(),
+            $calledClass::getObjectNameByTableName($tableName)
         );
     }
 
     /**
+     * @deprecated
      * @param $objectClass
      * @return DbModel
      */
     static public function getModelByObjectClass($objectClass) {
-        return call_user_func([get_called_class(), 'getModel'], preg_replace('%^.*\\\%', '', $objectClass));
+        /** @var DbModel $class */
+        $class = static::class;
+        
+        return $class::getModel(preg_replace('%^.*\\\%', '', $objectClass));
     }
 
     /**
+     * @deprecated
      * Load DbObject for current model and create new instance of it
      * @param null|array|string|int $data - null: do nothing | int and string: is primary key (read db) | array: object data
      * @param bool $filter - used only when $data not empty and is array
@@ -432,20 +418,16 @@ abstract class DbModel extends Table {
     }
 
     /**
+     * @deprecated
      * Collect real DB fields excluding virtual fields like files and images
-     * @return array
+     * @return Column[]|DbColumnConfig[]
      */
     public function getDbFields() {
-        $ret = [];
-        foreach ($this->getTableColumns() as $name => $column) {
-            if ($column->isExistsInDb()) {
-                $ret[] = $name;
-            }
-        }
-        return $ret;
+        return $this->getTableStructure()->getColumnsThatExistInDb();
     }
 
     /**
+     * @deprecated
      * Convert records to DbObjects
      * @param array $records
      * @param bool $dataIsLoadedFromDb
@@ -468,62 +450,68 @@ abstract class DbModel extends Table {
 
     /**
      * Build valid 'JOIN' settings from 'CONTAIN' table aliases
-     * @param array $where
+     * @param array $conditionsAndOptions
      * @param string|null $aliasForSubContains
-     * @return array $where
+     * @return array $additionalColumnsToSelect
      */
-    public function resolveContains(array $where, $aliasForSubContains = null) {
-        if (!empty($where['CONTAIN'])) {
-            if (!is_array($where['CONTAIN'])) {
-                $where['CONTAIN'] = [$where['CONTAIN']];
+    static public function resolveContains(array &$conditionsAndOptions, $aliasForSubContains = null) {
+        if (!empty($conditionsAndOptions['CONTAIN'])) {
+            if (!is_array($conditionsAndOptions['CONTAIN'])) {
+                $conditionsAndOptions['CONTAIN'] = [$conditionsAndOptions['CONTAIN']];
             }
-            if (empty($where['JOIN']) || !is_array($where['JOIN'])) {
-                $where['JOIN'] = [];
+            if (empty($conditionsAndOptions['JOIN']) || !is_array($conditionsAndOptions['JOIN'])) {
+                $conditionsAndOptions['JOIN'] = [];
             }
 
-            foreach ($where['CONTAIN'] as $alias => $fields) {
+            foreach ($conditionsAndOptions['CONTAIN'] as $alias => $columnsToSelect) {
                 if (is_int($alias)) {
-                    $alias = $fields;
-                    $fields = !empty($relation['fields']) ? $relation['fields'] : '*';
+                    $alias = $columnsToSelect;
+                    $columnsToSelect = !empty($relation['fields']) ? $relation['fields'] : ['*'];
                 }
-                $relationConfig = $this->getTableRealtaion($alias);
+                $relationConfig = static::getStructure()->getRelation($alias);
                 if ($relationConfig->getType() === DbRelationConfig::HAS_MANY) {
                     throw new \UnexpectedValueException("Queries with one-to-many joins are not allowed via 'CONTAIN' key");
                 } else {
-                    $model = $this->getRelatedModel($alias);
+                    $model = $relationConfig->getForeignTable();
                     $joinType = $relationConfig->getJoinType();
-                    if (is_array($fields)) {
-                        if (isset($fields['TYPE'])) {
-                            $joinType = $fields['TYPE'];
+                    if (is_array($columnsToSelect)) {
+                        if (isset($columnsToSelect['TYPE'])) {
+                            $joinType = $columnsToSelect['TYPE'];
                         }
-                        unset($fields['TYPE']);
-                        if (isset($fields['CONDITIONS'])) {
+                        unset($columnsToSelect['TYPE']);
+                        if (isset($columnsToSelect['CONDITIONS'])) {
                             throw new \UnexpectedValueException('CONDITIONS key is not supported in CONTAIN');
                         }
-                        unset($fields['CONDITIONS']);
-                        if (!empty($fields['CONTAIN'])) {
-                            $subContains = $fields['CONTAIN'];
+                        unset($columnsToSelect['CONDITIONS']);
+                        if (!empty($columnsToSelect['CONTAIN'])) {
+                            $subContains = $columnsToSelect['CONTAIN'];
                         }
-                        unset($fields['CONTAIN']);
-                        if (empty($fields)) {
-                            $fields = '*';
+                        unset($columnsToSelect['CONTAIN']);
+                        if (empty($columnsToSelect)) {
+                            $columnsToSelect = ['*'];
                         }
                     }
 
-                    $where['JOIN'][$alias] = $relationConfig->toOrmJoinConfig($this, $aliasForSubContains, $alias);
+                    $conditionsAndOptions['JOIN'][$alias] = $relationConfig->toOrmJoinConfig(
+                        static::getInstance(),
+                        $aliasForSubContains,
+                        $alias,
+                        $joinType
+                    );
 
                     if (!empty($subContains)) {
-                        $subJoins = $model->resolveContains(['CONTAIN' => $subContains], $alias);
-                        $where['JOIN'] = array_merge($where['JOIN'], $subJoins['JOIN']);
+                        $subOptions = ['CONTAIN' => $subContains];
+                        $columnsToSelect = array_merge_recursive($columnsToSelect, $model::resolveContains($subOptions, $alias));
+                        //$conditionsAndOptions['JOIN'] = array_merge($conditionsAndOptions['JOIN'], $subJoins['JOIN']);
                     }
                 }
             }
-            if (empty($where['JOIN'])) {
-                unset($where['JOIN']);
-            }
+//            if (empty($conditionsAndOptions['JOIN'])) {
+//                unset($conditionsAndOptions['JOIN']);
+//            }
         }
-        unset($where['CONTAIN']);
-        return $where;
+        unset($conditionsAndOptions['CONTAIN']);
+        return $conditionsAndOptions;
     }
 
     /**

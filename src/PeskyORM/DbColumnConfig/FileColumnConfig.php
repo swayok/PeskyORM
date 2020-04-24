@@ -84,7 +84,7 @@ class FileColumnConfig extends DbColumnConfig {
      * @return $this
      */
     public function setBasePathToFiles($basePathToFiles) {
-        if (empty($basePathToFiles) || (!is_string($basePathToFiles) && $basePathToFiles instanceof \Closure)) {
+        if (empty($basePathToFiles) || (!is_string($basePathToFiles) && !($basePathToFiles instanceof \Closure))) {
             throw new \InvalidArgumentException('$basePathToFiles argument must be a not-empty string or \Closure');
         }
         $this->basePathToFiles = $basePathToFiles;
@@ -106,7 +106,7 @@ class FileColumnConfig extends DbColumnConfig {
      * @return $this
      */
     public function setBaseUrlToFiles($baseUrlToFiles) {
-        if (!is_string($baseUrlToFiles) && $baseUrlToFiles instanceof \Closure) {
+        if (!is_string($baseUrlToFiles) && !($baseUrlToFiles instanceof \Closure)) {
             throw new \InvalidArgumentException('$baseUrlToFiles argument must be a string or \Closure');
         }
         if (is_string($baseUrlToFiles) && preg_match('%(https?://[^/]+)(/.*$|$)%i', $baseUrlToFiles, $urlParts)) {
