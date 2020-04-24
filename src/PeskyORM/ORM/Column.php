@@ -357,11 +357,11 @@ class Column {
                     $class = $column->getClosuresClass();
                     return $class::valueValidator($value, $isFromDb, $isForCondition, $column);
                 },
-                'valueIsAllowedValidator' => function ($value, $isFromDb, Column $column) {
+                'valueIsAllowedValidator' => function ($value, $isFromDb, $isForCondition, Column $column) {
                     $class = $column->getClosuresClass();
                     return $class::valueIsAllowedValidator($value, $isFromDb, $column);
                 },
-                'valueValidatorExtender' => function ($value, $isFromDb, Column $column) {
+                'valueValidatorExtender' => function ($value, $isFromDb, $isForCondition, Column $column) {
                     $class = $column->getClosuresClass();
                     return $class::valueValidatorExtender($value, $isFromDb, $column);
                 },
