@@ -341,16 +341,17 @@ class Relation {
      * @param TableInterface $localTable
      * @param string|null $localTableAlias
      * @param string|null $joinName
+     * @param string|null $joinType
      * @return OrmJoinInfo
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      */
-    public function toOrmJoinConfig(TableInterface $localTable, $localTableAlias = null, $joinName = null) {
+    public function toOrmJoinConfig(TableInterface $localTable, ?string $localTableAlias = null, ?string $joinName = null, ?string $joinType = null) {
         return OrmJoinInfo::create($joinName ?: $this->getName())
             ->setConfigForLocalTable($localTable, $this->getLocalColumnName())
             ->setConfigForForeignTable($this->getForeignTable(), $this->getForeignColumnName())
-            ->setJoinType($this->getJoinType())
+            ->setJoinType($joinType ?: $this->getJoinType())
             ->setAdditionalJoinConditions($this->getAdditionalJoinConditions($localTable, $localTableAlias, false))
             ->setTableAlias($localTableAlias ?: $localTable::getAlias());
     }
