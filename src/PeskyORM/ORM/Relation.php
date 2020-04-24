@@ -262,7 +262,7 @@ class Relation {
                 $this->additionalJoinConditions,
                 $this,
                 $localTable,
-                $localTableAlias,
+                $localTableAlias ?: $localTable::getAlias(),
                 $forStandaloneSelect,
                 $localRecord
             );
@@ -280,7 +280,7 @@ class Relation {
 
     /**
      * @param array|\Closure $additionalJoinConditions
-     *      - \Closure: function (Relation $relation, TableInterface $localTable, ?string $localTableAlias, bool $forStandaloneSelect, ?Record $localRecord = null) { return []; }
+     *      - \Closure: function (Relation $relation, TableInterface $localTable, string $localTableAlias, bool $forStandaloneSelect, ?Record $localRecord = null) { return []; }
      * @return $this
      * @throws \InvalidArgumentException
      */
