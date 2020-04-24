@@ -3,6 +3,8 @@
 namespace PeskyORM;
 use http\Exception\UnexpectedValueException;
 use PeskyORM\ORM\Column;
+use PeskyORM\ORM\Record;
+use PeskyORM\ORM\RecordInterface;
 use PeskyORM\ORM\Relation;
 use PeskyORM\ORM\Table;
 use Swayok\Utils\StringUtils;
@@ -567,11 +569,22 @@ abstract class DbModel extends Table {
      *      numeric|int: record's pk value, automatically converted to [$this->primaryKey => $where]
      * @param bool $asObject - true: return DbObject | false: return array
      * @param bool $withRootAlias
-     * @return array|bool|DbObject
+     * @return array
      */
-    static public function selectOne($columns, array $conditionsAndOptions, $asObject = false, $withRootAlias = false) {
+    static public function selectOne($columns, array $conditionsAndOptions, ?\Closure $configurator = null) {
         [$columns, $conditionsAndOptions] = static::resolveContains((array)$columns, $conditionsAndOptions);
-        return parent::selectOne($columns, $conditionsAndOptions);
+        return parent::selectOne($columns, $conditionsAndOptions, $configurator);
+    }
+    
+    /**
+     * @param array|string $columns
+     * @param array $conditionsAndOptions
+     * @param \Closure|null $configurator
+     * @return RecordInterface|Record
+     */
+    static public function selectOneAsDbRecord($columns, array $conditionsAndOptions, ?\Closure $configurator = null) {
+        [$columns, $conditionsAndOptions] = static::resolveContains((array)$columns, $conditionsAndOptions);
+        return parent::selectOneAsDbRecord($columns, $conditionsAndOptions, $configurator);
     }
 
     /**
