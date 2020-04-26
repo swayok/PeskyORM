@@ -1108,6 +1108,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      * @return $this
      * @throws \BadMethodCallException
+     * @throws InvalidDataException
      */
     public function commit(array $relationsToSave = [], $deleteNotListedRelatedRecords = false) {
         if (!$this->isCollectingUpdates) {
@@ -1164,6 +1165,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      * @return $this
      * @throws \BadMethodCallException
+     * @throws InvalidDataException
      */
     public function save(array $relationsToSave = [], $deleteNotListedRelatedRecords = false) {
         if ($this->isCollectingUpdates) {
@@ -1182,6 +1184,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $columnsToSave
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
+     * @throws InvalidDataException
      */
     protected function saveToDb(array $columnsToSave = []) {
         if ($this->isReadOnly()) {
@@ -1927,7 +1930,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             } else if (array_key_exists($key, $this->readOnlyData)) {
                 return $this->readOnlyData[$key];
             } else if (preg_match(static::COLUMN_NAME_WITH_FORMAT_REGEXP, $key, $parts)) {
-                list(, $colName, $format) = $parts;
+                [, $colName, $format] = $parts;
                 if (array_key_exists($colName, $this->readOnlyData)) {
                     $value = $this->readOnlyData[$colName];
                     $column = static::getColumn($colName);
