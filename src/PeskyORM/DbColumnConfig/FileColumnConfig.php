@@ -5,9 +5,12 @@ namespace PeskyORM\DbColumnConfig;
 use PeskyORM\DbColumnConfig;
 use PeskyORM\DbFileInfo;
 use PeskyORM\DbImageFileInfo;
+use PeskyORM\Exception\DbObjectException;
+use PeskyORM\Exception\DbObjectFieldException;
 use PeskyORM\ORM\Record;
 use PeskyORM\ORM\RecordValue;
 use Swayok\Utils\File;
+use Swayok\Utils\Folder;
 use Swayok\Utils\Utils;
 
 class FileColumnConfig extends DbColumnConfig {
@@ -31,28 +34,23 @@ class FileColumnConfig extends DbColumnConfig {
      */
     protected $defaultFileExtension = '';
     /**
-     * @var callable|null
-     * function (FileField $field) {}
+     * @var null|\Closure
      */
     protected $fileNameGenerator = null;
     /**
-     * @var callable|null
-     * function (FileField $field, $directorySeparator = DIRECTORY_SEPARATOR) {}
+     * @var null|\Closure
      */
     protected $fileSubdirGenerator = null;
     /**
-     * @var callable|null
-     * function (FileField $field) {}
+     * @var null|\Closure
      */
     protected $fileDirPathGenerator = null;
     /**
-     * @var callable|null
-     * function (FileField $field) {}
+     * @var null|\Closure
      */
     protected $fileDirRelativeUrlGenerator = null;
     /**
-     * @var callable|null
-     * function (FileField $field) {}
+     * @var null|\Closure
      */
     protected $fileServerUrlGenerator = null;
 
@@ -115,11 +113,11 @@ class FileColumnConfig extends DbColumnConfig {
     /**
      * Get absolute FS path to file dir
      */
-    protected function getFileDirPath(Record $record): string {
+    public function getFileDirPath(Record $record): string {
         $this->requireRecordExistence($record);
         $generator = $this->getFileDirPathGenerator();
         if (!empty($generator)) {
-            $dirPath = $generator($this);
+            $dirPath = $generator($this, $record);
             if (empty($dirPath) || !is_string($dirPath)) {
                 throw new \UnexpectedValueException('File dir path genetartor function should return not-empty string');
             }
@@ -134,7 +132,7 @@ class FileColumnConfig extends DbColumnConfig {
         $this->requireRecordExistence($record);
         $generator = $this->getFileSubdirGenerator();
         if (!empty($generator)) {
-            $subdir = $generator($this, $directorySeparator);
+            $subdir = $generator($this, $record, $directorySeparator);
             if (empty($subdir) || !is_string($subdir)) {
                 throw new \UnexpectedValueException('File subdir genetartor function should return not-empty string');
             }
@@ -184,7 +182,7 @@ class FileColumnConfig extends DbColumnConfig {
     
     /**
      * Get file name without extension
-     * @param string|callable|null $fallbackValue - null: $this->getName() is used
+     * @param string|null|\Closure $fallbackValue - null: $this->getName() is used
      * @return string - file name without extension
      */
     public function getFileNameWithoutExtension($fallbackValue = null): string {
@@ -239,7 +237,7 @@ class FileColumnConfig extends DbColumnConfig {
         $this->requireRecordExistence($record);
         $generator = $this->getFileDirRelativeUrlGenerator();
         if (!empty($generator)) {
-            $relUrl = $generator($this);
+            $relUrl = $generator($this, $record);
             if (empty($relUrl) || !is_string($relUrl)) {
                 throw new \UnexpectedValueException('File dir relative url genetartor function should return not-empty string');
             }
@@ -384,7 +382,7 @@ class FileColumnConfig extends DbColumnConfig {
     }
 
     /**
-     * @param \Closure $fileDirRelativeUrlGenerator - function (FileField $field) {}
+     * @param \Closure $fileDirRelativeUrlGenerator - function (FileColumnConfig $column, Record $record) {}
      * @return $this
      */
     public function setFileDirRelativeUrlGenerator(\Closure $fileDirRelativeUrlGenerator) {
@@ -397,7 +395,7 @@ class FileColumnConfig extends DbColumnConfig {
     }
 
     /**
-     * @param \Closure $fileDirPathGenerator - function (FileField $field) {}
+     * @param \Closure $fileDirPathGenerator - function (FileColumnConfig $column, Record $record) {}
      * @return $this
      */
     public function setFileDirPathGenerator(\Closure $fileDirPathGenerator) {
@@ -410,7 +408,7 @@ class FileColumnConfig extends DbColumnConfig {
     }
 
     /**
-     * @param \Closure $fileSubdirGenerator - function (FileField $field, $directorySeparator = DIRECTORY_SEPARATOR) {}
+     * @param \Closure $fileSubdirGenerator - function (FileColumnConfig $column, Record $record, $directorySeparator = DIRECTORY_SEPARATOR) {}
      * @return $this
      */
     public function setFileSubdirGenerator(\Closure $fileSubdirGenerator) {
@@ -423,7 +421,7 @@ class FileColumnConfig extends DbColumnConfig {
     }
 
     /**
-     * @param \Closure $fileNameGenerator - function (FileField $field) {}
+     * @param \Closure $fileNameGenerator - function (FileColumnConfig $column) {}
      * @return $this
      */
     public function setFileNameGenerator(\Closure $fileNameGenerator) {
@@ -449,6 +447,33 @@ class FileColumnConfig extends DbColumnConfig {
     public function setFileServerUrlGenerator(\Closure $fileServerUrlGenerator) {
         $this->fileServerUrlGenerator = $fileServerUrlGenerator;
         return $this;
+    }
+    
+    /**
+     * Get original file name with extension
+     * @return string
+     */
+    protected function getOriginalFullFileName(RecordValue $recordValue) {
+        $fileInfo = $this->getFileInfo($recordValue);
+        if ($fileInfo->hasOriginalFileNameWithExtension()) {
+            return $fileInfo->getOriginalFileNameWithExtension();
+        } else {
+            return $this->getFullFileName($recordValue);
+        }
+    }
+    
+    public function deleteFiles(Record $record) {
+        if (!$record->existsInDb()) {
+            throw new \InvalidArgumentException('Unable to delete files of non-existing object');
+        }
+        $pathToFiles = $this->getFileDirPath($record);
+        if (Folder::exist($pathToFiles)) {
+            $baseFileName = $this->getFileNameWithoutExtension();
+            $files = Folder::load($pathToFiles)->find("{$baseFileName}.*");
+            foreach ($files as $fileName) {
+                File::remove($pathToFiles . $fileName);
+            }
+        }
     }
 
 }

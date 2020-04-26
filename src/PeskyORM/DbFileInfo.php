@@ -7,6 +7,7 @@ namespace PeskyORM;
 use PeskyORM\DbColumnConfig\FileColumnConfig;
 use PeskyORM\DbColumnConfig\ImageColumnConfig;
 use PeskyORM\ORM\Column;
+use PeskyORM\ORM\RecordInterface;
 use PeskyORM\ORM\RecordValue;
 use Swayok\Utils\File;
 
@@ -38,6 +39,17 @@ class DbFileInfo {
         $this->column = $valueContainer->getColumn();
         $this->record = $valueContainer->getRecord();
         $this->readFileInfo();
+    }
+    
+    public function getRecord(): RecordInterface {
+        return $this->record;
+    }
+    
+    /**
+     * @return FileColumnConfig|ImageColumnConfig
+     */
+    public function getColumn(): Column {
+        return $this->column;
     }
 
     public function readFileInfo() {
@@ -83,42 +95,33 @@ class DbFileInfo {
         return $this;
     }
 
-    /**
-     * @return null
-     */
-    public function getFileExtension() {
+    public function getFileExtension(): ?string {
         return $this->fileExtension;
     }
 
     /**
-     * @param null $extension
+     * @param string $extension
      * @return $this
      */
-    public function setFileExtension($extension) {
+    public function setFileExtension(string $extension) {
         $this->fileExtension = $extension;
         return $this;
     }
 
-    /**
-     * @return null
-     */
-    public function getFileNameWithoutExtension() {
+    public function getFileNameWithoutExtension(): ?string {
         return $this->fileNameWithoutExtension;
     }
 
     /**
-     * @param null $fileNameWithoutExtension
+     * @param string $fileNameWithoutExtension
      * @return $this
      */
-    public function setFileNameWithoutExtension($fileNameWithoutExtension) {
+    public function setFileNameWithoutExtension(string $fileNameWithoutExtension) {
         $this->fileNameWithoutExtension = rtrim($fileNameWithoutExtension, '.');
         return $this;
     }
 
-    /**
-     * @return string
-     */
-    public function getFileNameWithExtension() {
+    public function getFileNameWithExtension(): ?string {
         return $this->fileNameWithExtension;
     }
 
@@ -126,33 +129,31 @@ class DbFileInfo {
      * @param string $fileNameWithExtension
      * @return $this
      */
-    public function setFileNameWithExtension($fileNameWithExtension) {
+    public function setFileNameWithExtension(string $fileNameWithExtension) {
         $this->fileNameWithExtension = rtrim($fileNameWithExtension, '.');
         return $this;
     }
 
-    /**
-     * @return string
-     */
-    public function getOriginalFileNameWithExtension() {
+    public function getOriginalFileNameWithExtension(): ?string {
         return empty($this->originalFileNameWithExtension)
             ? $this->getFileNameWithExtension()
             : $this->originalFileNameWithExtension;
+    }
+    
+    public function hasOriginalFileNameWithExtension(): bool {
+        return !empty($this->originalFileNameWithExtension);
     }
 
     /**
      * @param string $fileNameWithExtension
      * @return $this
      */
-    public function setOriginalFileNameWithExtension($fileNameWithExtension) {
+    public function setOriginalFileNameWithExtension(string $fileNameWithExtension) {
         $this->originalFileNameWithExtension = rtrim($fileNameWithExtension, '.');
         return $this;
     }
 
-    /**
-     * @return string
-     */
-    public function getOriginalFileNameWithoutExtension() {
+    public function getOriginalFileNameWithoutExtension(): ?string {
         return empty($this->originalFileNameWithoutExtension)
             ? $this->getFileNameWithoutExtension()
             : $this->originalFileNameWithoutExtension;
@@ -162,7 +163,7 @@ class DbFileInfo {
      * @param string $fileNameWithoutExtension
      * @return $this
      */
-    public function setOriginalFileNameWithoutExtension($fileNameWithoutExtension) {
+    public function setOriginalFileNameWithoutExtension(string $fileNameWithoutExtension) {
         $this->originalFileNameWithoutExtension = rtrim($fileNameWithoutExtension, '.');
         return $this;
     }

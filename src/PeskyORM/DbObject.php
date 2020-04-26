@@ -1,9 +1,7 @@
 <?php
 
 namespace PeskyORM;
-use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Record;
-use PeskyORM\ORM\RecordValue;
 
 /**
  * Class DbObject
@@ -58,32 +56,6 @@ class DbObject extends Record {
 
     /**
      * @deprecated
-     * @param string $fieldName
-     * @return bool
-     */
-    public function _hasField($fieldName) {
-        return static::hasColumn($fieldName);
-    }
-
-    /**
-     * @deprecated
-     * @param $fieldName
-     * @return RecordValue
-     */
-    public function _getField($fieldName) {
-        return $this->getValueContainer($fieldName);
-    }
-
-    /**
-     * @deprecated
-     * @return RecordValue
-     */
-    public function _getPkField() {
-        return $this->_getField(static::getPrimaryKeyColumnName());
-    }
-
-    /**
-     * @deprecated
      * @return mixed
      */
     public function _getPkFieldName() {
@@ -100,23 +72,6 @@ class DbObject extends Record {
 
     /**
      * @deprecated
-     * @param $fieldName
-     * @return RecordValue
-     */
-    public function _getFileField($fieldName) {
-        return $this->_getField($fieldName);
-    }
-
-    /**
-     * @deprecated
-     * @return DbColumnConfig[]|Column[]
-     */
-    public function _getFileFieldsConfigs() {
-        return $this->_getTableConfig()->getFileColumns();
-    }
-
-    /**
-     * @deprecated
      * @return DbModel
      */
     public function _getModel() {
@@ -127,35 +82,6 @@ class DbObject extends Record {
         /** @var DbModel $baseModelClass */
         $baseModelClass = static::$_baseModelClass;
         return $baseModelClass::getModelByObjectClass(static::class);
-    }
-
-    /**
-     * @deprecated
-     * todo: arguments positions are wrong - need to update all methods that use this one
-     * Update some field values without resetting loaded object.
-     * Primary key value may be omitted in $data
-     * Can work if $this->exists() == false, pk just not imported
-     * @param array $values
-     * @param bool|array $ignoreUnknownData -
-     *      true: filters data that does not belong to this object
-     *      false: data that does not belong to this object will trigger exceptions
-     *      array: list of fields to use
-     * @return $this
-     */
-    public function updateValues($values, $ignoreUnknownData = false, $isFromDb = false) {
-        return parent::updateValues($values, $isFromDb, $ignoreUnknownData);
-    }
-    
-    /**
-     * @deprecated
-     * Validate passed $fields or all fields if $fields is empty
-     * @param null|string|array $fieldNames - empty: all fields | string: single field | array: only this fields
-     * @param bool $forSave - true: allows some specific validations lise isUnique
-     * @return array - validation errors
-     */
-    public function validate($fieldNames = null, $forSave = false) {
-        $data = $this->collectValuesForSave($columnsToSave, !$forSave);
-        return $this->validateNewData($data, $fieldNames ?: [], !$forSave);
     }
 
     /**
@@ -176,24 +102,6 @@ class DbObject extends Record {
      */
     public function _setFieldValue($fieldName, $newValue, $isDbValue = false) {
         return $this->updateValue($fieldName, $newValue, $isDbValue);
-    }
-
-    /**
-     * @deprecated
-     * @param string $fieldName
-     * @return bool
-     */
-    public function _isFieldHasEmptyValue($fieldName) {
-        return !$this->hasValue($fieldName, false);
-    }
-
-    /**
-     * @deprecated
-     * @param string $alias
-     * @return bool
-     */
-    protected function _hasRelatedObject($alias, $returnTrueForNotInitiatedHasMany = false) {
-        return $this->isRelatedRecordAttached($alias);
     }
 
     /**
@@ -219,6 +127,9 @@ class DbObject extends Record {
     public function toPublicArray($fieldNames = null, $relations = false, $forceRelationsRead = true) {
         if ($relations === true) {
             $relations = ['*'];
+        }
+        if ($fieldNames === null) {
+            $fieldNames = [];
         }
         return $this->toArray((array)$fieldNames, $relations ? (array)$relations : [], $forceRelationsRead, true);
     }

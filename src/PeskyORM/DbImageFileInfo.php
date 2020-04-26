@@ -4,7 +4,9 @@
 namespace PeskyORM;
 
 use PeskyORM\DbColumnConfig\ImageColumnConfig;
+use PeskyORM\Exception\DbObjectFieldException;
 use PeskyORM\ORM\RecordValue;
+use Swayok\Utils\ImageUtils;
 
 /**
  * @property ImageColumnConfig $column
@@ -48,6 +50,24 @@ class DbImageFileInfo extends DbFileInfo {
      */
     public function getAbsoluteFileUrl($versionName = null) {
         return $this->column->getAbsoluteFileUrl($this->valueContainer, $versionName);
+    }
+    
+    /**
+     * @param string $versionName
+     * @return bool|string
+     */
+    public function restoreImageVersion($versionName, $ext = null) {
+        $configs = $this->column->getImageVersionsConfigs();
+        if (empty($configs[$versionName])) {
+            return false;
+        }
+        return ImageUtils::restoreVersionForConfig(
+            $versionName,
+            $configs[$versionName],
+            $this->getFileNameWithoutExtension(),
+            $this->column->getFileDirPath($this->record),
+            $ext
+        );
     }
 
 }
