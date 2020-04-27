@@ -3,8 +3,6 @@
 namespace PeskyORM;
 use http\Exception\UnexpectedValueException;
 use PeskyORM\ORM\Column;
-use PeskyORM\ORM\Record;
-use PeskyORM\ORM\RecordInterface;
 use PeskyORM\ORM\Relation;
 use PeskyORM\ORM\Table;
 use Swayok\Utils\StringUtils;
@@ -122,7 +120,7 @@ abstract class DbModel extends Table {
     }
 
     /**
-     * @return DbColumnConfig[]|Column[]
+     * @return Column[]
      */
     public function getTableColumns() {
         return $this->getTableStructure()->getColumns();
@@ -130,7 +128,7 @@ abstract class DbModel extends Table {
 
     /**
      * @param string $colName
-     * @return DbColumnConfig|Column
+     * @return Column
      */
     public function getTableColumn($colName) {
         return $this->getTableStructure()->getColumn($colName);
@@ -256,6 +254,15 @@ abstract class DbModel extends Table {
             ],
             $class
         );
+    }
+    
+    /**
+     * @param string $tableName
+     * @return $this
+     */
+    static public function getModelByTableName($tableName) {
+        $modelClass = static::getFullModelClassByTableName($tableName);
+        return static::getModelByClassName($modelClass);
     }
 
     /**
@@ -558,63 +565,21 @@ abstract class DbModel extends Table {
         return parent::selectAssoc($keysColumn, $valuesColumn, $conditionsAndOptions);
     }
 
-    /**
-     * @deprecated
-     * Runs Select query with count
-     * @param array $columns
-     * @param null|array $conditionsAndOptions
-     * @param bool $asObjects - true: return DbObject | false: return array
-     * @return array - 'count' => int, 'records' => array)
-     */
-    static public function selectWithCount(array $columns = ['*'], array $conditionsAndOptions = []) {
-        [$columns, $conditionsAndOptions] = static::normalizeConditionsAndOptions((array)$columns, $conditionsAndOptions);
-        $count = static::count($conditionsAndOptions);
-        if (empty($count)) {
-            return ['records' => [], 'count' => 0];
-        }
-        return [
-            'records' => static::select($columns, $conditionsAndOptions),
-            'count' => $count
-        ];
-    }
-    
     static public function count(array $conditionsAndOptions = [], \Closure $configurator = null, $removeNotInnerJoins = false) {
         [, $conditionsAndOptions] = static::normalizeConditionsAndOptions([], $conditionsAndOptions);
         return parent::count($conditionsAndOptions, $configurator, $removeNotInnerJoins);
     }
 
-    /**
-     * Get 1 record from DB
-     * @param string|array $columns
-     * @param array|string|int $conditionsAndOptions -
-     *      array: conditions,
-     *      numeric|int: record's pk value, automatically converted to [$this->primaryKey => $where]
-     * @param bool $asObject - true: return DbObject | false: return array
-     * @param bool $withRootAlias
-     * @return array
-     */
     static public function selectOne($columns, array $conditionsAndOptions, ?\Closure $configurator = null) {
         [$columns, $conditionsAndOptions] = static::normalizeConditionsAndOptions((array)$columns, $conditionsAndOptions);
         return parent::selectOne($columns, $conditionsAndOptions, $configurator);
     }
     
-    /**
-     * @param array|string $columns
-     * @param array $conditionsAndOptions
-     * @param \Closure|null $configurator
-     * @return RecordInterface|Record
-     */
     static public function selectOneAsDbRecord($columns, array $conditionsAndOptions, ?\Closure $configurator = null) {
         [$columns, $conditionsAndOptions] = static::normalizeConditionsAndOptions((array)$columns, $conditionsAndOptions);
         return parent::selectOneAsDbRecord($columns, $conditionsAndOptions, $configurator);
     }
 
-    /**
-     * Make a query that returns only 1 value defined by $expression
-     * @param string|\PeskyORM\Core\DbExpr $expression - example: 'COUNT(*)', 'SUM(`field`)'
-     * @param array $conditionsAndOptions
-     * @return string|int|float|bool
-     */
     static public function expression($expression, array $conditionsAndOptions = []) {
         if (!($expression instanceof \PeskyORM\Core\DbExpr)) {
             $expression = new \PeskyORM\Core\DbExpr($expression);
