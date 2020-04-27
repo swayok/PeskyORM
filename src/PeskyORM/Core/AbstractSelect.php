@@ -312,7 +312,7 @@ abstract class AbstractSelect {
      * @param DbExpr $expression
      * @return string
      */
-    public function fetchValue(DbExpr $expression): string {
+    public function fetchValue(DbExpr $expression): ?string {
         return $this->columns([$expression])->_fetch(Utils::FETCH_VALUE);
     }
 
