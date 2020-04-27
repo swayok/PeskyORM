@@ -8,39 +8,98 @@ class JoinInfo extends AbstractJoinInfo {
 
     /**
      * @param string $joinName
-     * @param string $tableName
-     * @param string $column
+     * @param string $localTableName
+     * @param string $localColumnName
      * @param string $joinType
      * @param string $foreignTableName
-     * @param string $foreignColumn
-     * @return JoinInfo
+     * @param string $foreignColumnName
+     * @param string $localTableSchema
+     * @param string $foreignTableSchema
+     * @return $this
      * @throws \InvalidArgumentException
      */
-    static public function construct($joinName, $tableName, $column, $joinType, $foreignTableName, $foreignColumn) {
-        return self::create($joinName)
-            ->setConfigForLocalTable($tableName, $column)
+    public static function create(
+        string $joinName,
+        string $localTableName,
+        string $localColumnName,
+        string $joinType,
+        string $foreignTableName,
+        string $foreignColumnName,
+        ?string $localTableSchema = null,
+        ?string $foreignTableSchema = null
+    ) {
+        return new static(
+            $joinName,
+            $localTableName,
+            $localColumnName,
+            $joinType,
+            $foreignTableName,
+            $foreignColumnName,
+            $localTableSchema,
+            $foreignTableSchema
+        );
+    }
+
+    /**
+     * @param string $joinName
+     * @param string $localTableName
+     * @param string $localColumnName
+     * @param string $joinType
+     * @param string $foreignTableName
+     * @param string $foreignColumnName
+     * @param string $localTableSchema
+     * @param string $foreignTableSchema
+     * @throws \InvalidArgumentException
+     */
+    public function __construct(
+        string $joinName,
+        string $localTableName,
+        string $localColumnName,
+        string $joinType,
+        string $foreignTableName,
+        string $foreignColumnName,
+        ?string $localTableSchema = null,
+        ?string $foreignTableSchema = null
+    ) {
+        parent::__construct($joinName);
+        $this
+            ->setConfigForLocalTable($localTableName, $localColumnName, $localTableSchema)
             ->setJoinType($joinType)
-            ->setConfigForForeignTable($foreignTableName, $foreignColumn);
+            ->setConfigForForeignTable($foreignTableName, $foreignColumnName, $foreignTableSchema);
     }
 
     /**
      * @param string $tableName
-     * @param string $column
+     * @param string $columnName
+     * @param string|null $tableSchema
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setConfigForLocalTable($tableName, $column) {
-        return $this->setTableName($tableName)->setColumnName($column);
+    public function setConfigForLocalTable(string $tableName, string $columnName, ?string $tableSchema = null) {
+        $this
+            ->setTableName($tableName)
+            ->setColumnName($columnName);
+        if ($tableSchema) {
+            $this->setTableSchema($tableSchema);
+        }
+        return $this;
     }
 
     /**
      * @param string $foreignTableName
-     * @param string $foreignColumn
+     * @param string $foreignColumnName
+     * @param string $foreignTableSchema
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setConfigForForeignTable($foreignTableName, $foreignColumn) {
-        return $this->setForeignTableName($foreignTableName)->setForeignColumnName($foreignColumn);
+    public function setConfigForForeignTable(string $foreignTableName, string $foreignColumnName, ?string $foreignTableSchema = null) {
+        $this
+            ->setForeignTableName($foreignTableName)
+            ->setForeignColumnName($foreignColumnName);
+        if ($foreignTableSchema) {
+            $this->setForeignTableSchema($foreignTableSchema);
+        }
+        return $this;
     }
 
     /**
@@ -48,8 +107,8 @@ class JoinInfo extends AbstractJoinInfo {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setForeignTableName($foreignTableName) {
-        if (empty($foreignTableName) || !is_string($foreignTableName)) {
+    public function setForeignTableName(string $foreignTableName) {
+        if (empty($foreignTableName)) {
             throw new \InvalidArgumentException('$foreignTableName argument must be a not-empty string');
         }
         $this->foreignTableName = $foreignTableName;
@@ -61,8 +120,8 @@ class JoinInfo extends AbstractJoinInfo {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setForeignTableSchema($schema) {
-        if ($schema !== null && (!is_string($schema) || empty($schema)) ) {
+    public function setForeignTableSchema(?string $schema) {
+        if ($schema !== null && empty($schema)) {
             throw new \InvalidArgumentException('$schema argument must be a not-empty string or null');
         }
         $this->foreignTableSchema = $schema;
@@ -74,8 +133,8 @@ class JoinInfo extends AbstractJoinInfo {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setTableName($tableName) {
-        if (empty($tableName) || !is_string($tableName)) {
+    public function setTableName(string $tableName) {
+        if (empty($tableName)) {
             throw new \InvalidArgumentException('$tableName argument must be a not-empty string');
         }
         $this->tableName = $tableName;
@@ -90,8 +149,8 @@ class JoinInfo extends AbstractJoinInfo {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setTableSchema($schema) {
-        if ($schema !== null && (!is_string($schema) || empty($schema)) ) {
+    public function setTableSchema(?string $schema) {
+        if ($schema !== null && empty($schema)) {
             throw new \InvalidArgumentException('$schema argument must be a not-empty string or null');
         }
         $this->tableSchema = $schema;

@@ -4,30 +4,30 @@ namespace PeskyORM\Core;
 
 abstract class AbstractJoinInfo {
 
-    const JOIN_LEFT = 'left';
-    const JOIN_RIGHT = 'right';
-    const JOIN_INNER = 'inner';
+    public const JOIN_LEFT = 'left';
+    public const JOIN_RIGHT = 'right';
+    public const JOIN_INNER = 'inner';
 
-    const NAME_VALIDATION_REGEXP = '%^[A-Z][a-zA-Z0-9]*$%';   //< CamelCase
+    public const NAME_VALIDATION_REGEXP = '%^[A-Z][a-zA-Z0-9]*$%';   //< CamelCase
 
     /** @var string */
-    protected $joinName = null;
+    protected $joinName;
     /** @var string */
-    protected $tableName = null;
+    protected $tableName;
     /** @var string|null */
-    protected $tableSchema = null;
+    protected $tableSchema;
     /** @var string|null */
-    protected $tableAlias = null;
+    protected $tableAlias;
     /** @var string */
-    protected $columnName = null;
+    protected $columnName;
     /** @var string */
-    protected $joinType = null;
+    protected $joinType;
     /** @var string */
-    protected $foreignTableName = null;
+    protected $foreignTableName;
     /** @var string|null */
-    protected $foreignTableSchema = null;
+    protected $foreignTableSchema;
     /** @var string */
-    protected $foreignColumnName = null;
+    protected $foreignColumnName;
     /** @var array */
     protected $additionalJoinConditions = [];
     /** @var array */
@@ -37,23 +37,11 @@ abstract class AbstractJoinInfo {
      * @param string $joinName
      * @throws \InvalidArgumentException
      */
-    public function __construct($joinName) {
+    public function __construct(string $joinName) {
         $this->setJoinName($joinName);
     }
 
-    /**
-     * @param string $joinName
-     * @return $this
-     * @throws \InvalidArgumentException
-     */
-    static public function create($joinName) {
-        return new static($joinName);
-    }
-
-    /**
-     * @return string
-     */
-    public function getColumnName() {
+    public function getColumnName(): ?string {
         return $this->columnName;
     }
 
@@ -62,18 +50,15 @@ abstract class AbstractJoinInfo {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setColumnName($columnName) {
-        if (empty($columnName) || !is_string($columnName)) {
+    public function setColumnName(string $columnName) {
+        if (empty($columnName)) {
             throw new \InvalidArgumentException('$columnName argument must be a not-empty string');
         }
         $this->columnName = $columnName;
         return $this;
     }
 
-    /**
-     * @return string
-     */
-    public function getForeignColumnName() {
+    public function getForeignColumnName(): ?string {
         return $this->foreignColumnName;
     }
 
@@ -82,32 +67,23 @@ abstract class AbstractJoinInfo {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setForeignColumnName($foreignColumnName) {
-        if (empty($foreignColumnName) || !is_string($foreignColumnName)) {
+    public function setForeignColumnName(string $foreignColumnName) {
+        if (empty($foreignColumnName)) {
             throw new \InvalidArgumentException('$foreignColumnName argument must be a not-empty string');
         }
         $this->foreignColumnName = $foreignColumnName;
         return $this;
     }
 
-    /**
-     * @return string
-     */
-    public function getForeignTableName() {
+    public function getForeignTableName(): ?string {
         return $this->foreignTableName;
     }
 
-    /**
-     * @return null|string
-     */
-    public function getForeignTableSchema() {
+    public function getForeignTableSchema(): ?string {
         return $this->foreignTableSchema;
     }
 
-    /**
-     * @return string
-     */
-    public function getJoinName() {
+    public function getJoinName(): ?string {
         return $this->joinName;
     }
 
@@ -116,8 +92,8 @@ abstract class AbstractJoinInfo {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setJoinName($joinName) {
-        if (empty($joinName) || !is_string($joinName)) {
+    public function setJoinName(string $joinName) {
+        if (empty($joinName)) {
             throw new \InvalidArgumentException('$joinName argument must be a not-empty string');
         } else if (!preg_match(static::NAME_VALIDATION_REGEXP, $joinName)) {
             throw new \InvalidArgumentException(
@@ -129,10 +105,7 @@ abstract class AbstractJoinInfo {
         return $this;
     }
 
-    /**
-     * @return string
-     */
-    public function getJoinType() {
+    public function getJoinType(): ?string {
         return $this->joinType;
     }
 
@@ -141,8 +114,8 @@ abstract class AbstractJoinInfo {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setJoinType($joinType) {
-        if (empty($joinType) || !is_string($joinType)) {
+    public function setJoinType(string $joinType) {
+        if (empty($joinType)) {
             throw new \InvalidArgumentException('$joinType argument must be a not-empty string');
         } else if (!in_array($joinType, [self::JOIN_INNER, self::JOIN_LEFT, self::JOIN_RIGHT], true)) {
             throw new \InvalidArgumentException(
@@ -153,31 +126,19 @@ abstract class AbstractJoinInfo {
         return $this;
     }
 
-    /**
-     * @return string
-     */
-    public function getTableName() {
+    public function getTableName(): ?string {
         return $this->tableName;
     }
 
-    /**
-     * @return bool
-     */
-    protected function hasTableName() {
+    protected function hasTableName(): bool {
         return !empty($this->tableName);
     }
 
-    /**
-     * @return null|string
-     */
-    public function getTableSchema() {
+    public function getTableSchema(): ?string {
         return $this->tableSchema;
     }
 
-    /**
-     * @return string
-     */
-    public function getTableAlias() {
+    public function getTableAlias(): ?string {
         return $this->tableAlias;
     }
 
@@ -186,18 +147,15 @@ abstract class AbstractJoinInfo {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setTableAlias($alias) {
-        if (empty($alias) || !is_string($alias)) {
+    public function setTableAlias(string $alias) {
+        if (empty($alias)) {
             throw new \InvalidArgumentException('$alias argument must be a not-empty string');
         }
         $this->tableAlias = $alias;
         return $this;
     }
 
-    /**
-     * @return array
-     */
-    public function getAdditionalJoinConditions() {
+    public function getAdditionalJoinConditions(): array {
         return $this->additionalJoinConditions;
     }
 
@@ -210,10 +168,7 @@ abstract class AbstractJoinInfo {
         return $this;
     }
 
-    /**
-     * @return array
-     */
-    public function getForeignColumnsToSelect() {
+    public function getForeignColumnsToSelect(): array {
         return $this->foreignColumnsToSelect;
     }
 
@@ -235,11 +190,11 @@ abstract class AbstractJoinInfo {
     public function isValid() {
         return (
             $this->hasTableName()
-            && !empty($this->getColumnName())
-            && !empty($this->getForeignTableName())
-            && !empty($this->getForeignColumnName())
-            && !empty($this->getJoinType())
-            && !empty($this->getJoinName())
+            && $this->getColumnName()
+            && $this->getForeignTableName()
+            && $this->getForeignColumnName()
+            && $this->getJoinType()
+            && $this->getJoinName()
         );
     }
 
