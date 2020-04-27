@@ -360,7 +360,7 @@ abstract class AbstractSelect {
     protected function getSimplifiedQuery(string $expression, bool $ignoreLeftJoins = true, bool $ignoreLimitAndOffset = false): string {
         $this->beforeQueryBuilding();
         $with = $this->makeWithQueries();
-        $fromTableAndOthers = $this->buildQueryPartsAfterSelectColumns($ignoreLeftJoins, false, $ignoreLimitAndOffset);
+        $fromTableAndOthers = $this->buildQueryPartsAfterSelectColumns($ignoreLeftJoins, false, !$ignoreLimitAndOffset);
         $this->validateIfThereAreEnoughJoins();
         $this->notDirty();
         return "{$with}SELECT $expression {$fromTableAndOthers}";
