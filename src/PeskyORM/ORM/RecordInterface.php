@@ -143,7 +143,7 @@ interface RecordInterface {
      * @param array $readRelatedRecords - also read related records
      * @return $this|RecordInterface
      */
-    public function fromPrimaryKey($pkValue, array $columns = [], array $readRelatedRecords = []);
+    public function fetchByPrimaryKey($pkValue, array $columns = [], array $readRelatedRecords = []);
 
     /**
      * Fill record values with data fetched from DB by $conditionsAndOptions
@@ -153,7 +153,7 @@ interface RecordInterface {
      * @param array $readRelatedRecords - also read related records
      * @return $this|RecordInterface
      */
-    public function fromDb(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = []);
+    public function fetch(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = []);
 
     /**
      * Reload data for current record.
