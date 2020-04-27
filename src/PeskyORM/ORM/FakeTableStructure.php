@@ -55,7 +55,7 @@ class {$className} extends {$parentClassShortName} {
     static public function getTableName() {
         return '{$tableName}';
     }
-    
+
     /**
      * @return string
      */
@@ -176,11 +176,11 @@ VIEW;
         return parent::getColumn($colName);
     }
 
-    protected function loadColumnConfigsFromPrivateMethods() {
+    protected function loadColumnsConfigsFromPrivateMethods() {
 
     }
 
-    protected function createMissingColumnConfigsFromDbTableDescription() {
+    protected function createMissingColumnsConfigsFromDbTableDescription() {
 
     }
 }
