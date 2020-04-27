@@ -7,52 +7,84 @@ use PeskyORM\Core\AbstractJoinInfo;
 class OrmJoinInfo extends AbstractJoinInfo {
 
     /** @var TableInterface */
-    protected $dbTable = null;
+    protected $dbTable;
     /** @var TableInterface */
-    protected $foreignDbTable = null;
+    protected $foreignDbTable;
 
     /**
      * @param string $joinName
-     * @param TableInterface $dbTable
-     * @param string $column
+     * @param TableInterface $localTable
+     * @param string $localColumnName
      * @param string $joinType
-     * @param TableInterface $foreignDbTable
-     * @param string $foreignColumn
+     * @param TableInterface $foreignTable
+     * @param string $foreignColumnName
      * @return $this
      * @throws \InvalidArgumentException
      */
-    static public function construct(
-        $joinName,
-        TableInterface $dbTable,
-        $column,
-        $joinType,
-        TableInterface $foreignDbTable,
-        $foreignColumn
+    static public function create(
+        string $joinName,
+        TableInterface $localTable,
+        string $localColumnName,
+        string $joinType,
+        TableInterface $foreignTable,
+        string $foreignColumnName
     ) {
-        return self::create($joinName)
-            ->setConfigForLocalTable($dbTable, $column)
+        return new static(
+            $joinName,
+            $localTable,
+            $localColumnName,
+            $joinType,
+            $foreignTable,
+            $foreignColumnName
+        );
+    }
+
+    /**
+     * @param string $joinName
+     * @param TableInterface $localTable
+     * @param string $localColumnName
+     * @param string $joinType
+     * @param TableInterface $foreignTable
+     * @param string $foreignColumnName
+     * @throws \InvalidArgumentException
+     */
+    public function __construct(
+        string $joinName,
+        TableInterface $localTable,
+        string $localColumnName,
+        string $joinType,
+        TableInterface $foreignTable,
+        string $foreignColumnName
+    ) {
+        parent::__construct($joinName);
+        $this
+            ->setConfigForLocalTable($localTable, $localColumnName)
             ->setJoinType($joinType)
-            ->setConfigForForeignTable($foreignDbTable, $foreignColumn);
+            ->setConfigForForeignTable($foreignTable, $foreignColumnName);
     }
 
     /**
-     * @param TableInterface $dbTable
-     * @param string $column
+     * @param TableInterface $table
+     * @param string $columnName
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setConfigForLocalTable(TableInterface $dbTable, $column) {
-        return $this->setDbTable($dbTable)->setColumnName($column);
+    public function setConfigForLocalTable(TableInterface $table, string $columnName) {
+        return $this
+            ->setDbTable($table)
+            ->setColumnName($columnName);
     }
 
     /**
-     * @param TableInterface $foreignDbTable
-     * @param string $foreignColumn
+     * @param TableInterface $foreignTable
+     * @param string $foreignColumnName
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setConfigForForeignTable(TableInterface $foreignDbTable, $foreignColumn) {
-        return $this->setForeignDbTable($foreignDbTable)->setForeignColumnName($foreignColumn);
+    public function setConfigForForeignTable(TableInterface $foreignTable, string $foreignColumnName) {
+        return $this
+            ->setForeignDbTable($foreignTable)
+            ->setForeignColumnName($foreignColumnName);
     }
 
     /**
@@ -62,30 +94,16 @@ class OrmJoinInfo extends AbstractJoinInfo {
      */
     public function setDbTable(TableInterface $dbTable) {
         $this->dbTable = $dbTable;
+        $this->tableName = $dbTable->getName();
+        $this->tableSchema = $dbTable->getTableStructure()->getSchema();
         if ($this->tableAlias === null) {
+            /** @noinspection StaticInvocationViaThisInspection */
             $this->setTableAlias($this->dbTable->getAlias());
         }
         return $this;
     }
 
-    /**
-     * @return string
-     */
-    public function getTableName() {
-        return $this->getDbTable()->getTableStructure()->getTableName();
-    }
-
-    /**
-     * @return bool
-     */
-    protected function hasTableName() {
-        return $this->getDbTable() !== null;
-    }
-
-    /**
-     * @return TableInterface
-     */
-    public function getDbTable() {
+    public function getDbTable(): TableInterface {
         return $this->dbTable;
     }
 
@@ -96,22 +114,18 @@ class OrmJoinInfo extends AbstractJoinInfo {
     public function setForeignDbTable(TableInterface $foreignDbTable) {
         $this->foreignDbTable = $foreignDbTable;
         $this->foreignTableName = $foreignDbTable->getName();
+        $this->foreignTableSchema = $foreignDbTable->getTableStructure()->getSchema();
         return $this;
     }
 
-    /**
-     * @return TableInterface
-     */
-    public function getForeignDbTable() {
+    public function getForeignDbTable(): TableInterface {
         return $this->foreignDbTable;
     }
 
     /**
      * @param array $columns
      * @return $this
-     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
     public function setForeignColumnsToSelect(...$columns) {
         if (count($columns) === 1 && is_array($columns[0])) {

@@ -6,7 +6,7 @@ use PeskyORM\ORM\OrmJoinInfo;
 use Swayok\Utils\ValidateValue;
 
 /**
- * @method join(AbstractJoinInfo $joinInfo, bool $append = true)
+ * @method join(AbstractJoinInfo $joinInfo, bool $append = true) //< it is impossible to overwrite method to use child class instead of AbstractJoinInfo
  */
 abstract class AbstractSelect {
 
@@ -1210,10 +1210,10 @@ abstract class AbstractSelect {
         return count($joins) ? ' ' . implode(' ', $joins) : '';
     }
 
-    protected function isJoinUsedInWhereOrHavingConditions(AbstractJoinInfo $joinInfo): bool {
+    protected function isJoinUsedInWhereOrHavingConditions(AbstractJoinInfo $joinConfig): bool {
         return (
-            in_array($this->getShortJoinAlias($joinInfo->getJoinName()), $this->joinsUsedInWhereAndHavingConditions, true)
-            || in_array($joinInfo->getJoinName(), $this->joinsUsedInWhereAndHavingConditions, true)
+            in_array($this->getShortJoinAlias($joinConfig->getJoinName()), $this->joinsUsedInWhereAndHavingConditions, true)
+            || in_array($joinConfig->getJoinName(), $this->joinsUsedInWhereAndHavingConditions, true)
         );
     }
 
@@ -1407,11 +1407,11 @@ abstract class AbstractSelect {
 
     /**
      * Normalize data received for related record or join
-     * @param AbstractJoinInfo $joinInfo
+     * @param AbstractJoinInfo $joinConfig
      * @param array $data
      * @return array
      */
-    protected function normalizeJoinDataForRecord(AbstractJoinInfo $joinInfo, array $data): array {
+    protected function normalizeJoinDataForRecord(AbstractJoinInfo $joinConfig, array $data): array {
         return $data;
     }
 
@@ -1460,6 +1460,8 @@ abstract class AbstractSelect {
             );
         }
     }
+
+//    abstract public function join(AbstractJoinInfo $joinInfo, bool $append = true); //< it is impossible to overwrite method to use child class instead of AbstractJoinInfo
 
     /**
      * @param string $alias

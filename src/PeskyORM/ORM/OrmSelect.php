@@ -95,10 +95,10 @@ class OrmSelect extends AbstractSelect {
 
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
 
-    protected function normalizeJoinDataForRecord(AbstractJoinInfo $joinInfo, array $data): array {
-        $data = parent::normalizeJoinDataForRecord($joinInfo, $data);
-        if ($joinInfo instanceof OrmJoinInfo) {
-            $pkName = $joinInfo->getForeignDbTable()->getPkColumnName();
+    protected function normalizeJoinDataForRecord(AbstractJoinInfo $joinConfig, array $data): array {
+        $data = parent::normalizeJoinDataForRecord($joinConfig, $data);
+        if ($joinConfig instanceof OrmJoinInfo) {
+            $pkName = $joinConfig->getForeignDbTable()->getPkColumnName();
             if (array_key_exists($pkName, $data) && $data[$pkName] === null) {
                  // not existing related record
                 return [];
