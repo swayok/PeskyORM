@@ -4,7 +4,6 @@
 namespace PeskyORM;
 
 use PeskyORM\DbColumnConfig\ImageColumnConfig;
-use PeskyORM\Exception\DbObjectFieldException;
 use PeskyORM\ORM\RecordValue;
 use Swayok\Utils\ImageUtils;
 
