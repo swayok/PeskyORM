@@ -473,7 +473,7 @@ abstract class Table implements TableInterface {
         }
         $record = static::getInstance()->newRecord();
         $record->updateValue($columnName, $data[$columnName], false); //< to validate and normalize value
-        $record->fromDb([
+        $record->fetch([
             $columnName => $record->getValue($columnName)
         ]);
         if ($record->existsInDb()) {

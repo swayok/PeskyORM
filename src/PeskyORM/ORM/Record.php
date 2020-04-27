@@ -87,7 +87,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return static
      */
     static public function read($pkValue, array $columns = [], array $readRelatedRecords = []) {
-        return static::newEmptyRecord()->fromPrimaryKey($pkValue, $columns, $readRelatedRecords);
+        return static::newEmptyRecord()->fetchByPrimaryKey($pkValue, $columns, $readRelatedRecords);
     }
 
     /**
@@ -101,7 +101,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return static
      */
     static public function find(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = []) {
-        return static::newEmptyRecord()->fromDb($conditionsAndOptions, $columns, $readRelatedRecords);
+        return static::newEmptyRecord()->fetch($conditionsAndOptions, $columns, $readRelatedRecords);
     }
 
     /**
@@ -877,6 +877,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
 
     /**
+     * @deprecated
+     */
+    public function fromPrimaryKey($pkValue, array $columns = [], array $readRelatedRecords = []) {
+        return $this->fetchByPrimaryKey($pkValue, $columns, $readRelatedRecords);
+    }
+
+    /**
      * Fill record values with data fetched from DB by primary key value ($pkValue)
      * Warning: if $columns argument value is empty - even heavy valued columns
      * will be selected @see \PeskyORM\ORM\Column::valueIsHeavy(). To select all columns
@@ -886,8 +893,15 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $readRelatedRecords - also read related records
      * @return $this
      */
-    public function fromPrimaryKey($pkValue, array $columns = [], array $readRelatedRecords = []) {
-        return $this->fromDb([static::getPrimaryKeyColumnName() => $pkValue], $columns, $readRelatedRecords);
+    public function fetchByPrimaryKey($pkValue, array $columns = [], array $readRelatedRecords = []) {
+        return $this->fetch([static::getPrimaryKeyColumnName() => $pkValue], $columns, $readRelatedRecords);
+    }
+
+    /**
+     * @deprecated
+     */
+    public function fromDb(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = []) {
+        return $this->fetch($conditionsAndOptions, $columns, $readRelatedRecords);
     }
 
     /**
@@ -901,7 +915,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $readRelatedRecords - also read related records
      * @return $this
      */
-    public function fromDb(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = []) {
+    public function fetch(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = []) {
         if (empty($columns)) {
             $columns = array_keys(static::getColumnsThatExistInDb());
         } else {
@@ -964,7 +978,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         if (!$this->existsInDb()) {
             throw new RecordNotFoundException('Record must exist in DB');
         }
-        return $this->fromPrimaryKey($this->getPrimaryKeyValue(), $columns, $readRelatedRecords);
+        return $this->fetchByPrimaryKey($this->getPrimaryKeyValue(), $columns, $readRelatedRecords);
     }
 
     /**

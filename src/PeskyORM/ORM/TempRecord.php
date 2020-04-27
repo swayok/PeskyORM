@@ -226,7 +226,7 @@ class TempRecord implements RecordInterface {
      * @return $this
      * @throws \BadMethodCallException
      */
-    public function fromPrimaryKey($pkValue, array $columns = [], array $readRelatedRecords = []) {
+    public function fetchByPrimaryKey($pkValue, array $columns = [], array $readRelatedRecords = []) {
         throw new \BadMethodCallException('Method cannot be used for this class (' . get_class($this) . ')');
     }
 
@@ -239,7 +239,7 @@ class TempRecord implements RecordInterface {
      * @return $this
      * @throws \BadMethodCallException
      */
-    public function fromDb(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = []) {
+    public function fetch(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = []) {
         throw new \BadMethodCallException('Method cannot be used for this class (' . get_class($this) . ')');
     }
 
