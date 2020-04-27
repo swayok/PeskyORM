@@ -87,7 +87,7 @@ abstract class DbModel extends Table {
      * @return DbTableConfig
      */
     public function getTableConfig() {
-        return $this->tableConfig;
+        return $this->getTableStructure();
     }
     
     public static function getStructure() {
@@ -456,7 +456,7 @@ abstract class DbModel extends Table {
      * @param string|null $aliasForSubContains
      * @return array $additionalColumnsToSelect
      */
-    static public function resolveContains(array $columnsToSelect, array $conditionsAndOptions, $aliasForSubContains = null) {
+    static public function normalizeConditionsAndOptions(array $columnsToSelect, array $conditionsAndOptions, $aliasForSubContains = null) {
         if (!empty($conditionsAndOptions['CONTAIN'])) {
             if (!is_array($conditionsAndOptions['CONTAIN'])) {
                 $conditionsAndOptions['CONTAIN'] = [$conditionsAndOptions['CONTAIN']];
@@ -504,15 +504,13 @@ abstract class DbModel extends Table {
                     )->setForeignColumnsToSelect($columnsToSelectForRelation);
 
                     if (!empty($subContains)) {
-                        [$columnsToSelectForRelation, $subJoins] = $model::resolveContains(
-//                            $columnsToSelectForRelation,
+                        [, $subJoins] = $model::normalizeConditionsAndOptions(
                             [],
                             ['CONTAIN' => $subContains],
                             $alias
                         );
                         $conditionsAndOptions['JOIN'] = array_merge($conditionsAndOptions['JOIN'], $subJoins['JOIN']);
                     }
-                    //$columnsToSelect[$alias] = $columnsToSelectForRelation;
                 }
             }
             if (empty($conditionsAndOptions['JOIN'])) {
@@ -520,24 +518,43 @@ abstract class DbModel extends Table {
             }
         }
         unset($conditionsAndOptions['CONTAIN']);
+        if (!empty($conditionsAndOptions['ORDER'])) {
+            if (is_string($conditionsAndOptions['ORDER'])) {
+                $conditionsAndOptions['ORDER'] = explode(',', $conditionsAndOptions['ORDER']);
+            }
+            $orderBy = [];
+            $orderRegexp = '%^([^\s]+)\s+((?:asc|desc)(?:\s+nulls\s+(?:first|last))?)$%i';
+            foreach ($conditionsAndOptions['ORDER'] as $key => $value) {
+                if (!is_int($key) || $value instanceof \PeskyORM\Core\DbExpr) {
+                    $orderBy[$key] = $value;
+                } else if (is_string($value) && preg_match($orderRegexp, trim($value), $matches)) {
+                    $orderBy[$matches[1]] = $matches[2];
+                } else {
+                    throw new \UnexpectedValueException('ORDER key is invalid: ' . json_encode(['key' => $key, 'value' => $value], JSON_UNESCAPED_UNICODE));
+                }
+            }
+            if (!empty($orderBy)) {
+                $conditionsAndOptions['ORDER'] = $orderBy;
+            }
+        }
         return [$columnsToSelect, $conditionsAndOptions];
     }
 
     /* Queries */
-
-    static public function select($columns = '*', $conditionsAndOptions = null, $asObjects = false, $withRootAlias = false) {
-        [$columns, $conditionsAndOptions] = static::resolveContains((array)$columns, $conditionsAndOptions);
+    
+    static public function select($columns = '*', array $conditionsAndOptions = [], \Closure $configurator = null, bool $asRecordSet = false) {
+        [$columns, $conditionsAndOptions] = static::normalizeConditionsAndOptions((array)$columns, $conditionsAndOptions);
         $records = parent::select($columns, $conditionsAndOptions, null);
-        return $asObjects ? $records : $records->toArrays();
+        return $asRecordSet ? $records : $records->toArrays();
     }
 
     static public function selectColumn($column, array $conditionsAndOptions = [], \Closure $configurator = null) {
-        [, $conditionsAndOptions] = static::resolveContains([], $conditionsAndOptions);
+        [, $conditionsAndOptions] = static::normalizeConditionsAndOptions([], $conditionsAndOptions);
         return parent::selectColumn($column, $conditionsAndOptions);
     }
 
     static public function selectAssoc($keysColumn, $valuesColumn, array $conditionsAndOptions = [], \Closure $configurator = null) {
-        [, $conditionsAndOptions] = static::resolveContains([], $conditionsAndOptions);
+        [, $conditionsAndOptions] = static::normalizeConditionsAndOptions([], $conditionsAndOptions);
         return parent::selectAssoc($keysColumn, $valuesColumn, $conditionsAndOptions);
     }
 
@@ -550,7 +567,7 @@ abstract class DbModel extends Table {
      * @return array - 'count' => int, 'records' => array)
      */
     static public function selectWithCount(array $columns = ['*'], array $conditionsAndOptions = []) {
-        [$columns, $conditionsAndOptions] = static::resolveContains((array)$columns, $conditionsAndOptions);
+        [$columns, $conditionsAndOptions] = static::normalizeConditionsAndOptions((array)$columns, $conditionsAndOptions);
         $count = static::count($conditionsAndOptions);
         if (empty($count)) {
             return ['records' => [], 'count' => 0];
@@ -559,6 +576,11 @@ abstract class DbModel extends Table {
             'records' => static::select($columns, $conditionsAndOptions),
             'count' => $count
         ];
+    }
+    
+    static public function count(array $conditionsAndOptions = [], \Closure $configurator = null, $removeNotInnerJoins = false) {
+        [, $conditionsAndOptions] = static::normalizeConditionsAndOptions([], $conditionsAndOptions);
+        return parent::count($conditionsAndOptions, $configurator, $removeNotInnerJoins);
     }
 
     /**
@@ -572,7 +594,7 @@ abstract class DbModel extends Table {
      * @return array
      */
     static public function selectOne($columns, array $conditionsAndOptions, ?\Closure $configurator = null) {
-        [$columns, $conditionsAndOptions] = static::resolveContains((array)$columns, $conditionsAndOptions);
+        [$columns, $conditionsAndOptions] = static::normalizeConditionsAndOptions((array)$columns, $conditionsAndOptions);
         return parent::selectOne($columns, $conditionsAndOptions, $configurator);
     }
     
@@ -583,7 +605,7 @@ abstract class DbModel extends Table {
      * @return RecordInterface|Record
      */
     static public function selectOneAsDbRecord($columns, array $conditionsAndOptions, ?\Closure $configurator = null) {
-        [$columns, $conditionsAndOptions] = static::resolveContains((array)$columns, $conditionsAndOptions);
+        [$columns, $conditionsAndOptions] = static::normalizeConditionsAndOptions((array)$columns, $conditionsAndOptions);
         return parent::selectOneAsDbRecord($columns, $conditionsAndOptions, $configurator);
     }
 
@@ -597,7 +619,7 @@ abstract class DbModel extends Table {
         if (!($expression instanceof \PeskyORM\Core\DbExpr)) {
             $expression = new \PeskyORM\Core\DbExpr($expression);
         }
-        [, $conditionsAndOptions] = static::resolveContains([], $conditionsAndOptions);
+        [, $conditionsAndOptions] = static::normalizeConditionsAndOptions([], $conditionsAndOptions);
         return static::selectValue($expression, $conditionsAndOptions);
     }
     

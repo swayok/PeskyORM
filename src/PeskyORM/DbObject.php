@@ -2,6 +2,7 @@
 
 namespace PeskyORM;
 use PeskyORM\ORM\Record;
+use PeskyORM\ORM\TableStructure;
 
 /**
  * Class DbObject
@@ -48,10 +49,10 @@ class DbObject extends Record {
 
     /**
      * @deprecated
-     * @return \PeskyORM\DbTableConfig
+     * @return \PeskyORM\DbTableConfig|TableStructure
      */
     public function _getTableConfig() {
-        return $this->_getModel()->getTableConfig();
+        return static::getTableStructure();
     }
 
     /**
