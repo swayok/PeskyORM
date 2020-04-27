@@ -12,7 +12,7 @@ abstract class TableStructure implements TableStructureInterface {
      * It uses PeskyORM\Core\DbConnectionsManager::getConnection(static::$connectionName)->describeTable(static::$name)
      * @var bool
      */
-    static protected $autodetectColumnConfigs = false;
+    static protected $autodetectColumnsConfigs = false;
     /**
      * Loads columns and relations configs from private methods of child class
      * Disable if you do not use private methods to define columns and relations
@@ -98,13 +98,31 @@ abstract class TableStructure implements TableStructureInterface {
      */
     protected function loadConfigs() {
         if (static::$autoloadConfigsFromPrivateMethods) {
-            $this->loadColumnConfigsFromPrivateMethods();
+            $this->loadColumnsConfigsFromPrivateMethods();
         }
-        if (static::$autodetectColumnConfigs) {
-            $this->createMissingColumnConfigsFromDbTableDescription();
+        if (static::$autodetectColumnsConfigs) {
+            $this->createMissingColumnsConfigsFromDbTableDescription();
         }
+        $this->loadColumnsConfigs();
+        $this->loadRelationsConfigs();
         $this->analyze();
         $this->validate();
+    }
+
+    /**
+     * Load columns configs that are not loaded from private methods
+     * Use $this->addColumn() to add column config
+     */
+    protected function loadColumnsConfigs() {
+
+    }
+
+    /**
+     * Load relations configs that are not loaded from private methods
+     * Use $this->addRelation() to add relation config
+     */
+    protected function loadRelationsConfigs() {
+
     }
 
     /**
@@ -301,7 +319,7 @@ abstract class TableStructure implements TableStructureInterface {
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      */
-    protected function loadColumnConfigsFromPrivateMethods() {
+    protected function loadColumnsConfigsFromPrivateMethods() {
         $objectReflection = new \ReflectionObject($this);
         $methods = $objectReflection->getMethods(\ReflectionMethod::IS_PRIVATE);
         foreach ($methods as $method) {
@@ -321,7 +339,7 @@ abstract class TableStructure implements TableStructureInterface {
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    protected function createMissingColumnConfigsFromDbTableDescription() {
+    protected function createMissingColumnsConfigsFromDbTableDescription() {
         $description = DbConnectionsManager::getConnection(static::getConnectionName(false))
             ->describeTable(static::getTableName(), static::getSchema());
         foreach ($description->getColumns() as $columnName => $columnDescription) {
