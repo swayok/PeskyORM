@@ -178,7 +178,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param string $key
      * @return Column[]|Column|Relation[]
      */
-    static private function getCachedColumnsOrRelations(string $key = 'columns'): array {
+    static private function getCachedColumnsOrRelations(string $key = 'columns') {
         // significantly decreases execution time on heavy ORM usage (proved by profilig with xdebug)
         if (!isset(self::$columns[static::class])) {
             $tableStructure = static::getTableStructure();
