@@ -2,6 +2,8 @@
 
 namespace PeskyORM;
 use PeskyORM\ORM\Record;
+use PeskyORM\ORM\RecordsArray;
+use PeskyORM\ORM\Relation;
 use PeskyORM\ORM\TableStructure;
 
 /**
@@ -163,4 +165,19 @@ class DbObject extends Record {
         return $this->getDefaults($fieldNames, $ignoreExcludedFields, true);
     }
 
+    public function readRelatedRecord($relationName) {
+        $ret = parent::readRelatedRecord($relationName);
+        $relation = static::getRelation($relationName);
+        if ($relation->getType() === Relation::HAS_MANY && is_array($this->relatedRecords[$relationName])) {
+            // todo: remove this after DbModel::select will always return RecordsSet
+            $this->relatedRecords[$relationName] = new RecordsArray(
+                $relation->getForeignTable(),
+                $this->relatedRecords[$relationName],
+                true,
+                $this->isTrustDbDataMode()
+            );
+        }
+        return $ret;
+    }
+    
 }
