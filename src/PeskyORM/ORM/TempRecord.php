@@ -40,7 +40,7 @@ class TempRecord implements RecordInterface {
      * @param string $name
      * @return bool
      */
-    static public function hasColumn($name) {
+    static public function hasColumn($name): bool {
         return false;
     }
 
@@ -49,7 +49,7 @@ class TempRecord implements RecordInterface {
      * @param string|null $format - filled when $name is something like 'timestamp_as_date' (returns 'date')
      * @return Column
      */
-    static public function getColumn($name, string &$format = null) {
+    static public function getColumn(string $name, string &$format = null) {
         return null;
     }
 
@@ -81,10 +81,10 @@ class TempRecord implements RecordInterface {
     /**
      * Get a value from specific $columnName with optional $format
      * @param string|Column $column
-     * @param null $format - change value format (list of formats depend on Column type and config)
+     * @param null|string $format - change value format (list of formats depend on Column type and config)
      * @return mixed
      */
-    public function getValue($column, $format = null) {
+    public function getValue($column, ?string $format = null) {
         return array_get($this->data, $column);
     }
 
@@ -94,18 +94,18 @@ class TempRecord implements RecordInterface {
      * @param bool $trueIfThereIsDefaultValue - true: returns true if there is no value set but column has default value
      * @return bool
      */
-    public function hasValue($column, $trueIfThereIsDefaultValue = false) {
+    public function hasValue($column, bool $trueIfThereIsDefaultValue = false): bool {
         return array_has($this->data, $column);
     }
 
     /**
      * Set a $value for $columnName
-     * @param string $column
+     * @param string|Column $column
      * @param mixed $value
      * @param boolean $isFromDb
      * @return $this
      */
-    public function updateValue($column, $value, $isFromDb) {
+    public function updateValue($column, $value, bool $isFromDb) {
         $this->data[$column] = $value;
         return $this;
     }
@@ -122,7 +122,7 @@ class TempRecord implements RecordInterface {
      * Check if there is a value for primary key column
      * @return bool
      */
-    public function hasPrimaryKeyValue() {
+    public function hasPrimaryKeyValue(): bool {
         return false;
     }
 
@@ -131,7 +131,7 @@ class TempRecord implements RecordInterface {
      * @param bool $useDbQuery - false: use only primary key value to check existence | true: use db query
      * @return bool
      */
-    public function existsInDb($useDbQuery = false) {
+    public function existsInDb(bool $useDbQuery = false): bool {
         return $this->existsInDb;
     }
 
@@ -150,7 +150,7 @@ class TempRecord implements RecordInterface {
      * @param bool $loadIfNotSet - true: read relation data if it is not set
      * @return Record|RecordsSet
      */
-    public function getRelatedRecord($relationName, $loadIfNotSet = false) {
+    public function getRelatedRecord(string $relationName, bool $loadIfNotSet = false) {
         return null;
     }
 
@@ -159,7 +159,7 @@ class TempRecord implements RecordInterface {
      * @param string $relationName - name of relation defined in TableStructure
      * @return $this
      */
-    public function readRelatedRecord($relationName) {
+    public function readRelatedRecord(string $relationName) {
         return $this;
     }
 
@@ -168,7 +168,7 @@ class TempRecord implements RecordInterface {
      * @param string $relationName
      * @return bool
      */
-    public function isRelatedRecordAttached($relationName) {
+    public function isRelatedRecordAttached(string $relationName): bool {
         return false;
     }
 
@@ -179,16 +179,16 @@ class TempRecord implements RecordInterface {
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
      * @return $this
      */
-    public function updateRelatedRecord($relationName, $relatedRecord, $isFromDb = null, $haltOnUnknownColumnNames = true) {
+    public function updateRelatedRecord($relationName, $relatedRecord, ?bool $isFromDb = null, bool  $haltOnUnknownColumnNames = true) {
         return $this;
     }
 
     /**
      * Remove related record
-     * @param string $name
+     * @param string $relationName
      * @return $this
      */
-    public function unsetRelatedRecord($name) {
+    public function unsetRelatedRecord(string $relationName) {
         return $this;
     }
 
@@ -201,7 +201,7 @@ class TempRecord implements RecordInterface {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function fromData(array $data, $isFromDb = false, $haltOnUnknownColumnNames = true) {
+    public function fromData(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true) {
         $this->data = $data;
         $this->setEsistsInDb($isFromDb);
         return $this;
@@ -280,7 +280,7 @@ class TempRecord implements RecordInterface {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function updateValues(array $data, $isFromDb = false, $haltOnUnknownColumnNames = true) {
+    public function updateValues(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true) {
         $this->data = array_merge($this->data, $data);
         return $this;
     }
@@ -320,7 +320,7 @@ class TempRecord implements RecordInterface {
      * @return $this
      * @throws \BadMethodCallException
      */
-    public function commit(array $relationsToSave = [], $deleteNotListedRelatedRecords = false) {
+    public function commit(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false) {
         throw new \BadMethodCallException('Method cannot be used for this class (' . get_class($this) . ')');
     }
 
@@ -336,7 +336,7 @@ class TempRecord implements RecordInterface {
      * @return $this
      * @throws \BadMethodCallException
      */
-    public function save(array $relationsToSave = [], $deleteNotListedRelatedRecords = false) {
+    public function save(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false) {
         throw new \BadMethodCallException('Method cannot be used for this class (' . get_class($this) . ')');
     }
 
@@ -350,7 +350,7 @@ class TempRecord implements RecordInterface {
      *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      * @throws \BadMethodCallException
      */
-    public function saveRelations(array $relationsToSave = [], $deleteNotListedRelatedRecords = false) {
+    public function saveRelations(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false) {
         throw new \BadMethodCallException('Method cannot be used for this class (' . get_class($this) . ')');
     }
 
@@ -362,7 +362,7 @@ class TempRecord implements RecordInterface {
      * @return $this
      * @throws \BadMethodCallException
      */
-    public function delete($resetAllValuesAfterDelete = true, $deleteFiles = true) {
+    public function delete($resetAllValuesAfterDelete = true, bool $deleteFiles = true) {
         throw new \BadMethodCallException('Method cannot be used for this class (' . get_class($this) . ')');
     }
 
@@ -377,9 +377,9 @@ class TempRecord implements RecordInterface {
     public function toArray(
         array $columnsNames = [],
         array $relatedRecordsNames = [],
-        $loadRelatedRecordsIfNotSet = false,
-        $withFilesInfo = true
-    ) {
+        bool $loadRelatedRecordsIfNotSet = false,
+        bool $withFilesInfo = true
+    ): array {
         if (
             empty($columnsNames)
             || (count($columnsNames) === 1 && $columnsNames[0] === '*')
@@ -405,8 +405,8 @@ class TempRecord implements RecordInterface {
     public function toArrayWithoutFiles(
         array $columnsNames = [],
         array $relatedRecordsNames = [],
-        $loadRelatedRecordsIfNotSet = false
-    ) {
+        bool $loadRelatedRecordsIfNotSet = false
+    ): array {
         return $this->toArray($columnsNames, $relatedRecordsNames, $loadRelatedRecordsIfNotSet, false);
     }
 
@@ -422,7 +422,7 @@ class TempRecord implements RecordInterface {
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    public function getDefaults(array $columns = [], $ignoreColumnsThatDoNotExistInDB = true, $nullifyDbExprValues = true) {
+    public function getDefaults(array $columns = [], bool $ignoreColumnsThatDoNotExistInDB = true, bool $nullifyDbExprValues = true): array {
         return [];
     }
 }
