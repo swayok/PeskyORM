@@ -1391,7 +1391,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return array - errors
      */
     static public function validateValue($column, $value, bool $isFromDb = false) {
-        if (!is_string($column)) {
+        if (is_string($column)) {
             $column = static::getColumn($column);
         }
         return $column->validateValue($value, $isFromDb, false);
