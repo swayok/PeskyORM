@@ -13,14 +13,14 @@ class TestingAdmin2 extends Record {
         return TestingAdminsTable::getInstance();
     }
 
-    protected function beforeSave(array $columnsToSave, array $data, $isUpdate) {
+    protected function beforeSave(array $columnsToSave, array $data, bool $isUpdate) {
         if ($isUpdate) {
             return ['login' => ['error']];
         }
         return [];
     }
 
-    protected function afterSave($isCreated, array $updatedColumns = []) {
+    protected function afterSave(bool $isCreated, array $updatedColumns = []) {
         throw new \BadMethodCallException('after: no-no-no!');
     }
 
