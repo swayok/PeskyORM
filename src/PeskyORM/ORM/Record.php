@@ -1338,17 +1338,21 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     protected function runColumnSavingExtenders(array $columnsToSave, array $dataSavedToDb, array $updatesReceivedFromDb, bool $isUpdate) {
         $updatedColumns = array_merge(
             array_keys($dataSavedToDb),
-            array_intersect(array_keys(static::getColumnsThatDoNotExistInDb()), $columnsToSave)
+            static::getColumnsThatDoNotExistInDb()
         );
-        foreach ($updatedColumns as $columnName) {
-            $column = static::getColumn($columnName);
+        foreach ($updatedColumns as $column) {
+            if (is_string($column)) {
+                $column = static::getColumn($column);
+            }
             $valueObject = $this->getValueContainerByColumnConfig($column);
-            call_user_func(
-                $column->getValueSavingExtender(),
-                $valueObject,
-                $isUpdate,
-                $updatesReceivedFromDb
-            );
+            if ($column->isItExistsInDb() || $valueObject->hasValue()) {
+                call_user_func(
+                    $column->getValueSavingExtender(),
+                    $valueObject,
+                    $isUpdate,
+                    $updatesReceivedFromDb
+                );
+            }
             $valueObject->pullDataForSavingExtender();
         }
     }
