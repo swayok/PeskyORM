@@ -188,13 +188,6 @@ class Relation {
                 );
             }
             $this->foreignTableClass = $foreignTableClass;
-            /** @var TableInterface $foreignTableClass */
-            $this->foreignTable = $foreignTableClass::getInstance();
-            if (!($this->foreignTable instanceof TableInterface)) {
-                throw new \InvalidArgumentException(
-                    "\$foreignTableClass must implement TableInterface"
-                );
-            }
         }
         return $this;
     }
@@ -205,7 +198,13 @@ class Relation {
      */
     public function getForeignTable() {
         if (!$this->foreignTable) {
-            throw new \BadMethodCallException('You need to provide foreign table class via setForeignTableClass()');
+            if (!$this->foreignTableClass) {
+                throw new \BadMethodCallException('You need to provide foreign table class via setForeignTableClass()');
+                } else {
+                /** @var TableInterface $foreignTableClass */
+                $this->foreignTable = $foreignTableClass::getInstance();
+                // note: it is already validated to implement TableInterface in setForeignTableClass()
+            }
         }
         return $this->foreignTable;
     }
