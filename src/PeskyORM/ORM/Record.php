@@ -176,7 +176,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * @param string $key
-     * @return Column[]|Column|Relation[]
+     * @return mixed
      */
     static private function getCachedColumnsOrRelations(string $key = 'columns') {
         // significantly decreases execution time on heavy ORM usage (proved by profilig with xdebug)
@@ -823,13 +823,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * Testif there are enough data to load related record
-     * @param string|Relation $relationName
+     * @param string|Relation $relation
      * @return bool
      */
-    protected function isRelatedRecordCanBeRead(string $relationName): bool {
-        $relation = $relationName instanceof Relation
-            ? $relationName
-            : static::getRelation($relationName);
+    protected function isRelatedRecordCanBeRead($relation): bool {
+        $relation = $relation instanceof Relation
+            ? $relation
+            : static::getRelation($relation);
         return $this->hasValue($relation->getLocalColumnName());
     }
 
