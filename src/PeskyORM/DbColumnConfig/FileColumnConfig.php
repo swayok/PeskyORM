@@ -5,7 +5,6 @@ namespace PeskyORM\DbColumnConfig;
 use PeskyORM\DbColumnConfig;
 use PeskyORM\DbFileInfo;
 use PeskyORM\DbImageFileInfo;
-use PeskyORM\Exception\DbObjectFieldException;
 use PeskyORM\ORM\Record;
 use PeskyORM\ORM\RecordValue;
 use PeskyORMLaravel\Db\Column\Utils\MimeTypesHelper;

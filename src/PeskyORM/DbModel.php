@@ -480,7 +480,7 @@ abstract class DbModel extends Table {
                     $columnsToSelectForRelation = [];
                 }
                 $relationConfig = static::getStructure()->getRelation($alias);
-                if ($relationConfig->getType() === DbRelationConfig::HAS_MANY) {
+                if ($relationConfig->getType() === Relation::HAS_MANY) {
                     throw new \UnexpectedValueException("Queries with one-to-many joins are not allowed via 'CONTAIN' key");
                 } else {
                     $model = $relationConfig->getForeignTable();
