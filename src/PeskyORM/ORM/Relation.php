@@ -202,6 +202,7 @@ class Relation {
                 throw new \BadMethodCallException('You need to provide foreign table class via setForeignTableClass()');
                 } else {
                 /** @var TableInterface $foreignTableClass */
+                $foreignTableClass = $this->foreignTableClass;
                 $this->foreignTable = $foreignTableClass::getInstance();
                 // note: it is already validated to implement TableInterface in setForeignTableClass()
             }
