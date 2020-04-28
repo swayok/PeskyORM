@@ -322,6 +322,7 @@ abstract class TableStructure implements TableStructureInterface {
     protected function loadColumnsConfigsFromPrivateMethods() {
         $objectReflection = new \ReflectionObject($this);
         $methods = $objectReflection->getMethods(\ReflectionMethod::IS_PRIVATE);
+        $relationsMethods = [];
         foreach ($methods as $method) {
             if ($method->isStatic()) {
                 continue;
@@ -329,8 +330,12 @@ abstract class TableStructure implements TableStructureInterface {
             if (preg_match(Column::NAME_VALIDATION_REGEXP, $method->getName())) {
                 $this->loadColumnConfigFromMethodReflection($method);
             } else if (preg_match(JoinInfo::NAME_VALIDATION_REGEXP, $method->getName())) {
-                $this->loadRelationConfigFromMethodReflection($method);
+                $relationsMethods[] = $method;
             }
+        }
+        // relations must be loaded last to prevent possible issues when Relation requests column which id not loaded yet
+        foreach ($relationsMethods as $method) {
+            $this->loadRelationConfigFromMethodReflection($method);
         }
     }
 
