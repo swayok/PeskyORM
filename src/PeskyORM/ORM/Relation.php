@@ -43,9 +43,6 @@ class Relation {
      * @param string|TableInterface $foreignTableClass
      * @param string $foreignColumnName
      * @return static
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function create(
@@ -63,9 +60,6 @@ class Relation {
      * @param string|TableInterface $foreignTableClass
      * @param string $foreignColumnName
      * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \UnexpectedValueException
      */
     public function __construct(
         $localColumnName,
@@ -173,9 +167,6 @@ class Relation {
     /**
      * @param string|TableInterface $foreignTableClass
      * @return $this
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     public function setForeignTableClass($foreignTableClass) {
@@ -221,7 +212,6 @@ class Relation {
 
     /**
      * @return string
-     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     public function getForeignColumnName() {
@@ -255,6 +245,7 @@ class Relation {
      * @param bool $forStandaloneSelect
      * @param Record|null $localRecord
      * @return array
+     * @throws \UnexpectedValueException
      */
     public function getAdditionalJoinConditions(TableInterface $localTable, ?string $localTableAlias, bool $forStandaloneSelect, ?Record $localRecord = null): array {
         if ($this->additionalJoinConditions instanceof \Closure) {
