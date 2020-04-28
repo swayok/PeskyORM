@@ -1172,6 +1172,9 @@ class Column {
 
     /**
      * Additional processing for a column's value during a save.
+     * WARNING: to be triggered one of conditions is required to be true:
+     *   a) column exists in DB and RecordValue was saved to DB
+     *   b) column does not exist in DB and RecordValue has value
      * Called after record's values were saved to db and $this->updateValues($savedData, true) is called to
      * update RecordValue objects and mark them as "Received from DB"
      * Primary usage: storing files to file system or other storage
