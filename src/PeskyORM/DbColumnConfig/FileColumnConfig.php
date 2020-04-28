@@ -5,8 +5,10 @@ namespace PeskyORM\DbColumnConfig;
 use PeskyORM\DbColumnConfig;
 use PeskyORM\DbFileInfo;
 use PeskyORM\DbImageFileInfo;
+use PeskyORM\Exception\DbObjectFieldException;
 use PeskyORM\ORM\Record;
 use PeskyORM\ORM\RecordValue;
+use PeskyORMLaravel\Db\Column\Utils\MimeTypesHelper;
 use Swayok\Utils\File;
 use Swayok\Utils\Folder;
 use Swayok\Utils\Utils;
@@ -22,11 +24,11 @@ class FileColumnConfig extends DbColumnConfig {
     /** @var string|callable */
     protected $basePathToFiles;
     /** @var string|null|callable */
-    protected $baseUrlToFiles = null;
+    protected $baseUrlToFiles;
     /**
      * @var array|null - null: any extension
      */
-    protected $allowedFileExtensions = null;
+    protected $allowedFileExtensions;
     /**
      * @var string - null: no default extension
      */
@@ -34,23 +36,23 @@ class FileColumnConfig extends DbColumnConfig {
     /**
      * @var null|\Closure
      */
-    protected $fileNameGenerator = null;
+    protected $fileNameGenerator;
     /**
      * @var null|\Closure
      */
-    protected $fileSubdirGenerator = null;
+    protected $fileSubdirGenerator;
     /**
      * @var null|\Closure
      */
-    protected $fileDirPathGenerator = null;
+    protected $fileDirPathGenerator;
     /**
      * @var null|\Closure
      */
-    protected $fileDirRelativeUrlGenerator = null;
+    protected $fileDirRelativeUrlGenerator;
     /**
      * @var null|\Closure
      */
-    protected $fileServerUrlGenerator = null;
+    protected $fileServerUrlGenerator;
 
     /**
      * @param string $name
@@ -80,6 +82,9 @@ class FileColumnConfig extends DbColumnConfig {
     }
     
     protected function configureColumnClosures() {
+        $this->setValueExistenceChecker(function (RecordValue $value, bool $checkDefaultValue = false) {
+            return $value->hasValue() || ($value->getRecord()->existsInDb() && $this->isFileExists($value));
+        });
         $this->setValueGetter(function (RecordValue $value, $format = null) {
             $record = $value->getRecord();
             if ($record->existsInDb()) {
@@ -90,22 +95,63 @@ class FileColumnConfig extends DbColumnConfig {
         });
         $this->setValueValidator(function ($value, $isFromDb, $isForCondition) {
             if (!$isFromDb && !empty($value)) {
-                if (!Utils::isFileUpload($value)) {
-                    return ['File upload expected'];
-                } else if (!Utils::isSuccessfullFileUpload($value)) {
-                    return ['File upload failed'];
-                } else if (!File::exist($value['tmp_name'])) {
-                    return ['File upload was successful but file is missing'];
-                }
+                return [];
             }
-            return [];
+            return $this->validateUploadedFile($value);
         });
         $this->setValueSetter(function ($newValue, $isFromDb, RecordValue $valueContainer, $trustDataReceivedFromDb) {
             if ($isFromDb || empty($newValue)) {
+                // this column cannot have DB value because it does not exist in DB
+                // empty $newValue also not needed
+                return $valueContainer;
+            }
+            $errors = $this->validateValue($newValue, $isFromDb, false);
+            if (count($errors) > 0) {
+                return $valueContainer->setValidationErrors($errors);
+            }
+            // it is file upload - store it in container
+            return $valueContainer
+                ->setIsFromDb(false)
+                ->setRawValue($newValue['tmp_name'], $newValue['tmp_name'], false)
+                ->setValidValue($newValue['tmp_name'], $newValue['tmp_name'])
+                ->setDataForSavingExtender($newValue);
+        });
+        $this->setValueSavingExtender(function (RecordValue $valueContainer, $isUpdate, array $savedData) {
+            $fileUpload = $valueContainer->pullDataForSavingExtender();
+            if (empty($fileUpload)) {
+                // do not remove! infinite recursion will happen!
                 return;
             }
-            // todo: validate and save file
+            $valueContainer
+                ->setIsFromDb(true)
+                ->setRawValue(null, null, true)
+                ->setValidValue(null, null);
+            if ($isUpdate) {
+                $this->deleteFiles($valueContainer->getRecord());
+            }
+            $this->analyzeUploadedFileAndSaveToFS($valueContainer, $fileUpload);
         });
+        $this->setValueDeleteExtender(function (RecordValue $valueContainer, $deleteFiles) {
+            if ($deleteFiles) {
+                $this->deleteFiles($valueContainer->getRecord());
+            }
+        });
+    }
+    
+    protected function validateUploadedFile($value): array {
+        if (!Utils::isFileUpload($value)) {
+            return ['File upload expected'];
+        } else if (!Utils::isSuccessfullFileUpload($value)) {
+            return ['File upload failed'];
+        } else if (!File::exist($value['tmp_name'])) {
+            return ['File upload was successful but file is missing'];
+        }
+        try {
+            $this->detectUploadedFileExtension($value);
+        } catch (\InvalidArgumentException $exception) {
+            return [$exception->getMessage()];
+        }
+        return [];
     }
     
     /**
@@ -172,10 +218,18 @@ class FileColumnConfig extends DbColumnConfig {
         return $valueContainer->getCustomInfo(
             'FileInfo',
             function () use ($valueContainer) {
-                $class = $this->fileInfoClassName;
-                return new $class($valueContainer);
+                return $this->createFileInfoObject($valueContainer);
             }, true
         );
+    }
+    
+    /**
+     * @param RecordValue $valueContainer
+     * @return DbFileInfo|DbImageFileInfo
+     */
+    protected function createFileInfoObject(RecordValue $valueContainer) {
+        $class = $this->fileInfoClassName;
+        return new $class($valueContainer);
     }
     
     /**
@@ -473,5 +527,91 @@ class FileColumnConfig extends DbColumnConfig {
             }
         }
     }
-
+    
+    /**
+     * Save file to FS + collect information
+     * @param RecordValue $valueContainer - uploaded file info
+     * @param array $uploadedFileInfo - uploaded file info
+     * @return null|DbFileInfo|DbImageFileInfo - array: information about file same as when you get by callings $this->getFileInfoFromInfoFile()
+     */
+    protected function analyzeUploadedFileAndSaveToFS(RecordValue $valueContainer, array $uploadedFileInfo) {
+        $pathToFiles = $this->getFileDirPath($valueContainer->getRecord());
+        if (!is_dir($pathToFiles)) {
+            Folder::add($pathToFiles, 0777);
+        }
+        $fileInfo = $this->createFileInfoObject($valueContainer);
+        
+        $fileInfo->setOriginalFileNameWithoutExtension(preg_replace('%\.[a-zA-Z0-9]{1,6}$%', '', $uploadedFileInfo['name']));
+        $fileInfo->setOriginalFileNameWithExtension($uploadedFileInfo['name']);
+        
+        $fileName = $this->getFileNameWithoutExtension();
+        $fileInfo->setFileNameWithoutExtension($fileName);
+        $fileInfo->setFileNameWithExtension($fileName);
+        $ext = $this->detectUploadedFileExtension($uploadedFileInfo);
+        $fileName .= '.' . $ext;
+        $fileInfo->setFileExtension($ext);
+        $fileInfo->setFileNameWithExtension($fileName);
+        $fileInfo->setOriginalFileNameWithExtension($fileInfo->getOriginalFileNameWithoutExtension() . '.' . $ext);
+        
+        // move tmp file to target file path
+        $filePath = $pathToFiles . $fileInfo->getFileNameWithExtension();
+        if (!File::load($uploadedFileInfo['tmp_name'])->move($filePath, 0666)) {
+            throw new \UnexpectedValueException('Failed to store file to file system');
+        }
+        $fileInfo->saveToFile();
+        
+        return $fileInfo;
+    }
+    
+    /**
+     * @param array $uploadedFileInfo
+     * @param string $filePath
+     * @param DbFileInfo|DbImageFileInfo $fileInfo
+     * @return void
+     */
+    protected function storeFileToFS(array $uploadedFileInfo, string $filePath, $fileInfo) {
+        if (!File::load($uploadedFileInfo['tmp_name'])->move($filePath, 0666)) {
+            throw new \UnexpectedValueException('Failed to store file to file system');
+        }
+    }
+    
+    /**
+     * Detect Uploaded file extension by file name or content type
+     * @param array $uploadedFileInfo - uploaded file info
+     * @return string - file extension without leading point (ex: 'mp4', 'mov', '')
+     * @throws \InvalidArgumentException
+     */
+    protected function detectUploadedFileExtension(array $uploadedFileInfo): ?string {
+        if (empty($uploadedFileInfo['type']) && empty($uploadedFileInfo['name']) && empty($uploadedFileInfo['tmp_name'])) {
+            throw new \InvalidArgumentException('Uploaded file extension cannot be detected');
+        }
+        // test content type
+        $receivedExt = null;
+        if (!empty($uploadedFileInfo['type'])) {
+            $receivedExt = MimeTypesHelper::getExtensionForMimeType($uploadedFileInfo['type']);
+        }
+        if (!$receivedExt) {
+            if (!empty($uploadedFileInfo['name'])) {
+                $receivedExt = preg_match('%\.([a-zA-Z0-9]+)\s*$%i', $uploadedFileInfo['name'], $matches) ? $matches[1] : '';
+            } else if (!empty($uploadedFileInfo['tmp_name'])) {
+                $receivedExt = preg_match('%\.([a-zA-Z0-9]+)\s*$%i', $uploadedFileInfo['tmp_name'], $matches) ? $matches[1] : '';
+            } else {
+                $receivedExt = $this->getDefaultFileExtension();
+            }
+        }
+        if (!$receivedExt) {
+            throw new \InvalidArgumentException('Uploaded file extension cannot be detected');
+        }
+        $receivedExt = strtolower($receivedExt);
+        if (!$this->isFileExtensionAllowed($receivedExt)) {
+            throw new \InvalidArgumentException('Uploaded file extension is not allowed');
+        }
+        return $receivedExt;
+    }
+    
+    protected function isFileExtensionAllowed(string $ext): bool {
+        $expectedExts = $this->getAllowedFileExtensions();
+        return is_string($ext) && (empty($expectedExts) || in_array($ext, $expectedExts, true));
+    }
+    
 }

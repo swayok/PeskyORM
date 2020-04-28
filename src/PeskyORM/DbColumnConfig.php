@@ -9,53 +9,6 @@ use Swayok\Utils\StringUtils;
 
 class DbColumnConfig extends Column {
 
-    const TYPE_SHA1 = 'sha1';
-    const TYPE_MD5 = 'md5';
-
-    const DB_TYPE_VARCHAR = 'varchar';
-    const DB_TYPE_TEXT = 'text';
-    const DB_TYPE_INT = 'integer';
-    const DB_TYPE_SMALLINT = 'smallint';
-    const DB_TYPE_BIGINT = 'bigint';
-    const DB_TYPE_FLOAT = 'numeric';
-    const DB_TYPE_BOOL = 'boolean';
-    const DB_TYPE_JSONB = 'jsonb';
-    const DB_TYPE_TIMESTAMP = 'timestamp';
-    const DB_TYPE_DATE = 'date';
-    const DB_TYPE_TIME = 'time';
-    const DB_TYPE_IP_ADDRESS = 'ip';
-
-    /**
-     * Contains map where keys are column types and values are real DB types
-     * If value is NULL then type is virtual and has no representation in DB
-     * @var array
-     */
-    static protected $typeToDbType = array(
-        self::TYPE_INT => self::DB_TYPE_INT,
-        self::TYPE_FLOAT => self::DB_TYPE_FLOAT,
-        self::TYPE_BOOL => self::DB_TYPE_BOOL,
-        self::TYPE_STRING => self::DB_TYPE_VARCHAR,
-        self::TYPE_TEXT => self::DB_TYPE_TEXT,
-        self::TYPE_JSON => self::DB_TYPE_TEXT,
-        self::TYPE_JSONB => self::DB_TYPE_JSONB,
-        self::TYPE_SHA1 => self::DB_TYPE_VARCHAR,
-        self::TYPE_MD5 => self::DB_TYPE_VARCHAR,
-        self::TYPE_PASSWORD => self::DB_TYPE_VARCHAR,
-        self::TYPE_EMAIL => self::DB_TYPE_VARCHAR,
-        self::TYPE_TIMESTAMP => self::DB_TYPE_TIMESTAMP,
-        self::TYPE_DATE => self::DB_TYPE_DATE,
-        self::TYPE_TIME => self::DB_TYPE_TIME,
-        self::TYPE_TIMEZONE_OFFSET => self::DB_TYPE_INT,
-        self::TYPE_ENUM => self::DB_TYPE_VARCHAR,
-        self::TYPE_IPV4_ADDRESS => self::DB_TYPE_IP_ADDRESS,
-        self::TYPE_FILE => null,
-        self::TYPE_IMAGE => null,
-    );
-
-    // params that can be set directly or calculated
-    /** @var string */
-    protected $dbType;
-
     /**
      * @deprecated
      * @return DbTableConfig|TableStructure

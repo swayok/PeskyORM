@@ -126,4 +126,33 @@ class ImageColumnConfig extends FileColumnConfig {
             $this->getImageVersionsConfigs()
         );
     }
+    
+    protected function validateUploadedFile($value): array {
+        $errors = parent::validateUploadedFile($value);
+        if (empty($errors) && !ImageUtils::isImage($value)) {
+            return ['Uploaded file is not image or image type is not supported'];
+        }
+        return $errors;
+    }
+    
+    protected function storeFileToFS(array $uploadedFileInfo, string $filePath, $fileInfo) {
+        $filesNames = ImageUtils::resize(
+            $uploadedFileInfo,
+            $filePath,
+            $fileInfo->getFileNameWithoutExtension(),
+            $this->getImageVersionsConfigs()
+        );
+        $fileInfo->setFilesNames($filesNames);
+        // update file info if there was a ImageVersionConfig::SOURCE_VERSION_NAME version of image and it is different
+        if (
+            !empty($filesNames[ImageVersionConfig::SOURCE_VERSION_NAME])
+            && $filesNames[ImageVersionConfig::SOURCE_VERSION_NAME] !== $fileInfo->getFileNameWithExtension()
+        ) {
+            $fileInfo->setFileNameWithExtension($filesNames[ImageVersionConfig::SOURCE_VERSION_NAME]);
+            if (preg_match('%(^.*?)\.([a-zA-Z0-9]+)$%', $filesNames[ImageVersionConfig::SOURCE_VERSION_NAME], $parts)) {
+                $fileInfo->setFileNameWithoutExtension($parts[1])
+                    ->setFileExtension($parts[2]);
+            }
+        }
+    }
 }
