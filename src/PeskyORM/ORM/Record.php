@@ -1152,7 +1152,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Note: throws exception if used without begin()
      * @return array
      */
-    protected function getAllColumnsWithAutoUpdatingValues(): bool {
+    protected function getAllColumnsWithAutoUpdatingValues(): array {
         $columnsNames = [];
         foreach (static::getColumns() as $columnName => $column) {
             if ($column->isAutoUpdatingValue() && $column->isItExistsInDb()) {
