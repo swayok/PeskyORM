@@ -217,7 +217,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return Column
      * @throws \InvalidArgumentException
      */
-    static public function getColumn(string $name, string &$format = null) {
+    static public function getColumn(string $name, string &$format = null): Column {
         $columns = static::getColumns(true);
         if (!isset($columns[$name])) {
             throw new \InvalidArgumentException(
@@ -236,11 +236,16 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         return isset(static::getColumns(true)[$name]);
     }
 
-    /**
-     * @return Column
-     */
-    static public function getPrimaryKeyColumn() {
-        return static::getCachedColumnsOrRelations('pk_column');
+    static public function getPrimaryKeyColumn(): Column {
+        $column = static::getCachedColumnsOrRelations('pk_column');
+        if (!$column) {
+            throw new \BadMethodCallException('There is no primary key column in ' . get_class(static::getTableStructure()));
+        }
+        return $column;
+    }
+
+    static public function hasPrimaryKeyColumn(): bool {
+        return (bool)static::getCachedColumnsOrRelations('pk_column');
     }
 
     /**
@@ -262,7 +267,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return Relation
      * @throws \InvalidArgumentException
      */
-    static public function getRelation(string $name) {
+    static public function getRelation(string $name): Relation {
         $relations = static::getRelations();
         if (!isset($relations[$name])) {
             throw new \InvalidArgumentException(
