@@ -103,7 +103,7 @@ VIEW;
         }
         return $table;
     }
-
+    
     /**
      * @param bool $writable - true: connection must have access to write data into DB
      * @return DbAdapterInterface
@@ -112,7 +112,7 @@ VIEW;
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    static public function getConnection($writable = false) {
+    static public function getConnection($writable = false): DbAdapterInterface {
         return static::getInstance()->connection ?: parent::getConnection($writable);
     }
 

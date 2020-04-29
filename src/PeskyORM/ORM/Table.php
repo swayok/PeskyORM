@@ -14,183 +14,122 @@ abstract class Table implements TableInterface {
     static private $instances = [];
     /** @var string */
     protected $alias;
-
+    
     /**
      * @return $this
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
      */
-    final static public function getInstance() {
+    final static public function getInstance(): TableInterface {
         if (!isset(self::$instances[static::class])) {
             self::$instances[static::class] = new static();
         }
         return self::$instances[static::class];
     }
-
+    
     /**
      * Shortcut for static::getInstance()
      * @return $this
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
      */
-    final static public function i() {
+    final static public function i(): TableInterface {
         return static::getInstance();
     }
-
+    
     /**
      * Get table name
      * @return string
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
-    static public function getName() {
+    static public function getName(): string {
         return static::getStructure()->getTableName();
     }
-
+    
     /**
      * @param bool $writable - true: connection must have access to write data into DB
      * @return DbAdapterInterface
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      */
-    static public function getConnection($writable = false) {
+    static public function getConnection($writable = false): DbAdapterInterface {
         return DbConnectionsManager::getConnection(static::getStructure()->getConnectionName($writable));
     }
-
+    
     /**
      * @return TableStructure
-     * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
      */
-    static public function getStructure() {
+    static public function getStructure(): TableStructureInterface {
         return static::getInstance()->getTableStructure();
     }
-
-    /**
-     * @return string
-     * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     */
-    static public function getAlias() {
+    
+    static public function getAlias(): string {
         return static::getInstance()->getTableAlias();
     }
-
-    /**
-     * @return string
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
-     */
-    public function getTableAlias() {
+    
+    public function getTableAlias(): string {
         if (!$this->alias || !is_string($this->alias)) {
             $this->alias = StringUtils::classify(static::getName());
         }
         return $this->alias;
     }
-
-    /**
-     * @return bool
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     */
-    static public function hasPkColumn() {
+    
+    static public function hasPkColumn(): bool {
         return static::getStructure()->hasPkColumn();
     }
-
-    /**
-     * @return Column
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     */
-    static public function getPkColumn() {
+    
+    static public function getPkColumn(): Column {
         return static::getStructure()->getPkColumn();
     }
-
-    /**
-     * @return string
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     */
-    static public function getPkColumnName() {
+    
+    static public function getPkColumnName(): string {
         return static::getStructure()->getPkColumnName();
     }
-
+    
     /**
      * @param string $relationName - alias for relation defined in TableStructure
      * @return TableInterface
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      */
-    static public function getRelatedTable($relationName) {
+    static public function getRelatedTable($relationName): TableInterface {
         return static::getStructure()->getRelation($relationName)->getForeignTable();
     }
-
+    
     /**
      * Get OrmJoinInfo for required relation
      * @param string $relationName
      * @param string|null $alterLocalTableAlias - alter this table's alias in join config
      * @param string|null $joinName - string: specific join name; null: $relationName is used
      * @return OrmJoinInfo
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
-    static public function getJoinConfigForRelation($relationName, $alterLocalTableAlias = null, $joinName = null) {
+    static public function getJoinConfigForRelation($relationName, $alterLocalTableAlias = null, $joinName = null): OrmJoinInfo {
         return static::getStructure()->getRelation($relationName)->toOrmJoinConfig(
             static::getInstance(),
             $alterLocalTableAlias,
             $joinName
         );
     }
-
+    
     /**
      * @param string $relationName - alias for relation defined in TableStructure
      * @return bool
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
-    static public function hasRelation($relationName) {
+    static public function hasRelation($relationName): bool {
         return static::getStructure()->hasRelation($relationName);
     }
-
+    
     /**
      * @return DbExpr
-     * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Exception\DbException
      */
-    static public function getExpressionToSetDefaultValueForAColumn() {
-        if (get_called_class() === __CLASS__) {
+    static public function getExpressionToSetDefaultValueForAColumn(): DbExpr {
+        if (static::class === __CLASS__) {
             throw new \BadMethodCallException(
                 'Trying to call abstract method ' . __CLASS__ . '::getConnection(). Use child classes to do that'
             );
         }
         return static::getConnection(true)->getExpressionToSetDefaultValueForAColumn();
     }
-
+    
     /**
      * @param string|array $columns
      * @param array $conditions
-     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return OrmSelect
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
-    static public function makeSelect($columns, array $conditions = [], \Closure $configurator = null) {
+    static public function makeSelect($columns, array $conditions = [], ?\Closure $configurator = null): OrmSelect {
         $select = OrmSelect::from(static::getInstance())
             ->fromConfigsArray($conditions)
             ->columns($columns);
@@ -203,136 +142,103 @@ abstract class Table implements TableInterface {
     /**
      * @param string|array $columns
      * @param array $conditions
-     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return RecordsSet
-     * @throws \PeskyORM\Exception\OrmException
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @return RecordsSet - Do not typehint returning value! it actually may be overriden to return array
      * @throws \PDOException
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      */
-    static public function select($columns = '*', array $conditions = [], \Closure $configurator = null) {
+    static public function select($columns = '*', array $conditions = [], ?\Closure $configurator = null) {
         return RecordsSet::createFromOrmSelect(static::makeSelect($columns, $conditions, $configurator));
     }
-
+    
     /**
      * Selects only 1 column
      * @param string $column
      * @param array $conditions
-     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      */
-    static public function selectColumn($column, array $conditions = [], \Closure $configurator = null) {
+    static public function selectColumn($column, array $conditions = [], ?\Closure $configurator = null): array {
         return static::makeSelect(['value' => $column], $conditions, $configurator)->fetchColumn();
     }
-
+    
     /**
      * Select associative array
      * Note: does not support columns from foreign models
      * @param string $keysColumn
      * @param string $valuesColumn
      * @param array $conditions
-     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      */
-    static public function selectAssoc($keysColumn, $valuesColumn, array $conditions = [], \Closure $configurator = null) {
+    static public function selectAssoc(string $keysColumn, string $valuesColumn, array $conditions = [], ?\Closure $configurator = null): array {
         return static::makeSelect([], $conditions, $configurator)
             ->fetchAssoc($keysColumn, $valuesColumn);
     }
-
+    
     /**
      * Get 1 record from DB as array
      * @param string|array $columns
      * @param array $conditions
-     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      */
-    static public function selectOne($columns, array $conditions, \Closure $configurator = null) {
+    static public function selectOne($columns, array $conditions, ?\Closure $configurator = null): array {
         return static::makeSelect($columns, $conditions, $configurator)->fetchOne();
     }
-
+    
     /**
      * Get 1 record from DB as Record
      * @param string|array $columns
      * @param array $conditions
-     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return RecordInterface
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \PeskyORM\Exception\InvalidDataException
      * @throws \PDOException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
-    static public function selectOneAsDbRecord($columns, array $conditions, \Closure $configurator = null) {
+    static public function selectOneAsDbRecord($columns, array $conditions, ?\Closure $configurator = null): \PeskyORM\ORM\RecordInterface {
         return static::makeSelect($columns, $conditions, $configurator)->fetchOneAsDbRecord();
     }
-
+    
     /**
      * Make a query that returns only 1 value defined by $expression
      * @param DbExpr $expression - example: DbExpr::create('COUNT(*)'), DbExpr::create('SUM(`field`)')
      * @param array $conditions
-     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return string
-     * @throws \PeskyORM\Exception\OrmException
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @return string|null
      * @throws \PDOException
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      */
-    static public function selectValue(DbExpr $expression, array $conditions = [], \Closure $configurator = null) {
+    static public function selectValue(DbExpr $expression, array $conditions = [], ?\Closure $configurator = null): ?string {
         return static::makeSelect(['value' => $expression], $conditions, $configurator)->fetchValue($expression);
     }
 
     /**
      * Does table contain any record matching provided condition
      * @param array $conditions
-     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return bool
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
      * @throws \PDOException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
-    static public function hasMatchingRecord(array $conditions, \Closure $configurator = null) {
+    static public function hasMatchingRecord(array $conditions, ?\Closure $configurator = null): bool {
         $callback = function (OrmSelect $select) use ($configurator) {
             if ($configurator) {
-                call_user_func($configurator, $select);
+                $configurator($select);
             }
             $select->offset(0)->limit(1)->removeOrdering();
         };
         return (int)static::selectValue(DbExpr::create('1'), $conditions, $callback) === 1;
     }
-
+    
     /**
      * @param array $conditions
-     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      *      Note: columns list, LIMIT, OFFSET and ORDER BY are not applied to count query
      * @param bool $removeNotInnerJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
      * @return int
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \BadMethodCallException
      * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
-    static public function count(array $conditions = [], \Closure $configurator = null, $removeNotInnerJoins = false) {
+    static public function count(array $conditions = [], ?\Closure $configurator = null, bool $removeNotInnerJoins = false): int {
         return static::makeSelect(
                 [static::getInstance()->getTableStructure()->getPkColumnName()],
                 $conditions,
@@ -340,35 +246,32 @@ abstract class Table implements TableInterface {
             )
             ->fetchCount($removeNotInnerJoins);
     }
-
+    
     /**
      * @param bool $useWritableConnection
      * @return null|string
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      */
-    static public function getLastQuery($useWritableConnection) {
+    static public function getLastQuery(bool $useWritableConnection): ?string {
         try {
             return static::getConnection($useWritableConnection)->getLastQuery();
         } catch (\Exception $exception) {
             return $exception->getMessage() . '. ' . $exception->getTraceAsString();
         }
     }
-
+    
     /**
      * @param bool $readOnly
      * @param null|string $transactionType
      * @return void
      */
-    static public function beginTransaction($readOnly = false, $transactionType = null) {
+    static public function beginTransaction(bool $readOnly = false, ?string $transactionType = null) {
         static::getConnection(true)->begin($readOnly, $transactionType);
     }
-
+    
     /**
      * @return bool
      */
-    static public function inTransaction() {
+    static public function inTransaction(): bool {
         return static::getConnection(true)->inTransaction();
     }
 
@@ -385,7 +288,7 @@ abstract class Table implements TableInterface {
     static public function rollBackTransaction() {
         static::getConnection(true)->rollBack();
     }
-
+    
     /**
      * @return void
      */
@@ -394,44 +297,46 @@ abstract class Table implements TableInterface {
             static::rollBackTransaction();
         }
     }
-
+    
     /**
      * @param string $name
      * @return string
      */
-    static public function quoteDbEntityName($name) {
+    static public function quoteDbEntityName(string $name): string {
         return static::getConnection(true)->quoteDbEntityName($name);
     }
-
+    
     /**
      * @param mixed $value
      * @param int $fieldInfoOrType
      * @return string
      */
-    static public function quoteValue($value, $fieldInfoOrType = \PDO::PARAM_STR) {
+    static public function quoteValue($value, int $fieldInfoOrType = \PDO::PARAM_STR): string {
         return static::getConnection(true)->quoteValue($value, $fieldInfoOrType);
     }
-
+    
     /**
      * @param DbExpr $value
      * @return string
      */
-    static public function quoteDbExpr(DbExpr $value) {
+    static public function quoteDbExpr(DbExpr $value): string {
         return static::getConnection(true)->quoteDbExpr($value);
     }
-
+    
     /**
      * @param string|DbExpr $query
      * @param string|null $fetchData - null: return PDOStatement; string: one of \PeskyORM\Core\Utils::FETCH_*
      * @return \PDOStatement|array
+     * @throws \PDOException
      */
-    static public function query($query, $fetchData = null) {
+    static public function query($query, ?string $fetchData = null) {
         return static::getConnection(true)->query($query, $fetchData);
     }
 
     /**
      * @param string|DbExpr $query
      * @return int|array = array: returned if $returning argument is not empty
+     * @throws \PDOException
      */
     static public function exec($query) {
         return static::getConnection(true)->exec($query);
@@ -444,10 +349,7 @@ abstract class Table implements TableInterface {
      *          - false: do not return anything
      *          - array: list of columns to return values for
      * @return array|bool - array returned only if $returning is not empty
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
      * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
     static public function insert(array $data, $returning = false) {
         return static::getConnection(true)->insert(
@@ -457,17 +359,15 @@ abstract class Table implements TableInterface {
             $returning
         );
     }
-
+    
     /**
      * Insert new record or update existing one if duplicate value found for $columnName
      * @param array $data
      * @param string $columnName - column to detect duplicates (only 1 column allowed!)
      * @return RecordInterface
-     * @throws \PeskyORM\Exception\InvalidDataException
-     * @throws \PeskyORM\Exception\InvalidTableColumnConfigException
-     * @throws \PeskyORM\Exception\OrmException
+     * @throws \PDOException
      */
-    static public function upsert(array $data, $columnName) {
+    static public function upsert(array $data, string $columnName): RecordInterface {
         if (!isset($data[$columnName])) {
             throw new \InvalidArgumentException("There is no value for column {$columnName} in passed \$data");
         }
@@ -496,9 +396,6 @@ abstract class Table implements TableInterface {
      *          - false: do not return anything
      *          - array: list of columns to return values for
      * @return array|bool - array returned only if $returning is not empty
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      * @throws \PDOException
      */
     static public function insertMany(array $columns, array $rows, $returning = false) {
@@ -521,10 +418,7 @@ abstract class Table implements TableInterface {
      * @return array|int - information about update execution
      *          - int: number of modified rows (when $returning === false)
      *          - array: modified records (when $returning !== false)
-     * @throws \UnexpectedValueException
      * @throws \PDOException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      */
     static public function update(array $data, array $conditions, $returning = false) {
         return static::getConnection(true)->update(
@@ -543,9 +437,6 @@ abstract class Table implements TableInterface {
      *          - false: do not return anything
      *          - array: list of columns to return values for
      * @return int|array - int: number of deleted records | array: returned only if $returning is not empty
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      * @throws \PDOException
      */
     static public function delete(array $conditions = [], $returning = false) {
@@ -565,16 +456,13 @@ abstract class Table implements TableInterface {
         $tableStructure = static::getInstance()->getTableStructure();
         return ltrim($tableStructure::getSchema() . '.' . $tableStructure::getTableName(), '.');
     }
-
+    
     /**
      * Get list of PDO data types for requested $columns
      * @param array $columns
      * @return array
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      */
-    static protected function getPdoDataTypesForColumns(array $columns = []) {
+    static protected function getPdoDataTypesForColumns(array $columns = []): array {
         $pdoDataTypes = [];
         if (empty($columns)) {
             $columns = array_keys(static::getStructure()->getColumns());

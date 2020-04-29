@@ -6,175 +6,175 @@ use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 
 interface TableInterface {
-
+    
     /**
      * Table Name
      * @return string
      */
-    static public function getName();
-
+    static public function getName(): string;
+    
     /**
      * Table alias.
      * For example: if table name is 'user_actions' the alias might be 'UserActions'
      * @return string
      */
-    static public function getAlias();
-
+    static public function getAlias(): string;
+    
     /**
      * @param bool $writable - true: connection must have access to write data into DB
      * @return DbAdapterInterface
      */
-    static public function getConnection($writable = false);
-
+    static public function getConnection($writable = false): DbAdapterInterface;
+    
     /**
      * @return TableInterface
      */
-    static public function getInstance();
-
+    static public function getInstance(): \PeskyORM\ORM\TableInterface;
+    
     /**
      * Table schema description
      * @return TableStructure
      */
-    static public function getStructure();
+    static public function getStructure(): \PeskyORM\ORM\TableStructureInterface;
 
     /**
      * Table schema description
      * @return TableStructure
      */
     public function getTableStructure();
-
+    
     /**
      * @param string $relationName
      * @param string|null $alterLocalTableAlias - alter this table's alias in join config
      * @param string|null $joinName - string: specific join name; null: $relationName is used
      * @return OrmJoinInfo
      */
-    static public function getJoinConfigForRelation($relationName, $alterLocalTableAlias = null, $joinName = null);
-
+    static public function getJoinConfigForRelation($relationName, $alterLocalTableAlias = null, $joinName = null): \PeskyORM\ORM\OrmJoinInfo;
+    
     /**
      * @return bool
      */
-    static public function hasPkColumn();
-
+    static public function hasPkColumn(): bool;
+    
     /**
      * @return Column
      */
-    static public function getPkColumn();
-
+    static public function getPkColumn(): \PeskyORM\ORM\Column;
+    
     /**
      * @return mixed
      */
-    static public function getPkColumnName();
+    static public function getPkColumnName(): string;
 
     /**
      * @return Record
      */
     public function newRecord();
-
+    
     /**
      * @param bool $useWritableConnection
      * @return null|string
      */
-    static public function getLastQuery($useWritableConnection);
+    static public function getLastQuery(bool $useWritableConnection): ?string ;
 
     /**
      * @param string|DbExpr $query
      * @return int|array = array: returned if $returning argument is not empty
      */
     static public function exec($query);
-
+    
     /**
      * @param string|DbExpr $query
      * @param string|null $fetchData - null: return PDOStatement; string: one of \PeskyORM\Core\Utils::FETCH_*
      * @return \PDOStatement|array
      */
-    static public function query($query, $fetchData = null);
+    static public function query($query, ?string $fetchData = null);
 
     /**
      * @param string|array $columns
      * @param array $conditions
-     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return RecordsSet
      * @throws \InvalidArgumentException
      */
-    static public function select($columns = '*', array $conditions = [], \Closure $configurator = null);
-
+    static public function select($columns = '*', array $conditions = [], ?\Closure $configurator = null);
+    
     /**
      * Selects only 1 column
      * @param string $column
      * @param array $conditions
-     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
      */
-    static public function selectColumn($column, array $conditions = [], \Closure $configurator = null);
-
+    static public function selectColumn($column, array $conditions = [], ?\Closure $configurator = null): array;
+    
     /**
      * Select associative array
      * Note: does not support columns from foreign models
      * @param string $keysColumn
      * @param string $valuesColumn
      * @param array $conditions
-     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
      */
-    static public function selectAssoc($keysColumn, $valuesColumn, array $conditions = [], \Closure $configurator = null);
-
+    static public function selectAssoc(string $keysColumn, string $valuesColumn, array $conditions = [], ?\Closure $configurator = null): array;
+    
     /**
      * Get 1 record from DB as array
      * @param string|array $columns
      * @param array $conditions
-     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
      */
-    static public function selectOne($columns, array $conditions, \Closure $configurator = null);
-
+    static public function selectOne($columns, array $conditions, ?\Closure $configurator = null): array;
+    
     /**
      * Get 1 record from DB as Record
      * @param string|array $columns
      * @param array $conditions
-     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return array
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @return RecordInterface
      */
-    static public function selectOneAsDbRecord($columns, array $conditions, \Closure $configurator = null);
-
+    static public function selectOneAsDbRecord($columns, array $conditions, ?\Closure $configurator = null): \PeskyORM\ORM\RecordInterface;
+    
     /**
      * Make a query that returns only 1 value defined by $expression
      * @param DbExpr $expression - example: DbExpr::create('COUNT(*)'), DbExpr::create('SUM(`field`)')
      * @param array $conditions
-     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return string
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @return string|null
      * @throws \InvalidArgumentException
      */
-    static public function selectValue(DbExpr $expression, array $conditions = [], \Closure $configurator = null);
+    static public function selectValue(DbExpr $expression, array $conditions = [], ?\Closure $configurator = null): ?string;
 
     /**
      * Does table contain any record matching provided condition
      * @param array $conditions
-     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return bool
      * @throws \InvalidArgumentException
      */
-    static public function hasMatchingRecord(array $conditions, \Closure $configurator = null);
-
+    static public function hasMatchingRecord(array $conditions, ?\Closure $configurator = null): bool;
+    
     /**
      * @param array $conditions
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @param bool $removeNotInnerJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
-     * @param \Closure $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return int
      */
-    static public function count(array $conditions = [], \Closure $configurator = null, $removeNotInnerJoins = false);
-
+    static public function count(array $conditions = [], ?\Closure $configurator = null, bool $removeNotInnerJoins = false): int;
+    
     /**
      * @param bool $readOnly
      * @param null|string $transactionType
      * @return void
      */
-    static public function beginTransaction($readOnly = false, $transactionType = null);
-
+    static public function beginTransaction(bool $readOnly = false, ?string $transactionType = null);
+    
     /**
      * @return bool
      */
-    static public function inTransaction();
+    static public function inTransaction(): bool;
 
     /**
      * @return void
@@ -237,12 +237,12 @@ interface TableInterface {
      * @throws \InvalidArgumentException
      */
     static public function delete(array $conditions = [], $returning = false);
-
+    
     /**
      * Return DbExpr to set default value for a column.
      * Example for MySQL and PostgreSQL: DbExpr::create('DEFAULT')
      * @return DbExpr
      */
-    static public function getExpressionToSetDefaultValueForAColumn();
+    static public function getExpressionToSetDefaultValueForAColumn(): \PeskyORM\Core\DbExpr;
 
 }
