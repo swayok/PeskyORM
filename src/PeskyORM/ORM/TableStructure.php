@@ -58,14 +58,11 @@ abstract class TableStructure implements TableStructureInterface {
 
     /** @var TableStructure[]  */
     static private $instances = [];
-
+    
     /**
      * @return $this
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
      */
-    final static public function getInstance() {
+    final static public function getInstance(): TableStructureInterface {
         if (!isset(self::$instances[static::class])) {
             self::$instances[static::class] = new static();
             self::$instances[static::class]->loadConfigs();
@@ -75,11 +72,8 @@ abstract class TableStructure implements TableStructureInterface {
 
     /**
      * @return $this
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
      */
-    final static public function i() {
+    final static public function i(): TableStructureInterface {
         return static::getInstance();
     }
 
@@ -144,158 +138,119 @@ abstract class TableStructure implements TableStructureInterface {
             throw new OrmException('Table schema must contain primary key', OrmException::CODE_INVALID_TABLE_SCHEMA);
         }
     }
-
+    
     /**
      * @param bool $writable - true: connection must have access to write data into DB
      * @return string
      */
-    static public function getConnectionName($writable) {
+    static public function getConnectionName(bool $writable): string {
         return 'default';
     }
-
-    /**
-     * @return string|null
-     */
-    static public function getSchema() {
+    
+    static public function getSchema(): ?string {
         return null;
     }
-
+    
     /**
-     * @param string $colName
+     * @param string $columnName
      * @return bool
      */
-    static public function hasColumn($colName) {
-        return static::getInstance()->_hasColumn($colName);
+    static public function hasColumn(string $columnName): bool {
+        return static::getInstance()->_hasColumn($columnName);
     }
-
+    
     /**
-     * @param string $colName
+     * @param string $columnName
      * @return Column
-     * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
      */
-    static public function getColumn($colName) {
-        return static::getInstance()->_getColumn($colName);
+    static public function getColumn(string $columnName): Column {
+        return static::getInstance()->_getColumn($columnName);
     }
-
+    
     /**
      * @return Column[] - key = column name
-     * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
      */
-    static public function getColumns() {
+    static public function getColumns(): array {
         return static::getInstance()->columns;
     }
-
+    
     /**
      * @return string|null
-     * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
      */
-    static public function getPkColumnName() {
+    static public function getPkColumnName(): ?string {
         return static::getPkColumn()->getName();
     }
-
+    
     /**
      * @return Column
-     * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
      */
-    static public function getPkColumn() {
+    static public function getPkColumn(): ?Column {
         return static::getInstance()->pk;
     }
-
+    
     /**
      * @return bool
-     * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
      */
-    static public function hasPkColumn() {
+    static public function hasPkColumn(): bool {
         return static::getInstance()->pk !== null;
     }
-
+    
     /**
      * @return bool
-     * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
      */
-    static public function hasFileColumns() {
+    static public function hasFileColumns(): bool {
         return count(static::getInstance()->fileColumns) > 0;
     }
-
+    
     /**
-     * @param string $colName
+     * @param string $columnName
      * @return bool
-     * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
      */
-    static public function hasFileColumn($colName) {
-        return static::getInstance()->_getColumn($colName)->isItAFile();
+    static public function hasFileColumn(string $columnName): bool {
+        return static::getInstance()->_getColumn($columnName)->isItAFile();
     }
-
+    
     /**
      * @return Column[] = array('column_name' => Column)
-     * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
      */
-    static public function getFileColumns() {
+    static public function getFileColumns(): array {
         return static::getInstance()->fileColumns;
     }
 
     /**
      * @return Column[]
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
-    static public function getColumnsThatExistInDb() {
+    static public function getColumnsThatExistInDb(): array {
         return static::getInstance()->columsThatExistInDb;
     }
 
     /**
      * @return Column[]
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
-    static public function getColumnsThatDoNotExistInDb() {
+    static public function getColumnsThatDoNotExistInDb(): array {
         return static::getInstance()->columsThatDoNotExistInDb;
     }
-
+    
     /**
-     * @param $relationName
+     * @param string $relationName
      * @return bool
      */
-    static public function hasRelation($relationName) {
+    static public function hasRelation(string $relationName): bool {
         return static::getInstance()->_hasRelation($relationName);
     }
-
+    
     /**
      * @param string $relationName
      * @return Relation
-     * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
      */
-    static public function getRelation($relationName) {
+    static public function getRelation(string $relationName): Relation {
         return static::getInstance()->_getRelation($relationName);
     }
-
+    
     /**
      * @return Relation[]
-     * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
      */
-    static public function getRelations() {
+    static public function getRelations(): array {
         return static::getInstance()->relations;
     }
 
@@ -303,10 +258,10 @@ abstract class TableStructure implements TableStructureInterface {
      * @param string $colName
      * @return Relation[]
      */
-    static public function getColumnRelations($colName) {
+    static public function getColumnRelations(string $columnName): array {
         $instance = static::getInstance();
-        $instance->_getColumn($colName);
-        return isset($instance->columnsRelations[$colName]) ? $instance->columnsRelations[$colName] : [];
+        $instance->_getColumn($columnName);
+        return isset($instance->columnsRelations[$columnName]) ? $instance->columnsRelations[$columnName] : [];
     }
 
     /**
@@ -315,9 +270,6 @@ abstract class TableStructure implements TableStructureInterface {
      * Relation name must start from upper case letter: private function RelationName() {}
      * Column method must return Column object
      * Relation method must return Relation object
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
      */
     protected function loadColumnsConfigsFromPrivateMethods() {
         $objectReflection = new \ReflectionObject($this);
@@ -341,8 +293,6 @@ abstract class TableStructure implements TableStructureInterface {
 
     /**
      * Use table description received from DB to automatically create column configs
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
      */
     protected function createMissingColumnsConfigsFromDbTableDescription() {
         $description = DbConnectionsManager::getConnection(static::getConnectionName(false))
@@ -368,14 +318,14 @@ abstract class TableStructure implements TableStructureInterface {
     }
 
     /**
-     * @param string $colName
+     * @param string $columnName
      * @return Column
      */
-    protected function _getColumn($colName) {
-        if (!$this->_hasColumn($colName)) {
-            throw new \InvalidArgumentException("Table does not contain column named '{$colName}'");
+    protected function _getColumn(string $columnName): Column {
+        if (!$this->_hasColumn($columnName)) {
+            throw new \InvalidArgumentException("Table does not contain column named '{$columnName}'");
         }
-        return $this->columns[$colName];
+        return $this->columns[$columnName];
     }
 
     /**
@@ -423,18 +373,18 @@ abstract class TableStructure implements TableStructureInterface {
     }
 
     /**
-     * @param string $colName
+     * @param string $columnName
      * @return bool
      */
-    protected function _hasColumn($colName) {
-        return isset($this->columns[$colName]);
+    protected function _hasColumn(string $columnName): bool {
+        return isset($this->columns[$columnName]);
     }
 
     /**
      * @param $relationName
      * @return Relation
      */
-    protected function _getRelation($relationName) {
+    protected function _getRelation(string $relationName): Relation {
         if (!$this->_hasRelation($relationName)) {
             throw new \InvalidArgumentException("There is no relation '{$relationName}' in " . static::class);
         }
@@ -445,7 +395,7 @@ abstract class TableStructure implements TableStructureInterface {
      * @param string $relationName
      * @return bool
      */
-    protected function _hasRelation($relationName) {
+    protected function _hasRelation(string $relationName): bool {
         return isset($this->relations[$relationName]);
     }
 

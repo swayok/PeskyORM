@@ -145,35 +145,35 @@ VIEW;
         $this->treatAnyColumnNameAsValid = count($this->columns) === 0;
         return $this;
     }
-
+    
     /**
      * @param bool $writable - true: connection must have access to write data into DB
      * @return string
      */
-    static public function getConnectionName($writable) {
+    static public function getConnectionName(bool $writable): string {
         return $writable ? static::getInstance()->connectionNameWritable : static::getInstance()->connectionName;
     }
-
+    
     /**
-     * @param string $colName
+     * @param string $columnName
      * @return bool
      */
-    static public function hasColumn($colName) {
-        return static::getInstance()->treatAnyColumnNameAsValid || parent::hasColumn($colName);
+    static public function hasColumn(string $columnName): bool {
+        return static::getInstance()->treatAnyColumnNameAsValid || parent::hasColumn($columnName);
     }
-
+    
     /**
-     * @param string $colName
+     * @param string $columnName
      * @return Column
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    static public function getColumn($colName) {
-        if (static::getInstance()->treatAnyColumnNameAsValid && !parent::hasColumn($colName)) {
-            static::getInstance()->columns[$colName] = Column::create(Column::TYPE_STRING, $colName);
+    static public function getColumn(string $columnName): Column {
+        if (static::getInstance()->treatAnyColumnNameAsValid && !parent::hasColumn($columnName)) {
+            static::getInstance()->columns[$columnName] = Column::create(Column::TYPE_STRING, $columnName);
         }
-        return parent::getColumn($colName);
+        return parent::getColumn($columnName);
     }
 
     protected function loadColumnsConfigsFromPrivateMethods() {
