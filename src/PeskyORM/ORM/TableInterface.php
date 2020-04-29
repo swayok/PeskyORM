@@ -29,13 +29,13 @@ interface TableInterface {
     /**
      * @return TableInterface
      */
-    static public function getInstance(): \PeskyORM\ORM\TableInterface;
+    static public function getInstance(): TableInterface;
     
     /**
      * Table schema description
      * @return TableStructure
      */
-    static public function getStructure(): \PeskyORM\ORM\TableStructureInterface;
+    static public function getStructure(): TableStructureInterface;
 
     /**
      * Table schema description
@@ -49,7 +49,7 @@ interface TableInterface {
      * @param string|null $joinName - string: specific join name; null: $relationName is used
      * @return OrmJoinInfo
      */
-    static public function getJoinConfigForRelation($relationName, $alterLocalTableAlias = null, $joinName = null): \PeskyORM\ORM\OrmJoinInfo;
+    static public function getJoinConfigForRelation($relationName, $alterLocalTableAlias = null, $joinName = null): OrmJoinInfo;
     
     /**
      * @return bool
@@ -59,7 +59,7 @@ interface TableInterface {
     /**
      * @return Column
      */
-    static public function getPkColumn(): \PeskyORM\ORM\Column;
+    static public function getPkColumn(): Column;
     
     /**
      * @return mixed
@@ -135,7 +135,7 @@ interface TableInterface {
      * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return RecordInterface
      */
-    static public function selectOneAsDbRecord($columns, array $conditions, ?\Closure $configurator = null): \PeskyORM\ORM\RecordInterface;
+    static public function selectOneAsDbRecord($columns, array $conditions, ?\Closure $configurator = null): RecordInterface;
     
     /**
      * Make a query that returns only 1 value defined by $expression
@@ -243,6 +243,6 @@ interface TableInterface {
      * Example for MySQL and PostgreSQL: DbExpr::create('DEFAULT')
      * @return DbExpr
      */
-    static public function getExpressionToSetDefaultValueForAColumn(): \PeskyORM\Core\DbExpr;
+    static public function getExpressionToSetDefaultValueForAColumn(): DbExpr;
 
 }
