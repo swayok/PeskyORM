@@ -52,14 +52,14 @@ class {$className} extends {$parentClassShortName} {
     /**
      * @return string
      */
-    static public function getTableName() {
+    static public function getTableName(): string {
         return '{$tableName}';
     }
 
     /**
      * @return string
      */
-    static public function getSchema() {
+    static public function getSchema(): ?string {
         return {$dbSchema};
     }
 }

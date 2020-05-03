@@ -1131,7 +1131,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         }
         $columnsToSave = array_keys($this->valuesBackup);
         $this->cleanUpdates();
-        $this->saveToDb($columnsToSave);
+        $this->saveToDb(array_intersect($columnsToSave, $this->getColumnsNamesWithUpdatableValues()));
         if (!empty($relationsToSave)) {
             $this->saveRelations($relationsToSave, $deleteNotListedRelatedRecords);
         }
@@ -1142,7 +1142,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Get names of all columns that can be saved to db
      * @return array
      */
-    protected function getAllColumnsWithUpdatableValues(): array {
+    protected function getColumnsNamesWithUpdatableValues(): array {
         $columnsNames = [];
         foreach (static::getColumns() as $columnName => $column) {
             if ($column->isValueCanBeSetOrChanged() && $column->isItExistsInDb()) {
@@ -1186,7 +1186,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 'Attempt to save data after begin(). You must call commit() or rollback()'
             );
         }
-        $this->saveToDb($this->getAllColumnsWithUpdatableValues());
+        $this->saveToDb($this->getColumnsNamesWithUpdatableValues());
         if (!empty($relationsToSave)) {
             $this->saveRelations($relationsToSave, $deleteNotListedRelatedRecords);
         }
@@ -1215,7 +1215,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 '$columnsToSave argument contains unknown columns: ' . implode(', ', $diff)
             );
         }
-        $diff = array_diff($columnsToSave, $this->getAllColumnsWithUpdatableValues());
+        $diff = array_diff($columnsToSave, $this->getColumnsNamesWithUpdatableValues());
         if (count($diff)) {
             throw new \InvalidArgumentException(
                 '$columnsToSave argument contains columns that cannot be saved to DB: '  . implode(', ', $diff)
