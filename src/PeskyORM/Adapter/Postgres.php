@@ -18,10 +18,10 @@ use Swayok\Utils\ValidateValue;
  */
 class Postgres extends DbAdapter {
 
-    const TRANSACTION_TYPE_READ_COMMITTED = 'READ COMMITTED';
-    const TRANSACTION_TYPE_REPEATABLE_READ = 'REPEATABLE READ';
-    const TRANSACTION_TYPE_SERIALIZABLE = 'SERIALIZABLE';
-    const TRANSACTION_TYPE_DEFAULT = self::TRANSACTION_TYPE_READ_COMMITTED;
+    public const TRANSACTION_TYPE_READ_COMMITTED = 'READ COMMITTED';
+    public const TRANSACTION_TYPE_REPEATABLE_READ = 'REPEATABLE READ';
+    public const TRANSACTION_TYPE_SERIALIZABLE = 'SERIALIZABLE';
+    public const TRANSACTION_TYPE_DEFAULT = self::TRANSACTION_TYPE_READ_COMMITTED;
 
     static public $transactionTypes = [
         self::TRANSACTION_TYPE_READ_COMMITTED,
@@ -29,12 +29,12 @@ class Postgres extends DbAdapter {
         self::TRANSACTION_TYPE_SERIALIZABLE
     ];
 
-    const ENTITY_NAME_QUOTES = '"';
+    public const ENTITY_NAME_QUOTES = '"';
 
-    const BOOL_TRUE = 'TRUE';
-    const BOOL_FALSE = 'FALSE';
+    public const BOOL_TRUE = 'TRUE';
+    public const BOOL_FALSE = 'FALSE';
 
-    const NO_LIMIT = 'ALL';
+    public const NO_LIMIT = 'ALL';
 
     /**
      * @var array
@@ -256,10 +256,7 @@ class Postgres extends DbAdapter {
      * @param string $table
      * @param null|string $schema - name of DB schema that contains $table
      * @return TableDescription
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\DbException
      * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
     public function describeTable($table, $schema = null) {
         if (empty($schema)) {
@@ -384,8 +381,6 @@ class Postgres extends DbAdapter {
      *      indexes 1, 3, 5, ...: selection operator (->, ->>, #>, #>>);
      *      indexes 2, 4, 6, ...: json key name or other selector ('json_key1', 'json_key2')
      * @return string - quoted entity name and json selector
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
     protected function quoteJsonSelectorExpression(array $sequence) {
         $sequence[0] = $this->quoteDbEntityName($sequence[0]);
@@ -401,7 +396,6 @@ class Postgres extends DbAdapter {
      * @param string $operator
      * @param bool $valueAlreadyQuoted
      * @return string
-     * @throws \PDOException
      * @throws \InvalidArgumentException
      */
     public function assembleConditionValue($value, $operator, $valueAlreadyQuoted = false) {
@@ -430,8 +424,6 @@ class Postgres extends DbAdapter {
      * @param mixed $rawValue
      * @param bool $valueAlreadyQuoted
      * @return string
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
     public function assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted = false) {
         // jsonb opertaors - '?', '?|' or '?&' interfere with prepared PDO statements that use '?' to insert values
@@ -466,9 +458,7 @@ class Postgres extends DbAdapter {
      * @param string $table
      * @param null|string $schema - name of DB schema that contains $table (for PostgreSQL)
      * @return bool
-     * @throws \PeskyORM\Exception\DbException
      * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
     public function hasTable($table, $schema = null) {
         if (empty($schema)) {

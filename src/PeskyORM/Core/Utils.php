@@ -63,14 +63,18 @@ class Utils {
      * @param DbAdapterInterface $connection
      * @param array $conditions
      * @param string $glue - 'AND' or 'OR'
-     * @param \Closure|null $columnQuoter - default: function ($columnName, DbAdapterInterface $connection) {
-     *      return $connection->quoteDbEntityName($columnName);
-     *  }
-     * @param \Closure|null $conditionValuePreprocessor - used to modify or validate condition's value.
-     *      default: function ($columnName, $rawValue, DbAdapterInterface $connection) {
-     *          return ($rawValue instanceof DbExpr) ? $connection->quoteDbExpr($rawValue) : $rawValue;
+     * @param \Closure|null $columnQuoter - used to quote column name. Default:
+     *      function (string $columnName, DbAdapterInterface $connection) {
+     *          return static::analyzeAndQuoteColumnName($columnName, $connection);
      *      }
-     *      Note: $rawValue can be DbExpr instance but not any other object
+     *      Note: $columnName here is expected to be string, DbExpr is not allowed here (and actually is not possible
+     *          because object cannot be used as keys in associative arrays)
+     * @param \Closure|null $conditionValuePreprocessor - used to modify or validate condition's value. Default:
+     *      function (?string $columnName, $rawValue, DbAdapterInterface $connection) {
+     *          return static::preprocessConditionValue($rawValue, $connection);
+     *      }
+     *      Note: $rawValue may be DbExpr or AbstractSelect instance but not any other object
+     *      Note: $columnName usually is null when $rawValue is DbExpr or AbstractSelect instance
      * @return string
      * @throws \UnexpectedValueException
      * @throws \PDOException
@@ -91,19 +95,13 @@ class Utils {
             return '';
         } else {
             if (!$columnQuoter) {
-                $columnQuoter = function ($columnName, DbAdapterInterface $connection) {
-                    return $connection->quoteDbEntityName($columnName);
+                $columnQuoter = function (string $columnName, DbAdapterInterface $connection) {
+                    return static::analyzeAndQuoteColumnNameForCondition($columnName, $connection);
                 };
             }
             if (!$conditionValuePreprocessor) {
-                $conditionValuePreprocessor = function ($columnName, $rawValue, DbAdapterInterface $connection) {
-                    if ($rawValue instanceof DbExpr) {
-                        return $connection->quoteDbExpr($rawValue);
-                    } else if ($rawValue instanceof AbstractSelect) {
-                        return '(' . $rawValue->getQuery() . ')';
-                    } else {
-                        return $rawValue;
-                    }
+                $conditionValuePreprocessor = function (?string $columnName, $rawValue, DbAdapterInterface $connection) {
+                    return static::preprocessConditionValue($rawValue, $connection);
                 };
             }
             $assembled = [];
@@ -127,7 +125,7 @@ class Utils {
                 }
                 if (is_numeric($column) && $valueIsDbExpr) {
                     // 1 - custom expressions
-                    $assembled[] = $conditionValuePreprocessor($column, $rawValue, $connection);
+                    $assembled[] = $conditionValuePreprocessor(null, $rawValue, $connection);
                     continue;
                 } else if (
                     (
@@ -176,6 +174,127 @@ class Utils {
                 }
             }
             return implode(" $glue ", $assembled);
+        }
+    }
+    
+    /**
+     * @param DbAdapterInterface $connection
+     * @param string $columnName
+     * @param null|string $columnAlias
+     * @param null|string $joinName
+     * @return array = [
+     *      'name' => string,
+     *      'alias' => ?string,
+     *      'join_name' => ?string,
+     *      'type_cast' => ?string,
+     * ]
+     */
+    static public function analyzeColumnName(
+        DbAdapterInterface $connection,
+        string $columnName,
+        ?string $columnAlias = null,
+        ?string $joinName = null
+    ): array {
+        $columnName = trim($columnName);
+        if ($columnName === '') {
+            throw new \InvalidArgumentException('$columnName argument is not allowed to be an empty string');
+        }
+        if ($columnAlias !== null) {
+            $columnAlias = trim($columnAlias);
+            if ($columnAlias === '') {
+                throw new \InvalidArgumentException('$columnAlias argument is not allowed to be an empty string');
+            }
+        }
+        if ($joinName !== null) {
+            $joinName = trim($joinName);
+            if ($joinName === '') {
+                throw new \InvalidArgumentException('$joinName argument is not allowed to be an empty string');
+            }
+        }
+        $ret = static::splitColumnName($columnName);
+        if ($columnAlias) {
+            // overwrite column alias when provided
+            $ret['alias'] = $columnAlias;
+        }
+        if ($joinName && !$ret['join_name']) {
+            $ret['join_name'] = $joinName;
+        }
+        unset($columnName, $joinName, $columnAlias); //< to prevent faulty usage
+        
+        if (!$connection->isValidDbEntityName($ret['name'])) {
+            throw new \InvalidArgumentException("Invalid column name or json selector: [{$ret['name']}]");
+        }
+        if ($ret['name'] === '*') {
+            $ret['type_cast'] = null;
+            $ret['alias'] = null;
+        }
+        /*
+        [
+            'name' => string,
+            'alias' => ?string,
+            'join_name' => ?string,
+            'type_cast' => ?string,
+        ]
+         */
+        return $ret;
+    }
+    
+    static public function splitColumnName(string $columnName): array {
+        $typeCast = null;
+        $columnAlias = null;
+        $joinName = null;
+        if (preg_match('%^\s*(.*?)\s+AS\s+(.+)$%is', $columnName, $aliasMatches)) {
+            // 'col1 as alias1' or 'JoinName.col2 AS alias2' or 'JoinName.col3::datatype As alias3'
+            [, $columnName, $columnAlias] = $aliasMatches;
+        }
+        if (preg_match('%^\s*(.*?)\s*::\s*([a-zA-Z0-9 _]+)\s*$%is', $columnName, $dataTypeMatches)) {
+            // 'col1::datatype' or 'JoinName.col2::datatype' or 'col3::data_type' or 'col4::data type'
+            [, $columnName, $typeCast] = $dataTypeMatches;
+        }
+        $columnName = trim($columnName);
+        if (preg_match('%^(\w+)\.(\w+|\*)$%', $columnName, $columnParts)) {
+            // 'JoinName.column' or 'JoinName.*'
+            [, $joinName, $columnName] = $columnParts;
+        }
+        return [
+            'name' => $columnName,
+            'alias' => $columnAlias,
+            'join_name' => $joinName,
+            'type_cast' => $typeCast,
+        ];
+    }
+    
+    /**
+     * @param string $columnName
+     * @param DbAdapterInterface $connection
+     * @return string
+     */
+    static public function analyzeAndQuoteColumnNameForCondition(string $columnName, DbAdapterInterface $connection): string {
+        $columnInfo = static::analyzeColumnName($connection, $columnName, null, null);
+        $quotedTableAlias = '';
+        if ($columnInfo['join_name']) {
+            $quotedTableAlias = $connection->quoteDbEntityName($columnInfo['join_name']) . '.';
+        }
+        $columnName = $quotedTableAlias . $connection->quoteDbEntityName($columnInfo['name']);
+        if ($columnInfo['type_cast']) {
+            $columnName = $connection->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
+        }
+        return $columnName;
+    }
+    
+    /**
+     * @param string $columnName
+     * @param mixed|DbExpr|AbstractSelect $rawValue
+     * @param DbAdapterInterface $connection
+     * @return mixed - in most cases it is string
+     */
+    static public function preprocessConditionValue($rawValue, DbAdapterInterface $connection) {
+        if ($rawValue instanceof DbExpr) {
+            return $connection->quoteDbExpr($rawValue);
+        } else if ($rawValue instanceof AbstractSelect) {
+            return '(' . $rawValue->getQuery() . ')';
+        } else {
+            return $rawValue;
         }
     }
 }

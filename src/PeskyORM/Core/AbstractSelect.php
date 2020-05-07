@@ -813,12 +813,11 @@ abstract class AbstractSelect {
      * @throws \InvalidArgumentException
      */
     protected function analyzeColumnName($columnName, ?string $columnAlias = null, ?string $joinName = null, string $errorsPrefix = ''): array {
-        $typeCast = null;
         $errorsPrefix = trim($errorsPrefix) === '' ? '' : $errorsPrefix . ': ';
         $isDbExpr = $columnName instanceof DbExpr;
         if (!is_string($columnName) && !$isDbExpr) {
             throw new \InvalidArgumentException($errorsPrefix . '$columnName argument must be a string or instance of DbExpr class');
-        } else if (!$isDbExpr && $columnName === '') {
+        } else if (!$isDbExpr && trim($columnName) === '') {
             throw new \InvalidArgumentException($errorsPrefix . '$columnName argument is not allowed to be an empty string');
         }
         /** @var DbExpr|string $columnName */
@@ -826,53 +825,59 @@ abstract class AbstractSelect {
         if (isset($this->analyzedColumns[$cacheKey])) {
             return $this->analyzedColumns[$cacheKey];
         }
-        if ($columnAlias === '') {
-            throw new \InvalidArgumentException($errorsPrefix . '$alias argument is not allowed to be an empty string');
+        if ($columnAlias !== null) {
+            $columnAlias = trim($columnAlias);
+            if ($columnAlias === '') {
+                throw new \InvalidArgumentException($errorsPrefix . '$columnAlias argument is not allowed to be an empty string');
+            }
         }
-        if ($joinName === '') {
-            throw new \InvalidArgumentException($errorsPrefix . '$joinName argument is not allowed to be an empty string');
+        if ($joinName !== null) {
+            $joinName = trim($joinName);
+            if ($joinName === '') {
+                throw new \InvalidArgumentException($errorsPrefix . '$joinName argument is not allowed to be an empty string');
+            }
         }
-        if (!$isDbExpr) {
+        if ($isDbExpr) {
+            $ret = [
+                'name' => $columnName,
+                'alias' => $columnAlias,
+                'join_name' => $joinName,
+                'type_cast' => null,
+            ];
+            unset($columnName, $joinName, $columnAlias); //< to prevent faulty usage
+        } else {
             $columnName = trim($columnName);
-            if (preg_match('%^(.*?)\s+AS\s+(.+)$%is', $columnName, $aliasMatches)) {
-                // 'col1 as alias1' or 'JoinName.col2 AS alias2' or 'JoinName.col3::datatype As alias3'
-                if (!$columnAlias) {
-                    $columnAlias = $aliasMatches[2];
-                }
-                $columnName = $aliasMatches[1];
+            $ret = Utils::splitColumnName($columnName);
+            if ($columnAlias) {
+                // overwrite column alias when provided
+                $ret['alias'] = $columnAlias;
             }
-            if (preg_match('%^(.*?)::([a-zA-Z0-9 _]+)$%is', $columnName, $dataTypeMatches)) {
-                // 'col1::datatype' or 'JoinName.col2::datatype'
-                $columnName = $dataTypeMatches[1];
-                $typeCast = trim($dataTypeMatches[2]);
+            if ($joinName && !$ret['join_name']) {
+                $ret['join_name'] = $joinName;
             }
-            if (preg_match('%^(\w+)\.(\w+|\*)$%', trim($columnName), $columnParts)) {
-                // 'JoinName.column' or 'JoinName.*'
-                [, $joinName, $columnName] = $columnParts;
+            unset($columnName, $joinName, $columnAlias); //< to prevent faulty usage
+            
+            if (!$this->getConnection()->isValidDbEntityName($ret['name'])) {
+                throw new \InvalidArgumentException("{$errorsPrefix}Invalid column name or json selector: [{$ret['name']}]");
             }
-            if (!$this->getConnection()->isValidDbEntityName($columnName)) {
-                throw new \InvalidArgumentException("{$errorsPrefix}Invalid column name or json selector: [$columnName]");
-            }
-            if ($columnName === '*') {
-                $typeCast = null;
-                $columnAlias = null;
+            if ($ret['name'] === '*') {
+                $ret['type_cast'] = null;
+                $ret['alias'] = null;
             }
         }
+        
+        // nullify join name if it same as current table alias
         if (
-            $joinName === $this->getTableAlias()
+            $ret['join_name'] === $this->getTableAlias()
             || (
-                in_array($joinName, $this->shortJoinAliases, true)
-                && array_flip($this->shortJoinAliases)[$joinName] === $this->getTableAlias()
+                in_array($ret['join_name'], $this->shortJoinAliases, true)
+                && array_flip($this->shortJoinAliases)[$ret['join_name']] === $this->getTableAlias()
             )
         ) {
-            $joinName = null;
+            $ret['join_name'] = null;
         }
-        return [
-            'name' => $columnName,
-            'alias' => $columnAlias,
-            'join_name' => $joinName,
-            'type_cast' => $typeCast,
-        ];
+        
+        return $ret;
     }
 
     /**
