@@ -11,8 +11,8 @@ use PeskyORMTest\TestingApp;
 use PeskyORMTest\TestingSettings\TestingSetting;
 use PeskyORMTest\TestingSettings\TestingSettingsTable;
 use PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
-use Swayok\Utils\NormalizeValue;
 use PHPUnit\Framework\TestCase;
+use Swayok\Utils\NormalizeValue;
 
 class DbRecordTest extends TestCase {
 
@@ -735,20 +735,20 @@ class DbRecordTest extends TestCase {
         $expected['Parent']['created_at'].= '+00';
         $expected['Parent']['updated_at'].= '+00';
         $expected['Parent']['not_existing_column_with_calculated_value'] = 'calculated-' . $expected['Parent']['id'];
-        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent'], true);
+        $toArrayRelation = $rec->fetchByPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent'], true);
         static::assertEquals($expected, $toArrayRelation);
 
-        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id', 'Parent'], [], true);
+        $toArrayRelation = $rec->fetchByPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id', 'Parent'], [], true);
         static::assertEquals($expected, $toArrayRelation);
 
         $expected = ['id' => $insertedRecords[1]['id'], 'Parent' => ['login' => $insertedRecords[0]['login']]];
-        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent' => ['login']], true);
+        $toArrayRelation = $rec->fetchByPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent' => ['login']], true);
         static::assertEquals($expected, $toArrayRelation);
 
         $expected = ['id' => $insertedRecords[1]['id'], 'Parent' => ['alias' => $insertedRecords[0]['login']]];
-        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent' => ['login' => 'alias']], true);
+        $toArrayRelation = $rec->fetchByPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id'], ['Parent' => ['login' => 'alias']], true);
         static::assertEquals($expected, $toArrayRelation);
-        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id', 'Parent' => ['login' => 'alias']], [], true);
+        $toArrayRelation = $rec->fetchByPrimaryKey($insertedRecords[1]['id'])->toArrayWithoutFiles(['id', 'Parent' => ['login' => 'alias']], [], true);
         static::assertEquals($expected, $toArrayRelation);
 
         // has many relations
@@ -759,9 +759,9 @@ class DbRecordTest extends TestCase {
         $expected['Children'][1]['created_at'].= '+00';
         $expected['Children'][1]['updated_at'].= '+00';
         $expected['Children'][1]['not_existing_column_with_calculated_value'] = 'calculated-' . $expected['Children'][1]['id'];
-        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id'], ['Children'], true);
+        $toArrayRelation = $rec->fetchByPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id'], ['Children'], true);
         static::assertEquals($expected, $toArrayRelation);
-        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id', 'Children'], [], true);
+        $toArrayRelation = $rec->fetchByPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id', 'Children'], [], true);
         static::assertEquals($expected, $toArrayRelation);
 
         $expected = [
@@ -771,9 +771,9 @@ class DbRecordTest extends TestCase {
                 ['email' => $insertedRecords[2]['email']]
             ]
         ];
-        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id'], ['Children' => ['email']], true);
+        $toArrayRelation = $rec->fetchByPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id'], ['Children' => ['email']], true);
         static::assertEquals($expected, $toArrayRelation);
-        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id', 'Children' => ['email']], [], true);
+        $toArrayRelation = $rec->fetchByPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id', 'Children' => ['email']], [], true);
         static::assertEquals($expected, $toArrayRelation);
 
         $expected = [
@@ -783,9 +783,9 @@ class DbRecordTest extends TestCase {
                 ['alias' => $insertedRecords[2]['email']]
             ]
         ];
-        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id'], ['Children' => ['email' => 'alias']], true);
+        $toArrayRelation = $rec->fetchByPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id'], ['Children' => ['email' => 'alias']], true);
         static::assertEquals($expected, $toArrayRelation);
-        $toArrayRelation = $rec->fromPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id', 'Children' => ['email' => 'alias']], [], true);
+        $toArrayRelation = $rec->fetchByPrimaryKey($insertedRecords[0]['id'])->toArrayWithoutFiles(['id', 'Children' => ['email' => 'alias']], [], true);
         static::assertEquals($expected, $toArrayRelation);
     }
 
@@ -910,7 +910,7 @@ class DbRecordTest extends TestCase {
         $normalColumns = array_diff(array_keys(TestingAdmin::getColumnsThatExistInDb()), ['password', 'created_at', 'updated_at']);
         $shortSetOfColumns = ['id', 'parent_id', 'login'];
 
-        $rec = TestingAdmin::newEmptyRecord()->fromPrimaryKey($example['id']);
+        $rec = TestingAdmin::newEmptyRecord()->fetchByPrimaryKey($example['id']);
         static::assertEquals((int)$example['id'], $rec->getValue('id'));
         static::assertTrue($rec->existsInDb());
         static::assertTrue($rec->existsInDb(true));
@@ -918,7 +918,7 @@ class DbRecordTest extends TestCase {
         static::assertTrue($rec->isValueFromDb('id'));
         static::assertTrue($rec->isValueFromDb('parent_id'));
 
-        $rec = TestingAdmin::newEmptyRecord()->fromPrimaryKey($example['id'], $shortSetOfColumns);
+        $rec = TestingAdmin::newEmptyRecord()->fetchByPrimaryKey($example['id'], $shortSetOfColumns);
         static::assertEquals((int)$example['id'], $rec->getValue('id'));
         static::assertTrue($rec->existsInDb());
         static::assertTrue($rec->existsInDb(true));
@@ -980,7 +980,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage SELECT: Column with name [invalid] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
      */
     public function testInvalidColumnInFromDb1() {
-        TestingAdmin::newEmptyRecord()->fromDb(['id' => 1], ['invalid']);
+        TestingAdmin::newEmptyRecord()->fetch(['id' => 1], ['invalid']);
     }
 
     /**
@@ -988,7 +988,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage Invalid column name for a key '0'. $columns argument must contain only strings and instances of DbExpr class.
      */
     public function testInvalidColumnInFromDb2() {
-        TestingAdmin::newEmptyRecord()->fromDb(['id' => 1], [['invalid']]);
+        TestingAdmin::newEmptyRecord()->fetch(['id' => 1], [['invalid']]);
     }
 
     /**
@@ -996,7 +996,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage WHERE: Column with name [invalid] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
      */
     public function testInvalidConditionInFromDb() {
-        TestingAdmin::newEmptyRecord()->fromDb(['invalid' => 1], ['id']);
+        TestingAdmin::newEmptyRecord()->fetch(['invalid' => 1], ['id']);
     }
 
     /**
@@ -1004,7 +1004,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage There is no relation 'Invalid' in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
      */
     public function testInvalidRelationInFromDb() {
-        TestingAdmin::newEmptyRecord()->fromDb(['id' => 1], ['id'], ['Invalid']);
+        TestingAdmin::newEmptyRecord()->fetch(['id' => 1], ['id'], ['Invalid']);
     }
 
     public function testFromDb() {
@@ -1018,7 +1018,7 @@ class DbRecordTest extends TestCase {
         $normalColumns = array_diff(array_keys(TestingAdmin::getColumnsThatExistInDb()), ['password', 'created_at', 'updated_at']);
         $shortSetOfColumns = ['id', 'parent_id', 'email'];
 
-        $rec = TestingAdmin::newEmptyRecord()->fromDb(['email' => $example['email']]);
+        $rec = TestingAdmin::newEmptyRecord()->fetch(['email' => $example['email']]);
         static::assertEquals((int)$example['id'], $rec->getValue('id'));
         static::assertEquals($example['email'], $rec->getValue('email'));
         static::assertTrue($rec->existsInDb());
@@ -1027,7 +1027,7 @@ class DbRecordTest extends TestCase {
         static::assertTrue($rec->isValueFromDb('id'));
         static::assertTrue($rec->isValueFromDb('parent_id'));
 
-        $rec = TestingAdmin::newEmptyRecord()->fromDb(['email' => $example['email']], $shortSetOfColumns);
+        $rec = TestingAdmin::newEmptyRecord()->fetch(['email' => $example['email']], $shortSetOfColumns);
         static::assertEquals((int)$example['id'], $rec->getValue('id'));
         static::assertEquals($example['email'], $rec->getValue('email'));
         static::assertTrue($rec->existsInDb());
@@ -2192,7 +2192,7 @@ class DbRecordTest extends TestCase {
         static::assertTrue(empty($rec['Children']));
         // specific situations for relations and isset/empty
         $recordsInserted = TestingApp::fillAdminsTable(10);
-        $rec->fromPrimaryKey($recordsInserted[1]['id']);
+        $rec->fetchByPrimaryKey($recordsInserted[1]['id']);
         static::assertTrue($rec->existsInDb());
         static::assertFalse($rec->isRelatedRecordAttached('Parent'));
         static::assertFalse($rec->isRelatedRecordAttached('Children'));
