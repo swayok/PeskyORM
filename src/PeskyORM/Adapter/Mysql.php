@@ -98,8 +98,13 @@ class Mysql extends DbAdapter {
         return null;
     }
 
-    public function setTimezone($timezone) {
+    public function setTimezone(string $timezone) {
         $this->exec(DbExpr::create("SET time_zone = ``$timezone``"));
+        return $this;
+    }
+    
+    public function setSearchPath(string $newSearchPath) {
+        // todo: find out if there is something similar in mysql
         return $this;
     }
 

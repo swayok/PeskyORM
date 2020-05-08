@@ -69,7 +69,13 @@ interface DbAdapterInterface {
      * @param string $timezone
      * @return $this
      */
-    public function setTimezone($timezone);
+    public function setTimezone(string $timezone);
+    
+    /**
+     * @param string $newSearchPath - coma-separated list of DB schemas
+     * @return $this
+     */
+    public function setSearchPath(string $newSearchPath);
 
     /**
      * @param string $table

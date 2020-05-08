@@ -153,8 +153,13 @@ class Postgres extends DbAdapter {
         return $this->getConnectionConfig()->getDefaultSchemaName();
     }
 
-    public function setTimezone($timezone) {
+    public function setTimezone(string $timezone) {
         $this->exec(DbExpr::create("SET SESSION TIME ZONE ``$timezone``"));
+        return $this;
+    }
+    
+    public function setSearchPath(string $newSearchPath) {
+        $this->exec(DbExpr::create("SET search_path TO {$newSearchPath}"));
         return $this;
     }
 
