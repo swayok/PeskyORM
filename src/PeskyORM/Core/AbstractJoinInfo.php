@@ -117,12 +117,12 @@ abstract class AbstractJoinInfo {
     public function setJoinType(string $joinType) {
         if (empty($joinType)) {
             throw new \InvalidArgumentException('$joinType argument must be a not-empty string');
-        } else if (!in_array($joinType, [self::JOIN_INNER, self::JOIN_LEFT, self::JOIN_RIGHT], true)) {
+        } else if (!in_array(strtolower($joinType), [self::JOIN_INNER, self::JOIN_LEFT, self::JOIN_RIGHT], true)) {
             throw new \InvalidArgumentException(
                 '$joinType argument must be one of: ' . implode(',', [self::JOIN_INNER, self::JOIN_LEFT, self::JOIN_RIGHT])
             );
         }
-        $this->joinType = $joinType;
+        $this->joinType = strtolower($joinType);
         return $this;
     }
 
