@@ -429,7 +429,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             $value = array_key_exists($column->getName(), $this->readOnlyData)
                 ? $this->readOnlyData[$column->getName()]
                 : null;
-            if (empty($format)) {
+            if (empty($format) && $column->isItExistsInDb()) {
                 return $value;
             } else {
                 return call_user_func(

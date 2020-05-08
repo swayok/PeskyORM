@@ -398,9 +398,9 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * Filter records and create new RecordsArray from remaining records
      * @param \Closure $filter - closure compatible with array_filter()
      * @param bool $resetOriginalRecordsArray
-     * @return $this - new RecordsArray or RecordsSet with applied filters
+     * @return RecordsArray - new RecordsArray (not RecordsSet!)
      */
-    public function filterRecords(\Closure $filter, $resetOriginalRecordsArray = false) {
+    public function filterRecords(\Closure $filter, $resetOriginalRecordsArray = false): RecordsArray {
         $newArray = new self($this->table, array_filter($this->toObjects(), $filter), $this->isFromDb);
         if ($resetOriginalRecordsArray) {
             $this->resetRecords();
@@ -441,6 +441,19 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
             $this->dbRecords[$index] = $record;
         }
         return $this->dbRecords[$index];
+    }
+    
+    protected function getStandaloneObject(array $data, bool $withOptimizations): RecordInterface {
+        $record = $this->table->newRecord();
+        if ($withOptimizations) {
+            if ($this->isReadOnlyModeEnabled()) {
+                $record->enableReadOnlyMode();
+            }
+            if ($this->isDbRecordDataValidationDisabled()) {
+                $record->enableTrustModeForDbData();
+            }
+        }
+        return $record->fromData($data, $this->isRecordsFromDb());
     }
 
     /**
@@ -485,30 +498,46 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
      * Get first record
-     * @param string|null $key - null: return record; string - return value for the key from record
+     * @param string|null $columnName - null: return record; string - return value for the key from record
      * @return RecordInterface|Record|mixed
      * @throws \BadMethodCallException
      */
-    public function first($key = null) {
+    public function first($columnName = null) {
         if ($this->count() === 0) {
             throw new \BadMethodCallException('There is no records');
         }
         $record = $this->offsetGet(0);
-        return $key === null ? $record : $record[$key];
+        return $columnName === null ? $record : $record[$columnName];
     }
 
     /**
      * Get last record
-     * @param string|null $key - null: return record; string - return value for the key from record
+     * @param string|null $columnName - null: return record; string - return value for the key from record
      * @return RecordInterface|Record|mixed
      * @throws \BadMethodCallException
      */
-    public function last($key = null) {
+    public function last($columnName = null) {
         if ($this->count() === 0) {
             throw new \BadMethodCallException('There is no records');
         }
         $record = $this->offsetGet(count($this->getRecords()) - 1);
-        return $key === null ? $record : $record[$key];
+        return $columnName === null ? $record : $record[$columnName];
+    }
+    
+    /**
+     * Find single record by $columnName and $value within selected records
+     * @param string $columnName
+     * @param mixed $value - expected value for $columnName
+     * @param bool $asObject
+     * @return array|RecordInterface|Record|null
+     */
+    public function findOne(string $columnName, $value, bool $asObject) {
+        foreach ($this->getRecords() as $index => $record) {
+            if ($record[$columnName] === $value) {
+                return $asObject ? $this->getStandaloneObject($record, false) : $record;
+            }
+        }
+        return null;
     }
 
     /**
