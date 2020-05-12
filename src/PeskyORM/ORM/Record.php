@@ -805,15 +805,22 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 $relation->getAdditionalJoinConditions(static::getTable(), null, true, $this)
             );
             if ($relation->getType() === Relation::HAS_MANY) {
-                $relatedRecord = $relatedTable::select('*', $conditions, function (OrmSelect $select) use ($relatedTable) {
-                    $select->orderBy($relatedTable::getPkColumnName(), true);
-                });
+                $relatedRecord = $relatedTable::select(
+                    '*',
+                    $conditions,
+                    function (OrmSelect $select) use ($relationName, $relatedTable) {
+                        $select
+                            ->orderBy($relatedTable::getPkColumnName(), true)
+                            ->setTableAlias($relationName);
+                    });
                 if ($this->isReadOnly()) {
                     $relatedRecord->enableReadOnlyMode();
                 }
             } else {
                 $relatedRecord = $relatedTable->newRecord();
-                $data = $relatedTable::selectOne('*', $conditions);
+                $data = $relatedTable::selectOne('*', $conditions, function (OrmSelect $select) use ($relationName) {
+                    $select->setTableAlias($relationName);
+                });
                 if ($this->isReadOnly()) {
                     $relatedRecord->enableReadOnlyMode();
                 }
@@ -1214,8 +1221,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         } else if ($this->isTrustDbDataMode()) {
             throw new \BadMethodCallException('Saving is not alowed when trusted mode for DB data is enabled');
         }
+        $isUpdate = $this->existsInDb();
         if (empty($columnsToSave)) {
             // nothing to save
+            $this->runColumnSavingExtenders($columnsToSave, [], [], $isUpdate);
             return;
         }
         $diff = array_diff($columnsToSave, array_keys(static::getColumns()));
@@ -1230,7 +1239,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 '$columnsToSave argument contains columns that cannot be saved to DB: '  . implode(', ', $diff)
             );
         }
-        $isUpdate = $this->existsInDb();
         $data = $this->collectValuesForSave($columnsToSave, $isUpdate);
         $updatedData = [];
         if (!empty($data)) {
@@ -1354,6 +1362,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             array_keys($dataSavedToDb),
             static::getColumnsThatDoNotExistInDb()
         );
+        $this->begin();
         foreach ($updatedColumns as $column) {
             if (is_string($column)) {
                 $column = static::getColumn($column);
@@ -1368,6 +1377,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 );
             }
             $valueObject->pullDataForSavingExtender();
+        }
+        if (empty($this->valuesBackup)) {
+            // needed to prevent infinite recursion caused by calling this method from saveToDb() method
+            $this->cleanUpdates();
+        } else {
+            $this->commit();
         }
     }
 

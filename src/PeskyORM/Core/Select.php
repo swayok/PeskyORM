@@ -44,8 +44,8 @@ class Select extends AbstractSelect {
             throw new \InvalidArgumentException('$tableName argument must be a not-empty string');
         }
         $this->tableName = $tableName;
-        $this->tableAlias = StringUtils::classify($tableName);
         $this->connection = $connection;
+        $this->setTableAlias(StringUtils::classify($tableName));
     }
 
     /**
@@ -67,6 +67,11 @@ class Select extends AbstractSelect {
 
     public function getTableName(): string {
         return $this->tableName;
+    }
+    
+    public function setTableAlias(string $tableAlias) {
+        $this->tableAlias = $tableAlias;
+        return $this;
     }
 
     public function getTableAlias(): string {

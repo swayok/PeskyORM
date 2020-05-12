@@ -15,6 +15,10 @@ class OrmSelect extends AbstractSelect {
      */
     protected $table;
     /**
+     * @var string
+     */
+    protected $tableAlias;
+    /**
      * @var TableStructure
      */
     protected $tableStructure;
@@ -37,26 +41,34 @@ class OrmSelect extends AbstractSelect {
 
     /**
      * @param TableInterface $table
+     * @param string $tableAlias - used for relations / alias for table in case if it is not $table::getAlias()
      * @return static
      */
-    static public function from(TableInterface $table) {
+    static public function from(TableInterface $table, ?string $tableAlias = null) {
         return new static($table);
     }
 
     /**
      * @param TableInterface $table - table name or Table object
+     * @param string $tableAlias - used for relations / alias for table in case if it is not $table::getAlias()
      */
-    public function __construct(TableInterface $table) {
-        $this->table = $table;
+    public function __construct(TableInterface $table, ?string $tableAlias = null) {
         $this->tableStructure = $table::getStructure();
+        $this->table = $table;
+        $this->setTableAlias($tableAlias ?: $this->getTable()->getAlias());
     }
 
     public function getTableName(): string {
         return $this->getTableStructure()->getTableName();
     }
+    
+    public function setTableAlias(string $tableAlias) {
+        $this->tableAlias = $tableAlias;
+        return $this;
+    }
 
     public function getTableAlias(): string {
-        return $this->getTable()->getAlias();
+        return $this->tableAlias;
     }
 
     public function getTableSchemaName(): ?string {
@@ -191,7 +203,7 @@ class OrmSelect extends AbstractSelect {
         $relationName = $joinName;
         // resolve 'JoinName as OtherName'
         if (preg_match('%\s*(.+)\s+AS\s+(.+)\s*%is', $joinName, $matches)) {
-            list(, $relationName, $joinName) = $matches;
+            [, $relationName, $joinName] = $matches;
         }
         $this->joinNameToRelationName[$joinName] = $relationName;
         if ($appendColumnsToExisting && isset($this->columnsToSelectFromJoinedRelations[$joinName])) {

@@ -752,11 +752,6 @@ abstract class AbstractSelect {
     protected function processRawColumns() {
         $this->columnNameWithAliasToColumnInfo = [];
         $this->columns = $this->normalizeColumnsList($this->columnsRaw, null, true, 'SELECT');
-        if (empty($this->columns)) {
-            throw new \UnexpectedValueException(
-                'Failed to assemble DB query: there is no columns to be selected from main table'
-            );
-        }
         return $this;
     }
 
@@ -1015,7 +1010,7 @@ abstract class AbstractSelect {
         bool $allowSubJoins = false,
         string $subject = 'SELECT'
     ): array {
-        if (count($columns) === 1 && is_array($columns[0])) {
+        if (count($columns) === 1 && isset($columns[0]) && is_array($columns[0])) {
             /** @var array $columns */
             $columns = $columns[0];
         }
@@ -1274,7 +1269,7 @@ abstract class AbstractSelect {
         }
         $columns = array_merge($columns, $this->collectJoinedColumnsForQuery($itIsWithQuery));
         if (empty($columns)) {
-            throw new \UnexpectedValueException('There is no columns to select');
+            throw new \UnexpectedValueException('There are no columns to select');
         }
         return ($this->distinct ? 'DISTINCT ' : '') . implode(', ', $columns);
     }
