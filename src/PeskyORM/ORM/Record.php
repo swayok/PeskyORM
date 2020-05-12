@@ -1068,6 +1068,15 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     public function merge(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true) {
         return $this->updateValues($data, $isFromDb, $haltOnUnknownColumnNames);
     }
+    
+    /**
+     * Record is currently collecting updates to be saved by Record->commit().
+     * Record->begin() was already called but Record->commit() or Record->rollback() was not called yet
+     * @return bool
+     */
+    public function isCollectingUpdates(): bool {
+        return $this->isCollectingUpdates;
+    }
 
     /**
      * Start collecting column updates
