@@ -152,7 +152,7 @@ abstract class Table implements TableInterface {
     
     /**
      * Selects only 1 column
-     * @param string $column
+     * @param string|DbExpr $column
      * @param array $conditions
      * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
@@ -165,14 +165,14 @@ abstract class Table implements TableInterface {
     /**
      * Select associative array
      * Note: does not support columns from foreign models
-     * @param string $keysColumn
-     * @param string $valuesColumn
+     * @param string|DbExpr $keysColumn
+     * @param string|DbExpr $valuesColumn
      * @param array $conditions
      * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
      * @throws \PDOException
      */
-    static public function selectAssoc(string $keysColumn, string $valuesColumn, array $conditions = [], ?\Closure $configurator = null): array {
+    static public function selectAssoc($keysColumn, $valuesColumn, array $conditions = [], ?\Closure $configurator = null): array {
         return static::makeSelect([], $conditions, $configurator)
             ->fetchAssoc($keysColumn, $valuesColumn);
     }

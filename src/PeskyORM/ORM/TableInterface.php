@@ -117,7 +117,7 @@ interface TableInterface {
      * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
      */
-    static public function selectAssoc(string $keysColumn, string $valuesColumn, array $conditions = [], ?\Closure $configurator = null): array;
+    static public function selectAssoc($keysColumn, $valuesColumn, array $conditions = [], ?\Closure $configurator = null): array;
     
     /**
      * Get 1 record from DB as array
