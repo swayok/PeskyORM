@@ -556,7 +556,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             if ($value === null) {
                 return $this->unsetPrimaryKeyValue();
             } else if (!$isFromDb) {
-                throw new \InvalidArgumentException('It is forbidden to set primary key value when $isFromDb === false');
+                if ($valueContainer->hasValue() && (string)$value === (string)$valueContainer->getValue()) {
+                    // no changes required in this situation
+                    return $this;
+                } else {
+                    throw new \InvalidArgumentException('It is forbidden to change primary key value when $isFromDb === false');
+                }
             }
             $this->existsInDb = true;
             $this->existsInDbReally = null;
@@ -574,7 +579,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         if ($this->isCollectingUpdates && !isset($this->valuesBackup[$colName])) {
             $this->valuesBackup[$colName] = clone $valueContainer;
         }
-        call_user_func($column->getValueSetter(), $value, (bool)$isFromDb, $valueContainer, $this->isTrustDbDataMode());
+        call_user_func($column->getValueSetter(), $value, $isFromDb, $valueContainer, $this->isTrustDbDataMode());
         if (!$valueContainer->isValid()) {
             throw new InvalidDataException([$colName => $valueContainer->getValidationErrors()]);
         }
