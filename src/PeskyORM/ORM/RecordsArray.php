@@ -281,20 +281,17 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     }
 
     /**
-     * @param null|string|\Closure $closureOrObjectsMethod
-     *  - null: returns selected records as is
-     *  - string: get record data processed by ORM Record's method name. You can provide additional args via $argumentsForMethod
-     *  - \Closure: function (RecordInterface $record) { return $record->toArray(); }
-     *  - \Closure: function (RecordInterface $record) { return \PeskyORM\ORM\KeyValuePair::create($record->id, $record->toArray()); }
-     * @param array $argumentsForMethod - pass this arguments to ORM Record's method. Not used if $argumentsForMethod is Closure
-     * @param bool $enableReadOnlyMode - true: disable all processing of Record's data during Record object creations so
-     *  it will work much faster on large sets of Records and allow using Record's methods but will disable
-     *  Record's data modification
+     * @param null|string|\Closure $closureOrColumnsListOrMethodName
+     *      - null: return all fetched records as not modified arrays
+     *      - other options and arguments described in RecordsArray::getDataFromEachObject()
+     * @param array $argumentsForMethod
+     * @param bool $enableReadOnlyMode
      * @return array[]
+     * @see RecordsArray::getDataFromEachObject()
      */
-    public function toArrays($closureOrObjectsMethod = null, array $argumentsForMethod = [], bool $enableReadOnlyMode = true): array {
-        if ($closureOrObjectsMethod) {
-            return $this->getDataFromEachObject($closureOrObjectsMethod, $argumentsForMethod, $enableReadOnlyMode);
+    public function toArrays($closureOrColumnsListOrMethodName = null, array $argumentsForMethod = [], bool $enableReadOnlyMode = true): array {
+        if ($closureOrColumnsListOrMethodName) {
+            return $this->getDataFromEachObject($closureOrColumnsListOrMethodName, $argumentsForMethod, $enableReadOnlyMode);
         } else if ($this->isRecordsContainObjects) {
             /** @var array|RecordInterface $data */
             foreach ($this->records as $index => $data) {
@@ -321,25 +318,39 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
 
     /**
      * Get some specific data from each object
-     * @param string|\Closure $closureOrObjectsMethod
-     *  - string: get record data processed by ORM Record's method name. You can provide additional args via $argumentsForMethod
-     *  - \Closure: function (RecordInterface $record) { return $record->toArray(); }
-     *  - \Closure: function (RecordInterface $record) { return \PeskyORM\ORM\KeyValuePair::create($record->id, $record->toArray()); }
-     * @param array $argumentsForMethod - pass this arguments to ORM Record's method. Not used if $argumentsForMethod is Closure
+     * @param string|\Closure|array $closureOrColumnsListOrMethodName
+     *      - string: get record data processed by ORM Record's method name. You can provide additional args via $argumentsForMethod
+     *      - array: list of columns compatible with Record->toArray($columnsNames)
+     *      - \Closure: function (RecordInterface $record) { return $record->toArray(); }
+     *      - \Closure: function (RecordInterface $record) { return \PeskyORM\ORM\KeyValuePair::create($record->id, $record->toArray()); }
+     * @param array $argumentsForMethod - pass this arguments to ORM Record's method.
+     *      Not used if $argumentsForMethod is Closure.
+     *      If $closureOrColumnsListOrMethodName is array - 1st argument is $closureOrColumnsListOrMethodName.
      * @param bool $enableReadOnlyMode - true: disable all processing of Record's data during Record object creations so
-     *  it will work much faster on large sets of Records and allow using Record's methods but will disable
-     *  Record's data modification
+     *      it will work much faster on large sets of Records and allow using Record's methods but will disable
+     *      Record's data modification
      * @return array
      * @throws \InvalidArgumentException
+     * @see Record::toArray()
+     * @see \PeskyORM\ORM\KeyValuePair::create()
      */
-    public function getDataFromEachObject($closureOrObjectsMethod, array $argumentsForMethod = [], bool $enableReadOnlyMode = true): array {
-        $closure = $closureOrObjectsMethod;
-        if (is_string($closure)) {
-            $closure = function (RecordInterface $record) use ($closureOrObjectsMethod, $argumentsForMethod) {
-                return call_user_func_array([$record, $closureOrObjectsMethod], $argumentsForMethod);
-            };
-        } else if (!($closure instanceof \Closure)) {
-            throw new \InvalidArgumentException('$callback argument must be a string (method name) or closure');
+    public function getDataFromEachObject($closureOrColumnsListOrMethodName, array $argumentsForMethod = [], bool $enableReadOnlyMode = true): array {
+        if ($closureOrColumnsListOrMethodName instanceof \Closure) {
+            $closure = $closureOrColumnsListOrMethodName;
+        } else {
+            if (is_array($closureOrColumnsListOrMethodName)) {
+                // columns list
+                $argumentsForMethod = array_merge([$closureOrColumnsListOrMethodName], $argumentsForMethod);
+                $closureOrColumnsListOrMethodName = 'toArray';
+            }
+            if (is_string($closureOrColumnsListOrMethodName)) {
+                // Record's method and arguments
+                $closure = function (RecordInterface $record) use ($closureOrColumnsListOrMethodName, $argumentsForMethod) {
+                    return call_user_func_array([$record, $closureOrColumnsListOrMethodName], $argumentsForMethod);
+                };
+            } else {
+                throw new \InvalidArgumentException('$callback argument must be a string (method name), array (columns list) or closure');
+            }
         }
         $data = [];
         $backupReuse = $this->isDbRecordInstanceReuseEnabled;

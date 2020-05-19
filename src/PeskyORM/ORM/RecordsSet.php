@@ -199,20 +199,11 @@ class RecordsSet extends RecordsArray {
     }
 
     /**
-     * @param null|string|\Closure $closureOrObjectsMethod
-     *  - null: returns selected records as is
-     *  - string: get record data processed by ORM Record's method name. You can provide additional args via $argumentsForMethod
-     *  - \Closure: function (RecordInterface $record) { return $record->toArray(); }
-     *  - \Closure: function (RecordInterface $record) { return \PeskyORM\ORM\KeyValuePair::create($record->id, $record->toArray()); }
-     * @param array $argumentsForMethod - pass this arguments to ORM Record's method. Not used if $argumentsForMethod is Closure
-     * @param bool $enableReadOnlyMode - true: disable all processing of Record's data during Record object creations so
-     *  it will work much faster on large sets of Records and allow using Record's methods but will disable
-     *  Record's data modification
-     * @return array[]
+     * @inheritDoc
      */
-    public function toArrays($closureOrObjectsMethod = null, array $argumentsForMethod = [], bool $enableReadOnlyMode = true): array {
-        if ($closureOrObjectsMethod) {
-            return $this->getDataFromEachObject($closureOrObjectsMethod, $argumentsForMethod, $enableReadOnlyMode);
+    public function toArrays($closureOrColumnsListOrMethodName = null, array $argumentsForMethod = [], bool $enableReadOnlyMode = true): array {
+        if ($closureOrColumnsListOrMethodName) {
+            return $this->getDataFromEachObject($closureOrColumnsListOrMethodName, $argumentsForMethod, $enableReadOnlyMode);
         } else {
             return $this->getRecords();
         }

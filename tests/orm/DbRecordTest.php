@@ -606,17 +606,17 @@ class DbRecordTest extends TestCase {
         $reflection = new ReflectionClass($rec);
         $method = $reflection->getMethod('getColumnValueForToArray');
         $method->setAccessible(true);
-        static::assertEquals(null, $method->invoke($rec, 'id', false));
-        static::assertEquals(1, $method->invoke($rec, 'parent_id', false));
-        static::assertEquals('en', $method->invoke($rec, 'language', false));
-        static::assertEquals(null, $method->invoke($rec, 'avatar', false));
-        static::assertEquals(null, $method->invoke($rec, 'avatar', true));
+        static::assertEquals(null, $method->invoke($rec, 'id', null, null, false));
+        static::assertEquals(1, $method->invoke($rec, 'parent_id', null, null, false));
+        static::assertEquals('en', $method->invoke($rec, 'language', null, null, false));
+        static::assertEquals(null, $method->invoke($rec, 'avatar', null, null, false));
+        static::assertEquals(null, $method->invoke($rec, 'avatar', null, null, true));
         $rec->updateValue('id', 2, true);
-        static::assertEquals(2, $method->invoke($rec, 'id', false));
-        static::assertEquals(1, $method->invoke($rec, 'parent_id', false));
-        static::assertEquals(null, $method->invoke($rec, 'language', false));
-        static::assertEquals(null, $method->invoke($rec, 'avatar', false));
-        static::assertEquals(null, $method->invoke($rec, 'avatar', true));
+        static::assertEquals(2, $method->invoke($rec, 'id', null, null, false));
+        static::assertEquals(1, $method->invoke($rec, 'parent_id', null, null, false));
+        static::assertEquals(null, $method->invoke($rec, 'language', null, null, false));
+        static::assertEquals(null, $method->invoke($rec, 'avatar', null, null, false));
+        static::assertEquals(null, $method->invoke($rec, 'avatar', null, null, true));
         $method->setAccessible(false);
     }
 

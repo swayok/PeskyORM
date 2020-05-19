@@ -613,22 +613,6 @@ class Column {
     }
 
     /**
-     * Value will not appear in Record->toArray() results
-     * @return $this
-     */
-    public function privateValue() {
-        $this->isPrivateValue = true;
-        return $this;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isPrivateValue() {
-        return $this->isPrivateValue;
-    }
-
-    /**
      * Get default value set via $this->setDefaultValue()
      * @return mixed - may be a \Closure: function() { return 'default value'; }
      * @throws \UnexpectedValueException
@@ -957,15 +941,33 @@ class Column {
     public function isValuePrivate() {
         return $this->isPrivate;
     }
+    
+    /**
+     * @deprecated - use isValuePrivate()
+     * @return bool
+     */
+    public function isPrivateValue() {
+        return $this->isPrivateValue;
+    }
 
     /**
+     * Value will not appear in Record->toArray() results
+     * @return $this
+     */
+    public function privateValue() {
+        $this->isPrivateValue = true;
+        return $this;
+    }
+    
+    /**
+     * @deprecated - use privateValue()
      * @return $this
      */
     public function valueIsPrivate() {
         $this->isPrivate = true;
         return $this;
     }
-
+    
     /**
      * @return array
      */

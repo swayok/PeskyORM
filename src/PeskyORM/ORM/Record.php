@@ -1612,18 +1612,37 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * Get required values as array
      * @param array $columnsNames
-     *  - empty array: return values for all columns
-     *  - array: contains index-string, key-string, key-array pairs:
-     *      index-string: value is column name or relation name (returns all data from related record)
-     *      key-string (renaming): key is a column name and value is a column alias (alters column name in resulting array)
-     *      key-array (relation data): key is a relation name and value is an array containing column names of the relation
-     *      '*' as the value for index 0: add all related records (if $loadRelatedRecordsIfNotSet === false - only loaded records will be added)
+     *  - empty array: return known values for all columns (unknown = not set or not fetched from DB)
+     *  - array: contains index-string, key-string, key-\Closure, key-array pairs:
+     *      - '*' as the value for index 0: all known values for record (unknown = not set or not fetched from DB)
+     *          Note: private columns / @see Column::isValuePrivate() will have null value
+     *          Note: heavy column / @see Column::isValueHeavy() will have value only if it was fetched from DB
+     *      - '*' as key: same as ['*' the value for index 0] variant but will exclude columns listed in value.
+     *      - index-string: value is column name or relation name (returns all data from related record)
+     *          or 'column_name_as_format' or 'RelationName.relation_column'.
+     *      - key-string (renaming): key is a column name and value is a column alias (alters key in resulting array).
+     *          Key can be 'column_name_as_format' or 'RelationName.relation_column'.
+     *      - key-\Closure (value altering): key is a column name and value is a \Closure that alters column's value.
+     *          Key can be 'column_name_as_format' or 'RelationName.relation_column'.
+     *          \Closure receives 2 arguments: $value (formatted column's value to alter) and Record $record ($this):
+     *              function ($value, Record $record) { return $value; }
+     *          \Closure may return \PeskyORM\ORM\KeyValuePair object to alter key in resulting array:
+     *              function ($value, Record $record) { return KeyValuePair::create('some_other_key', $value); }
+     *      - key-\Closure (value adding): key is not a column name and value is a \Closure that generates value for this key.
+     *          \Closure receives 1 argument: Record $record ($this):
+     *              function (Record $record) { return $record->column_name; }
+     *          \Closure may return \PeskyORM\ORM\KeyValuePair object to alter key in resulting array (not recommended!):
+     *              function (Record $record) { return KeyValuePair::create('some_other_key', $record->column_name); }
+     *      - key-array (relation data): key is a relation name and value is an array containing column names
+     *          of the related record using same rules as here.
      * @param array $relatedRecordsNames
      *  - empty: do not add any relations
      *  - array: contains index-string, key-string, key-array pairs or single value = '*':
-     *      '*' as the value for index === 0: add all related records (if $loadRelatedRecordsIfNotSet === false - only already loaded records will be added)
-     *      index-string: value is relation name (returns all data from related record)
-     *      key-array: key is relation name and value is array containing column names of related record to return
+     *      - '*' as the value for index === 0: add all related records
+     *          (if $loadRelatedRecordsIfNotSet === false - only already loaded records will be added)
+     *      - index-string: value is relation name (returns all data from related record)
+     *      - key-array: key is relation name and value is array containing column names of
+     *          the related record to return using same rules as for $columnsNames.
      * @param bool $loadRelatedRecordsIfNotSet - true: read all missing related objects from DB
      * @param bool $withFilesInfo - true: add info about files attached to a record (url, path, file_name, full_file_name, ext)
      * @return array
@@ -1639,13 +1658,20 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         if (empty($columnsNames) || (count($columnsNames) === 1 && isset($columnsNames[0]) && $columnsNames[0] === '*')) {
             $columnsNames = array_keys(static::getColumns());
         } else if (in_array('*', $columnsNames, true)) {
-            $columnsNames = array_merge($columnsNames, array_keys(static::getColumns()));
-            foreach ($columnsNames as $index => $relationName) {
-                if ($relationName === '*') {
-                    unset($columnsNames[$index]);
-                    break;
+            $excludeDuplicatesFromWildcard = [];
+            foreach ($columnsNames as $index => $columnName) {
+                if (is_string($index)) {
+                    $excludeDuplicatesFromWildcard[] = $index;
+                }
+                if (is_string($columnName)) {
+                    $excludeDuplicatesFromWildcard[] = $columnName;
+                    if ($columnName === '*') {
+                        unset($columnsNames[$index]);
+                    }
                 }
             }
+            $wildcardColumns = array_diff(array_keys(static::getColumns()), $excludeDuplicatesFromWildcard);
+            $columnsNames = array_merge($wildcardColumns, $columnsNames);
         } else if (isset($columnsNames['*'])) {
             // exclude some columns from wildcard
             $columnsNames = array_merge(
@@ -1677,7 +1703,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         // collect data for columns
         $data = [];
         foreach ($columnsNames as $index => $columnName) {
-            if ((!is_int($index) && is_array($columnName)) || static::hasRelation($columnName)) {
+            if (
+                (!is_int($index) && is_array($columnName))
+                || (is_string($columnName) && static::hasRelation($columnName))
+            ) {
                 // it is actually relation
                 if (is_int($index)) {
                     // get all data from related record
@@ -1687,15 +1716,25 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     $relatedRecordsNames[$index] = $columnName;
                 }
             } else {
-                $columnAlias = $columnName;
-                if (!is_int($index)) {
-                    $columnName = $index;
+                if ($columnName instanceof \Closure) {
+                    $valueModifier = $columnName;
+                    $columnName = $columnAlias = $index;
+                } else {
+                    $columnAlias = $columnName;
+                    if (!is_int($index)) {
+                        $columnName = $index;
+                    }
+                    $valueModifier = null;
                 }
                 if (!static::hasColumn($columnName) && count($parts = explode('.', $columnName)) > 1) {
                     // $columnName = 'Relaion.column' or 'Relation.Subrelation.column'
-                    $data[$columnAlias] = $this->getNestedValueForToArray($parts, $loadRelatedRecordsIfNotSet, !$withFilesInfo, $isset);
+                    $value = $this->getNestedValueForToArray($parts, $columnAlias, $valueModifier, $loadRelatedRecordsIfNotSet, !$withFilesInfo, $isset);
+                    // $columnAlias may be modified in $this->getNestedValueForToArray()
+                    $data[$columnAlias] = $value;
                 } else {
-                    $data[$columnAlias] = $this->getColumnValueForToArray($columnName, !$withFilesInfo, $isset);
+                    $value = $this->getColumnValueForToArray($columnName, $columnAlias, $valueModifier, !$withFilesInfo, $isset);
+                    // $columnAlias may be modified in $this->getColumnValueForToArray()
+                    $data[$columnAlias] = $value;
                 }
                 if (is_bool($isset) && !$isset) {
                     unset($data[$columnAlias]);
@@ -1755,56 +1794,119 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * Get column value if it is set or null in any other cases
-     * @param string $columnName - value may be modiied to real column name instead of column name with format (like 'created_at_as_time')
+     * @param string $columnName
+     * @param string $columnAlias - it is a reference because it can be altered by KeyValuePair returend from $valueModifier \Closure
+     * @param null|\Closure $valueModifier - \Closure to modify value = function ($value, Record $record) { return $value; }
      * @param bool $returnNullForFiles - false: return file information for file column | true: return null for file column
      * @param bool $isset - true: value is set | false: value is not set
      * @return mixed
      */
-    protected function getColumnValueForToArray(&$columnName, bool $returnNullForFiles = false, ?bool &$isset = null) {
+    protected function getColumnValueForToArray(
+        $columnName,
+        &$columnAlias = null,
+        ?\Closure $valueModifier = null,
+        bool $returnNullForFiles = false,
+        ?bool &$isset = null
+    ) {
         $isset = false;
+        if ($valueModifier && !static::hasColumn($columnName)) {
+            return $this->modifyValueForToArray(null, $columnAlias, null, $valueModifier, $isset);
+        }
         $column = static::getColumn($columnName, $format);
-        if ($column->isPrivateValue()) {
-            return null;
+        if ($column->isValuePrivate()) {
+            return $this->modifyValueForToArray($columnName, $columnAlias, null, $valueModifier, $isset);
         }
         if ($this->isReadOnly()) {
             if (array_key_exists($columnName, $this->readOnlyData)) {
                 $isset = true;
-                return $this->readOnlyData[$columnName];
+                return $this->modifyValueForToArray(
+                    $columnName,
+                    $columnAlias,
+                    $this->readOnlyData[$columnName],
+                    $valueModifier
+                );
             } else if ($format) {
                 $valueContainer = $this->createValueObject($column);
                 if (array_key_exists($column->getName(), $this->readOnlyData)) {
                     $isset = true;
                     $value = $this->readOnlyData[$column->getName()];
                     $valueContainer->setRawValue($value, $value, true);
-                    return call_user_func($column->getValueFormatter(), $valueContainer, $format);
+                    return $this->modifyValueForToArray(
+                        $columnName,
+                        $columnAlias,
+                        call_user_func($column->getValueFormatter(), $valueContainer, $format),
+                        $valueModifier
+                    );
                 } else {
                     $isset = true;
-                    return null;
+                    return $this->modifyValueForToArray($columnName, $columnAlias, null, $valueModifier);
                 }
             }
         }
         if ($column->isItAFile()) {
             if (!$returnNullForFiles && $this->_hasValue($column, false)) {
                 $isset = true;
-                return $this->_getValue($column, $format ?: 'array');
+                return $this->modifyValueForToArray(
+                    $columnName,
+                    $columnAlias,
+                    $this->_getValue($column, $format ?: 'array'),
+                    $valueModifier
+                );
             }
         } else {
             if ($this->existsInDb()) {
                 if ($this->_hasValue($column, false)) {
                     $isset = true;
                     $val = $this->_getValue($column, $format);
-                    return ($val instanceof DbExpr) ? null : $val;
+                    return $this->modifyValueForToArray(
+                        $columnName,
+                        $columnAlias,
+                        ($val instanceof DbExpr) ? null : $val,
+                        $valueModifier
+                    );
                 }
             } else {
                 $isset = true; //< there is always a value when record does not exist in DB
                 // if default value not provided directly it is considered to be null when record does not exist is DB
                 if ($this->_hasValue($column, true)) {
                     $val = $this->_getValue($column, $format);
-                    return ($val instanceof DbExpr) ? null : $val;
+                    return $this->modifyValueForToArray(
+                        $columnName,
+                        $columnAlias,
+                        ($val instanceof DbExpr) ? null : $val,
+                        $valueModifier
+                    );
                 }
             }
         }
-        return null;
+        return $this->modifyValueForToArray($columnName, $columnAlias, null, $valueModifier, $isset);
+    }
+    
+    /**
+     * @param mixed $columnName - when null
+     * @param mixed $columnAlias - may be modified by KeyValuePair returned from $valueModifier
+     * @param mixed $value
+     * @param \Closure|null $valueModifier - \Closure that modifies the value. 2 variants:
+     *      - if $columnName is set: function ($value, Record $record) { return $value };
+     *      - if $columnName is empty: function (Record $record) { return $record->column };
+     *      Both versions may return KeyValuePair object (not recommended if $columnName is empty)
+     * @return mixed
+     */
+    protected function modifyValueForToArray($columnName, &$columnAlias, $value, ?\Closure $valueModifier, &$hasValue = null) {
+        if (!$valueModifier) {
+            return $value;
+        }
+        $hasValue = true;
+        if (empty($columnName)) {
+            $value = $valueModifier($this);
+        } else {
+            $value = $valueModifier($value, $this);
+        }
+        if ($value instanceof KeyValuePair) {
+            $columnAlias = $value->getKey();
+            $value = $value->getValue();
+        }
+        return $value;
     }
 
     /**
@@ -1815,16 +1917,23 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param bool|null $isset - true: value is set | false: value is not set
      * @return mixed
      */
-    protected function getNestedValueForToArray(array $parts, bool $loadRelatedRecordsIfNotSet, bool $returnNullForFiles = false, ?bool &$isset = null) {
+    protected function getNestedValueForToArray(
+        array $parts,
+        &$columnAlias = null,
+        ?\Closure $valueModifier = null,
+        bool $loadRelatedRecordsIfNotSet = false,
+        bool $returnNullForFiles = false,
+        ?bool &$isset = null
+    ) {
         $relationName = array_shift($parts);
         $relatedRecord = $this->getRelatedRecord($relationName, $loadRelatedRecordsIfNotSet);
         if ($relatedRecord instanceof self) {
             // ignore related records without non-default data
             if ($relatedRecord->existsInDb() || $relatedRecord->hasAnyNonDefaultValues()) {
                 if (count($parts) === 1) {
-                    return $relatedRecord->getColumnValueForToArray($parts[0], $returnNullForFiles, $isset);
+                    return $relatedRecord->getColumnValueForToArray($parts[0], $columnAlias, $valueModifier, $returnNullForFiles, $isset);
                 } else {
-                    return $relatedRecord->getNestedValueForToArray($parts, $loadRelatedRecordsIfNotSet, $returnNullForFiles, $isset);
+                    return $relatedRecord->getNestedValueForToArray($parts, $columnAlias, $valueModifier, $loadRelatedRecordsIfNotSet, $returnNullForFiles, $isset);
                 }
             }
             $isset = false;
@@ -2061,6 +2170,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param $value
      */
     public function __set($name, $value) {
+        /** @noinspection PhpVoidFunctionResultUsedInspection */
         return $this->offsetSet($name, $value);
     }
 
