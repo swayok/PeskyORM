@@ -212,7 +212,7 @@ class RecordValue {
      */
     public function getValue() {
         if (!$this->hasValue) {
-            throw new \BadMethodCallException("Value for column '{$this->getColumn()->getName()}' is not set");
+            throw new \BadMethodCallException("Value for {$this->getColumnInfoForException()} is not set");
         }
         return $this->value;
     }
@@ -232,12 +232,12 @@ class RecordValue {
         } else {
             if ($this->hasDefaultValue()) {
                 throw new \BadMethodCallException(
-                    "Value for column '{$this->getColumn()->getName()}' is not set and default value cannot be set because"
+                    "Value for {$this->getColumnInfoForException()} is not set and default value cannot be set because"
                         . ' record already exists in DB and there is danger of unintended value overwriting'
                 );
             } else {
                 throw new \BadMethodCallException(
-                    "Value for column '{$this->getColumn()->getName()}' is not set and default value is not provided"
+                    "Value for {$this->getColumnInfoForException()} is not set and default value is not provided"
                 );
             }
         }
@@ -253,7 +253,7 @@ class RecordValue {
     public function setValidValue($value, $rawValue) {
         if ($rawValue !== $this->rawValue) {
             throw new \InvalidArgumentException(
-                "\$rawValue argument for column '{$this->getColumn()->getName()}'"
+                "\$rawValue argument for {$this->getColumnInfoForException()}"
                     . ' must be same as current raw value: ' . var_export($this->rawValue, true)
             );
         }
@@ -276,7 +276,7 @@ class RecordValue {
      */
     public function getOldValue() {
         if (!$this->hasOldValue()) {
-            throw new \BadMethodCallException("Old value is not set for column '{$this->getColumn()->getName()}'");
+            throw new \BadMethodCallException("Old value is not set for {$this->getColumnInfoForException()}");
         }
         return $this->oldValue;
     }
@@ -303,7 +303,7 @@ class RecordValue {
      */
     public function isOldValueWasFromDb() {
         if (!$this->hasOldValue()) {
-            throw new \BadMethodCallException("Old value is not set for column '{$this->getColumn()->getName()}'");
+            throw new \BadMethodCallException("Old value is not set for {$this->getColumnInfoForException()}");
         }
         return $this->oldValueIsFromDb;
     }
@@ -339,7 +339,7 @@ class RecordValue {
      */
     public function isValid() {
         if (!$this->isValidated()) {
-            throw new \BadMethodCallException("Value was not validated for column '{$this->getColumn()->getName()}'");
+            throw new \BadMethodCallException("Value was not validated for {$this->getColumnInfoForException()}");
         }
         return empty($this->validationErrors);
     }
@@ -359,7 +359,7 @@ class RecordValue {
             if (!is_string($key) && !is_numeric($key)) {
                 throw new \InvalidArgumentException(
                     '$key argument for custom info must be a string or number but ' . gettype($key) . ' received'
-                        . " (column: '{$this->getColumn()->getName()}')"
+                        . " (column: '{$this->getColumnInfoForException()}')"
                 );
             }
             if (array_key_exists($key, $this->customInfo)) {
@@ -396,13 +396,13 @@ class RecordValue {
         if (!is_string($key) && !is_numeric($key)) {
             throw new \InvalidArgumentException(
                 '$key argument for custom info must be a string or number but ' . gettype($key) . ' received'
-                    . " (column: '{$this->getColumn()->getName()}')"
+                    . " (column: '{$this->getColumnInfoForException()}')"
             );
         }
         $this->customInfo[$key] = $value;
         return $this;
     }
-
+    
     /**
      * @param null|string $key
      * @return $this
@@ -416,7 +416,7 @@ class RecordValue {
             if (!is_string($key) && !is_numeric($key)) {
                 throw new \InvalidArgumentException(
                     '$key argument for custom info must be a string or number but ' . gettype($key) . ' received'
-                        . " (column: '{$this->getColumn()->getName()}')"
+                        . " (column: '{$this->getColumnInfoForException()}')"
                 );
             }
             unset($this->customInfo[$key]);
@@ -460,5 +460,17 @@ class RecordValue {
         foreach ($data as $propertyName => $value) {
             $this->$propertyName = $value;
         }
+    }
+    
+    protected function getColumnInfoForException(): string {
+        $recordClass = get_class($this->getRecord());
+        $pk = 'undefined';
+        if (!$this->getColumn()->isItPrimaryKey()) {
+            try {
+                $pk = $this->getRecord()->existsInDb() ? 'null' : $this->getRecord()->getPrimaryKeyValue();
+            } catch (\Throwable $ignore) {
+            }
+        }
+        return $recordClass . '(#' . $pk . ')->' . $this->getColumn()->getName();
     }
 }
