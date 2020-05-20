@@ -1042,8 +1042,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 $this->_updateValue($pkColumn, $data[$pkColumn->getName()], true);
                 unset($data[$pkColumn->getName()]);
             } else {
+                $recordClass = static::class;
                 throw new \InvalidArgumentException(
-                    'Values update failed: record does not exist in DB while $isFromDb argument is \'true\'.'
+                    "Values update failed: record {$recordClass} does not exist in DB while \$isFromDb === true."
                     . ' Possibly you\'ve missed a primary key value in $data argument.'
                 );
             }
@@ -1061,8 +1062,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     $haltOnUnknownColumnNames
                 );
             } else if ($haltOnUnknownColumnNames) {
+                $recordClass = static::class;
+                $tableStructureClass = get_class(static::getTableStructure());
                 throw new \InvalidArgumentException(
-                    "\$data argument contains unknown column name or relation name: '$columnNameOrRelationName'"
+                    "\$data argument contains unknown column name or relation name {$recordClass}->{$columnNameOrRelationName}"
+                    . ' ($isFromDb: ' . ($isFromDb ? 'true' : 'false') . ').'
+                    . ($isFromDb ? " Possibly column '{$columnNameOrRelationName}' exists in DB but not defined in {$tableStructureClass}" : '')
                 );
             }
         }
