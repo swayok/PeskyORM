@@ -83,7 +83,7 @@ abstract class TableStructure implements TableStructureInterface {
      */
     final protected function __construct() {
         if (isset(self::$instances[static::class])) {
-            throw new \BadMethodCallException('Attempt to create 2nd instance of class ' . __CLASS__);
+            throw new \BadMethodCallException('Attempt to create 2nd instance of class ' . static::class);
         }
     }
 
@@ -135,7 +135,8 @@ abstract class TableStructure implements TableStructureInterface {
      */
     protected function validate() {
         if ($this->pk === null) {
-            throw new OrmException('Table schema must contain primary key', OrmException::CODE_INVALID_TABLE_SCHEMA);
+            $class = static::class;
+            throw new OrmException("TableStructure {$class} must contain primary key", OrmException::CODE_INVALID_TABLE_SCHEMA);
         }
     }
     
@@ -323,7 +324,8 @@ abstract class TableStructure implements TableStructureInterface {
      */
     protected function _getColumn(string $columnName): Column {
         if (!$this->_hasColumn($columnName)) {
-            throw new \InvalidArgumentException("Table does not contain column named '{$columnName}'");
+            $class = static::class;
+            throw new \InvalidArgumentException("{$class} does not know about column named '{$columnName}'");
         }
         return $this->columns[$columnName];
     }
@@ -338,8 +340,9 @@ abstract class TableStructure implements TableStructureInterface {
         $column = $method->invoke($this);
         $method->setAccessible(false);
         if (!($column instanceof Column)) {
+            $class = static::class;
             throw new \UnexpectedValueException(
-                "Method '{$method->getName()}' must return instance of \\PeskyORM\\ORM\\Column class"
+                "Method {$class}->{$method->getName()}() must return instance of \\PeskyORM\\ORM\\Column class"
             );
         }
         if (!$column->hasName()) {
@@ -356,8 +359,9 @@ abstract class TableStructure implements TableStructureInterface {
         $this->columns[$column->getName()] = $column;
         if ($column->isItPrimaryKey()) {
             if (!empty($this->pk)) {
+                $class = static::class;
                 throw new \UnexpectedValueException(
-                    '2 primary keys in one table is forbidden: \'' . $this->pk->getName() . " and '{$column->getName()}'"
+                    "2 primary keys in one table is forbidden: '{$this->pk->getName()}' and '{$column->getName()}' (class: {$class})"
                 );
             }
             $this->pk = $column;
@@ -386,7 +390,8 @@ abstract class TableStructure implements TableStructureInterface {
      */
     protected function _getRelation(string $relationName): Relation {
         if (!$this->_hasRelation($relationName)) {
-            throw new \InvalidArgumentException("There is no relation '{$relationName}' in " . static::class);
+            $class = static::class;
+            throw new \InvalidArgumentException("{$class} does not know about relation named '{$relationName}'");
         }
         return $this->relations[$relationName];
     }
@@ -410,8 +415,9 @@ abstract class TableStructure implements TableStructureInterface {
         $config = $method->invoke($this);
         $method->setAccessible(false);
         if (!($config instanceof Relation)) {
+            $class = static::class;
             throw new \UnexpectedValueException(
-                "Method '{$method->getName()}' must return instance of \\PeskyORM\\ORM\\Relation class"
+                "Method {$class}->{$method->getName()}() must return instance of \\PeskyORM\\ORM\\Relation class"
             );
         }
         if (!$config->hasName()) {
