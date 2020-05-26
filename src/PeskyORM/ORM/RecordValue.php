@@ -467,7 +467,7 @@ class RecordValue {
         $pk = 'undefined';
         if (!$this->getColumn()->isItPrimaryKey()) {
             try {
-                $pk = $this->getRecord()->existsInDb() ? 'null' : $this->getRecord()->getPrimaryKeyValue();
+                $pk = $this->getRecord()->existsInDb() ? $this->getRecord()->getPrimaryKeyValue() : 'null';
             } catch (\Throwable $ignore) {
             }
         }
