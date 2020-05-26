@@ -613,6 +613,16 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         }
         return $this;
     }
+    
+    /**
+     * @param string|Column $column
+     * @return $this
+     */
+    public function resetValueToDefault($column) {
+        $valueContainer = $this->getValueContainer($column);
+        $this->updateValue($column, $valueContainer->getDefaultValueOrNull(), false);
+        return $this;
+    }
 
     /**
      * Unset primary key value
