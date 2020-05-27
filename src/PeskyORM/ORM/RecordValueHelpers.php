@@ -105,13 +105,13 @@ abstract class RecordValueHelpers {
                 }
                 break;
             case Column::TYPE_IPV4_ADDRESS:
-                if (!ValidateValue::isIpAddress($value)) {
+                if (!$isForCondition && !ValidateValue::isIpAddress($value)) {
                     return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_IPV4_ADDRESS)];
                 }
                 break;
             case Column::TYPE_JSON:
             case Column::TYPE_JSONB:
-                if (!ValidateValue::isJson($value)) {
+                if (!$isForCondition && !ValidateValue::isJson($value)) {
                     return $isForCondition && is_string($value)
                         ? []
                         : [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_JSON)];
@@ -128,7 +128,7 @@ abstract class RecordValueHelpers {
                 }
                 break;
             case Column::TYPE_EMAIL:
-                if (!ValidateValue::isEmail($value)) {
+                if (!$isForCondition && !ValidateValue::isEmail($value)) {
                     return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_EMAIL)];
                 }
                 break;
