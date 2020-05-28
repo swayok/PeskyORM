@@ -583,6 +583,47 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         if (!$valueContainer->isValid()) {
             throw new InvalidDataException([$colName => $valueContainer->getValidationErrors()]);
         }
+        if ($isFromDb) {
+            // check if all loaded relations still properly linked and unset relations if not
+            $relations = $column->getRelations();
+            if (count($relations) > 0) {
+                $finalValue = $this->getValue($column);
+                // unset relation if relation's linking column value differs from current one
+                foreach ($column->getRelations() as $relation) {
+                    if ($this->isRelatedRecordAttached($relation->getName())) {
+                        $relatedRecord = $this->getRelatedRecord($relation->getName(), false);
+                        $relatedColumnName = $relation->getForeignColumnName();
+                        switch ($relation->getType()) {
+                            case Relation::HAS_ONE:
+                            case Relation::BELONGS_TO:
+                                if (
+                                    isset($relatedRecord[$relatedColumnName])
+                                    && $relatedRecord[$relatedColumnName] !== $finalValue
+                                ) {
+                                    $this->unsetRelatedRecord($relation->getName());
+                                }
+                                break;
+                            case Relation::HAS_MANY:
+                                /** @var RecordsSet $relatedRecord */
+                                if (!$relatedRecord->areRecordsFetchedFromDb()) {
+                                    // not fetched yet - remove without counting and other testing to prevent
+                                    // unnecessary DB queries
+                                    $this->unsetRelatedRecord($relation->getName());
+                                } else if ($relatedRecord->count() > 0) {
+                                    $firstRelatedRecord = $relatedRecord->first();
+                                    if (
+                                        isset($firstRelatedRecord[$relatedColumnName])
+                                        && $firstRelatedRecord[$relatedColumnName] !== $finalValue
+                                    ) {
+                                        $this->unsetRelatedRecord($relation->getName());
+                                    }
+                                }
+                                break;
+                        }
+                    }
+                }
+            }
+        }
         if (
             $prevPkValue !== null
             && (

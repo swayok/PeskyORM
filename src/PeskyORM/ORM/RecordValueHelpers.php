@@ -105,16 +105,16 @@ abstract class RecordValueHelpers {
                 }
                 break;
             case Column::TYPE_IPV4_ADDRESS:
-                if (!$isForCondition && !ValidateValue::isIpAddress($value)) {
+                if (!is_string($value) || (!$isForCondition && !ValidateValue::isIpAddress($value))) {
                     return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_IPV4_ADDRESS)];
                 }
                 break;
             case Column::TYPE_JSON:
             case Column::TYPE_JSONB:
-                if (!$isForCondition && !ValidateValue::isJson($value)) {
-                    return $isForCondition && is_string($value)
-                        ? []
-                        : [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_JSON)];
+                if ($isForCondition && !is_string($value)) {
+                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_STRING)];
+                } else if (!$isForCondition && !ValidateValue::isJson($value)) {
+                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_JSON)];
                 }
                 break;
             case Column::TYPE_FILE:
@@ -128,7 +128,9 @@ abstract class RecordValueHelpers {
                 }
                 break;
             case Column::TYPE_EMAIL:
-                if (!$isForCondition && !ValidateValue::isEmail($value)) {
+                if ($isForCondition && !is_string($value)) {
+                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_STRING)];
+                } else if (!$isForCondition && !ValidateValue::isEmail($value)) {
                     return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_EMAIL)];
                 }
                 break;

@@ -6,6 +6,10 @@ use PeskyORM\ORM\Record;
 
 /**
  * @method $this setId($value, $isFromDb = false)
+ * @method $this setParent($value, $isFromDb = false)
+ * @method $this setChildren($value, $isFromDb = false)
+ *
+ * @property Record $Parent
  */
 class TestingAdmin extends Record {
 

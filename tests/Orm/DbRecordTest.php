@@ -5,13 +5,20 @@ namespace Tests\Orm;
 use BadMethodCallException;
 use InvalidArgumentException;
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Exception\InvalidDataException;
+use PeskyORM\Exception\RecordNotFoundException;
 use PeskyORM\ORM\Record;
 use PeskyORM\ORM\RecordsArray;
+use PeskyORM\ORM\RecordsSet;
 use PeskyORM\ORM\RecordValue;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use Swayok\Utils\NormalizeValue;
+use Swayok\Utils\Set;
+use Swayok\Utils\StringUtils;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdmin2;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdmin3;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use Tests\PeskyORMTest\TestingApp;
@@ -867,7 +874,7 @@ class DbRecordTest extends TestCase {
     }
 
     /**
-     * @expectedException \PeskyORM\Exception\InvalidDataException
+     * @expectedException InvalidDataException
      * @expectedExceptionMessage Validation errors: [id] Value must be of an integer data type
      */
     public function testInvalidFromData3() {
@@ -1077,7 +1084,7 @@ class DbRecordTest extends TestCase {
         static::assertEquals($example, $rec->getRelatedRecord('Parent', false)->toArray($normalColumns));
         $children = $rec->getRelatedRecord('Children', false);
         static::assertCount(2, $children->toArrays());
-        static::assertEquals([$recordsAdded[3]['id'], $recordsAdded[7]['id']], \Swayok\Utils\Set::extract('/id', $children->toArrays()));
+        static::assertEquals([$recordsAdded[3]['id'], $recordsAdded[7]['id']], Set::extract('/id', $children->toArrays()));
 
         $rec = TestingAdmin::find(['id' => $recordsAdded[0]['id']], $shortSetOfColumns, ['Parent']);
         static::assertTrue($rec->existsInDb());
@@ -1086,7 +1093,7 @@ class DbRecordTest extends TestCase {
     }
 
     /**
-     * @expectedException \PeskyORM\Exception\RecordNotFoundException
+     * @expectedException RecordNotFoundException
      * @expectedExceptionMessage Record must exist in DB
      */
     public function testInvalidReload() {
@@ -1128,12 +1135,12 @@ class DbRecordTest extends TestCase {
         static::assertCount(2, $rec->getRelatedRecord('Children', false)->toArrays());
         static::assertEquals(
             [$recordsAdded[1]['id'], $recordsAdded[2]['id']],
-            \Swayok\Utils\Set::extract('/id', $rec->getRelatedRecord('Children', false)->toArrays())
+            Set::extract('/id', $rec->getRelatedRecord('Children', false)->toArrays())
         );
     }
 
     /**
-     * @expectedException \PeskyORM\Exception\RecordNotFoundException
+     * @expectedException RecordNotFoundException
      * @expectedExceptionMessage Record must exist in DB
      */
     public function testInvalidReadColumns1() {
@@ -1141,7 +1148,7 @@ class DbRecordTest extends TestCase {
     }
 
     /**
-     * @expectedException \PeskyORM\Exception\RecordNotFoundException
+     * @expectedException RecordNotFoundException
      * @expectedExceptionMessage Record with primary key '1' was not found in DB
      */
     public function testInvalidReadColumns2() {
@@ -1149,7 +1156,7 @@ class DbRecordTest extends TestCase {
     }
 
     /**
-     * @expectedException \PeskyORM\Exception\RecordNotFoundException
+     * @expectedException RecordNotFoundException
      * @expectedExceptionMessage Record with primary key '1' was not found in DB
      */
     public function testInvalidReadColumns3() {
@@ -1265,6 +1272,10 @@ class DbRecordTest extends TestCase {
             $rec->toArrayWithoutFiles($normalColumns, ['Parent' => $normalColumns], false)
         );
     }
+    
+    public function testRelationsUnsettingOnForeignKeyChange() {
+        // todo: add tests for Relations Unsetting On Foreign Key Change
+    }
 
     /**
      * @expectedException \InvalidArgumentException
@@ -1298,14 +1309,14 @@ class DbRecordTest extends TestCase {
         static::assertTrue($rec->isRelatedRecordAttached('Parent'));
         static::assertEquals($parentData, $rec->getRelatedRecord('Parent', false)->toArray($normalColumns));
         $prevSqlQuery = TestingAdminsTable::getLastQuery(false);
-        static::assertInstanceOf(\PeskyORM\ORM\RecordsSet::class, $rec->getRelatedRecord('Children', true));
+        static::assertInstanceOf(RecordsSet::class, $rec->getRelatedRecord('Children', true));
         static::assertEquals($prevSqlQuery, TestingAdminsTable::getLastQuery(false)); //< RecordsSet is lazy - query is still the same
         static::assertCount(2, $rec->getRelatedRecord('Children', true));
         static::assertNotEquals($prevSqlQuery, TestingAdminsTable::getLastQuery(false)); //< count mades a query
         $prevSqlQuery = TestingAdminsTable::getLastQuery(false);
         static::assertEquals(
             [$recordsAdded[3]['id'], $recordsAdded[7]['id']],
-            \Swayok\Utils\Set::extract('/id', $rec->getRelatedRecord('Children', false)->toArrays())
+            Set::extract('/id', $rec->getRelatedRecord('Children', false)->toArrays())
         );
         static::assertNotEquals($prevSqlQuery, TestingAdminsTable::getLastQuery(false)); //< and now it was a query to get records data
 
@@ -1340,7 +1351,7 @@ class DbRecordTest extends TestCase {
     }
 
     /**
-     * @expectedException \PeskyORM\Exception\InvalidDataException
+     * @expectedException InvalidDataException
      * @expectedExceptionMessage Validation errors: [email] Value must be an email
      */
     public function testInvalidUpdateValuesData4() {
@@ -1448,7 +1459,7 @@ class DbRecordTest extends TestCase {
     }
 
     /**
-     * @expectedException \PeskyORM\Exception\InvalidDataException
+     * @expectedException InvalidDataException
      * @expectedExceptionMessage Validation errors: [email] Value must be an email
      */
     public function testInvalidDataInCollectValuesForSave() {
@@ -1550,11 +1561,11 @@ class DbRecordTest extends TestCase {
 
     /**
      * @covers Record::beforeSave()
-     * @expectedException \PeskyORM\Exception\InvalidDataException
+     * @expectedException InvalidDataException
      * @expectedExceptionMessage Validation errors: [login] error
      */
     public function testBeforeSave() {
-        $rec = \PeskyORMTest\TestingAdmins\TestingAdmin2::newEmptyRecord();
+        $rec = TestingAdmin2::newEmptyRecord();
         $rec
             ->fromData(['id' => 999, 'login' => 'qqq'], true)
             ->updateValue('password', 'test', false)
@@ -1567,7 +1578,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage after: no-no-no!
      */
     public function testAfterSave() {
-        $rec = \PeskyORMTest\TestingAdmins\TestingAdmin2::newEmptyRecord();
+        $rec = TestingAdmin2::newEmptyRecord();
         $rec
             ->updateValue('login', 'test', false)
             ->updateValue('password', 'test', false)
@@ -1580,7 +1591,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage login: update!
      */
     public function testColumnSavingExtenders1() {
-        $rec = \PeskyORMTest\TestingAdmins\TestingAdmin3::newEmptyRecord();
+        $rec = TestingAdmin3::newEmptyRecord();
         $this->callObjectMethod(
             $rec,
             'runColumnSavingExtenders',
@@ -1597,7 +1608,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage some_file: here
      */
     public function testColumnSavingExtenders2() {
-        $rec = \PeskyORMTest\TestingAdmins\TestingAdmin3::newEmptyRecord();
+        $rec = TestingAdmin3::newEmptyRecord();
         $this->callObjectMethod(
             $rec,
             'runColumnSavingExtenders',
@@ -1624,7 +1635,7 @@ class DbRecordTest extends TestCase {
      */
     public function testColumnSavingExtendersUsageInSave1() {
         TestingApp::fillAdminsTable(1);
-        $rec = \PeskyORMTest\TestingAdmins\TestingAdmin3::newEmptyRecord()
+        $rec = TestingAdmin3::newEmptyRecord()
             ->fromData(['id' => 1], true)
             ->updateValues(['parent_id' => null, 'login' => 'test']);
         $rec->save();
@@ -1637,7 +1648,7 @@ class DbRecordTest extends TestCase {
      */
     public function testColumnSavingExtendersUsageInSave2() {
         TestingApp::fillAdminsTable(1);
-        $rec = \PeskyORMTest\TestingAdmins\TestingAdmin3::newEmptyRecord()
+        $rec = TestingAdmin3::newEmptyRecord()
             ->fromData(['id' => 1], true)
             ->updateValues([
                 'parent_id' => null,
@@ -2006,7 +2017,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage before delete: no-no-no!
      */
     public function testBeforeDelete() {
-        \PeskyORMTest\TestingAdmins\TestingAdmin2::fromArray(['id' => 9999], true)->delete();
+        TestingAdmin2::fromArray(['id' => 9999], true)->delete();
     }
 
     /**
@@ -2015,7 +2026,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage after delete: no-no-no!
      */
     public function testAfterDelete() {
-        \PeskyORMTest\TestingAdmins\TestingAdmin2::fromArray(['id' => 0], true)->delete();
+        TestingAdmin2::fromArray(['id' => 0], true)->delete();
     }
 
     /**
@@ -2302,7 +2313,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage Magic method 'setId($value, $isFromDb = false)' accepts only 2 arguments, but 3 arguments passed
      */
     public function testInvalidMagicMethodSetter6() {
-        TestingAdmin::newEmptyRecord()->setId(1, 2, 3);
+        TestingAdmin::newEmptyRecord()->setId(1, 3, 2);
     }
 
     /**
@@ -2360,7 +2371,7 @@ class DbRecordTest extends TestCase {
                 static::assertFalse($recForMagickSetterProperty->isValueFromDb($name));
             }
 
-            $setterMethodName = 'set' . \Swayok\Utils\StringUtils::classify($name);
+            $setterMethodName = 'set' . StringUtils::classify($name);
             call_user_func([$recForMagickSetterMethodFromDb, $setterMethodName], $value, true);
             static::assertTrue($recForMagickSetterMethodFromDb->hasValue($name));
             static::assertEquals($value, $recForMagickSetterMethodFromDb->getValue($name));

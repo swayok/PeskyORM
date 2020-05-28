@@ -183,6 +183,10 @@ class RecordsSet extends RecordsArray {
         }
         return $this->records;
     }
+    
+    public function areRecordsFetchedFromDb(): bool {
+        return $this->recordsCount !== null;
+    }
 
     /**
      * @param array $records

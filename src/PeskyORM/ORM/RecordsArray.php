@@ -182,6 +182,10 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     protected function getRecords(): array {
         return $this->records;
     }
+    
+    public function areRecordsFetchedFromDb(): bool {
+        return true;
+    }
 
     /**
      * @param int $index
