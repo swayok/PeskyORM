@@ -627,19 +627,21 @@ class Column {
 
     /**
      * Get validated default value
-     * @param mixed $fallbackValue - value to be returned when default value was not configured (may be a \Closure)
+     * @param mixed|\Closure $fallbackValue - value to be returned when default value was not configured (may be a \Closure)
      * @return mixed - validated default value or $fallbackValue or return from $this->validDefaultValueGetter
      * @throws \UnexpectedValueException
      */
     public function getValidDefaultValue($fallbackValue = null) {
         if ($this->validDefaultValue === self::VALID_DEFAULT_VALUE_UNDEFINED) {
+            $rememberValidDefaultValue = true;
             if ($this->validDefaultValueGetter) {
                 $defaultValue = call_user_func($this->validDefaultValueGetter, $fallbackValue, $this);
-                $excPrefix = 'Default value received from validDefaultValueGetter closure';
+                $excPrefix = 'Default value received from validDefaultValueGetter Closure';
             } else if ($this->hasDefaultValue()) {
                 $defaultValue = $this->defaultValue;
                 $excPrefix = 'Default value';
             } else {
+                $rememberValidDefaultValue = false;
                 $defaultValue = $fallbackValue;
                 $excPrefix = 'Fallback value of the default value';
             }
@@ -647,12 +649,21 @@ class Column {
                 $defaultValue = $defaultValue();
             }
             $errors = $this->validateValue($defaultValue, false, false);
-            if (!($defaultValue instanceof DbExpr) && count($errors) > 0) {
-                throw new \UnexpectedValueException(
-                    "{$excPrefix} for column '{$this->getName()}' is not valid. Errors: " . implode(', ', $errors)
-                );
+            if (!($defaultValue instanceof DbExpr)) {
+                if (count($errors) > 0) {
+                    $tableStructureClass = get_class($this->getTableStructure());
+                    throw new \UnexpectedValueException(
+                        "{$excPrefix} for column {$tableStructureClass}->{$this->getName()} is not valid. Errors: " . implode(', ', $errors)
+                    );
+                } else {
+                    $defaultValue = call_user_func($this->getValueNormalizer(), $defaultValue, false, $this);
+                }
             }
-            $this->validDefaultValue = $defaultValue;
+            if ($rememberValidDefaultValue) {
+                $this->validDefaultValue = $defaultValue;
+            } else {
+                return $defaultValue;
+            }
         }
         return $this->validDefaultValue;
     }
@@ -682,6 +693,7 @@ class Column {
      */
     public function setDefaultValue($defaultValue) {
         $this->defaultValue = $defaultValue;
+        $this->validDefaultValue = self::VALID_DEFAULT_VALUE_UNDEFINED;
         return $this;
     }
 

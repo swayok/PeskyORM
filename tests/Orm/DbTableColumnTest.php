@@ -1,17 +1,20 @@
 <?php
 
+namespace Tests\Orm;
+
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Relation;
 use PeskyORMTest\TestingAdmins\TestingAdminsTable;
+use Swayok\Utils\NormalizeValue;
 
-class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
+class DbTableColumnTest extends \PHPUnit\Framework\TestCase {
 
-    public static function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
         \PeskyORMTest\TestingApp::cleanInstancesOfDbTablesAndStructures();
         \PeskyORMTest\TestingApp::getPgsqlConnection();
     }
 
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         \PeskyORMTest\TestingApp::cleanInstancesOfDbTablesAndStructures();
     }
 
@@ -21,7 +24,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
      * @return mixed
      */
     private function getObjectPropertyValue($object, $propertyName) {
-        $reflection = new ReflectionClass($object);
+        $reflection = new \ReflectionClass($object);
         $prop = $reflection->getProperty($propertyName);
         $prop->setAccessible(true);
         return $prop->getValue($object);
@@ -267,7 +270,7 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
             return false;
         });
         static::assertTrue($obj->hasDefaultValue());
-        static::assertInstanceOf(Closure::class, $obj->getDefaultValueAsIs());
+        static::assertInstanceOf(\Closure::class, $obj->getDefaultValueAsIs());
         static::assertFalse($obj->getValidDefaultValue(true));
 
         $obj->setDefaultValue(false);
@@ -288,6 +291,20 @@ class DbTableColumnTest extends \PHPUnit_Framework_TestCase {
         static::assertTrue($obj->hasDefaultValue());
         static::assertTrue(true, $obj->getDefaultValueAsIs());
         static::assertFalse($obj->getValidDefaultValue(false));
+        
+        // default value that needs normalization
+        $nowTs = time();
+        $obj = Column::create(Column::TYPE_TIMESTAMP, 'name')
+            ->setDefaultValue($nowTs);
+        static::assertTrue($obj->hasDefaultValue());
+        $defaultValue = $obj->getValidDefaultValue();
+        static::assertNotEquals($nowTs, $defaultValue);
+        static::assertEquals(date(NormalizeValue::DATETIME_FORMAT, $nowTs), $defaultValue);
+    
+        $obj->setDefaultValue(function () use ($nowTs) {
+            return $nowTs;
+        });
+        static::assertEquals(date(NormalizeValue::DATETIME_FORMAT, $nowTs), $defaultValue);
     }
 
     /**

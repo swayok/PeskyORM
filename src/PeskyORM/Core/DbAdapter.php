@@ -554,7 +554,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @throws \InvalidArgumentException
      */
     protected function buildColumnsList(array $columns, $withBraces = true) {
-        $quoted = implode(',', array_map(function ($column) {
+        $quoted = implode(', ', array_map(function ($column) {
             return ($column instanceof DbExpr) ? $this->quoteDbExpr($column) : $this->quoteDbEntityName($column);
         }, $columns));
         return $withBraces ? '(' . $quoted . ')' : $quoted;
@@ -586,7 +586,7 @@ abstract class DbAdapter implements DbAdapterInterface {
                 empty($dataTypes[$column]) ? null : $dataTypes[$column]
             );
         }
-        return '(' . implode(',', $ret) . ')';
+        return '(' . implode(', ', $ret) . ')';
     }
 
     /**
@@ -605,7 +605,7 @@ abstract class DbAdapter implements DbAdapterInterface {
             );
             $ret[] = $this->quoteDbEntityName($column) . '=' . $quotedValue;
         }
-        return implode(',', $ret);
+        return implode(', ', $ret);
     }
 
     /**
@@ -1045,7 +1045,7 @@ abstract class DbAdapter implements DbAdapterInterface {
                 foreach ($value as $val) {
                     $quotedValues[] = $valueAlreadyQuoted ? $value : $this->quoteValue($val);
                 }
-                return '(' . implode(',', $quotedValues) . ')';
+                return '(' . implode(', ', $quotedValues) . ')';
             }
         } else {
             // 2.1, 2.2
