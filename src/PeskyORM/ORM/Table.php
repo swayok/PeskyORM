@@ -399,6 +399,24 @@ abstract class Table implements TableInterface {
      * @throws \PDOException
      */
     static public function insertMany(array $columns, array $rows, $returning = false) {
+        return static::insertManyAsIs(
+            $columns,
+            static::prepareDataForInsertMany($rows),
+            $returning
+        );
+    }
+    
+    /**
+     * @param array $columns - list of column names to insert data for
+     * @param array $rows - data to insert
+     * @param bool|array $returning - return some data back after $data inserted to $table
+     *          - true: return values for all columns of inserted table row
+     *          - false: do not return anything
+     *          - array: list of columns to return values for
+     * @return array|bool - array returned only if $returning is not empty
+     * @throws \PDOException
+     */
+    static public function insertManyAsIs(array $columns, array $rows, $returning = false) {
         return static::getConnection(true)->insertMany(
             static::getNameWithSchema(),
             $columns,
@@ -484,6 +502,88 @@ abstract class Table implements TableInterface {
             }
         }
         return $pdoDataTypes;
+    }
+    
+    /**
+     * Alter $rows to honor special columns features like isAutoUpdatingValue and fill missing values with defaults.
+     * Column features supported: isAutoUpdatingValue, isValueCanBeNull, convertsEmptyStringToNull,
+     *      isValueTrimmingRequired, isValueLowercasingRequired, getValidDefaultValue.
+     * Also uses static::getExpressionToSetDefaultValueForAColumn() if Column has no default value
+     * @param array $rows
+     * @param array $columnsToSave
+     * @param array|null $features - null: ['trim', 'lowercase', 'nullable', 'empty_string_to_null', 'auto']
+     * @return array
+     */
+    static protected function prepareDataForInsertMany(
+        array $rows,
+        array $columnsToSave = [],
+        ?array $features = null
+    ): array {
+        $allColumns = static::getStructure()->getColumns();
+        if (empty($columnsToSave)) {
+            $columnsToSave = array_keys($allColumns);
+        }
+        if ($features === null) {
+            $features = ['trim', 'lowercase', 'nullable', 'empty_string_to_null', 'auto'];
+        }
+        $defaults = [];
+        $forcedReplaces = [];
+        $notNulls = [];
+        $emptyToNull = [];
+        $trims = [];
+        $lowercases = [];
+        $dbDefault = static::getExpressionToSetDefaultValueForAColumn();
+        foreach ($columnsToSave as $columnName) {
+            $column = $allColumns[$columnName];
+            if (in_array('auto', $features, true) && $column->isAutoUpdatingValue()) {
+                $forcedReplaces[$columnName] = $column->getAutoUpdateForAValue();
+            } else {
+                if ($column->hasDefaultValue()) {
+                    $defaults[$columnName] = $column->getValidDefaultValue();
+                } else {
+                    $defaults[$columnName] = $dbDefault;
+                }
+                if (in_array('nullable', $features, true) && !$column->isValueCanBeNull()) {
+                    $notNulls[] = $columnName;
+                }
+                if (in_array('empty_string_to_null', $features, true) && !$column->convertsEmptyStringToNull()) {
+                    $emptyToNull[] = $columnName;
+                }
+                if (in_array('trim', $features, true) && $column->isValueTrimmingRequired()) {
+                    $trims[] = $columnName;
+                }
+                if (in_array('lowercase', $features, true) && $column->isValueLowercasingRequired()) {
+                    $lowercases[] = $columnName;
+                }
+            }
+        }
+        foreach ($rows as &$row) {
+            foreach ($emptyToNull as $columnName) {
+                if (isset($row[$columnName]) && is_string($row[$columnName]) && $row[$columnName] === '') {
+                    // convert empty string to null
+                    $row[$columnName] = null;
+                }
+            }
+            foreach ($notNulls as $columnName) {
+                if (!isset($row[$columnName])) {
+                    // remove column from array totally so that default value can replace it
+                    unset($row[$columnName]);
+                }
+            }
+            foreach ($trims as $columnName) {
+                if (isset($row[$columnName])) {
+                    $row[$columnName] = trim($row[$columnName]);
+                }
+            }
+            foreach ($lowercases as $columnName) {
+                if (isset($row[$columnName])) {
+                    $row[$columnName] = mb_strtolower($row[$columnName]);
+                }
+            }
+            $row = array_merge($defaults, $row, $forcedReplaces);
+            
+        }
+        return $rows;
     }
 
     /** @noinspection PhpUnusedPrivateMethodInspection */
