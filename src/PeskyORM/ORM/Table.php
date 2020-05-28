@@ -558,6 +558,13 @@ abstract class Table implements TableInterface {
             }
         }
         foreach ($rows as &$row) {
+            // trim before $emptyToNull
+            foreach ($trims as $columnName) {
+                if (isset($row[$columnName])) {
+                    $row[$columnName] = trim($row[$columnName]);
+                }
+            }
+            // $emptyToNull before $notNulls
             foreach ($emptyToNull as $columnName) {
                 if (isset($row[$columnName]) && is_string($row[$columnName]) && $row[$columnName] === '') {
                     // convert empty string to null
@@ -568,11 +575,6 @@ abstract class Table implements TableInterface {
                 if (!isset($row[$columnName])) {
                     // remove column from array totally so that default value can replace it
                     unset($row[$columnName]);
-                }
-            }
-            foreach ($trims as $columnName) {
-                if (isset($row[$columnName])) {
-                    $row[$columnName] = trim($row[$columnName]);
                 }
             }
             foreach ($lowercases as $columnName) {
