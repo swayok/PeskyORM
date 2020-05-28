@@ -1,14 +1,18 @@
 <?php
 
+namespace Tests\Core;
+
+use Tests\PeskyORMTest\TestingApp;
+
 require_once __DIR__ . '/PostgresAdapterDeleteDataTest.php';
 
-class MysqlAdapterDeleteTest extends PostgresAdapterDeleteTest {
+class MysqlAdapterDeleteDataTest extends PostgresAdapterDeleteDataTest {
 
     /**
      * @return \PeskyORM\Adapter\Mysql
      */
     static protected function getValidAdapter() {
-        return \PeskyORMTest\TestingApp::getMysqlConnection();
+        return TestingApp::getMysqlConnection();
     }
 
 }

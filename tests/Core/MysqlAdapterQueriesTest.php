@@ -1,11 +1,15 @@
 <?php
 
+namespace Tests\Core;
+
+use PDOException;
 use PeskyORM\Core\DbExpr;
-use PeskyORMTest\TestingApp;
+use PHPUnit\Framework\TestCase;
+use Tests\PeskyORMTest\TestingApp;
 
-class MysqlAdapterQueriesTest extends \PHPUnit_Framework_TestCase {
+class MysqlAdapterQueriesTest extends TestCase {
 
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         TestingApp::clearTables(static::getValidAdapter());
     }
 

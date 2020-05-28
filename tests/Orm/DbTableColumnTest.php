@@ -2,20 +2,23 @@
 
 namespace Tests\Orm;
 
+use InvalidArgumentException;
 use PeskyORM\ORM\Column;
-use PeskyORM\ORM\Relation;
-use PeskyORMTest\TestingAdmins\TestingAdminsTable;
+use PeskyORM\ORM\DefaultColumnClosures;
+use PHPUnit\Framework\TestCase;
 use Swayok\Utils\NormalizeValue;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
+use Tests\PeskyORMTest\TestingApp;
 
-class DbTableColumnTest extends \PHPUnit\Framework\TestCase {
+class DbTableColumnTest extends TestCase {
 
     public static function setUpBeforeClass(): void {
-        \PeskyORMTest\TestingApp::cleanInstancesOfDbTablesAndStructures();
-        \PeskyORMTest\TestingApp::getPgsqlConnection();
+        TestingApp::cleanInstancesOfDbTablesAndStructures();
+        TestingApp::getPgsqlConnection();
     }
 
     public static function tearDownAfterClass(): void {
-        \PeskyORMTest\TestingApp::cleanInstancesOfDbTablesAndStructures();
+        TestingApp::cleanInstancesOfDbTablesAndStructures();
     }
 
     /**
@@ -43,6 +46,7 @@ class DbTableColumnTest extends \PHPUnit\Framework\TestCase {
      * @expectedExceptionMessage $type argument must be a string, integer or float
      */
     public function testInvalidConstructor2() {
+        /** @noinspection PhpParamsInspection */
         Column::create([]);
     }
 
@@ -205,7 +209,7 @@ class DbTableColumnTest extends \PHPUnit\Framework\TestCase {
      * @expectedExceptionMessage Value format 'time' is not supported for column 'login'. Supported formats: none
      */
     public function testInvalidValueFormat() {
-        $rec = \PeskyORMTest\TestingAdmins\TestingAdmin::newEmptyRecord();
+        $rec = TestingAdmin::newEmptyRecord();
         /** @var \PeskyORM\ORM\RecordValue $value */
         $value = $this->getObjectPropertyValue($rec, 'values')['login'];
         static::assertEquals('11:00:00', call_user_func($value->getColumn()->getValueFormatter(), $value, 'time'));
@@ -215,7 +219,7 @@ class DbTableColumnTest extends \PHPUnit\Framework\TestCase {
         $obj = Column::create(Column::TYPE_TIMESTAMP);
         static::assertEquals($obj->getType(), Column::TYPE_TIMESTAMP);
         static::assertInstanceOf(\Closure::class, $obj->getValueFormatter());
-        $rec = \PeskyORMTest\TestingAdmins\TestingAdmin::fromArray(['created_at' => '2016-11-21 11:00:00']);
+        $rec = TestingAdmin::fromArray(['created_at' => '2016-11-21 11:00:00']);
         /** @var \PeskyORM\ORM\RecordValue $value */
         $value = $this->getObjectPropertyValue($rec, 'values')['created_at'];
         static::assertEquals('11:00:00', call_user_func($value->getColumn()->getValueFormatter(), $value, 'time'));
@@ -348,6 +352,7 @@ class DbTableColumnTest extends \PHPUnit\Framework\TestCase {
      * @expectedExceptionMessage $allowedValues argument cannot be empty
      */
     public function testInvalidSetAllowedValues3() {
+        /** @noinspection PhpParamsInspection */
         $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(-1);
         $obj->getAllowedValues();
@@ -358,6 +363,7 @@ class DbTableColumnTest extends \PHPUnit\Framework\TestCase {
      * @expectedExceptionMessage $allowedValues argument cannot be empty
      */
     public function testInvalidSetAllowedValues4() {
+        /** @noinspection PhpParamsInspection */
         $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(false);
         $obj->getAllowedValues();
@@ -395,46 +401,6 @@ class DbTableColumnTest extends \PHPUnit\Framework\TestCase {
     }
 
     /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage DB column name is not provided
-     */
-    public function testInvalidAddRelation1() {
-        $obj = Column::create(Column::TYPE_ENUM);
-        $obj->addRelation(new Relation('a', Relation::BELONGS_TO, TestingAdminsTable::class, 'id'));
-    }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Relation name is not provided
-     */
-    public function testInvalidAddRelation2() {
-        $obj = Column::create(Column::TYPE_ENUM)->setName('id');
-        $obj->addRelation(new Relation('a', Relation::BELONGS_TO, TestingAdminsTable::class, 'id'));
-    }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Relation 'Test' is not connected to column 'id'
-     */
-    public function testInvalidAddRelation3() {
-        $obj = Column::create(Column::TYPE_ENUM)->setName('id');
-        $obj->addRelation(
-            (new Relation('a', Relation::BELONGS_TO, TestingAdminsTable::class, 'id'))->setName('Test')
-        );
-    }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Relation 'Test' already defined for column 'id'
-     */
-    public function testInvalidAddRelation4() {
-        $obj = Column::create(Column::TYPE_ENUM)->setName('id');
-        $rel = (new Relation('id', Relation::BELONGS_TO, TestingAdminsTable::class, 'id'))->setName('Test');
-        $obj->addRelation($rel);
-        $obj->addRelation($rel);
-    }
-
-    /**
      * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage Relation 'Test' does not exist
      */
@@ -442,26 +408,12 @@ class DbTableColumnTest extends \PHPUnit\Framework\TestCase {
         Column::create(Column::TYPE_ENUM)->getRelation('Test');
     }
 
-    public function testRelations() {
-        $obj = Column::create(Column::TYPE_ENUM)->setName('id');
-        static::assertFalse($obj->hasRelation('Test'));
-        static::assertFalse($obj->isItAForeignKey());
-        $rel = (new Relation('id', Relation::HAS_ONE, TestingAdminsTable::class, 'id'))->setName('Test');
-        $obj->addRelation($rel);
-        static::assertTrue($obj->hasRelation('Test'));
-        static::assertFalse($obj->isItAForeignKey());
-        $rel2 = (new Relation('id', Relation::BELONGS_TO, TestingAdminsTable::class, 'id'))->setName('Test2');
-        $obj->addRelation($rel2);
-        static::assertTrue($obj->hasRelation('Test2'));
-        static::assertTrue($obj->isItAForeignKey());
-    }
-
     /**
      * @expectedException InvalidArgumentException
      * @expectedExceptionMessage $class argument must be a string and contain a full name of a calss that implements ColumnClosuresInterface
      */
     public function testInvalidSetClosuresClass1() {
-        Column::create(Column::TYPE_STRING)->setClosuresClass(\PeskyORMTest\TestingAdmins\TestingAdmin::class);
+        Column::create(Column::TYPE_STRING)->setClosuresClass(TestingAdmin::class);
     }
 
     /**
@@ -469,11 +421,11 @@ class DbTableColumnTest extends \PHPUnit\Framework\TestCase {
      * @expectedExceptionMessage $class argument must be a string and contain a full name of a calss that implements ColumnClosuresInterface
      */
     public function testInvalidSetClosuresClass2() {
-        Column::create(Column::TYPE_STRING)->setClosuresClass(new \PeskyORM\ORM\DefaultColumnClosures);
+        Column::create(Column::TYPE_STRING)->setClosuresClass(new DefaultColumnClosures);
     }
 
     public function testSetClosuresClass() {
-        $obj = Column::create(Column::TYPE_STRING)->setClosuresClass(\PeskyORM\ORM\DefaultColumnClosures::class);
+        $obj = Column::create(Column::TYPE_STRING)->setClosuresClass(DefaultColumnClosures::class);
         static::assertInstanceOf(\Closure::class, $obj->getValueGetter());
         static::assertInstanceOf(\Closure::class, $obj->getValueExistenceChecker());
         static::assertInstanceOf(\Closure::class, $obj->getValueSetter());

@@ -1,6 +1,6 @@
 <?php
 
-namespace PeskyORMTest\TestingInvalidClasses;
+namespace Tests\PeskyORMTest\TestingInvalidClasses;
 
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\TableStructure;
@@ -10,7 +10,7 @@ class TestingInvalidColumnsInTableStructure extends TableStructure {
     /**
      * @return string
      */
-    static public function getTableName() {
+    static public function getTableName(): string {
         return 'invalid';
     }
 

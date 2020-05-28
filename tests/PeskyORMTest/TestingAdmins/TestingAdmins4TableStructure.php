@@ -1,6 +1,6 @@
 <?php
 
-namespace PeskyORMTest\TestingAdmins;
+namespace Tests\PeskyORMTest\TestingAdmins;
 
 use PeskyORM\Core\DbExpr;
 use PeskyORM\ORM\Column;
@@ -11,7 +11,7 @@ class TestingAdmins4TableStructure extends TableStructure {
 
     static protected $autodetectColumnsConfigs = true;
 
-    static public function getTableName() {
+    static public function getTableName(): string {
         return 'admins';
     }
 

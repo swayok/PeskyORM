@@ -1,6 +1,6 @@
 <?php
 
-namespace PeskyORMTest;
+namespace Tests\PeskyORMTest;
 
 use PeskyORM\ORM\Table;
 use PeskyORM\ORM\TableStructure;

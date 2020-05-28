@@ -1,13 +1,15 @@
 <?php
 
+namespace Tests\Orm;
 
-use PeskyORMTest\TestingAdmins\TestingAdminsTable;
-use PeskyORMTest\TestingApp;
-use PeskyORMTest\TestingSettings\TestingSettingsTable;
+use PHPUnit\Framework\TestCase;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
+use Tests\PeskyORMTest\TestingApp;
+use Tests\PeskyORMTest\TestingSettings\TestingSettingsTable;
 
-class StaticPropertiesAndMethodsTest extends \PHPUnit_Framework_TestCase {
+class StaticPropertiesAndMethodsTest extends TestCase {
 
-    public static function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
         TestingApp::getPgsqlConnection();
     }
 

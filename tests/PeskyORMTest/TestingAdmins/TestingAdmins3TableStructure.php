@@ -1,22 +1,17 @@
 <?php
 
-namespace PeskyORMTest\TestingAdmins;
+namespace Tests\PeskyORMTest\TestingAdmins;
 
 use PeskyORM\Core\DbExpr;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\DefaultColumnClosures;
-use PeskyORM\ORM\RecordValue;
 use PeskyORM\ORM\Relation;
 use PeskyORM\ORM\TableStructure;
 
-class TestingAdminsTableStructure extends TableStructure {
+class TestingAdmins3TableStructure extends TableStructure {
 
-    static public function getTableName() {
+    static public function getTableName(): string {
         return 'admins';
-    }
-
-    static public function getConnectionName($writable) {
-        return $writable ? 'writable' : parent::getConnectionName(false);
     }
 
     private function id() {
@@ -40,6 +35,11 @@ class TestingAdminsTableStructure extends TableStructure {
             ->convertsEmptyStringToNull()
             ->disallowsNullValues()
             ->trimsValue()
+            ->setValueSavingExtender(function ($valueContainer, $isUpdate) {
+                if ($isUpdate) {
+                    throw new \UnexpectedValueException('login: update!');
+                }
+            })
         ;
     }
 
@@ -65,7 +65,6 @@ class TestingAdminsTableStructure extends TableStructure {
                 }
                 return [];
             })
-            ->privateValue()
         ;
     }
 
@@ -159,6 +158,9 @@ class TestingAdminsTableStructure extends TableStructure {
             ->allowsNullValues()
             ->setValueFormatter(function () {
                 return 'not implemented';
+            })
+            ->setValueSavingExtender(function () {
+                throw new \UnexpectedValueException('some_file: here');
             });
     }
 
@@ -172,39 +174,8 @@ class TestingAdminsTableStructure extends TableStructure {
             ->doesNotExistInDb();
     }
 
-    private function not_existing_column_with_default_value() {
-        return Column::create(Column::TYPE_STRING)
-            ->doesNotExistInDb()
-            ->disallowsNullValues()
-            ->setDefaultValue('default');
-    }
-
-    private function not_existing_column_with_calculated_value() {
-        return Column::create(Column::TYPE_STRING)
-            ->doesNotExistInDb()
-            ->valueCannotBeSetOrChanged()
-            ->disallowsNullValues()
-            ->setValueGetter(function (RecordValue $value, $format = null) {
-                $record = $value->getRecord();
-                return 'calculated-' . ($record->existsInDb() ? $value->getRecord()->getPrimaryKeyValue() : '');
-            })
-            ->setValueExistenceChecker(function () {
-                return true;
-            });
-    }
-
-    private function big_data() {
-        return Column::create(Column::TYPE_TEXT)
-            ->disallowsNullValues()
-            ->valueIsHeavy();
-    }
-
     private function Parent() {
         return Relation::create('parent_id', Relation::BELONGS_TO, TestingAdminsTable::class, 'id');
-    }
-
-    private function HasOne() {
-        return Relation::create('id', Relation::HAS_ONE, TestingAdminsTable::class, 'parent_id');
     }
 
     private function Children() {

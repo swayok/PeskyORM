@@ -1,19 +1,27 @@
 <?php
 
+namespace Tests\Orm;
+
 use PeskyORM\ORM\ClassBuilder;
 use PeskyORM\ORM\Column;
-use PeskyORMTest\Traits\TestingCreatedAtColumnTrait;
-use PeskyORMTest\Traits\TestingIdColumnTrait;
-use PeskyORMTest\Traits\TestingTimestampColumnsTrait;
+use PHPUnit\Framework\TestCase;
+use ReflectionClass;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
+use Tests\PeskyORMTest\TestingApp;
+use Tests\PeskyORMTest\TestingBaseTable;
+use Tests\PeskyORMTest\Traits\TestingCreatedAtColumnTrait;
+use Tests\PeskyORMTest\Traits\TestingIdColumnTrait;
+use Tests\PeskyORMTest\Traits\TestingTimestampColumnsTrait;
 
-class DbClassBuilderTest extends PHPUnit_Framework_TestCase {
+class DbClassBuilderTest extends TestCase {
 
     /**
      * @param string $tableName
      * @return ClassBuilder
      */
     protected function getBuilder($tableName = 'admins') {
-        return new ClassBuilder($tableName, \PeskyORMTest\TestingApp::getPgsqlConnection());
+        return new ClassBuilder($tableName, TestingApp::getPgsqlConnection());
     }
 
     /**
@@ -42,7 +50,7 @@ class DbClassBuilderTest extends PHPUnit_Framework_TestCase {
         $builder = $this->getBuilder();
         static::assertEquals(
             'TestingAdmin',
-            $this->callObjectMethod($builder, 'getShortClassName', \PeskyORMTest\TestingAdmins\TestingAdmin::class)
+            $this->callObjectMethod($builder, 'getShortClassName', TestingAdmin::class)
         );
         static::assertEquals(
             'Column::TYPE_STRING',
@@ -62,7 +70,7 @@ class DbClassBuilderTest extends PHPUnit_Framework_TestCase {
         );
         static::assertEquals(
             preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/table_class2.txt')),
-            preg_replace("%[\r\n\t]+%", '', $builder->buildTableClass('App\\Db', \PeskyORMTest\TestingBaseTable::class))
+            preg_replace("%[\r\n\t]+%", '', $builder->buildTableClass('App\\Db', TestingBaseTable::class))
         );
         static::assertEquals(
             preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/record_class1.txt')),
@@ -70,7 +78,7 @@ class DbClassBuilderTest extends PHPUnit_Framework_TestCase {
         );
         static::assertEquals(
             preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/record_class2.txt')),
-            preg_replace("%[\r\n\t]+%", '', $builder->buildRecordClass('App\\Db', \PeskyORMTest\TestingAdmins\TestingAdmin::class))
+            preg_replace("%[\r\n\t]+%", '', $builder->buildRecordClass('App\\Db', TestingAdmin::class))
         );
     }
 
@@ -162,7 +170,7 @@ class DbClassBuilderTest extends PHPUnit_Framework_TestCase {
         $builder->setDbSchemaName('public');
         static::assertEquals(
             preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/structure_class2.txt')),
-            preg_replace("%[\r\n\t]+%", '', $builder->buildStructureClass('App\\Db', \PeskyORMTest\TestingAdmins\TestingAdminsTableStructure::class))
+            preg_replace("%[\r\n\t]+%", '', $builder->buildStructureClass('App\\Db', TestingAdminsTableStructure::class))
         );
         $traits = [
             TestingIdColumnTrait::class,
@@ -171,7 +179,7 @@ class DbClassBuilderTest extends PHPUnit_Framework_TestCase {
         ];
         static::assertEquals(
             preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/structure_class3.txt')),
-            preg_replace("%[\r\n\t]+%", '', $builder->buildStructureClass('App\\Db', \PeskyORMTest\TestingAdmins\TestingAdminsTableStructure::class, $traits))
+            preg_replace("%[\r\n\t]+%", '', $builder->buildStructureClass('App\\Db', TestingAdminsTableStructure::class, $traits))
         );
     }
 }

@@ -1,25 +1,29 @@
 <?php
 
+namespace Tests\Core;
+
+use PDOStatement;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
-use PeskyORMTest\TestingApp;
+use PHPUnit\Framework\TestCase;
 use Swayok\Utils\Set;
+use Tests\PeskyORMTest\TestingApp;
 
-class UtilsTest extends \PHPUnit_Framework_TestCase {
+class UtilsTest extends TestCase {
 
     /** @var PostgresConfig */
     static protected $dbConnectionConfig;
 
-    static public function setUpBeforeClass() {
+    static public function setUpBeforeClass(): void {
         TestingApp::clearTables(static::getValidAdapter());
     }
 
-    static public function tearDownAfterClass() {
+    static public function tearDownAfterClass(): void {
         TestingApp::clearTables(static::getValidAdapter());
     }
 
-    protected function tearDown() {
+    protected function tearDown(): void {
         TestingApp::clearTables(static::getValidAdapter());
     }
 

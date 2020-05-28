@@ -1,18 +1,25 @@
 <?php
 
+namespace Tests\Orm;
+
+use InvalidArgumentException;
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Select;
 use PeskyORM\ORM\FakeTable;
 use PeskyORM\ORM\OrmJoinInfo;
 use PeskyORM\ORM\OrmSelect;
-use PeskyORMTest\TestingAdmins\TestingAdminsTable;
-use PeskyORMTest\TestingAdmins\TestingAdminsTableLongAlias;
-use PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
-use PeskyORMTest\TestingApp;
+use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use Swayok\Utils\Set;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableLongAlias;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
+use Tests\PeskyORMTest\TestingApp;
+use Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
+use UnexpectedValueException;
 
-class OrmSelectTest extends \PHPUnit\Framework\TestCase {
+class OrmSelectTest extends TestCase {
 
     public static function setUpBeforeClass(): void {
         TestingApp::clearTables(static::getValidAdapter());
@@ -66,7 +73,7 @@ class OrmSelectTest extends \PHPUnit\Framework\TestCase {
 
     public function testConstructorAndBasicFetching() {
         // via new
-        $dbSelect = $this->getNewSelect()->columns('id');
+        $dbSelect = self::getNewSelect()->columns('id');
         static::assertInstanceOf(OrmSelect::class, $dbSelect);
         static::assertInstanceOf(TestingAdminsTable::class, $dbSelect->getTable());
         static::assertInstanceOf(TestingAdminsTableStructure::class, $dbSelect->getTableStructure());
@@ -90,7 +97,7 @@ class OrmSelectTest extends \PHPUnit\Framework\TestCase {
         static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
 
         $insertedData = TestingApp::fillAdminsTable(2);
-        $testData = static::convertTestDataForAdminsTableAssert($insertedData);
+        $testData = $this->convertTestDataForAdminsTableAssert($insertedData);
         $testData[0]['created_at'] .= '+00';
         $testData[0]['updated_at'] .= '+00';
         $testData[1]['created_at'] .= '+00';
@@ -106,7 +113,7 @@ class OrmSelectTest extends \PHPUnit\Framework\TestCase {
         static::assertEquals(Set::extract('/id', $testData), $data);
         $data = $dbSelect->fetchAssoc('id', 'login');
         static::assertEquals(Set::combine($testData, '/id', '/login'), $data);
-        $sum = $dbSelect->fetchValue(\PeskyORM\Core\DbExpr::create('SUM(`id`)'));
+        $sum = $dbSelect->fetchValue(DbExpr::create('SUM(`id`)'));
         static::assertEquals(array_sum(Set::extract('/id', $testData)), $sum);
 
         // via static
@@ -566,33 +573,16 @@ class OrmSelectTest extends \PHPUnit\Framework\TestCase {
         // conditions assembling tests are in Utils::assembleWhereConditionsFromArray()
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Join config with name 'Test' is not valid
-     */
-    public function testInvalidJoin1() {
-        $joinConfig = OrmJoinInfo::create('Test');
-        static::getNewSelect()->join($joinConfig);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Join with name 'Test' already defined
-     */
-    public function testInvalidJoin2() {
-        $joinConfig = OrmJoinInfo::create('Test')
-            ->setConfigForLocalTable(TestingAdminsTable::getInstance(), 'parent_id')
-            ->setConfigForForeignTable(TestingAdminsTable::getInstance(), 'id')
-            ->setJoinType(OrmJoinInfo::JOIN_INNER);
-        static::getNewSelect()->join($joinConfig)->join($joinConfig);
-    }
-
     public function testJoins() {
         $dbSelect = static::getNewSelect()->columns(['id']);
-        $joinConfig = OrmJoinInfo::create('Test')
-            ->setConfigForLocalTable(TestingAdminsTable::getInstance(), 'parent_id')
-            ->setConfigForForeignTable(TestingAdminsTable::getInstance(), 'id')
-            ->setJoinType(OrmJoinInfo::JOIN_INNER)
+        $joinConfig = OrmJoinInfo::create(
+                'Test',
+                TestingAdminsTable::getInstance(),
+                'parent_id',
+                OrmJoinInfo::JOIN_INNER,
+                TestingAdminsTable::getInstance(),
+                'id'
+            )
             ->setForeignColumnsToSelect('login', 'email');
         static::assertEquals(
             'SELECT "Admins"."id" AS "_Admins__id", "Test"."login" AS "_Test__login", "Test"."email" AS "_Test__email" FROM "admins" AS "Admins" INNER JOIN "admins" AS "Test" ON ("Admins"."parent_id" = "Test"."id")',
@@ -673,7 +663,7 @@ class OrmSelectTest extends \PHPUnit\Framework\TestCase {
      * @expectedExceptionMessage Test: Column with name [Parent.qqq] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
      */
     public function testInvalidValidateColumnInfo3() {
-        $this->callObjectMethod($this->getNewSelect(), 'validateColumnInfo', [
+        $this->callObjectMethod(self::getNewSelect(), 'validateColumnInfo', [
             [
                 'name' => DbExpr::create('`Parent`.`id` + `Parent`.`qqq`'),
                 'join_name' => null,
@@ -689,7 +679,7 @@ class OrmSelectTest extends \PHPUnit\Framework\TestCase {
      * @expectedExceptionMessage Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect.
      */
     public function testInvalidValidateColumnInfo4() {
-        $this->callObjectMethod($this->getNewSelect(), 'validateColumnInfo', [
+        $this->callObjectMethod(self::getNewSelect(), 'validateColumnInfo', [
             [
                 'name' => 'id',
                 'join_name' => 'Children',
@@ -701,7 +691,7 @@ class OrmSelectTest extends \PHPUnit\Framework\TestCase {
     }
 
     public function testValidateColumnInfo() {
-        $select = $this->getNewSelect();
+        $select = self::getNewSelect();
         $info = [
             'name' => DbExpr::create('`there is no possibility to validate this =(` + Sum(`Parent`.`id` + `Parent`.`parent_id`)'),
             'join_name' => null,
@@ -833,7 +823,7 @@ class OrmSelectTest extends \PHPUnit\Framework\TestCase {
             $dbSelect->getQuery()
         );
         $fakeTable = FakeTable::makeNewFakeTable('subselect2');
-        $fakeTable->getTableStructure()->mimicTableStructure(\PeskyORMTest\TestingSettings\TestingSettingsTableStructure::getInstance());
+        $fakeTable->getTableStructure()->mimicTableStructure(TestingSettingsTableStructure::getInstance());
         $dbSelect = OrmSelect::from($fakeTable)
             ->with(Select::from('settings', static::getValidAdapter()), 'subselect2')
             ->where(['key' => 'test']);
@@ -843,7 +833,7 @@ class OrmSelectTest extends \PHPUnit\Framework\TestCase {
         );
 
         $fakeTable2 = FakeTable::makeNewFakeTable('subselect3');
-        $fakeTable2->getTableStructure()->mimicTableStructure(\PeskyORMTest\TestingSettings\TestingSettingsTableStructure::getInstance());
+        $fakeTable2->getTableStructure()->mimicTableStructure(TestingSettingsTableStructure::getInstance());
         $dbSelect2 = OrmSelect::from($fakeTable2)
             ->with(Select::from('settings', static::getValidAdapter()), 'subselect2')
             ->with(OrmSelect::from($fakeTable), 'subselect3')

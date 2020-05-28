@@ -1,8 +1,13 @@
 <?php
 
-use PeskyORM\Config\Connection\PostgresConfig;
+namespace Tests\Core;
 
-class PostgresConfigTest extends PHPUnit_Framework_TestCase {
+use InvalidArgumentException;
+use PeskyORM\Config\Connection\PostgresConfig;
+use PHPUnit\Framework\TestCase;
+use TypeError;
+
+class PostgresConfigTest extends TestCase {
 
     /**
      * @expectedException InvalidArgumentException
@@ -33,6 +38,7 @@ class PostgresConfigTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage DB name argument cannot be empty
      */
     public function testInvalidDbName4() {
+        /** @noinspection PhpParamsInspection */
         new PostgresConfig([], null, null);
     }
 
@@ -73,6 +79,7 @@ class PostgresConfigTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage DB user argument cannot be empty
      */
     public function testInvalidDbUser4() {
+        /** @noinspection PhpParamsInspection */
         new PostgresConfig('test', [], null);
     }
 
@@ -114,6 +121,7 @@ class PostgresConfigTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage DB password argument cannot be empty
      */
     public function testInvalidDbPassword4() {
+        /** @noinspection PhpParamsInspection */
         new PostgresConfig('test', 'test', []);
     }
 
@@ -140,6 +148,7 @@ class PostgresConfigTest extends PHPUnit_Framework_TestCase {
      */
     public function testInvalidDbHost2() {
         $config = new PostgresConfig('test', 'test', 'test');
+        /** @noinspection PhpParamsInspection */
         $config->setDbHost([]);
     }
     
@@ -185,6 +194,7 @@ class PostgresConfigTest extends PHPUnit_Framework_TestCase {
      */
     public function testInvalidDbPort3() {
         $config = new PostgresConfig('test', 'test', 'test');
+        /** @noinspection PhpParamsInspection */
         $config->setDbPort([]);
     }
 

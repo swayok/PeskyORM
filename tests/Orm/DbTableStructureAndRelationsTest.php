@@ -1,24 +1,29 @@
 <?php
 
+namespace Tests\Orm;
+
 use PeskyORM\Core\DbExpr;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Relation;
-use PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
-use PeskyORMTest\TestingApp;
-use PeskyORMTest\TestingInvalidClasses\TestingInvalidColumnsInTableStructure;
-use PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure;
-use PeskyORMTest\TestingInvalidClasses\TestingNoPkColumnInTableStructure;
-use PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
+use PHPUnit\Framework\TestCase;
+use ReflectionClass;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdmins4TableStructure;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
+use Tests\PeskyORMTest\TestingApp;
+use Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidColumnsInTableStructure;
+use Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure;
+use Tests\PeskyORMTest\TestingInvalidClasses\TestingNoPkColumnInTableStructure;
+use Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 
-class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
+class DbTableStructureAndRelationsTest extends TestCase {
 
-    public static function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
         TestingApp::getPgsqlConnection();
-        \PeskyORMTest\TestingApp::cleanInstancesOfDbTablesAndStructures();
+        TestingApp::cleanInstancesOfDbTablesAndStructures();
     }
 
-    public static function tearDownAfterClass() {
-        \PeskyORMTest\TestingApp::cleanInstancesOfDbTablesAndStructures();
+    public static function tearDownAfterClass(): void {
+        TestingApp::cleanInstancesOfDbTablesAndStructures();
     }
 
     public function testTableStructureCore() {
@@ -151,7 +156,7 @@ class DbTableStructureAndRelationsTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testCreateMissingColumnConfigsFromDbTableDescription() {
-        $structure = \PeskyORMTest\TestingAdmins\TestingAdmins4TableStructure::getInstance();
+        $structure = TestingAdmins4TableStructure::getInstance();
         static::assertCount(16, $structure::getColumns());
         static::assertEquals(
             [

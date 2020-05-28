@@ -1,16 +1,13 @@
 <?php
 
-namespace PeskyORMTest\TestingSettings;
+namespace Tests\PeskyORMTest\TestingSettings;
 
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\TableStructure;
 
 class TestingSettingsTableStructure extends TableStructure {
 
-    /**
-     * @return string
-     */
-    static public function getTableName() {
+    static public function getTableName(): string {
         return 'settings';
     }
 

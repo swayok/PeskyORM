@@ -1,21 +1,24 @@
 <?php
 
+namespace Tests\Orm;
 
 use PeskyORM\Core\DbExpr;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\RecordValue;
-use PeskyORMTest\TestingAdmins\TestingAdmin;
-use PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
-use PeskyORMTest\TestingApp;
+use PHPUnit\Framework\TestCase;
+use ReflectionClass;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
+use Tests\PeskyORMTest\TestingApp;
 
-class DbRecordValueTest extends PHPUnit_Framework_TestCase {
+class DbRecordValueTest extends TestCase {
 
-    public static function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
         TestingApp::getPgsqlConnection();
         TestingApp::cleanInstancesOfDbTablesAndStructures();
     }
 
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         TestingApp::cleanInstancesOfDbTablesAndStructures();
     }
 

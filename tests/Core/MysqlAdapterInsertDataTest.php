@@ -1,6 +1,8 @@
 <?php
 
-use PeskyORMTest\TestingApp;
+namespace Tests\Core;
+
+use Tests\PeskyORMTest\TestingApp;
 
 require_once __DIR__ . '/PostgresAdapterInsertDataTest.php';
 

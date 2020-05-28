@@ -1,16 +1,19 @@
 <?php
 
+namespace Tests\Orm;
 
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\RecordValue;
 use PeskyORM\ORM\RecordValueHelpers;
-use PeskyORMTest\TestingSettings\TestingSetting;
+use PHPUnit\Framework\TestCase;
+use SplFileInfo;
 use Swayok\Utils\NormalizeValue;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Tests\PeskyORMTest\TestingSettings\TestingSetting;
 
-class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
+class DbRecordValueHelpersTest extends TestCase {
 
-    public static function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
         date_default_timezone_set('UTC');
         parent::setUpBeforeClass();
     }
@@ -476,337 +479,450 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
 
     public function testIsValueFitsDataTypeBool() {
         $message = ['value_must_be_boolean'];
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_BOOL));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_BOOL));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_BOOL));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_BOOL));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_BOOL));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_BOOL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_BOOL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_BOOL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_BOOL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_BOOL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_BOOL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_BOOL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_BOOL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.0, Column::TYPE_BOOL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('1.0', Column::TYPE_BOOL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0.0, Column::TYPE_BOOL));
-        static::assertEquals(['bool'], RecordValueHelpers::isValueFitsDataType('0.0', Column::TYPE_BOOL, ['value_must_be_boolean' => 'bool']));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_BOOL, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_BOOL, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_BOOL, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_BOOL, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_BOOL, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_BOOL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_BOOL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_BOOL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_BOOL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_BOOL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_BOOL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_BOOL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_BOOL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.0, Column::TYPE_BOOL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('1.0', Column::TYPE_BOOL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0.0, Column::TYPE_BOOL, false));
+        static::assertEquals(['bool'], RecordValueHelpers::isValueFitsDataType('0.0', Column::TYPE_BOOL, false, ['value_must_be_boolean' => 'bool']));
+        // for conditions
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_BOOL, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_BOOL, true));
     }
 
     public function testIsValueFitsDataTypeInt() {
         $message = ['value_must_be_integer'];
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(11, Column::TYPE_INT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-11, Column::TYPE_INT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11', Column::TYPE_INT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-11', Column::TYPE_INT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_INT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_INT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1.0, Column::TYPE_INT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1.0000, Column::TYPE_INT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1.0', Column::TYPE_INT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1.0000', Column::TYPE_INT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_INT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0.1, Column::TYPE_INT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0.1', Column::TYPE_INT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('str', Column::TYPE_INT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('a1', Column::TYPE_INT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('1a', Column::TYPE_INT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_INT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_INT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_INT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_INT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_INT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_INT));
-        static::assertEquals(['int'], RecordValueHelpers::isValueFitsDataType([], Column::TYPE_INT, ['value_must_be_integer' => 'int']));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(11, Column::TYPE_INT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-11, Column::TYPE_INT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11', Column::TYPE_INT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-11', Column::TYPE_INT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_INT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_INT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1.0, Column::TYPE_INT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1.0000, Column::TYPE_INT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1.0', Column::TYPE_INT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1.0000', Column::TYPE_INT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_INT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0.1, Column::TYPE_INT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0.1', Column::TYPE_INT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('str', Column::TYPE_INT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('a1', Column::TYPE_INT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('1a', Column::TYPE_INT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_INT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_INT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_INT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_INT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_INT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_INT, false));
+        static::assertEquals(['int'], RecordValueHelpers::isValueFitsDataType([], Column::TYPE_INT, false, ['value_must_be_integer' => 'int']));
+        // for conditions
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(11, Column::TYPE_INT, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11', Column::TYPE_INT, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_INT, true));
     }
 
     public function testIsValueFitsDataTypeFloat() {
         $message = ['value_must_be_float'];
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(11, Column::TYPE_FLOAT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11', Column::TYPE_FLOAT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-11, Column::TYPE_FLOAT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-11', Column::TYPE_FLOAT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(11.2, Column::TYPE_FLOAT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11.2', Column::TYPE_FLOAT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-11.3, Column::TYPE_FLOAT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-11.3', Column::TYPE_FLOAT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_FLOAT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_FLOAT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1.0, Column::TYPE_FLOAT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1.01, Column::TYPE_FLOAT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1.01', Column::TYPE_FLOAT));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1.001', Column::TYPE_FLOAT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_FLOAT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('str', Column::TYPE_FLOAT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('a1', Column::TYPE_FLOAT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('1a', Column::TYPE_FLOAT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_FLOAT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_FLOAT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_FLOAT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_FLOAT));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_FLOAT));
-        static::assertEquals(['float'], RecordValueHelpers::isValueFitsDataType([], Column::TYPE_FLOAT, ['value_must_be_float' => 'float']));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(11, Column::TYPE_FLOAT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11', Column::TYPE_FLOAT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-11, Column::TYPE_FLOAT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-11', Column::TYPE_FLOAT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(11.2, Column::TYPE_FLOAT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11.2', Column::TYPE_FLOAT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-11.3, Column::TYPE_FLOAT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-11.3', Column::TYPE_FLOAT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_FLOAT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_FLOAT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1.0, Column::TYPE_FLOAT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1.01, Column::TYPE_FLOAT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1.01', Column::TYPE_FLOAT, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1.001', Column::TYPE_FLOAT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_FLOAT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('str', Column::TYPE_FLOAT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('a1', Column::TYPE_FLOAT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('1a', Column::TYPE_FLOAT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_FLOAT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_FLOAT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_FLOAT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_FLOAT, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_FLOAT, false));
+        static::assertEquals(['float'], RecordValueHelpers::isValueFitsDataType([], Column::TYPE_FLOAT, false, ['value_must_be_float' => 'float']));
+        // for conditions
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11.2', Column::TYPE_FLOAT, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(11.2, Column::TYPE_FLOAT, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('str', Column::TYPE_FLOAT, true));
     }
 
     public function testIsValueFitsDataTypeDate() {
         $message = ['value_must_be_date'];
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(time(), Column::TYPE_DATE));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('+1 day', Column::TYPE_DATE));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('now', Column::TYPE_DATE));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('2016-09-01', Column::TYPE_DATE));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', Column::TYPE_DATE));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22', Column::TYPE_DATE));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33 +03:00', Column::TYPE_DATE));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_DATE));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_DATE));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01092016', Column::TYPE_DATE));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_DATE));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_DATE));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_DATE));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_DATE));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_DATE));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_DATE));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_DATE));
-        static::assertEquals(['date'], RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_DATE, ['value_must_be_date' => 'date']));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(time(), Column::TYPE_DATE, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('+1 day', Column::TYPE_DATE, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('now', Column::TYPE_DATE, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('2016-09-01', Column::TYPE_DATE, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', Column::TYPE_DATE, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22', Column::TYPE_DATE, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33 +03:00', Column::TYPE_DATE, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_DATE, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_DATE, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01092016', Column::TYPE_DATE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_DATE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_DATE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_DATE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_DATE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_DATE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_DATE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_DATE, false));
+        static::assertEquals(['date'], RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_DATE, false, ['value_must_be_date' => 'date']));
+        // for conditions
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('2016-09-01', Column::TYPE_DATE, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', Column::TYPE_DATE, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33 +03:00', Column::TYPE_DATE, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_DATE, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_DATE, true));
     }
 
     public function testIsValueFitsDataTypeTime() {
         $message = ['value_must_be_time'];
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(time(), Column::TYPE_TIME));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('+1 hour', Column::TYPE_TIME));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('now', Column::TYPE_TIME));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('2016-09-01', Column::TYPE_TIME));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22:33', Column::TYPE_TIME));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22', Column::TYPE_TIME));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', Column::TYPE_TIME));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33 +03:00', Column::TYPE_TIME));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_TIME));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_TIME));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01092016', Column::TYPE_TIME));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_TIME));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_TIME));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_TIME));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_TIME));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_TIME));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_TIME));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_TIME));
-        static::assertEquals(['time'], RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_TIME, ['value_must_be_time' => 'time']));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(time(), Column::TYPE_TIME, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('+1 hour', Column::TYPE_TIME, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('now', Column::TYPE_TIME, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('2016-09-01', Column::TYPE_TIME, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22:33', Column::TYPE_TIME, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22', Column::TYPE_TIME, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', Column::TYPE_TIME, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33 +03:00', Column::TYPE_TIME, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_TIME, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_TIME, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01092016', Column::TYPE_TIME, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_TIME, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_TIME, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_TIME, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_TIME, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_TIME, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_TIME, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_TIME, false));
+        static::assertEquals(['time'], RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_TIME, false, ['value_must_be_time' => 'time']));
+        // for conditions
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('2016-09-01', Column::TYPE_TIME, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22:33', Column::TYPE_TIME, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22', Column::TYPE_TIME, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', Column::TYPE_TIME, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33 +03:00', Column::TYPE_TIME, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_TIME, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_TIME, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_TIME, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_TIME, true));
     }
 
     public function testIsValueFitsDataTypeTimestamp() {
         $message = ['value_must_be_timestamp'];
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(time(), Column::TYPE_TIMESTAMP));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('+1 hour', Column::TYPE_TIMESTAMP));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('now', Column::TYPE_TIMESTAMP));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('2016-09-01', Column::TYPE_TIMESTAMP));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22:33', Column::TYPE_TIMESTAMP));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22', Column::TYPE_TIMESTAMP));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', Column::TYPE_TIMESTAMP));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33 +03:00', Column::TYPE_TIMESTAMP));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_TIMESTAMP));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_TIMESTAMP));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01092016', Column::TYPE_TIMESTAMP));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_TIMESTAMP));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_TIMESTAMP));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_TIMESTAMP));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_TIMESTAMP));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_TIMESTAMP));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_TIMESTAMP));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_TIMESTAMP));
-        static::assertEquals(['timestamp'], RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_TIMESTAMP, ['value_must_be_timestamp' => 'timestamp']));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(time(), Column::TYPE_TIMESTAMP, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('+1 hour', Column::TYPE_TIMESTAMP, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('now', Column::TYPE_TIMESTAMP, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('2016-09-01', Column::TYPE_TIMESTAMP, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22:33', Column::TYPE_TIMESTAMP, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22', Column::TYPE_TIMESTAMP, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', Column::TYPE_TIMESTAMP, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33 +03:00', Column::TYPE_TIMESTAMP, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_TIMESTAMP, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_TIMESTAMP, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01092016', Column::TYPE_TIMESTAMP, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_TIMESTAMP, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_TIMESTAMP, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_TIMESTAMP, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_TIMESTAMP, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_TIMESTAMP, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_TIMESTAMP, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_TIMESTAMP, false));
+        static::assertEquals(['timestamp'], RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_TIMESTAMP, false, ['value_must_be_timestamp' => 'timestamp']));
+        // for conditions
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('now', Column::TYPE_TIMESTAMP, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('2016-09-01', Column::TYPE_TIMESTAMP, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22:33', Column::TYPE_TIMESTAMP, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22', Column::TYPE_TIMESTAMP, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', Column::TYPE_TIMESTAMP, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33 +03:00', Column::TYPE_TIMESTAMP, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_TIMESTAMP, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_TIMESTAMP, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_TIMESTAMP, true));
+        
     }
 
     public function testIsValueFitsDataTypeTimestampWithTz() {
         $message = ['value_must_be_timestamp_with_tz'];
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('+1 hour', Column::TYPE_TIMESTAMP_WITH_TZ));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('now', Column::TYPE_TIMESTAMP_WITH_TZ));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('2016-09-01', Column::TYPE_TIMESTAMP_WITH_TZ));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22:33', Column::TYPE_TIMESTAMP_WITH_TZ));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22', Column::TYPE_TIMESTAMP_WITH_TZ));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', Column::TYPE_TIMESTAMP_WITH_TZ));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33 +03:00', Column::TYPE_TIMESTAMP_WITH_TZ));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_TIMESTAMP_WITH_TZ));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(time(), Column::TYPE_TIMESTAMP_WITH_TZ));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_TIMESTAMP_WITH_TZ));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_TIMESTAMP_WITH_TZ));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('01092016', Column::TYPE_TIMESTAMP_WITH_TZ));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_TIMESTAMP_WITH_TZ));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_TIMESTAMP_WITH_TZ));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_TIMESTAMP_WITH_TZ));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_TIMESTAMP_WITH_TZ));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_TIMESTAMP_WITH_TZ));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_TIMESTAMP_WITH_TZ));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('+1 hour', Column::TYPE_TIMESTAMP_WITH_TZ, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('now', Column::TYPE_TIMESTAMP_WITH_TZ, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('2016-09-01', Column::TYPE_TIMESTAMP_WITH_TZ, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22:33', Column::TYPE_TIMESTAMP_WITH_TZ, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22', Column::TYPE_TIMESTAMP_WITH_TZ, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', Column::TYPE_TIMESTAMP_WITH_TZ, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33 +03:00', Column::TYPE_TIMESTAMP_WITH_TZ, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_TIMESTAMP_WITH_TZ, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(time(), Column::TYPE_TIMESTAMP_WITH_TZ, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_TIMESTAMP_WITH_TZ, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_TIMESTAMP_WITH_TZ, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('01092016', Column::TYPE_TIMESTAMP_WITH_TZ, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_TIMESTAMP_WITH_TZ, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_TIMESTAMP_WITH_TZ, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_TIMESTAMP_WITH_TZ, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_TIMESTAMP_WITH_TZ, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_TIMESTAMP_WITH_TZ, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_TIMESTAMP_WITH_TZ, false));
         static::assertEquals(
             ['wtz'],
-            RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_TIMESTAMP_WITH_TZ, ['value_must_be_timestamp_with_tz' => 'wtz'])
+            RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_TIMESTAMP_WITH_TZ, false, ['value_must_be_timestamp_with_tz' => 'wtz'])
         );
+        // for conditions
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('2016-09-01', Column::TYPE_TIMESTAMP_WITH_TZ, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22:33', Column::TYPE_TIMESTAMP_WITH_TZ, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22', Column::TYPE_TIMESTAMP_WITH_TZ, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', Column::TYPE_TIMESTAMP_WITH_TZ, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33 +03:00', Column::TYPE_TIMESTAMP_WITH_TZ, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_TIMESTAMP_WITH_TZ, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(time(), Column::TYPE_TIMESTAMP_WITH_TZ, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_TIMESTAMP_WITH_TZ, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_TIMESTAMP_WITH_TZ, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('01092016', Column::TYPE_TIMESTAMP_WITH_TZ, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_TIMESTAMP_WITH_TZ, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_TIMESTAMP_WITH_TZ, true));
     }
 
     public function testIsValueFitsDataTypeTimezoneOffset() {
         $message = ['value_must_be_timezone_offset'];
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22:33', Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22', Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('+18:00', Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(44200, Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('44200', Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-18:00', Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-44200, Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-44200', Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-1', Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(90000, Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('+1 hour', Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('now', Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('2016-09-01', Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_TIMEZONE_OFFSET));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_TIMEZONE_OFFSET));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22:33', Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22', Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('+18:00', Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(44200, Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('44200', Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-18:00', Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-44200, Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-44200', Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-1', Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(90000, Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('+1 hour', Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('now', Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('2016-09-01', Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_TIMEZONE_OFFSET, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_TIMEZONE_OFFSET, false));
         static::assertEquals(
             ['offset'],
-            RecordValueHelpers::isValueFitsDataType([], Column::TYPE_TIMEZONE_OFFSET, ['value_must_be_timezone_offset' => 'offset'])
+            RecordValueHelpers::isValueFitsDataType([], Column::TYPE_TIMEZONE_OFFSET, false, ['value_must_be_timezone_offset' => 'offset'])
         );
+        // for conditions
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(44200, Column::TYPE_TIMEZONE_OFFSET, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('44200', Column::TYPE_TIMEZONE_OFFSET, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-18:00', Column::TYPE_TIMEZONE_OFFSET, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-44200, Column::TYPE_TIMEZONE_OFFSET, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-44200', Column::TYPE_TIMEZONE_OFFSET, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('now', Column::TYPE_TIMEZONE_OFFSET, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('2016-09-01', Column::TYPE_TIMEZONE_OFFSET, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', Column::TYPE_TIMEZONE_OFFSET, true));
     }
 
     public function testIsValueFitsDataTypeIpV4Address() {
         $message = ['value_must_be_ipv4_address'];
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('192.168.0.0', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0.0.0.0', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('255.255.255.255', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('1.1.1.1/24', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('-1.0.0.1', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0.-1.0.1', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0.0.-1.1', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0.0.0.-1', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('255.255.255.256', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('255.255.256.255', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('255.256.255.255', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('256.255.255.255', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('*.*.*.*', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('a.0.0.0', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0.a.0.0', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0.0.a.0', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0.0.0.a', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.0, Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('1.0', Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0.0, Column::TYPE_IPV4_ADDRESS));
-        static::assertEquals(['ip'], RecordValueHelpers::isValueFitsDataType('0.0', Column::TYPE_IPV4_ADDRESS, ['value_must_be_ipv4_address' => 'ip']));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('192.168.0.0', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0.0.0.0', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('255.255.255.255', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('1.1.1.1/24', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('-1.0.0.1', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0.-1.0.1', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0.0.-1.1', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0.0.0.-1', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('255.255.255.256', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('255.255.256.255', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('255.256.255.255', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('256.255.255.255', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('*.*.*.*', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('a.0.0.0', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0.a.0.0', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0.0.a.0', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0.0.0.a', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.0, Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('1.0', Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0.0, Column::TYPE_IPV4_ADDRESS, false));
+        static::assertEquals(['ip'], RecordValueHelpers::isValueFitsDataType('0.0', Column::TYPE_IPV4_ADDRESS, false, ['value_must_be_ipv4_address' => 'ip']));
+        // for conditions
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('192.168.0.0', Column::TYPE_IPV4_ADDRESS, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0.0.0.0', Column::TYPE_IPV4_ADDRESS, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('255.255.255.255', Column::TYPE_IPV4_ADDRESS, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('', Column::TYPE_IPV4_ADDRESS, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1.1.1.1/24', Column::TYPE_IPV4_ADDRESS, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-1.0.0.1', Column::TYPE_IPV4_ADDRESS, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0.-1.0.1', Column::TYPE_IPV4_ADDRESS, true));
     }
 
     public function testIsValueFitsDataTypeJson() {
         $message = ['value_must_be_json'];
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType([], Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(['a' => 'b'], Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1.11, Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-1.11, Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-1', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1.11', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-1.11', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('"-1.11"', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('"1.11"', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('[]', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('["a"]', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('[1]', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('["a","b"]', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('["a", "b"]', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('["a", "b" ]', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('[ "a", "b" ]', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('{}', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('{"a":1.11}', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('{ "a":1.11}', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('{ "a":1.11 }', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('{ "a" :1.11 }', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('{ "a" : 1.11 }', Column::TYPE_JSON));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_JSON));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_JSON));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('{1:1.11}', Column::TYPE_JSON));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('{"a":}', Column::TYPE_JSON));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('{"a":"b",}', Column::TYPE_JSON));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('{:"a"}', Column::TYPE_JSON));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('[a]', Column::TYPE_JSON));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('["a",]', Column::TYPE_JSON));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('["a":"b"]', Column::TYPE_JSON));
-        static::assertEquals(['json'], RecordValueHelpers::isValueFitsDataType('["a":]', Column::TYPE_JSON, ['value_must_be_json' => 'json']));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType([], Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(['a' => 'b'], Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1.11, Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-1.11, Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-1', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1.11', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-1.11', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('"-1.11"', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('"1.11"', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('[]', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('["a"]', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('[1]', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('["a","b"]', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('["a", "b"]', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('["a", "b" ]', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('[ "a", "b" ]', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('{}', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('{"a":1.11}', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('{ "a":1.11}', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('{ "a":1.11 }', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('{ "a" :1.11 }', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('{ "a" : 1.11 }', Column::TYPE_JSON, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_JSON, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_JSON, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('{1:1.11}', Column::TYPE_JSON, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('{"a":}', Column::TYPE_JSON, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('{"a":"b",}', Column::TYPE_JSON, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('{:"a"}', Column::TYPE_JSON, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('[a]', Column::TYPE_JSON, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('["a",]', Column::TYPE_JSON, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('["a":"b"]', Column::TYPE_JSON, false));
+        static::assertEquals(['json'], RecordValueHelpers::isValueFitsDataType('["a":]', Column::TYPE_JSON, false, ['value_must_be_json' => 'json']));
+        // for conditions
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-1.11', Column::TYPE_JSON, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('"-1.11"', Column::TYPE_JSON, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('"1.11"', Column::TYPE_JSON, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('[]', Column::TYPE_JSON, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('["a"]', Column::TYPE_JSON, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('{1:1.11}', Column::TYPE_JSON, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('{"a":}', Column::TYPE_JSON, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('{"a":"b",}', Column::TYPE_JSON, true));
     }
 
     public function testIsValueFitsDataTypeEmail() {
         $message = ['value_must_be_email'];
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('test@email.ru', Column::TYPE_EMAIL));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('test.test@email.ru', Column::TYPE_EMAIL));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('+test.test@email.ru', Column::TYPE_EMAIL));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-test.test@email.ru', Column::TYPE_EMAIL));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('`test.test@email.ru', Column::TYPE_EMAIL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('.test@email.ru', Column::TYPE_EMAIL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('[test@email.ru', Column::TYPE_EMAIL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(']test@email.ru', Column::TYPE_EMAIL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_EMAIL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_EMAIL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_EMAIL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_EMAIL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_EMAIL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_EMAIL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_EMAIL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_EMAIL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_EMAIL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_EMAIL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('1.0', Column::TYPE_EMAIL));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0.0, Column::TYPE_EMAIL));
-        static::assertEquals(['email'], RecordValueHelpers::isValueFitsDataType('0.0', Column::TYPE_EMAIL, ['value_must_be_email' => 'email']));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('test@email.ru', Column::TYPE_EMAIL, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('test.test@email.ru', Column::TYPE_EMAIL, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('+test.test@email.ru', Column::TYPE_EMAIL, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-test.test@email.ru', Column::TYPE_EMAIL, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('`test.test@email.ru', Column::TYPE_EMAIL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('.test@email.ru', Column::TYPE_EMAIL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('[test@email.ru', Column::TYPE_EMAIL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(']test@email.ru', Column::TYPE_EMAIL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_EMAIL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_EMAIL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_EMAIL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_EMAIL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_EMAIL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_EMAIL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_EMAIL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_EMAIL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_EMAIL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_EMAIL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('1.0', Column::TYPE_EMAIL, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0.0, Column::TYPE_EMAIL, false));
+        static::assertEquals(['email'], RecordValueHelpers::isValueFitsDataType('0.0', Column::TYPE_EMAIL, false, ['value_must_be_email' => 'email']));
+        // for conditions
+        $altMessage = ['value_must_be_string'];
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('test.test@email.ru', Column::TYPE_EMAIL, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('+test.test@email.ru', Column::TYPE_EMAIL, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('[test@email.ru', Column::TYPE_EMAIL, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('.test@email.ru', Column::TYPE_EMAIL, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('email.ru', Column::TYPE_EMAIL, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('test', Column::TYPE_EMAIL, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_EMAIL, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0.0', Column::TYPE_EMAIL, true));
+        static::assertEquals($altMessage, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_EMAIL, true));
+        static::assertEquals($altMessage, RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_EMAIL, true));
+        static::assertEquals($altMessage, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_EMAIL, true));
+        static::assertEquals($altMessage, RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_EMAIL, true));
+        static::assertEquals($altMessage, RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_EMAIL, true));
     }
 
     public function testIsValueFitsDataTypeString() {
         $message = ['value_must_be_string'];
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('str', Column::TYPE_STRING));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('', Column::TYPE_STRING));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_STRING));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_STRING));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_STRING));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_STRING));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_STRING));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_STRING));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_STRING));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_STRING));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_STRING));
-        static::assertEquals(['string'], RecordValueHelpers::isValueFitsDataType(-1.25, Column::TYPE_STRING, ['value_must_be_string' => 'string']));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('str', Column::TYPE_STRING, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('', Column::TYPE_STRING, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_STRING, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_STRING, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_STRING, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_STRING, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_STRING, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_STRING, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_STRING, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_STRING, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_STRING, false));
+        static::assertEquals(['string'], RecordValueHelpers::isValueFitsDataType(-1.25, Column::TYPE_STRING, false, ['value_must_be_string' => 'string']));
+        // for conditions
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('str', Column::TYPE_STRING, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('', Column::TYPE_STRING, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_STRING, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_STRING, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_STRING, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_STRING, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_STRING, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_STRING, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_STRING, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_STRING, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_STRING, true));
     }
 
     public function testIsValueFitsDataTypeEnum() {
         $message = ['value_must_be_string_or_numeric'];
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('str', Column::TYPE_ENUM));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('', Column::TYPE_ENUM));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_ENUM));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_ENUM));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_ENUM));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_ENUM));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_ENUM));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-1.25, Column::TYPE_ENUM));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_ENUM));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_ENUM));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_ENUM));
-        static::assertEquals(['enum'], RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_ENUM, ['value_must_be_string_or_numeric' => 'enum']));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('str', Column::TYPE_ENUM, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('', Column::TYPE_ENUM, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_ENUM, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_ENUM, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_ENUM, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_ENUM, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_ENUM, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-1.25, Column::TYPE_ENUM, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_ENUM, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_ENUM, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_ENUM, false));
+        static::assertEquals(['enum'], RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_ENUM, false, ['value_must_be_string_or_numeric' => 'enum']));
+        // for conditions
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('str', Column::TYPE_ENUM, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('', Column::TYPE_ENUM, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_ENUM, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_ENUM, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_ENUM, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_ENUM, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_ENUM, true));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_ENUM, true));
     }
 
     public function testIsValueFitsDataTypeUploadedFile() {
@@ -820,54 +936,54 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         ];
         $invalidFileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['size'], $file['error']); //< is_uploaded_file() will fail
         $validFileObj = new SplFileInfo($file['tmp_name']);
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_FILE));
-        static::assertEquals(['value_must_be_file'], RecordValueHelpers::isValueFitsDataType($invalidFileObj, Column::TYPE_FILE));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($validFileObj, Column::TYPE_FILE));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_FILE));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_FILE));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_FILE));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_FILE));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_FILE));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_FILE));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_FILE));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_FILE));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_FILE));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_FILE));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(-1.0, Column::TYPE_FILE));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_FILE, false));
+        static::assertEquals(['value_must_be_file'], RecordValueHelpers::isValueFitsDataType($invalidFileObj, Column::TYPE_FILE, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($validFileObj, Column::TYPE_FILE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_FILE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_FILE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_FILE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_FILE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_FILE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_FILE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_FILE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_FILE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_FILE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_FILE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(-1.0, Column::TYPE_FILE, false));
 
         $badFile = $file;
         unset($badFile['tmp_name']);
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE, false));
 
         $badFile = $file;
         unset($badFile['name']);
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE, false));
 
         $badFile = $file;
         unset($badFile['type']);
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE, false));
 
         $badFile = $file;
         unset($badFile['size']);
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE, false));
 
         $badFile = $file;
         unset($badFile['error']);
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE, false));
 
         $badFile = $file;
         $badFile['size'] = 0;
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE, false));
 
         $badFile = $file;
         $badFile['size'] = -1;
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE, false));
 
         $badFile = $file;
         $badFile['error'] = 1;
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE, false));
         $badFileObj = new UploadedFile($badFile['tmp_name'] . 'asd', $badFile['name'], $badFile['type'], $badFile['size'], $badFile['error']);
-        static::assertEquals(['file'], RecordValueHelpers::isValueFitsDataType($badFileObj, Column::TYPE_FILE, ['value_must_be_file' => 'file']));
+        static::assertEquals(['file'], RecordValueHelpers::isValueFitsDataType($badFileObj, Column::TYPE_FILE, false, ['value_must_be_file' => 'file']));
     }
 
     public function testIsValueFitsDataTypeUploadedImage() {
@@ -880,49 +996,49 @@ class DbRecordValueHelpersTest extends \PHPUnit_Framework_TestCase {
         ];
         $invalidFileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['size'], $file['error']); //< is_uploaded_file() will fail
         $validFileObj = new SplFileInfo($file['tmp_name']);
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_FILE));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE));
-        static::assertEquals(['value_must_be_image'], RecordValueHelpers::isValueFitsDataType($invalidFileObj, Column::TYPE_IMAGE));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($validFileObj, Column::TYPE_IMAGE));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_FILE, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE, false));
+        static::assertEquals(['value_must_be_image'], RecordValueHelpers::isValueFitsDataType($invalidFileObj, Column::TYPE_IMAGE, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($validFileObj, Column::TYPE_IMAGE, false));
         $file['name'] = 'image_jpg';
         $file['type'] = 'image/jpeg';
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE, false));
         $file['type'] = 'image/png';
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE, false));
         $file['type'] = 'image/gif';
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE, false));
         $file['type'] = 'image/svg';
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE, false));
 
         $file['type'] = 'text/plain';
         $file['tmp_name'] = __DIR__ . '/files/test_file_jpg';
         $fileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['size'], $file['error']);
-        static::assertEquals(['image'], RecordValueHelpers::isValueFitsDataType($fileObj, Column::TYPE_IMAGE, ['value_must_be_image' => 'image']));
-        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE));
+        static::assertEquals(['image'], RecordValueHelpers::isValueFitsDataType($fileObj, Column::TYPE_IMAGE, false, ['value_must_be_image' => 'image']));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE, false));
     }
 
     public function testIsValidDbColumnValue() {
         $column = Column::create(Column::TYPE_STRING, 'test')
             ->disallowsNullValues()
             ->setAllowedValues(['abrakadabra']);
-        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, 'test', false));
-        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, '', false));
-        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, \PeskyORM\Core\DbExpr::create('test'), false));
+        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, 'test', false, false));
+        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, '', false, false));
+        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, \PeskyORM\Core\DbExpr::create('test'), false, false));
         static::assertEquals(
             ['not null'],
-            RecordValueHelpers::isValidDbColumnValue($column, null, false, ['value_cannot_be_null' => 'not null'])
+            RecordValueHelpers::isValidDbColumnValue($column, null, false, false, ['value_cannot_be_null' => 'not null'])
         );
         $column->convertsEmptyStringToNull();
-        static::assertEquals(['value_cannot_be_null'], RecordValueHelpers::isValidDbColumnValue($column, '', false));
+        static::assertEquals(['value_cannot_be_null'], RecordValueHelpers::isValidDbColumnValue($column, '', false, false));
         $column->allowsNullValues();
-        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, null, false));
-        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, '', false));
-        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, \PeskyORM\Core\DbExpr::create('test'), false));
+        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, null, false, false));
+        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, '', false, false));
+        static::assertEquals([], RecordValueHelpers::isValidDbColumnValue($column, \PeskyORM\Core\DbExpr::create('test'), false, false));
         // invalid valie
         $column = Column::create(Column::TYPE_INT, 'test')
             ->disallowsNullValues()
             ->setAllowedValues(['abrakadabra']);
-        static::assertEquals(['value_must_be_integer'], RecordValueHelpers::isValidDbColumnValue($column, 'not_int', false));
+        static::assertEquals(['value_must_be_integer'], RecordValueHelpers::isValidDbColumnValue($column, 'not_int', false, false));
     }
 
     /**

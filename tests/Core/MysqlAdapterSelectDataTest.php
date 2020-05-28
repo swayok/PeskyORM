@@ -1,8 +1,10 @@
 <?php
 
+namespace Tests\Core;
+
 require_once __DIR__ . '/PostgresAdapterSelectDataTest.php';
 
-use PeskyORMTest\TestingApp;
+use Tests\PeskyORMTest\TestingApp;
 
 class MysqlAdapterSelectDataTest extends PostgresAdapterSelectDataTest {
 

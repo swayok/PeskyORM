@@ -1,8 +1,10 @@
 <?php
 
+namespace Tests\Core;
+
 require_once __DIR__ . '/PostgresAdapterUpdateDataTest.php';
 
-use PeskyORMTest\TestingApp;
+use Tests\PeskyORMTest\TestingApp;
 
 class MysqlAdapterUpdateDataTest extends PostgresAdapterUpdateDataTest {
 

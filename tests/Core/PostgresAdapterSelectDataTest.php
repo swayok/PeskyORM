@@ -1,15 +1,18 @@
 <?php
 
+namespace Tests\Core;
+
 use PeskyORM\Core\DbExpr;
-use PeskyORMTest\TestingApp;
+use PHPUnit\Framework\TestCase;
+use Tests\PeskyORMTest\TestingApp;
 
-class PostgresAdapterSelectDataTest extends \PHPUnit_Framework_TestCase {
+class PostgresAdapterSelectDataTest extends TestCase {
 
-    static public function setUpBeforeClass() {
+    static public function setUpBeforeClass(): void {
         TestingApp::clearTables(static::getValidAdapter());
     }
 
-    static public function tearDownAfterClass() {
+    static public function tearDownAfterClass(): void {
         TestingApp::clearTables(static::getValidAdapter());
     }
 

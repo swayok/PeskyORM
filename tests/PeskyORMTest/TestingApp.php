@@ -1,6 +1,6 @@
 <?php
 
-namespace PeskyORMTest;
+namespace Tests\PeskyORMTest;
 
 use PeskyORM\Adapter\Mysql;
 use PeskyORM\Adapter\Postgres;

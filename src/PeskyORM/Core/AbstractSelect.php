@@ -417,7 +417,7 @@ abstract class AbstractSelect {
     }
 
     /**
-     * @param string[] $columns - formats:
+     * @param array $columns - formats:
      *  - array === []: all columns
      *  - array === ['*']: all columns
      *  - array format: [

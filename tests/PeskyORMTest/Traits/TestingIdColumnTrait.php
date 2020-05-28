@@ -1,6 +1,6 @@
 <?php
 
-namespace PeskyORMTest\Traits;
+namespace Tests\PeskyORMTest\Traits;
 
 use PeskyORM\ORM\Column;
 

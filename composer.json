@@ -20,7 +20,7 @@
     "autoload": {
         "psr-0": {
             "PeskyORM": "src/",
-            "PeskyORMTest": "tests/classes"
+            "Tests": "tests/"
         }
     },
     "require": {
@@ -30,6 +30,6 @@
         "crazycodr/standard-exceptions": "*"
     },
     "require-dev": {
-        "phpunit/phpunit": "5.*"
+        "phpunit/phpunit": "8.*"
     }
 }

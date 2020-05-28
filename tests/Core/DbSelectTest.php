@@ -1,19 +1,25 @@
 <?php
 
+namespace Tests\Core;
+
+use InvalidArgumentException;
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\JoinInfo;
 use PeskyORM\Core\Select;
-use PeskyORMTest\TestingApp;
+use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use Swayok\Utils\Set;
+use Tests\PeskyORMTest\TestingApp;
+use UnexpectedValueException;
 
-class DbSelectTest extends \PHPUnit_Framework_TestCase {
+class DbSelectTest extends TestCase {
 
-    static public function setUpBeforeClass() {
+    static public function setUpBeforeClass(): void {
         TestingApp::clearTables(static::getValidAdapter());
     }
 
-    static public function tearDownAfterClass() {
+    static public function tearDownAfterClass(): void {
         TestingApp::clearTables(static::getValidAdapter());
     }
 
@@ -25,7 +31,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
     }
 
     static protected function getValidAdapter() {
-        $adapter = \PeskyORMTest\TestingApp::getPgsqlConnection();
+        $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
@@ -146,7 +152,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
         static::assertEquals('SELECT 1 FROM "admins" AS "Admins" LIMIT 1', rtrim($dbSelect->getExistenceQuery()));
 
         $insertedData = static::fillAdminsTable();
-        $testData = static::convertTestDataForAdminsTableAssert($insertedData);
+        $testData = $this->convertTestDataForAdminsTableAssert($insertedData);
         static::assertEquals(2, $dbSelect->fetchCount());
         static::assertTrue($dbSelect->fetchExistence());
         $data = $dbSelect->fetchMany();
@@ -157,7 +163,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
         static::assertEquals(Set::extract('/id', $testData), $data);
         $data = $dbSelect->fetchAssoc('id', 'login');
         static::assertEquals(Set::combine($testData, '/id', '/login'), $data);
-        $sum = $dbSelect->fetchValue(\PeskyORM\Core\DbExpr::create('SUM(`id`)'));
+        $sum = $dbSelect->fetchValue(DbExpr::create('SUM(`id`)'));
         static::assertEquals(array_sum(Set::extract('/id', $testData)), $sum);
 
         // via static
@@ -541,6 +547,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $columnName argument cannot be empty
      */
     public function testInvalidOrderBy5() {
+        /** @noinspection PhpParamsInspection */
         static::getNewSelect()->orderBy([]);
     }
 
@@ -685,6 +692,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $limit argument must be an integer
      */
     public function testInvalidLimit4() {
+        /** @noinspection PhpParamsInspection */
         static::getNewSelect()->limit([]);
     }
 
@@ -693,6 +701,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $limit argument must be an integer
      */
     public function testInvalidLimit5() {
+        /** @noinspection PhpParamsInspection */
         static::getNewSelect()->limit($this);
     }
 
@@ -733,6 +742,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $offset argument must be an integer
      */
     public function testInvalidOffset4() {
+        /** @noinspection PhpParamsInspection */
         static::getNewSelect()->offset([]);
     }
 
@@ -741,6 +751,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $offset argument must be an integer
      */
     public function testInvalidOffset5() {
+        /** @noinspection PhpParamsInspection */
         static::getNewSelect()->offset($this);
     }
 
@@ -827,22 +838,10 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
 
     /**
      * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Join config with name 'Test' is not valid
-     */
-    public function testInvalidJoin1() {
-        $joinConfig = JoinInfo::create('Test');
-        static::getNewSelect()->join($joinConfig);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
      * @expectedExceptionMessage Join with name 'Test' already defined
      */
     public function testInvalidJoin2() {
-        $joinConfig = JoinInfo::create('Test')
-            ->setConfigForLocalTable('admins', 'id')
-            ->setConfigForForeignTable('settings', 'id')
-            ->setJoinType(JoinInfo::JOIN_INNER);
+        $joinConfig = JoinInfo::create('Test', 'admins', 'id', JoinInfo::JOIN_INNER, 'settings', 'id');
         static::getNewSelect()->join($joinConfig)->join($joinConfig);
     }
 
@@ -851,20 +850,14 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Invalid join name 'NotTest' used in columns list for join named 'Test'
      */
     public function testInvalidJoinColumns() {
-        $joinConfig = JoinInfo::create('Test')
-            ->setConfigForLocalTable('admins', 'id')
-            ->setConfigForForeignTable('settings', 'id')
-            ->setJoinType(JoinInfo::JOIN_INNER)
+        $joinConfig = JoinInfo::create('Test', 'admins', 'id', JoinInfo::JOIN_INNER, 'settings', 'id')
             ->setForeignColumnsToSelect('Test.key', 'NotTest.value');
         static::getNewSelect()->join($joinConfig)->getQuery();
     }
 
     public function testJoins() {
         $dbSelect = static::getNewSelect();
-        $joinConfig = JoinInfo::create('Test')
-            ->setConfigForLocalTable('admins', 'id')
-            ->setConfigForForeignTable('settings', 'id')
-            ->setJoinType(JoinInfo::JOIN_INNER)
+        $joinConfig = JoinInfo::create('Test', 'admins', 'id', JoinInfo::JOIN_INNER, 'settings', 'id')
             ->setForeignColumnsToSelect('key', 'value');
         static::assertEquals(
             'SELECT "Admins".*, "Test"."key" AS "_Test__key", "Test"."value" AS "_Test__value" FROM "admins" AS "Admins" INNER JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."id")',
@@ -921,6 +914,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $selectAlias argument must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)
      */
     public function testInvalidWith2() {
+        /** @noinspection PhpParamsInspection */
         static::getNewSelect()->with(static::getNewSelect(), []);
     }
 
@@ -1116,6 +1110,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $schema argument must be a not-empty string
      */
     public function testInvalidSetDbSchemaName5() {
+        /** @noinspection PhpParamsInspection */
         static::getNewSelect()->setTableSchemaName(['arr']);
     }
 
@@ -1358,10 +1353,7 @@ class DbSelectTest extends \PHPUnit_Framework_TestCase {
                 'Test.admin_id >' => '1',
             ],
             'JOIN' => [
-                JoinInfo::create('Test')
-                    ->setConfigForLocalTable('admins', 'id')
-                    ->setJoinType(JoinInfo::JOIN_LEFT)
-                    ->setConfigForForeignTable('settings', 'admin_id')
+                JoinInfo::create('Test', 'admins', 'id', JoinInfo::JOIN_LEFT, 'settings', 'admin_id')
                     ->setForeignColumnsToSelect(['admin_id', 'setting_value' => 'Test.value'])
             ]
         ];

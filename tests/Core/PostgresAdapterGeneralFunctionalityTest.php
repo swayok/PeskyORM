@@ -1,17 +1,25 @@
 <?php
 
+namespace Tests\Core;
+
+use InvalidArgumentException;
+use PDO;
+use PDOException;
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbExpr;
-use PeskyORMTest\TestingApp;
+use PHPUnit\Framework\TestCase;
+use ReflectionClass;
+use Tests\PeskyORMTest\TestingApp;
+use TypeError;
 
-class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCase {
+class PostgresAdapterGeneralFunctionalityTest extends TestCase {
 
-    public static function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
         TestingApp::clearTables(static::getValidAdapter());
     }
 
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         TestingApp::clearTables(static::getValidAdapter());
     }
 
@@ -250,6 +258,7 @@ class PostgresAdapterGeneralFunctionalityTest extends \PHPUnit_Framework_TestCas
      */
     public function testQuotingOfInvalidDbExpr() {
         $adapter = static::getValidAdapter();
+        /** @noinspection PhpParamsInspection */
         $adapter->quoteDbExpr('test');
     }
 

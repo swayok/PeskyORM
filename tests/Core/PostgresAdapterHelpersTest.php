@@ -1,10 +1,18 @@
 <?php
 
+namespace Tests\Core;
+
+use Exception;
+use InvalidArgumentException;
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
-use PeskyORMTest\TestingApp;
+use PHPUnit\Framework\TestCase;
+use ReflectionClass;
+use ReflectionMethod;
+use Tests\PeskyORMTest\TestingApp;
+use TypeError;
 
-class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
+class PostgresAdapterHelpersTest extends TestCase {
 
     static protected function getValidAdapter() {
         $adapter = TestingApp::getPgsqlConnection();
@@ -276,12 +284,12 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage Condition operator [>=] does not support list of values
      */
     public function testInvalidConvertConditionOperator() {
-        $adapter = $this->getValidAdapter();
+        $adapter = self::getValidAdapter();
         $adapter->convertConditionOperator('>=', [1, 2, 3]);
     }
 
     public function testConvertConditionOperatorForNullValue() {
-        $adapter = $this->getValidAdapter();
+        $adapter = self::getValidAdapter();
 
         $operator = $adapter->convertConditionOperator('=', null);
         static::assertEquals('IS', $operator);
@@ -309,7 +317,7 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testConvertConditionOperatorForArrayValue() {
-        $adapter = $this->getValidAdapter();
+        $adapter = self::getValidAdapter();
 
         $operator = $adapter->convertConditionOperator('=', [1, 2, 3]);
         static::assertEquals('IN', $operator);
@@ -333,7 +341,7 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testConvertConditionOperator() {
-        $adapter = $this->getValidAdapter();
+        $adapter = self::getValidAdapter();
 
         $operator = $adapter->convertConditionOperator('BETWEEN', [1, 2, 3]);
         static::assertEquals('BETWEEN', $operator);
@@ -353,7 +361,7 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
     }
 
     public function testConvertConditionOperatorForStringComparison() {
-        $adapter = $this->getValidAdapter();
+        $adapter = self::getValidAdapter();
 
         $operator = $adapter->convertConditionOperator('SIMILAR TO', 'qwe');
         static::assertEquals('SIMILAR TO', $operator);
@@ -386,7 +394,7 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $table argument cannot be empty and must be a non-numeric string
      */
     public function testInvalidArgsInMakeSelectQuery() {
-        $adapter = $this->getValidAdapter();
+        $adapter = self::getValidAdapter();
         $adapter->makeSelectQuery('');
     }
 
@@ -395,7 +403,7 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $columns argument must contain only strings and DbExpr objects
      */
     public function testInvalidArgsInMakeSelectQuery2() {
-        $adapter = $this->getValidAdapter();
+        $adapter = self::getValidAdapter();
         $adapter->makeSelectQuery('table', [$this]);
     }
 
@@ -404,12 +412,12 @@ class PostgresAdapterHelpersTest extends PHPUnit_Framework_TestCase {
      * @expectedExceptionMessage $conditionsAndOptions argument must be an instance of DbExpr class
      */
     public function testInvalidArgsInMakeSelectQuery3() {
-        $adapter = $this->getValidAdapter();
+        $adapter = self::getValidAdapter();
         $adapter->makeSelectQuery('table', [], 'string');
     }
 
     public function testMakeSelectQuery() {
-        $adapter = $this->getValidAdapter();
+        $adapter = self::getValidAdapter();
 
         $query = $adapter->makeSelectQuery('test_table', ['col1', DbExpr::create('`col2` as `col22`')]);
         static::assertEquals(

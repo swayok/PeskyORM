@@ -1,12 +1,12 @@
 <?php
 
-namespace PeskyORMTest\TestingAdmins;
+namespace Tests\PeskyORMTest\TestingAdmins;
 
-use PeskyORMTest\TestingBaseTable;
+use Tests\PeskyORMTest\TestingBaseTable;
 
 class TestingAdminsTableLongAlias extends TestingBaseTable {
 
-    public function getTableAlias() {
+    public function getTableAlias(): string {
         return 'TestingAdminsTableLongAliasReallyLooooooong';
     }
 

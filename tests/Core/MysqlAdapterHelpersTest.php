@@ -1,17 +1,20 @@
 <?php
 
+namespace Tests\Core;
+
 use PeskyORM\Core\DbExpr;
+use Tests\PeskyORMTest\TestingApp;
 
 require_once __DIR__ . '/PostgresAdapterHelpersTest.php';
 
 class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest {
 
     static protected function getValidAdapter() {
-        return \PeskyORMTest\TestingApp::getMysqlConnection();
+        return TestingApp::getMysqlConnection();
     }
 
     public function testConvertConditionOperatorForStringComparison() {
-        $adapter = $this->getValidAdapter();
+        $adapter = self::getValidAdapter();
 
         $operator = $adapter->convertConditionOperator('SIMILAR TO', 'qweq');
         static::assertEquals('LIKE', $operator);

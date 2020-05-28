@@ -1,18 +1,24 @@
 <?php
 
+namespace Tests\Orm;
+
+use BadMethodCallException;
+use InvalidArgumentException;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\ORM\Record;
 use PeskyORM\ORM\RecordsArray;
 use PeskyORM\ORM\RecordValue;
-use PeskyORMTest\TestingAdmins\TestingAdmin;
-use PeskyORMTest\TestingAdmins\TestingAdminsTable;
-use PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
-use PeskyORMTest\TestingApp;
-use PeskyORMTest\TestingSettings\TestingSetting;
-use PeskyORMTest\TestingSettings\TestingSettingsTable;
-use PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use Swayok\Utils\NormalizeValue;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
+use Tests\PeskyORMTest\TestingApp;
+use Tests\PeskyORMTest\TestingSettings\TestingSetting;
+use Tests\PeskyORMTest\TestingSettings\TestingSettingsTable;
+use Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
+use UnexpectedValueException;
 
 class DbRecordTest extends TestCase {
 
@@ -710,7 +716,7 @@ class DbRecordTest extends TestCase {
         $toArrayPartial = $rec->toArrayWithoutFiles(['id', 'parent_id', 'login' => 'alias', 'role']);
         $expected['alias'] = $expected['login'];
         unset($expected['login']);
-        static::assertEquals(array_merge(['id' => null], $adminNoIdNormalized), $toArray);
+        static::assertEquals(array_merge(['id' => null], $adminNoIdNormalized), $toArrayPartial);
 
         // has one / belongs to relations (not existing in db)
         $rec->updateRelatedRecord('Parent', [], false);
@@ -861,7 +867,7 @@ class DbRecordTest extends TestCase {
     }
 
     /**
-     * @expectedException PeskyORM\Exception\InvalidDataException
+     * @expectedException \PeskyORM\Exception\InvalidDataException
      * @expectedExceptionMessage Validation errors: [id] Value must be of an integer data type
      */
     public function testInvalidFromData3() {
@@ -954,7 +960,7 @@ class DbRecordTest extends TestCase {
         // get related records
         $rec = TestingAdmin::read($example['id'], [], ['Parent', 'Children']);
         static::assertTrue($rec->existsInDb());
-        $relatedRecords = static::getObjectPropertyValue($rec, 'relatedRecords');
+        $relatedRecords = $this->getObjectPropertyValue($rec, 'relatedRecords');
         static::assertCount(2, $relatedRecords);
         static::assertArrayHasKey('Parent', $relatedRecords);
         static::assertArrayHasKey('Children', $relatedRecords);
@@ -1210,6 +1216,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage $relatedRecord argument for HAS MANY relation must be array or instance of PeskyORM\ORM\RecordsArray
      */
     public function testInvalidSetRelatedRecord2() {
+        /** @noinspection PhpParamsInspection */
         TestingAdmin::newEmptyRecord()->updateRelatedRecord('Children', 'test');
     }
 
@@ -1226,6 +1233,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage $relatedRecord argument must be an array or instance of Record class for the 'admins' DB table
      */
     public function testInvalidSetRelatedRecord4() {
+        /** @noinspection PhpParamsInspection */
         TestingAdmin::newEmptyRecord()->updateRelatedRecord('Parent', 'string');
     }
 
@@ -2080,6 +2088,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage Table does not contain column named 'invalidcolname'
      */
     public function testInvalidMagicIsset() {
+        /** @noinspection PhpExpressionResultUnusedInspection */
         isset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)->invalidcolname);
     }
 
@@ -2088,6 +2097,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage Table does not contain column named 'invalidcolname'
      */
     public function testInvalidArrayOffsetIsset1() {
+        /** @noinspection PhpExpressionResultUnusedInspection */
         isset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)['invalidcolname']);
     }
 
@@ -2096,6 +2106,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage Table does not contain column named 'created_at_as_date'
      */
     public function testInvalidArrayOffsetIsset2() {
+        /** @noinspection PhpExpressionResultUnusedInspection */
         isset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)['created_at_as_date']);
     }
 
@@ -2246,6 +2257,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage Magic method 'setInvalidcolumn($value, $isFromDb = false)' is not linked with any column or relation
      */
     public function testInvalidMagicMethodSetter1() {
+        /** @noinspection PhpUndefinedMethodInspection */
         TestingAdmin::newEmptyRecord()->setInvalidcolumn(1);
     }
 
@@ -2254,6 +2266,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage Magic method 'setCreatedAtAsDate($value, $isFromDb = false)' is not linked with any column or relation
      */
     public function testInvalidMagicMethodSetter2() {
+        /** @noinspection PhpUndefinedMethodInspection */
         TestingAdmin::newEmptyRecord()->setCreatedAtAsDate(1);
     }
 
@@ -2262,6 +2275,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage Magic method 'setParentid($value, $isFromDb = false)' is not linked with any column or relation
      */
     public function testInvalidMagicMethodSetter3() {
+        /** @noinspection PhpUndefinedMethodInspection */
         TestingAdmin::newEmptyRecord()->setParentid(1);
     }
 
@@ -2270,6 +2284,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage Magic method 'setparentid($value, $isFromDb = false)' is forbidden. You can magically call only methods starting with 'set'
      */
     public function testInvalidMagicMethodSetter4() {
+        /** @noinspection PhpUndefinedMethodInspection */
         TestingAdmin::newEmptyRecord()->setparentid(1);
     }
 
@@ -2278,6 +2293,7 @@ class DbRecordTest extends TestCase {
      * @expectedExceptionMessage Magic method 'anymethod($value, $isFromDb = false)' is forbidden. You can magically call only methods starting with 'set'
      */
     public function testInvalidMagicMethodSetter5() {
+        /** @noinspection PhpUndefinedMethodInspection */
         TestingAdmin::newEmptyRecord()->anymethod(1);
     }
 

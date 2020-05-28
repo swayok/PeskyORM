@@ -1,16 +1,21 @@
 <?php
 
+namespace Tests\Core;
+
+use InvalidArgumentException;
+use PDO;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
-use PeskyORMTest\TestingApp;
+use PHPUnit\Framework\TestCase;
+use Tests\PeskyORMTest\TestingApp;
 
-class PostgresAdapterInsertDataTest extends \PHPUnit_Framework_TestCase {
+class PostgresAdapterInsertDataTest extends TestCase {
 
-    static public function setUpBeforeClass() {
+    static public function setUpBeforeClass(): void {
         TestingApp::clearTables(static::getValidAdapter());
     }
 
-    static public function tearDownAfterClass() {
+    static public function tearDownAfterClass(): void {
         TestingApp::clearTables(static::getValidAdapter());
     }
 

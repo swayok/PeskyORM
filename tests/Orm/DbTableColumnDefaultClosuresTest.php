@@ -1,15 +1,18 @@
 <?php
 
+namespace Tests\Orm;
+
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\DefaultColumnClosures;
 use PeskyORM\ORM\RecordValue;
-use PeskyORMTest\TestingAdmins\TestingAdmin;
-use PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
-use PeskyORMTest\TestingApp;
+use PHPUnit\Framework\TestCase;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
+use Tests\PeskyORMTest\TestingApp;
 
-class DbTableColumnDefaultClosuresTest extends PHPUnit_Framework_TestCase {
+class DbTableColumnDefaultClosuresTest extends TestCase {
 
-    public static function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
         TestingApp::getPgsqlConnection();
     }
 
@@ -70,17 +73,17 @@ class DbTableColumnDefaultClosuresTest extends PHPUnit_Framework_TestCase {
             });
         static::assertEquals(
             ['Value is not allowed: c'],
-            DefaultColumnClosures::valueValidator('c', false, $column)
+            DefaultColumnClosures::valueValidator('c', false, false, $column)
         );
         static::assertEquals(
             ['Value must be a string or a number'],
-            DefaultColumnClosures::valueValidator(true, false, $column)
+            DefaultColumnClosures::valueValidator(true, false, false, $column)
         );
         static::assertEquals(
             ['extender!!!'],
-            DefaultColumnClosures::valueValidator('a', false, $column)
+            DefaultColumnClosures::valueValidator('a', false, false, $column)
         );
-        static::assertEquals([], DefaultColumnClosures::valueValidator('b', false, $column));
+        static::assertEquals([], DefaultColumnClosures::valueValidator('b', false, false, $column));
     }
 
     /**
@@ -125,20 +128,20 @@ class DbTableColumnDefaultClosuresTest extends PHPUnit_Framework_TestCase {
         $column = Column::create(Column::TYPE_STRING, 'test1')
             ->valueCannotBeSetOrChanged();
         $valueObj = RecordValue::create($column, TestingAdmin::_());
-        DefaultColumnClosures::valueSetter('1', true, $valueObj);
+        DefaultColumnClosures::valueSetter('1', true, $valueObj, false);
         static::assertEquals('1', $valueObj->getRawValue());
         static::assertEquals('1', $valueObj->getValue());
 
         $column = Column::create(Column::TYPE_STRING, 'test2')
             ->valueCannotBeSetOrChanged();
         $valueObj = RecordValue::create($column, TestingAdmin::_());
-        DefaultColumnClosures::valueSetter('2', false, $valueObj);
+        DefaultColumnClosures::valueSetter('2', false, $valueObj, false);
     }
 
     public function testValueSetter() {
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
         // new value
-        DefaultColumnClosures::valueSetter('1', false, $valueObj);
+        DefaultColumnClosures::valueSetter('1', false, $valueObj, false);
         static::assertEquals('1', $valueObj->getRawValue());
         static::assertEquals(1, $valueObj->getValue());
         static::assertTrue($valueObj->isValidated());
@@ -146,7 +149,7 @@ class DbTableColumnDefaultClosuresTest extends PHPUnit_Framework_TestCase {
         static::assertFalse($valueObj->isItFromDb());
         static::assertFalse($valueObj->hasOldValue());
         // change 'isItFromDb' status to true (should not be any changes other than $valueObj->isItFromDb())
-        DefaultColumnClosures::valueSetter(1, true, $valueObj);
+        DefaultColumnClosures::valueSetter(1, true, $valueObj, false);
         static::assertEquals('1', $valueObj->getRawValue());
         static::assertEquals(1, $valueObj->getValue());
         static::assertTrue($valueObj->isValidated());
@@ -154,7 +157,7 @@ class DbTableColumnDefaultClosuresTest extends PHPUnit_Framework_TestCase {
         static::assertTrue($valueObj->isItFromDb());
         static::assertFalse($valueObj->hasOldValue());
         // change value
-        DefaultColumnClosures::valueSetter('2', true, $valueObj);
+        DefaultColumnClosures::valueSetter('2', true, $valueObj, false);
         static::assertEquals('2', $valueObj->getRawValue());
         static::assertEquals(2, $valueObj->getValue());
         static::assertTrue($valueObj->hasOldValue());
@@ -164,7 +167,7 @@ class DbTableColumnDefaultClosuresTest extends PHPUnit_Framework_TestCase {
         static::assertTrue($valueObj->isValid());
         static::assertTrue($valueObj->isItFromDb());
         // invalid value
-        DefaultColumnClosures::valueSetter(false, true, $valueObj);
+        DefaultColumnClosures::valueSetter(false, true, $valueObj, false);
         static::assertEquals(false, $valueObj->getRawValue());
         static::assertEquals(false, $valueObj->getValue());
         static::assertTrue($valueObj->hasOldValue());
