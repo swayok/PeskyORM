@@ -12,8 +12,6 @@ use Swayok\Utils\StringUtils;
  */
 abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Serializable {
 
-    const COLUMN_NAME_WITH_FORMAT_REGEXP = '%^(.+)_as_(.+)$%is';
-
     /**
      * @var TableStructureInterface[]
      */
@@ -2096,31 +2094,22 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      */
     public function offsetExists($key) {
-        if ($this->isReadOnly()) {
-            $exists = array_key_exists($key, $this->readOnlyData) || isset($this->relatedRecords[$key]);
-            if ($exists) {
-                return true;
-            }
-            if (preg_match(static::COLUMN_NAME_WITH_FORMAT_REGEXP, $key, $parts) && array_key_exists($parts[1], $this->readOnlyData)) {
-                if (!$this->_hasValue(static::getColumn($parts[1]), false)) {
-                    return false;
-                }
-                return $this->offsetGet($key) !== null;
-            }
-            return false;
-        } else if (static::hasColumn($key)) {
-            return $this->_hasValue(static::getColumn($key), false);
+        if (static::hasColumn($key)) {
+            // also handles 'column_as_format'
+            $column = static::getColumn($key, $format);
+            return (
+                $this->_hasValue($column, false)
+                && (
+                    !$format
+                    || $this->_getValue($column, $format) !== null
+                )
+            );
         } else if (static::hasRelation($key)) {
             if (!$this->isRelatedRecordCanBeRead($key)) {
                 return false;
             }
             $record = $this->getRelatedRecord($key, true);
             return $record instanceof RecordInterface ? $record->existsInDb() : $record->count();
-        } else if (preg_match(static::COLUMN_NAME_WITH_FORMAT_REGEXP, $key, $parts)) {
-            if (!$this->_hasValue(static::getColumn($parts[1]), false)) {
-                return false;
-            }
-            return $this->offsetGet($key) !== null;
         } else {
             throw new \InvalidArgumentException(
                 'There is no column or relation with name ' . $key . ' in ' . static::class
@@ -2134,38 +2123,11 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      */
     public function offsetGet($key) {
-        if ($this->isReadOnly()) {
-            if (self::hasRelation($key)) {
-                return $this->getRelatedRecord($key, true);
-            } else if (array_key_exists($key, $this->readOnlyData)) {
-                return $this->readOnlyData[$key];
-            } else if (preg_match(static::COLUMN_NAME_WITH_FORMAT_REGEXP, $key, $parts)) {
-                [, $colName, $format] = $parts;
-                if (array_key_exists($colName, $this->readOnlyData)) {
-                    $value = $this->readOnlyData[$colName];
-                    $column = static::getColumn($colName);
-                    $valueContainer = $this->createValueObject($column)->setRawValue($value, $value, true);
-                    return call_user_func($column->getValueFormatter(), $valueContainer, $format);
-                } else {
-                    return null;
-                }
-            } else {
-                return null;
-            }
-        } else if (static::hasColumn($key)) {
-            $column = static::getColumn($key);
-            $format = null;
-            if ($column->getName() !== $key) {
-                $parts = explode('_as_', $key, 2);
-                if (count($parts) === 2) {
-                    $format = $parts[1];
-                }
-            }
-            return $this->_getValue(static::getColumn($key), $format);
+        if (static::hasColumn($key)) {
+            $column = static::getColumn($key, $format);
+            return $this->_getValue($column, $format);
         } else if (static::hasRelation($key)) {
             return $this->getRelatedRecord($key, true);
-        } else if (preg_match(static::COLUMN_NAME_WITH_FORMAT_REGEXP, $key, $parts)) {
-            return $this->_getValue(static::getColumn($parts[1]), $parts[2]);
         } else {
             throw new \InvalidArgumentException(
                 'There is no column or relation with name ' . $key . ' in ' . static::class
