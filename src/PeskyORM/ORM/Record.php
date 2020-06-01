@@ -2019,18 +2019,28 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Collect default values for the columns
      * Note: if there is no default value for a column - null will be returned
      * @param array $columns - empty: return values for all columns
-     * @param bool $ignoreColumnsThatDoNotExistInDB - true: if column does not exist in DB - its value will not be returned
+     * @param bool $ignoreColumnsThatDoNotExistInDBOrAutoupdatable - true: if column does not exist in DB - its value will not be returned
      * @param bool $nullifyDbExprValues - true: if default value is DbExpr - replace it by null
      * @return array
      */
-    public function getDefaults(array $columns = [], $ignoreColumnsThatDoNotExistInDB = true, $nullifyDbExprValues = true): array {
+    public function getDefaults(
+        array $columns = [],
+        bool $ignoreColumnsThatDoNotExistInDBOrAutoupdatable = true,
+        bool $nullifyDbExprValues = true
+    ): array {
         if (count($columns) === 0) {
             $columns = array_keys(static::getColumns());
         }
         $values = array();
         foreach ($columns as $columnName) {
             $column = static::getColumn($columnName);
-            if ($ignoreColumnsThatDoNotExistInDB && !$column->isItExistsInDb()) {
+            if (
+                $ignoreColumnsThatDoNotExistInDBOrAutoupdatable
+                && (
+                    !$column->isItExistsInDb()
+                    || $column->isAutoUpdatingValue()
+                )
+            ) {
                 continue;
             } else {
                 $values[$columnName] = $this->getValueContainerByColumnConfig($column)->getDefaultValueOrNull();

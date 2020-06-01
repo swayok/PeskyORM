@@ -290,7 +290,7 @@ interface RecordInterface {
      * Collect default values for the columns
      * Note: if there is no default value for a column - null will be returned
      * @param array $columns - empty: return values for all columns
-     * @param bool $ignoreColumnsThatDoNotExistInDB - true: if column does not exist in DB - its value will not be returned
+     * @param bool $ignoreColumnsThatDoNotExistInDBOrAutoupdatable - true: if column does not exist in DB - its value will not be returned
      * @param bool $nullifyDbExprValues - true: if default value is DbExpr - replace it by null
      * @return array
      * @throws \PeskyORM\Exception\OrmException
@@ -298,7 +298,7 @@ interface RecordInterface {
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    public function getDefaults(array $columns = [], bool $ignoreColumnsThatDoNotExistInDB = true, bool $nullifyDbExprValues = true): array;
+    public function getDefaults(array $columns = [], bool $ignoreColumnsThatDoNotExistInDBOrAutoupdatable = true, bool $nullifyDbExprValues = true): array;
 
 
 }
