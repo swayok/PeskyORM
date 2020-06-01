@@ -137,7 +137,15 @@ abstract class RecordValueHelpers {
             case Column::TYPE_PASSWORD:
             case Column::TYPE_TEXT:
             case Column::TYPE_STRING:
-                if (!is_string($value)) {
+                if (
+                    !is_string($value)
+                    && !is_numeric($value)
+                    && !(
+                        is_object($value)
+                        && method_exists($value, '__toString')
+                    )
+                ) {
+                    //^ numbers can be normally converted to strings
                     return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_STRING)];
                 }
                 break;
