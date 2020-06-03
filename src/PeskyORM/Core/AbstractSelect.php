@@ -1401,6 +1401,9 @@ abstract class AbstractSelect {
                 if (empty($data[$config->getTableAlias()][$config->getJoinName()])) {
                     unset($data[$config->getTableAlias()][$config->getJoinName()]);
                 }
+                if (empty($data[$config->getTableAlias()])) {
+                    unset($data[$config->getTableAlias()]);
+                }
             }
         }
     }
