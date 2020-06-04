@@ -2099,6 +2099,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
 
     /**
+     * Proxy to _hasValue() or isRelatedRecordCanBeRead();
+     * NOTE: it is not isset()
      * @param string $key - column name or relation name
      * @return boolean - true on success or false on failure.
      * @throws \InvalidArgumentException
@@ -2107,13 +2109,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         if (static::hasColumn($key)) {
             // also handles 'column_as_format'
             $column = static::getColumn($key, $format);
-            return (
-                $this->_hasValue($column, false)
-                && (
-                    !$format
-                    || $this->_getValue($column, $format) !== null
-                )
-            );
+            if (!$this->_hasValue($column, false)) {
+                return false;
+            } else if ($format) {
+                return $this->_getValue($column, $format) !== null;
+            } else {
+                return true;
+            }
         } else if (static::hasRelation($key)) {
             if (!$this->isRelatedRecordCanBeRead($key)) {
                 return false;
@@ -2207,7 +2209,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return bool
      */
     public function __isset($name) {
-        return $this->offsetExists($name);
+        $hasValue = $this->offsetExists($name);
+        if (!$hasValue) {
+            return false;
+        } else {
+            return $this->offsetGet($name) !== null;
+        }
     }
 
     /**
