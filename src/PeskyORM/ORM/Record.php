@@ -673,7 +673,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \BadMethodCallException
      */
     public function resetValueToDefault($column) {
-        $column = static::getColumn($column);
+        if (is_string($column)) {
+            $column = static::getColumn($column);
+        }
         if ($column->isItPrimaryKey()) {
             throw new \BadMethodCallException('Record->resetValueToDefault() cannot be applied to primary key column');
         }
