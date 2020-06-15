@@ -340,6 +340,20 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $this->cleanUpdates();
         return $this;
     }
+    
+    public function resetToDefaults() {
+        if ($this->isCollectingUpdates) {
+            throw new \BadMethodCallException(
+                'Attempt to reset record while changes collecting was not finished. You need to use commit() or rollback() first'
+            );
+        }
+        foreach (static::getColumns() as $column) {
+            if (!$column->isItPrimaryKey()) {
+                $this->resetValueToDefault($column);
+            }
+        }
+        return $this;
+    }
 
     /**
      * @param Column $column
@@ -656,10 +670,17 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @param string|Column $column
      * @return $this
+     * @throws \BadMethodCallException
      */
     public function resetValueToDefault($column) {
+        $column = static::getColumn($column);
+        if ($column->isItPrimaryKey()) {
+            throw new \BadMethodCallException('Record->resetValueToDefault() cannot be applied to primary key column');
+        }
         $valueContainer = $this->getValueContainer($column);
-        $this->updateValue($column, $valueContainer->getDefaultValueOrNull(), false);
+        if ($column->isValueCanBeSetOrChanged() && !$column->isAutoUpdatingValue() && $column->isItExistsInDb()) {
+            $this->updateValue($column, $valueContainer->getDefaultValueOrNull(), false);
+        }
         return $this;
     }
 
@@ -2018,11 +2039,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * Collect default values for the columns
      * Note: if there is no default value for a column - null will be returned
+     * Note: this method is not used by ORM
      * @param array $columns - empty: return values for all columns
      * @param bool $ignoreColumnsThatCannotBeSetManually - true: value will not be returned for columns that
-     *      - autoupdatable
-     *      - does not exist in DB
-     *      - cannot be set or changed and $nullifyDbExprValues == true and default value is DbExpr
+     *      - autoupdatable ($column->isAutoUpdatingValue())
+     *      - does not exist in DB (!$column->isItExistsInDb())
+     *      - value cannot be set or changed (!$column->isValueCanBeSetOrChanged())
      * @param bool $nullifyDbExprValues - true: if default value is DbExpr - replace it by null
      * @return array
      */
@@ -2042,18 +2064,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 && (
                     !$column->isItExistsInDb()
                     || $column->isAutoUpdatingValue()
+                    || !$column->isValueCanBeSetOrChanged()
                 )
             ) {
                 continue;
             } else {
                 $values[$columnName] = $this->getValueContainerByColumnConfig($column)->getDefaultValueOrNull();
                 if ($nullifyDbExprValues && $values[$columnName] instanceof DbExpr) {
-                    if ($ignoreColumnsThatCannotBeSetManually && !$column->isValueCanBeSetOrChanged()) {
-                        // we need to skip this one or there might be unexpected errors like setting null to non-changeable column
-                        unset($values[$columnName]);
-                    } else {
-                        $values[$columnName] = null;
-                    }
+                    $values[$columnName] = null;
                 }
             }
         }
