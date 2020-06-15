@@ -2019,13 +2019,16 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Collect default values for the columns
      * Note: if there is no default value for a column - null will be returned
      * @param array $columns - empty: return values for all columns
-     * @param bool $ignoreColumnsThatDoNotExistInDBOrAutoupdatable - true: if column does not exist in DB - its value will not be returned
+     * @param bool $ignoreColumnsThatCannotBeSetManually - true: value will not be returned for columns that
+     *      - autoupdatable
+     *      - does not exist in DB
+     *      - cannot be set or changed and $nullifyDbExprValues == true and default value is DbExpr
      * @param bool $nullifyDbExprValues - true: if default value is DbExpr - replace it by null
      * @return array
      */
     public function getDefaults(
         array $columns = [],
-        bool $ignoreColumnsThatDoNotExistInDBOrAutoupdatable = true,
+        bool $ignoreColumnsThatCannotBeSetManually = true,
         bool $nullifyDbExprValues = true
     ): array {
         if (count($columns) === 0) {
@@ -2035,7 +2038,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         foreach ($columns as $columnName) {
             $column = static::getColumn($columnName);
             if (
-                $ignoreColumnsThatDoNotExistInDBOrAutoupdatable
+                $ignoreColumnsThatCannotBeSetManually
                 && (
                     !$column->isItExistsInDb()
                     || $column->isAutoUpdatingValue()
@@ -2045,7 +2048,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             } else {
                 $values[$columnName] = $this->getValueContainerByColumnConfig($column)->getDefaultValueOrNull();
                 if ($nullifyDbExprValues && $values[$columnName] instanceof DbExpr) {
-                    $values[$columnName] = null;
+                    if ($ignoreColumnsThatCannotBeSetManually && !$column->isValueCanBeSetOrChanged()) {
+                        // we need to skip this one or there might be unexpected errors like setting null to non-changeable column
+                        unset($values[$columnName]);
+                    } else {
+                        $values[$columnName] = null;
+                    }
                 }
             }
         }
