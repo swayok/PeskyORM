@@ -16,14 +16,15 @@ interface ColumnClosuresInterface {
     static public function valueSetter($newValue, $isFromDb, RecordValue $valueContainer, $trustDataReceivedFromDb);
 
     /**
-     * Slightly modify value before validation. Uses $column->isEmptyStringMustBeConvertedToNull(),
-     * $column->isValueLowercasingRequired() and $column->isValueTrimmingRequired
+     * Slightly modify value before validation and value setter. Uses $column->isEmptyStringMustBeConvertedToNull(),
+     * $column->isValueLowercasingRequired() and $column->isValueTrimmingRequired()
      * @param Column $column
      * @param mixed $value
      * @param bool $isFromDb
+     * @param bool $isForValidation
      * @return mixed
      */
-    static public function valuePreprocessor($value, $isFromDb, Column $column);
+    static public function valuePreprocessor($value, bool $isFromDb, bool $isForValidation, Column $column);
 
     /**
      * Get value

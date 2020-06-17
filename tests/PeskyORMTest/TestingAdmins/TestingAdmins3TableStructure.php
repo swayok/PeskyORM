@@ -48,8 +48,8 @@ class TestingAdmins3TableStructure extends TableStructure {
             ->convertsEmptyStringToNull()
             ->disallowsNullValues()
             ->trimsValue()
-            ->setValuePreprocessor(function ($value, $isDbValue, Column $column) {
-                $value = DefaultColumnClosures::valuePreprocessor($value, $isDbValue, $column);
+            ->setValuePreprocessor(function ($value, $isDbValue, $isForValidation, Column $column) {
+                $value = DefaultColumnClosures::valuePreprocessor($value, $isDbValue, $isForValidation, $column);
                 if ($isDbValue) {
                     return $value;
                 } else {

@@ -24,7 +24,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
             $valueContainer->setRawValue($newValue, $normalziedValue, true);
             $valueContainer->setValidValue($normalziedValue, $newValue);
         } else {
-            $preprocessedValue = call_user_func($column->getValuePreprocessor(), $newValue, $isFromDb, $column);
+            $preprocessedValue = call_user_func($column->getValuePreprocessor(), $newValue, $isFromDb, false, $column);
             if ($preprocessedValue === null && $column->hasDefaultValue()) {
                 $preprocessedValue = $column->getValidDefaultValue();
             }
@@ -66,8 +66,8 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
      * @param bool $isFromDb
      * @return mixed
      */
-    static public function valuePreprocessor($value, $isFromDb, Column $column) {
-        if ($isFromDb) {
+    static public function valuePreprocessor($value, bool $isFromDb, bool $isForValidation, Column $column) {
+        if ($isFromDb && !$isForValidation) {
             return $value;
         }
         if (is_string($value)) {

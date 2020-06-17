@@ -38,21 +38,21 @@ class DbTableColumnDefaultClosuresTest extends TestCase {
 
     public function testValuePreprocessor() {
         $column = Column::create(Column::TYPE_BOOL, 'test');
-        static::assertEquals('', DefaultColumnClosures::valuePreprocessor('', false, $column));
-        static::assertEquals(' ', DefaultColumnClosures::valuePreprocessor(' ', false, $column));
-        static::assertEquals(null, DefaultColumnClosures::valuePreprocessor(null, false, $column));
-        static::assertEquals([], DefaultColumnClosures::valuePreprocessor([], false, $column));
-        static::assertEquals(['arr'], DefaultColumnClosures::valuePreprocessor(['arr'], false, $column));
-        static::assertEquals(true, DefaultColumnClosures::valuePreprocessor(true, false, $column));
-        static::assertEquals(false, DefaultColumnClosures::valuePreprocessor(false, false, $column));
-        static::assertEquals(1, DefaultColumnClosures::valuePreprocessor(1, false, $column));
-        static::assertEquals(-1.23, DefaultColumnClosures::valuePreprocessor(-1.23, false, $column));
-        static::assertEquals('1.23', DefaultColumnClosures::valuePreprocessor('1.23', false, $column));
+        static::assertEquals('', DefaultColumnClosures::valuePreprocessor('', false, false, $column));
+        static::assertEquals(' ', DefaultColumnClosures::valuePreprocessor(' ', false, false, $column));
+        static::assertEquals(null, DefaultColumnClosures::valuePreprocessor(null, false, false, $column));
+        static::assertEquals([], DefaultColumnClosures::valuePreprocessor([], false, false, $column));
+        static::assertEquals(['arr'], DefaultColumnClosures::valuePreprocessor(['arr'], false, false, $column));
+        static::assertEquals(true, DefaultColumnClosures::valuePreprocessor(true, false, false, $column));
+        static::assertEquals(false, DefaultColumnClosures::valuePreprocessor(false, false, false, $column));
+        static::assertEquals(1, DefaultColumnClosures::valuePreprocessor(1, false, false, $column));
+        static::assertEquals(-1.23, DefaultColumnClosures::valuePreprocessor(-1.23, false, false, $column));
+        static::assertEquals('1.23', DefaultColumnClosures::valuePreprocessor('1.23', false, false, $column));
         $column->trimsValue()->lowercasesValue()->convertsEmptyStringToNull();
-        static::assertEquals(null, DefaultColumnClosures::valuePreprocessor('', false, $column));
-        static::assertEquals(null, DefaultColumnClosures::valuePreprocessor(' ', false, $column));
-        static::assertEquals('a', DefaultColumnClosures::valuePreprocessor(' a ', false, $column));
-        static::assertEquals('b', DefaultColumnClosures::valuePreprocessor(' B ', false, $column));
+        static::assertEquals(null, DefaultColumnClosures::valuePreprocessor('', false, false, $column));
+        static::assertEquals(null, DefaultColumnClosures::valuePreprocessor(' ', false, false, $column));
+        static::assertEquals('a', DefaultColumnClosures::valuePreprocessor(' a ', false, false, $column));
+        static::assertEquals('b', DefaultColumnClosures::valuePreprocessor(' B ', false, false, $column));
     }
 
     public function testIsValueAllowedValidator() {

@@ -21,15 +21,19 @@ abstract class RecordValueHelpers {
         if ($value instanceof DbExpr) {
             return [];
         }
-        $value = static::preprocessColumnValue($column, $value, $isFromDb);
+        $preprocessedValue = static::preprocessColumnValue($column, $value, true, $isFromDb);
         // null value?
-        if ($value === null) {
-            return $column->isValueCanBeNull() || $isForCondition
-                ? []
-                : [static::getErrorMessage($errorMessages, $column::VALUE_CANNOT_BE_NULL)];
+        if ($preprocessedValue === null) {
+            if ($isForCondition) {
+                return [];
+            } else if ($column->isValueCanBeNull() || ($isFromDb && $value !== null)) {
+                // db value is not null but was preprocessed into null - it is not an error
+                return [];
+            }
+            return [static::getErrorMessage($errorMessages, $column::VALUE_CANNOT_BE_NULL)];
         }
         // data type validation
-        $errors = static::isValueFitsDataType($value, $column->getType(), $isForCondition, $errorMessages);
+        $errors = static::isValueFitsDataType($preprocessedValue, $column->getType(), $isForCondition, $errorMessages);
         if (!empty($errors)) {
             return $errors;
         }
@@ -42,10 +46,11 @@ abstract class RecordValueHelpers {
      * @param Column $column
      * @param mixed $value
      * @param bool $isDbValue
+     * @param bool $isForValidation
      * @return mixed
      */
-    static public function preprocessColumnValue(Column $column, $value, $isDbValue) {
-        return call_user_func($column->getValuePreprocessor(), $value, $isDbValue, $column);
+    static public function preprocessColumnValue(Column $column, $value, bool $isDbValue, bool $isForValidation) {
+        return call_user_func($column->getValuePreprocessor(), $value, $isDbValue, $isForValidation, $column);
     }
 
     /**
@@ -56,7 +61,7 @@ abstract class RecordValueHelpers {
      * @param array $errorMessages
      * @return array
      */
-    static public function isValueFitsDataType($value, $type, $isForCondition, array $errorMessages = []) {
+    static public function isValueFitsDataType($value, $type, bool $isForCondition, array $errorMessages = []) {
         switch ($type) {
             case Column::TYPE_BOOL:
                 if (!ValidateValue::isBoolean($value)) {

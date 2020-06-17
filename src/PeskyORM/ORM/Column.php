@@ -369,9 +369,9 @@ class Column {
                     $class = $column->getClosuresClass();
                     return $class::valueNormalizer($value, $isFromDb, $column);
                 },
-                'valuePreprocessor' => function ($newValue, $isFromDb, Column $column) {
+                'valuePreprocessor' => function ($newValue, $isFromDb, $isForValidation, Column $column) {
                     $class = $column->getClosuresClass();
-                    return $class::valuePreprocessor($newValue, $isFromDb, $column);
+                    return $class::valuePreprocessor($newValue, $isFromDb, $isForValidation, $column);
                 },
                 'valueSavingExtender' => function (RecordValue $valueContainer, $isUpdate, array $savedData) {
                     $class = $valueContainer->getColumn()->getClosuresClass();
