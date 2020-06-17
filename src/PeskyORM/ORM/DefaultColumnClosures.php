@@ -67,6 +67,9 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
      * @return mixed
      */
     static public function valuePreprocessor($value, $isFromDb, Column $column) {
+        if ($isFromDb) {
+            return $value;
+        }
         if (is_string($value)) {
             if (!$isFromDb && $column->isValueTrimmingRequired()) {
                 $value = trim($value);
