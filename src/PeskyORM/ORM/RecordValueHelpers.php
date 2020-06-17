@@ -196,25 +196,25 @@ abstract class RecordValueHelpers {
                 return [];
             }
         }
-        $value = static::preprocessColumnValue($column, $value, $isFromDb);
+        $preprocessedValue = static::preprocessColumnValue($column, $value, true, $isFromDb);
         // column is nullable and value is null or should be converted to null
-        if ($value === null && $column->isValueCanBeNull()) {
+        if ($preprocessedValue === null && ($column->isValueCanBeNull() || ($isFromDb && $value !== null))) {
             return [];
         }
         // can value be used?
-        if (!is_scalar($value) && !is_array($value)) {
+        if (!is_scalar($preprocessedValue) && !is_array($preprocessedValue)) {
             throw new \InvalidArgumentException(
                 '$value argument must be a string, integer, float or array to be able to validate if it is within allowed values'
             );
         }
         // validate
-        if (is_array($value)) {
+        if (is_array($preprocessedValue)) {
             // compare if $value array is contained inside $allowedValues array
-            if (count(array_diff($value, $allowedValues)) > 0) {
+            if (count(array_diff($preprocessedValue, $allowedValues)) > 0) {
                 return [static::getErrorMessage($errorMessages, Column::ONE_OF_VALUES_IS_NOT_ALLOWED)];
             }
-        } else if (!in_array($value, $allowedValues, true)) {
-            return [str_replace(':value', $value, static::getErrorMessage($errorMessages, Column::VALUE_IS_NOT_ALLOWED))];
+        } else if (!in_array($preprocessedValue, $allowedValues, true)) {
+            return [str_replace(':value', $preprocessedValue, static::getErrorMessage($errorMessages, Column::VALUE_IS_NOT_ALLOWED))];
         }
         return [];
     }
@@ -308,7 +308,6 @@ abstract class RecordValueHelpers {
                 $value['tmp_name'],
                 $value['name'],
                 $value['type'],
-                $value['size'],
                 $value['error'],
                 !is_uploaded_file($value['tmp_name'])
             );

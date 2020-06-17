@@ -40,19 +40,19 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertFalse($column->isValueTrimmingRequired());
         static::assertFalse($column->isEmptyStringMustBeConvertedToNull());
         static::assertFalse($column->isValueLowercasingRequired());
-        static::assertEquals(' ', RecordValueHelpers::preprocessColumnValue($column, ' ', false));
+        static::assertEquals(' ', RecordValueHelpers::preprocessColumnValue($column, ' ', false, false));
         $column->trimsValue();
         static::assertTrue($column->isValueTrimmingRequired());
-        static::assertEquals('', RecordValueHelpers::preprocessColumnValue($column, ' ', false));
-        static::assertEquals('A', RecordValueHelpers::preprocessColumnValue($column, ' A ', false));
+        static::assertEquals('', RecordValueHelpers::preprocessColumnValue($column, ' ', false, false));
+        static::assertEquals('A', RecordValueHelpers::preprocessColumnValue($column, ' A ', false, false));
         $column->convertsEmptyStringToNull();
         static::assertTrue($column->isEmptyStringMustBeConvertedToNull());
-        static::assertEquals(null, RecordValueHelpers::preprocessColumnValue($column, null, false));
-        static::assertEquals(null, RecordValueHelpers::preprocessColumnValue($column, ' ', false));
-        static::assertEquals('A', RecordValueHelpers::preprocessColumnValue($column, ' A ', false));
+        static::assertEquals(null, RecordValueHelpers::preprocessColumnValue($column, null, false, false));
+        static::assertEquals(null, RecordValueHelpers::preprocessColumnValue($column, ' ', false, false));
+        static::assertEquals('A', RecordValueHelpers::preprocessColumnValue($column, ' A ', false, false));
         $column->lowercasesValue();
         static::assertTrue($column->isValueLowercasingRequired());
-        static::assertEquals('upper', RecordValueHelpers::preprocessColumnValue($column, 'UPPER', false));
+        static::assertEquals('upper', RecordValueHelpers::preprocessColumnValue($column, 'UPPER', false, false));
     }
 
     public function testNormalizeBoolValue() {
