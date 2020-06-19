@@ -122,6 +122,7 @@ class OrmSelect extends AbstractSelect {
     protected function beforeQueryBuilding() {
         if ($this->isDirty('joins') || $this->isDirty('with')) {
             $this->setDirty('columns');
+            $this->setDirty('distinct');
             $this->setDirty('where');
             $this->setDirty('having');
             $this->setDirty('orderBy');
@@ -129,6 +130,7 @@ class OrmSelect extends AbstractSelect {
         }
         if (
             $this->isDirty('columns')
+            || $this->isDirty('distinct')
             || $this->isDirty('where')
             || $this->isDirty('having')
             || $this->isDirty('orderBy')

@@ -33,6 +33,10 @@ abstract class AbstractSelect {
     /**
      * @var array
      */
+    protected $distinctColumns = [];
+    /**
+     * @var array
+     */
     protected $where = [];
     /**
      * @var array
@@ -162,7 +166,10 @@ abstract class AbstractSelect {
         }
         // DISTINCT
         if (!empty($conditionsAndOptions['DISTINCT'])) {
-            $this->distinct(true);
+            $this->distinct(
+                true,
+                is_array($conditionsAndOptions['DISTINCT']) ? $conditionsAndOptions['DISTINCT'] : null
+            );
         }
         // ORDER BY
         if (!empty($conditionsAndOptions['ORDER'])) {
@@ -451,12 +458,20 @@ abstract class AbstractSelect {
     }
 
     /**
-     * Set distinct flag to query (SELECT DISTINCT fields ...)
+     * Set distinct flag to query (SELECT DISTINCT fields ...) or ((SELECT DISTINCT ON ($columns) fields)
      * @param bool $value
+     * @param null|array $columns - list of columns to be disctinct
      * @return $this
      */
-    public function distinct(bool $value = true) {
+    public function distinct(bool $value = true, ?array $columns = null) {
         $this->distinct = $value;
+        $this->distinctColumns = [];
+        if (!empty($columns)) {
+            foreach ($columns as $columnName) {
+                $this->distinctColumns[] = $this->analyzeColumnName($columnName, null, null, 'DISTINCT');
+            }
+        }
+        $this->setDirty('distinct');
         return $this;
     }
 
@@ -1271,7 +1286,22 @@ abstract class AbstractSelect {
         if (empty($columns)) {
             throw new \UnexpectedValueException('There are no columns to select');
         }
-        return ($this->distinct ? 'DISTINCT ' : '') . implode(', ', $columns);
+        return $this->makeDistinctForQuery() . implode(', ', $columns);
+    }
+    
+    protected function makeDistinctForQuery() {
+        if (!$this->distinct) {
+            return '';
+        }
+        $ret = 'DISTINCT ';
+        if (!empty($this->distinctColumns)) {
+            $columns = [];
+            foreach ($this->distinctColumns as $columnInfo) {
+                $columns[] = $this->makeColumnNameForCondition($columnInfo, 'DISTINCT');
+            }
+            $ret .= ' ON (' . implode(',', $columns) . ') ';
+        }
+        return $ret;
     }
 
     /**
