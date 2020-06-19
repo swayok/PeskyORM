@@ -411,7 +411,6 @@ abstract class DbAdapter implements DbAdapterInterface {
      *          - int: number of modified rows (when $returning === false)
      *          - array: modified records (when $returning !== false)
      * @throws \PDOException
-     * @throws \InvalidArgumentException
      * @throws \PeskyORM\Exception\DbException
      */
     public function update($table, array $data, $conditions, array $dataTypes = [], $returning = false) {
@@ -458,21 +457,26 @@ abstract class DbAdapter implements DbAdapterInterface {
      *          - array: list of columns to return values for
      * @return int|array - int: number of deleted records | array: returned only if $returning is not empty
      * @throws \PDOException
-     * @throws \InvalidArgumentException
      * @throws \PeskyORM\Exception\DbException
      */
     public function delete($table, $conditions, $returning = false) {
         $this->guardTableNameArg($table);
         $this->guardConditionsArg($conditions);
         $this->guardReturningArg($returning);
-        $query = 'DELETE FROM ' . $this->quoteDbEntityName($table)
+        [$tableName, $tableAlias] = preg_split('%\s+AS\s+%i', $table, 2);
+        if (empty($tableAlias) || trim($tableAlias) === '') {
+            $tableAlias = '';
+        } else {
+            $tableAlias = ' AS ' . $this->quoteDbEntityName($tableAlias);
+        }
+        $query = 'DELETE FROM ' . $this->quoteDbEntityName($tableName) . $tableAlias
             . ' WHERE ' . ($conditions instanceof DbExpr ? $this->quoteDbExpr($conditions) : $conditions);
         if (empty($returning)) {
             return $this->exec($query);
         } else {
             $records = $this->resolveQueryWithReturningColumns(
                 $query,
-                $table,
+                $tableName,
                 [],
                 [],
                 [],

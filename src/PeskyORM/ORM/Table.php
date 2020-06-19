@@ -459,7 +459,7 @@ abstract class Table implements TableInterface {
      */
     static public function delete(array $conditions = [], $returning = false) {
         return static::getConnection(true)->delete(
-            static::getNameWithSchema(),
+            static::getNameWithSchema() . ' AS ' . static::getInstance()->getTableAlias(),
             Utils::assembleWhereConditionsFromArray(static::getConnection(), $conditions),
             $returning
         );
