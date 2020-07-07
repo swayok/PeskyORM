@@ -3,55 +3,52 @@
 namespace PeskyORM\Core;
 
 interface DbAdapterInterface {
-
+    
     /**
      * Class name that implements DbConnectionConfigInterface
      * @return string
      */
-    static public function getConnectionConfigClass();
-
+    static public function getConnectionConfigClass(): string;
+    
     /**
      * Connect to DB once
-     * @return $this
+     * @return \PDO or PDO wrapper
      */
     public function getConnection();
-
-    /**
-     * @return DbConnectionConfigInterface
-     */
-    public function getConnectionConfig();
-
+    
+    public function getConnectionConfig(): DbConnectionConfigInterface;
+    
     /**
      * Run $callback when DB connection created (or right now if connection already established)
      * @param \Closure $callback
      * @param null|string $code - callback code to prevent duplicate usage
      * @return $this
      */
-    public function onConnect(\Closure $callback, $code = null);
+    public function onConnect(\Closure $callback, ?string $code = null);
 
     /**
      * @return $this
      */
     public function disconnect();
-
+    
     /**
      * Get last executed query
      * @return null|string
      */
-    public function getLastQuery();
+    public function getLastQuery(): ?string;
 
      /**
      * @param string|DbExpr $query
      * @return int|array = array: returned if $returning argument is not empty
      */
     public function exec($query);
-
+    
     /**
      * @param string|DbExpr $query
      * @param string|null $fetchData - null: return PDOStatement; string: one of \PeskyORM\Core\Utils::FETCH_*
      * @return \PDOStatement|array
      */
-    public function query($query, $fetchData = null);
+    public function query($query, ?string $fetchData = null);
 
     /**
      * Listen for DB notifications (mostly for PostgreSQL LISTEN...NOTIFY)
@@ -76,7 +73,7 @@ interface DbAdapterInterface {
      * @return $this
      */
     public function setSearchPath(string $newSearchPath);
-
+    
     /**
      * @param string $table
      * @param array $data - key-value array where key = table column and value = value of associated column
@@ -92,8 +89,8 @@ interface DbAdapterInterface {
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function insert($table, array $data, array $dataTypes = [], $returning = false, $pkName = 'id');
-
+    public function insert(string $table, array $data, array $dataTypes = [], $returning = false, string $pkName = 'id');
+    
     /**
      * @param string $table
      * @param array $columns - list of columns to insert data to
@@ -110,8 +107,8 @@ interface DbAdapterInterface {
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function insertMany($table, array $columns, array $data, array $dataTypes = [], $returning = false, $pkName = 'id');
-
+    public function insertMany(string $table, array $columns, array $data, array $dataTypes = [], $returning = false, string $pkName = 'id');
+    
     /**
      * @param string $table
      * @param array $data - key-value array where key = table column and value = value of associated column
@@ -129,7 +126,7 @@ interface DbAdapterInterface {
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function update($table, array $data, $conditions, array $dataTypes = [], $returning = false);
+    public function update(string $table, array $data, $conditions, array $dataTypes = [], $returning = false);
 
     /**
      * @param string $table
@@ -143,18 +140,18 @@ interface DbAdapterInterface {
      * @throws \InvalidArgumentException
      */
     public function delete($table, $conditions, $returning = false);
-
+    
     /**
      * @return bool
      */
-    public function inTransaction();
-
+    public function inTransaction(): bool;
+    
     /**
      * @param bool $readOnly - true: transaction only reads data
      * @param null|string $transactionType - type of transaction
      * @return $this
      */
-    public function begin($readOnly = false, $transactionType = null);
+    public function begin(bool $readOnly = false, ?string $transactionType = null);
 
     /**
      * @return $this
@@ -165,75 +162,75 @@ interface DbAdapterInterface {
      * @return $this
      */
     public function rollBack();
-
+    
     /**
      * @param null|\PDOStatement|\PDO $pdoStatement $pdoStatement - if null: $this->getConnection() will be used
      * @return array
      */
-    public function getPdoError($pdoStatement = null);
-
+    public function getPdoError($pdoStatement = null): array;
+    
     /**
      * Quote DB entity name (column, table, alias, schema)
-     * @param string|array $name - array: list of names to quote.
+     * @param string $name
      * Names format:
      *  1. 'table', 'column', 'TableAlias'
      *  2. 'TableAlias.column' - quoted like '`TableAlias`.`column`'
      * @return string
      */
-    public function quoteDbEntityName($name);
-
+    public function quoteDbEntityName(string $name): string;
+    
     /**
      * Test if $name matches a DB entity naming rules or it is a JSON selector
      * @param string $name
      * @param bool $canBeAJsonSelector - test if $name contains a JSON selector like 'col_name -> json_key'
      * @return bool
      */
-    static public function isValidDbEntityName($name, $canBeAJsonSelector = true);
-
+    static public function isValidDbEntityName(string $name, bool $canBeAJsonSelector = true): bool;
+    
     /**
      * Quote passed value
      * @param mixed $value
      * @param int|null $valueDataType - one of \PDO::PARAM_* or null for autodetection (detects bool, null, string only)
      * @return string
      */
-    public function quoteValue($value, $valueDataType = null);
-
+    public function quoteValue($value, ?int $valueDataType = null): string;
+    
     /**
      * @param DbExpr $expression
      * @return string
      */
-    public function quoteDbExpr(DbExpr $expression);
-
+    public function quoteDbExpr(DbExpr $expression): string;
+    
     /**
      * Does DB supports table schemas?
      * Postgres - yes: "public"."table_name"; Mysql - no
      * @return bool
      */
-    public function isDbSupportsTableSchemas();
-
+    public function isDbSupportsTableSchemas(): bool;
+    
     /**
      * Get default DB table schema
      * @return string|null - null: for DB Adapters that does not support table schemas
      */
-    public function getDefaultTableSchema();
-
+    public function getDefaultTableSchema(): ?string;
+    
     /**
      * @param string $operator
      * @param string|array|int|float $value
      * @return string
      * @throws \InvalidArgumentException
      */
-    public function convertConditionOperator($operator, $value);
-
+    public function convertConditionOperator(string $operator, $value): string;
+    
     /**
      * @param string|array|int|float $value
      * @param string $operator
-     * @return string
+     * @return mixed
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function assembleConditionValue($value, $operator);
-
+    public function assembleConditionValue($value, string $operator);
+    
     /**
      * Assemble condition from prepared parts
      * @param string $quotedColumn
@@ -242,8 +239,8 @@ interface DbAdapterInterface {
      * @param bool $valueAlreadyQuoted
      * @return string
      */
-    public function assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted = false);
-
+    public function assembleCondition(string $quotedColumn, string $operator, $rawValue, bool $valueAlreadyQuoted = false): string;
+    
     /**
      * Converts general representation of data type conversion to adapter's specific one
      * General representation is: '::datatype'. Example: '::date', '::timestamp'.
@@ -254,8 +251,8 @@ interface DbAdapterInterface {
      * @param string $expression - expression to cast type for
      * @return string - something like 'expression::datatype' or 'CAST(expression AS datatype)'
      */
-    public function addDataTypeCastToExpression($dataType, $expression);
-
+    public function addDataTypeCastToExpression(string $dataType, string $expression): string;
+    
     /**
      * Select many records form DB by compiling simple query from passed parameters.
      * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
@@ -267,8 +264,8 @@ interface DbAdapterInterface {
      * @throws \PeskyORM\Exception\DbException
      * @throws \InvalidArgumentException
      */
-    public function select($table, array $columns = [], $conditionsAndOptions = null);
-
+    public function select(string $table, array $columns = [], $conditionsAndOptions = null): array;
+    
     /**
      * Select many records form DB by compiling simple query from passed parameters returning an array with values for
      * specified $column.
@@ -281,22 +278,22 @@ interface DbAdapterInterface {
      * @throws \PeskyORM\Exception\DbException
      * @throws \InvalidArgumentException
      */
-    public function selectColumn($table, $column, $conditionsAndOptions = null);
-
+    public function selectColumn(string $table, $column, $conditionsAndOptions = null): array;
+    
     /**
      * Select many records form DB by compiling simple query from passed parameters returning an associative array.
      * The query is something like: "SELECT $keysColumn, $valuesColumn FROM $table $conditionsAndOptions"
      * @param string $table
-     * @param string $keysColumn
-     * @param string $valuesColumn
+     * @param string|DbExpr $keysColumn
+     * @param string|DbExpr $valuesColumn
      * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
      * @throws \PDOException
      * @throws \PeskyORM\Exception\DbException
      * @throws \InvalidArgumentException
      */
-    public function selectAssoc($table, $keysColumn, $valuesColumn, $conditionsAndOptions = null);
-
+    public function selectAssoc(string $table, $keysColumn, $valuesColumn, $conditionsAndOptions = null): array;
+    
     /**
      * Select first matching record form DB by compiling simple query from passed parameters.
      * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
@@ -308,21 +305,21 @@ interface DbAdapterInterface {
      * @throws \PeskyORM\Exception\DbException
      * @throws \InvalidArgumentException
      */
-    public function selectOne($table, array $columns = [], $conditionsAndOptions = null);
-
+    public function selectOne(string $table, array $columns = [], $conditionsAndOptions = null): array;
+    
     /**
      * Select a value form DB by compiling simple query from passed parameters.
      * The query is something like: "SELECT $expression FROM $table $conditionsAndOptions"
      * @param string $table
      * @param DbExpr $expression - something like "COUNT(*)" or anything else
      * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
-     * @return array
+     * @return mixed
      * @throws \PDOException
      * @throws \PeskyORM\Exception\DbException
      * @throws \InvalidArgumentException
      */
-    public function selectValue($table, DbExpr $expression, $conditionsAndOptions = null);
-
+    public function selectValue(string $table, DbExpr $expression, $conditionsAndOptions = null);
+    
     /**
      * Make a simple SELECT query from passed parameters
      * @param string $table
@@ -332,30 +329,30 @@ interface DbAdapterInterface {
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function makeSelectQuery($table, array $columns = [], $conditionsAndOptions = null);
-
+    public function makeSelectQuery(string $table, array $columns = [], $conditionsAndOptions = null): string;
+    
     /**
      * Get table description from DB
      * @param string $table
      * @param null|string $schema - name of DB schema that contains $table (for PostgreSQL)
      * @return TableDescription
      */
-    public function describeTable($table, $schema = null);
-
+    public function describeTable(string $table, ?string $schema = null): TableDescription;
+    
     /**
      * Search for $table in $schema
      * @param string $table
      * @param null|string $schema - name of DB schema that contains $table (for PostgreSQL)
      * @return bool
      */
-    public function hasTable($table, $schema = null);
-
+    public function hasTable(string $table, ?string $schema = null): bool;
+    
     /**
      * Return DbExpr to set default value for a column.
      * Example for MySQL and PostgreSQL: DbExpr::create('DEFAULT') and used for updates and inserts
      * Note: throw exception if adapter does not support this feature
      * @return DbExpr
      */
-    static public function getExpressionToSetDefaultValueForAColumn();
+    static public function getExpressionToSetDefaultValueForAColumn(): DbExpr;
 
 }

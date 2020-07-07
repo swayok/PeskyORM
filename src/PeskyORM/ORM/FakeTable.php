@@ -63,7 +63,7 @@ abstract class FakeTable extends Table {
         string $classBody = ''
     ) {
         $tableName = trim($tableName);
-        if ($tableName === '' || !DbAdapter::isValidDbEntityName($tableName)) {
+        if ($tableName === '' || !DbAdapter::isValidDbEntityName($tableName, false)) {
             throw new \InvalidArgumentException(
                 '$tableName argument must be a not empty string that matches DB entity naming rules (usually alphanumeric with underscores)'
             );

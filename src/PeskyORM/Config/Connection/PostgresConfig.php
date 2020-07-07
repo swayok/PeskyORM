@@ -24,14 +24,14 @@ class PostgresConfig implements DbConnectionConfigInterface {
     protected $charset = 'UTF8';
     protected $timezone;
     protected $sslConfigs = [];
-
+    
     /**
      * @param array $config
-     * @param null $name
+     * @param string|null $name
      * @return static
      * @throws \InvalidArgumentException
      */
-    static public function fromArray(array $config, $name = null) {
+    static public function fromArray(array $config, ?string $name = null) {
         $dbName = $config['database'] ?: null;
         $user = $config['username'] ?: null;
         $password = $config['password'] ?: null;
@@ -97,23 +97,23 @@ class PostgresConfig implements DbConnectionConfigInterface {
         }
         $this->dbPassword = $password;
     }
-
+    
     /**
      * Get PDO connection string (ex: pgsql:host=localhost;port=5432;dbname=testdb;user=bruce;password=mypass)
      * @return string
      */
-    public function getPdoConnectionString() {
+    public function getPdoConnectionString(): string {
         $dsn = 'pgsql:host=' . $this->dbHost . ';port=' . $this->dbPort . ';dbname=' . $this->dbName;
         foreach ($this->sslConfigs as $option => $value) {
             $dsn .= ";{$option}={$value}";
         }
         return $dsn;
     }
-
+    
     /**
      * @return string
      */
-    public function getName() {
+    public function getName(): string {
         return $this->name ?: $this->dbName;
     }
 
@@ -125,25 +125,25 @@ class PostgresConfig implements DbConnectionConfigInterface {
         $this->name = $name;
         return $this;
     }
-
+    
     /**
      * @return string
      */
-    public function getUserName() {
+    public function getUserName(): string {
         return $this->dbUser;
     }
-
+    
     /**
      * @return string
      */
-    public function getUserPassword() {
+    public function getUserPassword(): string {
         return $this->dbPassword;
     }
-
+    
     /**
      * @return string
      */
-    public function getDbName() {
+    public function getDbName(): string {
         return $this->dbName;
     }
 
@@ -161,11 +161,11 @@ class PostgresConfig implements DbConnectionConfigInterface {
         $this->dbHost = $dbHost;
         return $this;
     }
-
+    
     /**
      * @return null|string
      */
-    public function getDbHost() {
+    public function getDbHost(): string {
         return $this->dbHost;
     }
 
@@ -198,19 +198,19 @@ class PostgresConfig implements DbConnectionConfigInterface {
         $this->options = $options;
         return $this;
     }
-
+    
     /**
      * GET options for PDO connection
      * @return array
      */
-    public function getOptions() {
+    public function getOptions(): array {
         return $this->options;
     }
-
+    
     /**
      * @return string
      */
-    public function getDefaultSchemaName() {
+    public function getDefaultSchemaName(): ?string {
         return $this->defaultSchemaName;
     }
 
@@ -227,13 +227,13 @@ class PostgresConfig implements DbConnectionConfigInterface {
         $this->searchPath = implode(',', (array)$defaultSchemaName);
         return $this;
     }
-
+    
     /**
-     * @param $charset
+     * @param string $charset
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setCharset($charset) {
+    public function setCharset(string $charset) {
         if (empty($charset)) {
             throw new \InvalidArgumentException('DB charset argument cannot be empty');
         } else if (!is_string($charset)) {
@@ -242,12 +242,12 @@ class PostgresConfig implements DbConnectionConfigInterface {
         $this->charset = $charset;
         return $this;
     }
-
+    
     /**
      * @param string|null $timezone
      * @return $this
      */
-    public function setTimezone($timezone) {
+    public function setTimezone(?string $timezone) {
         $this->timezone = $timezone;
         return $this;
     }

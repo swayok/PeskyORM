@@ -23,7 +23,7 @@ abstract class FakeTableStructure extends TableStructure {
      */
     static public function makeNewFakeStructure(string $tableName, ?TableStructureInterface $tableStructureToCopy = null) {
         $tableName = trim($tableName);
-        if ($tableName === '' || !DbAdapter::isValidDbEntityName($tableName)) {
+        if ($tableName === '' || !DbAdapter::isValidDbEntityName($tableName, false)) {
             throw new \InvalidArgumentException(
                 '$tableName argument must be a not empty string that matches DB entity naming rules (usually alphanumeric with underscores)'
             );

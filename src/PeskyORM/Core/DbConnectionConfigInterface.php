@@ -3,50 +3,50 @@
 namespace PeskyORM\Core;
 
 interface DbConnectionConfigInterface {
-
+    
     /**
      * @param array $config
-     * @param null $name
+     * @param string|null $name
      * @return $this
      */
-    static public function fromArray(array $config, $name = null);
-
+    static public function fromArray(array $config, ?string $name = null);
+    
     /**
      * Get PDO connection string (ex: pgsql:host=localhost;port=5432;dbname=testdb;user=bruce;password=mypass)
      * @return string
      */
-    public function getPdoConnectionString();
-
+    public function getPdoConnectionString(): string;
+    
     /**
      * Connection name (Default: DB name)
      * @return string
      */
-    public function getName();
-
+    public function getName(): string;
+    
     /**
      * @return string
      */
-    public function getDbName();
-
+    public function getDbName(): string;
+    
     /**
      * @return string
      */
-    public function getDbHost();
+    public function getDbHost(): string;
 
     /**
      * @return int|null|string
      */
     public function getDbPort();
-
+    
     /**
      * @return string
      */
-    public function getUserName();
-
+    public function getUserName(): string;
+    
     /**
      * @return string
      */
-    public function getUserPassword();
+    public function getUserPassword(): string;
 
     /**
      * Set options for PDO connection (key-value)
@@ -54,29 +54,29 @@ interface DbConnectionConfigInterface {
      * @return $this
      */
     public function setOptions(array $options);
-
+    
     /**
      * GET options for PDO connection
      * @return array
      */
-    public function getOptions();
-
+    public function getOptions(): array;
+    
     /**
-     * @param $charset
+     * @param string $charset
      * @return $this
      */
-    public function setCharset($charset);
-
+    public function setCharset(string $charset);
+    
     /**
      * @param string|null $timezone
      * @return $this
      */
-    public function setTimezone($timezone);
-
+    public function setTimezone(?string $timezone);
+    
     /**
      * @return string|null
      */
-    public function getDefaultSchemaName();
+    public function getDefaultSchemaName(): ?string;
 
     /**
      * @param string|array $defaultSchemaName

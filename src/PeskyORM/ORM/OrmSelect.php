@@ -319,15 +319,18 @@ class OrmSelect extends AbstractSelect {
                             ->getStructure()
                             ->getColumn($columnInfo['name']);
                     }
-                    if (is_array($rawValue)) {
-                        foreach ($rawValue as $arrValue) {
-                            $errors = $column->validateValue($arrValue, false, true);
-                            if (!empty($errors)) {
-                                break;
+                    if (!$columnInfo['json_selector']) {
+                        // in json selector there may be any type of value
+                        if (is_array($rawValue)) {
+                            foreach ($rawValue as $arrValue) {
+                                $errors = $column->validateValue($arrValue, false, true);
+                                if (!empty($errors)) {
+                                    break;
+                                }
                             }
+                        } else if ($rawValue !== null) {
+                            $errors = $column->validateValue($rawValue, false, true);
                         }
-                    } else if ($rawValue !== null) {
-                        $errors = $column->validateValue($rawValue, false, true);
                     }
                     if (!empty($errors)) {
                         throw new \UnexpectedValueException(
@@ -349,7 +352,7 @@ class OrmSelect extends AbstractSelect {
     }
 
     protected function makeColumnNameForCondition(array $columnInfo, string $subject = 'WHERE'): string {
-        $this->validateColumnInfo($columnInfo, $subject);
+        $this->validateColumnInfoForCondition($columnInfo, $subject);
         return parent::makeColumnNameForCondition($columnInfo);
     }
 
@@ -406,6 +409,10 @@ class OrmSelect extends AbstractSelect {
                 }
             }
         }
+    }
+    
+    protected function validateColumnInfoForCondition(array $columnInfo, string $subject) {
+        return $this->validateColumnInfo($columnInfo, $subject);
     }
 
 }

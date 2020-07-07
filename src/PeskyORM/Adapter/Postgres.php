@@ -122,11 +122,11 @@ class Postgres extends DbAdapter {
         'NOT REGEX' => '!~*',
     ];
 
-    static public function getConnectionConfigClass() {
+    static public function getConnectionConfigClass(): string {
         return PostgresConfig::class;
     }
 
-    static protected function _isValidDbEntityName($name) {
+    static protected function _isValidDbEntityName(string $name): bool {
         // $name can literally be anything when quoted and it is always quoted unless developer skips quotes
         // https://www.postgresql.org/docs/10/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
         return preg_match('%^[a-zA-Z_].*$%', $name) > 0;
@@ -145,11 +145,11 @@ class Postgres extends DbAdapter {
         return parent::disconnect();
     }
 
-    public function isDbSupportsTableSchemas() {
+    public function isDbSupportsTableSchemas(): bool {
         return true;
     }
 
-    public function getDefaultTableSchema() {
+    public function getDefaultTableSchema(): ?string {
         return $this->getConnectionConfig()->getDefaultSchemaName();
     }
 
@@ -163,19 +163,19 @@ class Postgres extends DbAdapter {
         return $this;
     }
 
-    public function addDataTypeCastToExpression($dataType, $expression) {
-        return $expression . '::' . $dataType;
+    public function addDataTypeCastToExpression(string $dataType, string $expression): string {
+        return '(' . $expression . ')::' . $dataType;
     }
 
     public function getConditionOperatorsMap() {
         return static::$conditionOperatorsMap;
     }
 
-    public function inTransaction() {
+    public function inTransaction(): bool {
         return $this->inTransaction;
     }
 
-    public function begin($readOnly = false, $transactionType = null) {
+    public function begin(bool $readOnly = false, ?string $transactionType = null) {
         $this->guardTransaction('begin');
         if (empty($transactionType)) {
             $transactionType = static::TRANSACTION_TYPE_DEFAULT;
@@ -254,8 +254,8 @@ class Postgres extends DbAdapter {
             return Utils::getDataFromStatement($statement, Utils::FETCH_ALL);
         }
     }
-
-
+    
+    
     /**
      * Get table description from DB
      * @param string $table
@@ -263,7 +263,7 @@ class Postgres extends DbAdapter {
      * @return TableDescription
      * @throws \PDOException
      */
-    public function describeTable($table, $schema = null) {
+    public function describeTable(string $table, ?string $schema = null): TableDescription {
         if (empty($schema)) {
             $schema = $this->getDefaultTableSchema();
         }
@@ -395,7 +395,7 @@ class Postgres extends DbAdapter {
         }
         return implode('', $sequence);
     }
-
+    
     /**
      * @param mixed $value
      * @param string $operator
@@ -421,7 +421,7 @@ class Postgres extends DbAdapter {
             return parent::assembleConditionValue($value, $operator, $valueAlreadyQuoted);
         }
     }
-
+    
     /**
      * Assemble condition from prepared parts
      * @param string $quotedColumn
@@ -430,7 +430,7 @@ class Postgres extends DbAdapter {
      * @param bool $valueAlreadyQuoted
      * @return string
      */
-    public function assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted = false) {
+    public function assembleCondition(string $quotedColumn, string $operator, $rawValue, bool $valueAlreadyQuoted = false): string {
         // jsonb opertaors - '?', '?|' or '?&' interfere with prepared PDO statements that use '?' to insert values
         // so it is impossible to use this operators directly. We need to use workarounds
         if (in_array($operator, ['?', '?|', '?&'], true)) {
@@ -457,7 +457,7 @@ class Postgres extends DbAdapter {
             return parent::assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted);
         }
     }
-
+    
     /**
      * Search for $table in $schema
      * @param string $table
@@ -465,7 +465,7 @@ class Postgres extends DbAdapter {
      * @return bool
      * @throws \PDOException
      */
-    public function hasTable($table, $schema = null) {
+    public function hasTable(string $table, ?string $schema = null): bool {
         if (empty($schema)) {
             $schema = $this->getDefaultTableSchema();
         }

@@ -82,7 +82,7 @@ class Mysql extends DbAdapter {
         'year' => Column::TYPE_INT,
     ];
 
-    static public function getConnectionConfigClass() {
+    static public function getConnectionConfigClass(): string {
         return MysqlConfig::class;
     }
 
@@ -90,11 +90,11 @@ class Mysql extends DbAdapter {
         parent::__construct($connectionConfig);
     }
 
-    public function isDbSupportsTableSchemas() {
+    public function isDbSupportsTableSchemas(): bool {
         return false;
     }
 
-    public function getDefaultTableSchema() {
+    public function getDefaultTableSchema(): ?string {
         return null;
     }
 
@@ -108,7 +108,7 @@ class Mysql extends DbAdapter {
         return $this;
     }
 
-    public function addDataTypeCastToExpression($dataType, $expression) {
+    public function addDataTypeCastToExpression(string $dataType, string $expression): string {
         if (!is_string($dataType)) {
             throw new \InvalidArgumentException('$dataType must be a string');
         }
@@ -272,19 +272,19 @@ class Mysql extends DbAdapter {
         $this->exec($query);
         return Utils::getDataFromStatement($stmnt, Utils::FETCH_ALL);
     }
-
-
+    
+    
     /**
      * Get table description from DB
      * @param string $table
-     * @param null $schema - not used for MySQL
+     * @param string|null $schema - not used for MySQL
      * @return TableDescription
      * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\DbException
+     * @throws DbException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function describeTable($table, $schema = null) {
+    public function describeTable(string $table, ?string $schema = null): TableDescription {
         $description = new TableDescription($table, $schema);
         /** @var array $columns */
         $columns = $this->query(DbExpr::create("SHOW COLUMNS IN `$table`"), Utils::FETCH_ALL);
@@ -408,7 +408,7 @@ class Mysql extends DbAdapter {
         }
         return $this->quoteValue($key, \PDO::PARAM_STR);
     }
-
+    
     /**
      * @param mixed $value
      * @param string $operator
@@ -435,7 +435,7 @@ class Mysql extends DbAdapter {
             return parent::assembleConditionValue($value, $operator, $valueAlreadyQuoted);
         }
     }
-
+    
     /**
      * Assemble condition from prepared parts
      * @param string $quotedColumn
@@ -446,7 +446,7 @@ class Mysql extends DbAdapter {
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted = false) {
+    public function assembleCondition(string $quotedColumn, string $operator, $rawValue, bool $valueAlreadyQuoted = false): string {
         if (in_array($operator, ['?', '?|', '?&'], true)) {
             if (!is_array($rawValue)) {
                 $rawValue = [$valueAlreadyQuoted ? $rawValue : $this->quoteJsonSelectorValue($rawValue)];
@@ -466,17 +466,17 @@ class Mysql extends DbAdapter {
             return parent::assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted);
         }
     }
-
+    
     /**
      * Search for $table in $schema
      * @param string $table
      * @param null|string $schema - name of DB schema that contains $table (for PostgreSQL)
      * @return bool
-     * @throws \PeskyORM\Exception\DbException
+     * @throws DbException
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function hasTable($table, $schema = null) {
+    public function hasTable(string $table, ?string $schema = null): bool {
         $exists = (bool)$this->query(
             DbExpr::create("SELECT true FROM `information_schema`.`tables` WHERE `table_name` = ``$table``"),
             static::FETCH_VALUE

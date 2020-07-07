@@ -16,14 +16,14 @@ class MysqlConfig implements DbConnectionConfigInterface {
     protected $unixSocket;
     protected $options = [];
     protected $timezone;
-
+    
     /**
      * @param array $config
-     * @param null $name
+     * @param string|null $name
      * @return static
      * @throws \InvalidArgumentException
      */
-    static public function fromArray(array $config, $name = null) {
+    static public function fromArray(array $config, ?string $name = null) {
         $dbName = $config['database'] ?: null;
         $user = $config['username'] ?: null;
         $password = $config['password'] ?: null;
@@ -84,12 +84,12 @@ class MysqlConfig implements DbConnectionConfigInterface {
         }
         $this->dbPassword = $password;
     }
-
+    
     /**
      * Get PDO connection string (ex: pgsql:host=localhost;port=5432;dbname=testdb;user=bruce;password=mypass)
      * @return string
      */
-    public function getPdoConnectionString() {
+    public function getPdoConnectionString(): string {
         if ($this->unixSocket === null) {
             $ret = 'mysql:host=' . $this->dbHost . ';port=' . $this->dbPort;
         } else {
@@ -105,7 +105,7 @@ class MysqlConfig implements DbConnectionConfigInterface {
     /**
      * @return string
      */
-    public function getName() {
+    public function getName(): string {
         return $this->name ?: $this->dbName;
     }
 
@@ -117,34 +117,34 @@ class MysqlConfig implements DbConnectionConfigInterface {
         $this->name = $name;
         return $this;
     }
-
+    
     /**
      * @return string
      */
-    public function getUserName() {
+    public function getUserName(): string {
         return $this->dbUser;
     }
-
+    
     /**
      * @return string
      */
-    public function getUserPassword() {
+    public function getUserPassword(): string {
         return $this->dbPassword;
     }
-
+    
     /**
      * @return string
      */
-    public function getDbName() {
+    public function getDbName(): string {
         return $this->dbName;
     }
-
+    
     /**
      * @param string $charset
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setCharset($charset) {
+    public function setCharset(string $charset) {
         if (empty($charset)) {
             throw new \InvalidArgumentException('DB charset argument cannot be empty');
         } else if (!is_string($charset)) {
@@ -168,11 +168,11 @@ class MysqlConfig implements DbConnectionConfigInterface {
         $this->dbHost = $dbHost;
         return $this;
     }
-
+    
     /**
      * @return null|string
      */
-    public function getDbHost() {
+    public function getDbHost(): string {
         return $this->dbHost;
     }
 
@@ -221,20 +221,20 @@ class MysqlConfig implements DbConnectionConfigInterface {
         $this->options = $options;
         return $this;
     }
-
+    
     /**
      * GET options for PDO connection
      * @return array
      */
-    public function getOptions() {
+    public function getOptions(): array {
         return $this->options;
     }
-
+    
     /**
      * @param string|null $timezone
      * @return $this
      */
-    public function setTimezone($timezone) {
+    public function setTimezone(?string $timezone) {
         $this->timezone = $timezone;
         return $this;
     }
@@ -250,11 +250,11 @@ class MysqlConfig implements DbConnectionConfigInterface {
         }
         return $this;
     }
-
+    
     /**
      * @return string|null
      */
-    public function getDefaultSchemaName() {
+    public function getDefaultSchemaName(): ?string {
         return null;
     }
 

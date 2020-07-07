@@ -220,13 +220,17 @@ class Utils {
             $ret['join_name'] = $joinName;
         }
         unset($columnName, $joinName, $columnAlias); //< to prevent faulty usage
-        
-        if (!$connection->isValidDbEntityName($ret['name'])) {
-            throw new \InvalidArgumentException("Invalid column name or json selector: [{$ret['name']}]");
-        }
+    
         if ($ret['name'] === '*') {
             $ret['type_cast'] = null;
             $ret['alias'] = null;
+            $ret['json_selector'] = null;
+        } else if (!$connection->isValidDbEntityName($ret['json_selector'] ?: $ret['name'], true)) {
+            if ($ret['json_selector']) {
+                throw new \InvalidArgumentException('Invalid json selector: [' . $ret['json_selector'] . ']');
+            } else {
+                throw new \InvalidArgumentException('Invalid column name: [' . $ret['name'] . ']');
+            }
         }
         /*
         [
@@ -234,6 +238,7 @@ class Utils {
             'alias' => ?string,
             'join_name' => ?string,
             'type_cast' => ?string,
+            'json_selector' => ?string,
         ]
          */
         return $ret;
@@ -243,6 +248,7 @@ class Utils {
         $typeCast = null;
         $columnAlias = null;
         $joinName = null;
+        $jsonSelector = null;
         if (preg_match('%^\s*(.*?)\s+AS\s+(.+)$%is', $columnName, $aliasMatches)) {
             // 'col1 as alias1' or 'JoinName.col2 AS alias2' or 'JoinName.col3::datatype As alias3'
             [, $columnName, $columnAlias] = $aliasMatches;
@@ -252,15 +258,22 @@ class Utils {
             [, $columnName, $typeCast] = $dataTypeMatches;
         }
         $columnName = trim($columnName);
+        if (preg_match('%^\s*(.*?)\s*([-#]>.*)$%', $columnName, $jsonSelectorMatches)) {
+            // json_column->key or json_column->>key or json_column->key->>key
+            // or json_column#>key or json_column#>>key and so on
+            [$jsonSelector, $columnName] = $jsonSelectorMatches;
+        }
         if (preg_match('%^(\w+)\.(\w+|\*)$%', $columnName, $columnParts)) {
             // 'JoinName.column' or 'JoinName.*'
             [, $joinName, $columnName] = $columnParts;
         }
+        
         return [
             'name' => $columnName,
             'alias' => $columnAlias,
             'join_name' => $joinName,
             'type_cast' => $typeCast,
+            'json_selector' => $jsonSelector //< full selector including column name
         ];
     }
     
@@ -275,7 +288,7 @@ class Utils {
         if ($columnInfo['join_name']) {
             $quotedTableAlias = $connection->quoteDbEntityName($columnInfo['join_name']) . '.';
         }
-        $columnName = $quotedTableAlias . $connection->quoteDbEntityName($columnInfo['name']);
+        $columnName = $quotedTableAlias . $connection->quoteDbEntityName($columnInfo['json_selector'] ?: $columnInfo['name']);
         if ($columnInfo['type_cast']) {
             $columnName = $connection->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
         }

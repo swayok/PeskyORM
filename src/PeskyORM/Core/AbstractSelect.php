@@ -142,7 +142,7 @@ abstract class AbstractSelect {
                     throw new \InvalidArgumentException(
                         "WITH key in \$conditionsAndOptions argument contains invalid value for key {$selectAlias}. Value must be an instance of AbstractSelect class"
                     );
-                } else if (!$this->getConnection()->isValidDbEntityName($selectAlias)) {
+                } else if (!$this->getConnection()->isValidDbEntityName($selectAlias, false)) {
                     throw new \InvalidArgumentException(
                         "WITH key in \$conditionsAndOptions argument contains invalid key {$selectAlias}. Key must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)"
                     );
@@ -672,7 +672,7 @@ abstract class AbstractSelect {
      * @return $this
      */
     public function with(AbstractSelect $select, string $selectAlias, bool $append = true) {
-        if (!$this->getConnection()->isValidDbEntityName($selectAlias)) {
+        if (!$this->getConnection()->isValidDbEntityName($selectAlias, false)) {
             throw new \InvalidArgumentException(
                 '$selectAlias argument does not fit DB entity naming rules (usually alphanumeric string with underscores)'
             );
@@ -822,7 +822,12 @@ abstract class AbstractSelect {
      * @return array - contains keys: 'name', 'alias', 'join_name', 'type_cast'. All keys are strings or nulls (except 'name')
      * @throws \InvalidArgumentException
      */
-    protected function analyzeColumnName($columnName, ?string $columnAlias = null, ?string $joinName = null, string $errorsPrefix = ''): array {
+    protected function analyzeColumnName(
+        $columnName,
+        ?string $columnAlias = null,
+        ?string $joinName = null,
+        string $errorsPrefix = ''
+    ): array {
         $errorsPrefix = trim($errorsPrefix) === '' ? '' : $errorsPrefix . ': ';
         $isDbExpr = $columnName instanceof DbExpr;
         if (!is_string($columnName) && !$isDbExpr) {
@@ -866,14 +871,19 @@ abstract class AbstractSelect {
                 $ret['join_name'] = $joinName;
             }
             unset($columnName, $joinName, $columnAlias); //< to prevent faulty usage
-            
-            if (!$this->getConnection()->isValidDbEntityName($ret['name'])) {
-                throw new \InvalidArgumentException("{$errorsPrefix}Invalid column name or json selector: [{$ret['name']}]");
-            }
+    
             if ($ret['name'] === '*') {
                 $ret['type_cast'] = null;
                 $ret['alias'] = null;
+                $ret['json_selector'] = null;
+            } else if (!$this->getConnection()->isValidDbEntityName($ret['json_selector'] ?: $ret['name'], true)) {
+                if ($ret['json_selector']) {
+                    throw new \InvalidArgumentException("{$errorsPrefix}Invalid json selector: [{$ret['json_selector']}]");
+                } else {
+                    throw new \InvalidArgumentException("{$errorsPrefix}Invalid column name: [{$ret['name']}]");
+                }
             }
+            
         }
         
         // nullify join name if it same as current table alias
@@ -952,7 +962,8 @@ abstract class AbstractSelect {
      */
     protected function makeColumnNameForCondition(array $columnInfo, string $subject = 'WHERE'): string {
         $tableAlias = $columnInfo['join_name'] ?: $this->getTableAlias();
-        $columnName = $this->quoteDbEntityName($this->getShortJoinAlias($tableAlias)) . '.' . $this->quoteDbEntityName($columnInfo['name']);
+        $columnName = $this->quoteDbEntityName($this->getShortJoinAlias($tableAlias)) . '.'
+            . $this->quoteDbEntityName($columnInfo['json_selector'] ?: $columnInfo['name']);
         if ($columnInfo['type_cast']) {
             $columnName = $this->getConnection()->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
         }
