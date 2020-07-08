@@ -381,6 +381,7 @@ class Postgres extends DbAdapter {
 
     /**
      * Quote a db entity name like 'table.col_name -> json_key1 ->> json_key2'
+     * or 'table.col_name -> json_key1 ->> integer_as_index' or 'table.col_name -> json_key1 ->> `integer_as_key`'
      * @param array $sequence -
      *      index 0: base entity name ('table.col_name' or 'col_name');
      *      indexes 1, 3, 5, ...: selection operator (->, ->>, #>, #>>);
@@ -390,8 +391,10 @@ class Postgres extends DbAdapter {
     protected function quoteJsonSelectorExpression(array $sequence) {
         $sequence[0] = $this->quoteDbEntityName($sequence[0]);
         for ($i = 2, $max = count($sequence); $i < $max; $i += 2) {
-            $value = trim($sequence[$i], '\'"` ');
-            $sequence[$i] = ctype_digit($value) ? $value : $this->quoteValue($value, \PDO::PARAM_STR);
+            if (!ctype_digit($sequence[$i])) {
+                // quote as string unless it is integer
+                $sequence[$i] = $this->quoteValue(trim($sequence[$i], '\'"` '), \PDO::PARAM_STR);
+            }
         }
         return implode('', $sequence);
     }
