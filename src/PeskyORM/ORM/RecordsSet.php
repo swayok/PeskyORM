@@ -26,7 +26,11 @@ class RecordsSet extends RecordsArray {
      * @var array[] - keys: relation names; values: arrays ['relation' => Relation; 'columns' => array]
      */
     protected $hasManyRelationsToInject = [];
-
+    /**
+     * @var bool
+     */
+    protected $ignoreLeftJoinsForCount = false;
+    
     /**
      * @param TableInterface $table
      * @param array $records
@@ -258,6 +262,16 @@ class RecordsSet extends RecordsArray {
         }
         return $this->recordsCount;
     }
+    
+    /**
+     * This can speedup count query for simple cases when joins are not nested
+     * @param bool $ignoreLeftJoinsForCount
+     * @return $this
+     */
+    public function setIgnoreLeftJoinsForCount(bool $ignoreLeftJoinsForCount) {
+        $this->ignoreLeftJoinsForCount = $ignoreLeftJoinsForCount;
+        return $this;
+    }
 
     /**
      * Count DB records ignoring LIMIT and OFFSET options
@@ -265,7 +279,7 @@ class RecordsSet extends RecordsArray {
      */
     public function totalCount() {
         if ($this->recordsCountTotal === null) {
-            $this->recordsCountTotal = $this->select->fetchCount(true);
+            $this->recordsCountTotal = $this->select->fetchCount($this->ignoreLeftJoinsForCount);
         }
         return $this->recordsCountTotal;
     }
