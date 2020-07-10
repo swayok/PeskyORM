@@ -275,9 +275,15 @@ class RecordsSet extends RecordsArray {
 
     /**
      * Count DB records ignoring LIMIT and OFFSET options
+     * @param bool|null $ignoreLeftJoins - null: use $this->ignoreLeftJoinsForCount | bool: change $this->ignoreLeftJoinsForCount
      * @return int
      */
-    public function totalCount() {
+    public function totalCount(?bool $ignoreLeftJoins = null) {
+        if ($ignoreLeftJoins !== null && $this->ignoreLeftJoinsForCount !== $ignoreLeftJoins) {
+            // $this->ignoreLeftJoinsForCount differs from previous one - reset total records count
+            $this->recordsCountTotal = null;
+            $this->ignoreLeftJoinsForCount = $ignoreLeftJoins;
+        }
         if ($this->recordsCountTotal === null) {
             $this->recordsCountTotal = $this->select->fetchCount($this->ignoreLeftJoinsForCount);
         }
