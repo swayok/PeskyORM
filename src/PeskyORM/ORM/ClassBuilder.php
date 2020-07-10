@@ -88,13 +88,13 @@ VIEW;
         if ($parentClass === null) {
             $parentClass = TableStructure::class;
         }
-        list($traits, $includes, $usedColumns) = $this->makeTraitsForTableStructure($traitsForColumns);
+        [$traits, $includes, $usedColumns] = $this->makeTraitsForTableStructure($traitsForColumns);
         $getSchemaMethod = '';
         if ($this->dbSchemaName && $this->dbSchemaName !== $this->connection->getDefaultTableSchema()) {
             $getSchemaMethod = <<<VIEW
         
     static public function getSchema(): ?string {
-        return {$this->dbSchemaName};
+        return '{$this->dbSchemaName}';
     }
     
 VIEW;
