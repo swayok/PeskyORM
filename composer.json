@@ -19,8 +19,10 @@
     },
     "autoload": {
         "psr-0": {
-            "PeskyORM": "src/",
-            "Tests": "tests/"
+            "PeskyORM": "src/"
+        },
+        "psr-4": {
+            "Tests\\": "tests/"
         }
     },
     "require": {
