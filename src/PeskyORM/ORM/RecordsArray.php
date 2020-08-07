@@ -54,7 +54,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @var string[] - relation names
      */
     protected $hasManyRelationsInjected = [];
-
+    
     /**
      * @param TableInterface $table
      * @param array|RecordInterface[]|Record[] $records
@@ -66,7 +66,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
         $this->table = $table;
         $this->setIsDbRecordDataValidationDisabled($disableDbRecordDataValidation);
         if (count($records)) {
-            $recordClass = get_class($this->table->newRecord());
+            $recordClass = get_class($this->getNewRecord());
             /** @var array|RecordInterface[] $records */
             $records = array_values($records);
             /** @noinspection ForeachSourceInspection */
@@ -90,6 +90,10 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
             $this->records = array_values($records);
         }
         $this->isFromDb = $isFromDb;
+    }
+    
+    protected function getNewRecord(): RecordInterface {
+        return $this->table->newRecord();
     }
 
     /**
@@ -151,7 +155,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      */
     protected function getDbRecordObjectForIteration() {
         if ($this->dbRecordForIteration === null) {
-            $this->dbRecordForIteration = $this->table->newRecord();
+            $this->dbRecordForIteration = $this->getNewRecord();
             if ($this->isReadOnlyModeEnabled()) {
                 $this->dbRecordForIteration->enableReadOnlyMode();
             } else {
@@ -434,7 +438,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
             if ($isFromDb === null) {
                 $isFromDb = $this->autodetectIfRecordIsFromDb($data);
             }
-            $record = $this->table->newRecord();
+            $record = $this->getNewRecord();
             $pkColumnName = $this->table->getTableStructure()->getPkColumnName();
             if ($this->isReadOnlyModeEnabled()) {
                 $record->enableReadOnlyMode();
@@ -459,7 +463,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
     }
     
     protected function getStandaloneObject(array $data, bool $withOptimizations): RecordInterface {
-        $record = $this->table->newRecord();
+        $record = $this->getNewRecord();
         if ($withOptimizations) {
             if ($this->isReadOnlyModeEnabled()) {
                 $record->enableReadOnlyMode();

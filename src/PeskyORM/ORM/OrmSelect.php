@@ -23,6 +23,11 @@ class OrmSelect extends AbstractSelect {
      */
     protected $tableStructure;
     /**
+     * DB Record class (when null - $this->table->newRecord() will be used in $this->getNewRecord())
+     * @var string|null
+     */
+    protected $recordClass;
+    /**
      * @var array
      */
     protected $columnsToSelectFromJoinedRelations = [];
@@ -38,7 +43,7 @@ class OrmSelect extends AbstractSelect {
      * @var array
      */
     protected $joinsAddedByRelations = [];
-
+    
     /**
      * @param TableInterface $table
      * @param string $tableAlias - used for relations / alias for table in case if it is not $table::getAlias()
@@ -82,6 +87,15 @@ class OrmSelect extends AbstractSelect {
     public function getTable(): TableInterface {
         return $this->table;
     }
+    
+    public function setRecordClass(?string $class) {
+        $this->recordClass = $class;
+        return $this;
+    }
+    
+    public function getNewRecord() {
+        return $this->recordClass ? new $this->recordClass : $this->table->newRecord();
+    }
 
     public function getTableStructure(): TableStructure {
         return $this->tableStructure;
@@ -91,7 +105,7 @@ class OrmSelect extends AbstractSelect {
      * @return Record|RecordInterface
      */
     public function fetchOneAsDbRecord(): RecordInterface {
-        return $this->table->newRecord()->fromDbData($this->fetchOne());
+        return $this->getNewRecord()->fromDbData($this->fetchOne());
     }
 
     /**

@@ -5,7 +5,7 @@ namespace PeskyORM\ORM;
 use PeskyORM\Core\DbExpr;
 
 class RecordsSet extends RecordsArray {
-
+    
     /**
      * @var OrmSelect
      */
@@ -59,6 +59,17 @@ class RecordsSet extends RecordsArray {
     public function __construct(OrmSelect $dbSelect, bool $disableDbRecordDataValidation = false) {
         parent::__construct($dbSelect->getTable(), [], true, $disableDbRecordDataValidation);
         $this->setOrmSelect($dbSelect);
+    }
+    
+    public function setRecordClass(?string $class) {
+        $this->getOrmSelect()->setRecordClass($class);
+        $this->dbRecords = [];
+        $this->dbRecordForIteration = null;
+        return $this;
+    }
+    
+    protected function getNewRecord(): RecordInterface {
+        return $this->getOrmSelect()->getNewRecord();
     }
 
     /**
