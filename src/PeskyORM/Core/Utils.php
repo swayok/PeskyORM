@@ -253,8 +253,8 @@ class Utils {
             // 'col1 as alias1' or 'JoinName.col2 AS alias2' or 'JoinName.col3::datatype As alias3'
             [, $columnName, $columnAlias] = $aliasMatches;
         }
-        if (preg_match('%^\s*(.*?)\s*::\s*([a-zA-Z0-9 _]+)\s*$%is', $columnName, $dataTypeMatches)) {
-            // 'col1::datatype' or 'JoinName.col2::datatype' or 'col3::data_type' or 'col4::data type'
+        if (preg_match('%^\s*(.*?)\s*::\s*([a-zA-Z0-9 _]+(?:\s*\([^)]+\))?)\s*$%is', $columnName, $dataTypeMatches)) {
+            // 'col1::datatype' or 'JoinName.col2::datatype' or 'col3::data_type' or 'col4::data type' or 'col4::data_type()'
             [, $columnName, $typeCast] = $dataTypeMatches;
         }
         $columnName = trim($columnName);
