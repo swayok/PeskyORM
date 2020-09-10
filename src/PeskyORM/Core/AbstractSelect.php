@@ -85,7 +85,7 @@ abstract class AbstractSelect {
     /**
      * @var array
      */
-    protected $columnNameWithAliasToColumnInfo = [];
+    protected $columnAliasToColumnInfo = [];
 
     /**
      * @return string
@@ -765,7 +765,7 @@ abstract class AbstractSelect {
      * @return $this
      */
     protected function processRawColumns() {
-        $this->columnNameWithAliasToColumnInfo = [];
+        $this->columnAliasToColumnInfo = [];
         $this->columns = $this->normalizeColumnsList($this->columnsRaw, null, true, 'SELECT');
         return $this;
     }
@@ -857,16 +857,20 @@ abstract class AbstractSelect {
                 'name' => $columnName,
                 'alias' => $columnAlias,
                 'join_name' => $joinName,
-                'type_cast' => null,
+                'type_cast' => null
             ];
             unset($columnName, $joinName, $columnAlias); //< to prevent faulty usage
         } else {
             $columnName = trim($columnName);
             $ret = Utils::splitColumnName($columnName);
+            if ($ret['join_name'] && $columnAlias && $ret['join_name'] !== $joinName) {
+                $ret['parent'] = $joinName ?: $this->getTableAlias();
+            }
             if ($columnAlias) {
                 // overwrite column alias when provided
                 $ret['alias'] = $columnAlias;
             }
+            
             if ($joinName && !$ret['join_name']) {
                 $ret['join_name'] = $joinName;
             }
@@ -918,12 +922,11 @@ abstract class AbstractSelect {
      */
     protected function makeColumnNameWithAliasForQuery(array $columnInfo, bool $itIsWithQuery = false): string {
         $tableAlias = $columnInfo['join_name'] ?: $this->getTableAlias();
-        $shortTableAlias = $this->getShortJoinAlias($tableAlias);
         $isDbExpr = $columnInfo['name'] instanceof DbExpr;
         if ($isDbExpr) {
             $columnName = $this->quoteDbExpr($columnInfo['name']);
         } else {
-            $columnName = $this->quoteDbEntityName($shortTableAlias) . '.' . $this->quoteDbEntityName($columnInfo['name']);
+            $columnName = $this->quoteDbEntityName($this->getShortJoinAlias($tableAlias)) . '.' . $this->quoteDbEntityName($columnInfo['name']);
         }
         if ($columnInfo['type_cast']) {
             $columnName = $this->getConnection()->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
@@ -937,9 +940,21 @@ abstract class AbstractSelect {
                 return $columnName;
             }
         } else {
-            $columnAlias = $this->quoteDbEntityName($this->makeColumnAlias($columnInfo['alias'] ?: $columnInfo['name'], $tableAlias));
+            $columnAlias = $this->quoteDbEntityName($this->makeColumnAliasFromColumnInfo($columnInfo));
             return $columnName . ' AS ' . $columnAlias;
         }
+    }
+    
+    protected function makeColumnAliasFromColumnInfo(array $columnInfo): ?string {
+        if ($columnInfo['name'] instanceof DbExpr && !$columnInfo['alias']) {
+            return null;
+        }
+        if (isset($columnInfo['parent'])) {
+            $tableAlias = $columnInfo['parent'];
+        } else {
+            $tableAlias = $columnInfo['join_name'] ?: $this->getTableAlias();
+        }
+        return $this->makeColumnAlias($columnInfo['alias'] ?: $columnInfo['name'], $tableAlias);
     }
 
     /**
@@ -1096,7 +1111,7 @@ abstract class AbstractSelect {
                 );
             } else {
                 $columnInfo = $this->analyzeColumnName($columnName, $columnAlias, $joinName, $subject);
-                if ($columnInfo['join_name'] !== $joinName) {
+                if ($columnInfo['join_name'] !== $joinName && !isset($columnInfo['parent'])) {
                     // Note: ($joinName === null) restricts situation like
                     // new JoinInfo('Join2')->setForeignColumnsToSelect(['SomeOtehrJoin.col'])
                     if ($allowSubJoins) {
@@ -1288,9 +1303,11 @@ abstract class AbstractSelect {
             if (is_string($columnInfo)) {
                 $columns[] = $columnInfo;
             } else {
-                $colNameWithAlias = $this->makeColumnNameWithAliasForQuery($columnInfo, $itIsWithQuery);
-                $this->columnNameWithAliasToColumnInfo[$colNameWithAlias] = $columnInfo;
-                $columns[] = $colNameWithAlias;
+                $columnAlias = $this->makeColumnAliasFromColumnInfo($columnInfo);
+                if ($columnAlias) {
+                    $this->columnAliasToColumnInfo[$columnAlias] = $columnInfo;
+                }
+                $columns[] = $this->makeColumnNameWithAliasForQuery($columnInfo, $itIsWithQuery);
             }
         }
         $columns = array_merge($columns, $this->collectJoinedColumnsForQuery($itIsWithQuery));
@@ -1327,7 +1344,7 @@ abstract class AbstractSelect {
                 continue;
             }
             $joinColumns = $this->normalizeColumnsList(
-                $joinConfig->getForeignColumnsToSelect(),
+                $columnsToJoin,
                 $joinConfig->getJoinName(),
                 false,
                 'JOIN [' . $joinConfig->getJoinName() . ']'
@@ -1336,6 +1353,10 @@ abstract class AbstractSelect {
                 if (is_string($columnInfo)) {
                     $columns[] = $columnInfo;
                 } else {
+                    $columnAlias = $this->makeColumnAliasFromColumnInfo($columnInfo);
+                    if ($columnAlias) {
+                        $this->columnAliasToColumnInfo[$columnAlias] = $columnInfo;
+                    }
                     $columns[] = $this->makeColumnNameWithAliasForQuery($columnInfo, $itIsWithQuery);
                 }
             }
@@ -1366,10 +1387,10 @@ abstract class AbstractSelect {
         $dataBlocks = [$this->getTableAlias() => []];
         // process record's column aliases and group column values by table alias
         foreach ($record as $columnAlias => $value) {
-            if (isset($this->columnNameWithAliasToColumnInfo[$columnAlias])) {
-                $colInfo = $this->columnNameWithAliasToColumnInfo[$columnAlias];
-                $group = $colInfo['join_name'] ?: $this->getTableAlias();
-                $dataBlocks[$group][$colInfo['name']] = $value;
+            if (isset($this->columnAliasToColumnInfo[$columnAlias])) {
+                $colInfo = $this->columnAliasToColumnInfo[$columnAlias];
+                $group = isset($colInfo['parent']) ? $colInfo['parent'] : $colInfo['join_name'];
+                $dataBlocks[$group ?: $this->getTableAlias()][$colInfo['alias'] ?: $colInfo['name']] = $value;
             } else if (preg_match('%^_(.+?)__(.+?)$%', $columnAlias, $colInfo)) {
                 [, $tableAlias, $column] = $colInfo;
                 if (isset($shortJoinAliasToAlias[$tableAlias])) {
