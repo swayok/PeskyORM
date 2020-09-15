@@ -908,6 +908,10 @@ abstract class DbAdapter implements DbAdapterInterface {
                     throw new \InvalidArgumentException("\$value expected to be integer or numeric string. $realType received");
                 }
             }
+            if ($valueDataType === \PDO::PARAM_STR && is_string($value)) {
+                // prevent "\" at the end of a string by duplicating slashes
+                $value = preg_replace('%([\\\]+)$%', '$1$1', $value);
+            }
             if (!in_array($valueDataType, [\PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_LOB], true)) {
                 throw new \InvalidArgumentException('Value in $fieldType argument must be a constant like \PDO::PARAM_*');
             }
