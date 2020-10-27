@@ -2,6 +2,7 @@
 
 namespace PeskyORM\Core;
 
+use http\Exception\BadMethodCallException;
 use PeskyORM\ORM\OrmJoinInfo;
 use Swayok\Utils\ValidateValue;
 
@@ -412,6 +413,9 @@ abstract class AbstractSelect {
      * @return string
      */
     public function getCountQuery(bool $ignoreLeftJoins = true): string {
+        if ($this->distinct) {
+            throw new BadMethodCallException('Cannot determine column name to use for COUNT(DISTINCT {column_name})');
+        }
         return $this->getSimplifiedQuery('COUNT(*)', $ignoreLeftJoins, true);
     }
 

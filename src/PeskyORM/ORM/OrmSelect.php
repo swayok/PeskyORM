@@ -118,7 +118,37 @@ class OrmSelect extends AbstractSelect {
         $this->_join($joinInfo, $append);
         return $this;
     }
-
+    
+    public function getCountQuery(bool $ignoreLeftJoins = true): string {
+        if ($this->distinct) {
+            $pkColumnName = $this->tableStructure->getPkColumnName();
+            if (empty($this->distinctColumns) || in_array($pkColumnName, $this->distinctColumns, true)) {
+                $columnInfo = $this->analyzeColumnName($pkColumnName);
+            } else {
+                $columnInfo = null;
+                foreach ($this->distinctColumns as $distinctColumnInfo) {
+                    if ($distinctColumnInfo['join_name'] === null && $distinctColumnInfo['json_selector'] === null) {
+                        if (!$columnInfo) {
+                            $columnInfo = $distinctColumnInfo;
+                        } else if ($distinctColumnInfo['name'] === $pkColumnName) {
+                            $columnInfo = $distinctColumnInfo;
+                            break;
+                        }
+                    }
+                }
+                if (empty($columnInfo)) {
+                    $columnInfo = $this->distinctColumns[0];
+                }
+                $columnInfo['alias'] = null;
+                $columnInfo['type_cast'] = null;
+            }
+            $expression = 'COUNT(DISTINCT ' . $this->makeColumnNameForCondition($columnInfo, 'DISTINCT') . ')';
+            return $this->getSimplifiedQuery($expression, $ignoreLeftJoins, true);
+        } else {
+            return parent::getCountQuery($ignoreLeftJoins);
+        }
+    }
+    
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
 
     protected function normalizeJoinDataForRecord(AbstractJoinInfo $joinConfig, array $data): array {
