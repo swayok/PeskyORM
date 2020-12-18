@@ -2,6 +2,7 @@
 
 namespace PeskyORM\ORM;
 
+use Carbon\Carbon;
 use PeskyORM\Core\DbExpr;
 use Swayok\Utils\NormalizeValue;
 use Swayok\Utils\ValidateValue;
@@ -321,16 +322,21 @@ abstract class RecordValueHelpers {
             case Column::TYPE_UNIX_TIMESTAMP:
             case Column::TYPE_TIMESTAMP:
             case Column::TYPE_TIMESTAMP_WITH_TZ:
-                $formats = ['date', 'time', 'unix_ts'];
+                $formats = ['date', 'time', 'unix_ts', 'carbon'];
                 $formatter = function (RecordValue $valueContainer, $format) {
                     return static::formatTimestamp($valueContainer, $format);
                 };
                 break;
             case Column::TYPE_DATE:
+                $formats = ['unix_ts', 'carbon'];
+                $formatter = function (RecordValue $valueContainer, $format) {
+                    return static::formatDate($valueContainer, $format);
+                };
+                break;
             case Column::TYPE_TIME:
                 $formats = ['unix_ts'];
                 $formatter = function (RecordValue $valueContainer, $format) {
-                    return static::formatDateOrTime($valueContainer, $format);
+                    return static::formatTime($valueContainer, $format);
                 };
                 break;
             case Column::TYPE_JSON:
@@ -365,21 +371,42 @@ abstract class RecordValueHelpers {
                     return date(NormalizeValue::TIME_FORMAT, strtotime($value));
                 case 'unix_ts':
                     return strtotime($value);
+                case 'carbon':
+                    return Carbon::parse($value);
                 default:
                     throw new \InvalidArgumentException("Requested value format '$format' is not implemented");
             }
         }, true);
     }
 
-    static public function formatDateOrTime(RecordValue $valueContainer, $format) {
+    static public function formatDate(RecordValue $valueContainer, $format) {
         if (!is_string($format)) {
             throw new \InvalidArgumentException('$format argument must be a string');
         }
         return $valueContainer->getCustomInfo('format:' . $format, function (RecordValue $valueContainer) use ($format) {
-            if ($format === 'unix_ts') {
-                return strtotime(static::getSimpleValueFormContainer($valueContainer));
-            } else {
-                throw new \InvalidArgumentException("Requested value format '$format' is not implemented");
+            $value = static::getSimpleValueFormContainer($valueContainer);
+            switch ($format) {
+                case 'unix_ts':
+                    return strtotime($value);
+                case 'carbon':
+                    return Carbon::parse($value)->startOfDay();
+                default:
+                    throw new \InvalidArgumentException("Requested value format '$format' is not implemented");
+            }
+        }, true);
+    }
+    
+    static public function formatTime(RecordValue $valueContainer, $format) {
+        if (!is_string($format)) {
+            throw new \InvalidArgumentException('$format argument must be a string');
+        }
+        return $valueContainer->getCustomInfo('format:' . $format, function (RecordValue $valueContainer) use ($format) {
+            $value = static::getSimpleValueFormContainer($valueContainer);
+            switch ($format) {
+                case 'unix_ts':
+                    return strtotime($value);
+                default:
+                    throw new \InvalidArgumentException("Requested value format '$format' is not implemented");
             }
         }, true);
     }

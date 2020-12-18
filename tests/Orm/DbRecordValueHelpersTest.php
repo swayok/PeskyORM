@@ -460,10 +460,10 @@ class DbRecordValueHelpersTest extends TestCase {
 
     public function testFormatDateOrTime() {
         $valueObj = $this->createDbRecordValue(Column::TYPE_DATE, '2016-09-01');
-        static::assertEquals(strtotime($valueObj->getValue()), RecordValueHelpers::formatDateOrTime($valueObj, 'unix_ts'));
+        static::assertEquals(strtotime($valueObj->getValue()), RecordValueHelpers::formatDate($valueObj, 'unix_ts'));
 
         $valueObj = $this->createDbRecordValue(Column::TYPE_TIME, '12:34:56');
-        static::assertEquals(strtotime($valueObj->getValue()), RecordValueHelpers::formatDateOrTime($valueObj, 'unix_ts'));
+        static::assertEquals(strtotime($valueObj->getValue()), RecordValueHelpers::formatDate($valueObj, 'unix_ts'));
     }
 
     public function testFormatJson() {

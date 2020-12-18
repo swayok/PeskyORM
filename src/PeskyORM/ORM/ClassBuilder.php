@@ -134,12 +134,16 @@ VIEW;
         if ($parentClass === null) {
             $parentClass = Record::class;
         }
+        $includes = '';
+        if ($this->hasDateOrTimestampColumns()) {
+            $includes .= "\nuse Carbon\Carbon;";
+        }
         return <<<VIEW
 <?php
 
 namespace {$namespace};
 
-use {$parentClass};
+use {$parentClass};$includes
 
 /**
 {$this->makePhpDocForRecord()}
@@ -338,6 +342,25 @@ VIEW;
         }
         return implode("\n", $getters) . "\n *\n" . implode("\n", $setters);
     }
+    
+    /**
+     * @return bool
+     */
+    protected function hasDateOrTimestampColumns() {
+        $description = $this->getTableDescription();
+        $types = [
+            Column::TYPE_TIMESTAMP,
+            Column::TYPE_TIMESTAMP_WITH_TZ,
+            Column::TYPE_UNIX_TIMESTAMP,
+            Column::TYPE_DATE,
+        ];
+        foreach ($description->getColumns() as $columnDescription) {
+            if (in_array($columnDescription->getOrmType(), $types, true)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * @param ColumnDescription $columnDescription
@@ -377,6 +400,9 @@ VIEW;
                     break;
                 case 'object':
                     $formatToPhpType[$formatName] = '\stdClass';
+                    break;
+                case 'carbon':
+                    $formatToPhpType[$formatName] = 'Carbon';
                     break;
                 default:
                     $formatToPhpType[$formatName] = 'string';
