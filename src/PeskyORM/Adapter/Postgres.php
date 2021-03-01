@@ -312,7 +312,7 @@ class Postgres extends DbAdapter {
                 $columnInfo['type'],
                 $this->convertDbTypeToOrmType($columnInfo['type'])
             );
-            list($limit, $precision) = $this->extractLimitAndPrecisionForColumnDescription($columnInfo['type_description']);
+            [$limit, $precision] = $this->extractLimitAndPrecisionForColumnDescription($columnInfo['type_description']);
             $columnDescription
                 ->setLimitAndPrecision($limit, $precision)
                 ->setIsNullable(!(bool)$columnInfo['notnull'])
@@ -369,6 +369,21 @@ class Postgres extends DbAdapter {
         } else {
             return [null, null];
         }
+    }
+    
+    public static function isValidDbEntityName($name, $canBeAJsonSelector = true) {
+        return (
+            $name === '*'
+            || preg_match('%^[a-zA-Z_][a-zA-Z_0-9]*(\.[a-zA-Z_0-9]+(::.+?)|\.\*)?$%i', $name) > 0
+            || ($canBeAJsonSelector && static::isValidJsonSelector($name))
+        );
+    }
+    
+    protected function quoteNormalDbEntityName($name) {
+        $parts = explode('::', $name);
+        $name = $parts[0];
+        $type = isset($parts[1]) ? '::' . $parts[1] : '';
+        return parent::quoteNormalDbEntityName($name) . $type;
     }
 
     /**

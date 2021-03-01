@@ -418,7 +418,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         $this->guardTableNameArg($table);
         $this->guardDataArg($data);
         $this->guardConditionsArg($conditions);
-        list($tableName, $tableAlias) = preg_split('%\s*AS\s*%i', $table, 2);
+        [$tableName, $tableAlias] = preg_split('%\s*AS\s*%i', $table, 2);
         if (empty($tableAlias) || trim($tableAlias) === '') {
             $tableAlias = '';
         } else {
@@ -775,7 +775,7 @@ abstract class DbAdapter implements DbAdapterInterface {
         } else if (!($pdoStatement instanceof \PDOStatement) && !($pdoStatement instanceof \PDO)) {
             throw new \InvalidArgumentException('$pdoStatement argument should be instance of \PDOStatement or \PDO');
         }
-        list($ret['sql_code'], $ret['code'], $ret['message']) = $pdoStatement->errorInfo();
+        [$ret['sql_code'], $ret['code'], $ret['message']] = $pdoStatement->errorInfo();
         return $ret;
     }
 
@@ -804,10 +804,14 @@ abstract class DbAdapter implements DbAdapterInterface {
             $parts = preg_split('%\s*([-#]>>?)\s*%', $name, -1, PREG_SPLIT_DELIM_CAPTURE);
             return $this->quoteJsonSelectorExpression($parts);
         } else {
-            return static::ENTITY_NAME_QUOTES
-                . str_replace('.', static::ENTITY_NAME_QUOTES . '.' . static::ENTITY_NAME_QUOTES, $name)
-                . static::ENTITY_NAME_QUOTES;
+            return $this->quoteNormalDbEntityName($name);
         }
+    }
+    
+    protected function quoteNormalDbEntityName($name) {
+        return static::ENTITY_NAME_QUOTES
+            . str_replace('.', static::ENTITY_NAME_QUOTES . '.' . static::ENTITY_NAME_QUOTES, $name)
+            . static::ENTITY_NAME_QUOTES;
     }
 
     /**
