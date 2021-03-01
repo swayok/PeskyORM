@@ -374,7 +374,7 @@ class Postgres extends DbAdapter {
     public static function isValidDbEntityName($name, $canBeAJsonSelector = true) {
         return (
             $name === '*'
-            || preg_match('%^[a-zA-Z_][a-zA-Z_0-9]*(\.[a-zA-Z_0-9]+(::.+?)|\.\*)?$%i', $name) > 0
+            || preg_match('%^[a-zA-Z_][a-zA-Z_0-9]*(\.[a-zA-Z_0-9]+(::.+?)?|\.\*)?$%i', $name) > 0
             || ($canBeAJsonSelector && static::isValidJsonSelector($name))
         );
     }
