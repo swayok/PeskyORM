@@ -527,7 +527,8 @@ abstract class Table implements TableInterface {
             $features = ['trim', 'lowercase', 'nullable', 'empty_string_to_null', 'auto'];
         }
         $defaults = [];
-        $forcedReplaces = [];
+        /** @var Column[] $autoupdatableColumns */
+        $autoupdatableColumns = [];
         $notNulls = [];
         $emptyToNull = [];
         $trims = [];
@@ -536,7 +537,7 @@ abstract class Table implements TableInterface {
         foreach ($columnsToSave as $columnName) {
             $column = $allColumns[$columnName];
             if (in_array('auto', $features, true) && $column->isAutoUpdatingValue()) {
-                $forcedReplaces[$columnName] = $column->getAutoUpdateForAValue();
+                $autoupdatableColumns[$columnName] = $column;
             } else {
                 if ($column->hasDefaultValue()) {
                     $defaults[$columnName] = $column->getValidDefaultValue();
@@ -582,8 +583,10 @@ abstract class Table implements TableInterface {
                     $row[$columnName] = mb_strtolower($row[$columnName]);
                 }
             }
-            $row = array_merge($defaults, $row, $forcedReplaces);
-            
+            $row = array_merge($defaults, $row);
+            foreach ($autoupdatableColumns as $columnName => $column) {
+                $row[$columnName] = $column->getAutoUpdateForAValue($row);
+            }
         }
         return $rows;
     }

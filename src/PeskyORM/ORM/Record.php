@@ -1423,7 +1423,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $autoUpdatingColumns = $this->getAllColumnsWithAutoUpdatingValues();
         foreach ($autoUpdatingColumns as $columnName) {
             if (!isset($data[$columnName])) {
-                $data[$columnName] = static::getColumn($columnName)->getAutoUpdateForAValue();
+                $data[$columnName] = static::getColumn($columnName)->getAutoUpdateForAValue($this);
             }
         }
         // set pk value

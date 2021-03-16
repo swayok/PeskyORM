@@ -1248,7 +1248,7 @@ class Column {
     }
 
     /**
-     * @param \Closure $valueGenerator
+     * @param \Closure $valueGenerator = function (array|RecordInterface $record) { return 'value' }
      * @return $this
      */
     public function autoUpdateValueOnEachSaveWith(\Closure $valueGenerator) {
@@ -1257,14 +1257,15 @@ class Column {
     }
 
     /**
+     * @param RecordInterface|Record|array
      * @return \Closure|null
      * @throws \UnexpectedValueException
      */
-    public function getAutoUpdateForAValue() {
+    public function getAutoUpdateForAValue($record) {
         if (empty($this->valueAutoUpdater)) {
             throw new \UnexpectedValueException('Value auto updater function is not set');
         }
-        return call_user_func($this->valueAutoUpdater);
+        return call_user_func($this->valueAutoUpdater, $record);
     }
 
     /**
