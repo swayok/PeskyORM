@@ -1739,8 +1739,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             foreach ($columnsNames as $index => $columnName) {
                 if (is_string($index)) {
                     $excludeDuplicatesFromWildcard[] = $index;
-                }
-                if (is_string($columnName)) {
+                } else if (is_string($columnName)) {
                     $excludeDuplicatesFromWildcard[] = $columnName;
                     if ($columnName === '*') {
                         unset($columnsNames[$index]);
@@ -1781,7 +1780,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $data = [];
         foreach ($columnsNames as $index => $columnName) {
             if (
-                (!is_int($index) && is_array($columnName))
+                (!is_int($index) && (is_array($columnName) || $columnName === '*' || static::hasRelation($index)))
                 || (is_string($columnName) && static::hasRelation($columnName))
             ) {
                 // it is actually relation
@@ -1790,7 +1789,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     $relatedRecordsNames[] = $columnName;
                 } else {
                     // get certain data form related record
-                    $relatedRecordsNames[$index] = $columnName;
+                    $relatedRecordsNames[$index] = (array)$columnName;
                 }
             } else {
                 if ($columnName instanceof \Closure) {
