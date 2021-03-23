@@ -1075,7 +1075,7 @@ abstract class AbstractSelect {
                         . 'Value must be a string or array.'
                     );
                 }
-                // we're goo to go - no more validation needed
+                // we're good to go - no more validation needed
             } else if (
                 !is_numeric($columnAlias)
                 && (

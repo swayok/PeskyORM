@@ -233,7 +233,21 @@ class OrmSelect extends AbstractSelect {
             $filteredColumns = [];
             /** @var array $columns */
             foreach ($columns as $columnAlias => $columnName) {
-                if (!is_int($columnAlias) && (is_array($columnName) || $columnName === '*')) {
+                if ($columnAlias === '*' && empty($columnName)) {
+                    // ['*' => []] situation - convert to select '*'
+                    $columnName = $columnAlias;
+                    $columnAlias = -1;
+                }
+                if ($columnAlias === '*') {
+                    // all columns except those listed in $columnName
+                    $filteredColumns = array_merge(
+                        $filteredColumns,
+                        array_diff(
+                            array_keys($this->getJoin($joinName)->getForeignDbTable()->getTableStructure()->getColumnsThatExistInDb()),
+                            (array)$columnName
+                        )
+                    );
+                } else if (!is_int($columnAlias) && (is_array($columnName) || $columnName === '*')) {
                     // subrealtion
                     $this->resolveColumnsToBeSelectedForJoin($columnAlias, $columnName, $joinName, false);
                 } else if (preg_match('%^(.*)\.\*$%', $columnName, $matches)) {
