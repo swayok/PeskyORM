@@ -193,10 +193,18 @@ class RecordsSet extends RecordsArray {
      * @return array
      */
     protected function getRecords(bool $reload = false): array {
+        $this->fetchRecords($reload);
+        return $this->records;
+    }
+    
+    /**
+     * @return $this
+     */
+    public function fetchRecords(bool $reload = false) {
         if ($reload || $this->recordsCount === null) {
             $this->setRecords($this->select->fetchMany());
         }
-        return $this->records;
+        return $this;
     }
     
     public function areRecordsFetchedFromDb(): bool {
