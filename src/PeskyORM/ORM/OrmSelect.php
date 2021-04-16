@@ -278,20 +278,23 @@ class OrmSelect extends AbstractSelect {
     }
 
     /**
-     * @param string $joinName
+     * @param string $joinName - 'Name' or 'Name.SubName'
      * @return OrmJoinInfo
      */
     protected function getJoin(string $joinName) {
-        if (
-            !$this->hasJoin($joinName, true)
-            && (
-                array_key_exists($joinName, $this->joinedRelationsParents) //< array_key_exists is correct
-                || $this->getTableStructure()->hasRelation($joinName)
-            )
-        ) {
-            $this->addJoinFromRelation($joinName);
+        $joins = explode('.', $joinName);
+        foreach ($joins as $subJoin) {
+            if (
+                !$this->hasJoin($subJoin, true)
+                && (
+                    array_key_exists($subJoin, $this->joinedRelationsParents) //< array_key_exists is correct
+                    || $this->getTableStructure()->hasRelation($subJoin)
+                )
+            ) {
+                $this->addJoinFromRelation($subJoin);
+            }
         }
-        return parent::getJoin($joinName);
+        return parent::getJoin($joins[count($joins) - 1]);
     }
 
     /**

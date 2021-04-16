@@ -1204,7 +1204,11 @@ abstract class AbstractSelect {
     protected function columnQuoterForConditions($columnName, ?string $joinName, string $subject): string {
         $columnInfo = $this->analyzeColumnName($columnName, null, $joinName, $subject);
         if (!empty($columnInfo['join_name']) && in_array($subject, ['WHERE', 'HAVING'], true)) {
-            $this->joinsUsedInWhereAndHavingConditions[] = $columnInfo['join_name'];
+            $joins = explode('.', $columnInfo['join_name']);
+            foreach ($joins as $subJoinName) {
+                $this->joinsUsedInWhereAndHavingConditions[] = $subJoinName;
+            }
+            $columnInfo['join_name'] = $joins[count($joins) - 1];
         }
         return $this->makeColumnNameForCondition($columnInfo, $subject);
     }

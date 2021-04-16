@@ -263,8 +263,8 @@ class Utils {
             // or json_column#>key or json_column#>>key and so on
             [$jsonSelector, $columnName] = $jsonSelectorMatches;
         }
-        if (preg_match('%^(\w+)\.(\w+|\*)$%', $columnName, $columnParts)) {
-            // 'JoinName.column' or 'JoinName.*'
+        if (preg_match('%^([\w.]+)\.(\w+|\*)$%', $columnName, $columnParts)) {
+            // 'JoinName.column' or 'JoinName.*' or  'JoinName.SubjoinName.column' or 'JoinName.SubjoinName.*'
             [, $joinName, $columnName] = $columnParts;
         }
         
