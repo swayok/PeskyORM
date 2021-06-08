@@ -380,8 +380,8 @@ class OrmSelect extends AbstractSelect {
                             ->getStructure()
                             ->getColumn($columnInfo['name']);
                     }
-                    if (!$columnInfo['json_selector']) {
-                        // in json selector there may be any type of value
+                    if (!$columnInfo['json_selector'] && !$columnInfo['type_cast']) {
+                        // in json selector there may be any type of value and type casting is responsibility of developer
                         if (is_array($rawValue)) {
                             foreach ($rawValue as $arrValue) {
                                 $errors = $column->validateValue($arrValue, false, true);
