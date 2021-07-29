@@ -81,10 +81,9 @@ class DbExpr {
 
     /**
      * @param array $replaces - associative array where keys are regular expressions and values are replacements
-     * @return $this
+     * @return static - new record
      */
     public function applyReplaces(array $replaces) {
-        $this->expression = preg_replace(array_keys($replaces), array_values($replaces), $this->expression);
-        return $this;
+        return new static(preg_replace(array_keys($replaces), array_values($replaces), $this->expression), $this->wrapInBrackets);
     }
 }
