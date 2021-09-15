@@ -184,7 +184,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * Use when you have problems related to transactions
      * @param bool $enable = true: enable; false: disable
      */
-    static public function enableTransactionTraces($enable = true) {
+    static public function enableTransactionTraces(bool $enable = true) {
         static::$isTransactionTracesEnabled = $enable;
     }
     
@@ -198,10 +198,7 @@ abstract class DbAdapter implements DbAdapterInterface {
     /**
      * @param string|DbExpr $query
      * @param string|null $fetchData - null: return PDOStatement; string: one of \PeskyORM\Core\Utils::FETCH_*
-     * @return \PDOStatement|mixed
-     * @throws DbException
-     * @throws \InvalidArgumentException
-     * @throws \PDOException
+     * @return array|false|\PDOStatement|string|null
      */
     public function query($query, ?string $fetchData = null) {
         if ($query instanceof DbExpr) {
@@ -228,11 +225,8 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @param string|DbExpr $query
      * @param bool $ignoreZeroModifiedRows - true: will not try to additionally validate if query failed
      * @return array|int = array: returned if $returning argument is not empty
-     * @throws \PeskyORM\Exception\DbException
-     * @throws \InvalidArgumentException
-     * @throws \PDOException
      */
-    protected function _exec($query, $ignoreZeroModifiedRows = false) {
+    protected function _exec($query, bool $ignoreZeroModifiedRows = false) {
         if ($query instanceof DbExpr) {
             $query = $this->quoteDbExpr($query->setWrapInBrackets(false));
         }
@@ -258,9 +252,6 @@ abstract class DbAdapter implements DbAdapterInterface {
     /**
      * @param string|DbExpr $query
      * @return int|array = array: returned if $returning argument is not empty
-     * @throws \PeskyORM\Exception\DbException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
     public function exec($query) {
         return $this->_exec($query);
