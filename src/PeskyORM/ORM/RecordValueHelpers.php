@@ -372,7 +372,7 @@ abstract class RecordValueHelpers {
                 case 'unix_ts':
                     return strtotime($value);
                 case 'carbon':
-                    return Carbon::parse($value);
+                    return Carbon::parse($value)->toImmutable();
                 default:
                     throw new \InvalidArgumentException("Requested value format '$format' is not implemented");
             }
@@ -389,7 +389,7 @@ abstract class RecordValueHelpers {
                 case 'unix_ts':
                     return strtotime($value);
                 case 'carbon':
-                    return Carbon::parse($value)->startOfDay();
+                    return Carbon::parse($value)->startOfDay()->toImmutable();
                 default:
                     throw new \InvalidArgumentException("Requested value format '$format' is not implemented");
             }
