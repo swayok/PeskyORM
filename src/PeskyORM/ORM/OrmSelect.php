@@ -457,16 +457,16 @@ class OrmSelect extends AbstractSelect {
                     );
                 }
             } else {
-                $foreignTableStructure = $this
-                    ->getJoin($columnInfo['join_name'])
-                    ->getForeignDbTable()
-                    ->getTableStructure();
-                $isValid = $columnInfo['name'] === '*' || $foreignTableStructure::hasColumn($columnInfo['name']);
-                if (!$isValid) {
-                    throw new \UnexpectedValueException(
-                        "{$subject}: Column with name [{$columnInfo['join_name']}.{$columnInfo['name']}] not found in "
-                            . get_class($foreignTableStructure)
-                    );
+                $join = $this->getJoin($columnInfo['join_name']);
+                if (!($join instanceof CrossJoinInfo)) {
+                    $foreignTableStructure = $join->getForeignDbTable()->getTableStructure();
+                    $isValid = $columnInfo['name'] === '*' || $foreignTableStructure::hasColumn($columnInfo['name']);
+                    if (!$isValid) {
+                        throw new \UnexpectedValueException(
+                            "{$subject}: Column with name [{$columnInfo['join_name']}.{$columnInfo['name']}] not found in "
+                                . get_class($foreignTableStructure)
+                        );
+                    }
                 }
             }
         }

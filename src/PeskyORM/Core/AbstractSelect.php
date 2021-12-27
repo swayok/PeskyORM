@@ -3,6 +3,7 @@
 namespace PeskyORM\Core;
 
 use http\Exception\BadMethodCallException;
+use PeskyORM\ORM\CrossJoinInfo;
 use PeskyORM\ORM\OrmJoinInfo;
 use Swayok\Utils\ValidateValue;
 
@@ -67,6 +68,10 @@ abstract class AbstractSelect {
      * @var JoinInfo[]
      */
     protected $joins = [];
+    /**
+     * @var CrossJoinInfo[]
+     */
+    protected $crossJoins = [];
     /**
      * List of JOINs names that are mentioned in WHERE and HAVING conditions.
      * This is used in simplified query builder so it won't drop LEFT JOINs if
@@ -724,6 +729,22 @@ abstract class AbstractSelect {
         $this->setDirty('joins');
         return $this;
     }
+    
+    public function crossJoin(CrossJoinInfo $joinConfig, bool $append = true) {
+        // @see CROSS JOIN docs for details
+        if (!$joinConfig->isValid()) {
+            throw new \InvalidArgumentException("Cross join config with name '{$joinConfig->getJoinName()}' is not valid");
+        }
+        if (!$append) {
+            $this->crossJoins = [];
+        }
+        if (isset($this->crossJoins[$joinConfig->getJoinName()])) {
+            throw new \InvalidArgumentException("Cross join with name '{$joinConfig->getJoinName()}' already defined");
+        }
+        $this->crossJoins[$joinConfig->getJoinName()] = $joinConfig;
+        $this->setDirty('joins');
+        return $this;
+    }
 
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
 
@@ -1037,6 +1058,10 @@ abstract class AbstractSelect {
             $joinName = $joinConfig->getJoinName();
             $replaces["%`{$joinName}`\.%"] = '`' . $this->getShortJoinAlias($joinName) . '`.';
         }
+        foreach ($this->crossJoins as $joinConfig) {
+            $joinName = $joinConfig->getJoinName();
+            $replaces["%`{$joinName}`\.%"] = '`' . $this->getShortJoinAlias($joinName) . '`.';
+        }
         return $dbExpr->applyReplaces($replaces);
     }
 
@@ -1256,6 +1281,10 @@ abstract class AbstractSelect {
             $conditions = $this->makeJoinConditions($joinConfig);
             $joins[] = "$type $table ON ($conditions)";
         }
+        foreach ($this->crossJoins as $joinConfig) {
+            $joinQuery = $this->quoteDbExpr($joinConfig->getJoinQuery());
+            $joins[] = "CROSS JOIN {$joinQuery} AS " . $this->quoteDbEntityName($this->getShortJoinAlias($joinConfig->getJoinName()));
+        }
         return count($joins) ? ' ' . implode(' ', $joins) : '';
     }
 
@@ -1418,7 +1447,7 @@ abstract class AbstractSelect {
         // make record nested + add missing child records
         $nested = $dataBlocks[$this->getTableAlias()] ?: [];
         $deepNestedJoins = [];
-        foreach ($this->joins as $joinConfig) {
+        foreach (array_merge($this->joins, $this->crossJoins) as $joinConfig) {
             if (!empty($dataBlocks[$joinConfig->getJoinName()])) {
                 $data = $this->normalizeJoinDataForRecord($joinConfig, $dataBlocks[$joinConfig->getJoinName()]);
                 if ($joinConfig->getTableAlias() === $this->getTableAlias()) {
@@ -1551,12 +1580,19 @@ abstract class AbstractSelect {
      * @return bool
      */
     protected function hasJoin(string $joinName, bool $mayBeShort = false): bool {
-        return isset($this->joins[$joinName]) || ($mayBeShort && in_array($joinName, $this->shortJoinAliases, true));
+        return (
+            isset($this->joins[$joinName])
+            || isset($this->crossJoins[$joinName])
+            || (
+                $mayBeShort
+                && in_array($joinName, $this->shortJoinAliases, true)
+            )
+        );
     }
 
     /**
      * @param string $joinName
-     * @return JoinInfo|OrmJoinInfo
+     * @return JoinInfo|OrmJoinInfo|CrossJoinInfo
      * @throws \UnexpectedValueException
      */
     protected function getJoin(string $joinName) {
@@ -1565,14 +1601,20 @@ abstract class AbstractSelect {
         }
         if (isset($this->joins[$joinName])) {
             return $this->joins[$joinName];
+        } else if (isset($this->crossJoins[$joinName])) {
+            return $this->crossJoins[$joinName];
         } else {
-            return $this->joins[array_flip($this->shortJoinAliases)[$joinName]];
+            $alias = array_flip($this->shortJoinAliases)[$joinName];
+            return $this->joins[$alias] ?: $this->crossJoins[$alias];
         }
     }
 
     public function __clone() {
         foreach ($this->joins as $key => $joinConfig) {
             $this->joins[$key] = clone $joinConfig;
+        }
+        foreach ($this->crossJoins as $key => $joinConfig) {
+            $this->crossJoins[$key] = clone $joinConfig;
         }
     }
 }

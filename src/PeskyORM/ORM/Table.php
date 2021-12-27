@@ -131,11 +131,11 @@ abstract class Table implements TableInterface {
      */
     static public function makeSelect($columns, array $conditions = [], ?\Closure $configurator = null): OrmSelect {
         $select = OrmSelect::from(static::getInstance())
-            ->fromConfigsArray($conditions)
-            ->columns($columns);
+            ->fromConfigsArray($conditions);
         if ($configurator !== null) {
             $configurator($select);
         }
+        $select->columns($columns);
         return $select;
     }
 
