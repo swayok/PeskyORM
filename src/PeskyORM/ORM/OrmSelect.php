@@ -205,7 +205,7 @@ class OrmSelect extends AbstractSelect {
         return $this;
     }
 
-    protected function normalizeWildcardColumn(?string $joinName = null, ?array $excludeColumns = null): array {
+    protected function normalizeWildcardColumn(?string $joinName = null, ?array $excludeColumns = null, bool $includeHeavyColumns = false): array {
         if ($joinName === null) {
             $tableStructure = $this->getTableStructure();
         } else {
@@ -216,7 +216,7 @@ class OrmSelect extends AbstractSelect {
             $excludeColumns = [];
         }
         foreach ($tableStructure::getColumnsThatExistInDb() as $columnName => $config) {
-            if (!$config->isValueHeavy() && !in_array($columnName, $excludeColumns, true)) {
+            if (($includeHeavyColumns || !$config->isValueHeavy()) && !in_array($columnName, $excludeColumns, true)) {
                 $normalizedColumns[] = $this->analyzeColumnName($columnName, null, $joinName, 'SELECT');
             }
         }

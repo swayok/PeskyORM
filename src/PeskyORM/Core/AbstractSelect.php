@@ -1126,17 +1126,17 @@ abstract class AbstractSelect {
                 );
             }
             $columnAlias = is_int($columnAlias) ? null : $columnAlias;
-            if ($columnName === '*') {
+            if ($columnName === '*' || $columnName === '**') {
                 /** @noinspection SlowArrayOperationsInLoopInspection */
                 $normalizedColumns = array_merge(
                     $normalizedColumns,
-                    $this->normalizeWildcardColumn($joinName, [])
+                    $this->normalizeWildcardColumn($joinName, [], $columnName === '**')
                 );
-            } else if ($columnAlias === '*') {
+            } else if ($columnAlias === '*' || $columnAlias === '**') {
                 /** @noinspection SlowArrayOperationsInLoopInspection */
                 $normalizedColumns = array_merge(
                     $normalizedColumns,
-                    $this->normalizeWildcardColumn($joinName, (array)$columnName)
+                    $this->normalizeWildcardColumn($joinName, (array)$columnName, $columnAlias === '**')
                 );
             } else {
                 $columnInfo = $this->analyzeColumnName($columnName, $columnAlias, $joinName, $subject);
@@ -1167,9 +1167,10 @@ abstract class AbstractSelect {
      * Normalize '*' column name
      * @param null|string $joinName
      * @param null|array $excludeColumns - list of columns to exclude from wildcard (handled only by OrmSelect)
+     * @param bool $includeHeavyColumns - used in OrmSelect
      * @return array - returns list of $this->analyzeColumnName() results
      */
-    protected function normalizeWildcardColumn(?string $joinName = null, ?array $excludeColumns = null): array {
+    protected function normalizeWildcardColumn(?string $joinName = null, ?array $excludeColumns = null, bool $includeHeavyColumns = false): array {
         return [$this->analyzeColumnName('*', null, $joinName, 'SELECT')];
     }
 
