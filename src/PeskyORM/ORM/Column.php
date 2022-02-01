@@ -908,7 +908,7 @@ class Column {
     protected function itIsForeignKey(Relation $relation) {
         if ($this->foreignKeyRelation) {
             throw new \InvalidArgumentException(
-                'Conflict detected: relation ' . $relation->getName() . ' pretends to be the source of '
+                'Conflict detected for column ' . $this->getName() . ': relation ' . $relation->getName() . ' pretends to be the source of '
                 . 'values for this foreign key but there is already another relation for this: '
                 . $this->foreignKeyRelation->getName()
             );
