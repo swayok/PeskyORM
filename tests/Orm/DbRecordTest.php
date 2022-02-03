@@ -1287,7 +1287,7 @@ class DbRecordTest extends TestCase {
 
     /**
      * @expectedException \BadMethodCallException
-     * @expectedExceptionMessage Record has not enough data to read related record 'Parent'. You need to provide a value for 'parent_id' column.
+     * @expectedExceptionMessage Record \Tests\PeskyORMTest\TestingAdmins\TestingAdmin has not enough data to read related record 'Parent'. You need to provide a value for 'parent_id' column.
      */
     public function testInvalidReadRelatedRecord2() {
         TestingAdmin::newEmptyRecord()->readRelatedRecord('Parent');
