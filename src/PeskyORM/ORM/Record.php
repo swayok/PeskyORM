@@ -865,7 +865,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $relation = static::getRelation($relationName);
         if (!$this->isRelatedRecordCanBeRead($relation)) {
             throw new \BadMethodCallException(
-                "Record has not enough data to read related record '{$relationName}'. "
+                'Record ' . get_class($this) . " has not enough data to read related record '{$relationName}'. "
                     . "You need to provide a value for '{$relation->getLocalColumnName()}' column."
             );
         }
