@@ -135,12 +135,24 @@ class RecordsSet extends RecordsArray {
     /**
      * Replace records ordering
      * Note: deletes already selected records and selects new
-     * @param string|DbExpr $column
+     * @param array|string|DbExpr $column
      * @param bool $orderAscending
      * @return $this
      */
     public function replaceOrdering($column, bool $orderAscending = true) {
-        $this->select->orderBy($column, $orderAscending, false);
+        if (is_array($column)) {
+            foreach ($column as $colName => $direction) {
+                if (is_int($colName)) {
+                    // index => column or DbExpr
+                    $this->select->orderBy($direction, 'asc', false);
+                } else {
+                    // column or DbExpr => direction
+                    $this->select->orderBy($colName, $direction, false);
+                }
+            }
+        } else {
+            $this->select->orderBy($column, $orderAscending, false);
+        }
         $this->resetRecords();
         return $this;
     }
