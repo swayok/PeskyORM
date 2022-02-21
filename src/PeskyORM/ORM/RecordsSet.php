@@ -141,13 +141,14 @@ class RecordsSet extends RecordsArray {
      */
     public function replaceOrdering($column, bool $orderAscending = true) {
         if (is_array($column)) {
+            $this->select->removeOrdering();
             foreach ($column as $colName => $direction) {
                 if (is_int($colName)) {
                     // index => column or DbExpr
-                    $this->select->orderBy($direction, 'asc', false);
+                    $this->select->orderBy($direction, 'asc', true);
                 } else {
                     // column or DbExpr => direction
-                    $this->select->orderBy($colName, $direction, false);
+                    $this->select->orderBy($colName, $direction, true);
                 }
             }
         } else {
