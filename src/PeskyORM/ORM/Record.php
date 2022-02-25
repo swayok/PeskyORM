@@ -808,12 +808,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     "\$relatedRecord argument must be an instance of Record class for the '{$relationTable::getName()}' DB table"
                 );
             }
-            if ($this->isTrustDbDataMode()) {
-                $relatedRecord->enableTrustModeForDbData();
-            }
-            if ($this->isReadOnly()) {
-                $relatedRecord->enableReadOnlyMode();
-            }
         } else {
             throw new \InvalidArgumentException(
                 "\$relatedRecord argument must be an array or instance of Record class for the '{$relationTable::getName()}' DB table"
