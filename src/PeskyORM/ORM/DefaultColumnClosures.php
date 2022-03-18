@@ -220,10 +220,11 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
 
     /**
      * @param Column $column
+     * @param array $additionalFormats
      * @return array
      */
-    static public function getValueFormats(Column $column) {
+    static public function getValueFormats(Column $column, array $additionalFormats = []) {
         [, $formats] = RecordValueHelpers::getValueFormatterAndFormatsByType($column->getType());
-        return $formats;
+        return array_unique(array_merge($formats, $additionalFormats));
     }
 }

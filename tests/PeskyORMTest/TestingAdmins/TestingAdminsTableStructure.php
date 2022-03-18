@@ -150,7 +150,7 @@ class TestingAdminsTableStructure extends TableStructure {
             ->allowsNullValues()
             ->setValueFormatter(function () {
                 return 'not implemented';
-            });
+            }, []);
     }
 
     private function some_file() {
@@ -159,7 +159,7 @@ class TestingAdminsTableStructure extends TableStructure {
             ->allowsNullValues()
             ->setValueFormatter(function () {
                 return 'not implemented';
-            });
+            }, []);
     }
 
     private function not_changeable_column() {

@@ -196,9 +196,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     'column' => $column
                 ];
                 /** @var ColumnClosuresInterface $closuresClass */
-                $closuresClass = $column->getClosuresClass();
-                $formats = $closuresClass::getValueFormats($column);
-                foreach ($formats as $format) {
+                foreach ($column->getValueFormattersNames() as $format) {
                     self::$columns[static::class]['columns_and_formats'][$columnName . '_as_' . $format] = [
                         'format' => $format,
                         'column' => $column

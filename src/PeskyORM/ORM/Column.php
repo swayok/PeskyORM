@@ -274,6 +274,12 @@ class Column {
      */
     protected $valueFormatter = null;
     /**
+     * List of value formatters. Used in default getter to add possibility to convert original value to specific format
+     * For example: convert json to array, or timestamp like 2016-05-24 17:24:00 to unix timestamp
+     * @var null|\Closure
+     */
+    protected $valueFormattersNames = [];
+    /**
      * Function that generates new value for a column for each save operation
      * Usage example: updated_at column
      * @var null|\Closure
@@ -402,7 +408,9 @@ class Column {
         $this->setValuePreprocessor($closures['valuePreprocessor']);
         $this->setValueSavingExtender($closures['valueSavingExtender']);
         $this->setValueDeleteExtender($closures['valueDeleteExtender']);
-        $this->setValueFormatter($closures['valueFormatter']);
+        /** @var DefaultColumnClosures $closuresClass */
+        $closuresClass = $this->getClosuresClass();
+        $this->setValueFormatter($closures['valueFormatter'], $closuresClass::getValueFormats($this));
     }
 
     /**
@@ -1240,11 +1248,17 @@ class Column {
     /**
      * Function to transform original value into another format and return result. Used by default value getter
      * @param \Closure $valueFormatter - function (RecordValue $valueContainer, $format) { return 'formatted value'; }
+     * @param array $formattersNames - list of formats
      * @return $this
      */
-    public function setValueFormatter(\Closure $valueFormatter) {
+    public function setValueFormatter(\Closure $valueFormatter, array $formattersNames) {
         $this->valueFormatter = $valueFormatter;
+        $this->valueFormattersNames = $formattersNames;
         return $this;
+    }
+    
+    public function getValueFormattersNames(): array {
+        return $this->valueFormattersNames;
     }
 
     /**

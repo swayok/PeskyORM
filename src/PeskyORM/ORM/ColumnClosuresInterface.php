@@ -107,8 +107,9 @@ interface ColumnClosuresInterface {
     /**
      * List of available formatters for a column. Required for service purposes.
      * @param Column $column
+     * @param array $additionalFormats
      * @return array
      */
-    static public function getValueFormats(Column $column);
+    static public function getValueFormats(Column $column, array $additionalFormats = []);
 
 }
