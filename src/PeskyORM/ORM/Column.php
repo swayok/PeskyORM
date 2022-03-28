@@ -800,7 +800,9 @@ class Column {
     public function uniqueValues($caseSensitive = self::CASE_SENSITIVE, ...$withinColumns) {
         $this->isValueMustBeUnique = true;
         $this->isUniqueContraintCaseSensitive = (bool)$caseSensitive;
-        $this->uniqueContraintAdditonalColumns = $withinColumns;
+        $this->uniqueContraintAdditonalColumns = count($withinColumns) === 1 && isset($withinColumns[0]) && is_array($withinColumns[0])
+            ? $withinColumns[0]
+            : $withinColumns;
         return $this;
     }
 
