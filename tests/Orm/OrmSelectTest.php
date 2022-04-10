@@ -39,7 +39,7 @@ class OrmSelectTest extends TestCase {
 
     public function convertTestDataForAdminsTableAssert($data) {
         foreach ($data as &$item) {
-            $item['id'] = "{$item['id']}";
+            $item['id'] = (string)$item['id'];
             $item['is_superadmin'] = (bool)$item['is_superadmin'];
             $item['is_active'] = (bool)$item['is_active'];
         }
@@ -126,61 +126,49 @@ class OrmSelectTest extends TestCase {
         $data = $dbSelect->limit(1)->fetchNextPage();
         static::assertEquals([$testData[1]], $data);
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage SELECT: There is no relation 'OtherTable' in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testInvalidJoinsSet() {
+        $this->expectExceptionMessage("SELECT: There is no relation 'OtherTable' in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectException(UnexpectedValueException::class);
         static::getNewSelect()->columns(['id', 'OtherTable.id'])->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage SELECT: Column with name [asid] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testNotExistingColumnName1() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage("SELECT: Column with name [asid] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()->columns(['asid'])->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage SELECT: Column with name [Parent.asid] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testNotExistingColumnName2() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage("SELECT: Column with name [Parent.asid] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()->columns(['id', 'Parent.asid'])->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage SELECT: Column with name [asid] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testNotExistingColumnName3() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage("SELECT: Column with name [asid] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         // Parent is column alias, not a relation
         static::getNewSelect()->columns(['Parent' => 'asid'])->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage SELECT: Column with name [Parent.asid] and alias [asialias] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testNotExistingColumnName4() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage(
+            "SELECT: Column with name [Parent.asid] and alias [asialias] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure"
+        );
         static::getNewSelect()->columns(['id', 'Parent' => ['asialias' => 'asid']])->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage Failed to assemble DB query: there is no columns to be selected from main table
-     */
+    
     public function testEmptyColumnsList1() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage("Failed to assemble DB query: there is no columns to be selected from main table");
         static::getNewSelect()->columns(['Parent.id'])->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage SELECT: Column with name [asdasdqdasd] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testInvalidColNameInDbExpr() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage("SELECT: Column with name [asdasdqdasd] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()->columns(['sum' => DbExpr::create('SUM(`Admins`.`asdasdqdasd`)')])->getQuery();
     }
 
@@ -306,76 +294,72 @@ class OrmSelectTest extends TestCase {
             rtrim($dbSelect->columns(['*', 'sum' => DbExpr::create('SUM(`id`)')])->getQuery())
         );
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect
-     */
+    
     public function testHasManyRelationException1() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage(
+            "Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect"
+        );
         static::getNewSelect()->columns('id', 'Children.*')->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect
-     */
+    
     public function testHasManyRelationException2() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage(
+            "Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect"
+        );
         static::getNewSelect()->columns(['id', 'Parent' => ['Children.*']])->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect
-     */
+    
     public function testHasManyRelationException3() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage(
+            "Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect"
+        );
         static::getNewSelect()->columns(['id', 'Parent' => ['Children' => '*']])->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect
-     */
+    
     public function testHasManyRelationException4() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage(
+            "Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect"
+        );
         static::getNewSelect()->columns(['id', 'Parent' => ['Children' => ['*']]])->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect
-     */
+    
     public function testHasManyRelationException5() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage(
+            "Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect"
+        );
         static::getNewSelect()->columns(['id', 'Parent' => ['Children' => []]])->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage SELECT: Column with name [Parent.qqq] and alias [Children] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testHasManyRelationException6() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage(
+            "SELECT: Column with name [Parent.qqq] and alias [Children] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure"
+        );
         static::getNewSelect()->columns(['id', 'Parent' => ['Children' => 'qqq']])->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage SELECT: Column with name [Parent.qqq] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testInvalidColNameInRelation1() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage("SELECT: Column with name [Parent.qqq] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()->columns(['id', 'Parent' => ['qqq']])->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage SELECT: Column with name [Parent.qqq] and alias [key] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testInvalidColNameInRelation2() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage(
+            "SELECT: Column with name [Parent.qqq] and alias [key] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure"
+        );
         static::getNewSelect()->columns(['id', 'Parent' => ['key' => 'qqq']])->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage SELECT: Column with name [Parent.qqq] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testInvalidColNameInRelation3() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage("SELECT: Column with name [Parent.qqq] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()->columns(['id', 'Parent.qqq'])->getQuery();
     }
 
@@ -402,12 +386,6 @@ class OrmSelectTest extends TestCase {
         foreach ($dbSelect->getTable()->getTableStructure()->getColumns() as $column) {
             if ($column->isItExistsInDb()) {
                 $shortName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', [$column->getName()]);
-                $expectedColsInfo[] = [
-                    'name' => $column->getName(),
-                    'alias' => null,
-                    'join_name' => null,
-                    'type_cast' => null,
-                ];
                 $colsInSelectForParent[] = '"Parent"."' . $column->getName() . '" AS "_Parent__' . $shortName . '"';
                 $colsInSelectForParent2[] = '"Parent2"."' . $column->getName() . '" AS "_Parent2__' . $shortName . '"';
             }
@@ -440,84 +418,64 @@ class OrmSelectTest extends TestCase {
 
 
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Invalid WHERE condition value provided for column [email]. Value: 0
-     */
+    
     public function testInvalidWhereCondition1() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("Invalid WHERE condition value provided for column [email]. Value: 0");
         static::getNewSelect()->where(['email' => '0'])->getQuery();
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Invalid HAVING condition value provided for column [email]. Value: 0
-     */
+    
     public function testInvalidHavingCondition1() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("Invalid HAVING condition value provided for column [email]. Value: 0");
         static::getNewSelect()->having(['email' => '0'])->getQuery();
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage WHERE: Column with name [invalid_____] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testInvalidWhereCondition2() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("WHERE: Column with name [invalid_____] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()->where(['invalid_____' => '0'])->getQuery();
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage HAVING: Column with name [invalid_____] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testInvalidHavingCondition2() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("HAVING: Column with name [invalid_____] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()->having(['invalid_____' => '0'])->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage Join config with name [InvalidRel] not found
-     */
+    
     public function testInvalidRelationInWhere1() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage("Join config with name [InvalidRel] not found");
         static::getNewSelect()->where(['InvalidRel.col' => '0'])->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage Join config with name [InvalidRel] not found
-     */
+    
     public function testInvalidRelationInHaving1() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage("Join config with name [InvalidRel] not found");
         static::getNewSelect()->having(['InvalidRel.col' => '0'])->getQuery();
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage WHERE: Column with name [Parent.col] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testInvalidRelationInWhere2() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("WHERE: Column with name [Parent.col] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()->where(['Parent.col' => '0'])->getQuery();
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage HAVING: Column with name [Parent.col] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testInvalidRelationInHaving2() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("HAVING: Column with name [Parent.col] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()->having(['Parent.col' => '0'])->getQuery();
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage WHERE: Column with name [Parent2.col] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testInvalidRelationInWhere3() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("WHERE: Column with name [Parent2.col] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()->columns(['id', 'Parent' => ['Parent as Parent2' => '*']])->where(['Parent2.col' => '0'])->getQuery();
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage HAVING: Column with name [Parent2.col] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testInvalidRelationInHaving3() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("HAVING: Column with name [Parent2.col] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()->columns(['id', 'Parent' => ['Parent as Parent2' => '*']])->having(['Parent2.col' => '0'])->getQuery();
     }
 
@@ -625,12 +583,10 @@ class OrmSelectTest extends TestCase {
             $dbSelect->join($joinConfig, false)->getQuery()
         );
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage Test: Column with name [qqq] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testInvalidValidateColumnInfo1() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage("Test: Column with name [qqq] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         $this->callObjectMethod(static::getNewSelect(), 'validateColumnInfo', [
             [
                 'name' => 'qqq',
@@ -641,12 +597,10 @@ class OrmSelectTest extends TestCase {
             'Test'
         ]);
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage Test: Column with name [Parent.qqq] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testInvalidValidateColumnInfo2() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage("Test: Column with name [Parent.qqq] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         $this->callObjectMethod(static::getNewSelect(), 'validateColumnInfo', [
             [
                 'name' => 'qqq',
@@ -657,12 +611,10 @@ class OrmSelectTest extends TestCase {
             'Test'
         ]);
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage Test: Column with name [Parent.qqq] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testInvalidValidateColumnInfo3() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage("Test: Column with name [Parent.qqq] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         $this->callObjectMethod(self::getNewSelect(), 'validateColumnInfo', [
             [
                 'name' => DbExpr::create('`Parent`.`id` + `Parent`.`qqq`'),
@@ -673,12 +625,12 @@ class OrmSelectTest extends TestCase {
             'Test'
         ]);
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect.
-     */
+    
     public function testInvalidValidateColumnInfo4() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage(
+            "Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect."
+        );
         $this->callObjectMethod(self::getNewSelect(), 'validateColumnInfo', [
             [
                 'name' => 'id',
@@ -716,68 +668,56 @@ class OrmSelectTest extends TestCase {
         ];
         $this->callObjectMethod($select, 'validateColumnInfo', [$info, 'Test']);
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage Join config with name [Test] not found
-     */
+    
     public function testInvalidOrderBy1() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage("Join config with name [Test] not found");
         static::getNewSelect()->orderBy('Test.id')->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage ORDER BY: Column with name [Parent.qweasd] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testInvalidOrderBy2() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage(
+            "ORDER BY: Column with name [Parent.qweasd] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure"
+        );
         static::getNewSelect()->orderBy('Parent.qweasd')->getQuery();
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage ORDER BY: Invalid column name or json selector: [Parent.qweasd ASC]
-     */
+    
     public function testInvalidOrderBy3() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("ORDER BY: Invalid column name or json selector: [Parent.qweasd ASC]");
         static::getNewSelect()->orderBy('Parent.qweasd ASC')->getQuery();
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage ORDER BY: Invalid column name or json selector: [Parent.Parent.id]
-     */
+    
     public function testInvalidOrderBy4() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("ORDER BY: Invalid column name or json selector: [Parent.Parent.id]");
         static::getNewSelect()->orderBy('Parent.Parent.id')->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage Join config with name [Test] not found
-     */
+    
     public function testInvalidGroupBy1() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage("Join config with name [Test] not found");
         static::getNewSelect()->groupBy(['Test.id'])->getQuery();
     }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @expectedExceptionMessage GROUP BY: Column with name [Parent.qweasd] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testInvalidGroupBy2() {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage(
+            "GROUP BY: Column with name [Parent.qweasd] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure"
+        );
         static::getNewSelect()->groupBy(['Parent.qweasd'])->getQuery();
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage GROUP BY: Invalid column name or json selector: [Parent.qweasd ASC]
-     */
+    
     public function testInvalidGroupBy3() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("GROUP BY: Invalid column name or json selector: [Parent.qweasd ASC]");
         static::getNewSelect()->groupBy(['Parent.qweasd ASC'])->getQuery();
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage GROUP BY: Invalid column name or json selector: [Parent.Parent.id]
-     */
+    
     public function testInvalidGroupBy4() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("GROUP BY: Invalid column name or json selector: [Parent.Parent.id]");
         static::getNewSelect()->groupBy(['Parent.Parent.id'])->getQuery();
     }
 
@@ -868,6 +808,10 @@ class OrmSelectTest extends TestCase {
             preg_replace('%^SELECT "(.+?)"."id",*$%', '$1', $select->getQuery()),
             TestingAdminsTableLongAlias::getAlias()
         );
+    }
+    
+    public function testContains() {
+        // todo: add tests for OrmSelect->normalizeConditionsAndOptionsArray() and OrmSelect->convertContainsToJoins()
     }
 
 

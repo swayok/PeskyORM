@@ -150,6 +150,155 @@ class OrmSelect extends AbstractSelect {
     }
     
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
+    
+    protected function normalizeConditionsAndOptionsArray(array $conditionsAndOptions): array {
+        $conditionsAndOptions = parent::normalizeConditionsAndOptionsArray($conditionsAndOptions);
+    
+        if (isset($conditionsAndOptions['CONTAINS'])) {
+            $conditionsAndOptions['CONTAIN'] = $conditionsAndOptions['CONTAINS'];
+        }
+        unset($conditionsAndOptions['CONTAINS']);
+        
+        if (!empty($conditionsAndOptions['CONTAIN'])) {
+            $conditionsAndOptions = $this->convertContainsToJoins($conditionsAndOptions);
+        }
+    
+        if (empty($conditionsAndOptions['JOINS'])) {
+            unset($conditionsAndOptions['JOINS']);
+        }
+        return $conditionsAndOptions;
+    }
+    
+    /**
+     * Convert 'CONTAIN' key value from $conditionsAndOptions to 'JOINS' using table's relations
+     *
+     * To select columns from relations you can just use relations in $this->columns(['RelationName' => ['column1']])
+     *
+     * 'CONTAIN' idea is to allow joining relations for some very specific cases like aggregated columns and
+     * conditions that cannot automatically detect and load correct relations (deep nesting, DbExpr, several relations with same name)
+     *
+     * Formats:
+     * ['RelationName'] - join 'RelationName' and select all of its columns
+     * ['RelationName' => '*'] - join 'RelationName' and select all of its columns
+     * ['RelationName' => ['*']] - join 'RelationName' and select all of its columns
+     * ['RelationName' => []] - join 'RelationName' and select none of its columns (useful for conditions and aggregates)
+     * ['RelationName' => ['col1', 'col2']] - join 'RelationName' and select some of its columns
+     * ['RelationName as RelationAlias'] - use 'RelationAlias' instead of 'RelationName' when referring to joined Relation
+     *      (for cases when deep joins have same names). Note that fetched data will use 'RelationAlias', not 'RelationName'
+     * Options:
+     * ['RelationName' => ['*', 'TYPE' => Relation::JOIN_* ]] - join 'RelationName' using specific join type:
+     *      Relation::JOIN_INNER, Relation::JOIN_LEFT, Relation::JOIN_RIGHT
+     * ['RelationName' => ['*', 'JOIN_CONDITIONS' => [...] ]] - join 'RelationName' with additional join conditions
+     * Sub contains:
+     * ['RelationName' => ['CONTAIN' => ['SubRelationName']]] - join 'RelationName' and select none of its columns,
+     *      then join 'SubRelationName' via 'RelationName' and select all of its columns
+     * ['RelationName' => ['*', 'CONTAIN' => ['SubRelationName' => ['col1', 'col2']]]] - join 'RelationName' and select all its columns,
+     *      then join 'SubRelationName' via 'RelationName' and select all of its columns
+     * You can use Options and Sub contains for sub contains:
+     * [
+     *      'RelationName' => [
+     *          '*',
+     *          'CONTAIN' => [
+     *              'SubRelationName' => [
+     *                  '*',
+     *                  'TYPE' => Relation::JOIN_LEFT,
+     *                  'JOIN_CONDITIONS' => ['SubRelationName.col1' => 'some value or DbExpr'],
+     *                  'CONTAIN' => [
+     *                      'SubSubRelation'
+     *                  ]
+     *              ]
+     *          ]
+     *      ]
+     * ]
+     */
+    protected function convertContainsToJoins(
+        array $conditionsAndOptions,
+        ?TableInterface $table = null,
+        ?string $aliasForSubContains = null
+    ): array {
+        if (!is_array($conditionsAndOptions['CONTAIN'])) {
+            $conditionsAndOptions['CONTAIN'] = [$conditionsAndOptions['CONTAIN']];
+        }
+        if (empty($conditionsAndOptions['JOINS']) || !is_array($conditionsAndOptions['JOINS'])) {
+            $conditionsAndOptions['JOINS'] = [];
+        }
+        
+        if (!$table) {
+            $table = $this->getTable();
+        }
+        $tableStructure = $table->getTableStructure();
+        
+        foreach ($conditionsAndOptions['CONTAIN'] as $relationName => $columnsToSelectForRelation) {
+            if ($columnsToSelectForRelation instanceof OrmJoinInfo) {
+                $conditionsAndOptions['JOINS'][$columnsToSelectForRelation->getJoinName()] = $columnsToSelectForRelation;
+                continue;
+            }
+            
+            $subContains = [];
+            if (is_int($relationName)) {
+                $relationName = $columnsToSelectForRelation;
+                $columnsToSelectForRelation = ['*'];
+            } else if (empty($columnsToSelectForRelation)) {
+                $columnsToSelectForRelation = [];
+            }
+            // parse "RelationName as RelationAlias"
+            $relationAlias = $relationName;
+            if (preg_match('%^\s*(.*?)\s+as\s+(.*)\s*$%i', $relationName, $matches)) {
+                [, $relationName, $relationAlias] = $matches[1];
+            }
+            $relationConfig = $tableStructure::getRelation($relationName);
+            if ($relationConfig->getType() === Relation::HAS_MANY) {
+                throw new \UnexpectedValueException("Queries with one-to-many joins are not allowed via 'CONTAIN' key");
+            } else {
+                /** @var TableInterface|Table $foreignTable */
+                $foreignTable = $relationConfig->getForeignTable();
+                $joinType = $relationConfig->getJoinType();
+                if (is_array($columnsToSelectForRelation)) {
+                    if (isset($columnsToSelectForRelation['TYPE'])) {
+                        $joinType = $columnsToSelectForRelation['TYPE'];
+                    }
+                    unset($columnsToSelectForRelation['TYPE']);
+                    if (isset($columnsToSelectForRelation['CONDITIONS'])) {
+                        throw new \UnexpectedValueException('CONDITIONS key is not supported in CONTAIN');
+                    }
+                    unset($columnsToSelectForRelation['CONDITIONS']);
+                    if (!empty($columnsToSelectForRelation['CONTAIN'])) {
+                        $subContains = $columnsToSelectForRelation['CONTAIN'];
+                    }
+                    unset($columnsToSelectForRelation['CONTAIN']);
+                    if (isset($columnsToSelectForRelation['JOIN_CONDITIONS'])) {
+                        $additionalJoinConditions = $columnsToSelectForRelation['JOIN_CONDITIONS'];
+                    }
+                    unset($columnsToSelectForRelation['JOIN_CONDITIONS']);
+                    
+                    if (empty($columnsToSelectForRelation)) {
+                        $columnsToSelectForRelation = [];
+                    }
+                }
+                
+                $ormJoinConfig = $relationConfig
+                    ->toOrmJoinConfig($table, $aliasForSubContains, $relationAlias, $joinType)
+                    ->setForeignColumnsToSelect($columnsToSelectForRelation);
+                
+                if (!empty($additionalJoinConditions)) {
+                    $ormJoinConfig->setAdditionalJoinConditions($additionalJoinConditions);
+                }
+                
+                $conditionsAndOptions['JOINS'][$relationAlias] = $ormJoinConfig;
+                
+                if (!empty($subContains)) {
+                    $subContainConditions = $this->convertContainsToJoins(
+                        ['CONTAIN' => $subContains],
+                        $foreignTable,
+                        $relationAlias
+                    );
+                    $conditionsAndOptions['JOINS'] = array_merge($conditionsAndOptions['JOINS'], $subContainConditions['JOINS']);
+                }
+            }
+        }
+        unset($conditionsAndOptions['CONTAIN']);
+        return $conditionsAndOptions;
+    }
 
     protected function normalizeJoinDataForRecord(AbstractJoinInfo $joinConfig, array $data): array {
         $data = parent::normalizeJoinDataForRecord($joinConfig, $data);
