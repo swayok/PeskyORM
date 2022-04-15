@@ -13,7 +13,7 @@ class TestingAdmin2 extends Record {
         return TestingAdminsTable::getInstance();
     }
 
-    protected function beforeSave(array $columnsToSave, array $data, bool $isUpdate) {
+    protected function beforeSave(array $columnsToSave, array $data, bool $isUpdate): array {
         if ($isUpdate) {
             return ['login' => ['error']];
         }
