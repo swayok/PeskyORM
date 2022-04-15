@@ -15,53 +15,29 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator {
     /**
      * @var TableStructureInterface[]
      */
-    private static $tableStructures = [];
-    /**
-     * @var array
-     */
-    private static $columns = [];
+    private static array $tableStructures = [];
+    private static array $columns = [];
 
     /**
      * @var RecordValue[]
      */
-    protected $values = [];
+    protected array $values = [];
     /**
      * @var Record[]|RecordInterface[]|RecordsSet[]
      */
-    protected $relatedRecords = [];
-    /**
-     * @var null|bool
-     */
-    private $existsInDb;
-    /**
-     * @var null
-     */
-    private $existsInDbReally;
-    /**
-     * @var bool
-     */
-    protected $isCollectingUpdates = false;
+    protected array $relatedRecords = [];
+    private ?bool $existsInDb = null;
+    private ?bool $existsInDbReally = null;
+    protected bool $isCollectingUpdates = false;
     /**
      * Collected when value is updated during $this->isCollectingUpdates === true
      * @var RecordValue[]
      */
-    protected $valuesBackup = [];
-    /**
-     * @var int
-     */
-    protected $iteratorIdx = 0;
-    /**
-     * @var bool
-     */
-    protected $trustDbDataMode = false;
-    /**
-     * @var bool
-     */
-    protected $isReadOnly = false;
-    /**
-     * @var array
-     */
-    protected $readOnlyData = [];
+    protected array $valuesBackup = [];
+    protected int $iteratorIdx = 0;
+    protected bool $trustDbDataMode = false;
+    protected bool $isReadOnly = false;
+    protected array $readOnlyData = [];
 
     /**
      * Create new record with values from $data array
@@ -84,7 +60,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator {
      * @param array $readRelatedRecords
      * @return static
      */
-    static public function read($pkValue, array $columns = [], array $readRelatedRecords = []): static {
+    static public function read(mixed $pkValue, array $columns = [], array $readRelatedRecords = []): static {
         return static::newEmptyRecord()->fetchByPrimaryKey($pkValue, $columns, $readRelatedRecords);
     }
 
@@ -273,11 +249,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator {
         return $relations[$name];
     }
 
-    /**
-     * @param string $name
-     * @return bool
-     */
-    static public function hasRelation($name): bool {
+    static public function hasRelation(string $name): bool {
         return isset(static::getRelations()[$name]);
     }
 
@@ -365,7 +337,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator {
      * @param string|Column $column
      * @return $this
      */
-    protected function resetValue($column): static {
+    protected function resetValue(string|Column $column): static {
         unset($this->values[is_string($column) ? $column : $column->getName()]);
         return $this;
     }
@@ -383,7 +355,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator {
      * @param string|Column $colNameOrConfig
      * @return RecordValue
      */
-    protected function getValueContainer($colNameOrConfig): RecordValue {
+    protected function getValueContainer(string|Column $colNameOrConfig): RecordValue {
         return is_string($colNameOrConfig)
             ? $this->getValueContainerByColumnName($colNameOrConfig)
             : $this->getValueContainerByColumnConfig($colNameOrConfig);
@@ -763,7 +735,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator {
 
     /**
      * @param string|Relation $relationName
-     * @param array|Record|RecordsArray $relatedRecord
+     * @param array|Record|RecordsArray|RecordsSet $relatedRecord
      * @param bool|null $isFromDb - true: marks values as loaded from DB | null: autodetect
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
      * @return $this
@@ -961,14 +933,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator {
     /**
      * Fill record values with data fetched from DB by primary key value ($pkValue)
      * Warning: if $columns argument value is empty - even heavy valued columns
-     * will be selected @see \PeskyORM\ORM\Column::valueIsHeavy(). To select all columns
-     * excluding heavy ones use ['*'] as value for $columns argument
-     * @param int|float|string $pkValue
+     * will be selected @param mixed $pkValue
      * @param array $columns - empty: get all columns
      * @param array $readRelatedRecords - also read related records
      * @return $this
+     *@see \PeskyORM\ORM\Column::valueIsHeavy(). To select all columns
+     * excluding heavy ones use ['*'] as value for $columns argument
      */
-    public function fetchByPrimaryKey($pkValue, array $columns = [], array $readRelatedRecords = []): static {
+    public function fetchByPrimaryKey(mixed $pkValue, array $columns = [], array $readRelatedRecords = []): static {
         return $this->fetch([static::getPrimaryKeyColumnName() => $pkValue], $columns, $readRelatedRecords);
     }
 
@@ -1542,8 +1514,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator {
      *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
      *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      * @throws \InvalidArgumentException
+     * @return static
      */
-    public function saveRelations(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false) {
+    public function saveRelations(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false): static {
         if (!$this->existsInDb()) {
             throw new \BadMethodCallException(
                 'It is impossible to save related objects of a record that does not exist in DB'
@@ -1606,6 +1579,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator {
                 }
             }
         }
+        return $this;
     }
 
     /**
@@ -1616,7 +1590,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator {
      * @return $this
      * @throws \BadMethodCallException
      */
-    public function delete(bool $resetAllValuesAfterDelete = true, bool $deleteFiles = true): static {
+    public function delete(bool $resetAllValuesAfterDelete = true, bool $deleteFiles = true): RecordInterface {
         if ($this->isReadOnly()) {
             throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
         } else if (!$this->hasPrimaryKeyValue()) {
