@@ -805,7 +805,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator {
      * @return Record|RecordsSet
      * @throws \BadMethodCallException
      */
-    public function getRelatedRecord(string $relationName, bool $loadIfNotSet = false): RecordInterface|Record|RecordsSet {
+    public function getRelatedRecord(string $relationName, bool $loadIfNotSet = false): RecordInterface|Record|RecordsSet|RecordsArray {
         if (!$this->isRelatedRecordAttached($relationName)) {
             if ($loadIfNotSet) {
                 $this->readRelatedRecord($relationName);
