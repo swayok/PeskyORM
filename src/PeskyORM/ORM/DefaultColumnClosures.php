@@ -2,6 +2,9 @@
 
 namespace PeskyORM\ORM;
 
+use PeskyORM\Core\AbstractSelect;
+use PeskyORM\Core\DbExpr;
+
 class DefaultColumnClosures implements ColumnClosuresInterface {
 
     /**
@@ -80,6 +83,8 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
             if (!$isFromDb && $column->isValueLowercasingRequired()) {
                 $value = mb_strtolower($value);
             }
+        } else if (is_object($value) && $value instanceof RecordsSet) {
+            $value = $value->getOrmSelect();
         }
         return $value;
     }
@@ -129,6 +134,10 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
         );
         if (count($errors) > 0) {
             return $errors;
+        }
+        if (is_object($value) && ($value instanceof DbExpr || is_subclass_of($value, AbstractSelect::class))) {
+            // can't be validated in any other way
+            return [];
         }
         $errors = call_user_func($column->getValueIsAllowedValidator(), $value, $isFromDb, $isForCondition, $column);
         if (!is_array($errors)) {

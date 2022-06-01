@@ -3,6 +3,7 @@
 namespace PeskyORM\ORM;
 
 use Carbon\Carbon;
+use PeskyORM\Core\AbstractSelect;
 use PeskyORM\Core\DbExpr;
 use Swayok\Utils\NormalizeValue;
 use Swayok\Utils\ValidateValue;
@@ -19,7 +20,7 @@ abstract class RecordValueHelpers {
      * @return array
      */
     static public function isValidDbColumnValue(Column $column, $value, $isFromDb, $isForCondition, array $errorMessages = []) {
-        if ($value instanceof DbExpr) {
+        if (is_object($value) && ($value instanceof DbExpr || is_subclass_of($value, AbstractSelect::class))) {
             return [];
         }
         $preprocessedValue = static::preprocessColumnValue($column, $value, true, $isFromDb);
@@ -233,12 +234,12 @@ abstract class RecordValueHelpers {
      * Normalize $value according to expected data type ($type)
      * @param mixed $value
      * @param string $type - one of Column::TYPE_*
-     * @return null|string|UploadedFile
+     * @return null|string|UploadedFile|DbExpr|AbstractSelect
      */
     static public function normalizeValue($value, $type) {
         if ($value === null) {
             return null;
-        } else if ($value instanceof DbExpr) {
+        } else if (is_object($value) && ($value instanceof DbExpr || is_subclass_of($value, AbstractSelect::class))) {
             return $value;
         }
         switch ($type) {
