@@ -865,6 +865,8 @@ abstract class DbAdapter implements DbAdapterInterface {
     public function quoteValue($value, ?int $valueDataType = null): string {
         if ($value instanceof DbExpr) {
             return $this->quoteDbExpr($value);
+        } else if (is_object($value) && is_subclass_of($value, AbstractSelect::class)) {
+            return '(' . $value->getQuery() . ')';
         } else {
             if ($value === null || $valueDataType === \PDO::PARAM_NULL) {
                 return 'NULL';
