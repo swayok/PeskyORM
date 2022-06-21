@@ -247,6 +247,64 @@ abstract class Table implements TableInterface {
             ->fetchCount($removeNotInnerJoins);
     }
     
+    static public function makeConditionsFromArray(array $conditions): DbExpr {
+        $assembled = Utils::assembleWhereConditionsFromArray(
+            static::getConnection(),
+            $conditions,
+            function ($columnName) {
+                $columnInfo = static::analyzeColumnName($columnName);
+                $tableAlias = $columnInfo['join_name'] ?: static::getAlias();
+                $columnNameForDbExpr = '`' . $tableAlias . '`.';
+                if ($columnInfo['json_selector']) {
+                    $columnNameForDbExpr .= static::quoteDbEntityName($columnInfo['json_selector']);
+                } else {
+                    $columnNameForDbExpr .= '`' . $columnInfo['name'] . '`';
+                }
+                if ($columnInfo['type_cast']) {
+                    $columnNameForDbExpr = static::getConnection()->addDataTypeCastToExpression($columnInfo['type_cast'], $columnNameForDbExpr);
+                }
+                return $columnNameForDbExpr;
+            },
+            'AND',
+            function ($columnName, $rawValue) {
+                if ($rawValue instanceof DbExpr) {
+                    return $rawValue->get();
+                }
+                return $rawValue;
+            }
+        );
+        return DbExpr::create(trim($assembled), false);
+    }
+    
+    static public function analyzeColumnName($columnName): array {
+        if ($columnName instanceof DbExpr) {
+            $ret = [
+                'name' => $columnName,
+                'alias' => null,
+                'join_name' => null,
+                'type_cast' => null
+            ];
+        } else {
+            $columnName = trim($columnName);
+            $ret = Utils::splitColumnName($columnName);
+            if (!static::getConnection()->isValidDbEntityName($ret['json_selector'] ?: $ret['name'], true)) {
+                if ($ret['json_selector']) {
+                    throw new \InvalidArgumentException("Invalid json selector: [{$ret['json_selector']}]");
+                } else {
+                    throw new \InvalidArgumentException("Invalid column name: [{$ret['name']}]");
+                }
+            }
+        
+        }
+    
+        // nullify join name if it same as current table alias
+        if ($ret['join_name'] === static::getAlias()) {
+            $ret['join_name'] = null;
+        }
+    
+        return $ret;
+    }
+    
     /**
      * @param bool $useWritableConnection
      * @return null|string
