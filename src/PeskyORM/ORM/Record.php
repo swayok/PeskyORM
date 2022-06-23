@@ -1865,6 +1865,17 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         }
         return false;
     }
+    
+    public function getAllNonDefaultValues(): array {
+        $columnsNames = static::getColumns();
+        $ret = [];
+        foreach ($columnsNames as $columnName => $column) {
+            if ($column->isItExistsInDb() && $this->hasValue($column, false)) {
+                $ret[$columnName] = $this->_getValue($column, null);
+            }
+        }
+        return $ret;
+    }
 
     /**
      * Get column value if it is set or null in any other cases
@@ -2361,14 +2372,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return $this
      */
     public function enableReadOnlyMode() {
-        if ($this->existsInDb()) {
-            $this->readOnlyData = $this->toArray([], ['*']);
-        } else {
-            throw new \BadMethodCallException(
-                'Record->enableReadOnlyMode() method cannot be used with records that does not exist in DB after any value have been already set'
-            );
+        if (!$this->isReadOnly) {
+            if ($this->existsInDb()) {
+                $this->readOnlyData = $this->toArray([], ['*']);
+            } else {
+                $this->readOnlyData = $this->getAllNonDefaultValues();
+            }
+            $this->isReadOnly = true;
         }
-        $this->isReadOnly = true;
         return $this;
     }
 
@@ -2377,12 +2388,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return $this
      */
     public function disableReadOnlyMode() {
-        $this->isReadOnly = false;
-        $this->reset();
-        if (!empty($this->readOnlyData)) {
-            $this->updateValues($this->readOnlyData, true);
+        if ($this->isReadOnly) {
+            $this->isReadOnly = false;
+            $this->reset();
+            if (!empty($this->readOnlyData)) {
+                $this->updateValues($this->readOnlyData, !empty($this->readOnlyData[static::getPrimaryKeyColumnName()]));
+            }
+            $this->readOnlyData = [];
         }
-        $this->readOnlyData = [];
         return $this;
     }
     
