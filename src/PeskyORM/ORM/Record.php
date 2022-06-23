@@ -2357,6 +2357,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     public function enableReadOnlyMode() {
         if ($this->existsInDb()) {
             $this->readOnlyData = $this->toArray([], ['*']);
+        } else if ($this->hasAnyNonDefaultValues()) {
+            throw new \BadMethodCallException(
+                'Record->enableReadOnlyMode() method cannot be used with records that does not exist in DB after any value have been already set'
+            );
         }
         $this->isReadOnly = true;
         return $this;
