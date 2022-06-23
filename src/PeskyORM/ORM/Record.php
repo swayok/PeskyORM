@@ -59,6 +59,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     protected $isReadOnly = false;
     /**
+     * @var bool
+     */
+    protected $forbidSaving = false;
+    /**
      * @var array
      */
     protected $readOnlyData = [];
@@ -1290,7 +1294,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws InvalidDataException
      */
     protected function saveToDb(array $columnsToSave = []) {
-        if ($this->isReadOnly()) {
+        if ($this->isSavingAllowed()) {
+            throw new \BadMethodCallException('Record saving was forbidden.');
+        } else if ($this->isReadOnly()) {
             throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
         } else if ($this->isTrustDbDataMode()) {
             throw new \BadMethodCallException('Saving is not alowed when trusted mode for DB data is enabled');
@@ -2357,7 +2363,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     public function enableReadOnlyMode() {
         if ($this->existsInDb()) {
             $this->readOnlyData = $this->toArray([], ['*']);
-        } else if ($this->hasAnyNonDefaultValues()) {
+        } else {
             throw new \BadMethodCallException(
                 'Record->enableReadOnlyMode() method cannot be used with records that does not exist in DB after any value have been already set'
             );
@@ -2379,12 +2385,26 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $this->readOnlyData = [];
         return $this;
     }
-
+    
     /**
      * @return bool
      */
     public function isReadOnly(): bool {
         return $this->isReadOnly;
+    }
+    
+    public function forbidSaving() {
+        $this->forbidSaving = true;
+        return $this;
+    }
+    
+    public function allowSaving() {
+        $this->forbidSaving = true;
+        return $this;
+    }
+    
+    public function isSavingAllowed(): bool {
+        return !$this->forbidSaving();
     }
 
     /**
