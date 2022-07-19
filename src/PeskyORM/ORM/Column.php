@@ -268,17 +268,22 @@ class Column {
      */
     protected $valueDeleteExtender = null;
     /**
-     * Formats value. Used in default getter to add possibility to convert original value to specific format
+     * Formats value. Used in default getter to add possibility to convert original value to specific format.
      * For example: convert json to array, or timestamp like 2016-05-24 17:24:00 to unix timestamp
      * @var null|\Closure
      */
     protected $valueFormatter = null;
     /**
-     * List of value formatters. Used in default getter to add possibility to convert original value to specific format
+     * List of value formatters names. Used in default getter to add possibility to convert original value to specific format.
      * For example: convert json to array, or timestamp like 2016-05-24 17:24:00 to unix timestamp
      * @var null|\Closure
      */
-    protected $valueFormattersNames = [];
+    protected $defaultValueFormattersNames = [];
+    /**
+     * List of custom value formatters. Used in $this->valueFormatter to extend default list of formatters.
+     * @var \Closure[]
+     */
+    protected $customValueFormatters = [];
     /**
      * Function that generates new value for a column for each save operation
      * Usage example: updated_at column
@@ -315,7 +320,7 @@ class Column {
     static public $imageFileTypes = array(
         self::TYPE_IMAGE,
     );
-
+    
     /**
      * @param string $name
      * @param string $type
@@ -1255,12 +1260,26 @@ class Column {
      */
     public function setValueFormatter(\Closure $valueFormatter, array $formattersNames) {
         $this->valueFormatter = $valueFormatter;
-        $this->valueFormattersNames = $formattersNames;
+        $this->defaultValueFormattersNames = $formattersNames;
         return $this;
     }
     
     public function getValueFormattersNames(): array {
-        return $this->valueFormattersNames;
+        return array_merge($this->defaultValueFormattersNames, array_keys($this->customValueFormatters));
+    }
+    
+    /**
+     * @param string $name
+     * @param \Closure $formatter = function(RecordValue $valueContainer) { return $modifiedValue }
+     * @return $this
+     */
+    public function addCustomValueFormatter(string $name, \Closure $formatter) {
+        $this->customValueFormatters[$name] = $formatter;
+        return $this;
+    }
+    
+    public function getCustomValueFormatters(): array {
+        return $this->customValueFormatters;
     }
 
     /**

@@ -316,7 +316,7 @@ abstract class RecordValueHelpers {
         }
     }
 
-    static public function getValueFormatterAndFormatsByType($type) {
+    static public function getValueFormatterAndFormatsByType(string $type): array {
         $formatter = null;
         $formats = [];
         switch ($type) {

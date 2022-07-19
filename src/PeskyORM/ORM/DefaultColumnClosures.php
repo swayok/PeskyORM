@@ -217,6 +217,10 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
      */
     static public function valueFormatter(RecordValue $valueContainer, $format) {
         $column = $valueContainer->getColumn();
+        $customFormatters = $column->getCustomValueFormatters();
+        if (isset($customFormatters[$format])) {
+            return $customFormatters[$format]($valueContainer);
+        }
         [$formatter, $formats] = RecordValueHelpers::getValueFormatterAndFormatsByType($column->getType());
         if (!in_array($format, $formats, true)) {
             throw new \InvalidArgumentException(
