@@ -84,12 +84,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * Create new record and load values from DB using $pkValue
      * Warning: if $columns argument value is empty - even heavy valued columns
-     * will be selected @param mixed $pkValue
+     * will be selected (see \PeskyORM\ORM\Column::valueIsHeavy()). To select all columns
+     * excluding heavy ones use ['*'] as value for $columns argument
+     * @param mixed $pkValue
      * @param array $columns
      * @param array $readRelatedRecords
      * @return static
-     * @see \PeskyORM\ORM\Column::valueIsHeavy(). To select all columns
-     * excluding heavy ones use ['*'] as value for $columns argument
      */
     static public function read($pkValue, array $columns = [], array $readRelatedRecords = [])
     {
@@ -100,12 +100,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * Create new record and find values in DB using $conditionsAndOptions
      * Warning: if $columns argument value is empty - even heavy valued columns
-     * will be selected @param array $conditionsAndOptions
+     * will be selected (see \PeskyORM\ORM\Column::valueIsHeavy()). To select all columns
+     * excluding heavy ones use ['*'] as value for $columns argument
+     * @param array $conditionsAndOptions
      * @param array $columns
      * @param array $readRelatedRecords
      * @return static
-     * @see \PeskyORM\ORM\Column::valueIsHeavy(). To select all columns
-     * excluding heavy ones use ['*'] as value for $columns argument
      */
     static public function find(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = [])
     {
@@ -1040,12 +1040,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * Fill record values with data fetched from DB by primary key value ($pkValue)
      * Warning: if $columns argument value is empty - even heavy valued columns
-     * will be selected @param int|float|string $pkValue
+     * will be selected (see \PeskyORM\ORM\Column::valueIsHeavy()). To select all columns
+     * excluding heavy ones use ['*'] as value for $columns argument
+     * @param int|float|string $pkValue
      * @param array $columns - empty: get all columns
      * @param array $readRelatedRecords - also read related records
      * @return $this
-     * @see \PeskyORM\ORM\Column::valueIsHeavy(). To select all columns
-     * excluding heavy ones use ['*'] as value for $columns argument
      */
     public function fetchByPrimaryKey($pkValue, array $columns = [], array $readRelatedRecords = [])
     {
@@ -1063,13 +1063,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * Fill record values with data fetched from DB by $conditionsAndOptions
      * Warning: if $columns argument value is empty - even heavy valued columns
-     * will be selected @param array $conditionsAndOptions
+     * will be selected (see \PeskyORM\ORM\Column::valueIsHeavy()). To select all columns
+     * excluding heavy ones use ['*'] as value for $columns argument
+     * Note: relations can be loaded via 'CONTAIN' key in $conditionsAndOptions
+     * @param array $conditionsAndOptions
      * @param array $columns - empty: get all columns
      * @param array $readRelatedRecords - also read related records
      * @return $this
-     * @see \PeskyORM\ORM\Column::valueIsHeavy(). To select all columns
-     * excluding heavy ones use ['*'] as value for $columns argument
-     * Note: relations can be loaded via 'CONTAIN' key in $conditionsAndOptions
      */
     public function fetch(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = [])
     {
@@ -1126,12 +1126,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Reload data for current record.
      * Note: record must exist in DB
      * Warning: if $columns argument value is empty - even heavy valued columns
-     * will be selected @param array $columns - columns to read
+     * will be selected (see \PeskyORM\ORM\Column::valueIsHeavy()). To select all columns
+     * excluding heavy ones use ['*'] as value for $columns argument
+     * @param array $columns - columns to read
      * @param array $readRelatedRecords - also read related records
      * @return $this
      * @throws RecordNotFoundException
-     * @see \PeskyORM\ORM\Column::valueIsHeavy(). To select all columns
-     * excluding heavy ones use ['*'] as value for $columns argument
      */
     public function reload(array $columns = [], array $readRelatedRecords = [])
     {
@@ -1791,19 +1791,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      *  - empty array: return known values for all columns (unknown = not set or not fetched from DB)
      *  - array: contains index-string, key-string, key-\Closure, key-array pairs:
      *      - '*' as the value for index 0: all known values for record (unknown = not set or not fetched from DB)
-     *          Note: private columns / @param array $relatedRecordsNames
-     *  - empty: do not add any relations
-     *  - array: contains index-string, key-string, key-array pairs or single value = '*':
-     *      - '*' as the value for index === 0: add all related records
-     *          (if $loadRelatedRecordsIfNotSet === false - only already loaded records will be added)
-     *      - index-string: value is relation name (returns all data from related record)
-     *      - key-array: key is relation name and value is array containing column names of
-     *          the related record to return using same rules as for $columnsNames.
-     * @param bool $loadRelatedRecordsIfNotSet - true: read all missing related objects from DB
-     * @param bool $withFilesInfo - true: add info about files attached to a record (url, path, file_name, full_file_name, ext)
-     * @return array
-     * @throws \InvalidArgumentException
-     * @see Column::isValueHeavy() will have value only if it was fetched from DB
+     *          Note: private columns / see Column::isValuePrivate() will have null value
+     *          Note: heavy column / see Column::isValueHeavy() will have value only if it was fetched from DB
      *      - '*' as key: same as ['*' the value for index 0] variant but will exclude columns listed in value.
      *      - index-string: value is column name or relation name (returns all data from related record)
      *          or 'column_name_as_format' or 'RelationName.relation_column'.
@@ -1822,789 +1811,778 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      *              function (Record $record) { return KeyValuePair::create('some_other_key', $record->column_name); }
      *      - key-array (relation data): key is a relation name and value is an array containing column names
      *          of the related record using same rules as here.
-     * @see Column::isValuePrivate() will have null value
-     *          Note: heavy column //
+     * @param array $relatedRecordsNames
+     *  - empty: do not add any relations
+     *  - array: contains index-string, key-string, key-array pairs or single value = '*':
+     *      - '*' as the value for index === 0: add all related records
+     *          (if $loadRelatedRecordsIfNotSet === false - only already loaded records will be added)
+     *      - index-string: value is relation name (returns all data from related record)
+     *      - key-array: key is relation name and value is array containing column names of
+     *          the related record to return using same rules as for $columnsNames.
+     * @param bool $loadRelatedRecordsIfNotSet - true: read all missing related objects from DB
+     * @param bool $withFilesInfo - true: add info about files attached to a record (url, path, file_name, full_file_name, ext)
+     * @return array
+     * @throws \InvalidArgumentException
+     */
     public function toArray(
-    array $columnsNames = [],
-    array $relatedRecordsNames = [],
-    bool $loadRelatedRecordsIfNotSet = false,
-    bool $withFilesInfo = true
+        array $columnsNames = [],
+        array $relatedRecordsNames = [],
+        bool $loadRelatedRecordsIfNotSet = false,
+        bool $withFilesInfo = true
     ): array {
-    // normalize column names
-    if (empty($columnsNames) || (count($columnsNames) === 1 && isset($columnsNames[0]) && $columnsNames[0] === '*')) {
-    $columnsNames = array_keys(static::getColumns());
-    } else if (in_array('*', $columnsNames, true)) {
-    $excludeDuplicatesFromWildcard = [];
-    foreach ($columnsNames as $index => $columnName) {
-    if (is_string($index)) {
-    $excludeDuplicatesFromWildcard[] = $index;
-    } else if (is_string($columnName)) {
-    $excludeDuplicatesFromWildcard[] = $columnName;
-    if ($columnName === '*') {
-    unset($columnsNames[$index]);
-    }
-    }
-    }
-    $wildcardColumns = array_diff(array_keys(static::getColumns()), $excludeDuplicatesFromWildcard);
-    $columnsNames = array_merge($wildcardColumns, $columnsNames);
-    } else if (isset($columnsNames['*'])) {
-    // exclude some columns from wildcard
-    $columnsNames = array_merge(
-    array_diff(array_keys(static::getColumns()), (array)$columnsNames['*']),
-    $columnsNames
-    );
-    unset($columnsNames['*']);
-    }
-    // normalize relation names
-    if (
-    array_key_exists(0, $relatedRecordsNames)
-    && count($relatedRecordsNames) === 1
-    && $relatedRecordsNames[0] === '*'
-    ) {
-    $relatedRecordsNames = array_keys(static::getTableStructure()->getRelations());
-    if (!$loadRelatedRecordsIfNotSet) {
-    if ($this->isReadOnly()) {
-    $relatedRecordsNames = array_intersect(
-    $relatedRecordsNames,
-    array_merge(array_keys($this->relatedRecords), array_keys($this->readOnlyData))
-    );
-    } else {
-    $relatedRecordsNames = array_keys($this->relatedRecords);
-    }
-    }
-    }
-    // collect data for columns
-    $data = [];
-    foreach ($columnsNames as $index => $columnName) {
-    if (
-    (!is_int($index) && (is_array($columnName) || $columnName === '*' || static::hasRelation($index)))
-    || (is_string($columnName) && static::hasRelation($columnName))
-    ) {
-    // it is actually relation
-    if (is_int($index)) {
-    // get all data from related record
-    $relatedRecordsNames[] = $columnName;
-    } else {
-    // get certain data form related record
-    $relatedRecordsNames[$index] = (array)$columnName;
-    }
-    } else {
-    if ($columnName instanceof \Closure) {
-    $valueModifier = $columnName;
-    $columnName = $columnAlias = $index;
-    } else {
-    $columnAlias = $columnName;
-    if (!is_int($index)) {
-    $columnName = $index;
-    }
-    $valueModifier = null;
-    }
-    if (!static::hasColumn($columnName) && count($parts = explode('.', $columnName)) > 1) {
-    // $columnName = 'Relaion.column' or 'Relation.Subrelation.column'
-    $value = $this->getNestedValueForToArray($parts, $columnAlias, $valueModifier, $loadRelatedRecordsIfNotSet, !$withFilesInfo, $isset);
-    } else {
-    $value = $this->getColumnValueForToArray($columnName, $columnAlias, $valueModifier, !$withFilesInfo, $isset);
-    }
-    // $columnAlias may be modified in $this->getColumnValueForToArray()
-    $data[$columnAlias] = $value;
-    if (is_bool($isset) && !$isset) {
-    unset($data[$columnAlias]);
-    }
-    }
-    }
-    // collect data for relations
-    foreach ($relatedRecordsNames as $relatedRecordName => $relatedRecordColumns) {
-    if (is_int($relatedRecordName)) {
-    $relatedRecordName = $relatedRecordColumns;
-    $relatedRecordColumns = [];
-    }
-    if (!is_array($relatedRecordColumns)) {
-    throw new \InvalidArgumentException(
-    "Columns list for relation '{$relatedRecordName}' must be an array. "
-    . gettype($relatedRecordName) . ' given.'
-    );
-    }
-    $relatedRecord = $this->getRelatedRecord($relatedRecordName, $loadRelatedRecordsIfNotSet);
-    if ($relatedRecord instanceof self) {
-    // ignore related records without non-default data
-    if ($relatedRecord->existsInDb()) {
-    $data[$relatedRecordName] = $withFilesInfo
-    ? $relatedRecord->toArray($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet)
-    : $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
-    } else if ($relatedRecord->hasAnyNonDefaultValues()) {
-    // return related record only if there are any non-default value (column that do not exist in db are ignored)
-    $data[$relatedRecordName] = $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
-    }
-    } else {
-    /** @var RecordsSet $relatedRecord*/
-$relatedRecord->enableDbRecordInstanceReuseDuringIteration();
-if ($this->isTrustDbDataMode())
-{
-
-$relatedRecord->disableDbRecordDataValidation();
-}
-
-$data[$relatedRecordName] = [];
-foreach ($relatedRecord as $relRecord) {
-    $data[$relatedRecordName][] = $withFilesInfo
-        ? $relRecord->toArray($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet)
-        : $relRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
-}
-$relatedRecord->disableDbRecordInstanceReuseDuringIteration();
-}
-}
-return $data;
-}
-
-protected
-function hasAnyNonDefaultValues(): bool
-{
-    $columnsNames = static::getColumns();
-    foreach ($columnsNames as $columnName => $column) {
-        if ($column->isItExistsInDb() && $this->hasValue($column, false)) {
-            return true;
+        // normalize column names
+        if (empty($columnsNames) || (count($columnsNames) === 1 && isset($columnsNames[0]) && $columnsNames[0] === '*')) {
+            $columnsNames = array_keys(static::getColumns());
+        } elseif (in_array('*', $columnsNames, true)) {
+            $excludeDuplicatesFromWildcard = [];
+            foreach ($columnsNames as $index => $columnName) {
+                if (is_string($index)) {
+                    $excludeDuplicatesFromWildcard[] = $index;
+                } elseif (is_string($columnName)) {
+                    $excludeDuplicatesFromWildcard[] = $columnName;
+                    if ($columnName === '*') {
+                        unset($columnsNames[$index]);
+                    }
+                }
+            }
+            $wildcardColumns = array_diff(array_keys(static::getColumns()), $excludeDuplicatesFromWildcard);
+            $columnsNames = array_merge($wildcardColumns, $columnsNames);
+        } elseif (isset($columnsNames['*'])) {
+            // exclude some columns from wildcard
+            $columnsNames = array_merge(
+                array_diff(array_keys(static::getColumns()), (array)$columnsNames['*']),
+                $columnsNames
+            );
+            unset($columnsNames['*']);
         }
-    }
-    return false;
-}
-
-public
-function getAllNonDefaultValues(): array
-{
-    $columnsNames = static::getColumns();
-    $ret = [];
-    foreach ($columnsNames as $columnName => $column) {
-        if ($column->isItExistsInDb() && $this->hasValue($column, false)) {
-            $ret[$columnName] = $this->_getValue($column, null);
+        // normalize relation names
+        if (
+            array_key_exists(0, $relatedRecordsNames)
+            && count($relatedRecordsNames) === 1
+            && $relatedRecordsNames[0] === '*'
+        ) {
+            $relatedRecordsNames = array_keys(
+                static::getTableStructure()
+                    ->getRelations()
+            );
+            if (!$loadRelatedRecordsIfNotSet) {
+                if ($this->isReadOnly()) {
+                    $relatedRecordsNames = array_intersect(
+                        $relatedRecordsNames,
+                        array_merge(array_keys($this->relatedRecords), array_keys($this->readOnlyData))
+                    );
+                } else {
+                    $relatedRecordsNames = array_keys($this->relatedRecords);
+                }
+            }
         }
+        // collect data for columns
+        $data = [];
+        foreach ($columnsNames as $index => $columnName) {
+            if (
+                (!is_int($index) && (is_array($columnName) || $columnName === '*' || static::hasRelation($index)))
+                || (is_string($columnName) && static::hasRelation($columnName))
+            ) {
+                // it is actually relation
+                if (is_int($index)) {
+                    // get all data from related record
+                    $relatedRecordsNames[] = $columnName;
+                } else {
+                    // get certain data form related record
+                    $relatedRecordsNames[$index] = (array)$columnName;
+                }
+            } else {
+                if ($columnName instanceof \Closure) {
+                    $valueModifier = $columnName;
+                    $columnName = $columnAlias = $index;
+                } else {
+                    $columnAlias = $columnName;
+                    if (!is_int($index)) {
+                        $columnName = $index;
+                    }
+                    $valueModifier = null;
+                }
+                if (!static::hasColumn($columnName) && count($parts = explode('.', $columnName)) > 1) {
+                    // $columnName = 'Relaion.column' or 'Relation.Subrelation.column'
+                    $value = $this->getNestedValueForToArray(
+                        $parts,
+                        $columnAlias,
+                        $valueModifier,
+                        $loadRelatedRecordsIfNotSet,
+                        !$withFilesInfo,
+                        $isset
+                    );
+                } else {
+                    $value = $this->getColumnValueForToArray($columnName, $columnAlias, $valueModifier, !$withFilesInfo, $isset);
+                }
+                // $columnAlias may be modified in $this->getColumnValueForToArray()
+                $data[$columnAlias] = $value;
+                if (is_bool($isset) && !$isset) {
+                    unset($data[$columnAlias]);
+                }
+            }
+        }
+        // collect data for relations
+        foreach ($relatedRecordsNames as $relatedRecordName => $relatedRecordColumns) {
+            if (is_int($relatedRecordName)) {
+                $relatedRecordName = $relatedRecordColumns;
+                $relatedRecordColumns = [];
+            }
+            if (!is_array($relatedRecordColumns)) {
+                throw new \InvalidArgumentException(
+                    "Columns list for relation '{$relatedRecordName}' must be an array. "
+                    . gettype($relatedRecordName) . ' given.'
+                );
+            }
+            $relatedRecord = $this->getRelatedRecord($relatedRecordName, $loadRelatedRecordsIfNotSet);
+            if ($relatedRecord instanceof self) {
+                // ignore related records without non-default data
+                if ($relatedRecord->existsInDb()) {
+                    $data[$relatedRecordName] = $withFilesInfo
+                        ? $relatedRecord->toArray($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet)
+                        : $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
+                } elseif ($relatedRecord->hasAnyNonDefaultValues()) {
+                    // return related record only if there are any non-default value (column that do not exist in db are ignored)
+                    $data[$relatedRecordName] = $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
+                }
+            } else {
+                /** @var RecordsSet $relatedRecord */
+                $relatedRecord->enableDbRecordInstanceReuseDuringIteration();
+                if ($this->isTrustDbDataMode()) {
+                    $relatedRecord->disableDbRecordDataValidation();
+                }
+                $data[$relatedRecordName] = [];
+                foreach ($relatedRecord as $relRecord) {
+                    $data[$relatedRecordName][] = $withFilesInfo
+                        ? $relRecord->toArray($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet)
+                        : $relRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
+                }
+                $relatedRecord->disableDbRecordInstanceReuseDuringIteration();
+            }
+        }
+        return $data;
     }
-    return $ret;
-}
-
-/**
- * Get column value if it is set or null in any other cases
- * @param string $columnName
- * @param string $columnAlias - it is a reference because it can be altered by KeyValuePair returend from $valueModifier \Closure
- * @param null|\Closure $valueModifier - \Closure to modify value = function ($value, Record $record) { return $value; }
- * @param bool $returnNullForFiles - false: return file information for file column | true: return null for file column
- * @param bool $isset - true: value is set | false: value is not set
- * @return mixed
- */
-protected
-function getColumnValueForToArray(
-    $columnName,
-    &$columnAlias = null,
-    ?\Closure $valueModifier = null,
-    bool $returnNullForFiles = false,
-    ?bool &$isset = null
-) {
-    $isset = false;
-    if ($valueModifier && !static::hasColumn($columnName)) {
-        return $this->modifyValueForToArray(null, $columnAlias, null, $valueModifier, $isset);
+    
+    protected function hasAnyNonDefaultValues(): bool
+    {
+        $columnsNames = static::getColumns();
+        foreach ($columnsNames as $columnName => $column) {
+            if ($column->isItExistsInDb() && $this->hasValue($column, false)) {
+                return true;
+            }
+        }
+        return false;
     }
-    $column = static::getColumn($columnName, $format);
-    if ($column->isValuePrivate()) {
+    
+    public function getAllNonDefaultValues(): array
+    {
+        $columnsNames = static::getColumns();
+        $ret = [];
+        foreach ($columnsNames as $columnName => $column) {
+            if ($column->isItExistsInDb() && $this->hasValue($column, false)) {
+                $ret[$columnName] = $this->_getValue($column, null);
+            }
+        }
+        return $ret;
+    }
+    
+    /**
+     * Get column value if it is set or null in any other cases
+     * @param string $columnName
+     * @param string $columnAlias - it is a reference because it can be altered by KeyValuePair returend from $valueModifier \Closure
+     * @param null|\Closure $valueModifier - \Closure to modify value = function ($value, Record $record) { return $value; }
+     * @param bool $returnNullForFiles - false: return file information for file column | true: return null for file column
+     * @param bool $isset - true: value is set | false: value is not set
+     * @return mixed
+     */
+    protected function getColumnValueForToArray(
+        $columnName,
+        &$columnAlias = null,
+        ?\Closure $valueModifier = null,
+        bool $returnNullForFiles = false,
+        ?bool &$isset = null
+    ) {
+        $isset = false;
+        if ($valueModifier && !static::hasColumn($columnName)) {
+            return $this->modifyValueForToArray(null, $columnAlias, null, $valueModifier, $isset);
+        }
+        $column = static::getColumn($columnName, $format);
+        if ($column->isValuePrivate()) {
+            return $this->modifyValueForToArray($columnName, $columnAlias, null, $valueModifier, $isset);
+        }
+        if ($this->isReadOnly()) {
+            if (array_key_exists($columnName, $this->readOnlyData)) {
+                $isset = true;
+                return $this->modifyValueForToArray(
+                    $columnName,
+                    $columnAlias,
+                    $this->readOnlyData[$columnName],
+                    $valueModifier
+                );
+            } elseif ($format) {
+                $valueContainer = $this->createValueObject($column);
+                $isset = true;
+                if (array_key_exists($column->getName(), $this->readOnlyData)) {
+                    $value = $this->readOnlyData[$column->getName()];
+                    $valueContainer->setRawValue($value, $value, true);
+                    return $this->modifyValueForToArray(
+                        $columnName,
+                        $columnAlias,
+                        call_user_func($column->getValueFormatter(), $valueContainer, $format),
+                        $valueModifier
+                    );
+                } else {
+                    return $this->modifyValueForToArray($columnName, $columnAlias, null, $valueModifier);
+                }
+            }
+        }
+        if ($column->isItAFile()) {
+            if (!$returnNullForFiles && $this->_hasValue($column, false)) {
+                $isset = true;
+                return $this->modifyValueForToArray(
+                    $columnName,
+                    $columnAlias,
+                    $this->_getValue($column, $format ?: 'array'),
+                    $valueModifier
+                );
+            }
+        } else {
+            if ($this->existsInDb()) {
+                if ($this->_hasValue($column, false)) {
+                    $isset = true;
+                    $val = $this->_getValue($column, $format);
+                    return $this->modifyValueForToArray(
+                        $columnName,
+                        $columnAlias,
+                        ($val instanceof DbExpr) ? null : $val,
+                        $valueModifier
+                    );
+                }
+            } else {
+                $isset = true; //< there is always a value when record does not exist in DB
+                // if default value not provided directly it is considered to be null when record does not exist is DB
+                if ($this->_hasValue($column, true)) {
+                    $val = $this->_getValue($column, $format);
+                    return $this->modifyValueForToArray(
+                        $columnName,
+                        $columnAlias,
+                        ($val instanceof DbExpr) ? null : $val,
+                        $valueModifier
+                    );
+                }
+            }
+        }
         return $this->modifyValueForToArray($columnName, $columnAlias, null, $valueModifier, $isset);
     }
-    if ($this->isReadOnly()) {
-        if (array_key_exists($columnName, $this->readOnlyData)) {
-            $isset = true;
-            return $this->modifyValueForToArray(
-                $columnName,
-                $columnAlias,
-                $this->readOnlyData[$columnName],
-                $valueModifier
-            );
-        } elseif ($format) {
-            $valueContainer = $this->createValueObject($column);
-            $isset = true;
-            if (array_key_exists($column->getName(), $this->readOnlyData)) {
-                $value = $this->readOnlyData[$column->getName()];
-                $valueContainer->setRawValue($value, $value, true);
-                return $this->modifyValueForToArray(
-                    $columnName,
-                    $columnAlias,
-                    call_user_func($column->getValueFormatter(), $valueContainer, $format),
-                    $valueModifier
-                );
-            } else {
-                return $this->modifyValueForToArray($columnName, $columnAlias, null, $valueModifier);
-            }
+    
+    /**
+     * @param mixed $columnName - when null
+     * @param mixed $columnAlias - may be modified by KeyValuePair returned from $valueModifier
+     * @param mixed $value
+     * @param \Closure|null $valueModifier - \Closure that modifies the value. 2 variants:
+     *      - if $columnName is set: function ($value, Record $record) { return $value };
+     *      - if $columnName is empty: function (Record $record) { return $record->column };
+     *      Both versions may return KeyValuePair object (not recommended if $columnName is empty)
+     * @return mixed
+     */
+    protected function modifyValueForToArray($columnName, &$columnAlias, $value, ?\Closure $valueModifier, &$hasValue = null)
+    {
+        if (!$valueModifier) {
+            return $value;
         }
-    }
-    if ($column->isItAFile()) {
-        if (!$returnNullForFiles && $this->_hasValue($column, false)) {
-            $isset = true;
-            return $this->modifyValueForToArray(
-                $columnName,
-                $columnAlias,
-                $this->_getValue($column, $format ?: 'array'),
-                $valueModifier
-            );
-        }
-    } else {
-        if ($this->existsInDb()) {
-            if ($this->_hasValue($column, false)) {
-                $isset = true;
-                $val = $this->_getValue($column, $format);
-                return $this->modifyValueForToArray(
-                    $columnName,
-                    $columnAlias,
-                    ($val instanceof DbExpr) ? null : $val,
-                    $valueModifier
-                );
-            }
+        $hasValue = true;
+        if (empty($columnName)) {
+            $value = $valueModifier($this);
         } else {
-            $isset = true; //< there is always a value when record does not exist in DB
-            // if default value not provided directly it is considered to be null when record does not exist is DB
-            if ($this->_hasValue($column, true)) {
-                $val = $this->_getValue($column, $format);
-                return $this->modifyValueForToArray(
-                    $columnName,
-                    $columnAlias,
-                    ($val instanceof DbExpr) ? null : $val,
-                    $valueModifier
-                );
-            }
+            $value = $valueModifier($value, $this);
         }
-    }
-    return $this->modifyValueForToArray($columnName, $columnAlias, null, $valueModifier, $isset);
-}
-
-/**
- * @param mixed $columnName - when null
- * @param mixed $columnAlias - may be modified by KeyValuePair returned from $valueModifier
- * @param mixed $value
- * @param \Closure|null $valueModifier - \Closure that modifies the value. 2 variants:
- *      - if $columnName is set: function ($value, Record $record) { return $value };
- *      - if $columnName is empty: function (Record $record) { return $record->column };
- *      Both versions may return KeyValuePair object (not recommended if $columnName is empty)
- * @return mixed
- */
-protected
-function modifyValueForToArray($columnName, &$columnAlias, $value, ?\Closure $valueModifier, &$hasValue = null)
-{
-    if (!$valueModifier) {
+        if ($value instanceof KeyValuePair) {
+            $columnAlias = $value->getKey();
+            $value = $value->getValue();
+        }
         return $value;
     }
-    $hasValue = true;
-    if (empty($columnName)) {
-        $value = $valueModifier($this);
-    } else {
-        $value = $valueModifier($value, $this);
+    
+    /**
+     * Get nested value if it is set or null in any other cases
+     * @param array $parts - parts of nested path ('Relation.Subrelation.column' => ['Relation', 'Subrelation', 'column']
+     * @param bool $loadRelatedRecordsIfNotSet - true: read required missing related objects from DB
+     * @param bool $returnNullForFiles - false: return file information for file column | true: return null for file column
+     * @param bool|null $isset - true: value is set | false: value is not set
+     * @return mixed
+     */
+    protected function getNestedValueForToArray(
+        array $parts,
+        &$columnAlias = null,
+        ?\Closure $valueModifier = null,
+        bool $loadRelatedRecordsIfNotSet = false,
+        bool $returnNullForFiles = false,
+        ?bool &$isset = null
+    ) {
+        $relationName = array_shift($parts);
+        $relatedRecord = $this->getRelatedRecord($relationName, $loadRelatedRecordsIfNotSet);
+        if ($relatedRecord instanceof self) {
+            // ignore related records without non-default data
+            if ($relatedRecord->existsInDb() || $relatedRecord->hasAnyNonDefaultValues()) {
+                if (count($parts) === 1) {
+                    return $relatedRecord->getColumnValueForToArray($parts[0], $columnAlias, $valueModifier, $returnNullForFiles, $isset);
+                } else {
+                    return $relatedRecord->getNestedValueForToArray(
+                        $parts,
+                        $columnAlias,
+                        $valueModifier,
+                        $loadRelatedRecordsIfNotSet,
+                        $returnNullForFiles,
+                        $isset
+                    );
+                }
+            }
+            $isset = false;
+            return null;
+        } else {
+            // record set - not supported
+            throw new \InvalidArgumentException(
+                'Has many relations are not supported. Trying to resolve: ' . $relationName . '.' . implode('.', $parts)
+            );
+        }
     }
-    if ($value instanceof KeyValuePair) {
-        $columnAlias = $value->getKey();
-        $value = $value->getValue();
+    
+    /**
+     * Get required values as array but exclude file columns
+     * @param array $columnsNames - empty: return all columns
+     * @param array $relatedRecordsNames - empty: do not add any relations
+     * @param bool $loadRelatedRecordsIfNotSet - true: read required missing related objects from DB
+     * @return array
+     */
+    public function toArrayWithoutFiles(
+        array $columnsNames = [],
+        array $relatedRecordsNames = [],
+        bool $loadRelatedRecordsIfNotSet = false
+    ): array {
+        return $this->toArray($columnsNames, $relatedRecordsNames, $loadRelatedRecordsIfNotSet, false);
     }
-    return $value;
-}
-
-/**
- * Get nested value if it is set or null in any other cases
- * @param array $parts - parts of nested path ('Relation.Subrelation.column' => ['Relation', 'Subrelation', 'column']
- * @param bool $loadRelatedRecordsIfNotSet - true: read required missing related objects from DB
- * @param bool $returnNullForFiles - false: return file information for file column | true: return null for file column
- * @param bool|null $isset - true: value is set | false: value is not set
- * @return mixed
- */
-protected
-function getNestedValueForToArray(
-    array $parts,
-    &$columnAlias = null,
-    ?\Closure $valueModifier = null,
-    bool $loadRelatedRecordsIfNotSet = false,
-    bool $returnNullForFiles = false,
-    ?bool &$isset = null
-) {
-    $relationName = array_shift($parts);
-    $relatedRecord = $this->getRelatedRecord($relationName, $loadRelatedRecordsIfNotSet);
-    if ($relatedRecord instanceof self) {
-        // ignore related records without non-default data
-        if ($relatedRecord->existsInDb() || $relatedRecord->hasAnyNonDefaultValues()) {
-            if (count($parts) === 1) {
-                return $relatedRecord->getColumnValueForToArray($parts[0], $columnAlias, $valueModifier, $returnNullForFiles, $isset);
+    
+    /**
+     * Collect default values for the columns
+     * Note: if there is no default value for a column - null will be returned
+     * Note: this method is not used by ORM
+     * @param array $columns - empty: return values for all columns
+     * @param bool $ignoreColumnsThatCannotBeSetManually - true: value will not be returned for columns that
+     *      - autoupdatable ($column->isAutoUpdatingValue())
+     *      - does not exist in DB (!$column->isItExistsInDb())
+     *      - value cannot be set or changed (!$column->isValueCanBeSetOrChanged())
+     * @param bool $nullifyDbExprValues - true: if default value is DbExpr - replace it by null
+     * @return array
+     */
+    public function getDefaults(
+        array $columns = [],
+        bool $ignoreColumnsThatCannotBeSetManually = true,
+        bool $nullifyDbExprValues = true
+    ): array {
+        if (count($columns) === 0) {
+            $columns = array_keys(static::getColumns());
+        }
+        $values = [];
+        foreach ($columns as $columnName) {
+            $column = static::getColumn($columnName);
+            if (
+                $ignoreColumnsThatCannotBeSetManually
+                && (
+                    !$column->isItExistsInDb()
+                    || $column->isAutoUpdatingValue()
+                    || !$column->isValueCanBeSetOrChanged()
+                )
+            ) {
+                continue;
             } else {
-                return $relatedRecord->getNestedValueForToArray(
-                    $parts,
-                    $columnAlias,
-                    $valueModifier,
-                    $loadRelatedRecordsIfNotSet,
-                    $returnNullForFiles,
-                    $isset
+                $values[$columnName] = $this->getValueContainerByColumnConfig($column)
+                    ->getDefaultValueOrNull();
+                if ($nullifyDbExprValues && $values[$columnName] instanceof DbExpr) {
+                    $values[$columnName] = null;
+                }
+            }
+        }
+        return $values;
+    }
+    
+    /**
+     * Return the current element
+     * @return mixed
+     */
+    public function current()
+    {
+        $key = $this->key();
+        return $key !== null ? $this->getColumnValueForToArray($key) : null;
+    }
+    
+    /**
+     * Move forward to next element
+     */
+    public function next()
+    {
+        $this->iteratorIdx++;
+    }
+    
+    /**
+     * Return the key of the current element
+     * @return int|string|null scalar on success, or null on failure.
+     */
+    public function key()
+    {
+        if ($this->valid()) {
+            return array_keys(static::getColumns())[$this->iteratorIdx];
+        } else {
+            return null;
+        }
+    }
+    
+    /**
+     * Checks if current position is valid
+     * @return boolean
+     */
+    public function valid()
+    {
+        return array_key_exists($this->iteratorIdx, array_keys(static::getColumns()));
+    }
+    
+    /**
+     * Rewind the Iterator to the first element
+     */
+    public function rewind()
+    {
+        $this->iteratorIdx = 0;
+    }
+    
+    /**
+     * Proxy to _hasValue() or isRelatedRecordCanBeRead();
+     * NOTE: it is not isset()
+     * @param string $key - column name or relation name
+     * @return boolean - true on success or false on failure.
+     * @throws \InvalidArgumentException
+     */
+    public function offsetExists($key)
+    {
+        if (static::hasColumn($key)) {
+            // also handles 'column_as_format'
+            $column = static::getColumn($key, $format);
+            if (!$this->_hasValue($column, false)) {
+                return false;
+            } elseif ($format) {
+                return $this->_getValue($column, $format) !== null;
+            } else {
+                return true;
+            }
+        } elseif (static::hasRelation($key)) {
+            if (!$this->isRelatedRecordCanBeRead($key)) {
+                return false;
+            }
+            $record = $this->getRelatedRecord($key, true);
+            return $record instanceof RecordInterface ? $record->existsInDb() : $record->count();
+        } else {
+            throw new \InvalidArgumentException(
+                'There is no column or relation with name ' . $key . ' in ' . static::class
+            );
+        }
+    }
+    
+    /**
+     * @param mixed $key - column name or column name with format (ex: created_at_as_date) or relation name
+     * @return mixed
+     * @throws \InvalidArgumentException
+     */
+    public function offsetGet($key)
+    {
+        if (static::hasColumn($key)) {
+            $column = static::getColumn($key, $format);
+            return $this->_getValue($column, $format);
+        } elseif (static::hasRelation($key)) {
+            return $this->getRelatedRecord($key, true);
+        } else {
+            throw new \InvalidArgumentException(
+                'There is no column or relation with name ' . $key . ' in ' . static::class
+            );
+        }
+    }
+    
+    /**
+     * @param mixed $key - column name or relation name
+     * @param mixed $value
+     * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
+     */
+    public function offsetSet($key, $value)
+    {
+        if ($this->isReadOnly()) {
+            throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
+        } elseif (static::hasColumn($key)) {
+            $this->_updateValue(static::getColumn($key), $value, $key === static::getPrimaryKeyColumnName());
+        } elseif (static::hasRelation($key)) {
+            $this->updateRelatedRecord($key, $value, null);
+        } else {
+            throw new \InvalidArgumentException(
+                'There is no column or relation with name ' . $key . ' in ' . static::class
+            );
+        }
+    }
+    
+    /**
+     * @param string $key
+     * @return Record
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     */
+    public function offsetUnset($key)
+    {
+        if ($this->isReadOnly()) {
+            throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
+        } elseif (static::hasColumn($key)) {
+            return $this->unsetValue($key);
+        } elseif (static::hasRelation($key)) {
+            return $this->unsetRelatedRecord($key);
+        } else {
+            throw new \InvalidArgumentException(
+                'There is no column or relation with name ' . $key . ' in ' . static::class
+            );
+        }
+    }
+    
+    /**
+     * @param $name - column name or column name with format (ex: created_at_as_date) or relation name
+     * @return mixed
+     */
+    public function __get($name)
+    {
+        return $this->offsetGet($name);
+    }
+    
+    /**
+     * @param $name - 'setColumnName' or 'setRelationName'
+     * @param $value
+     */
+    public function __set($name, $value)
+    {
+        /** @noinspection PhpVoidFunctionResultUsedInspection */
+        return $this->offsetSet($name, $value);
+    }
+    
+    /**
+     * @param $name - column name or relation name
+     * @return bool
+     */
+    public function __isset($name)
+    {
+        $hasValue = $this->offsetExists($name);
+        if (!$hasValue) {
+            return false;
+        } else {
+            return $this->offsetGet($name) !== null;
+        }
+    }
+    
+    /**
+     * @param string $name - column name or relation name
+     */
+    public function __unset($name)
+    {
+        $this->offsetUnset($name);
+    }
+    
+    /**
+     * Supports only methods starting with 'set' and ending with column name or relation name
+     * @param string $name - something like 'setColumnName' or 'setRelationName'
+     * @param array $arguments - 1 required, 2 accepted. 1st - value, 2nd - $isFromDb
+     * @return $this
+     * @throws \BadMethodCallException
+     * @throws \InvalidArgumentException
+     */
+    public function __call($name, array $arguments)
+    {
+        $isValidName = preg_match('%^set([A-Z][a-zA-Z0-9]*)$%', $name, $nameParts);
+        if (!$isValidName) {
+            throw new \BadMethodCallException(
+                "Magic method '{$name}(\$value, \$isFromDb = false)' is forbidden. You can magically call only methods starting with 'set', for example: setId(1)"
+            );
+        } elseif (count($arguments) > 2) {
+            throw new \InvalidArgumentException(
+                "Magic method '{$name}(\$value, \$isFromDb = false)' accepts only 2 arguments, but " . count($arguments) . ' arguments passed'
+            );
+        } elseif (array_key_exists(1, $arguments) && !is_bool($arguments[1])) {
+            throw new \InvalidArgumentException(
+                "2nd argument for magic method '{$name}(\$value, \$isFromDb = false)' must be a boolean and reflects if value received from DB"
+            );
+        }
+        $value = $arguments[0];
+        if (static::hasRelation($nameParts[1])) {
+            if (
+                (
+                    !is_array($value)
+                    && !is_object($value)
+                )
+                || (
+                    is_object($value)
+                    && !($value instanceof self)
+                    && !($value instanceof RecordsSet)
+                )
+            ) {
+                throw new \InvalidArgumentException(
+                    "1st argument for magic method '{$name}(\$value, \$isFromDb = false)' must be an array or instance of Record class or RecordsSet class"
                 );
             }
-        }
-        $isset = false;
-        return null;
-    } else {
-        // record set - not supported
-        throw new \InvalidArgumentException(
-            'Has many relations are not supported. Trying to resolve: ' . $relationName . '.' . implode('.', $parts)
-        );
-    }
-}
-
-/**
- * Get required values as array but exclude file columns
- * @param array $columnsNames - empty: return all columns
- * @param array $relatedRecordsNames - empty: do not add any relations
- * @param bool $loadRelatedRecordsIfNotSet - true: read required missing related objects from DB
- * @return array
- */
-public
-function toArrayWithoutFiles(
-    array $columnsNames = [],
-    array $relatedRecordsNames = [],
-    bool $loadRelatedRecordsIfNotSet = false
-): array {
-    return $this->toArray($columnsNames, $relatedRecordsNames, $loadRelatedRecordsIfNotSet, false);
-}
-
-/**
- * Collect default values for the columns
- * Note: if there is no default value for a column - null will be returned
- * Note: this method is not used by ORM
- * @param array $columns - empty: return values for all columns
- * @param bool $ignoreColumnsThatCannotBeSetManually - true: value will not be returned for columns that
- *      - autoupdatable ($column->isAutoUpdatingValue())
- *      - does not exist in DB (!$column->isItExistsInDb())
- *      - value cannot be set or changed (!$column->isValueCanBeSetOrChanged())
- * @param bool $nullifyDbExprValues - true: if default value is DbExpr - replace it by null
- * @return array
- */
-public
-function getDefaults(
-    array $columns = [],
-    bool $ignoreColumnsThatCannotBeSetManually = true,
-    bool $nullifyDbExprValues = true
-): array {
-    if (count($columns) === 0) {
-        $columns = array_keys(static::getColumns());
-    }
-    $values = [];
-    foreach ($columns as $columnName) {
-        $column = static::getColumn($columnName);
-        if (
-            $ignoreColumnsThatCannotBeSetManually
-            && (
-                !$column->isItExistsInDb()
-                || $column->isAutoUpdatingValue()
-                || !$column->isValueCanBeSetOrChanged()
-            )
-        ) {
-            continue;
+            $isFromDb = $arguments[1] ?? null;
+            $this->updateRelatedRecord($nameParts[1], $value, $isFromDb);
         } else {
-            $values[$columnName] = $this->getValueContainerByColumnConfig($column)
-                ->getDefaultValueOrNull();
-            if ($nullifyDbExprValues && $values[$columnName] instanceof DbExpr) {
-                $values[$columnName] = null;
+            $columnName = StringUtils::underscore($nameParts[1]);
+            if (!static::hasColumn($columnName)) {
+                throw new \BadMethodCallException(
+                    "Magic method '{$name}(\$value, \$isFromDb = false)' is not linked with any column or relation"
+                );
             }
+            $column = static::getColumn($columnName);
+            $isFromDb = array_key_exists(1, $arguments)
+                ? $arguments[1]
+                : $column->isItPrimaryKey(); //< make pk key be "from DB" by default or it will crash
+            $this->_updateValue($column, $value, $isFromDb);
         }
+        return $this;
     }
-    return $values;
-}
-
-/**
- * Return the current element
- * @return mixed
- */
-public
-function current()
-{
-    $key = $this->key();
-    return $key !== null ? $this->getColumnValueForToArray($key) : null;
-}
-
-/**
- * Move forward to next element
- */
-public
-function next()
-{
-    $this->iteratorIdx++;
-}
-
-/**
- * Return the key of the current element
- * @return int|string|null scalar on success, or null on failure.
- */
-public
-function key()
-{
-    if ($this->valid()) {
-        return array_keys(static::getColumns())[$this->iteratorIdx];
-    } else {
-        return null;
-    }
-}
-
-/**
- * Checks if current position is valid
- * @return boolean
- */
-public
-function valid()
-{
-    return array_key_exists($this->iteratorIdx, array_keys(static::getColumns()));
-}
-
-/**
- * Rewind the Iterator to the first element
- */
-public
-function rewind()
-{
-    $this->iteratorIdx = 0;
-}
-
-/**
- * Proxy to _hasValue() or isRelatedRecordCanBeRead();
- * NOTE: it is not isset()
- * @param string $key - column name or relation name
- * @return boolean - true on success or false on failure.
- * @throws \InvalidArgumentException
- */
-public
-function offsetExists($key)
-{
-    if (static::hasColumn($key)) {
-        // also handles 'column_as_format'
-        $column = static::getColumn($key, $format);
-        if (!$this->_hasValue($column, false)) {
-            return false;
-        } elseif ($format) {
-            return $this->_getValue($column, $format) !== null;
-        } else {
-            return true;
+    
+    /**
+     * String representation of object
+     * Note: it does not save relations to prevent infinite loops
+     * @link http://php.net/manual/en/serializable.serialize.php
+     * @return string the string representation of the object or null
+     * @since 5.1.0
+     */
+    public function serialize()
+    {
+        $data = [
+            'props' => [
+                'existsInDb' => $this->existsInDb,
+            ],
+            'values' => [],
+        ];
+        foreach ($this->values as $name => $value) {
+            $data['values'][$name] = $value->serialize();
         }
-    } elseif (static::hasRelation($key)) {
-        if (!$this->isRelatedRecordCanBeRead($key)) {
-            return false;
+        return json_encode($data);
+    }
+    
+    /**
+     * Constructs the object
+     * @link http://php.net/manual/en/serializable.unserialize.php
+     * @param string $serialized <p>
+     * The string representation of the object.
+     * </p>
+     * @return void
+     * @throws \InvalidArgumentException
+     * @since 5.1.0
+     */
+    public function unserialize($serialized)
+    {
+        $data = json_decode($serialized, true);
+        if (!is_array($data)) {
+            throw new \InvalidArgumentException('$serialized argument must be a json-encoded array');
         }
-        $record = $this->getRelatedRecord($key, true);
-        return $record instanceof RecordInterface ? $record->existsInDb() : $record->count();
-    } else {
-        throw new \InvalidArgumentException(
-            'There is no column or relation with name ' . $key . ' in ' . static::class
-        );
-    }
-}
-
-/**
- * @param mixed $key - column name or column name with format (ex: created_at_as_date) or relation name
- * @return mixed
- * @throws \InvalidArgumentException
- */
-public
-function offsetGet($key)
-{
-    if (static::hasColumn($key)) {
-        $column = static::getColumn($key, $format);
-        return $this->_getValue($column, $format);
-    } elseif (static::hasRelation($key)) {
-        return $this->getRelatedRecord($key, true);
-    } else {
-        throw new \InvalidArgumentException(
-            'There is no column or relation with name ' . $key . ' in ' . static::class
-        );
-    }
-}
-
-/**
- * @param mixed $key - column name or relation name
- * @param mixed $value
- * @throws \InvalidArgumentException
- * @throws \BadMethodCallException
- */
-public
-function offsetSet($key, $value)
-{
-    if ($this->isReadOnly()) {
-        throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
-    } elseif (static::hasColumn($key)) {
-        $this->_updateValue(static::getColumn($key), $value, $key === static::getPrimaryKeyColumnName());
-    } elseif (static::hasRelation($key)) {
-        $this->updateRelatedRecord($key, $value, null);
-    } else {
-        throw new \InvalidArgumentException(
-            'There is no column or relation with name ' . $key . ' in ' . static::class
-        );
-    }
-}
-
-/**
- * @param string $key
- * @return Record
- * @throws \BadMethodCallException
- * @throws \InvalidArgumentException
- */
-public
-function offsetUnset($key)
-{
-    if ($this->isReadOnly()) {
-        throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
-    } elseif (static::hasColumn($key)) {
-        return $this->unsetValue($key);
-    } elseif (static::hasRelation($key)) {
-        return $this->unsetRelatedRecord($key);
-    } else {
-        throw new \InvalidArgumentException(
-            'There is no column or relation with name ' . $key . ' in ' . static::class
-        );
-    }
-}
-
-/**
- * @param $name - column name or column name with format (ex: created_at_as_date) or relation name
- * @return mixed
- */
-public
-function __get($name)
-{
-    return $this->offsetGet($name);
-}
-
-/**
- * @param $name - 'setColumnName' or 'setRelationName'
- * @param $value
- */
-public
-function __set($name, $value)
-{
-    /** @noinspection PhpVoidFunctionResultUsedInspection */
-    return $this->offsetSet($name, $value);
-}
-
-/**
- * @param $name - column name or relation name
- * @return bool
- */
-public
-function __isset($name)
-{
-    $hasValue = $this->offsetExists($name);
-    if (!$hasValue) {
-        return false;
-    } else {
-        return $this->offsetGet($name) !== null;
-    }
-}
-
-/**
- * @param string $name - column name or relation name
- */
-public
-function __unset($name)
-{
-    $this->offsetUnset($name);
-}
-
-/**
- * Supports only methods starting with 'set' and ending with column name or relation name
- * @param string $name - something like 'setColumnName' or 'setRelationName'
- * @param array $arguments - 1 required, 2 accepted. 1st - value, 2nd - $isFromDb
- * @return $this
- * @throws \BadMethodCallException
- * @throws \InvalidArgumentException
- */
-public
-function __call($name, array $arguments)
-{
-    $isValidName = preg_match('%^set([A-Z][a-zA-Z0-9]*)$%', $name, $nameParts);
-    if (!$isValidName) {
-        throw new \BadMethodCallException(
-            "Magic method '{$name}(\$value, \$isFromDb = false)' is forbidden. You can magically call only methods starting with 'set', for example: setId(1)"
-        );
-    } elseif (count($arguments) > 2) {
-        throw new \InvalidArgumentException(
-            "Magic method '{$name}(\$value, \$isFromDb = false)' accepts only 2 arguments, but " . count($arguments) . ' arguments passed'
-        );
-    } elseif (array_key_exists(1, $arguments) && !is_bool($arguments[1])) {
-        throw new \InvalidArgumentException(
-            "2nd argument for magic method '{$name}(\$value, \$isFromDb = false)' must be a boolean and reflects if value received from DB"
-        );
-    }
-    $value = $arguments[0];
-    if (static::hasRelation($nameParts[1])) {
-        if (
-            (
-                !is_array($value)
-                && !is_object($value)
-            )
-            || (
-                is_object($value)
-                && !($value instanceof self)
-                && !($value instanceof RecordsSet)
-            )
-        ) {
-            throw new \InvalidArgumentException(
-                "1st argument for magic method '{$name}(\$value, \$isFromDb = false)' must be an array or instance of Record class or RecordsSet class"
-            );
-        }
-        $isFromDb = $arguments[1] ?? null;
-        $this->updateRelatedRecord($nameParts[1], $value, $isFromDb);
-    } else {
-        $columnName = StringUtils::underscore($nameParts[1]);
-        if (!static::hasColumn($columnName)) {
-            throw new \BadMethodCallException(
-                "Magic method '{$name}(\$value, \$isFromDb = false)' is not linked with any column or relation"
-            );
-        }
-        $column = static::getColumn($columnName);
-        $isFromDb = array_key_exists(1, $arguments)
-            ? $arguments[1]
-            : $column->isItPrimaryKey(); //< make pk key be "from DB" by default or it will crash
-        $this->_updateValue($column, $value, $isFromDb);
-    }
-    return $this;
-}
-
-/**
- * String representation of object
- * Note: it does not save relations to prevent infinite loops
- * @link http://php.net/manual/en/serializable.serialize.php
- * @return string the string representation of the object or null
- * @since 5.1.0
- */
-public
-function serialize()
-{
-    $data = [
-        'props' => [
-            'existsInDb' => $this->existsInDb,
-        ],
-        'values' => [],
-    ];
-    foreach ($this->values as $name => $value) {
-        $data['values'][$name] = $value->serialize();
-    }
-    return json_encode($data);
-}
-
-/**
- * Constructs the object
- * @link http://php.net/manual/en/serializable.unserialize.php
- * @param string $serialized <p>
- * The string representation of the object.
- * </p>
- * @return void
- * @throws \InvalidArgumentException
- * @since 5.1.0
- */
-public
-function unserialize($serialized)
-{
-    $data = json_decode($serialized, true);
-    if (!is_array($data)) {
-        throw new \InvalidArgumentException('$serialized argument must be a json-encoded array');
-    }
-    $this->reset();
-    foreach ($data['props'] as $name => $value) {
-        $this->$name = $value;
-    }
-    foreach ($data['values'] as $name => $value) {
-        $this->getValueContainerByColumnName($name)
-            ->unserialize($value);
-    }
-}
-
-/**
- * Enable read only mode. In this mode incoming data is not processed in any way and Record works like an array
- * but maintains most getters functionality including relations.
- * Usage of value formatters are allowed ({column}_as_array, {column}_as_object, etc.)
- * Relations returned as similar read only Records or RecordArrays.
- * In this mode you're able to use Record's methods that do not modify Record's data.
- * @return $this
- */
-public
-function enableReadOnlyMode()
-{
-    if (!$this->isReadOnly) {
-        if ($this->existsInDb()) {
-            $this->readOnlyData = $this->toArray([], ['*']);
-        } else {
-            $this->readOnlyData = $this->getAllNonDefaultValues();
-        }
-        $this->isReadOnly = true;
-    }
-    return $this;
-}
-
-/**
- * Disable read only mode.
- * @return $this
- */
-public
-function disableReadOnlyMode()
-{
-    if ($this->isReadOnly) {
-        $this->isReadOnly = false;
         $this->reset();
-        if (!empty($this->readOnlyData)) {
-            $this->updateValues($this->readOnlyData, !empty($this->readOnlyData[static::getPrimaryKeyColumnName()]));
+        foreach ($data['props'] as $name => $value) {
+            $this->$name = $value;
         }
-        $this->readOnlyData = [];
+        foreach ($data['values'] as $name => $value) {
+            $this->getValueContainerByColumnName($name)
+                ->unserialize($value);
+        }
     }
-    return $this;
-}
-
-/**
- * @return bool
- */
-public
-function isReadOnly(): bool
-{
-    return $this->isReadOnly;
-}
-
-public
-function forbidSaving()
-{
-    $this->forbidSaving = true;
-    return $this;
-}
-
-public
-function allowSaving()
-{
-    $this->forbidSaving = true;
-    return $this;
-}
-
-public
-function isSavingAllowed(): bool
-{
-    return !$this->forbidSaving();
-}
-
-/**
- * Normalizes readonly data so that numeric and bool values will not be strings
- * @param array $data
- * @return array
- */
-static public function normalizeReadOnlyData(array $data): array
-{
-    $columns = static::getColumns();
-    $relations = static::getRelations();
-    foreach ($data as $key => $value) {
-        if (isset($columns[$key])) {
-            $data[$key] = RecordValueHelpers::normalizeValueReceivedFromDb(
-                $value,
-                static::getColumn($key)
-                    ->getType()
-            );
-        } elseif (isset($relations[$key])) {
-            if (!is_array($value)) {
-                $data[$key] = $value;
+    
+    /**
+     * Enable read only mode. In this mode incoming data is not processed in any way and Record works like an array
+     * but maintains most getters functionality including relations.
+     * Usage of value formatters are allowed ({column}_as_array, {column}_as_object, etc.)
+     * Relations returned as similar read only Records or RecordArrays.
+     * In this mode you're able to use Record's methods that do not modify Record's data.
+     * @return $this
+     */
+    public function enableReadOnlyMode()
+    {
+        if (!$this->isReadOnly) {
+            if ($this->existsInDb()) {
+                $this->readOnlyData = $this->toArray([], ['*']);
             } else {
-                $data[$key] = $relations[$key]->getForeignTable()
-                    ->newRecord()
-                    ->normalizeReadOnlyData($value);
+                $this->readOnlyData = $this->getAllNonDefaultValues();
+            }
+            $this->isReadOnly = true;
+        }
+        return $this;
+    }
+    
+    /**
+     * Disable read only mode.
+     * @return $this
+     */
+    public function disableReadOnlyMode()
+    {
+        if ($this->isReadOnly) {
+            $this->isReadOnly = false;
+            $this->reset();
+            if (!empty($this->readOnlyData)) {
+                $this->updateValues($this->readOnlyData, !empty($this->readOnlyData[static::getPrimaryKeyColumnName()]));
+            }
+            $this->readOnlyData = [];
+        }
+        return $this;
+    }
+    
+    /**
+     * @return bool
+     */
+    public function isReadOnly(): bool
+    {
+        return $this->isReadOnly;
+    }
+    
+    public function forbidSaving()
+    {
+        $this->forbidSaving = true;
+        return $this;
+    }
+    
+    public function allowSaving()
+    {
+        $this->forbidSaving = true;
+        return $this;
+    }
+    
+    public function isSavingAllowed(): bool
+    {
+        return !$this->forbidSaving();
+    }
+    
+    /**
+     * Normalizes readonly data so that numeric and bool values will not be strings
+     * @param array $data
+     * @return array
+     */
+    static public function normalizeReadOnlyData(array $data): array
+    {
+        $columns = static::getColumns();
+        $relations = static::getRelations();
+        foreach ($data as $key => $value) {
+            if (isset($columns[$key])) {
+                $data[$key] = RecordValueHelpers::normalizeValueReceivedFromDb(
+                    $value,
+                    static::getColumn($key)
+                        ->getType()
+                );
+            } elseif (isset($relations[$key])) {
+                if (!is_array($value)) {
+                    $data[$key] = $value;
+                } else {
+                    $data[$key] = $relations[$key]->getForeignTable()
+                        ->newRecord()
+                        ->normalizeReadOnlyData($value);
+                }
             }
         }
+        return $data;
     }
-    return $data;
-}
-
+    
 }
