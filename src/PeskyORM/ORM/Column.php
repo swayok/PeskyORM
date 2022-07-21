@@ -19,54 +19,54 @@ use PeskyORM\Core\DbExpr;
 class Column
 {
     
-    const TYPE_INT = 'integer';
-    const TYPE_FLOAT = 'float';
-    const TYPE_BOOL = 'boolean';
-    const TYPE_STRING = 'string';
-    const TYPE_EMAIL = 'email';
-    const TYPE_TEXT = 'text';
-    const TYPE_JSON = 'json';
-    const TYPE_JSONB = 'jsonb';
-    const TYPE_PASSWORD = 'password';
-    const TYPE_TIMESTAMP = 'timestamp';
-    const TYPE_TIMESTAMP_WITH_TZ = 'timestamp_tz';
-    const TYPE_UNIX_TIMESTAMP = 'unix_timestamp';
-    const TYPE_DATE = 'date';
-    const TYPE_TIME = 'time';
-    const TYPE_TIMEZONE_OFFSET = 'timezone_offset';
-    const TYPE_ENUM = 'enum';
-    const TYPE_IPV4_ADDRESS = 'ip';
-    const TYPE_FILE = 'file';
-    const TYPE_IMAGE = 'image';
-    const TYPE_BLOB = 'blob';
+    public const TYPE_INT = 'integer';
+    public const TYPE_FLOAT = 'float';
+    public const TYPE_BOOL = 'boolean';
+    public const TYPE_STRING = 'string';
+    public const TYPE_EMAIL = 'email';
+    public const TYPE_TEXT = 'text';
+    public const TYPE_JSON = 'json';
+    public const TYPE_JSONB = 'jsonb';
+    public const TYPE_PASSWORD = 'password';
+    public const TYPE_TIMESTAMP = 'timestamp';
+    public const TYPE_TIMESTAMP_WITH_TZ = 'timestamp_tz';
+    public const TYPE_UNIX_TIMESTAMP = 'unix_timestamp';
+    public const TYPE_DATE = 'date';
+    public const TYPE_TIME = 'time';
+    public const TYPE_TIMEZONE_OFFSET = 'timezone_offset';
+    public const TYPE_ENUM = 'enum';
+    public const TYPE_IPV4_ADDRESS = 'ip';
+    public const TYPE_FILE = 'file';
+    public const TYPE_IMAGE = 'image';
+    public const TYPE_BLOB = 'blob';
     
-    const NAME_VALIDATION_REGEXP = '%^[a-z][a-z0-9_]*$%';    //< snake_case
+    public const NAME_VALIDATION_REGEXP = '%^[a-z][a-z0-9_]*$%';    //< snake_case
     
-    const DEFAULT_VALUE_NOT_SET = '___NOT_SET___';
-    const VALID_DEFAULT_VALUE_UNDEFINED = '___UNDEFINED___';
+    public const DEFAULT_VALUE_NOT_SET = '___NOT_SET___';
+    public const VALID_DEFAULT_VALUE_UNDEFINED = '___UNDEFINED___';
     
-    const VALUE_CANNOT_BE_NULL = 'value_cannot_be_null';
-    const VALUE_MUST_BE_BOOLEAN = 'value_must_be_boolean';
-    const VALUE_MUST_BE_INTEGER = 'value_must_be_integer';
-    const VALUE_MUST_BE_FLOAT = 'value_must_be_float';
-    const VALUE_MUST_BE_IMAGE = 'value_must_be_image';
-    const VALUE_MUST_BE_FILE = 'value_must_be_file';
-    const VALUE_MUST_BE_JSON = 'value_must_be_json';
-    const VALUE_MUST_BE_IPV4_ADDRESS = 'value_must_be_ipv4_address';
-    const VALUE_MUST_BE_EMAIL = 'value_must_be_email';
-    const VALUE_MUST_BE_TIMEZONE_OFFSET = 'value_must_be_timezone_offset';
-    const VALUE_MUST_BE_TIMESTAMP = 'value_must_be_timestamp';
-    const VALUE_MUST_BE_TIMESTAMP_WITH_TZ = 'value_must_be_timestamp_with_tz';
-    const VALUE_MUST_BE_TIME = 'value_must_be_time';
-    const VALUE_MUST_BE_DATE = 'value_must_be_date';
-    const VALUE_IS_NOT_ALLOWED = 'value_is_not_allowed';
-    const ONE_OF_VALUES_IS_NOT_ALLOWED = 'one_of_values_is_not_allowed';
-    const VALUE_MUST_BE_STRING = 'value_must_be_string';
-    const VALUE_MUST_BE_STRING_OR_NUMERIC = 'value_must_be_string_or_numeric';
-    const VALUE_MUST_BE_ARRAY = 'value_must_be_array';
+    public const VALUE_CANNOT_BE_NULL = 'value_cannot_be_null';
+    public const VALUE_MUST_BE_BOOLEAN = 'value_must_be_boolean';
+    public const VALUE_MUST_BE_INTEGER = 'value_must_be_integer';
+    public const VALUE_MUST_BE_FLOAT = 'value_must_be_float';
+    public const VALUE_MUST_BE_IMAGE = 'value_must_be_image';
+    public const VALUE_MUST_BE_FILE = 'value_must_be_file';
+    public const VALUE_MUST_BE_JSON = 'value_must_be_json';
+    public const VALUE_MUST_BE_IPV4_ADDRESS = 'value_must_be_ipv4_address';
+    public const VALUE_MUST_BE_EMAIL = 'value_must_be_email';
+    public const VALUE_MUST_BE_TIMEZONE_OFFSET = 'value_must_be_timezone_offset';
+    public const VALUE_MUST_BE_TIMESTAMP = 'value_must_be_timestamp';
+    public const VALUE_MUST_BE_TIMESTAMP_WITH_TZ = 'value_must_be_timestamp_with_tz';
+    public const VALUE_MUST_BE_TIME = 'value_must_be_time';
+    public const VALUE_MUST_BE_DATE = 'value_must_be_date';
+    public const VALUE_IS_NOT_ALLOWED = 'value_is_not_allowed';
+    public const ONE_OF_VALUES_IS_NOT_ALLOWED = 'one_of_values_is_not_allowed';
+    public const VALUE_MUST_BE_STRING = 'value_must_be_string';
+    public const VALUE_MUST_BE_STRING_OR_NUMERIC = 'value_must_be_string_or_numeric';
+    public const VALUE_MUST_BE_ARRAY = 'value_must_be_array';
     
-    const CASE_SENSITIVE = true;
-    const CASE_INSENSITIVE = false;
+    public const CASE_SENSITIVE = true;
+    public const CASE_INSENSITIVE = false;
     
     /**
      * @var array

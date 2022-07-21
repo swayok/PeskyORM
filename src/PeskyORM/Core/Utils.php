@@ -5,10 +5,10 @@ namespace PeskyORM\Core;
 class Utils
 {
     
-    const FETCH_ALL = 'all';
-    const FETCH_FIRST = 'first';
-    const FETCH_VALUE = 'value';
-    const FETCH_COLUMN = 'column';
+    public const FETCH_ALL = 'all';
+    public const FETCH_FIRST = 'first';
+    public const FETCH_VALUE = 'value';
+    public const FETCH_COLUMN = 'column';
     
     /**
      * Get data from $statement according to required $type
@@ -114,11 +114,11 @@ class Utils
                     $valueIsSubSelect = $rawValue instanceof AbstractSelect;
                     if (!$valueIsDbExpr && !$valueIsSubSelect) {
                         throw new \InvalidArgumentException(
-                            '$conditions argument may contain only objects of class DbExpr or AbstractSelect. Other objects are forbidden. Key: ' . (string)$column
+                            '$conditions argument may contain only objects of class DbExpr or AbstractSelect. Other objects are forbidden. Key: ' . $column
                         );
                     } elseif ($valueIsSubSelect && is_numeric($column)) {
                         throw new \InvalidArgumentException(
-                            '$conditions argument may contain objects of class AbstractSelect only with non-numeric keys. Key: ' . (string)$column
+                            '$conditions argument may contain objects of class AbstractSelect only with non-numeric keys. Key: ' . $column
                         );
                     }
                 }
@@ -128,6 +128,7 @@ class Utils
                 if (is_numeric($column) && $valueIsDbExpr) {
                     // 1 - custom expressions
                     $assembled[] = $conditionValuePreprocessor(null, $rawValue, $connection);
+                    /** @noinspection PhpUnnecessaryStopStatementInspection */
                     continue;
                 } elseif (
                     (
@@ -221,6 +222,7 @@ class Utils
         if ($joinName && !$ret['join_name']) {
             $ret['join_name'] = $joinName;
         }
+        /** @noinspection UselessUnsetInspection */
         unset($columnName, $joinName, $columnAlias); //< to prevent faulty usage
         
         if ($ret['name'] === '*') {

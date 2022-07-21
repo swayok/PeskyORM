@@ -39,7 +39,7 @@ abstract class FakeTableStructure extends TableStructure
             $dbSchema = 'null';
         } else {
             $namespace = 'PeskyORM\ORM\Fakes';
-            $parentClassFullName = FakeTableStructure::class;
+            $parentClassFullName = __CLASS__;
             $parentClassShortName = 'FakeTableStructure';
             $dbSchema = 'parent::getSchema()';
         }

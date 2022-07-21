@@ -15,7 +15,7 @@ use Swayok\Utils\ValidateValue;
 class Mysql extends DbAdapter
 {
     
-    const ENTITY_NAME_QUOTES = '`';
+    public const ENTITY_NAME_QUOTES = '`';
     
     static protected $dataTypesMap = [
         'bytea' => 'BINARY',
@@ -135,6 +135,9 @@ class Mysql extends DbAdapter
         return static::$conditionOperatorsMap;
     }
     
+    /**
+     * {@inheritdoc}
+     */
     protected function resolveQueryWithReturningColumns(
         $query,
         $table,
@@ -174,6 +177,7 @@ class Mysql extends DbAdapter
         $returning,
         $pkName
     ) {
+        /** @noinspection MissUsingParentKeywordInspection */
         parent::insert($table, $data, $dataTypes, false);
         $insertQuery = $this->getLastQuery();
         $id = $this->quoteValue(
@@ -209,6 +213,7 @@ class Mysql extends DbAdapter
         $returning,
         $pkName
     ) {
+        /** @noinspection MissUsingParentKeywordInspection */
         parent::insertMany($table, $columns, $data, $dataTypes, false);
         $insertQuery = $this->getLastQuery();
         $id1 = (int)trim(
@@ -253,6 +258,7 @@ class Mysql extends DbAdapter
         $table,
         $returning
     ) {
+        /** @noinspection MissUsingParentKeywordInspection */
         $rowsUpdated = parent::exec($updateQuery);
         if (empty($rowsUpdated)) {
             return [];
@@ -404,7 +410,7 @@ class Mysql extends DbAdapter
                     $result = "JSON_UNQUOTE(JSON_EXTRACT({$result}, {$sequence[$i + 1]}))";
                     break;
                 default:
-                    throw new \UnexpectedValueException("Unsopported json operator '{$sequence[$i]}' received");
+                    throw new DbException("Unsopported json operator '{$sequence[$i]}' received", DbException::CODE_DB_DOES_NOT_SUPPORT_FEATURE);
             }
         }
         return $result;
@@ -515,7 +521,7 @@ class Mysql extends DbAdapter
      */
     public function listen(string $channel, \Closure $handler, int $sleepIfNoNotificationMs = 1000, int $sleepAfterNotificationMs = 0)
     {
-        throw new \BadMethodCallException('MySQL does not support notifications');
+        throw new DbException('MySQL does not support notifications', DbException::CODE_DB_DOES_NOT_SUPPORT_FEATURE);
     }
     
 }

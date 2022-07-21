@@ -1114,8 +1114,7 @@ class DbRecordTest extends TestCase
     public function testFromDb()
     {
         $recordsAdded = TestingApp::fillAdminsTable(10);
-        $example = $recordsAdded[0];
-        $exampleWithParent = $recordsAdded[1];
+        [$example, $exampleWithParent] = $recordsAdded;
         unset(
             $example['password'], $example['created_at'], $example['updated_at'],
             $exampleWithParent['password'], $exampleWithParent['created_at'], $exampleWithParent['updated_at']
@@ -1362,8 +1361,7 @@ class DbRecordTest extends TestCase
     public function testSetGetAndHasRelatedRecord()
     {
         $records = TestingApp::getRecordsForDb('admins', 2);
-        $parentData = $records[0];
-        $recordData = $records[1];
+        [$parentData, $recordData] = $records;
         $normalColumns = array_diff(array_keys(TestingAdmin::getColumnsThatExistInDb()), ['password', 'created_at', 'updated_at']);
         unset(
             $parentData['password'], $parentData['created_at'], $parentData['updated_at'],
@@ -2589,6 +2587,7 @@ class DbRecordTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Magic method 'setId(\$value, \$isFromDb = false)' accepts only 2 arguments, but 3 arguments passed");
+        /** @noinspection PhpMethodParametersCountMismatchInspection */
         TestingAdmin::newEmptyRecord()
             ->setId(1, 3, 2);
     }
@@ -2656,12 +2655,12 @@ class DbRecordTest extends TestCase
             }
             
             $setterMethodName = 'set' . StringUtils::classify($name);
-            call_user_func([$recForMagickSetterMethodFromDb, $setterMethodName], $value, true);
+            $recForMagickSetterMethodFromDb->$setterMethodName($value, true);
             static::assertTrue($recForMagickSetterMethodFromDb->hasValue($name));
             static::assertEquals($value, $recForMagickSetterMethodFromDb->getValue($name));
             static::assertTrue($recForMagickSetterMethodFromDb->isValueFromDb($name));
             
-            call_user_func([$recForMagickSetterMethodNotFromDb, $setterMethodName], $value, $name === 'id');
+            $recForMagickSetterMethodNotFromDb->$setterMethodName($value, $name === 'id');
             static::assertTrue($recForMagickSetterMethodNotFromDb->hasValue($name));
             static::assertEquals($value, $recForMagickSetterMethodNotFromDb->getValue($name));
             if ($name === 'id') {

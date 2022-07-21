@@ -195,8 +195,8 @@ abstract class TableStructure implements TableStructureInterface
      */
     static public function getPkColumnName(): ?string
     {
-        return static::getPkColumn()
-            ->getName();
+        $column = static::getPkColumn();
+        return $column ? $column->getName() : null;
     }
     
     /**

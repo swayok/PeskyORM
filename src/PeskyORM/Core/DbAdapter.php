@@ -9,21 +9,19 @@ use Swayok\Utils\Utils;
 abstract class DbAdapter implements DbAdapterInterface
 {
     
-    const DEFAULT_DB_PORT_NUMBER = '';
-    
-    const ENTITY_NAME_QUOTES = '';
+    public const ENTITY_NAME_QUOTES = '';
     
     // db-specific values for bool data type
-    const BOOL_TRUE = '1';
-    const BOOL_FALSE = '0';
+    public const BOOL_TRUE = '1';
+    public const BOOL_FALSE = '0';
     
     // db-specific value for unlimited amount of query results (ex: SELECT .. OFFSET 10 LIMIT 0)
-    const NO_LIMIT = '0';
+    public const NO_LIMIT = '0';
     
-    const FETCH_ALL = OrmUtils::FETCH_ALL;
-    const FETCH_FIRST = OrmUtils::FETCH_FIRST;
-    const FETCH_VALUE = OrmUtils::FETCH_VALUE;
-    const FETCH_COLUMN = OrmUtils::FETCH_COLUMN;
+    public const FETCH_ALL = OrmUtils::FETCH_ALL;
+    public const FETCH_FIRST = OrmUtils::FETCH_FIRST;
+    public const FETCH_VALUE = OrmUtils::FETCH_VALUE;
+    public const FETCH_COLUMN = OrmUtils::FETCH_COLUMN;
     
     /**
      * Traces of all transactions (required for debug)
@@ -628,7 +626,7 @@ abstract class DbAdapter implements DbAdapterInterface
         $ret = [];
         foreach ($valuesAssoc as $column => $value) {
             $quotedValue = $this->quoteValue(
-                $valuesAssoc[$column],
+                $value,
                 empty($dataTypes[$column]) ? null : $dataTypes[$column]
             );
             $ret[] = $this->quoteDbEntityName($column) . '=' . $quotedValue;
@@ -643,7 +641,7 @@ abstract class DbAdapter implements DbAdapterInterface
      * @param array $columns
      * @param array $data
      * @param array $dataTypes
-     * @param array|bool $returning - @see insert()
+     * @param array|bool|string $returning - @see insert()
      * @param $pkName - Name of primary key for $returning in DB drivers that support only getLastInsertId()
      * @param string $operation - Name of operation to perform: 'insert', 'insert_many', 'update', 'delete'
      * @return array
@@ -994,14 +992,13 @@ abstract class DbAdapter implements DbAdapterInterface
             },
             $expression->get()
         );
-        $quoted = preg_replace_callback(
+        return preg_replace_callback(
             '%`(.*?)`%s',
             function ($matches) {
                 return $this->quoteDbEntityName($matches[1]);
             },
             $quoted
         );
-        return $quoted;
     }
     
     /**
@@ -1247,12 +1244,12 @@ abstract class DbAdapter implements DbAdapterInterface
      * Make a simple SELECT query from passed parameters
      * @param string $table
      * @param array $columns - empty array means "all columns" (SELECT *), must contain only strings and DbExpr objects
-     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return string - something like: "SELECT $columns FROM $table $conditionsAndOptions"
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function makeSelectQuery(string $table, array $columns = [], $conditionsAndOptions = null): string
+    public function makeSelectQuery(string $table, array $columns = [], ?DbExpr $conditionsAndOptions = null): string
     {
         $this->guardTableNameArg($table);
         if (empty($columns)) {
@@ -1261,7 +1258,7 @@ abstract class DbAdapter implements DbAdapterInterface
             $this->guardColumnsArg($columns);
         }
         $this->guardConditionsAndOptionsArg($conditionsAndOptions);
-        $suffix = empty($conditionsAndOptions) ? '' : ' ' . $this->quoteDbExpr($conditionsAndOptions);
+        $suffix = $conditionsAndOptions ? ' ' . $this->quoteDbExpr($conditionsAndOptions) : '';
         return 'SELECT ' . $this->buildColumnsList($columns, false) . ' FROM ' . $this->quoteDbEntityName($table) . $suffix;
     }
     

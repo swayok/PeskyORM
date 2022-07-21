@@ -35,7 +35,7 @@ class Relation
     /** @var string|\Closure|null */
     protected $displayColumnName;
     
-    /** @var array */
+    /** @var array|\Closure */
     protected $additionalJoinConditions = [];
     
     /**

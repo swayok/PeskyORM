@@ -142,11 +142,7 @@ class Postgres extends DbAdapter
     
     public function disconnect()
     {
-        try {
-            $this->query('SELECT pg_terminate_backend(pg_backend_pid());');
-        } catch (\PDOException $exc) {
-            throw $exc;
-        }
+        $this->query('SELECT pg_terminate_backend(pg_backend_pid());');
         return parent::disconnect();
     }
     
@@ -340,7 +336,7 @@ class Postgres extends DbAdapter
             [$limit, $precision] = $this->extractLimitAndPrecisionForColumnDescription($columnInfo['type_description']);
             $columnDescription
                 ->setLimitAndPrecision($limit, $precision)
-                ->setIsNullable(!(bool)$columnInfo['notnull'])
+                ->setIsNullable(!$columnInfo['notnull'])
                 ->setIsPrimaryKey($columnInfo['primarykey'])
                 ->setIsForeignKey($columnInfo['foreignkey'])
                 ->setIsUnique($columnInfo['uniquekey'])
@@ -375,7 +371,7 @@ class Postgres extends DbAdapter
             $matches
         )) {
             return str_replace("''", "'", $matches[1]);
-        } elseif (preg_match("%^'(\d+(?:\.\d*)?)'(?:::(numeric|decimal|(?:small|medium|big)?int(?:eger)?(?:2|4|8)?))?$%", $default, $matches)) {
+        } elseif (preg_match("%^'(\d+(?:\.\d*)?)'(?:::(numeric|decimal|(?:small|medium|big)?int(?:eger)?[248]?))?$%", $default, $matches)) {
             return (float)$matches[1];
         } elseif ($default === 'true') {
             return true;
@@ -383,7 +379,7 @@ class Postgres extends DbAdapter
             return false;
         } elseif (ValidateValue::isInteger($default)) {
             return (int)$default;
-        } elseif (strlen($tmp = trim($default, "'")) > 0 && ValidateValue::isFloat($tmp)) {
+        } elseif (($tmp = trim($default, "'")) !== '' && ValidateValue::isFloat($tmp)) {
             return (float)$tmp;
         } else {
             return DbExpr::create($default);

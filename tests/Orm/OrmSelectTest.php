@@ -46,7 +46,7 @@ class OrmSelectTest extends TestCase
     public function convertTestDataForAdminsTableAssert($data)
     {
         foreach ($data as &$item) {
-            $item['id'] = "{$item['id']}";
+            $item['id'] = (string)$item['id'];
             $item['is_superadmin'] = (bool)$item['is_superadmin'];
             $item['is_active'] = (bool)$item['is_active'];
         }

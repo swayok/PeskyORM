@@ -71,7 +71,6 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
             $recordClass = get_class($this->getNewRecord());
             /** @var array|RecordInterface[] $records */
             $records = array_values($records);
-            /** @noinspection ForeachSourceInspection */
             foreach ($records as $index => $record) {
                 if (is_array($record)) {
                     $this->records[$index] = $record;
@@ -398,6 +397,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
             $this->disableDbRecordDataValidation();
         }
         for ($i = 0, $count = $this->count(); $i < $count; $i++) {
+            /** @var Record|RecordInterface $record */
             $record = $this->offsetGet($i);
             $value = $closure($record);
             if ($value instanceof KeyValuePair) {
@@ -564,6 +564,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         if ($this->count() === 0) {
             throw new \BadMethodCallException('There is no records');
         }
+        /** @var Record|RecordInterface $record */
         $record = $this->offsetGet(0);
         return $columnName === null ? $record : $record[$columnName];
     }
@@ -579,6 +580,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         if ($this->count() === 0) {
             throw new \BadMethodCallException('There is no records');
         }
+        /** @var Record|RecordInterface $record */
         $record = $this->offsetGet(count($this->getRecords()) - 1);
         return $columnName === null ? $record : $record[$columnName];
     }
@@ -617,6 +619,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     public function offsetGet($index)
     {
         if ($this->isDbRecordInstanceReuseDuringIterationEnabled()) {
+            /** @var RecordInterface|Record $dbRecord */
             $dbRecord = $this->getDbRecordObjectForIteration();
             if ($index !== $this->currentDbRecordIndex) {
                 $data = $this->getRecordDataByIndex($index);
@@ -624,7 +627,8 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
                 if ($isFromDb === null) {
                     $isFromDb = $this->autodetectIfRecordIsFromDb($data);
                 }
-                $dbRecord->reset()
+                $dbRecord
+                    ->reset()
                     ->fromData($data, $isFromDb);
                 $this->currentDbRecordIndex = $index;
             }

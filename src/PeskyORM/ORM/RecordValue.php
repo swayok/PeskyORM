@@ -252,17 +252,15 @@ class RecordValue
             return $this->value;
         } elseif ($this->isDefaultValueCanBeSet()) {
             return $this->getDefaultValue();
+        } elseif ($this->hasDefaultValue()) {
+            throw new \BadMethodCallException(
+                "Value for {$this->getColumnInfoForException()} is not set and default value cannot be set because"
+                . ' record already exists in DB and there is danger of unintended value overwriting'
+            );
         } else {
-            if ($this->hasDefaultValue()) {
-                throw new \BadMethodCallException(
-                    "Value for {$this->getColumnInfoForException()} is not set and default value cannot be set because"
-                    . ' record already exists in DB and there is danger of unintended value overwriting'
-                );
-            } else {
-                throw new \BadMethodCallException(
-                    "Value for {$this->getColumnInfoForException()} is not set and default value is not provided"
-                );
-            }
+            throw new \BadMethodCallException(
+                "Value for {$this->getColumnInfoForException()} is not set and default value is not provided"
+            );
         }
     }
     

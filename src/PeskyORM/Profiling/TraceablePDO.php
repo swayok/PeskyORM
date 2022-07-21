@@ -281,7 +281,7 @@ class TraceablePDO extends PDO
         return array_reduce($this->executedStatements, function ($maxMemoryUsed, $statement) {
             /** @var $statement TracedStatement */
             $memoryUsed = $statement->getEndMemory();
-            return $memoryUsed > $maxMemoryUsed ? $memoryUsed : $maxMemoryUsed;
+            return max($memoryUsed, $maxMemoryUsed);
         });
     }
     

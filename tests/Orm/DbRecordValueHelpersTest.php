@@ -114,7 +114,7 @@ class DbRecordValueHelpersTest extends TestCase
     {
         static::assertNull(RecordValueHelpers::normalizeValue(null, Column::TYPE_DATE));
         static::assertEquals(
-            date(NormalizeValue::DATE_FORMAT, time()),
+            date(NormalizeValue::DATE_FORMAT),
             RecordValueHelpers::normalizeValue(time(), Column::TYPE_DATE)
         );
         static::assertEquals(
@@ -193,7 +193,7 @@ class DbRecordValueHelpersTest extends TestCase
     {
         static::assertNull(RecordValueHelpers::normalizeValue(null, Column::TYPE_TIMESTAMP));
         static::assertEquals(
-            date(NormalizeValue::DATETIME_FORMAT, time()),
+            date(NormalizeValue::DATETIME_FORMAT),
             RecordValueHelpers::normalizeValue(time(), Column::TYPE_TIMESTAMP)
         );
         static::assertEquals(
@@ -242,7 +242,7 @@ class DbRecordValueHelpersTest extends TestCase
     {
         static::assertNull(RecordValueHelpers::normalizeValue(null, Column::TYPE_TIMESTAMP_WITH_TZ));
         static::assertEquals(
-            date(NormalizeValue::DATETIME_WITH_TZ_FORMAT, time()),
+            date(NormalizeValue::DATETIME_WITH_TZ_FORMAT),
             RecordValueHelpers::normalizeValue(time(), Column::TYPE_TIMESTAMP_WITH_TZ)
         );
         static::assertEquals(

@@ -1494,6 +1494,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $columnsToSave
      * @param bool $isUpdate
      * @return array
+     * @noinspection PhpParameterByRefIsNotUsedAsReferenceInspection
      */
     protected function collectValuesForSave(array &$columnsToSave, bool $isUpdate): array
     {
@@ -2046,30 +2047,28 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     $valueModifier
                 );
             }
+        } elseif ($this->existsInDb()) {
+            if ($this->_hasValue($column, false)) {
+                $isset = true;
+                $val = $this->_getValue($column, $format);
+                return $this->modifyValueForToArray(
+                    $columnName,
+                    $columnAlias,
+                    ($val instanceof DbExpr) ? null : $val,
+                    $valueModifier
+                );
+            }
         } else {
-            if ($this->existsInDb()) {
-                if ($this->_hasValue($column, false)) {
-                    $isset = true;
-                    $val = $this->_getValue($column, $format);
-                    return $this->modifyValueForToArray(
-                        $columnName,
-                        $columnAlias,
-                        ($val instanceof DbExpr) ? null : $val,
-                        $valueModifier
-                    );
-                }
-            } else {
-                $isset = true; //< there is always a value when record does not exist in DB
-                // if default value not provided directly it is considered to be null when record does not exist is DB
-                if ($this->_hasValue($column, true)) {
-                    $val = $this->_getValue($column, $format);
-                    return $this->modifyValueForToArray(
-                        $columnName,
-                        $columnAlias,
-                        ($val instanceof DbExpr) ? null : $val,
-                        $valueModifier
-                    );
-                }
+            $isset = true; //< there is always a value when record does not exist in DB
+            // if default value not provided directly it is considered to be null when record does not exist is DB
+            if ($this->_hasValue($column, true)) {
+                $val = $this->_getValue($column, $format);
+                return $this->modifyValueForToArray(
+                    $columnName,
+                    $columnAlias,
+                    ($val instanceof DbExpr) ? null : $val,
+                    $valueModifier
+                );
             }
         }
         return $this->modifyValueForToArray($columnName, $columnAlias, null, $valueModifier, $isset);

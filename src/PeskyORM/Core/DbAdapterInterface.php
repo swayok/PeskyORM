@@ -228,6 +228,7 @@ interface DbAdapterInterface
     /**
      * @param string|array|int|float $value
      * @param string $operator
+     * @param bool $valueAlreadyQuoted
      * @return mixed
      * @throws \PDOException
      * @throws \InvalidArgumentException
@@ -327,12 +328,12 @@ interface DbAdapterInterface
      * Make a simple SELECT query from passed parameters
      * @param string $table
      * @param array $columns - empty array means "all columns" (SELECT *), must contain only strings and DbExpr objects
-     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return string - something like: "SELECT $columns FROM $table $conditionsAndOptions"
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function makeSelectQuery(string $table, array $columns = [], $conditionsAndOptions = null): string;
+    public function makeSelectQuery(string $table, array $columns = [], ?DbExpr $conditionsAndOptions = null): string;
     
     /**
      * Get table description from DB

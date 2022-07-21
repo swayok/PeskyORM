@@ -2,15 +2,18 @@
 
 namespace PeskyORM\Core;
 
+use PeskyORM\Adapter\Mysql;
+use PeskyORM\Adapter\Postgres;
+
 class DbConnectionsManager
 {
     
-    const ADAPTER_MYSQL = 'mysql';
-    const ADAPTER_POSTGRES = 'pgsql';
+    public const ADAPTER_MYSQL = 'mysql';
+    public const ADAPTER_POSTGRES = 'pgsql';
     
     static private $adapters = [
-        self::ADAPTER_MYSQL => '\PeskyORM\Adapter\Mysql',
-        self::ADAPTER_POSTGRES => '\PeskyORM\Adapter\Postgres',
+        self::ADAPTER_MYSQL => Mysql::class,
+        self::ADAPTER_POSTGRES => Postgres::class,
     ];
     
     /**

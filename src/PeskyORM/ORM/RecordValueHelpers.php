@@ -419,11 +419,10 @@ abstract class RecordValueHelpers
         }
         return $valueContainer->getCustomInfo('format:' . $format, function (RecordValue $valueContainer) use ($format) {
             $value = static::getSimpleValueFormContainer($valueContainer);
-            switch ($format) {
-                case 'unix_ts':
-                    return strtotime($value);
-                default:
-                    throw new \InvalidArgumentException("Requested value format '$format' is not implemented");
+            if ($format === 'unix_ts') {
+                return strtotime($value);
+            } else {
+                throw new \InvalidArgumentException("Requested value format '$format' is not implemented");
             }
         }, true);
     }

@@ -15,7 +15,7 @@ abstract class TestingBaseTable extends Table
     public function newRecord()
     {
         if (!$this->recordClass) {
-            $class = new \ReflectionClass(get_called_class());
+            $class = new \ReflectionClass(static::class);
             $this->recordClass = $class->getNamespaceName() . '\\'
                 . StringUtils::singularize(str_replace('Table', '', $class->getShortName()));
         }
@@ -25,7 +25,7 @@ abstract class TestingBaseTable extends Table
     public function getTableStructure()
     {
         /** @var TableStructure $class */
-        $class = get_called_class() . 'Structure';
+        $class = static::class . 'Structure';
         return $class::getInstance();
     }
     

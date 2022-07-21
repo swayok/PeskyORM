@@ -497,28 +497,26 @@ class OrmSelect extends AbstractSelect
                     );
                 }
             }
+        } elseif ($columnInfo['join_name'] === null) {
+            $isValid = $this->getTableStructure()
+                ->hasColumn($columnInfo['name']);
+            if (!$isValid) {
+                throw new \UnexpectedValueException(
+                    "{$subject}: Column with name [{$columnInfo['name']}] not found in "
+                    . get_class($this->getTableStructure())
+                );
+            }
         } else {
-            if ($columnInfo['join_name'] === null) {
-                $isValid = $this->getTableStructure()
-                    ->hasColumn($columnInfo['name']);
+            $join = $this->getJoin($columnInfo['join_name']);
+            if (!($join instanceof CrossJoinInfo)) {
+                $foreignTableStructure = $join->getForeignDbTable()
+                    ->getTableStructure();
+                $isValid = $columnInfo['name'] === '*' || $foreignTableStructure::hasColumn($columnInfo['name']);
                 if (!$isValid) {
                     throw new \UnexpectedValueException(
-                        "{$subject}: Column with name [{$columnInfo['name']}] not found in "
-                        . get_class($this->getTableStructure())
+                        "{$subject}: Column with name [{$columnInfo['join_name']}.{$columnInfo['name']}] not found in "
+                        . get_class($foreignTableStructure)
                     );
-                }
-            } else {
-                $join = $this->getJoin($columnInfo['join_name']);
-                if (!($join instanceof CrossJoinInfo)) {
-                    $foreignTableStructure = $join->getForeignDbTable()
-                        ->getTableStructure();
-                    $isValid = $columnInfo['name'] === '*' || $foreignTableStructure::hasColumn($columnInfo['name']);
-                    if (!$isValid) {
-                        throw new \UnexpectedValueException(
-                            "{$subject}: Column with name [{$columnInfo['join_name']}.{$columnInfo['name']}] not found in "
-                            . get_class($foreignTableStructure)
-                        );
-                    }
                 }
             }
         }

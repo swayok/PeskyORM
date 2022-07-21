@@ -6,6 +6,8 @@ use Exception;
 use InvalidArgumentException;
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\TableDescription;
+use PeskyORM\ORM\Column;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
@@ -389,6 +391,7 @@ class PostgresAdapterHelpersTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$conditionsAndOptions argument must be an instance of DbExpr class");
         $adapter = self::getValidAdapter();
+        /** @noinspection PhpParamsInspection */
         $adapter->makeSelectQuery('table', [], 'string');
     }
     
@@ -843,7 +846,7 @@ class PostgresAdapterHelpersTest extends TestCase
         // Postgres::describeTable()
         $adapter = static::getValidAdapter();
         $description = $adapter->describeTable('settings');
-        static::assertInstanceOf(\PeskyORM\Core\TableDescription::class, $adapter->describeTable('admins'));
+        static::assertInstanceOf(TableDescription::class, $adapter->describeTable('admins'));
         static::assertEquals('settings', $description->getName());
         static::assertEquals('public', $description->getDbSchema());
         static::assertCount(3, $description->getColumns());
@@ -851,7 +854,7 @@ class PostgresAdapterHelpersTest extends TestCase
         $idCol = $description->getColumn('id');
         static::assertEquals('id', $idCol->getName());
         static::assertEquals('int4', $idCol->getDbType());
-        static::assertEquals(\PeskyORM\ORM\Column::TYPE_INT, $idCol->getOrmType());
+        static::assertEquals(Column::TYPE_INT, $idCol->getOrmType());
         static::assertEquals(DbExpr::create('nextval(\'settings_id_seq\'::regclass)'), $idCol->getDefault());
         static::assertEquals(null, $idCol->getNumberPrecision());
         static::assertEquals(null, $idCol->getLimit());
@@ -863,7 +866,7 @@ class PostgresAdapterHelpersTest extends TestCase
         $keyCol = $description->getColumn('key');
         static::assertEquals('key', $keyCol->getName());
         static::assertEquals('varchar', $keyCol->getDbType());
-        static::assertEquals(\PeskyORM\ORM\Column::TYPE_STRING, $keyCol->getOrmType());
+        static::assertEquals(Column::TYPE_STRING, $keyCol->getOrmType());
         static::assertEquals(null, $keyCol->getDefault());
         static::assertEquals(null, $keyCol->getNumberPrecision());
         static::assertEquals(100, $keyCol->getLimit());
@@ -875,7 +878,7 @@ class PostgresAdapterHelpersTest extends TestCase
         $valueCol = $description->getColumn('value');
         static::assertEquals('value', $valueCol->getName());
         static::assertEquals('json', $valueCol->getDbType());
-        static::assertEquals(\PeskyORM\ORM\Column::TYPE_JSON, $valueCol->getOrmType());
+        static::assertEquals(Column::TYPE_JSON, $valueCol->getOrmType());
         static::assertEquals('{}', $valueCol->getDefault());
         static::assertEquals(null, $valueCol->getNumberPrecision());
         static::assertEquals(null, $valueCol->getLimit());

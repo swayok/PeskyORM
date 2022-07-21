@@ -937,6 +937,7 @@ abstract class AbstractSelect
                 'join_name' => $joinName,
                 'type_cast' => null,
             ];
+            /** @noinspection UselessUnsetInspection */
             unset($columnName, $joinName, $columnAlias); //< to prevent faulty usage
         } else {
             $columnName = trim($columnName);
@@ -952,6 +953,7 @@ abstract class AbstractSelect
             if ($joinName && !$ret['join_name']) {
                 $ret['join_name'] = $joinName;
             }
+            /** @noinspection UselessUnsetInspection */
             unset($columnName, $joinName, $columnAlias); //< to prevent faulty usage
             
             if ($ret['name'] === '*') {
