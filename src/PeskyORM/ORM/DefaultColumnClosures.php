@@ -4,6 +4,7 @@ namespace PeskyORM\ORM;
 
 use PeskyORM\Core\AbstractSelect;
 use PeskyORM\Core\DbExpr;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class DefaultColumnClosures implements ColumnClosuresInterface {
 
@@ -64,9 +65,6 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
 
     /**
      * Uses $column->convertsEmptyValueToNull(), $column->mustTrimValue() and $column->mustLowercaseValue()
-     * @param Column $column
-     * @param mixed $value
-     * @param bool $isFromDb
      * @return mixed
      */
     static public function valuePreprocessor($value, bool $isFromDb, bool $isForValidation, Column $column) {
@@ -83,7 +81,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
             if (!$isFromDb && $column->isValueLowercasingRequired()) {
                 $value = mb_strtolower($value);
             }
-        } else if (is_object($value) && $value instanceof RecordsSet) {
+        } else if ($value instanceof RecordsSet) {
             $value = $value->getOrmSelect();
         }
         return $value;
@@ -171,7 +169,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface {
      * @param mixed $value
      * @param bool $isFromDb
      * @param Column $column
-     * @return mixed
+     * @return AbstractSelect|bool|DbExpr|float|int|string|UploadedFile|null
      */
     static public function valueNormalizer($value, $isFromDb, Column $column) {
         return $isFromDb

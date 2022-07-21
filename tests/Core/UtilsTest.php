@@ -87,12 +87,10 @@ class UtilsTest extends TestCase {
         }
         return $data;
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Unknown processing type [???]
-     */
+    
     public function testInvalidGetDataFromStatement1() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Unknown processing type [???]");
         Utils::getDataFromStatement(new PDOStatement(), '???');
     }
 
@@ -133,52 +131,42 @@ class UtilsTest extends TestCase {
         $statement->execute();
         static::assertEquals(null, Utils::getDataFromStatement($statement, Utils::FETCH_VALUE));
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $glue argument must be "AND" or "OR"
-     */
+    
     public function testInvalidAssembleWhereConditionsFromArray1() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$glue argument must be \"AND\" or \"OR\"");
         Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), [], function () {}, 'wow');
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $conditions argument may contain only objects of class DbExpr or AbstractSelect. Other objects are forbidden. Key: 0
-     */
+    
     public function testInvalidAssembleWhereConditionsFromArray3() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage(
+            "\$conditions argument may contain only objects of class DbExpr or AbstractSelect. Other objects are forbidden. Key: 0"
+        );
         Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), [$this], function () {});
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Empty column name detected in $conditions argument
-     */
+    
     public function testInvalidAssembleWhereConditionsFromArray4() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Empty column name detected in \$conditions argument");
         Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['' => 'value'], function () {});
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Empty column name detected in $conditions argument
-     */
+    
     public function testInvalidAssembleWhereConditionsFromArray5() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Empty column name detected in \$conditions argument");
         Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), [' =' => ['value']], function () {});
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Empty column name detected in $conditions argument
-     */
+    
     public function testInvalidAssembleWhereConditionsFromArray6() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Empty column name detected in \$conditions argument");
         Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['=' => ['value']], function () {});
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Condition operator [LIKE] does not support list of values
-     */
+    
     public function testInvalidAssembleWhereConditionsFromArray7() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Condition operator [LIKE] does not support list of values");
         Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['col1 LIKE' => ['value']], function () {});
     }
 
@@ -355,12 +343,10 @@ class UtilsTest extends TestCase {
             )
         );
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Value [aaa] for column name [test] is invalid
-     */
+    
     public function testValidationViaAssembleWhereConditionsFromArray() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("Value [aaa] for column name [test] is invalid");
         Utils::assembleWhereConditionsFromArray(
             static::getValidAdapter(),
             ['test' => 'aaa'],

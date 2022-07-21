@@ -24,12 +24,10 @@ class PostgresAdapterQueriesTest extends TestCase {
         $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
-
-    /**
-     * @expectedException PDOException
-     * @expectedExceptionMessage invalid input syntax for type json
-     */
+    
     public function testInvalidValueInQuery() {
+        $this->expectException(PDOException::class);
+        $this->expectExceptionMessage("invalid input syntax for type json");
         $adapter = static::getValidAdapter();
         $adapter->begin();
         $adapter->exec(
@@ -37,12 +35,10 @@ class PostgresAdapterQueriesTest extends TestCase {
         );
         $adapter->rollBack();
     }
-
-    /**
-     * @expectedException PDOException
-     * @expectedExceptionMessage relation "abrakadabra" does not exist
-     */
+    
     public function testInvalidTableInQuery() {
+        $this->expectException(PDOException::class);
+        $this->expectExceptionMessage("relation \"abrakadabra\" does not exist");
         $adapter = static::getValidAdapter();
         $adapter->exec(
             DbExpr::create('INSERT INTO `abrakadabra` (`key`, `value`) VALUES (``test_key``, ``test_value``)')
@@ -82,32 +78,26 @@ class PostgresAdapterQueriesTest extends TestCase {
             'value' => '"test_value"',
         ], $record);
     }
-
-    /**
-     * @expectedException \PeskyORM\Exception\DbException
-     * @expectedExceptionMessage Already in transaction
-     */
+    
     public function testTransactionsNestingPrevention() {
+        $this->expectException(\PeskyORM\Exception\DbException::class);
+        $this->expectExceptionMessage("Already in transaction");
         $adapter = static::getValidAdapter();
         $adapter->begin();
         $adapter->begin();
     }
-
-    /**
-     * @expectedException \PeskyORM\Exception\DbException
-     * @expectedExceptionMessage Attempt to commit not started transaction
-     */
+    
     public function testTransactionCommitWithoutBegin() {
+        $this->expectException(\PeskyORM\Exception\DbException::class);
+        $this->expectExceptionMessage("Attempt to commit not started transaction");
         $adapter = static::getValidAdapter();
         $adapter->commit();
         $adapter->commit();
     }
-
-    /**
-     * @expectedException \PeskyORM\Exception\DbException
-     * @expectedExceptionMessage Attempt to rollback not started transaction
-     */
+    
     public function testTransactionRollbackWithoutBegin() {
+        $this->expectException(\PeskyORM\Exception\DbException::class);
+        $this->expectExceptionMessage("Attempt to rollback not started transaction");
         $adapter = static::getValidAdapter();
         $adapter->rollBack();
         $adapter->rollBack();
@@ -155,12 +145,10 @@ class PostgresAdapterQueriesTest extends TestCase {
         );
         $adapter->rollBack();
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Unknown transaction type 'abrakadabra' for PostgreSQL
-     */
+    
     public function testInvalidTransactionType() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Unknown transaction type 'abrakadabra' for PostgreSQL");
         $adapter = static::getValidAdapter();
         if ($adapter->inTransaction()) {
             $adapter->rollBack();

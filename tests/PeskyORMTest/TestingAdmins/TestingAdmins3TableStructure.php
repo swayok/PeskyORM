@@ -50,14 +50,12 @@ class TestingAdmins3TableStructure extends TableStructure {
             ->trimsValue()
             ->setValuePreprocessor(function ($value, $isDbValue, $isForValidation, Column $column) {
                 $value = DefaultColumnClosures::valuePreprocessor($value, $isDbValue, $isForValidation, $column);
-                if ($isDbValue) {
-                    return $value;
-                } else {
+                if (!$isDbValue) {
                     if (!empty($value)) {
                         return password_hash($value, PASSWORD_BCRYPT);
                     }
-                    return $value;
                 }
+                return $value;
             })
             ->extendValueValidator(function ($value) {
                 if (mb_strlen($value) !== 60) {

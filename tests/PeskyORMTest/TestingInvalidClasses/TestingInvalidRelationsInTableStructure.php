@@ -5,7 +5,7 @@ namespace Tests\PeskyORMTest\TestingInvalidClasses;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Relation;
 use PeskyORM\ORM\TableStructure;
-use PeskyORMTest\TestingAdmins\TestingAdminsTable;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 
 class TestingInvalidRelationsInTableStructure extends TableStructure {
 

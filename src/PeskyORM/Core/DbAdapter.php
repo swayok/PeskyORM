@@ -781,7 +781,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @throws \InvalidArgumentException
      */
     public function quoteDbEntityName(string $name): string {
-        if (!is_string($name) || trim($name) === '') {
+        if (trim($name) === '') {
             throw new \InvalidArgumentException('Db entity name must be a not empty string');
         }
         if ($name === '*') {
@@ -950,7 +950,7 @@ abstract class DbAdapter implements DbAdapterInterface {
     
     /**
      * @param string $operator
-     * @param array|float|int|string $value
+     * @param array|float|int|string|DbExpr $value
      * @return string
      * @throws \InvalidArgumentException
      */
@@ -970,7 +970,6 @@ abstract class DbAdapter implements DbAdapterInterface {
                     return 'NOT IN';
                 case 'BETWEEN':
                 case 'NOT BETWEEN':
-                    return $operator;
                 case '?|':
                 case '?&':
                 case '@>':
@@ -991,7 +990,7 @@ abstract class DbAdapter implements DbAdapterInterface {
             return '=';
         } else {
             $map = $this->getConditionOperatorsMap();
-            return isset($map[$operator]) ? $map[$operator] : $operator;
+            return $map[$operator] ?? $operator;
         }
     }
 
@@ -1010,7 +1009,7 @@ abstract class DbAdapter implements DbAdapterInterface {
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function assembleConditionValue($value, $operator, $valueAlreadyQuoted = false) {
+    public function assembleConditionValue($value, string $operator, bool $valueAlreadyQuoted = false): string {
         $operator = mb_strtoupper($operator);
         if ($value instanceof DbExpr) {
             return $this->quoteDbExpr($value);

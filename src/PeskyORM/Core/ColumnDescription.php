@@ -47,35 +47,21 @@ class ColumnDescription implements \Serializable {
      */
     protected $isUnique = false;
 
-    /**
-     * @param string $name
-     * @param string $dbType
-     * @param string $ormType
-     */
-    public function __construct($name, $dbType, $ormType) {
+    public function __construct(string $name, string $dbType, string $ormType) {
         $this->name = $name;
         $this->dbType = $dbType;
         $this->ormType = $ormType;
     }
 
-    /**
-     * @return string
-     */
-    public function getName() {
+    public function getName(): string {
         return $this->name;
     }
 
-    /**
-     * @return string
-     */
-    public function getDbType() {
+    public function getDbType(): string {
         return $this->dbType;
     }
 
-    /**
-     * @return string
-     */
-    public function getOrmType() {
+    public function getOrmType(): string {
         return $this->ormType;
     }
 
@@ -84,32 +70,23 @@ class ColumnDescription implements \Serializable {
      * @param int|null $numberPrecision
      * @return $this
      */
-    public function setLimitAndPrecision($limit, $numberPrecision = null) {
-        $this->limit = $limit ? (int)$limit : null;
+    public function setLimitAndPrecision(?int $limit, ?int $numberPrecision = null) {
+        $this->limit = $limit;
         if ($this->getOrmType() === Column::TYPE_FLOAT) {
-            $this->numberPrecision = $numberPrecision ? (int)$numberPrecision : null;
+            $this->numberPrecision = $numberPrecision;
         }
         return $this;
     }
 
-    /**
-     * @return int|null
-     */
-    public function getLimit() {
+    public function getLimit(): ?int {
         return $this->limit;
     }
 
-    /**
-     * @return int|null
-     */
-    public function getNumberPrecision() {
+    public function getNumberPrecision(): ?int {
         return $this->numberPrecision;
     }
 
-    /**
-     * @return boolean
-     */
-    public function isNullable() {
+    public function isNullable(): bool {
         return $this->isNullable;
     }
 
@@ -117,8 +94,8 @@ class ColumnDescription implements \Serializable {
      * @param boolean $isNullable
      * @return $this
      */
-    public function setIsNullable($isNullable) {
-        $this->isNullable = (bool)$isNullable;
+    public function setIsNullable(bool $isNullable) {
+        $this->isNullable = $isNullable;
         return $this;
     }
 
@@ -130,7 +107,7 @@ class ColumnDescription implements \Serializable {
     }
 
     /**
-     * @param mixed $default
+     * @param string|int|float|bool|DbExpr|null $default
      * @return $this
      */
     public function setDefault($default) {
@@ -138,10 +115,7 @@ class ColumnDescription implements \Serializable {
         return $this;
     }
 
-    /**
-     * @return boolean
-     */
-    public function isPrimaryKey() {
+    public function isPrimaryKey(): bool {
         return $this->isPrimaryKey;
     }
 
@@ -149,15 +123,12 @@ class ColumnDescription implements \Serializable {
      * @param boolean $isPrimaryKey
      * @return $this
      */
-    public function setIsPrimaryKey($isPrimaryKey) {
-        $this->isPrimaryKey = (bool)$isPrimaryKey;
+    public function setIsPrimaryKey(bool $isPrimaryKey) {
+        $this->isPrimaryKey = $isPrimaryKey;
         return $this;
     }
 
-    /**
-     * @return boolean
-     */
-    public function isForeignKey() {
+    public function isForeignKey(): bool {
         return $this->isForeignKey;
     }
 
@@ -165,24 +136,21 @@ class ColumnDescription implements \Serializable {
      * @param boolean $isForeignKey
      * @return $this
      */
-    public function setIsForeignKey($isForeignKey) {
-        $this->isForeignKey = (bool)$isForeignKey;
+    public function setIsForeignKey(bool $isForeignKey) {
+        $this->isForeignKey = $isForeignKey;
         return $this;
     }
 
-    /**
-     * @return mixed
-     */
-    public function isUnique() {
+    public function isUnique(): bool {
         return $this->isUnique;
     }
 
     /**
-     * @param mixed $isUnique
+     * @param bool $isUnique
      * @return $this
      */
-    public function setIsUnique($isUnique) {
-        $this->isUnique = (bool)$isUnique;
+    public function setIsUnique(bool $isUnique) {
+        $this->isUnique = $isUnique;
         return $this;
     }
 

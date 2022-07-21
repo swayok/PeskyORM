@@ -8,219 +8,169 @@ use PHPUnit\Framework\TestCase;
 use TypeError;
 
 class MysqlConfigTest extends TestCase {
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB name argument cannot be empty
-     */
+    
     public function testInvalidDbName() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB name argument cannot be empty");
         new MysqlConfig(null, null, null);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB name argument cannot be empty
-     */
+    
     public function testInvalidDbName2() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB name argument cannot be empty");
         new MysqlConfig('', null, null);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB name argument cannot be empty
-     */
+    
     public function testInvalidDbName3() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB name argument cannot be empty");
         new MysqlConfig(false, null, null);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB name argument cannot be empty
-     */
+    
     public function testInvalidDbName4() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB name argument cannot be empty");
         /** @noinspection PhpParamsInspection */
         new MysqlConfig([], null, null);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB name argument must be a string
-     */
+    
     public function testInvalidDbName5() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB name argument must be a string");
         new MysqlConfig(true, null, null);
     }
     
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB user argument cannot be empty
-     */
     public function testInvalidDbUser() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB user argument cannot be empty");
         new MysqlConfig('test', null, null);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB user argument cannot be empty
-     */
+    
     public function testInvalidDbUser2() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB user argument cannot be empty");
         new MysqlConfig('test', '', null);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB user argument cannot be empty
-     */
+    
     public function testInvalidDbUser3() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB user argument cannot be empty");
         new MysqlConfig('test', false, null);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB user argument cannot be empty
-     */
+    
     public function testInvalidDbUser4() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB user argument cannot be empty");
         /** @noinspection PhpParamsInspection */
         new MysqlConfig('test', [], null);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB user argument must be a string
-     */
+    
     public function testInvalidDbUser5() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB user argument must be a string");
         new MysqlConfig('test', true, null);
     }
     
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB password argument cannot be empty
-     */
     public function testInvalidDbPassword() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB password argument cannot be empty");
         new MysqlConfig('test', 'test', null);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB password argument cannot be empty
-     */
+    
     public function testInvalidDbPassword2() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB password argument cannot be empty");
         new MysqlConfig('test', 'test', '');
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB password argument cannot be empty
-     */
+    
     public function testInvalidDbPassword3() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB password argument cannot be empty");
         new MysqlConfig('test', 'test', false);
     }
-
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB password argument cannot be empty
-     */
+    
+    
     public function testInvalidDbPassword4() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB password argument cannot be empty");
         /** @noinspection PhpParamsInspection */
         new MysqlConfig('test', 'test', []);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB password argument must be a string
-     */
+    
     public function testInvalidDbPassword5() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB password argument must be a string");
         new MysqlConfig('test', 'test', true);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB host argument cannot be empty
-     */
+    
     public function testInvalidDbHost() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB host argument cannot be empty");
         $config = new MysqlConfig('test', 'test', 'test');
         $config->setDbHost(null);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB host argument cannot be empty
-     */
+    
     public function testInvalidDbHost2() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB host argument cannot be empty");
         $config = new MysqlConfig('test', 'test', 'test');
         /** @noinspection PhpParamsInspection */
         $config->setDbHost([]);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB host argument must be a string
-     */
+    
     public function testInvalidDbHost3() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB host argument must be a string");
         $config = new MysqlConfig('test', 'test', 'test');
         $config->setDbHost(true);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB host argument cannot be empty
-     */
+    
     public function testInvalidDbHost4() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB host argument cannot be empty");
         $config = new MysqlConfig('test', 'test', 'test');
         $config->setDbHost(false);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB port argument must be an integer number
-     */
+    
     public function testInvalidDbPort() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB port argument must be an integer number");
         $config = new MysqlConfig('test', 'test', 'test');
         $config->setDbPort('test');
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB port argument must be an integer number
-     */
+    
     public function testInvalidDbPort2() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB port argument must be an integer number");
         $config = new MysqlConfig('test', 'test', 'test');
         $config->setDbPort(null);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB port argument must be an integer number
-     */
+    
     public function testInvalidDbPort3() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB port argument must be an integer number");
         $config = new MysqlConfig('test', 'test', 'test');
         /** @noinspection PhpParamsInspection */
         $config->setDbPort([]);
     }
-
-    /**
-     * @expectedException TypeError
-     * @expectedExceptionMessage setOptions() must be of the type array
-     */
+    
     public function testInvalidOptions() {
+        $this->expectException(TypeError::class);
+        $this->expectExceptionMessage("setOptions() must be of the type array");
         $config = new MysqlConfig('test', 'test', 'test');
         $config->setOptions(null);
     }
     
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB charset argument cannot be empty
-     */
     public function testInvalidCharset() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB charset argument cannot be empty");
         $config = new MysqlConfig('test', 'test', 'test');
         $config->setCharset(null);
     }
     
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB charset argument must be a string
-     */
     public function testInvalidCharset2() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB charset argument must be a string");
         $config = new MysqlConfig('test', 'test', 'test');
         $config->setCharset(true);
     }
@@ -251,41 +201,33 @@ class MysqlConfigTest extends TestCase {
         $config->setUnixSocket('/tmp/mysql.sock');
         $this->assertEquals('mysql:unix_socket=/tmp/mysql.sock;dbname=dbname;charset=cp1251', $config->getPdoConnectionString());
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB name argument
-     */
+    
     public function testInvalidDbNameFromArray() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB name argument");
         MysqlConfig::fromArray([]);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB user argument
-     */
+    
     public function testInvalidDbUserFromArray() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB user argument");
         MysqlConfig::fromArray([
             'database' => 'test'
         ]);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB password argument
-     */
+    
     public function testInvalidDbPasswordFromArray() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB password argument");
         MysqlConfig::fromArray([
             'database' => 'test',
             'username' => 'test',
         ]);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage DB port argument must be an integer number
-     */
+    
     public function testInvalidDbPortFromArray() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("DB port argument must be an integer number");
         MysqlConfig::fromArray([
             'database' => 'test',
             'username' => 'test',

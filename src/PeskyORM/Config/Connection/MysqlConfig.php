@@ -147,8 +147,6 @@ class MysqlConfig implements DbConnectionConfigInterface {
     public function setCharset(string $charset) {
         if (empty($charset)) {
             throw new \InvalidArgumentException('DB charset argument cannot be empty');
-        } else if (!is_string($charset)) {
-            throw new \InvalidArgumentException('DB charset argument must be a string');
         }
         $this->charset = $charset;
         return $this;
@@ -177,7 +175,7 @@ class MysqlConfig implements DbConnectionConfigInterface {
     }
 
     /**
-     * @param string $dbPort
+     * @param string|int $dbPort
      * @return $this
      * @throws \InvalidArgumentException
      */
@@ -185,14 +183,11 @@ class MysqlConfig implements DbConnectionConfigInterface {
         if (!is_numeric($dbPort) || !ctype_digit((string)$dbPort)) {
             throw new \InvalidArgumentException('DB port argument must be an integer number');
         }
-        $this->dbPort = $dbPort;
+        $this->dbPort = (string)$dbPort;
         return $this;
     }
 
-    /**
-     * @return int|null|string
-     */
-    public function getDbPort() {
+    public function getDbPort(): string {
         return $this->dbPort;
     }
 

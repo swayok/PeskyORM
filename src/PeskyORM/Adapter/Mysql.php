@@ -109,12 +109,6 @@ class Mysql extends DbAdapter {
     }
 
     public function addDataTypeCastToExpression(string $dataType, string $expression): string {
-        if (!is_string($dataType)) {
-            throw new \InvalidArgumentException('$dataType must be a string');
-        }
-        if (!is_string($expression)) {
-            throw new \InvalidArgumentException('$expression must be a string');
-        }
         return 'CAST(' . $expression . ' AS ' . $this->getRealDataType($dataType) . ')';
     }
 
@@ -319,7 +313,7 @@ class Mysql extends DbAdapter {
 
     /**
      * @param string $default
-     * @return mixed
+     * @return bool|DbExpr|float|int|string|null
      */
     protected function cleanDefaultValueForColumnDescription($default) {
         if ($default === null || $default === '') {
@@ -417,7 +411,7 @@ class Mysql extends DbAdapter {
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function assembleConditionValue($value, $operator, $valueAlreadyQuoted = false) {
+    public function assembleConditionValue($value, string $operator, bool $valueAlreadyQuoted = false): string {
         if (in_array($operator, ['@>', '<@'], true)) {
             if ($valueAlreadyQuoted) {
                 if (!is_string($value)) {

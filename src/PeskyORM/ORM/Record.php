@@ -317,7 +317,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         return $this;
     }
 
-    protected function isTrustDbDataMode(): bool {
+    public function isTrustDbDataMode(): bool {
         return $this->trustDbDataMode;
     }
 
@@ -774,7 +774,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @throws \InvalidArgumentException
      */
     public function updateRelatedRecord($relationName, $relatedRecord, ?bool $isFromDb = null, bool $haltOnUnknownColumnNames = true) {
-        /** @var Relation $relation */
         $relation = is_string($relationName) ? static::getRelation($relationName) : $relationName;
         $relationTable = $relation->getForeignTable();
         if ($relation->getType() === Relation::HAS_MANY) {
@@ -1431,12 +1430,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         return $data;
     }
 
-    /**
-     * @param array $columnsToSave
-     * @param array $dataSavedToDb
-     * @param array $updatesReceivedFromDb
-     * @param $isUpdate
-     */
     protected function runColumnSavingExtenders(array $columnsToSave, array $dataSavedToDb, array $updatesReceivedFromDb, bool $isUpdate) {
         $updatedColumns = array_merge(
             array_keys($dataSavedToDb),
@@ -1760,10 +1753,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             && count($relatedRecordsNames) === 1
             && $relatedRecordsNames[0] === '*'
         ) {
-            if ($loadRelatedRecordsIfNotSet) {
-                $relatedRecordsNames = array_keys(static::getTableStructure()->getRelations());
-            } else {
-                $relatedRecordsNames = array_keys(static::getTableStructure()->getRelations());
+            $relatedRecordsNames = array_keys(static::getTableStructure()->getRelations());
+            if (!$loadRelatedRecordsIfNotSet) {
                 if ($this->isReadOnly()) {
                     $relatedRecordsNames = array_intersect(
                         $relatedRecordsNames,
@@ -1803,13 +1794,11 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 if (!static::hasColumn($columnName) && count($parts = explode('.', $columnName)) > 1) {
                     // $columnName = 'Relaion.column' or 'Relation.Subrelation.column'
                     $value = $this->getNestedValueForToArray($parts, $columnAlias, $valueModifier, $loadRelatedRecordsIfNotSet, !$withFilesInfo, $isset);
-                    // $columnAlias may be modified in $this->getNestedValueForToArray()
-                    $data[$columnAlias] = $value;
                 } else {
                     $value = $this->getColumnValueForToArray($columnName, $columnAlias, $valueModifier, !$withFilesInfo, $isset);
-                    // $columnAlias may be modified in $this->getColumnValueForToArray()
-                    $data[$columnAlias] = $value;
                 }
+                // $columnAlias may be modified in $this->getColumnValueForToArray()
+                $data[$columnAlias] = $value;
                 if (is_bool($isset) && !$isset) {
                     unset($data[$columnAlias]);
                 }
@@ -1912,8 +1901,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 );
             } else if ($format) {
                 $valueContainer = $this->createValueObject($column);
+                $isset = true;
                 if (array_key_exists($column->getName(), $this->readOnlyData)) {
-                    $isset = true;
                     $value = $this->readOnlyData[$column->getName()];
                     $valueContainer->setRawValue($value, $value, true);
                     return $this->modifyValueForToArray(
@@ -1923,7 +1912,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                         $valueModifier
                     );
                 } else {
-                    $isset = true;
                     return $this->modifyValueForToArray($columnName, $columnAlias, null, $valueModifier);
                 }
             }
@@ -2094,9 +2082,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     public function current() {
         $key = $this->key();
-        if ($key === null) {
-            return null;
-        }
         return $key !== null ? $this->getColumnValueForToArray($key) : null;
     }
 
@@ -2109,7 +2094,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 
     /**
      * Return the key of the current element
-     * @return mixed scalar on success, or null on failure.
+     * @return int|string|null scalar on success, or null on failure.
      */
     public function key() {
         if ($this->valid()) {
@@ -2300,7 +2285,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     "1st argument for magic method '{$name}(\$value, \$isFromDb = false)' must be an array or instance of Record class or RecordsSet class"
                 );
             }
-            $isFromDb = array_key_exists(1, $arguments) ? (bool)$arguments[1] : null;
+            $isFromDb = $arguments[1] ?? null;
             $this->updateRelatedRecord($nameParts[1], $value, $isFromDb);
         } else {
             $columnName = StringUtils::underscore($nameParts[1]);
@@ -2311,7 +2296,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             }
             $column = static::getColumn($columnName);
             $isFromDb = array_key_exists(1, $arguments)
-                ? (bool)$arguments[1]
+                ? $arguments[1]
                 : $column->isItPrimaryKey(); //< make pk key be "from DB" by default or it will crash
             $this->_updateValue($column, $value, $isFromDb);
         }
@@ -2357,7 +2342,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         foreach ($data['props'] as $name => $value) {
             $this->$name = $value;
         }
-        /** @var array $data */
         foreach ($data['values'] as $name => $value) {
             $this->getValueContainerByColumnName($name)->unserialize($value);
         }

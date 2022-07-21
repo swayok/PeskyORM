@@ -39,7 +39,7 @@ class RecordsSet extends RecordsArray {
      * @return RecordsArray
      */
     static public function createFromArray(TableInterface $table, array $records, ?bool $isFromDb = null, bool $trustDataReceivedFromDb = false) {
-        return new RecordsArray($table, $records, $isFromDb === null ? null : (bool)$isFromDb, (bool)$trustDataReceivedFromDb);
+        return new RecordsArray($table, $records, $isFromDb, $trustDataReceivedFromDb);
     }
 
     /**
@@ -281,7 +281,6 @@ class RecordsSet extends RecordsArray {
                 $this->recordsCount = $this->totalCount();
             } else {
                 $recordsCountAfterOffset = $this->totalCount() - $this->select->getOffset();
-                /** @noinspection NotOptimalIfConditionsInspection */
                 if ($this->select->getLimit() === 0) {
                     $this->recordsCount = $recordsCountAfterOffset;
                 } else {

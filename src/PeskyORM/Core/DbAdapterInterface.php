@@ -46,7 +46,7 @@ interface DbAdapterInterface {
     /**
      * @param string|DbExpr $query
      * @param string|null $fetchData - null: return PDOStatement; string: one of \PeskyORM\Core\Utils::FETCH_*
-     * @return \PDOStatement|array
+     * @return \PDOStatement|array|string|null
      */
     public function query($query, ?string $fetchData = null);
 
@@ -229,7 +229,7 @@ interface DbAdapterInterface {
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function assembleConditionValue($value, string $operator);
+    public function assembleConditionValue($value, string $operator, bool $valueAlreadyQuoted = false): string;
     
     /**
      * Assemble condition from prepared parts

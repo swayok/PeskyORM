@@ -136,9 +136,12 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
                 '/' . $relation->getForeignColumnName()
             );
             foreach ($this->getRecords() as $index => $record) {
-                $relatedRecords = array_get($relatedRecordsGrouped, array_get($record, $localColumnName, null), null);
-                if (!is_array($relatedRecords)) {
-                    $relatedRecords = [];
+                $relatedRecords = [];
+                if (
+                    isset($record[$localColumnName], $relatedRecordsGrouped[$record[$localColumnName]])
+                    && is_array($relatedRecordsGrouped[$record[$localColumnName]])
+                ) {
+                    $relatedRecords = $relatedRecordsGrouped[$record[$localColumnName]];
                 }
                 if ($record instanceof RecordInterface) {
                     $this->records[$index] = $this->records[$index]->toArray([], ['*'], false);
@@ -261,7 +264,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable  {
      * @return $this
      */
     protected function setIsDbRecordDataValidationDisabled(bool $isDisabled) {
-        $this->isDbRecordDataValidationDisabled = (bool)$isDisabled;
+        $this->isDbRecordDataValidationDisabled = $isDisabled;
         if ($this->dbRecordForIteration) {
             if ($this->isDbRecordDataValidationDisabled()) {
                 $this->dbRecordForIteration->enableTrustModeForDbData();

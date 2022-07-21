@@ -46,7 +46,7 @@ class OrmSelect extends AbstractSelect {
     
     /**
      * @param TableInterface $table
-     * @param string $tableAlias - used for relations / alias for table in case if it is not $table::getAlias()
+     * @param string|null $tableAlias - used for relations / alias for table in case if it is not $table::getAlias()
      * @return static
      */
     static public function from(TableInterface $table, ?string $tableAlias = null) {
@@ -55,7 +55,7 @@ class OrmSelect extends AbstractSelect {
 
     /**
      * @param TableInterface $table - table name or Table object
-     * @param string $tableAlias - used for relations / alias for table in case if it is not $table::getAlias()
+     * @param string|null $tableAlias - used for relations / alias for table in case if it is not $table::getAlias()
      */
     public function __construct(TableInterface $table, ?string $tableAlias = null) {
         $this->tableStructure = $table::getStructure();
@@ -231,7 +231,6 @@ class OrmSelect extends AbstractSelect {
     ) {
         if (is_array($columns) && !empty($columns)) {
             $filteredColumns = [];
-            /** @var array $columns */
             foreach ($columns as $columnAlias => $columnName) {
                 if ($columnAlias === '*' && empty($columnName)) {
                     // ['*' => []] situation - convert to select '*'
@@ -473,7 +472,7 @@ class OrmSelect extends AbstractSelect {
     }
     
     protected function validateColumnInfoForCondition(array $columnInfo, string $subject) {
-        return $this->validateColumnInfo($columnInfo, $subject);
+        $this->validateColumnInfo($columnInfo, $subject);
     }
 
 }

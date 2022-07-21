@@ -137,9 +137,6 @@ class Relation {
      * @throws \InvalidArgumentException
      */
     public function setLocalColumnName(string $localColumnName) {
-        if (!is_string($localColumnName)) {
-            throw new \InvalidArgumentException('$localColumnName argument must be a string');
-        }
         $this->localColumnName = $localColumnName;
         return $this;
     }
@@ -216,9 +213,6 @@ class Relation {
      * @throws \InvalidArgumentException
      */
     public function setForeignColumnName(string $foreignColumnName) {
-        if (!is_string($foreignColumnName)) {
-            throw new \InvalidArgumentException('$foreignColumnName argument must be a string');
-        }
         $this->foreignColumnName = $foreignColumnName;
         return $this;
     }
@@ -302,9 +296,6 @@ class Relation {
      * @throws \InvalidArgumentException
      */
     public function setJoinType(string $joinType) {
-        if (!is_string($joinType)) {
-            throw new \InvalidArgumentException('$joinType argument must be a string');
-        }
         $types = [static::JOIN_INNER, static::JOIN_LEFT, static::JOIN_RIGHT];
         if (!in_array($joinType, $types, true)) {
             throw new \InvalidArgumentException('$joinType argument must be one of: ' . implode(',', $types));

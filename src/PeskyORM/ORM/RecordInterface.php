@@ -299,6 +299,18 @@ interface RecordInterface {
      * @throws \BadMethodCallException
      */
     public function getDefaults(array $columns = [], bool $ignoreColumnsThatCannotBeSetManually = true, bool $nullifyDbExprValues = true): array;
-
-
+    
+    public function enableReadOnlyMode();
+    
+    public function disableReadOnlyMode();
+    
+    public function isReadOnly(): bool;
+    
+    public function enableTrustModeForDbData();
+    
+    public function disableTrustModeForDbData();
+    
+    public function isTrustDbDataMode(): bool;
+    
+    
 }

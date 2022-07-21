@@ -203,7 +203,7 @@ VIEW;
 
     /**
      * @param string $fullClassName
-     * @return mixed
+     * @return string
      */
     protected function getShortClassName($fullClassName) {
         return basename(str_replace('\\', '/', $fullClassName));

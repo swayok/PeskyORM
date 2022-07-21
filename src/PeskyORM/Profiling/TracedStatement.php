@@ -6,58 +6,67 @@ namespace PeskyORM\Profiling;
  * Holds information about a statement
  */
 class TracedStatement {
-
+    
+    /** @var string */
     protected $sql;
-
+    
+    /** @var int|null */
     protected $rowCount;
 
     /** @var array */
     protected $parameters;
 
+    /** @var float|null */
     protected $startTime;
-
+    
+    /** @var float|null */
     protected $endTime;
-
+    
+    /** @var float|null */
     protected $duration;
 
+    /** @var int|null */
     protected $startMemory;
 
+    /** @var int|null */
     protected $endMemory;
 
+    /** @var int|null */
     protected $memoryDelta;
 
+    /** @var string|null */
     protected $preparedId;
 
-    /** @var \Throwable|\Exception */
+    /** @var \Throwable|null */
     protected $exception;
-
+    
     /**
      * @param string $sql
      * @param array $params
-     * @param string $preparedId
+     * @param string|null $preparedId
      */
-    public function __construct($sql, array $params = [], $preparedId = null) {
+    public function __construct(string $sql, array $params = [], ?string $preparedId = null) {
         $this->sql = $sql;
         $this->parameters = $this->checkParameters($params);
         $this->preparedId = $preparedId;
     }
-
+    
     /**
-     * @param null $startTime
-     * @param null $startMemory
+     * @param float|null $startTime
+     * @param float|null $startMemory
      */
-    public function start($startTime = null, $startMemory = null) {
+    public function start(?float $startTime = null, ?float $startMemory = null) {
         $this->startTime = $startTime ?: microtime(true);
         $this->startMemory = $startMemory ?: memory_get_usage(false);
     }
-
+    
     /**
-     * @param \Exception|null $exception
+     * @param \Throwable|null $exception
      * @param int $rowCount
-     * @param null $endTime
-     * @param null $endMemory
+     * @param float|null $endTime
+     * @param int|null $endMemory
      */
-    public function end(\Exception $exception = null, $rowCount = 0, $endTime = null, $endMemory = null) {
+    public function end(?\Throwable $exception = null, int $rowCount = 0, ?float $endTime = null, ?int $endMemory = null) {
         $this->endTime = $endTime ?: microtime(true);
         $this->duration = $this->endTime - $this->startTime;
         $this->endMemory = $endMemory ?: memory_get_usage(false);
@@ -70,9 +79,9 @@ class TracedStatement {
      * Check parameters for illegal (non UTF-8) strings, like Binary data.
      *
      * @param array $params
-     * @return mixed
+     * @return array
      */
-    public function checkParameters(array $params) {
+    public function checkParameters(array $params): array {
         foreach ($params as &$param) {
             if (!mb_check_encoding($param, 'UTF-8')) {
                 $param = '[BINARY DATA]';
@@ -87,7 +96,7 @@ class TracedStatement {
      *
      * @return string
      */
-    public function getSql() {
+    public function getSql(): string {
         return $this->sql;
     }
 
@@ -97,7 +106,7 @@ class TracedStatement {
      * @param string $quotationChar
      * @return string
      */
-    public function getSqlWithParams($quotationChar = '<>') {
+    public function getSqlWithParams($quotationChar = '<>'): string {
         if (($l = strlen($quotationChar)) > 1) {
             $quoteLeft = substr($quotationChar, 0, $l / 2);
             $quoteRight = substr($quotationChar, $l / 2);
@@ -124,7 +133,7 @@ class TracedStatement {
      *
      * @return int
      */
-    public function getRowCount() {
+    public function getRowCount(): int {
         return $this->rowCount;
     }
 
@@ -133,7 +142,7 @@ class TracedStatement {
      *
      * @return array
      */
-    public function getParameters() {
+    public function getParameters(): array {
         $params = [];
         foreach ($this->parameters as $name => $param) {
             $params[$name] = htmlentities($param, ENT_QUOTES, 'UTF-8', false);
@@ -145,9 +154,9 @@ class TracedStatement {
     /**
      * Returns the prepared statement id
      *
-     * @return string
+     * @return string|null
      */
-    public function getPreparedId() {
+    public function getPreparedId(): ?string {
         return $this->preparedId;
     }
 
@@ -156,44 +165,44 @@ class TracedStatement {
      *
      * @return boolean
      */
-    public function isPrepared() {
+    public function isPrepared(): bool {
         return $this->preparedId !== null;
     }
 
     /**
-     * @return mixed
+     * @return float
      */
-    public function getStartTime() {
+    public function getStartTime(): float {
         return $this->startTime;
     }
 
     /**
-     * @return mixed
+     * @return float
      */
-    public function getEndTime() {
+    public function getEndTime(): float {
         return $this->endTime;
     }
 
     /**
      * Returns the duration in seconds of the execution
      *
-     * @return int
+     * @return float
      */
-    public function getDuration() {
+    public function getDuration(): float {
         return $this->duration;
     }
 
     /**
-     * @return mixed
+     * @return int
      */
-    public function getStartMemory() {
+    public function getStartMemory(): int {
         return $this->startMemory;
     }
 
     /**
-     * @return mixed
+     * @return int
      */
-    public function getEndMemory() {
+    public function getEndMemory(): int {
         return $this->endMemory;
     }
 
@@ -202,7 +211,7 @@ class TracedStatement {
      *
      * @return int
      */
-    public function getMemoryUsage() {
+    public function getMemoryUsage(): int {
         return $this->memoryDelta;
     }
 
@@ -211,25 +220,25 @@ class TracedStatement {
      *
      * @return boolean
      */
-    public function isSuccess() {
+    public function isSuccess(): bool {
         return $this->exception === null;
     }
 
     /**
      * Returns the exception triggered
      *
-     * @return \Exception
+     * @return \Throwable|null
      */
-    public function getException() {
+    public function getException(): ?\Throwable {
         return $this->exception;
     }
-
+    
     /**
      * Returns the exception's code
      *
-     * @return string
+     * @return int
      */
-    public function getErrorCode() {
+    public function getErrorCode(): int {
         return $this->exception !== null ? $this->exception->getCode() : 0;
     }
 
@@ -238,7 +247,7 @@ class TracedStatement {
      *
      * @return string
      */
-    public function getErrorMessage() {
+    public function getErrorMessage(): string {
         return $this->exception !== null ? $this->exception->getMessage() : '';
     }
 }

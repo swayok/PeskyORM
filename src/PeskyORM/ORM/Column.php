@@ -466,7 +466,7 @@ class Column {
     /**
      * @return string|ColumnClosuresInterface
      */
-    public function getClosuresClass() {
+    public function getClosuresClass(): string {
         return $this->defaultClosuresClass;
     }
 
@@ -836,7 +836,7 @@ class Column {
     }
 
     /**
-     * @return bool|string - one of self::ON_UPDATE, self::ON_CREATE, self::ON_ALL, self::ON_NONE
+     * @return bool|int - one of self::ON_UPDATE, self::ON_CREATE, self::ON_ALL, self::ON_NONE
      */
     public function isValueCanBeSetOrChanged() {
         return $this->isValueCanBeSetOrChanged;

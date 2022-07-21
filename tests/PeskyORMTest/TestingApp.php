@@ -54,18 +54,18 @@ class TestingApp {
     }
 
     static protected function getGlobalConfigs() {
-        return include __DIR__ . '/../../configs/global.php';
+        return include __DIR__ . '/../configs/global.php';
     }
 
     static public function getRecordsForDb($table, $limit = 0) {
-        if ($limit === 0 || $limit <= 10) {
+        if ($limit <= 10) {
             if (!static::$dataForDbMinimal) {
-                static::$dataForDbMinimal = include __DIR__ . '/../../configs/minimal_db_contents.php';
+                static::$dataForDbMinimal = include __DIR__ . '/../configs/minimal_db_contents.php';
             }
             $records = static::$dataForDbMinimal;
         } else {
             if (!static::$dataForDb) {
-                static::$dataForDb = include __DIR__ . '/../../configs/base_db_contents.php';
+                static::$dataForDb = include __DIR__ . '/../configs/base_db_contents.php';
             }
             $records = static::$dataForDb;
         }
@@ -76,14 +76,14 @@ class TestingApp {
         }
     }
 
-    static public function fillAdminsTable($limit = 0) {
+    static public function fillAdminsTable($limit = 0): array {
         static::$pgsqlConnection->exec('TRUNCATE TABLE admins');
         $data = static::getRecordsForDb('admins', $limit);
         static::$pgsqlConnection->insertMany('admins', array_keys($data[0]), $data);
         return $data;
     }
 
-    static public function fillSettingsTable($limit = 0) {
+    static public function fillSettingsTable($limit = 0): array {
         static::$pgsqlConnection->exec('TRUNCATE TABLE settings');
         $data = static::getRecordsForDb('settings', $limit);
         static::$pgsqlConnection->insertMany('settings', array_keys($data[0]), $data);

@@ -10,7 +10,6 @@ class CrossJoinInfo extends AbstractJoinInfo {
     protected $joinQuery;
 
     /**
-     * @param string $joinName
      * @return $this
      * @throws \InvalidArgumentException
      */

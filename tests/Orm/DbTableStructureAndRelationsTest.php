@@ -3,6 +3,7 @@
 namespace Tests\Orm;
 
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Exception\OrmException;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Relation;
 use PHPUnit\Framework\TestCase;
@@ -32,20 +33,16 @@ class DbTableStructureAndRelationsTest extends TestCase {
         static::assertEquals(null, TestingAdminsTableStructure::getSchema());
         static::assertEquals('admins', TestingAdminsTableStructure::getTableName());
     }
-
-    /**
-     * @expectedException \PeskyORM\Exception\OrmException
-     * @expectedExceptionMessage Table schema must contain primary key
-     */
+    
     public function testAbsentPkColumn() {
+        $this->expectException(OrmException::class);
+        $this->expectExceptionMessage("Table schema must contain primary key");
         TestingNoPkColumnInTableStructure::getInstance();
     }
-
-    /**
-     * @expectedException \BadMethodCallException
-     * @expectedExceptionMessage Attempt to create 2nd instance of class PeskyORM\ORM\TableStructure
-     */
+    
     public function testDuplicateConstruct() {
+        $this->expectException(\BadMethodCallException::class);
+        $this->expectExceptionMessage("Attempt to create 2nd instance of class PeskyORM\ORM\TableStructure");
         $class = new ReflectionClass(TestingAdminsTableStructure::class);
         $method = $class->getConstructor();
         $method->setAccessible(true);
@@ -89,69 +86,53 @@ class DbTableStructureAndRelationsTest extends TestCase {
             TestingAdminsTableStructure::getColumn($relation->getLocalColumnName())->isItAForeignKey()
         );
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Table does not contain column named 'abrakadabra'
-     */
+    
     public function testInvalidColumnGet() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Table does not contain column named 'abrakadabra'");
         TestingAdminsTableStructure::getColumn('abrakadabra');
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage There is no relation 'abrakadabra' in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure
-     */
+    
     public function testInvalidRelationGet() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("There is no relation 'abrakadabra' in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         TestingAdminsTableStructure::getRelation('abrakadabra');
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Method 'invalid' must return instance of \PeskyORM\ORM\Column class
-     */
+    
     public function testInvalidTableStructure1() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("Method 'invalid' must return instance of \PeskyORM\ORM\Column class");
         TestingInvalidColumnsInTableStructure::getColumn('invalid');
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage 2 primary keys in one table is forbidden
-     */
+    
     public function testInvalidTableStructure2() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("2 primary keys in one table is forbidden");
         TestingInvalidColumnsInTableStructure::getColumn('pk1');
         TestingInvalidColumnsInTableStructure::getColumn('pk2');
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Method 'InvalidClass' must return instance of \PeskyORM\ORM\Relation class
-     */
+    
     public function testInvalidTableStructure3() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("Method 'InvalidClass' must return instance of \PeskyORM\ORM\Relation class");
         TestingInvalidRelationsInTableStructure::getRelation('InvalidClass');
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Table 'some_table' has no column 'local_invalid' or column is not defined yet
-     */
+    
     public function testInvalidTableStructure4() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("Table 'some_table' has no column 'local_invalid' or column is not defined yet");
         TestingInvalidRelationsInTableStructure::getRelation('InvalidLocalColumnName');
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Table 'admins' has no column 'foreign_invalid' or column is not defined yet
-     */
+    
     public function testInvalidTableStructure5() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("Table 'admins' has no column 'foreign_invalid' or column is not defined yet");
         TestingInvalidRelationsInTableStructure::getRelation('InvalidForeignColumnName');
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $foreignTableClass argument contains invalid value: class '___class_invalid' does not exist
-     */
+    
     public function testInvalidTableStructure6() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$foreignTableClass argument contains invalid value: class '___class_invalid' does not exist");
         TestingInvalidRelationsInTableStructure::getRelation('InvalidForeignTableClass');
     }
 

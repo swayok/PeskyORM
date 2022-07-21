@@ -32,52 +32,43 @@ class DbTableColumnTest extends TestCase {
         $prop->setAccessible(true);
         return $prop->getValue($object);
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $type argument must be a string, integer or float
-     */
+    
     public function testInvalidConstructor1() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$type argument must be a string, integer or float");
         Column::create(null);
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $type argument must be a string, integer or float
-     */
+    
     public function testInvalidConstructor2() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$type argument must be a string, integer or float");
         /** @noinspection PhpParamsInspection */
         Column::create([]);
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $type argument must be a string, integer or float
-     */
+    
     public function testInvalidConstructor3() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$type argument must be a string, integer or float");
+        /** @noinspection PhpParamsInspection */
         Column::create($this);
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $type argument must be a string, integer or float
-     */
+    
     public function testInvalidConstructor4() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$type argument must be a string, integer or float");
         Column::create(true);
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $type argument must be a string, integer or float
-     */
+    
     public function testInvalidConstructor5() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$type argument must be a string, integer or float");
         Column::create(false);
     }
 
     public function testConstructor() {
         $obj = Column::create(Column::TYPE_BOOL);
         static::assertInstanceOf(Column::class, $obj);
-        static::assertEquals($obj->getType(), Column::TYPE_BOOL);
+        static::assertEquals(Column::TYPE_BOOL, $obj->getType());
         static::assertFalse($obj->hasName());
         static::assertEquals('test', $obj->setName('test')->getName());
         static::assertTrue($obj->hasName());
@@ -106,109 +97,87 @@ class DbTableColumnTest extends TestCase {
         static::assertFalse($obj->isItAForeignKey());
         static::assertFalse($obj->isItAnImage());
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage DB column name is not provided
-     */
+    
     public function testInvalidName1() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("DB column name is not provided");
         Column::create(Column::TYPE_STRING, null)->getName();
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage DB column name is not provided
-     */
+    
     public function testInvalidName2() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("DB column name is not provided");
         Column::create(Column::TYPE_STRING, false)->getName();
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage DB column name is not provided
-     */
+    
     public function testInvalidName3() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("DB column name is not provided");
         Column::create(Column::TYPE_STRING, [])->getName();
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $name argument must be a string
-     */
+    
     public function testInvalidNameSet1() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$name argument must be a string");
         Column::create(Column::TYPE_INT, ['arr']);
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $name argument must be a string
-     */
+    
     public function testInvalidNameSet2() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$name argument must be a string");
         Column::create(Column::TYPE_FLOAT, $this);
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $name argument must be a string
-     */
+    
     public function testInvalidNameSet3() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$name argument must be a string");
         Column::create(Column::TYPE_IPV4_ADDRESS, true);
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessageRegExp %\$name argument contains invalid value: .*?\. Pattern: .*?\. Example: snake_case1%
-     */
+    
     public function testInvalidNameSet4() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches("%\$name argument contains invalid value: .*?\. Pattern: .*?\. Example: snake_case1%");
         Column::create(Column::TYPE_BLOB, 'two words');
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessageRegExp %\$name argument contains invalid value: .*?\. Pattern: .*?\. Example: snake_case1%
-     */
+    
     public function testInvalidNameSet5() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches("%\$name argument contains invalid value: .*?\. Pattern: .*?\. Example: snake_case1%");
         Column::create(Column::TYPE_DATE, 'camelCase');
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessageRegExp %\$name argument contains invalid value: .*?\. Pattern: .*?\. Example: snake_case1%
-     */
+    
     public function testInvalidNameSet6() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches("%\$name argument contains invalid value: .*?\. Pattern: .*?\. Example: snake_case1%");
         Column::create(Column::TYPE_EMAIL, 'UpperCase');
     }
-
-    /**
-     * @expectedException \BadMethodCallException
-     * @expectedExceptionMessage Column name alteration is forbidden
-     */
+    
     public function testDoubleNameSetter() {
+        $this->expectException(\BadMethodCallException::class);
+        $this->expectExceptionMessage("Column name alteration is forbidden");
         $obj = Column::create(Column::TYPE_ENUM)->setName('test');
         $obj->setName('test');
     }
 
     public function testFileTypes() {
         $obj = Column::create(Column::TYPE_FILE);
-        static::assertEquals($obj->getType(), Column::TYPE_FILE);
+        static::assertEquals(Column::TYPE_FILE, $obj->getType());
         static::assertTrue($obj->isItAFile());
         $obj = Column::create(Column::TYPE_IMAGE);
-        static::assertEquals($obj->getType(), Column::TYPE_IMAGE);
+        static::assertEquals(Column::TYPE_IMAGE, $obj->getType());
         static::assertTrue($obj->isItAFile());
         static::assertTrue($obj->isItAnImage());
     }
 
     public function testEnumType() {
         $obj = Column::create(Column::TYPE_ENUM);
-        static::assertEquals($obj->getType(), Column::TYPE_ENUM);
+        static::assertEquals(Column::TYPE_ENUM, $obj->getType());
         static::assertTrue($obj->isEnum());
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Value format 'time' is not supported for column 'login'. Supported formats: none
-     */
+    
     public function testInvalidValueFormat() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Value format 'time' is not supported for column 'login'. Supported formats: none");
         $rec = TestingAdmin::newEmptyRecord();
         /** @var \PeskyORM\ORM\RecordValue $value */
         $value = $this->getObjectPropertyValue($rec, 'values')['login'];
@@ -217,46 +186,42 @@ class DbTableColumnTest extends TestCase {
 
     public function testFormattersDetectedByType() {
         $obj = Column::create(Column::TYPE_TIMESTAMP);
-        static::assertEquals($obj->getType(), Column::TYPE_TIMESTAMP);
+        static::assertEquals(Column::TYPE_TIMESTAMP, $obj->getType());
         static::assertInstanceOf(\Closure::class, $obj->getValueFormatter());
         $rec = TestingAdmin::fromArray(['created_at' => '2016-11-21 11:00:00']);
         /** @var \PeskyORM\ORM\RecordValue $value */
         $value = $this->getObjectPropertyValue($rec, 'values')['created_at'];
         static::assertEquals('11:00:00', call_user_func($value->getColumn()->getValueFormatter(), $value, 'time'));
     }
-
-    /**
-     * @expectedException \BadMethodCallException
-     * @expectedExceptionMessage Default value for column 'name' is not set
-     */
+    
     public function testInvalidDefaultValueGet1() {
+        $this->expectException(\BadMethodCallException::class);
+        $this->expectExceptionMessage("Default value for column 'name' is not set");
         Column::create(Column::TYPE_BOOL, 'name')->getDefaultValueAsIs();
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Default value for column 'name' is not valid. Errors: Value must be of a boolean data type
-     */
+    
     public function testInvalidDefaultValueGet2() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("Default value for column 'name' is not valid. Errors: Value must be of a boolean data type");
         Column::create(Column::TYPE_BOOL, 'name')
             ->setDefaultValue(-1)
             ->getValidDefaultValue();
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Fallback value of the default value for column 'name' is not valid. Errors: Value must be of a boolean data type
-     */
+    
     public function testInvalidDefaultValueGet3() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage(
+            "Fallback value of the default value for column 'name' is not valid. Errors: Value must be of a boolean data type"
+        );
         Column::create(Column::TYPE_BOOL, 'name')
             ->getValidDefaultValue(-1);
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Default value received from validDefaultValueGetter closure for column 'name' is not valid. Errors: Value must be of a boolean data type
-     */
+    
     public function testInvalidDefaultValueGet4() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage(
+            "Default value received from validDefaultValueGetter closure for column 'name' is not valid. Errors: Value must be of a boolean data type"
+        );
         Column::create(Column::TYPE_BOOL, 'name')
             ->setValidDefaultValueGetter(function ($fallback) {
                 return -1;
@@ -310,80 +275,66 @@ class DbTableColumnTest extends TestCase {
         });
         static::assertEquals(date(NormalizeValue::DATETIME_FORMAT, $nowTs), $defaultValue);
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Allowed values closure must return a not-empty array
-     */
+    
     public function testInvalidGetAllowedValues() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("Allowed values closure must return a not-empty array");
         $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(function () {
                 return -1;
             });
         $obj->getAllowedValues();
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Allowed values closure must return a not-empty array
-     */
+    
     public function testInvalidSetAllowedValues1() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("Allowed values closure must return a not-empty array");
         $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(function () {
                 return -1;
             });
         $obj->getAllowedValues();
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Allowed values closure must return a not-empty array
-     */
+    
     public function testInvalidSetAllowedValues2() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("Allowed values closure must return a not-empty array");
         $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(function () {
                 return [];
             });
         $obj->getAllowedValues();
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $allowedValues argument cannot be empty
-     */
+    
     public function testInvalidSetAllowedValues3() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$allowedValues argument cannot be empty");
         /** @noinspection PhpParamsInspection */
         $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(-1);
         $obj->getAllowedValues();
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $allowedValues argument cannot be empty
-     */
+    
     public function testInvalidSetAllowedValues4() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$allowedValues argument cannot be empty");
         /** @noinspection PhpParamsInspection */
         $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(false);
         $obj->getAllowedValues();
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $allowedValues argument cannot be empty
-     */
+    
     public function testInvalidSetAllowedValues5() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$allowedValues argument cannot be empty");
         $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues([]);
         $obj->getAllowedValues();
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $allowedValues argument cannot be empty
-     */
+    
     public function testInvalidSetAllowedValues6() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$allowedValues argument cannot be empty");
         $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(null);
         $obj->getAllowedValues();
@@ -399,29 +350,24 @@ class DbTableColumnTest extends TestCase {
         });
         static::assertEquals(['test2'], $obj->getAllowedValues());
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Relation 'Test' does not exist
-     */
+    
     public function testInvalidGetRelation() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Relation 'Test' does not exist");
         Column::create(Column::TYPE_ENUM)->getRelation('Test');
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $class argument must be a string and contain a full name of a calss that implements ColumnClosuresInterface
-     */
+    
     public function testInvalidSetClosuresClass1() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$class argument must be a string and contain a full name of a calss that implements ColumnClosuresInterface");
         Column::create(Column::TYPE_STRING)->setClosuresClass(TestingAdmin::class);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $class argument must be a string and contain a full name of a calss that implements ColumnClosuresInterface
-     */
+    
     public function testInvalidSetClosuresClass2() {
-        Column::create(Column::TYPE_STRING)->setClosuresClass(new DefaultColumnClosures);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$class argument must be a string and contain a full name of a calss that implements ColumnClosuresInterface");
+        /** @noinspection PhpParamsInspection */
+        Column::create(Column::TYPE_STRING)->setClosuresClass(new DefaultColumnClosures());
     }
 
     public function testSetClosuresClass() {

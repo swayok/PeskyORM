@@ -23,10 +23,6 @@ abstract class FakeTable extends Table {
      * @param TableInterface $tableToMimic
      * @param string $fakeTableName
      * @return FakeTable
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
     static public function mimicTable(TableInterface $tableToMimic, $fakeTableName) {
         $reflection = new \ReflectionClass($tableToMimic);
@@ -37,7 +33,7 @@ abstract class FakeTable extends Table {
                 $reflection->getInterfaceNames(),
                 $reflection->getTraitNames()
             )
-            ->setRecordClass($tableToMimic->newRecord());
+            ->setRecordClass(get_class($tableToMimic->newRecord()));
     }
 
     /**
@@ -45,19 +41,17 @@ abstract class FakeTable extends Table {
      * @param array|TableStructureInterface $columnsOrTableStructure
      *      - array: key-value array where key is column name and value is column type or key is int and value is column name
      *      - TableStructureInterface: table structure to use instead of FakeTableStructure
-     * @param DbAdapterInterface $connection
+     * @param DbAdapterInterface|null $connection
      * @param array $interfaces - full class names of interfaces that fake table must implement
      * @param array $traits - full names of traits that fake table must use
      * @param string $classBody
      * @return FakeTable
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
     static public function makeNewFakeTable(
         string $tableName,
         $columnsOrTableStructure = null,
-        DbAdapterInterface $connection = null,
+        ?DbAdapterInterface $connection = null,
         array $interfaces = [],
         array $traits = [],
         string $classBody = ''
@@ -107,10 +101,6 @@ VIEW;
     /**
      * @param bool $writable - true: connection must have access to write data into DB
      * @return DbAdapterInterface
-     * @throws \UnexpectedValueException
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
     static public function getConnection($writable = false): DbAdapterInterface {
         return static::getInstance()->connection ?: parent::getConnection($writable);
@@ -128,8 +118,6 @@ VIEW;
     /**
      * Table schema description
      * @return TableStructureInterface|FakeTableStructure
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
     public function getTableStructure() {
         if (!$this->tableStructure) {
@@ -149,7 +137,6 @@ VIEW;
 
     /**
      * @return FakeRecord
-     * @throws \BadMethodCallException
      */
     public function newRecord() {
         if (!$this->recordClass) {

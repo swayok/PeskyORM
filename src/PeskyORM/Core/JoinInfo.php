@@ -13,8 +13,8 @@ class JoinInfo extends AbstractJoinInfo {
      * @param string $joinType
      * @param string $foreignTableName
      * @param string $foreignColumnName
-     * @param string $localTableSchema
-     * @param string $foreignTableSchema
+     * @param string|null $localTableSchema
+     * @param string|null $foreignTableSchema
      * @return $this
      * @throws \InvalidArgumentException
      */
@@ -47,8 +47,8 @@ class JoinInfo extends AbstractJoinInfo {
      * @param string $joinType
      * @param string $foreignTableName
      * @param string $foreignColumnName
-     * @param string $localTableSchema
-     * @param string $foreignTableSchema
+     * @param string|null $localTableSchema
+     * @param string|null $foreignTableSchema
      * @throws \InvalidArgumentException
      */
     public function __construct(
@@ -88,7 +88,7 @@ class JoinInfo extends AbstractJoinInfo {
     /**
      * @param string $foreignTableName
      * @param string $foreignColumnName
-     * @param string $foreignTableSchema
+     * @param string|null $foreignTableSchema
      * @return $this
      * @throws \InvalidArgumentException
      */

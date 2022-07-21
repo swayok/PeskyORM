@@ -40,7 +40,7 @@ class Select extends AbstractSelect {
      * @throws \InvalidArgumentException
      */
     public function __construct(string $tableName, DbAdapterInterface $connection) {
-        if (!is_string($tableName) || empty($tableName)) {
+        if (empty($tableName)) {
             throw new \InvalidArgumentException('$tableName argument must be a not-empty string');
         }
         $this->tableName = $tableName;
@@ -54,7 +54,7 @@ class Select extends AbstractSelect {
      * @throws \InvalidArgumentException
      */
     public function setTableSchemaName(string $schema) {
-        if (!is_string($schema) || empty($schema)) {
+        if (empty($schema)) {
             throw new \InvalidArgumentException('$schema argument must be a not-empty string');
         }
         $this->dbSchema = $schema;

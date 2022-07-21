@@ -26,12 +26,10 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase {
     static private function getValidAdapter() {
         return TestingApp::getMysqlConnection();
     }
-
-    /**
-     * @expectedException PDOException
-     * @expectedExceptionMessage Access denied for user
-     */
+    
     public function testConnectionWithInvalidUserName() {
+        $this->expectException(PDOException::class);
+        $this->expectExceptionMessage("Access denied for user");
         $config = MysqlConfig::fromArray([
             'database' => 'totally_not_existing_db',
             'username' => 'totally_not_existing_user',
@@ -40,12 +38,10 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase {
         $adapter = new Mysql($config);
         $adapter->getConnection();
     }
-
-    /**
-     * @expectedException PDOException
-     * @expectedExceptionMessage Access denied for user
-     */
+    
     public function testConnectionWithInvalidUserName2() {
+        $this->expectException(PDOException::class);
+        $this->expectExceptionMessage("Access denied for user");
         $config = MysqlConfig::fromArray([
             'database' => 'totally_not_existing_db',
             'username' => self::getValidAdapter()->getConnectionConfig()->getUserName(),
@@ -54,12 +50,10 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase {
         $adapter = new Mysql($config);
         $adapter->getConnection();
     }
-
-    /**
-     * @expectedException PDOException
-     * @expectedExceptionMessage Access denied for user
-     */
+    
     public function testConnectionWithInvalidDbName() {
+        $this->expectException(PDOException::class);
+        $this->expectExceptionMessage("Access denied for user");
         $config = MysqlConfig::fromArray([
             'database' => 'totally_not_existing_db',
             'username' => self::getValidAdapter()->getConnectionConfig()->getUserName(),
@@ -68,12 +62,10 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase {
         $adapter = new Mysql($config);
         $adapter->getConnection();
     }
-
-    /**
-     * @expectedException PDOException
-     * @expectedExceptionMessage Access denied for user
-     */
+    
     public function testConnectionWithInvalidUserPassword() {
+        $this->expectException(PDOException::class);
+        $this->expectExceptionMessage("Access denied for user");
         $config = MysqlConfig::fromArray([
             'database' => self::getValidAdapter()->getConnectionConfig()->getDbName(),
             'username' => self::getValidAdapter()->getConnectionConfig()->getUserName(),
@@ -116,147 +108,117 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase {
         $this->assertEquals(null, $prop->getValue($adapter));
         $reflector->getProperty('pdo')->setAccessible(false);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Invalid db entity name
-     */
+    
     public function testQuotingOfInvalidDbEntity() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid db entity name");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName('";DROP table1;');
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Db entity name must be a not empty string
-     */
+    
     public function testQuotingOfInvalidDbEntity2() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Db entity name must be a not empty string");
         $adapter = static::getValidAdapter();
+        /** @noinspection PhpParamsInspection */
         $adapter->quoteDbEntityName(['arrr']);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Db entity name must be a not empty string
-     */
+    
     public function testQuotingOfInvalidDbEntity3() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Db entity name must be a not empty string");
         $adapter = static::getValidAdapter();
+        /** @noinspection PhpParamsInspection */
         $adapter->quoteDbEntityName($adapter);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Db entity name must be a not empty string
-     */
+    
     public function testQuotingOfInvalidDbEntity4() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Db entity name must be a not empty string");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName(true);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Db entity name must be a not empty string
-     */
+    
     public function testQuotingOfInvalidDbEntity5() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Db entity name must be a not empty string");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName(false);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Invalid db entity name [colname->->]
-     */
+    
     public function testQuotingOfInvalidDbEntity6() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid db entity name [colname->->]");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName('colname->->');
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Invalid db entity name [colname-> ->]
-     */
+    
     public function testQuotingOfInvalidDbEntity7() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid db entity name [colname-> ->]");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName('colname-> ->');
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Db entity name must be a not empty string
-     */
+    
     public function testQuotingOfInvalidDbEntity8() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Db entity name must be a not empty string");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName('');
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Value in $fieldType argument must be a constant like
-     */
+    
     public function testQuotingOfInvalidDbValueType() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Value in \$fieldType argument must be a constant like");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue('test', 'abrakadabra');
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $value expected to be integer or numeric string. String [abrakadabra] received
-     */
+    
     public function testQuotingOfInvalidIntDbValue() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$value expected to be integer or numeric string. String [abrakadabra] received");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue('abrakadabra', PDO::PARAM_INT);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $value expected to be integer or numeric string. Object fo class [\PeskyORM\Adapter\Mysql] received
-     */
+    
     public function testQuotingOfInvalidIntDbValue2() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$value expected to be integer or numeric string. Object fo class [\PeskyORM\Adapter\Mysql] received");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue($adapter, PDO::PARAM_INT);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $value expected to be integer or numeric string. Array received
-     */
+    
     public function testQuotingOfInvalidIntDbValue3() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$value expected to be integer or numeric string. Array received");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue(['key' => 'val'], PDO::PARAM_INT);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $value expected to be integer or numeric string. Resource received
-     */
+    
     public function testQuotingOfInvalidIntDbValue4() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$value expected to be integer or numeric string. Resource received");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue(curl_init('http://test.url'), PDO::PARAM_INT);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $value expected to be integer or numeric string. Boolean [true] received
-     */
+    
     public function testQuotingOfInvalidIntDbValue5() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$value expected to be integer or numeric string. Boolean [true] received");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue(true, PDO::PARAM_INT);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $value expected to be integer or numeric string. Boolean [false] received
-     */
+    
     public function testQuotingOfInvalidIntDbValue6() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$value expected to be integer or numeric string. Boolean [false] received");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue(false, PDO::PARAM_INT);
     }
-
-    /**
-     * @expectedException TypeError
-     * @expectedExceptionMessage must be an instance of PeskyORM\Core\DbExpr, string given
-     */
+    
     public function testQuotingOfInvalidDbExpr() {
+        $this->expectException(TypeError::class);
+        $this->expectExceptionMessage("must be an instance of PeskyORM\Core\DbExpr, string given");
         $adapter = static::getValidAdapter();
         /** @noinspection PhpParamsInspection */
         $adapter->quoteDbExpr('test');
@@ -316,6 +278,7 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase {
         $this->assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_LOB));
         $this->assertEquals("'123'", $adapter->quoteValue(123));
         $this->assertEquals("'123'", $adapter->quoteValue(123, PDO::PARAM_INT));
+        /** @noinspection SqlWithoutWhere */
         $this->assertEquals(
             'DELETE FROM `table1` WHERE `col1` = \'value1\'',
             $adapter->quoteDbExpr(DbExpr::create('DELETE FROM `table1` WHERE `col1` = ``value1``'))
@@ -329,23 +292,19 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase {
         $colsList = $method->invoke($adapter, ['column1', 'alias.column2']);
         $this->assertEquals('(`column1`,`alias`.`column2`)', $colsList);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columns argument cannot be empty
-     */
+    
     public function testInvalidColumnsInBuildValuesList() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$columns argument cannot be empty");
         $adapter = static::getValidAdapter();
         $method = (new ReflectionClass($adapter))->getMethod('buildValuesList');
         $method->setAccessible(true);
         $method->invoke($adapter, [], []);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $valuesAssoc array does not contain key [col2]
-     */
+    
     public function testInvalidDataInBuildValuesList() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$valuesAssoc array does not contain key [col2]");
         $adapter = static::getValidAdapter();
         $method = (new ReflectionClass($adapter))->getMethod('buildValuesList');
         $method->setAccessible(true);

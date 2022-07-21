@@ -625,7 +625,7 @@ abstract class Table implements TableInterface {
             }
             // $emptyToNull before $notNulls
             foreach ($emptyToNull as $columnName) {
-                if (isset($row[$columnName]) && is_string($row[$columnName]) && $row[$columnName] === '') {
+                if (isset($row[$columnName]) && $row[$columnName] === '') {
                     // convert empty string to null
                     $row[$columnName] = null;
                 }

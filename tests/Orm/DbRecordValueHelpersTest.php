@@ -346,21 +346,21 @@ class DbRecordValueHelpersTest extends TestCase {
     public function testGetValueFormatterAndFormatsByTypeForTimestamps() {
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_UNIX_TIMESTAMP);
         static::assertNotEmpty($ret);
-        static::assertTrue(is_array($ret));
+        static::assertIsArray($ret);
         static::assertCount(2, $ret);
         static::assertEquals(['date', 'time', 'unix_ts'], $ret[1]);
         static::assertInstanceOf(\Closure::class, $ret[0]);
 
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_TIMESTAMP);
         static::assertNotEmpty($ret);
-        static::assertTrue(is_array($ret));
+        static::assertIsArray($ret);
         static::assertCount(2, $ret);
         static::assertEquals(['date', 'time', 'unix_ts'], $ret[1]);
         static::assertInstanceOf(\Closure::class, $ret[0]);
 
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_TIMESTAMP_WITH_TZ);
         static::assertNotEmpty($ret);
-        static::assertTrue(is_array($ret));
+        static::assertIsArray($ret);
         static::assertCount(2, $ret);
         static::assertEquals(['date', 'time', 'unix_ts'], $ret[1]);
         static::assertInstanceOf(\Closure::class, $ret[0]);
@@ -369,14 +369,14 @@ class DbRecordValueHelpersTest extends TestCase {
     public function testGetValueFormatterAndFormatsByTypeForDateAndTime() {
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_DATE);
         static::assertNotEmpty($ret);
-        static::assertTrue(is_array($ret));
+        static::assertIsArray($ret);
         static::assertCount(2, $ret);
         static::assertEquals(['unix_ts'], $ret[1]);
         static::assertInstanceOf(\Closure::class, $ret[0]);
 
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_TIME);
         static::assertNotEmpty($ret);
-        static::assertTrue(is_array($ret));
+        static::assertIsArray($ret);
         static::assertCount(2, $ret);
         static::assertEquals(['unix_ts'], $ret[1]);
         static::assertInstanceOf(\Closure::class, $ret[0]);
@@ -385,14 +385,14 @@ class DbRecordValueHelpersTest extends TestCase {
     public function testGetValueFormatterAndFormatsByTypeForJson() {
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_JSON);
         static::assertNotEmpty($ret);
-        static::assertTrue(is_array($ret));
+        static::assertIsArray($ret);
         static::assertCount(2, $ret);
         static::assertEquals(['array', 'object'], $ret[1]);
         static::assertInstanceOf(\Closure::class, $ret[0]);
 
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_JSONB);
         static::assertNotEmpty($ret);
-        static::assertTrue(is_array($ret));
+        static::assertIsArray($ret);
         static::assertCount(2, $ret);
         static::assertEquals(['array', 'object'], $ret[1]);
         static::assertInstanceOf(\Closure::class, $ret[0]);
@@ -401,50 +401,42 @@ class DbRecordValueHelpersTest extends TestCase {
     public function testGetValueFormatterAndFormatsByTypeForOthers() {
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_STRING);
         static::assertNotEmpty($ret);
-        static::assertTrue(is_array($ret));
+        static::assertIsArray($ret);
         static::assertCount(2, $ret);
         static::assertEquals([], $ret[1]);
         static::assertNull($ret[0]);
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $format argument must be a string
-     */
+    
     public function testInvalidFormatTimestamp1() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$format argument must be a string");
         RecordValueHelpers::formatTimestamp(
             $this->createDbRecordValue(Column::TYPE_TIMESTAMP, '2016-09-01 01:02:03'),
             []
         );
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $format argument must be a string
-     */
+    
     public function testInvalidFormatTimestamp2() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$format argument must be a string");
         RecordValueHelpers::formatTimestamp(
             $this->createDbRecordValue(Column::TYPE_TIMESTAMP, '2016-09-01 01:02:03'),
             null
         );
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $format argument must be a string
-     */
+    
     public function testInvalidFormatTimestamp3() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$format argument must be a string");
         RecordValueHelpers::formatTimestamp(
             $this->createDbRecordValue(Column::TYPE_TIMESTAMP, '2016-09-01 01:02:03'),
             true
         );
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Requested value format 'not_existing_format' is not implemented
-     */
+    
     public function testInvalidFormatTimestamp4() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Requested value format 'not_existing_format' is not implemented");
         RecordValueHelpers::formatTimestamp(
             $this->createDbRecordValue(Column::TYPE_TIMESTAMP, '2016-09-01 01:02:03'),
             'not_existing_format'
@@ -1040,52 +1032,52 @@ class DbRecordValueHelpersTest extends TestCase {
             ->setAllowedValues(['abrakadabra']);
         static::assertEquals(['value_must_be_integer'], RecordValueHelpers::isValidDbColumnValue($column, 'not_int', false, false));
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Enum column [test] is required to have a list of allowed values
-     */
+    
     public function testInvalidColumnAllowedValuesForEnum() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("Enum column [test] is required to have a list of allowed values");
         $column = Column::create(Column::TYPE_ENUM, 'test');
         RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test', false);
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $value argument must be a string, integer, float or array to be able to validate if it is within allowed values
-     */
+    
     public function testInvalidValueForAllowedValues() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage(
+            "\$value argument must be a string, integer, float or array to be able to validate if it is within allowed values"
+        );
         $column = Column::create(Column::TYPE_ENUM, 'test')
             ->setAllowedValues(['test']);
+        /** @noinspection PhpParamsInspection */
         RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, $column, false);
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $value argument must be a string, integer, float or array to be able to validate if it is within allowed values
-     */
+    
     public function testInvalidValueForAllowedValues2() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage(
+            "\$value argument must be a string, integer, float or array to be able to validate if it is within allowed values"
+        );
         $column = Column::create(Column::TYPE_STRING, 'test')
             ->setAllowedValues(['test']);
+        /** @noinspection PhpParamsInspection */
         RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, $column, false);
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $value argument must be a string, integer, float or array to be able to validate if it is within allowed values
-     */
+    
     public function testInvalidValueForAllowedValues3() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage(
+            "\$value argument must be a string, integer, float or array to be able to validate if it is within allowed values"
+        );
         $column = Column::create(Column::TYPE_ENUM, 'test')
             ->setAllowedValues(['test'])
             ->disallowsNullValues();
         RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, null, false);
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $value argument must be a string, integer, float or array to be able to validate if it is within allowed values
-     */
+    
     public function testInvalidValueForAllowedValues4() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage(
+            "\$value argument must be a string, integer, float or array to be able to validate if it is within allowed values"
+        );
         $column = Column::create(Column::TYPE_STRING, 'test')
             ->disallowsNullValues()
             ->setAllowedValues(['test']);

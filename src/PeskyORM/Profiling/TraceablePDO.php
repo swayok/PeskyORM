@@ -16,10 +16,11 @@ class TraceablePDO extends PDO {
     /** @var TracedStatement[] */
     protected $executedStatements = [];
 
-    /** @noinspection MagicMethodsValidityInspection */
     /**
      * @param PDO $pdo
      * @param null $databaseName
+     * @noinspection PhpMissingParentConstructorInspection
+     * @noinspection MagicMethodsValidityInspection
      */
     public function __construct(PDO $pdo, $databaseName = null) {
         $this->pdo = $pdo;
@@ -114,20 +115,22 @@ class TraceablePDO extends PDO {
     public function lastInsertId($name = null) {
         return $this->pdo->lastInsertId($name);
     }
-
+    
     /**
      * Prepares a statement for execution and returns a statement object
      *
      * @link   http://php.net/manual/en/pdo.prepare.php
-     * @param  string $statement This must be a valid SQL statement template for the target DB server.
-     * @param  array $driver_options [optional] This array holds one or more key=&gt;value pairs to
+     * @param string $query This must be a valid SQL statement template for the target DB server.
+     * @param array|null $options [optional] This array holds one or more key=&gt;value pairs to
      * set attribute values for the PDOStatement object that this method returns.
-     * @return TraceablePDOStatement|\PDOStatement|bool If the database server successfully prepares the statement,
+     * @return TraceablePDOStatement|false If the database server successfully prepares the statement,
      * PDO::prepare returns a PDOStatement object. If the database server cannot successfully prepare
      * the statement, PDO::prepare returns FALSE or emits PDOException (depending on error handling).
      */
-    public function prepare ($statement, $driver_options = null) {
-        return $this->pdo->prepare($statement, $driver_options);
+    public function prepare($query, array $options = null) {
+        /** @var TraceablePDOStatement|false $statement */
+        $statement = $this->pdo->prepare($query, $options);
+        return $statement;
     }
 
     /**
@@ -150,13 +153,13 @@ class TraceablePDO extends PDO {
      *
      * @link   http://php.net/manual/en/pdo.quote.php
      * @param  string $string The string to be quoted.
-     * @param  int $parameter_type [optional] Provides a data type hint for drivers that have
+     * @param  int $type [optional] Provides a data type hint for drivers that have
      * alternate quoting styles.
      * @return string|bool A quoted string that is theoretically safe to pass into an SQL statement.
      * Returns FALSE if the driver does not support quoting in this way.
      */
-    public function quote($string, $parameter_type = PDO::PARAM_STR) {
-        return $this->pdo->quote($string, $parameter_type);
+    public function quote($string, $type = PDO::PARAM_STR) {
+        return $this->pdo->quote($string, $type);
     }
 
     /**
@@ -278,7 +281,6 @@ class TraceablePDO extends PDO {
      */
     public function getFailedExecutedStatements() {
         return array_filter($this->executedStatements, function ($statement) {
-            /** @var $statement TracedStatement */
             return !$statement->isSuccess();
         });
     }

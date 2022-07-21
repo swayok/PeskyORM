@@ -40,7 +40,7 @@ class {$className} extends FakeRecord {
 }
 VIEW;
         eval($class);
-        /** @var FakeRecord $fullClassName */
+        /** @var FakeRecord|string $fullClassName */
         $fullClassName = $namespace . '\\' . $className;
         $fullClassName::setTable($table);
         return $fullClassName;

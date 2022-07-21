@@ -434,9 +434,9 @@ class RecordValue {
     }
 
     /**
-     * @return mixed
+     * @return array
      */
-    public function pullDataForSavingExtender() {
+    public function pullDataForSavingExtender(): array {
         $data = $this->dataForSavingExtender;
         $this->dataForSavingExtender = null;
         return $data;

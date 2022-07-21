@@ -345,10 +345,10 @@ class Postgres extends DbAdapter {
 
     /**
      * @param string $default
-     * @return mixed
+     * @return array|bool|DbExpr|float|int|string|string[]|null
      */
     protected function cleanDefaultValueForColumnDescription($default) {
-        if ($default === null || $default === '' || preg_match('%^NULL::%is', $default)) {
+        if ($default === null || $default === '' || preg_match('%^NULL::%i', $default)) {
             return null;
         } else if (preg_match("%^'((?:[^']|'')*?)'(?:::(bpchar|character varying|char|jsonb?|xml|macaddr|varchar|inet|cidr|text|uuid))?$%", $default, $matches)) {
             return str_replace("''", "'", $matches[1]);
@@ -406,7 +406,7 @@ class Postgres extends DbAdapter {
      * @return string
      * @throws \InvalidArgumentException
      */
-    public function assembleConditionValue($value, $operator, $valueAlreadyQuoted = false) {
+    public function assembleConditionValue($value, string $operator, bool $valueAlreadyQuoted = false): string {
         if (in_array($operator, ['@>', '<@'], true)) {
             if ($valueAlreadyQuoted) {
                 if (!is_string($value)) {

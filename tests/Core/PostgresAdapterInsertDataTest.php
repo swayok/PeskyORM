@@ -132,30 +132,24 @@ class PostgresAdapterInsertDataTest extends TestCase {
         $this->assertEquals('test_key_returning2', $return['key']);
         $this->assertEquals(json_encode('test_value1'), $return['value']);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columns argument must contain only strings
-     */
+    
     public function testInvalidColumnsForInsertMany() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$columns argument must contain only strings");
         $adapter = static::getValidAdapter();
         $adapter->insertMany('settings', [null], [['key' => 'value']]);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columns argument must contain only strings
-     */
+    
     public function testInvalidColumnsForInsertMany2() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$columns argument must contain only strings");
         $adapter = static::getValidAdapter();
         $adapter->insertMany('settings', [DbExpr::create('test')], [['key' => 'value']]);
     }
-
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage $columns argument must contain only strings
-     */
+    
     public function testInvalidColumnsForInsertMany3() {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$columns argument must contain only strings");
         $adapter = static::getValidAdapter();
         $adapter->insertMany('settings', [['subarray']], [['key' => 'value']]);
     }

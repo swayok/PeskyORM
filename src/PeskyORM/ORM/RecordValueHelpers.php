@@ -234,7 +234,7 @@ abstract class RecordValueHelpers {
      * Normalize $value according to expected data type ($type)
      * @param mixed $value
      * @param string $type - one of Column::TYPE_*
-     * @return null|string|UploadedFile|DbExpr|AbstractSelect
+     * @return null|string|UploadedFile|DbExpr|AbstractSelect|bool|int|float
      */
     static public function normalizeValue($value, $type) {
         if ($value === null) {
@@ -281,7 +281,7 @@ abstract class RecordValueHelpers {
      * Note: lighter version of normalizeValue() to optimize processing of large amount of records
      * @param mixed $value
      * @param string $type - one of Column::TYPE_*
-     * @return null|string|UploadedFile
+     * @return null|string|UploadedFile|DbExpr
      */
     static public function normalizeValueReceivedFromDb($value, $type) {
         if ($value === null) {

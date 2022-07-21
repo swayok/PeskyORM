@@ -331,7 +331,7 @@ abstract class AbstractSelect {
 
     /**
      * @param string $selectionType - one of PeskyORM\Core\Utils::FETCH_*
-     * @return mixed
+     * @return array|string|null
      */
     protected function _fetch(string $selectionType) {
         $data = $this->getConnection()->query($this->getQuery(), $selectionType);
@@ -882,7 +882,7 @@ abstract class AbstractSelect {
                 'name' => $columnName,
                 'alias' => $columnAlias,
                 'join_name' => $joinName,
-                'type_cast' => null
+                'type_cast' => null,
             ];
             unset($columnName, $joinName, $columnAlias); //< to prevent faulty usage
         } else {
@@ -1092,6 +1092,10 @@ abstract class AbstractSelect {
             }
         }
         $normalizedColumns = [];
+        /**
+         * @var string|int $columnAlias
+         * @var string|array $columnName
+         */
         foreach ($columns as $columnAlias => $columnName) {
             if ($columnAlias === '*') {
                 if (!is_string($columnName) && !is_array($columnName)) {
@@ -1178,7 +1182,7 @@ abstract class AbstractSelect {
      * Decide what to do if join name mentioned in columns list
      * @param string $joinName
      * @param array|string $columns - string === '*' only
-     * @param string $parentJoinName
+     * @param string|null $parentJoinName
      * @param bool $appendColumnsToExisting - true: $columns will be appended | false: $columns will replace existing ones
      * @throws \UnexpectedValueException
      */
@@ -1427,7 +1431,7 @@ abstract class AbstractSelect {
         foreach ($record as $columnAlias => $value) {
             if (isset($this->columnAliasToColumnInfo[$columnAlias])) {
                 $colInfo = $this->columnAliasToColumnInfo[$columnAlias];
-                $group = isset($colInfo['parent']) ? $colInfo['parent'] : $colInfo['join_name'];
+                $group = $colInfo['parent'] ?? $colInfo['join_name'];
                 $dataBlocks[$group ?: $this->getTableAlias()][$colInfo['alias'] ?: $colInfo['name']] = $value;
             } else if (preg_match('%^_(.+?)__(.+?)$%', $columnAlias, $colInfo)) {
                 [, $tableAlias, $column] = $colInfo;

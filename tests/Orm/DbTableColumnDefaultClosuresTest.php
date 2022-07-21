@@ -85,30 +85,24 @@ class DbTableColumnDefaultClosuresTest extends TestCase {
         );
         static::assertEquals([], DefaultColumnClosures::valueValidator('b', false, false, $column));
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Value format 'nooooo!' is not supported for column 'parent_id'. Supported formats: none
-     */
+    
     public function testInvalidFormatterInValueGetter() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Value format 'nooooo!' is not supported for column 'parent_id'. Supported formats: none");
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
         DefaultColumnClosures::valueGetter($valueObj, 'nooooo!');
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Value format 'nooooo!' is not supported for column 'created_at'. Supported formats: date, time, unix_ts
-     */
+    
     public function testInvalidFormatInValueGetter1() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Value format 'nooooo!' is not supported for column 'created_at'. Supported formats: date, time, unix_ts");
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('created_at'), TestingAdmin::_());
         DefaultColumnClosures::valueGetter($valueObj, 'nooooo!');
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $format argument for column 'created_at' must be a string or a number.
-     */
+    
     public function testInvalidFormatInValueGetter2() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$format argument for column 'created_at' must be a string or a number.");
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('created_at'), TestingAdmin::_());
         DefaultColumnClosures::valueGetter($valueObj, false);
     }
@@ -119,12 +113,10 @@ class DbTableColumnDefaultClosuresTest extends TestCase {
         static::assertEquals('2016-09-01', DefaultColumnClosures::valueGetter($valueObj));
         static::assertEquals(strtotime('2016-09-01'), DefaultColumnClosures::valueGetter($valueObj, 'unix_ts'));
     }
-
-    /**
-     * @expectedException \BadMethodCallException
-     * @expectedExceptionMessage Column 'test2' restricts value modification
-     */
+    
     public function testValueSetIsForbidden() {
+        $this->expectException(\BadMethodCallException::class);
+        $this->expectExceptionMessage("Column 'test2' restricts value modification");
         $column = Column::create(Column::TYPE_STRING, 'test1')
             ->valueCannotBeSetOrChanged();
         $valueObj = RecordValue::create($column, TestingAdmin::_());

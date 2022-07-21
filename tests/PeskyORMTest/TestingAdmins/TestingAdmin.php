@@ -9,7 +9,13 @@ use PeskyORM\ORM\Record;
  * @method $this setParent($value, $isFromDb = false)
  * @method $this setChildren($value, $isFromDb = false)
  *
+ * @property string $created_at_as_date
+ * @property integer $parent_id
+ *
  * @property Record $Parent
+ * @property Record $HasOne
+ * @property Record $Children
+ * @property Record $VeryLongRelationNameSoItMustBeShortened
  */
 class TestingAdmin extends Record {
 

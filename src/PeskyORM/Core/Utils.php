@@ -21,7 +21,7 @@ class Utils {
         if (!in_array($type, array(self::FETCH_COLUMN, self::FETCH_ALL, self::FETCH_FIRST, self::FETCH_VALUE), true)) {
             throw new \InvalidArgumentException("Unknown processing type [{$type}]");
         }
-        if ($statement && $statement->rowCount() > 0) {
+        if ($statement->rowCount() > 0) {
             switch ($type) {
                 case self::FETCH_COLUMN:
                     return $statement->fetchAll(\PDO::FETCH_COLUMN);
@@ -296,7 +296,6 @@ class Utils {
     }
     
     /**
-     * @param string $columnName
      * @param mixed|DbExpr|AbstractSelect $rawValue
      * @param DbAdapterInterface $connection
      * @return mixed - in most cases it is string

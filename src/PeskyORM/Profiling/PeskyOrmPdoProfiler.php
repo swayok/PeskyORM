@@ -64,7 +64,6 @@ class PeskyOrmPdoProfiler {
             $data['accumulated_duration'] += $pdodata['accumulated_duration'];
 //            $data['accumulated_memory_usage'] += $pdodata['accumulated_memory_usage'];
             $data['max_memory_usage'] = max($data['max_memory_usage'], $pdodata['max_memory_usage']);
-            /** @noinspection SlowArrayOperationsInLoopInspection */
             $data['statements'][$name] = $pdodata['statements'];
         }
 

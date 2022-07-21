@@ -34,9 +34,9 @@ interface DbConnectionConfigInterface {
     public function getDbHost(): string;
 
     /**
-     * @return int|null|string
+     * @return string
      */
-    public function getDbPort();
+    public function getDbPort(): string;
     
     /**
      * @return string

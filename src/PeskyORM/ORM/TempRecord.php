@@ -33,7 +33,7 @@ class TempRecord implements RecordInterface {
      * @return TableInterface
      */
     static public function getTable() {
-        return null;
+        throw new \BadMethodCallException('Temp Record has not Table');
     }
 
     /**
@@ -50,7 +50,7 @@ class TempRecord implements RecordInterface {
      * @return Column
      */
     static public function getColumn(string $name, string &$format = null) {
-        return null;
+        throw new \BadMethodCallException('TempRecord has no Columns');
     }
 
     /**
@@ -85,7 +85,7 @@ class TempRecord implements RecordInterface {
      * @return mixed
      */
     public function getValue($column, ?string $format = null) {
-        return array_get($this->data, $column);
+        return array_key_exists($column, $this->data) ? $this->data[$column] : null;
     }
 
     /**
@@ -95,7 +95,7 @@ class TempRecord implements RecordInterface {
      * @return bool
      */
     public function hasValue($column, bool $trueIfThereIsDefaultValue = false): bool {
-        return array_has($this->data, $column);
+        return array_key_exists($column, $this->data);
     }
 
     /**
@@ -151,7 +151,7 @@ class TempRecord implements RecordInterface {
      * @return Record|RecordsSet
      */
     public function getRelatedRecord(string $relationName, bool $loadIfNotSet = false) {
-        return null;
+        throw new \BadMethodCallException('TempRecord has no Relations');
     }
 
     /**
@@ -250,7 +250,6 @@ class TempRecord implements RecordInterface {
      * @param array $readRelatedRecords - also read related records
      * @return $this
      * @throws \BadMethodCallException
-     * @throws \PeskyORM\Exception\RecordNotFoundException
      */
     public function reload(array $columns = [], array $readRelatedRecords = []) {
         throw new \BadMethodCallException('Method cannot be used for this class (' . get_class($this) . ')');
@@ -260,12 +259,7 @@ class TempRecord implements RecordInterface {
      * Read values for specific columns
      * @param array $columns - columns to read
      * @return $this
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
      * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Exception\RecordNotFoundException
      */
     public function readColumns(array $columns = []) {
         throw new \BadMethodCallException('Method cannot be used for this class (' . get_class($this) . ')');
@@ -362,7 +356,7 @@ class TempRecord implements RecordInterface {
      * @return $this
      * @throws \BadMethodCallException
      */
-    public function delete($resetAllValuesAfterDelete = true, bool $deleteFiles = true) {
+    public function delete(bool $resetAllValuesAfterDelete = true, bool $deleteFiles = true) {
         throw new \BadMethodCallException('Method cannot be used for this class (' . get_class($this) . ')');
     }
 
@@ -417,12 +411,32 @@ class TempRecord implements RecordInterface {
      * @param bool $ignoreColumnsThatCannotBeSetManually - true: if column does not exist in DB - its value will not be returned
      * @param bool $nullifyDbExprValues - true: if default value is DbExpr - replace it by null
      * @return array
-     * @throws \PeskyORM\Exception\OrmException
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
     public function getDefaults(array $columns = [], bool $ignoreColumnsThatCannotBeSetManually = true, bool $nullifyDbExprValues = true): array {
         return [];
+    }
+    
+    public function enableReadOnlyMode() {
+    
+    }
+    
+    public function disableReadOnlyMode() {
+    
+    }
+    
+    public function isReadOnly(): bool {
+        return false;
+    }
+    
+    public function enableTrustModeForDbData() {
+    
+    }
+    
+    public function disableTrustModeForDbData() {
+    
+    }
+    
+    public function isTrustDbDataMode(): bool {
+        return false;
     }
 }

@@ -89,7 +89,6 @@ class TableDescription implements \Serializable {
             'name' => $this->getName(),
             'dbSchema' => $this->getDbSchema(),
             'columns' => [],
-            'relations' => []
         ];
         foreach ($this->getColumns() as $columnName => $columnDescription) {
             $data['columns'][$columnName] = serialize($columnDescription);
@@ -115,8 +114,8 @@ class TableDescription implements \Serializable {
         foreach ($data as $propertyName => $value) {
             $this->$propertyName = $value;
         }
-        foreach ($this->columns as $columnName => $serializedForeignKey) {
-            $this->columns[$columnName] = unserialize($serializedForeignKey);
+        foreach ($data['columns'] as $columnName => $serializedColumnDescription) {
+            $this->columns[$columnName] = unserialize($serializedColumnDescription, ['allowed_classes' => [ColumnDescription::class]]);
         }
     }
 }

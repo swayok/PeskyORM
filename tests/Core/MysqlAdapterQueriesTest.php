@@ -16,12 +16,10 @@ class MysqlAdapterQueriesTest extends TestCase {
     static private function getValidAdapter() {
         return TestingApp::getMysqlConnection();
     }
-
-    /**
-     * @expectedException PDOException
-     * @expectedExceptionMessage Column 'key' cannot be null
-     */
+    
     public function testInvalidValueInQuery() {
+        $this->expectException(PDOException::class);
+        $this->expectExceptionMessage("Column 'key' cannot be null");
         $adapter = static::getValidAdapter();
         $adapter->begin();
         $adapter->exec(
@@ -29,12 +27,10 @@ class MysqlAdapterQueriesTest extends TestCase {
         );
         $adapter->rollBack();
     }
-
-    /**
-     * @expectedException PDOException
-     * @expectedExceptionMessageRegExp  %Table '.*?\.abrakadabra' doesn't exist%i
-     */
+    
     public function testInvalidTableInQuery() {
+        $this->expectException(PDOException::class);
+        $this->expectExceptionMessageMatches("%Table '.*?\.abrakadabra' doesn't exist%i");
         $adapter = static::getValidAdapter();
         $adapter->exec(
             DbExpr::create('INSERT INTO `abrakadabra` (`key`, `value`) VALUES (``test_key``, ``test_value``)')
@@ -74,32 +70,26 @@ class MysqlAdapterQueriesTest extends TestCase {
             'value' => '"test_value"',
         ], $record);
     }
-
-    /**
-     * @expectedException \PeskyORM\Exception\DbException
-     * @expectedExceptionMessage Already in transaction
-     */
+    
     public function testTransactionsNestingPrevention() {
+        $this->expectException(\PeskyORM\Exception\DbException::class);
+        $this->expectExceptionMessage("Already in transaction");
         $adapter = static::getValidAdapter();
         $adapter->begin();
         $adapter->begin();
     }
-
-    /**
-     * @expectedException \PeskyORM\Exception\DbException
-     * @expectedExceptionMessage Attempt to commit not started transaction
-     */
+    
     public function testTransactionCommitWithoutBegin() {
+        $this->expectException(\PeskyORM\Exception\DbException::class);
+        $this->expectExceptionMessage("Attempt to commit not started transaction");
         $adapter = static::getValidAdapter();
         $adapter->commit();
         $adapter->commit();
     }
-
-    /**
-     * @expectedException \PeskyORM\Exception\DbException
-     * @expectedExceptionMessage Attempt to rollback not started transaction
-     */
+    
     public function testTransactionRollbackWithoutBegin() {
+        $this->expectException(\PeskyORM\Exception\DbException::class);
+        $this->expectExceptionMessage("Attempt to rollback not started transaction");
         $adapter = static::getValidAdapter();
         $adapter->rollBack();
         $adapter->rollBack();

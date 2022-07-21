@@ -256,13 +256,13 @@ abstract class TableStructure implements TableStructureInterface {
     }
 
     /**
-     * @param string $colName
+     * @param string $columnName
      * @return Relation[]
      */
     static public function getColumnRelations(string $columnName): array {
         $instance = static::getInstance();
         $instance->_getColumn($columnName);
-        return isset($instance->columnsRelations[$columnName]) ? $instance->columnsRelations[$columnName] : [];
+        return $instance->columnsRelations[$columnName] ?? [];
     }
 
     /**
@@ -351,9 +351,6 @@ abstract class TableStructure implements TableStructureInterface {
         $this->addColumn($column);
     }
 
-    /**
-     * @param Column $column
-     */
     protected function addColumn(Column $column) {
         $column->setTableStructure($this);
         $this->columns[$column->getName()] = $column;
@@ -376,18 +373,10 @@ abstract class TableStructure implements TableStructureInterface {
         }
     }
 
-    /**
-     * @param string $columnName
-     * @return bool
-     */
     protected function _hasColumn(string $columnName): bool {
         return isset($this->columns[$columnName]);
     }
 
-    /**
-     * @param $relationName
-     * @return Relation
-     */
     protected function _getRelation(string $relationName): Relation {
         if (!$this->_hasRelation($relationName)) {
             $class = static::class;
@@ -396,10 +385,6 @@ abstract class TableStructure implements TableStructureInterface {
         return $this->relations[$relationName];
     }
 
-    /**
-     * @param string $relationName
-     * @return bool
-     */
     protected function _hasRelation(string $relationName): bool {
         return isset($this->relations[$relationName]);
     }
@@ -409,7 +394,6 @@ abstract class TableStructure implements TableStructureInterface {
      * @param \ReflectionMethod $method
      */
     protected function loadRelationConfigFromMethodReflection(\ReflectionMethod $method) {
-        /** @var \ReflectionMethod $method */
         $method->setAccessible(true);
         /** @var Relation $config */
         $config = $method->invoke($this);

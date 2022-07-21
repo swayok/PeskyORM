@@ -16,7 +16,7 @@ abstract class FakeTableStructure extends TableStructure {
 
     /**
      * @param string $tableName
-     * @param TableStructureInterface $tableStructureToCopy - use this table structure as parent class for a fake one
+     * @param TableStructureInterface|null $tableStructureToCopy - use this table structure as parent class for a fake one
      *      but replace its table name
      * @return FakeTableStructure|TableStructureInterface
      * @throws \InvalidArgumentException

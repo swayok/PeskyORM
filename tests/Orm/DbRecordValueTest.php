@@ -81,21 +81,17 @@ class DbRecordValueTest extends TestCase {
         static::assertNotEquals($clone->getCustomInfo(), $valueObj->getCustomInfo());
         static::assertEquals($clone->getRecord(), $valueObj->getRecord());
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $key argument for custom info must be a string or number but object received (column: 'id')
-     */
+    
     public function testInvalidGetCustomInfo() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$key argument for custom info must be a string or number but object received (column: 'id')");
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
         $valueObj->getCustomInfo($this);
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $key argument for custom info must be a string or number but object received (column: 'id')
-     */
+    
     public function testInvalidRemoveCustomInfo() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$key argument for custom info must be a string or number but object received (column: 'id')");
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
         $valueObj->removeCustomInfo($this);
     }
@@ -148,43 +144,37 @@ class DbRecordValueTest extends TestCase {
         $valueObj->setIsFromDb(true);
         static::assertTrue($valueObj->isItFromDb());
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Default value for column 'language' is not valid
-     */
+    
     public function testInvalidDefaultValue() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("Default value for column 'language' is not valid");
         $col = $this->getClonedColumn('language')->setDefaultValue('invalid');
         $valueObj = RecordValue::create($col, TestingAdmin::_());
         $valueObj->getDefaultValue();
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Fallback value of the default value for column 'parent_id' is not valid. Errors: Null value is not allowed
-     */
+    
     public function testInvalidDefaultValue2() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("Fallback value of the default value for column 'parent_id' is not valid. Errors: Null value is not allowed");
         $valueObj = RecordValue::create($this->getClonedColumn('parent_id')->disallowsNullValues(), TestingAdmin::_());
         $valueObj->getDefaultValue();
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Default value for column 'parent_id' is not valid. Errors: Null value is not allowed
-     */
+    
     public function testInvalidDefaultValue3() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("Default value for column 'parent_id' is not valid. Errors: Null value is not allowed");
         $valueObj = RecordValue::create(
             $this->getClonedColumn('parent_id')->disallowsNullValues()->setDefaultValue(null),
             TestingAdmin::_()
         );
         $valueObj->getDefaultValue();
     }
-
-    /**
-     * @expectedException \UnexpectedValueException
-     * @expectedExceptionMessage Default value received from validDefaultValueGetter closure for column 'parent_id' is not valid. Errors: Null value is not allowed
-     */
+    
     public function testInvalidDefaultValue4() {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage(
+            "Default value received from validDefaultValueGetter closure for column 'parent_id' is not valid. Errors: Null value is not allowed"
+        );
         $valueObj = RecordValue::create(
             $this->getClonedColumn('parent_id')
                 ->disallowsNullValues()
@@ -195,12 +185,12 @@ class DbRecordValueTest extends TestCase {
         );
         $valueObj->getDefaultValue();
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $value argument must be a string, integer, float or array to be able to validate if it is within allowed values
-     */
+    
     public function testInvalidDefaultValue5() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage(
+            "\$value argument must be a string, integer, float or array to be able to validate if it is within allowed values"
+        );
         $langCol = clone TestingAdminsTableStructure::getColumn('language');
         $langCol->setDefaultValue(DbExpr::create('test2'));
         $valueObj = RecordValue::create($langCol, TestingAdmin::_());
@@ -252,33 +242,27 @@ class DbRecordValueTest extends TestCase {
         $idColValueObj->setRawValue(2, 2, false)->setValidValue(2, 2);
         static::assertFalse($idColValueObj->isDefaultValueCanBeSet());
     }
-
-    /**
-     * @expectedException \BadMethodCallException
-     * @expectedExceptionMessage Value for column 'parent_id' is not set
-     */
+    
     public function testInvalidGetValue() {
+        $this->expectException(\BadMethodCallException::class);
+        $this->expectExceptionMessage("Value for column 'parent_id' is not set");
         $valueObj = RecordValue::create(
             TestingAdminsTableStructure::getColumn('parent_id'),
             TestingAdmin::newEmptyRecord()
         );
         $valueObj->getValue();
     }
-
-    /**
-     * @expectedException \BadMethodCallException
-     * @expectedExceptionMessage Old value is not set
-     */
+    
     public function testInvalidGetOldValue() {
+        $this->expectException(\BadMethodCallException::class);
+        $this->expectExceptionMessage("Old value is not set");
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
         $valueObj->getOldValue();
     }
-
-    /**
-     * @expectedException \BadMethodCallException
-     * @expectedExceptionMessage Old value is not set
-     */
+    
     public function testInvalidIsOldValueWasFromDb() {
+        $this->expectException(\BadMethodCallException::class);
+        $this->expectExceptionMessage("Old value is not set");
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
         $valueObj->isOldValueWasFromDb();
     }
@@ -314,12 +298,10 @@ class DbRecordValueTest extends TestCase {
         static::assertTrue($valueObj->isOldValueWasFromDb());
         static::assertEquals(3, $valueObj->getOldValue());
     }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage $rawValue argument for column 'parent_id' must be same as current raw value: NULL
-     */
+    
     public function testInvalidSetValidValue1() {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$rawValue argument for column 'parent_id' must be same as current raw value: NULL");
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
         $valueObj->setValidValue(1, 1);
     }
