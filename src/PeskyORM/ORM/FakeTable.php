@@ -6,8 +6,9 @@ use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbAdapterInterface;
 use Swayok\Utils\StringUtils;
 
-abstract class FakeTable extends Table {
-
+abstract class FakeTable extends Table
+{
+    
     protected $tableName;
     /** @var FakeTableStructure */
     protected $tableStructure;
@@ -16,26 +17,27 @@ abstract class FakeTable extends Table {
     protected $recordClass;
     /** @var DbAdapterInterface */
     protected $connection;
-
+    
     static private $fakesCreated = 0;
-
+    
     /**
      * @param TableInterface $tableToMimic
      * @param string $fakeTableName
      * @return FakeTable
      */
-    static public function mimicTable(TableInterface $tableToMimic, $fakeTableName) {
+    static public function mimicTable(TableInterface $tableToMimic, $fakeTableName)
+    {
         $reflection = new \ReflectionClass($tableToMimic);
         return static::makeNewFakeTable(
-                $fakeTableName,
-                $tableToMimic->getTableStructure(),
-                null,
-                $reflection->getInterfaceNames(),
-                $reflection->getTraitNames()
-            )
+            $fakeTableName,
+            $tableToMimic->getTableStructure(),
+            null,
+            $reflection->getInterfaceNames(),
+            $reflection->getTraitNames()
+        )
             ->setRecordClass(get_class($tableToMimic->newRecord()));
     }
-
+    
     /**
      * @param string $tableName
      * @param array|TableStructureInterface $columnsOrTableStructure
@@ -83,13 +85,14 @@ VIEW;
         $table = $fullClassName::getInstance();
         $table->tableName = $tableName;
         if (is_array($columnsOrTableStructure)) {
-            $table->getTableStructure()->setTableColumns($columnsOrTableStructure);
-        } else if ($columnsOrTableStructure instanceof TableStructureInterface) {
+            $table->getTableStructure()
+                ->setTableColumns($columnsOrTableStructure);
+        } elseif ($columnsOrTableStructure instanceof TableStructureInterface) {
             $table->setTableStructureToCopy($columnsOrTableStructure);
-        } else if ($columnsOrTableStructure !== null) {
+        } elseif ($columnsOrTableStructure !== null) {
             throw new \InvalidArgumentException(
                 '$columnsOrTableStructure argument must be an array, instance of DbAdapterInterface or null. '
-                    . gettype($columnsOrTableStructure) . ' received'
+                . gettype($columnsOrTableStructure) . ' received'
             );
         }
         if ($connection) {
@@ -102,58 +105,64 @@ VIEW;
      * @param bool $writable - true: connection must have access to write data into DB
      * @return DbAdapterInterface
      */
-    static public function getConnection($writable = false): DbAdapterInterface {
+    static public function getConnection($writable = false): DbAdapterInterface
+    {
         return static::getInstance()->connection ?: parent::getConnection($writable);
     }
-
+    
     /**
      * @param DbAdapterInterface $connection
      * @return $this
      */
-    public function setConnection(DbAdapterInterface $connection) {
+    public function setConnection(DbAdapterInterface $connection)
+    {
         $this->connection = $connection;
         return $this;
     }
-
+    
     /**
      * Table schema description
      * @return TableStructureInterface|FakeTableStructure
      */
-    public function getTableStructure() {
+    public function getTableStructure()
+    {
         if (!$this->tableStructure) {
             $this->tableStructure = FakeTableStructure::makeNewFakeStructure($this->tableName, $this->tableStructureToCopy);
         }
         return $this->tableStructure;
     }
-
+    
     /**
      * @param TableStructureInterface $tableStructure
      * @return $this
      */
-    public function setTableStructureToCopy(TableStructureInterface $tableStructure) {
+    public function setTableStructureToCopy(TableStructureInterface $tableStructure)
+    {
         $this->tableStructureToCopy = $tableStructure;
         return $this;
     }
-
+    
     /**
      * @return FakeRecord
      */
-    public function newRecord() {
+    public function newRecord()
+    {
         if (!$this->recordClass) {
             $this->recordClass = FakeRecord::makeNewFakeRecordClass($this);
         }
-        return new $this->recordClass;
+        return new $this->recordClass();
     }
-
+    
     /**
      * @param string $class
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setRecordClass($class) {
+    public function setRecordClass($class)
+    {
         if ($class instanceof RecordInterface) {
             $this->recordClass = get_class($class);
-        } else if (!class_exists($class) || !in_array(RecordInterface::class, class_implements($class), true)) {
+        } elseif (!class_exists($class) || !in_array(RecordInterface::class, class_implements($class), true)) {
             throw new \InvalidArgumentException('$class argument is not a class or it does not implement RecordInterface');
         } else {
             $this->recordClass = $class;

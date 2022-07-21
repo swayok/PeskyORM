@@ -7,60 +7,71 @@ use PeskyORM\Core\Utils;
 use PHPUnit\Framework\TestCase;
 use Tests\PeskyORMTest\TestingApp;
 
-class PostgresAdapterDeleteDataTest extends TestCase {
-
-    static public function setUpBeforeClass(): void {
+class PostgresAdapterDeleteDataTest extends TestCase
+{
+    
+    static public function setUpBeforeClass(): void
+    {
         TestingApp::clearTables(static::getValidAdapter());
     }
-
-    static public function tearDownAfterClass(): void {
+    
+    static public function tearDownAfterClass(): void
+    {
         TestingApp::clearTables(static::getValidAdapter());
     }
-
+    
     /**
      * @return \PeskyORM\Adapter\Postgres
      */
-    static protected function getValidAdapter() {
+    static protected function getValidAdapter()
+    {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
-
-    protected function setUp(): void {
+    
+    protected function setUp(): void
+    {
         TestingApp::clearTables(static::getValidAdapter());
     }
-
-    public function testDelete() {
+    
+    public function testDelete()
+    {
         $adapter = static::getValidAdapter();
         $testData1 = [
             ['key' => 'test_key1', 'value' => json_encode('test_value1')],
-            ['key' => 'test_key2', 'value' => json_encode('test_value2')]
+            ['key' => 'test_key2', 'value' => json_encode('test_value2')],
         ];
         $adapter->insertMany('settings', ['key', 'value'], $testData1);
         $rowsDeleted = $adapter->delete('settings', DbExpr::create("`key` = ``{$testData1[0]['key']}``"));
         $this->assertEquals(
-            $adapter->quoteDbExpr(DbExpr::create(
-                "DELETE FROM `settings` WHERE (`key` = ``{$testData1[0]['key']}``)",
-                false
-            )),
+            $adapter->quoteDbExpr(
+                DbExpr::create(
+                    "DELETE FROM `settings` WHERE (`key` = ``{$testData1[0]['key']}``)",
+                    false
+                )
+            ),
             $adapter->getLastQuery()
         );
         $this->assertEquals(1, $rowsDeleted);
         $count = Utils::getDataFromStatement(
-            $adapter->query(DbExpr::create(
-                "SELECT COUNT(*) FROM `settings` WHERE `key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``) GROUP BY `key`",
-                false
-            )),
+            $adapter->query(
+                DbExpr::create(
+                    "SELECT COUNT(*) FROM `settings` WHERE `key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``) GROUP BY `key`",
+                    false
+                )
+            ),
             Utils::FETCH_VALUE
         );
         $this->assertEquals(1, $count);
     }
-
-    public function testDeleteReturning() {
+    
+    public function testDeleteReturning()
+    {
         $adapter = static::getValidAdapter();
         $testData1 = [
             ['key' => 'test_key1', 'value' => json_encode('test_value1')],
-            ['key' => 'test_key2', 'value' => json_encode('test_value2')]
+            ['key' => 'test_key2', 'value' => json_encode('test_value2')],
         ];
         $insertedData = $adapter->insertMany('settings', ['key', 'value'], $testData1, [], true);
         $deletedRecords = $adapter->delete(
@@ -70,7 +81,7 @@ class PostgresAdapterDeleteDataTest extends TestCase {
         );
         $this->assertCount(2, $deletedRecords);
         $this->assertEquals($insertedData, $deletedRecords);
-
+        
         $insertedData = $adapter->insertMany('settings', ['key', 'value'], $testData1, [], ['id', 'value']);
         $deletedRecords = $adapter->delete(
             'settings',
@@ -80,5 +91,5 @@ class PostgresAdapterDeleteDataTest extends TestCase {
         $this->assertCount(2, $deletedRecords);
         $this->assertEquals($insertedData, $deletedRecords);
     }
-
+    
 }

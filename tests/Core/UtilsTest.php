@@ -10,36 +10,44 @@ use PHPUnit\Framework\TestCase;
 use Swayok\Utils\Set;
 use Tests\PeskyORMTest\TestingApp;
 
-class UtilsTest extends TestCase {
-
+class UtilsTest extends TestCase
+{
+    
     /** @var PostgresConfig */
     static protected $dbConnectionConfig;
-
-    static public function setUpBeforeClass(): void {
+    
+    static public function setUpBeforeClass(): void
+    {
         TestingApp::clearTables(static::getValidAdapter());
     }
-
-    static public function tearDownAfterClass(): void {
+    
+    static public function tearDownAfterClass(): void
+    {
         TestingApp::clearTables(static::getValidAdapter());
     }
-
-    protected function tearDown(): void {
+    
+    protected function tearDown(): void
+    {
         TestingApp::clearTables(static::getValidAdapter());
     }
-
-    static protected function fillTables() {
+    
+    static protected function fillTables()
+    {
         $data = static::getTestDataForAdminsTableInsert();
-        static::getValidAdapter()->insertMany('admins', array_keys($data[0]), $data);
+        static::getValidAdapter()
+            ->insertMany('admins', array_keys($data[0]), $data);
         return ['admins' => $data];
     }
-
-    static protected function getValidAdapter() {
+    
+    static protected function getValidAdapter()
+    {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
-
-    static public function getTestDataForAdminsTableInsert() {
+    
+    static public function getTestDataForAdminsTableInsert()
+    {
         return [
             [
                 'id' => 1,
@@ -56,7 +64,7 @@ class UtilsTest extends TestCase {
                 'is_active' => 1,
                 'name' => 'Lionel Freeman',
                 'email' => 'diam.at.pretium@idmollisnec.co.uk',
-                'timezone' => 'Europe/Moscow'
+                'timezone' => 'Europe/Moscow',
             ],
             [
                 'id' => 2,
@@ -73,12 +81,13 @@ class UtilsTest extends TestCase {
                 'is_active' => false,
                 'name' => 'Jasper Waller',
                 'email' => 'elit@eratvelpede.org',
-                'timezone' => 'Europe/Moscow'
-            ]
+                'timezone' => 'Europe/Moscow',
+            ],
         ];
     }
-
-    public function convertTestDataForAdminsTableAssert($data) {
+    
+    public function convertTestDataForAdminsTableAssert($data)
+    {
         foreach ($data as &$item) {
             $item['id'] = "{$item['id']}";
             $item['is_superadmin'] = (bool)$item['is_superadmin'];
@@ -88,15 +97,18 @@ class UtilsTest extends TestCase {
         return $data;
     }
     
-    public function testInvalidGetDataFromStatement1() {
+    public function testInvalidGetDataFromStatement1()
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Unknown processing type [???]");
         Utils::getDataFromStatement(new PDOStatement(), '???');
     }
-
-    public function testGetDataFromStatement() {
+    
+    public function testGetDataFromStatement()
+    {
         $testData = $this->convertTestDataForAdminsTableAssert(static::fillTables()['admins']);
-        $statement = static::getValidAdapter()->query(DbExpr::create('SELECT * FROM `admins`'));
+        $statement = static::getValidAdapter()
+            ->query(DbExpr::create('SELECT * FROM `admins`'));
         static::assertEquals(
             $testData,
             Utils::getDataFromStatement($statement, Utils::FETCH_ALL)
@@ -119,7 +131,8 @@ class UtilsTest extends TestCase {
             $testData[0]['id'],
             Utils::getDataFromStatement($statement, Utils::FETCH_VALUE)
         );
-        $statement = static::getValidAdapter()->query(DbExpr::create('SELECT * FROM `admins` WHERE `id` < ``0``'));
+        $statement = static::getValidAdapter()
+            ->query(DbExpr::create('SELECT * FROM `admins` WHERE `id` < ``0``'));
         static::assertEquals([], Utils::getDataFromStatement($statement, Utils::FETCH_ALL));
         $statement->closeCursor();
         $statement->execute();
@@ -132,45 +145,58 @@ class UtilsTest extends TestCase {
         static::assertEquals(null, Utils::getDataFromStatement($statement, Utils::FETCH_VALUE));
     }
     
-    public function testInvalidAssembleWhereConditionsFromArray1() {
+    public function testInvalidAssembleWhereConditionsFromArray1()
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$glue argument must be \"AND\" or \"OR\"");
-        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), [], function () {}, 'wow');
+        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), [], function () {
+        }, 'wow');
     }
     
-    public function testInvalidAssembleWhereConditionsFromArray3() {
+    public function testInvalidAssembleWhereConditionsFromArray3()
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage(
             "\$conditions argument may contain only objects of class DbExpr or AbstractSelect. Other objects are forbidden. Key: 0"
         );
-        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), [$this], function () {});
+        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), [$this], function () {
+        });
     }
     
-    public function testInvalidAssembleWhereConditionsFromArray4() {
+    public function testInvalidAssembleWhereConditionsFromArray4()
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Empty column name detected in \$conditions argument");
-        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['' => 'value'], function () {});
+        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['' => 'value'], function () {
+        });
     }
     
-    public function testInvalidAssembleWhereConditionsFromArray5() {
+    public function testInvalidAssembleWhereConditionsFromArray5()
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Empty column name detected in \$conditions argument");
-        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), [' =' => ['value']], function () {});
+        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), [' =' => ['value']], function () {
+        });
     }
     
-    public function testInvalidAssembleWhereConditionsFromArray6() {
+    public function testInvalidAssembleWhereConditionsFromArray6()
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Empty column name detected in \$conditions argument");
-        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['=' => ['value']], function () {});
+        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['=' => ['value']], function () {
+        });
     }
     
-    public function testInvalidAssembleWhereConditionsFromArray7() {
+    public function testInvalidAssembleWhereConditionsFromArray7()
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Condition operator [LIKE] does not support list of values");
-        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['col1 LIKE' => ['value']], function () {});
+        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['col1 LIKE' => ['value']], function () {
+        });
     }
-
-    public function testGluesInAssembleWhereConditionsFromArray() {
+    
+    public function testGluesInAssembleWhereConditionsFromArray()
+    {
         $adapter = static::getValidAdapter();
         $columnQuoter = function ($columnName) use ($adapter) {
             return $adapter->quoteDbEntityName($columnName);
@@ -244,8 +270,9 @@ class UtilsTest extends TestCase {
             )
         );
     }
-
-    public function testOperatorsInAssembleWhereConditionsFromArray() {
+    
+    public function testOperatorsInAssembleWhereConditionsFromArray()
+    {
         $adapter = static::getValidAdapter();
         $columnQuoter = function ($columnName) use ($adapter) {
             return $adapter->quoteDbEntityName($columnName);
@@ -344,7 +371,8 @@ class UtilsTest extends TestCase {
         );
     }
     
-    public function testValidationViaAssembleWhereConditionsFromArray() {
+    public function testValidationViaAssembleWhereConditionsFromArray()
+    {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("Value [aaa] for column name [test] is invalid");
         Utils::assembleWhereConditionsFromArray(
@@ -357,8 +385,9 @@ class UtilsTest extends TestCase {
             }
         );
     }
-
-    public function testDbExprUsageInAssembleWhereConditionsFromArray() {
+    
+    public function testDbExprUsageInAssembleWhereConditionsFromArray()
+    {
         $adapter = static::getValidAdapter();
         $columnQuoter = function ($columnName) use ($adapter) {
             return $adapter->quoteDbEntityName($columnName);

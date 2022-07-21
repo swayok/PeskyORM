@@ -11,31 +11,36 @@ use Swayok\Utils\NormalizeValue;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Tests\PeskyORMTest\TestingSettings\TestingSetting;
 
-class DbRecordValueHelpersTest extends TestCase {
-
-    public static function setUpBeforeClass(): void {
+class DbRecordValueHelpersTest extends TestCase
+{
+    
+    public static function setUpBeforeClass(): void
+    {
         date_default_timezone_set('UTC');
         parent::setUpBeforeClass();
     }
-
+    
     /**
      * @param string $type
      * @param mixed $value
      * @return RecordValue
      */
-    private function createDbRecordValue($type, $value) {
+    private function createDbRecordValue($type, $value)
+    {
         $obj = RecordValue::create(Column::create($type, 'test'), TestingSetting::_());
         $obj->setRawValue($value, $value, true)
             ->setValidValue($value, $value);
         return $obj;
     }
-
-    public function testGetErrorMessage() {
+    
+    public function testGetErrorMessage()
+    {
         static::assertEquals('test', RecordValueHelpers::getErrorMessage([], 'test'));
         static::assertEquals('not-a-test', RecordValueHelpers::getErrorMessage(['test' => 'not-a-test'], 'test'));
     }
-
-    public function testPreprocessValue() {
+    
+    public function testPreprocessValue()
+    {
         $column = Column::create(Column::TYPE_STRING, 'test');
         static::assertFalse($column->isValueTrimmingRequired());
         static::assertFalse($column->isEmptyStringMustBeConvertedToNull());
@@ -54,8 +59,9 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertTrue($column->isValueLowercasingRequired());
         static::assertEquals('upper', RecordValueHelpers::preprocessColumnValue($column, 'UPPER', false, false));
     }
-
-    public function testNormalizeBoolValue() {
+    
+    public function testNormalizeBoolValue()
+    {
         static::assertNull(RecordValueHelpers::normalizeValue(null, Column::TYPE_BOOL));
         static::assertTrue(RecordValueHelpers::normalizeValue('1', Column::TYPE_BOOL));
         static::assertTrue(RecordValueHelpers::normalizeValue(true, Column::TYPE_BOOL));
@@ -69,8 +75,9 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertFalse(RecordValueHelpers::normalizeValue('0', Column::TYPE_BOOL));
         static::assertFalse(RecordValueHelpers::normalizeValue(false, Column::TYPE_BOOL));
     }
-
-    public function testNormalizeIntAndUnixTimestampValue() {
+    
+    public function testNormalizeIntAndUnixTimestampValue()
+    {
         static::assertNull(RecordValueHelpers::normalizeValue(null, Column::TYPE_INT));
         static::assertNull(RecordValueHelpers::normalizeValue(null, Column::TYPE_UNIX_TIMESTAMP));
         static::assertEquals(1, RecordValueHelpers::normalizeValue('1', Column::TYPE_INT));
@@ -87,8 +94,9 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals(time(), RecordValueHelpers::normalizeValue(time() . '', Column::TYPE_UNIX_TIMESTAMP));
         static::assertEquals(0, RecordValueHelpers::normalizeValue('sasd', Column::TYPE_UNIX_TIMESTAMP));
     }
-
-    public function testNormalizeFloatValue() {
+    
+    public function testNormalizeFloatValue()
+    {
         static::assertNull(RecordValueHelpers::normalizeValue(null, Column::TYPE_FLOAT));
         static::assertEquals(1.00, RecordValueHelpers::normalizeValue('1', Column::TYPE_FLOAT));
         static::assertEquals(2.00, RecordValueHelpers::normalizeValue('2', Column::TYPE_FLOAT));
@@ -101,8 +109,9 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals(1.1, RecordValueHelpers::normalizeValue('1.1a9', Column::TYPE_FLOAT));
         static::assertEquals(0, RecordValueHelpers::normalizeValue('s1', Column::TYPE_FLOAT));
     }
-
-    public function testNormalizeDateValue() {
+    
+    public function testNormalizeDateValue()
+    {
         static::assertNull(RecordValueHelpers::normalizeValue(null, Column::TYPE_DATE));
         static::assertEquals(
             date(NormalizeValue::DATE_FORMAT, time()),
@@ -149,8 +158,9 @@ class DbRecordValueHelpersTest extends TestCase {
             RecordValueHelpers::normalizeValue('qqq', Column::TYPE_DATE)
         );
     }
-
-    public function testNormalizeTimeValue() {
+    
+    public function testNormalizeTimeValue()
+    {
         static::assertNull(RecordValueHelpers::normalizeValue(null, Column::TYPE_TIME));
         $now = time();
         static::assertEquals(
@@ -178,8 +188,9 @@ class DbRecordValueHelpersTest extends TestCase {
             RecordValueHelpers::normalizeValue('01:56', Column::TYPE_TIME)
         );
     }
-
-    public function testNormalizeDateTimeValue() {
+    
+    public function testNormalizeDateTimeValue()
+    {
         static::assertNull(RecordValueHelpers::normalizeValue(null, Column::TYPE_TIMESTAMP));
         static::assertEquals(
             date(NormalizeValue::DATETIME_FORMAT, time()),
@@ -226,8 +237,9 @@ class DbRecordValueHelpersTest extends TestCase {
             RecordValueHelpers::normalizeValue('qqq', Column::TYPE_TIMESTAMP)
         );
     }
-
-    public function testNormalizeDateTimeWithTzValue() {
+    
+    public function testNormalizeDateTimeWithTzValue()
+    {
         static::assertNull(RecordValueHelpers::normalizeValue(null, Column::TYPE_TIMESTAMP_WITH_TZ));
         static::assertEquals(
             date(NormalizeValue::DATETIME_WITH_TZ_FORMAT, time()),
@@ -280,8 +292,9 @@ class DbRecordValueHelpersTest extends TestCase {
         );
         date_default_timezone_set('UTC');
     }
-
-    public function testNormalizeJsonValue() {
+    
+    public function testNormalizeJsonValue()
+    {
         static::assertNull(RecordValueHelpers::normalizeValue(null, Column::TYPE_JSON));
         static::assertNull(RecordValueHelpers::normalizeValue(null, Column::TYPE_JSONB));
         static::assertEquals('[]', RecordValueHelpers::normalizeValue([], Column::TYPE_JSON));
@@ -304,8 +317,9 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals('10.1', RecordValueHelpers::normalizeValue(10.1, Column::TYPE_JSON));
         static::assertEquals(10.1, json_decode('10.1', true));
     }
-
-    public function testNormalizeFileAndImageValue() {
+    
+    public function testNormalizeFileAndImageValue()
+    {
         static::assertNull(RecordValueHelpers::normalizeValue(null, Column::TYPE_FILE));
         static::assertNull(RecordValueHelpers::normalizeValue(null, Column::TYPE_IMAGE));
         $file = [
@@ -323,16 +337,17 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals('image/jpeg', $normalized->getMimeType());
         static::assertEquals($file['size'], $normalized->getSize());
         static::assertEquals($file['error'], $normalized->getError());
-
+        
         $normalized2 = RecordValueHelpers::normalizeValue($file, Column::TYPE_IMAGE);
         static::assertInstanceOf(UploadedFile::class, $normalized2);
         static::assertEquals('image/jpeg', $normalized->getMimeType());
-
+        
         $normalized3 = RecordValueHelpers::normalizeValue($normalized, Column::TYPE_IMAGE);
         static::assertEquals($normalized, $normalized3);
     }
-
-    public function testNormalizeStringValue() {
+    
+    public function testNormalizeStringValue()
+    {
         static::assertNull(RecordValueHelpers::normalizeValue(null, Column::TYPE_IPV4_ADDRESS));
         static::assertNull(RecordValueHelpers::normalizeValue(null, Column::TYPE_STRING));
         static::assertEquals('string', RecordValueHelpers::normalizeValue('string', Column::TYPE_STRING));
@@ -342,22 +357,23 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals('1', RecordValueHelpers::normalizeValue(true, Column::TYPE_STRING));
         static::assertEquals('string', RecordValueHelpers::normalizeValue('string', Column::TYPE_IPV4_ADDRESS));
     }
-
-    public function testGetValueFormatterAndFormatsByTypeForTimestamps() {
+    
+    public function testGetValueFormatterAndFormatsByTypeForTimestamps()
+    {
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_UNIX_TIMESTAMP);
         static::assertNotEmpty($ret);
         static::assertIsArray($ret);
         static::assertCount(2, $ret);
         static::assertEquals(['date', 'time', 'unix_ts'], $ret[1]);
         static::assertInstanceOf(\Closure::class, $ret[0]);
-
+        
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_TIMESTAMP);
         static::assertNotEmpty($ret);
         static::assertIsArray($ret);
         static::assertCount(2, $ret);
         static::assertEquals(['date', 'time', 'unix_ts'], $ret[1]);
         static::assertInstanceOf(\Closure::class, $ret[0]);
-
+        
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_TIMESTAMP_WITH_TZ);
         static::assertNotEmpty($ret);
         static::assertIsArray($ret);
@@ -365,15 +381,16 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals(['date', 'time', 'unix_ts'], $ret[1]);
         static::assertInstanceOf(\Closure::class, $ret[0]);
     }
-
-    public function testGetValueFormatterAndFormatsByTypeForDateAndTime() {
+    
+    public function testGetValueFormatterAndFormatsByTypeForDateAndTime()
+    {
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_DATE);
         static::assertNotEmpty($ret);
         static::assertIsArray($ret);
         static::assertCount(2, $ret);
         static::assertEquals(['unix_ts'], $ret[1]);
         static::assertInstanceOf(\Closure::class, $ret[0]);
-
+        
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_TIME);
         static::assertNotEmpty($ret);
         static::assertIsArray($ret);
@@ -381,15 +398,16 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals(['unix_ts'], $ret[1]);
         static::assertInstanceOf(\Closure::class, $ret[0]);
     }
-
-    public function testGetValueFormatterAndFormatsByTypeForJson() {
+    
+    public function testGetValueFormatterAndFormatsByTypeForJson()
+    {
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_JSON);
         static::assertNotEmpty($ret);
         static::assertIsArray($ret);
         static::assertCount(2, $ret);
         static::assertEquals(['array', 'object'], $ret[1]);
         static::assertInstanceOf(\Closure::class, $ret[0]);
-
+        
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_JSONB);
         static::assertNotEmpty($ret);
         static::assertIsArray($ret);
@@ -397,8 +415,9 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals(['array', 'object'], $ret[1]);
         static::assertInstanceOf(\Closure::class, $ret[0]);
     }
-
-    public function testGetValueFormatterAndFormatsByTypeForOthers() {
+    
+    public function testGetValueFormatterAndFormatsByTypeForOthers()
+    {
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_STRING);
         static::assertNotEmpty($ret);
         static::assertIsArray($ret);
@@ -407,7 +426,8 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertNull($ret[0]);
     }
     
-    public function testInvalidFormatTimestamp1() {
+    public function testInvalidFormatTimestamp1()
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$format argument must be a string");
         RecordValueHelpers::formatTimestamp(
@@ -416,7 +436,8 @@ class DbRecordValueHelpersTest extends TestCase {
         );
     }
     
-    public function testInvalidFormatTimestamp2() {
+    public function testInvalidFormatTimestamp2()
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$format argument must be a string");
         RecordValueHelpers::formatTimestamp(
@@ -425,7 +446,8 @@ class DbRecordValueHelpersTest extends TestCase {
         );
     }
     
-    public function testInvalidFormatTimestamp3() {
+    public function testInvalidFormatTimestamp3()
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$format argument must be a string");
         RecordValueHelpers::formatTimestamp(
@@ -434,7 +456,8 @@ class DbRecordValueHelpersTest extends TestCase {
         );
     }
     
-    public function testInvalidFormatTimestamp4() {
+    public function testInvalidFormatTimestamp4()
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Requested value format 'not_existing_format' is not implemented");
         RecordValueHelpers::formatTimestamp(
@@ -442,34 +465,38 @@ class DbRecordValueHelpersTest extends TestCase {
             'not_existing_format'
         );
     }
-
-    public function testFormatTimestamp() {
+    
+    public function testFormatTimestamp()
+    {
         $valueObj = $this->createDbRecordValue(Column::TYPE_TIMESTAMP, '2016-09-01 01:02:03');
         static::assertEquals('2016-09-01', RecordValueHelpers::formatTimestamp($valueObj, 'date'));
         static::assertEquals('01:02:03', RecordValueHelpers::formatTimestamp($valueObj, 'time'));
         static::assertEquals(strtotime($valueObj->getValue()), RecordValueHelpers::formatTimestamp($valueObj, 'unix_ts'));
     }
-
-    public function testFormatDateOrTime() {
+    
+    public function testFormatDateOrTime()
+    {
         $valueObj = $this->createDbRecordValue(Column::TYPE_DATE, '2016-09-01');
         static::assertEquals(strtotime($valueObj->getValue()), RecordValueHelpers::formatDate($valueObj, 'unix_ts'));
-
+        
         $valueObj = $this->createDbRecordValue(Column::TYPE_TIME, '12:34:56');
         static::assertEquals(strtotime($valueObj->getValue()), RecordValueHelpers::formatDate($valueObj, 'unix_ts'));
     }
-
-    public function testFormatJson() {
+    
+    public function testFormatJson()
+    {
         $value = ['test' => 'value', 'val'];
         $valueObj = $this->createDbRecordValue(Column::TYPE_JSON, json_encode($value));
         static::assertEquals($value, RecordValueHelpers::formatJson($valueObj, 'array'));
         static::assertEquals(json_decode(json_encode($value)), RecordValueHelpers::formatJson($valueObj, 'object'));
-
+        
         $valueObj = $this->createDbRecordValue(Column::TYPE_JSONB, '"invalidjson');
         static::assertEquals(false, RecordValueHelpers::formatJson($valueObj, 'array'));
         static::assertEquals(false, RecordValueHelpers::formatJson($valueObj, 'object'));
     }
-
-    public function testIsValueFitsDataTypeBool() {
+    
+    public function testIsValueFitsDataTypeBool()
+    {
         $message = ['value_must_be_boolean'];
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_BOOL, false));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_BOOL, false));
@@ -492,8 +519,9 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('1', Column::TYPE_BOOL, true));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_BOOL, true));
     }
-
-    public function testIsValueFitsDataTypeInt() {
+    
+    public function testIsValueFitsDataTypeInt()
+    {
         $message = ['value_must_be_integer'];
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType(11, Column::TYPE_INT, false));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-11, Column::TYPE_INT, false));
@@ -523,8 +551,9 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11', Column::TYPE_INT, true));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_INT, true));
     }
-
-    public function testIsValueFitsDataTypeFloat() {
+    
+    public function testIsValueFitsDataTypeFloat()
+    {
         $message = ['value_must_be_float'];
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType(11, Column::TYPE_FLOAT, false));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11', Column::TYPE_FLOAT, false));
@@ -555,8 +584,9 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType(11.2, Column::TYPE_FLOAT, true));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('str', Column::TYPE_FLOAT, true));
     }
-
-    public function testIsValueFitsDataTypeDate() {
+    
+    public function testIsValueFitsDataTypeDate()
+    {
         $message = ['value_must_be_date'];
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType(time(), Column::TYPE_DATE, false));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('+1 day', Column::TYPE_DATE, false));
@@ -583,8 +613,9 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_DATE, true));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_DATE, true));
     }
-
-    public function testIsValueFitsDataTypeTime() {
+    
+    public function testIsValueFitsDataTypeTime()
+    {
         $message = ['value_must_be_time'];
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType(time(), Column::TYPE_TIME, false));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('+1 hour', Column::TYPE_TIME, false));
@@ -616,8 +647,9 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_TIME, true));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_TIME, true));
     }
-
-    public function testIsValueFitsDataTypeTimestamp() {
+    
+    public function testIsValueFitsDataTypeTimestamp()
+    {
         $message = ['value_must_be_timestamp'];
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType(time(), Column::TYPE_TIMESTAMP, false));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('+1 hour', Column::TYPE_TIMESTAMP, false));
@@ -637,7 +669,8 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_TIMESTAMP, false));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_TIMESTAMP, false));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_TIMESTAMP, false));
-        static::assertEquals(['timestamp'], RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_TIMESTAMP, false, ['value_must_be_timestamp' => 'timestamp']));
+        static::assertEquals(['timestamp'],
+            RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_TIMESTAMP, false, ['value_must_be_timestamp' => 'timestamp']));
         // for conditions
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('now', Column::TYPE_TIMESTAMP, true));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('2016-09-01', Column::TYPE_TIMESTAMP, true));
@@ -648,10 +681,10 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_TIMESTAMP, true));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_TIMESTAMP, true));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_TIMESTAMP, true));
-        
     }
-
-    public function testIsValueFitsDataTypeTimestampWithTz() {
+    
+    public function testIsValueFitsDataTypeTimestampWithTz()
+    {
         $message = ['value_must_be_timestamp_with_tz'];
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('+1 hour', Column::TYPE_TIMESTAMP_WITH_TZ, false));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('now', Column::TYPE_TIMESTAMP_WITH_TZ, false));
@@ -689,8 +722,9 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0, Column::TYPE_TIMESTAMP_WITH_TZ, true));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('0', Column::TYPE_TIMESTAMP_WITH_TZ, true));
     }
-
-    public function testIsValueFitsDataTypeTimezoneOffset() {
+    
+    public function testIsValueFitsDataTypeTimezoneOffset()
+    {
         $message = ['value_must_be_timezone_offset'];
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22:33', Column::TYPE_TIMEZONE_OFFSET, false));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('11:22', Column::TYPE_TIMEZONE_OFFSET, false));
@@ -729,8 +763,9 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('2016-09-01', Column::TYPE_TIMEZONE_OFFSET, true));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('01-09-2016 11:22:33', Column::TYPE_TIMEZONE_OFFSET, true));
     }
-
-    public function testIsValueFitsDataTypeIpV4Address() {
+    
+    public function testIsValueFitsDataTypeIpV4Address()
+    {
         $message = ['value_must_be_ipv4_address'];
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('192.168.0.0', Column::TYPE_IPV4_ADDRESS, false));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0.0.0.0', Column::TYPE_IPV4_ADDRESS, false));
@@ -761,7 +796,8 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.0, Column::TYPE_IPV4_ADDRESS, false));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('1.0', Column::TYPE_IPV4_ADDRESS, false));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0.0, Column::TYPE_IPV4_ADDRESS, false));
-        static::assertEquals(['ip'], RecordValueHelpers::isValueFitsDataType('0.0', Column::TYPE_IPV4_ADDRESS, false, ['value_must_be_ipv4_address' => 'ip']));
+        static::assertEquals(['ip'],
+            RecordValueHelpers::isValueFitsDataType('0.0', Column::TYPE_IPV4_ADDRESS, false, ['value_must_be_ipv4_address' => 'ip']));
         // for conditions
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('192.168.0.0', Column::TYPE_IPV4_ADDRESS, true));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0.0.0.0', Column::TYPE_IPV4_ADDRESS, true));
@@ -771,8 +807,9 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('-1.0.0.1', Column::TYPE_IPV4_ADDRESS, true));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('0.-1.0.1', Column::TYPE_IPV4_ADDRESS, true));
     }
-
-    public function testIsValueFitsDataTypeJson() {
+    
+    public function testIsValueFitsDataTypeJson()
+    {
         $message = ['value_must_be_json'];
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType([], Column::TYPE_JSON, false));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType(['a' => 'b'], Column::TYPE_JSON, false));
@@ -823,8 +860,9 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('{"a":}', Column::TYPE_JSON, true));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('{"a":"b",}', Column::TYPE_JSON, true));
     }
-
-    public function testIsValueFitsDataTypeEmail() {
+    
+    public function testIsValueFitsDataTypeEmail()
+    {
         $message = ['value_must_be_email'];
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('test@email.ru', Column::TYPE_EMAIL, false));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('test.test@email.ru', Column::TYPE_EMAIL, false));
@@ -846,7 +884,8 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_EMAIL, false));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('1.0', Column::TYPE_EMAIL, false));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(0.0, Column::TYPE_EMAIL, false));
-        static::assertEquals(['email'], RecordValueHelpers::isValueFitsDataType('0.0', Column::TYPE_EMAIL, false, ['value_must_be_email' => 'email']));
+        static::assertEquals(['email'],
+            RecordValueHelpers::isValueFitsDataType('0.0', Column::TYPE_EMAIL, false, ['value_must_be_email' => 'email']));
         // for conditions
         $altMessage = ['value_must_be_string'];
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('test.test@email.ru', Column::TYPE_EMAIL, true));
@@ -863,8 +902,9 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals($altMessage, RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_EMAIL, true));
         static::assertEquals($altMessage, RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_EMAIL, true));
     }
-
-    public function testIsValueFitsDataTypeString() {
+    
+    public function testIsValueFitsDataTypeString()
+    {
         $message = ['value_must_be_string'];
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('str', Column::TYPE_STRING, false));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('', Column::TYPE_STRING, false));
@@ -877,7 +917,8 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_STRING, false));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_STRING, false));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_STRING, false));
-        static::assertEquals(['string'], RecordValueHelpers::isValueFitsDataType(-1.25, Column::TYPE_STRING, false, ['value_must_be_string' => 'string']));
+        static::assertEquals(['string'],
+            RecordValueHelpers::isValueFitsDataType(-1.25, Column::TYPE_STRING, false, ['value_must_be_string' => 'string']));
         // for conditions
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('str', Column::TYPE_STRING, true));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('', Column::TYPE_STRING, true));
@@ -891,8 +932,9 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_STRING, true));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_STRING, true));
     }
-
-    public function testIsValueFitsDataTypeEnum() {
+    
+    public function testIsValueFitsDataTypeEnum()
+    {
         $message = ['value_must_be_string_or_numeric'];
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('str', Column::TYPE_ENUM, false));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('', Column::TYPE_ENUM, false));
@@ -905,7 +947,8 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_ENUM, false));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_ENUM, false));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_ENUM, false));
-        static::assertEquals(['enum'], RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_ENUM, false, ['value_must_be_string_or_numeric' => 'enum']));
+        static::assertEquals(['enum'],
+            RecordValueHelpers::isValueFitsDataType(true, Column::TYPE_ENUM, false, ['value_must_be_string_or_numeric' => 'enum']));
         // for conditions
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('str', Column::TYPE_ENUM, true));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('', Column::TYPE_ENUM, true));
@@ -916,8 +959,9 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_ENUM, true));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_ENUM, true));
     }
-
-    public function testIsValueFitsDataTypeUploadedFile() {
+    
+    public function testIsValueFitsDataTypeUploadedFile()
+    {
         $message = ['value_must_be_file'];
         $file = [
             'tmp_name' => __DIR__ . '/files/test_file.jpg',
@@ -942,43 +986,45 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_FILE, false));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_FILE, false));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(-1.0, Column::TYPE_FILE, false));
-
+        
         $badFile = $file;
         unset($badFile['tmp_name']);
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE, false));
-
+        
         $badFile = $file;
         unset($badFile['name']);
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE, false));
-
+        
         $badFile = $file;
         unset($badFile['type']);
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE, false));
-
+        
         $badFile = $file;
         unset($badFile['size']);
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE, false));
-
+        
         $badFile = $file;
         unset($badFile['error']);
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE, false));
-
+        
         $badFile = $file;
         $badFile['size'] = 0;
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE, false));
-
+        
         $badFile = $file;
         $badFile['size'] = -1;
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE, false));
-
+        
         $badFile = $file;
         $badFile['error'] = 1;
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType($badFile, Column::TYPE_FILE, false));
         $badFileObj = new UploadedFile($badFile['tmp_name'] . 'asd', $badFile['name'], $badFile['type'], $badFile['error']);
-        static::assertEquals(['file'], RecordValueHelpers::isValueFitsDataType($badFileObj, Column::TYPE_FILE, false, ['value_must_be_file' => 'file']));
+        static::assertEquals(['file'],
+            RecordValueHelpers::isValueFitsDataType($badFileObj, Column::TYPE_FILE, false, ['value_must_be_file' => 'file']));
     }
-
-    public function testIsValueFitsDataTypeUploadedImage() {
+    
+    public function testIsValueFitsDataTypeUploadedImage()
+    {
         $file = [
             'tmp_name' => __DIR__ . '/files/test_file.jpg',
             'name' => 'image.jpg',
@@ -1001,15 +1047,17 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE, false));
         $file['type'] = 'image/svg';
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE, false));
-
+        
         $file['type'] = 'text/plain';
         $file['tmp_name'] = __DIR__ . '/files/test_file_jpg';
         $fileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['error']);
-        static::assertEquals(['image'], RecordValueHelpers::isValueFitsDataType($fileObj, Column::TYPE_IMAGE, false, ['value_must_be_image' => 'image']));
+        static::assertEquals(['image'],
+            RecordValueHelpers::isValueFitsDataType($fileObj, Column::TYPE_IMAGE, false, ['value_must_be_image' => 'image']));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE, false));
     }
-
-    public function testIsValidDbColumnValue() {
+    
+    public function testIsValidDbColumnValue()
+    {
         $column = Column::create(Column::TYPE_STRING, 'test')
             ->disallowsNullValues()
             ->setAllowedValues(['abrakadabra']);
@@ -1033,14 +1081,16 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals(['value_must_be_integer'], RecordValueHelpers::isValidDbColumnValue($column, 'not_int', false, false));
     }
     
-    public function testInvalidColumnAllowedValuesForEnum() {
+    public function testInvalidColumnAllowedValuesForEnum()
+    {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("Enum column [test] is required to have a list of allowed values");
         $column = Column::create(Column::TYPE_ENUM, 'test');
         RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test', false);
     }
     
-    public function testInvalidValueForAllowedValues() {
+    public function testInvalidValueForAllowedValues()
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage(
             "\$value argument must be a string, integer, float or array to be able to validate if it is within allowed values"
@@ -1051,7 +1101,8 @@ class DbRecordValueHelpersTest extends TestCase {
         RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, $column, false);
     }
     
-    public function testInvalidValueForAllowedValues2() {
+    public function testInvalidValueForAllowedValues2()
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage(
             "\$value argument must be a string, integer, float or array to be able to validate if it is within allowed values"
@@ -1062,7 +1113,8 @@ class DbRecordValueHelpersTest extends TestCase {
         RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, $column, false);
     }
     
-    public function testInvalidValueForAllowedValues3() {
+    public function testInvalidValueForAllowedValues3()
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage(
             "\$value argument must be a string, integer, float or array to be able to validate if it is within allowed values"
@@ -1073,7 +1125,8 @@ class DbRecordValueHelpersTest extends TestCase {
         RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, null, false);
     }
     
-    public function testInvalidValueForAllowedValues4() {
+    public function testInvalidValueForAllowedValues4()
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage(
             "\$value argument must be a string, integer, float or array to be able to validate if it is within allowed values"
@@ -1083,13 +1136,14 @@ class DbRecordValueHelpersTest extends TestCase {
             ->setAllowedValues(['test']);
         RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, null, false);
     }
-
-    public function testIsValueWithinTheAllowedValuesOfTheEnumColumn() {
+    
+    public function testIsValueWithinTheAllowedValuesOfTheEnumColumn()
+    {
         $message1 = ['value_is_not_allowed'];
         $message2 = ['one_of_values_is_not_allowed'];
         $column = Column::create(Column::TYPE_ENUM, 'test')
             ->allowsNullValues()
-            ->setAllowedValues(['test' , 'test2']);
+            ->setAllowedValues(['test', 'test2']);
         static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test', false));
         static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test2', false));
         static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test'], false));
@@ -1102,11 +1156,12 @@ class DbRecordValueHelpersTest extends TestCase {
         static::assertEquals($message2, RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['ups'], false));
         static::assertEquals($message2, RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'ups'], false));
     }
-
-    public function testIsValueWithinTheAllowedValuesOfTheNotEnumColumn() {
+    
+    public function testIsValueWithinTheAllowedValuesOfTheNotEnumColumn()
+    {
         $column = Column::create(Column::TYPE_STRING, 'test')
             ->allowsNullValues()
-            ->setAllowedValues(['test' , 'test2']);
+            ->setAllowedValues(['test', 'test2']);
         static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test', false));
         static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'test2', false));
         static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test'], false));
@@ -1138,5 +1193,5 @@ class DbRecordValueHelpersTest extends TestCase {
         $column->convertsEmptyStringToNull();
         static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, '', false));
     }
-
+    
 }

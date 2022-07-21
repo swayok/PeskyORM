@@ -2,7 +2,8 @@
 
 namespace PeskyORM\Core;
 
-interface DbConnectionConfigInterface {
+interface DbConnectionConfigInterface
+{
     
     /**
      * @param array $config
@@ -32,7 +33,7 @@ interface DbConnectionConfigInterface {
      * @return string
      */
     public function getDbHost(): string;
-
+    
     /**
      * @return string
      */
@@ -47,7 +48,7 @@ interface DbConnectionConfigInterface {
      * @return string
      */
     public function getUserPassword(): string;
-
+    
     /**
      * Set options for PDO connection (key-value)
      * @param array $options
@@ -77,18 +78,18 @@ interface DbConnectionConfigInterface {
      * @return string|null
      */
     public function getDefaultSchemaName(): ?string;
-
+    
     /**
      * @param string|array $defaultSchemaName
      * @return $this
      */
     public function setDefaultSchemaName($defaultSchemaName);
-
+    
     /**
      * Do some action on connect (set charset, default db schema, etc)
      * @param \PDO $connection
      * @return $this
      */
     public function onConnect(\PDO $connection);
-
+    
 }

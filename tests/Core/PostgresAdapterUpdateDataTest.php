@@ -8,23 +8,28 @@ use PeskyORM\Core\Utils;
 use PHPUnit\Framework\TestCase;
 use Tests\PeskyORMTest\TestingApp;
 
-class PostgresAdapterUpdateDataTest extends TestCase {
-
-    static public function setUpBeforeClass(): void {
+class PostgresAdapterUpdateDataTest extends TestCase
+{
+    
+    static public function setUpBeforeClass(): void
+    {
         TestingApp::clearTables(static::getValidAdapter());
     }
-
-    static public function tearDownAfterClass(): void {
+    
+    static public function tearDownAfterClass(): void
+    {
         TestingApp::clearTables(static::getValidAdapter());
     }
-
-    static protected function getValidAdapter() {
+    
+    static protected function getValidAdapter()
+    {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
-
-    public function getTestDataForAdminsTableInsert() {
+    
+    public function getTestDataForAdminsTableInsert()
+    {
         return [
             [
                 'id' => 1,
@@ -41,7 +46,7 @@ class PostgresAdapterUpdateDataTest extends TestCase {
                 'is_active' => 1,
                 'name' => 'Lionel Freeman',
                 'email' => 'diam.at.pretium@idmollisnec.co.uk',
-                'timezone' => 'Europe/Moscow'
+                'timezone' => 'Europe/Moscow',
             ],
             [
                 'id' => 2,
@@ -58,12 +63,13 @@ class PostgresAdapterUpdateDataTest extends TestCase {
                 'is_active' => false,
                 'name' => 'Jasper Waller',
                 'email' => 'elit@eratvelpede.org',
-                'timezone' => 'Europe/Moscow'
-            ]
+                'timezone' => 'Europe/Moscow',
+            ],
         ];
     }
-
-    public function convertTestDataForAdminsTableAssert($data) {
+    
+    public function convertTestDataForAdminsTableAssert($data)
+    {
         foreach ($data as &$item) {
             $item['id'] = "{$item['id']}";
             $item['is_superadmin'] = (bool)$item['is_superadmin'];
@@ -72,40 +78,45 @@ class PostgresAdapterUpdateDataTest extends TestCase {
         }
         return $data;
     }
-
-    public function testUpdate() {
+    
+    public function testUpdate()
+    {
         $adapter = static::getValidAdapter();
         TestingApp::clearTables($adapter);
         $testData1 = [
             ['key' => 'test_key1', 'value' => json_encode('test_value1')],
-            ['key' => 'test_key2', 'value' => json_encode('test_value2')]
+            ['key' => 'test_key2', 'value' => json_encode('test_value2')],
         ];
         $adapter->insertMany('settings', ['key', 'value'], $testData1);
         $update1 = ['value' => json_encode('test_value1.1')];
         $adapter->update('settings', $update1, DbExpr::create("`key` = ``{$testData1[0]['key']}``"));
         $this->assertEquals(
-            $adapter->quoteDbExpr(DbExpr::create(
-                "UPDATE `settings` SET `value`=``\"test_value1.1\"`` WHERE (`key` = ``{$testData1[0]['key']}``)",
-                false
-            )),
+            $adapter->quoteDbExpr(
+                DbExpr::create(
+                    "UPDATE `settings` SET `value`=``\"test_value1.1\"`` WHERE (`key` = ``{$testData1[0]['key']}``)",
+                    false
+                )
+            ),
             $adapter->getLastQuery()
         );
         $data = Utils::getDataFromStatement(
-            $adapter->query(DbExpr::create(
-                "SELECT * FROM `settings` WHERE (`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)) ORDER BY `key`",
-                false
-            )),
+            $adapter->query(
+                DbExpr::create(
+                    "SELECT * FROM `settings` WHERE (`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)) ORDER BY `key`",
+                    false
+                )
+            ),
             Utils::FETCH_ALL
         );
         $this->assertArraySubset(array_replace($testData1[0], $update1), $data[0]);
         $this->assertArraySubset($testData1[1], $data[1]);
-
+        
         $testData2 = $this->getTestDataForAdminsTableInsert();
         $adapter->insertMany('admins', array_keys($testData2[0]), $testData2);
         $update2 = [
             'parent_id' => 1,
             'is_superadmin' => 0,
-            'is_active' => 0
+            'is_active' => 0,
         ];
         $adapter->update(
             'admins',
@@ -114,13 +125,15 @@ class PostgresAdapterUpdateDataTest extends TestCase {
             [
                 'parent_id' => PDO::PARAM_INT,
                 'is_superadmin' => PDO::PARAM_BOOL,
-                'is_active' => PDO::PARAM_BOOL
+                'is_active' => PDO::PARAM_BOOL,
             ]
         );
         $data = Utils::getDataFromStatement(
-            $adapter->query(DbExpr::create(
-                "SELECT * FROM `admins` WHERE `id` IN (``{$testData2[0]['id']}``,``{$testData2[1]['id']}``) ORDER BY `id`"
-            )),
+            $adapter->query(
+                DbExpr::create(
+                    "SELECT * FROM `admins` WHERE `id` IN (``{$testData2[0]['id']}``,``{$testData2[1]['id']}``) ORDER BY `id`"
+                )
+            ),
             Utils::FETCH_ALL
         );
         $testData2[0] = array_replace($testData2[0], $update2);
@@ -133,5 +146,5 @@ class PostgresAdapterUpdateDataTest extends TestCase {
         $this->assertEquals($dataForAssert[1]['is_active'], $data[1]['is_active']);
         $this->assertEquals($dataForAssert[1]['parent_id'], $data[1]['parent_id']);
     }
-
+    
 }

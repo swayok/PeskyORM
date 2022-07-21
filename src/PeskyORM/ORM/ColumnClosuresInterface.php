@@ -2,8 +2,9 @@
 
 namespace PeskyORM\ORM;
 
-interface ColumnClosuresInterface {
-
+interface ColumnClosuresInterface
+{
+    
     /**
      * Set value. Should also normalize and validate value
      * @param mixed $newValue
@@ -14,7 +15,7 @@ interface ColumnClosuresInterface {
      * @return RecordValue
      */
     static public function valueSetter($newValue, $isFromDb, RecordValue $valueContainer, $trustDataReceivedFromDb);
-
+    
     /**
      * Slightly modify value before validation and value setter. Uses $column->isEmptyStringMustBeConvertedToNull(),
      * $column->isValueLowercasingRequired() and $column->isValueTrimmingRequired()
@@ -25,7 +26,7 @@ interface ColumnClosuresInterface {
      * @return mixed
      */
     static public function valuePreprocessor($value, bool $isFromDb, bool $isForValidation, Column $column);
-
+    
     /**
      * Get value
      * @param RecordValue $value
@@ -33,7 +34,7 @@ interface ColumnClosuresInterface {
      * @return mixed
      */
     static public function valueGetter(RecordValue $value, $format = null);
-
+    
     /**
      * Tests if value is set
      * @param RecordValue $valueContainer
@@ -41,7 +42,7 @@ interface ColumnClosuresInterface {
      * @return bool
      */
     static public function valueExistenceChecker(RecordValue $valueContainer, $checkDefaultValue = false);
-
+    
     /**
      * Validates value. Uses valueValidatorExtender
      * @param RecordValue|mixed $value
@@ -51,7 +52,7 @@ interface ColumnClosuresInterface {
      * @return array
      */
     static public function valueValidator($value, $isFromDb, $isForCondition, Column $column);
-
+    
     /**
      * Extends value validation in addition to valueValidator
      * @param mixed $value
@@ -60,7 +61,7 @@ interface ColumnClosuresInterface {
      * @return array - list of error messages (empty list = no errors)
      */
     static public function valueValidatorExtender($value, $isFromDb, Column $column);
-
+    
     /**
      * Validates if value is allowed
      * @param RecordValue|mixed $value
@@ -69,7 +70,7 @@ interface ColumnClosuresInterface {
      * @return array
      */
     static public function valueIsAllowedValidator($value, $isFromDb, Column $column);
-
+    
     /**
      * Normalize value to fit column's data type
      * @param mixed $value
@@ -78,7 +79,7 @@ interface ColumnClosuresInterface {
      * @return mixed
      */
     static public function valueNormalizer($value, $isFromDb, Column $column);
-
+    
     /**
      * Additional actions after value saving to DB (or instead of saving if column does not exist in DB)
      * @param RecordValue $valueContainer
@@ -87,7 +88,7 @@ interface ColumnClosuresInterface {
      * @return void
      */
     static public function valueSavingExtender(RecordValue $valueContainer, $isUpdate, array $savedData);
-
+    
     /**
      * Additional actions after record deleted from DB
      * @param RecordValue $valueContainer
@@ -95,7 +96,7 @@ interface ColumnClosuresInterface {
      * @return void
      */
     static public function valueDeleteExtender(RecordValue $valueContainer, $deleteFiles);
-
+    
     /**
      * Formats value according to required $format
      * @param RecordValue $valueContainer
@@ -103,7 +104,7 @@ interface ColumnClosuresInterface {
      * @return mixed
      */
     static public function valueFormatter(RecordValue $valueContainer, $format);
-
+    
     /**
      * List of available formatters for a column. Required for service purposes.
      * @param Column $column
@@ -111,5 +112,5 @@ interface ColumnClosuresInterface {
      * @return array
      */
     static public function getValueFormats(Column $column, array $additionalFormats = []);
-
+    
 }

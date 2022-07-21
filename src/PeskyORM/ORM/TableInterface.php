@@ -5,7 +5,8 @@ namespace PeskyORM\ORM;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 
-interface TableInterface {
+interface TableInterface
+{
     
     /**
      * Table Name
@@ -36,7 +37,7 @@ interface TableInterface {
      * @return TableStructure
      */
     static public function getStructure(): TableStructureInterface;
-
+    
     /**
      * Table schema description
      * @return TableStructure
@@ -65,7 +66,7 @@ interface TableInterface {
      * @return mixed
      */
     static public function getPkColumnName(): string;
-
+    
     /**
      * @return Record
      */
@@ -75,8 +76,8 @@ interface TableInterface {
      * @param bool $useWritableConnection
      * @return null|string
      */
-    static public function getLastQuery(bool $useWritableConnection): ?string ;
-
+    static public function getLastQuery(bool $useWritableConnection): ?string;
+    
     /**
      * @param string|DbExpr $query
      * @return int|array = array: returned if $returning argument is not empty
@@ -89,7 +90,7 @@ interface TableInterface {
      * @return \PDOStatement|array
      */
     static public function query($query, ?string $fetchData = null);
-
+    
     /**
      * @param string|array $columns
      * @param array $conditions
@@ -146,7 +147,7 @@ interface TableInterface {
      * @throws \InvalidArgumentException
      */
     static public function selectValue(DbExpr $expression, array $conditions = [], ?\Closure $configurator = null): ?string;
-
+    
     /**
      * Does table contain any record matching provided condition
      * @param array $conditions
@@ -175,17 +176,17 @@ interface TableInterface {
      * @return bool
      */
     static public function inTransaction(): bool;
-
+    
     /**
      * @return void
      */
     static public function commitTransaction();
-
+    
     /**
      * @return void
      */
     static public function rollBackTransaction();
-
+    
     /**
      * @param array $data
      * @param bool|array $returning - return some data back after $data inserted to $table
@@ -197,7 +198,7 @@ interface TableInterface {
      * @throws \InvalidArgumentException
      */
     static public function insert(array $data, $returning = false);
-
+    
     /**
      * @param array $columns - list of column names to insert data for
      * @param array $rows - data to insert
@@ -210,7 +211,7 @@ interface TableInterface {
      * @throws \PDOException
      */
     static public function insertMany(array $columns, array $rows, $returning = false);
-
+    
     /**
      * @param array $data - key-value array where key = table column and value = value of associated column
      * @param array $conditions - WHERE conditions
@@ -225,7 +226,7 @@ interface TableInterface {
      * @throws \InvalidArgumentException
      */
     static public function update(array $data, array $conditions, $returning = false);
-
+    
     /**
      * @param array $conditions - WHERE conditions
      * @param bool|array $returning - return some data back after $data inserted to $table
@@ -244,5 +245,5 @@ interface TableInterface {
      * @return DbExpr
      */
     static public function getExpressionToSetDefaultValueForAColumn(): DbExpr;
-
+    
 }

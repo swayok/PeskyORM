@@ -6,13 +6,16 @@ require_once __DIR__ . '/PostgresAdapterSelectDataTest.php';
 
 use Tests\PeskyORMTest\TestingApp;
 
-class MysqlAdapterSelectDataTest extends PostgresAdapterSelectDataTest {
-
-    static protected function getValidAdapter() {
+class MysqlAdapterSelectDataTest extends PostgresAdapterSelectDataTest
+{
+    
+    static protected function getValidAdapter()
+    {
         return TestingApp::getMysqlConnection();
     }
-
-    public function convertTestDataForAdminsTableAssert($data) {
+    
+    public function convertTestDataForAdminsTableAssert($data)
+    {
         foreach ($data as &$item) {
             $item['id'] = "{$item['id']}";
             $item['is_superadmin'] = $item['is_superadmin'] ? '1' : '0';

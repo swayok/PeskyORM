@@ -12,21 +12,24 @@ use ReflectionMethod;
 use Tests\PeskyORMTest\TestingApp;
 use TypeError;
 
-class PostgresAdapterHelpersTest extends TestCase {
-
-    static protected function getValidAdapter() {
+class PostgresAdapterHelpersTest extends TestCase
+{
+    
+    static protected function getValidAdapter()
+    {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
-
+    
     /**
      * @param string $methodName
      * @param mixed $arg
      * @param mixed $arg2
      * @return ReflectionMethod
      */
-    protected function invokePrivateAdapterMethod($methodName, $arg, $arg2 = '__NOT_SET__') {
+    protected function invokePrivateAdapterMethod($methodName, $arg, $arg2 = '__NOT_SET__')
+    {
         $adapter = static::getValidAdapter();
         $method = (new ReflectionClass($adapter))->getMethod($methodName);
         $method->setAccessible(true);
@@ -37,181 +40,211 @@ class PostgresAdapterHelpersTest extends TestCase {
         }
     }
     
-    public function testInvalidTable() {
+    public function testInvalidTable()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$table argument cannot be empty");
         $this->invokePrivateAdapterMethod('guardTableNameArg', null);
     }
     
-    public function testInvalidTable2() {
+    public function testInvalidTable2()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$table argument cannot be empty");
         $this->invokePrivateAdapterMethod('guardTableNameArg', '');
     }
     
-    public function testInvalidTable3() {
+    public function testInvalidTable3()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$table argument cannot be empty");
         $this->invokePrivateAdapterMethod('guardTableNameArg', false);
     }
     
-    public function testInvalidTable4() {
+    public function testInvalidTable4()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$table argument cannot be empty");
         $this->invokePrivateAdapterMethod('guardTableNameArg', true);
     }
     
-    public function testInvalidTable5() {
+    public function testInvalidTable5()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$table argument cannot be empty");
         $this->invokePrivateAdapterMethod('guardTableNameArg', new Exception('test'));
     }
     
-    public function testInvalidTable6() {
+    public function testInvalidTable6()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$table argument cannot be empty");
         $this->invokePrivateAdapterMethod('guardTableNameArg', 123);
     }
     
-    public function testInvalidData() {
+    public function testInvalidData()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$data argument cannot be empty");
         $this->invokePrivateAdapterMethod('guardDataArg', []);
     }
     
-    public function testInvalidData2() {
+    public function testInvalidData2()
+    {
         $this->expectException(TypeError::class);
         $this->expectExceptionMessage("guardDataArg() must be of the type array");
         $this->invokePrivateAdapterMethod('guardDataArg', 'test');
     }
     
-    public function testInvalidColumns() {
+    public function testInvalidColumns()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$columns argument cannot be empty");
         $this->invokePrivateAdapterMethod('guardColumnsArg', []);
     }
     
-    public function testInvalidColumns2() {
+    public function testInvalidColumns2()
+    {
         $this->expectException(TypeError::class);
         $this->expectExceptionMessage("guardColumnsArg() must be of the type array");
         $this->invokePrivateAdapterMethod('guardColumnsArg', 'test');
     }
     
-    public function testInvalidColumns3() {
+    public function testInvalidColumns3()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$columns argument must contain only strings and DbExpr objects");
         $this->invokePrivateAdapterMethod('guardColumnsArg', [$this]);
     }
     
-    public function testInvalidColumns4() {
+    public function testInvalidColumns4()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$columns argument must contain only strings");
         $this->invokePrivateAdapterMethod('guardColumnsArg', [DbExpr::create('test')], false);
     }
     
-    public function testInvalidConditions() {
+    public function testInvalidConditions()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$conditions argument is not allowed to be empty");
         $this->invokePrivateAdapterMethod('guardConditionsArg', '');
     }
     
-    public function testInvalidConditions2() {
+    public function testInvalidConditions2()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$conditions argument must be a string or DbExpr object");
         $this->invokePrivateAdapterMethod('guardConditionsArg', []);
     }
     
-    public function testInvalidConditions3() {
+    public function testInvalidConditions3()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$conditions argument must be a string or DbExpr object");
         $this->invokePrivateAdapterMethod('guardConditionsArg', new Exception('test'));
     }
     
-    public function testInvalidConditions4() {
+    public function testInvalidConditions4()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$conditions argument must be a string or DbExpr object");
         $this->invokePrivateAdapterMethod('guardConditionsArg', false);
     }
     
-    public function testInvalidConditions5() {
+    public function testInvalidConditions5()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$conditions argument must be a string or DbExpr object");
         $this->invokePrivateAdapterMethod('guardConditionsArg', true);
     }
     
-    public function testInvalidConditions6() {
+    public function testInvalidConditions6()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$conditions argument must be a string or DbExpr object");
         $this->invokePrivateAdapterMethod('guardConditionsArg', 123);
     }
     
-    public function testInvalidConditionsAndOptions() {
+    public function testInvalidConditionsAndOptions()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$conditionsAndOptions argument must be an instance of DbExpr class");
         $this->invokePrivateAdapterMethod('guardConditionsAndOptionsArg', 123);
     }
     
-    public function testInvalidConditionsAndOptions2() {
+    public function testInvalidConditionsAndOptions2()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$conditionsAndOptions argument must be an instance of DbExpr class");
         $this->invokePrivateAdapterMethod('guardConditionsAndOptionsArg', $this);
     }
     
-    public function testInvalidConditionsAndOptions3() {
+    public function testInvalidConditionsAndOptions3()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$conditionsAndOptions argument must be an instance of DbExpr class");
         $this->invokePrivateAdapterMethod('guardConditionsAndOptionsArg', 'string');
     }
     
-    public function testInvalidReturning() {
+    public function testInvalidReturning()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$returning argument must be array or boolean");
         $this->invokePrivateAdapterMethod('guardReturningArg', '*');
     }
     
-    public function testInvalidReturning2() {
+    public function testInvalidReturning2()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$returning argument must be array or boolean");
         $this->invokePrivateAdapterMethod('guardReturningArg', new Exception('test'));
     }
     
-    public function testInvalidReturning3() {
+    public function testInvalidReturning3()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$returning argument must be array or boolean");
         $this->invokePrivateAdapterMethod('guardReturningArg', 123);
     }
     
-    public function testInvalidPkName() {
+    public function testInvalidPkName()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$pkName argument cannot be empty");
         $this->invokePrivateAdapterMethod('guardPkNameArg', '');
     }
     
-    public function testInvalidPkName2() {
+    public function testInvalidPkName2()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$pkName argument must be a string");
         $this->invokePrivateAdapterMethod('guardPkNameArg', true);
     }
     
-    public function testInvalidPkName3() {
+    public function testInvalidPkName3()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$pkName argument cannot be empty");
         $this->invokePrivateAdapterMethod('guardPkNameArg', []);
     }
     
-    public function testInvalidPkName4() {
+    public function testInvalidPkName4()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Invalid db entity name");
         $this->invokePrivateAdapterMethod('guardPkNameArg', 'teasd as das d 90as9()');
     }
     
-    public function testInvalidPkName5() {
+    public function testInvalidPkName5()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$pkName argument must be a string");
         $this->invokePrivateAdapterMethod('guardPkNameArg', DbExpr::create('test'));
     }
-
-    public function testValidArgs() {
+    
+    public function testValidArgs()
+    {
         $this->invokePrivateAdapterMethod('guardTableNameArg', 'table');
         $this->invokePrivateAdapterMethod('guardDataArg', ['key' => 'value']);
         $this->invokePrivateAdapterMethod('guardColumnsArg', ['key1', DbExpr::create('key2')]);
@@ -222,16 +255,18 @@ class PostgresAdapterHelpersTest extends TestCase {
         $this->invokePrivateAdapterMethod('guardReturningArg', ['key1', 'key2']);
     }
     
-    public function testInvalidConvertConditionOperator() {
+    public function testInvalidConvertConditionOperator()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Condition operator [>=] does not support list of values");
         $adapter = self::getValidAdapter();
         $adapter->convertConditionOperator('>=', [1, 2, 3]);
     }
-
-    public function testConvertConditionOperatorForNullValue() {
+    
+    public function testConvertConditionOperatorForNullValue()
+    {
         $adapter = self::getValidAdapter();
-
+        
         $operator = $adapter->convertConditionOperator('=', null);
         static::assertEquals('IS', $operator);
         $operator = $adapter->convertConditionOperator('IS', null);
@@ -240,55 +275,57 @@ class PostgresAdapterHelpersTest extends TestCase {
         static::assertEquals('IS', $operator);
         $operator = $adapter->convertConditionOperator('OPER', null);
         static::assertEquals('IS', $operator);
-
+        
         $operator = $adapter->convertConditionOperator('IS', '1');
         static::assertEquals('=', $operator);
-
+        
         $operator = $adapter->convertConditionOperator('!=', null);
         static::assertEquals('IS NOT', $operator);
         $operator = $adapter->convertConditionOperator('NOT', null);
         static::assertEquals('IS NOT', $operator);
         $operator = $adapter->convertConditionOperator('IS NOT', null);
         static::assertEquals('IS NOT', $operator);
-
+        
         $operator = $adapter->convertConditionOperator('NOT', '1');
         static::assertEquals('!=', $operator);
         $operator = $adapter->convertConditionOperator('IS NOT', '1');
         static::assertEquals('!=', $operator);
     }
-
-    public function testConvertConditionOperatorForArrayValue() {
+    
+    public function testConvertConditionOperatorForArrayValue()
+    {
         $adapter = self::getValidAdapter();
-
+        
         $operator = $adapter->convertConditionOperator('=', [1, 2, 3]);
         static::assertEquals('IN', $operator);
         $operator = $adapter->convertConditionOperator('!=', [1, 2, 3]);
         static::assertEquals('NOT IN', $operator);
-
+        
         $operator = $adapter->convertConditionOperator('IN', 1);
         static::assertEquals('=', $operator);
         $operator = $adapter->convertConditionOperator('NOT IN', 1);
         static::assertEquals('!=', $operator);
-
+        
         $operator = $adapter->convertConditionOperator('IN', [1, 2, 3]);
         static::assertEquals('IN', $operator);
         $operator = $adapter->convertConditionOperator('NOT IN', [1, 2, 3]);
         static::assertEquals('NOT IN', $operator);
-
+        
         $operator = $adapter->convertConditionOperator('IN', DbExpr::create('SELECT'));
         static::assertEquals('IN', $operator);
         $operator = $adapter->convertConditionOperator('NOT IN', DbExpr::create('SELECT'));
         static::assertEquals('NOT IN', $operator);
     }
-
-    public function testConvertConditionOperator() {
+    
+    public function testConvertConditionOperator()
+    {
         $adapter = self::getValidAdapter();
-
+        
         $operator = $adapter->convertConditionOperator('BETWEEN', [1, 2, 3]);
         static::assertEquals('BETWEEN', $operator);
         $operator = $adapter->convertConditionOperator('NOT BETWEEN', 'oo');
         static::assertEquals('NOT BETWEEN', $operator);
-
+        
         $operator = $adapter->convertConditionOperator('>', 1);
         static::assertEquals('>', $operator);
         $operator = $adapter->convertConditionOperator('<', 'a');
@@ -300,102 +337,123 @@ class PostgresAdapterHelpersTest extends TestCase {
         $operator = $adapter->convertConditionOperator('NOT LIKE', 'ewqewqe');
         static::assertEquals('NOT LIKE', $operator);
     }
-
-    public function testConvertConditionOperatorForStringComparison() {
+    
+    public function testConvertConditionOperatorForStringComparison()
+    {
         $adapter = self::getValidAdapter();
-
+        
         $operator = $adapter->convertConditionOperator('SIMILAR TO', 'qwe');
         static::assertEquals('SIMILAR TO', $operator);
         $operator = $adapter->convertConditionOperator('NOT SIMILAR TO', 'qwe');
         static::assertEquals('NOT SIMILAR TO', $operator);
-
+        
         $operator = $adapter->convertConditionOperator('REGEXP', 'wqe');
         static::assertEquals('~*', $operator);
         $operator = $adapter->convertConditionOperator('NOT REGEXP', 'ewqe');
         static::assertEquals('!~*', $operator);
-
+        
         $operator = $adapter->convertConditionOperator('REGEX', 'weq');
         static::assertEquals('~*', $operator);
         $operator = $adapter->convertConditionOperator('NOT REGEX', 'qwe');
         static::assertEquals('!~*', $operator);
-
+        
         $operator = $adapter->convertConditionOperator('~', 'ewq');
         static::assertEquals('~', $operator);
         $operator = $adapter->convertConditionOperator('!~', 'ewqe');
         static::assertEquals('!~', $operator);
-
+        
         $operator = $adapter->convertConditionOperator('~*', 'ewqe');
         static::assertEquals('~*', $operator);
         $operator = $adapter->convertConditionOperator('!~*', 'ewqe');
         static::assertEquals('!~*', $operator);
     }
     
-    public function testInvalidArgsInMakeSelectQuery() {
+    public function testInvalidArgsInMakeSelectQuery()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$table argument cannot be empty and must be a non-numeric string");
         $adapter = self::getValidAdapter();
         $adapter->makeSelectQuery('');
     }
     
-    public function testInvalidArgsInMakeSelectQuery2() {
+    public function testInvalidArgsInMakeSelectQuery2()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$columns argument must contain only strings and DbExpr objects");
         $adapter = self::getValidAdapter();
         $adapter->makeSelectQuery('table', [$this]);
     }
     
-    public function testInvalidArgsInMakeSelectQuery3() {
+    public function testInvalidArgsInMakeSelectQuery3()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$conditionsAndOptions argument must be an instance of DbExpr class");
         $adapter = self::getValidAdapter();
         $adapter->makeSelectQuery('table', [], 'string');
     }
-
-    public function testMakeSelectQuery() {
+    
+    public function testMakeSelectQuery()
+    {
         $adapter = self::getValidAdapter();
-
+        
         $query = $adapter->makeSelectQuery('test_table', ['col1', DbExpr::create('`col2` as `col22`')]);
         static::assertEquals(
-            $adapter->quoteDbExpr(DbExpr::create(
-                'SELECT `col1`,' . '(`col2` as `col22`) FROM `test_table`', //< concatenation needed to avoid annoying PHPStorm inspections
-                false
-            )),
+            $adapter->quoteDbExpr(
+                DbExpr::create(
+                    'SELECT `col1`,' . '(`col2` as `col22`) FROM `test_table`', //< concatenation needed to avoid annoying PHPStorm inspections
+                    false
+                )
+            ),
             $query
         );
-
+        
         $query = $adapter->makeSelectQuery('test_table', [], DbExpr::create('WHERE `col1` > ``0``', false));
         static::assertEquals(
-            $adapter->quoteDbExpr(DbExpr::create(
-                'SELECT `*`' . ' FROM `test_table` WHERE `col1` > ``0``', //< concatenation needed to avoid annoying PHPStorm inspections
-                false
-            )),
+            $adapter->quoteDbExpr(
+                DbExpr::create(
+                    'SELECT `*`' . ' FROM `test_table` WHERE `col1` > ``0``', //< concatenation needed to avoid annoying PHPStorm inspections
+                    false
+                )
+            ),
             $query
         );
     }
-
-    public function testQuoteJsonSelectorExpression() {
+    
+    public function testQuoteJsonSelectorExpression()
+    {
         static::assertEquals(
             '"table"."col_name"->\'key1\'->>\'key 2\'#>\'key 3\'#>>\'key 4\'',
             $this->invokePrivateAdapterMethod('quoteJsonSelectorExpression', [
-                'table.col_name', '->', 'key1', '->>', '"key 2"', '#>', '`key 3`', '#>>', "'key 4'"
+                'table.col_name',
+                '->',
+                'key1',
+                '->>',
+                '"key 2"',
+                '#>',
+                '`key 3`',
+                '#>>',
+                "'key 4'",
             ])
         );
         static::assertEquals(
             '"table"."col_name"->2',
             $this->invokePrivateAdapterMethod('quoteJsonSelectorExpression', [
-                'table.col_name', '->', '2'
+                'table.col_name',
+                '->',
+                '2',
             ])
         );
     }
     
     /** @noinspection PhpUnitAssertTrueWithIncompatibleTypeArgumentInspection */
-    public function testIsValidDbEntityNameAndJsonSelector() {
+    public function testIsValidDbEntityNameAndJsonSelector()
+    {
         static::assertTrue($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test->test'));
         static::assertTrue($this->invokePrivateAdapterMethod('isValidJsonSelector', '_test #> `test`'));
         static::assertTrue($this->invokePrivateAdapterMethod('isValidJsonSelector', 't2est ->>"test"'));
         static::assertTrue($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test->> \'test\''));
         static::assertTrue($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test->test->>test#>test#>>test'));
-
+        
         static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', ''));
         static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test->'));
         static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', '->test'));
@@ -406,13 +464,13 @@ class PostgresAdapterHelpersTest extends TestCase {
         static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', '0test test->test'));
         static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', '$test test->test'));
         static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test#test->test'));
-
+        
         static::assertTrue($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test'));
         static::assertTrue($this->invokePrivateAdapterMethod('isValidDbEntityName', '_test._test2'));
         static::assertTrue($this->invokePrivateAdapterMethod('isValidDbEntityName', 't2est.*'));
         static::assertTrue($this->invokePrivateAdapterMethod('isValidDbEntityName', '*'));
         static::assertTrue($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test->test'));
-
+        
         static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test test'));
         static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', '0test'));
         static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', '$test'));
@@ -421,73 +479,96 @@ class PostgresAdapterHelpersTest extends TestCase {
         static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test->test', false));
     }
     
-    public function testInvalidAssembleConditionValue11() {
+    public function testInvalidAssembleConditionValue11()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Condition value for BETWEEN and NOT BETWEEN operator must be an array with 2 values: [min, max]");
-        static::getValidAdapter()->assembleConditionValue(null, 'BETWEEN');
+        static::getValidAdapter()
+            ->assembleConditionValue(null, 'BETWEEN');
     }
     
-    public function testInvalidAssembleConditionValue12() {
+    public function testInvalidAssembleConditionValue12()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Condition value for BETWEEN and NOT BETWEEN operator must be an array with 2 values: [min, max]");
-        static::getValidAdapter()->assembleConditionValue(1, 'NOT BETWEEN');
+        static::getValidAdapter()
+            ->assembleConditionValue(1, 'NOT BETWEEN');
     }
     
-    public function testInvalidAssembleConditionValue13() {
+    public function testInvalidAssembleConditionValue13()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Condition value for BETWEEN and NOT BETWEEN operator must be an array with 2 values: [min, max]");
-        static::getValidAdapter()->assembleConditionValue(false, 'BETWEEN');
+        static::getValidAdapter()
+            ->assembleConditionValue(false, 'BETWEEN');
     }
     
-    public function testInvalidAssembleConditionValue14() {
+    public function testInvalidAssembleConditionValue14()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Condition value for BETWEEN and NOT BETWEEN operator must be an array with 2 values: [min, max]");
-        static::getValidAdapter()->assembleConditionValue(true, 'BETWEEN');
+        static::getValidAdapter()
+            ->assembleConditionValue(true, 'BETWEEN');
     }
     
-    public function testInvalidAssembleConditionValue15() {
+    public function testInvalidAssembleConditionValue15()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("BETWEEN and NOT BETWEEN conditions require value to an array with 2 values: [min, max]");
-        static::getValidAdapter()->assembleConditionValue([], 'BETWEEN');
+        static::getValidAdapter()
+            ->assembleConditionValue([], 'BETWEEN');
     }
     
-    public function testInvalidAssembleConditionValue16() {
+    public function testInvalidAssembleConditionValue16()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("BETWEEN and NOT BETWEEN conditions require value to an array with 2 values: [min, max]");
-        static::getValidAdapter()->assembleConditionValue([true], 'BETWEEN');
+        static::getValidAdapter()
+            ->assembleConditionValue([true], 'BETWEEN');
     }
     
-    public function testInvalidAssembleConditionValue17() {
+    public function testInvalidAssembleConditionValue17()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("BETWEEN and NOT BETWEEN conditions require value to an array with 2 values: [min, max]");
-        static::getValidAdapter()->assembleConditionValue([1, 2, 3], 'BETWEEN');
+        static::getValidAdapter()
+            ->assembleConditionValue([1, 2, 3], 'BETWEEN');
     }
     
-    public function testInvalidAssembleConditionValue18() {
+    public function testInvalidAssembleConditionValue18()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("BETWEEN and NOT BETWEEN conditions does not allow min or max values to be null or boolean");
-        static::getValidAdapter()->assembleConditionValue([true, false], 'BETWEEN');
+        static::getValidAdapter()
+            ->assembleConditionValue([true, false], 'BETWEEN');
     }
     
-    public function testInvalidAssembleConditionValue19() {
+    public function testInvalidAssembleConditionValue19()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("BETWEEN and NOT BETWEEN conditions does not allow min or max values to be null or boolean");
-        static::getValidAdapter()->assembleConditionValue([null, 1], 'BETWEEN');
+        static::getValidAdapter()
+            ->assembleConditionValue([null, 1], 'BETWEEN');
     }
     
-    public function testInvalidAssembleConditionValue110() {
+    public function testInvalidAssembleConditionValue110()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("BETWEEN and NOT BETWEEN conditions does not allow min or max values to be null or boolean");
-        static::getValidAdapter()->assembleConditionValue([1, null], 'BETWEEN');
+        static::getValidAdapter()
+            ->assembleConditionValue([1, null], 'BETWEEN');
     }
     
-    public function testInvalidAssembleConditionValue21() {
+    public function testInvalidAssembleConditionValue21()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Empty array is not allowed as condition value");
-        static::getValidAdapter()->assembleConditionValue([], '=');
+        static::getValidAdapter()
+            ->assembleConditionValue([], '=');
     }
-
-    public function testAssembleConditionValue() {
+    
+    public function testAssembleConditionValue()
+    {
         $adapter = static::getValidAdapter();
         $dbexpr = DbExpr::create('``test`` = `expr`');
         static::assertEquals(
@@ -524,13 +605,16 @@ class PostgresAdapterHelpersTest extends TestCase {
         );
     }
     
-    public function testInvalidConditionValueWithQuotedFlag() {
+    public function testInvalidConditionValueWithQuotedFlag()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Condition value with \$valueAlreadyQuoted === true must be a string. array received");
-        static::getValidAdapter()->assembleConditionValue(['key' => 'value'], '@>', true);
+        static::getValidAdapter()
+            ->assembleConditionValue(['key' => 'value'], '@>', true);
     }
-
-    public function testAssembleConditionValueAdapterSpecific() {
+    
+    public function testAssembleConditionValueAdapterSpecific()
+    {
         $adapter = static::getValidAdapter();
         static::assertEquals(
             $adapter->quoteValue('string') . '::jsonb',
@@ -557,8 +641,9 @@ class PostgresAdapterHelpersTest extends TestCase {
             $adapter->assembleConditionValue(json_encode([1, 2, 3]), '<@', true)
         );
     }
-
-    public function testAssembleCondition() {
+    
+    public function testAssembleCondition()
+    {
         $adapter = static::getValidAdapter();
         $column = $adapter->quoteDbEntityName('colname');
         static::assertEquals(
@@ -586,8 +671,9 @@ class PostgresAdapterHelpersTest extends TestCase {
             $adapter->assembleCondition($column, 'BETWEEN', [1, 2], true)
         );
     }
-
-    public function testAssembleConditionAdapterSpecific() {
+    
+    public function testAssembleConditionAdapterSpecific()
+    {
         $adapter = static::getValidAdapter();
         $column = $adapter->quoteDbEntityName('colname');
         static::assertEquals(
@@ -647,14 +733,15 @@ class PostgresAdapterHelpersTest extends TestCase {
             $adapter->assembleCondition($column, '?&', ['test1', 'test2'], true)
         );
     }
-
+    
     /**
      * @covers Postgres::extractLimitAndPrecisionForColumnDescription()
      * @covers Postgres::cleanDefaultValueForColumnDescription()
      * @covers DbAdapter::describeTable()
      * @covers Postgres::describeTable()
      */
-    public function testDescribeTable() {
+    public function testDescribeTable()
+    {
         // Postgres::extractLimitAndPrecisionForColumnDescription()
         static::assertEquals(
             [null, null],
@@ -760,7 +847,7 @@ class PostgresAdapterHelpersTest extends TestCase {
         static::assertEquals('settings', $description->getName());
         static::assertEquals('public', $description->getDbSchema());
         static::assertCount(3, $description->getColumns());
-
+        
         $idCol = $description->getColumn('id');
         static::assertEquals('id', $idCol->getName());
         static::assertEquals('int4', $idCol->getDbType());
@@ -772,7 +859,7 @@ class PostgresAdapterHelpersTest extends TestCase {
         static::assertFalse($idCol->isUnique());
         static::assertFalse($idCol->isForeignKey());
         static::assertFalse($idCol->isNullable());
-
+        
         $keyCol = $description->getColumn('key');
         static::assertEquals('key', $keyCol->getName());
         static::assertEquals('varchar', $keyCol->getDbType());
@@ -784,7 +871,7 @@ class PostgresAdapterHelpersTest extends TestCase {
         static::assertTrue($keyCol->isUnique());
         static::assertFalse($keyCol->isForeignKey());
         static::assertFalse($keyCol->isNullable());
-
+        
         $valueCol = $description->getColumn('value');
         static::assertEquals('value', $valueCol->getName());
         static::assertEquals('json', $valueCol->getDbType());
@@ -796,15 +883,27 @@ class PostgresAdapterHelpersTest extends TestCase {
         static::assertFalse($valueCol->isUnique());
         static::assertFalse($valueCol->isForeignKey());
         static::assertFalse($valueCol->isNullable());
-
+        
         $description = $adapter->describeTable('admins');
         static::assertEquals('admins', $description->getName());
         static::assertEquals('public', $description->getDbSchema());
         static::assertCount(16, $description->getColumns());
-        static::assertTrue($description->getColumn('login')->isUnique());
-        static::assertTrue($description->getColumn('email')->isUnique());
-        static::assertTrue($description->getColumn('parent_id')->isForeignKey());
-        static::assertTrue($description->getColumn('remember_token')->isNullable());
+        static::assertTrue(
+            $description->getColumn('login')
+                ->isUnique()
+        );
+        static::assertTrue(
+            $description->getColumn('email')
+                ->isUnique()
+        );
+        static::assertTrue(
+            $description->getColumn('parent_id')
+                ->isForeignKey()
+        );
+        static::assertTrue(
+            $description->getColumn('remember_token')
+                ->isNullable()
+        );
     }
-
+    
 }

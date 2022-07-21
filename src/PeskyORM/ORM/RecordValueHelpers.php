@@ -9,8 +9,9 @@ use Swayok\Utils\NormalizeValue;
 use Swayok\Utils\ValidateValue;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
-abstract class RecordValueHelpers {
-
+abstract class RecordValueHelpers
+{
+    
     /**
      * @param Column $column
      * @param mixed $value
@@ -19,7 +20,8 @@ abstract class RecordValueHelpers {
      * @param array $errorMessages
      * @return array
      */
-    static public function isValidDbColumnValue(Column $column, $value, $isFromDb, $isForCondition, array $errorMessages = []) {
+    static public function isValidDbColumnValue(Column $column, $value, $isFromDb, $isForCondition, array $errorMessages = [])
+    {
         if (is_object($value) && ($value instanceof DbExpr || is_subclass_of($value, AbstractSelect::class))) {
             return [];
         }
@@ -28,7 +30,7 @@ abstract class RecordValueHelpers {
         if ($preprocessedValue === null) {
             if ($isForCondition) {
                 return [];
-            } else if ($column->isValueCanBeNull() || ($isFromDb && $value !== null)) {
+            } elseif ($column->isValueCanBeNull() || ($isFromDb && $value !== null)) {
                 // db value is not null but was preprocessed into null - it is not an error
                 return [];
             }
@@ -41,7 +43,7 @@ abstract class RecordValueHelpers {
         }
         return [];
     }
-
+    
     /**
      * Preprocess value using $column->getValuePreprocessor(). This will perform basic processing like
      * converting empty string to null, trimming and lowercasing if any required
@@ -51,10 +53,11 @@ abstract class RecordValueHelpers {
      * @param bool $isForValidation
      * @return mixed
      */
-    static public function preprocessColumnValue(Column $column, $value, bool $isDbValue, bool $isForValidation) {
+    static public function preprocessColumnValue(Column $column, $value, bool $isDbValue, bool $isForValidation)
+    {
         return call_user_func($column->getValuePreprocessor(), $value, $isDbValue, $isForValidation, $column);
     }
-
+    
     /**
      * Test if $value fits data type ($type)
      * @param mixed $value
@@ -63,7 +66,8 @@ abstract class RecordValueHelpers {
      * @param array $errorMessages
      * @return array
      */
-    static public function isValueFitsDataType($value, $type, bool $isForCondition, array $errorMessages = []) {
+    static public function isValueFitsDataType($value, $type, bool $isForCondition, array $errorMessages = [])
+    {
         switch ($type) {
             case Column::TYPE_BOOL:
                 if (!ValidateValue::isBoolean($value)) {
@@ -120,7 +124,7 @@ abstract class RecordValueHelpers {
             case Column::TYPE_JSONB:
                 if ($isForCondition && !is_string($value)) {
                     return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_STRING)];
-                } else if (!$isForCondition && !ValidateValue::isJson($value)) {
+                } elseif (!$isForCondition && !ValidateValue::isJson($value)) {
                     return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_JSON)];
                 }
                 break;
@@ -137,7 +141,7 @@ abstract class RecordValueHelpers {
             case Column::TYPE_EMAIL:
                 if ($isForCondition && !is_string($value)) {
                     return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_STRING)];
-                } else if (!$isForCondition && !ValidateValue::isEmail($value)) {
+                } elseif (!$isForCondition && !ValidateValue::isEmail($value)) {
                     return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_EMAIL)];
                 }
                 break;
@@ -159,7 +163,7 @@ abstract class RecordValueHelpers {
         }
         return [];
     }
-
+    
     /**
      * Test if value is present in $column->getAllowedValues() (if any)
      * Notes:
@@ -215,31 +219,33 @@ abstract class RecordValueHelpers {
             if (count(array_diff($preprocessedValue, $allowedValues)) > 0) {
                 return [static::getErrorMessage($errorMessages, Column::ONE_OF_VALUES_IS_NOT_ALLOWED)];
             }
-        } else if (!in_array($preprocessedValue, $allowedValues, true)) {
+        } elseif (!in_array($preprocessedValue, $allowedValues, true)) {
             return [str_replace(':value', $preprocessedValue, static::getErrorMessage($errorMessages, Column::VALUE_IS_NOT_ALLOWED))];
         }
         return [];
     }
-
+    
     /**
      * @param array $errorMessages
      * @param string $key
      * @return string
      */
-    static public function getErrorMessage(array $errorMessages, $key) {
+    static public function getErrorMessage(array $errorMessages, $key)
+    {
         return array_key_exists($key, $errorMessages) ? $errorMessages[$key] : $key;
     }
-
+    
     /**
      * Normalize $value according to expected data type ($type)
      * @param mixed $value
      * @param string $type - one of Column::TYPE_*
      * @return null|string|UploadedFile|DbExpr|AbstractSelect|bool|int|float
      */
-    static public function normalizeValue($value, $type) {
+    static public function normalizeValue($value, $type)
+    {
         if ($value === null) {
             return null;
-        } else if (is_object($value) && ($value instanceof DbExpr || is_subclass_of($value, AbstractSelect::class))) {
+        } elseif (is_object($value) && ($value instanceof DbExpr || is_subclass_of($value, AbstractSelect::class))) {
             return $value;
         }
         switch ($type) {
@@ -275,7 +281,7 @@ abstract class RecordValueHelpers {
                 return $value;
         }
     }
-
+    
     /**
      * Normalize $value received form DB according to expected data type ($type)
      * Note: lighter version of normalizeValue() to optimize processing of large amount of records
@@ -283,10 +289,11 @@ abstract class RecordValueHelpers {
      * @param string $type - one of Column::TYPE_*
      * @return null|string|UploadedFile|DbExpr
      */
-    static public function normalizeValueReceivedFromDb($value, $type) {
+    static public function normalizeValueReceivedFromDb($value, $type)
+    {
         if ($value === null) {
             return null;
-        } else if ($value instanceof DbExpr) {
+        } elseif ($value instanceof DbExpr) {
             return $value;
         }
         switch ($type) {
@@ -301,8 +308,9 @@ abstract class RecordValueHelpers {
                 return $value;
         }
     }
-
-    static public function normalizeFile($value) {
+    
+    static public function normalizeFile($value)
+    {
         if ($value instanceof UploadedFile) {
             return $value;
         } else {
@@ -315,8 +323,9 @@ abstract class RecordValueHelpers {
             );
         }
     }
-
-    static public function getValueFormatterAndFormatsByType(string $type): array {
+    
+    static public function getValueFormatterAndFormatsByType(string $type): array
+    {
         $formatter = null;
         $formats = [];
         switch ($type) {
@@ -350,16 +359,18 @@ abstract class RecordValueHelpers {
         }
         return [$formatter, $formats];
     }
-
-    static protected function getSimpleValueFormContainer(RecordValue $valueContainer) {
+    
+    static protected function getSimpleValueFormContainer(RecordValue $valueContainer)
+    {
         $value = $valueContainer->getValueOrDefault();
         if ($value instanceof DbExpr) {
             throw new \UnexpectedValueException('It is impossible to change format of the DbExpr');
         }
         return $value;
     }
-
-    static public function formatTimestamp(RecordValue $valueContainer, $format) {
+    
+    static public function formatTimestamp(RecordValue $valueContainer, $format)
+    {
         if (!is_string($format)) {
             throw new \InvalidArgumentException('$format argument must be a string');
         }
@@ -373,14 +384,16 @@ abstract class RecordValueHelpers {
                 case 'unix_ts':
                     return strtotime($value);
                 case 'carbon':
-                    return Carbon::parse($value)->toImmutable();
+                    return Carbon::parse($value)
+                        ->toImmutable();
                 default:
                     throw new \InvalidArgumentException("Requested value format '$format' is not implemented");
             }
         }, true);
     }
-
-    static public function formatDate(RecordValue $valueContainer, $format) {
+    
+    static public function formatDate(RecordValue $valueContainer, $format)
+    {
         if (!is_string($format)) {
             throw new \InvalidArgumentException('$format argument must be a string');
         }
@@ -390,14 +403,17 @@ abstract class RecordValueHelpers {
                 case 'unix_ts':
                     return strtotime($value);
                 case 'carbon':
-                    return Carbon::parse($value)->startOfDay()->toImmutable();
+                    return Carbon::parse($value)
+                        ->startOfDay()
+                        ->toImmutable();
                 default:
                     throw new \InvalidArgumentException("Requested value format '$format' is not implemented");
             }
         }, true);
     }
     
-    static public function formatTime(RecordValue $valueContainer, $format) {
+    static public function formatTime(RecordValue $valueContainer, $format)
+    {
         if (!is_string($format)) {
             throw new \InvalidArgumentException('$format argument must be a string');
         }
@@ -411,8 +427,9 @@ abstract class RecordValueHelpers {
             }
         }, true);
     }
-
-    static public function formatJson(RecordValue $valueContainer, $format) {
+    
+    static public function formatJson(RecordValue $valueContainer, $format)
+    {
         if (!is_string($format)) {
             throw new \InvalidArgumentException('$format argument must be a string');
         }
@@ -431,5 +448,5 @@ abstract class RecordValueHelpers {
             }
         }, true);
     }
-
+    
 }

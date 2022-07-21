@@ -6,13 +6,16 @@ require_once __DIR__ . '/PostgresAdapterUpdateDataTest.php';
 
 use Tests\PeskyORMTest\TestingApp;
 
-class MysqlAdapterUpdateDataTest extends PostgresAdapterUpdateDataTest {
-
-    static protected function getValidAdapter() {
+class MysqlAdapterUpdateDataTest extends PostgresAdapterUpdateDataTest
+{
+    
+    static protected function getValidAdapter()
+    {
         return TestingApp::getMysqlConnection();
     }
-
-    public function convertTestDataForAdminsTableAssert($data) {
+    
+    public function convertTestDataForAdminsTableAssert($data)
+    {
         foreach ($data as &$item) {
             $item['id'] = "{$item['id']}";
             $item['is_superadmin'] = $item['is_superadmin'] ? '1' : '0';
@@ -23,5 +26,5 @@ class MysqlAdapterUpdateDataTest extends PostgresAdapterUpdateDataTest {
         }
         return $data;
     }
-
+    
 }

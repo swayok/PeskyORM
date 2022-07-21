@@ -16,26 +16,27 @@ use Swayok\Utils\ValidateValue;
  * @property PostgresConfig $connectionConfig
  * @method PostgresConfig getConnectionConfig()
  */
-class Postgres extends DbAdapter {
-
+class Postgres extends DbAdapter
+{
+    
     public const TRANSACTION_TYPE_READ_COMMITTED = 'READ COMMITTED';
     public const TRANSACTION_TYPE_REPEATABLE_READ = 'REPEATABLE READ';
     public const TRANSACTION_TYPE_SERIALIZABLE = 'SERIALIZABLE';
     public const TRANSACTION_TYPE_DEFAULT = self::TRANSACTION_TYPE_READ_COMMITTED;
-
+    
     static public $transactionTypes = [
         self::TRANSACTION_TYPE_READ_COMMITTED,
         self::TRANSACTION_TYPE_REPEATABLE_READ,
-        self::TRANSACTION_TYPE_SERIALIZABLE
+        self::TRANSACTION_TYPE_SERIALIZABLE,
     ];
-
+    
     public const ENTITY_NAME_QUOTES = '"';
-
+    
     public const BOOL_TRUE = 'TRUE';
     public const BOOL_FALSE = 'FALSE';
-
+    
     public const NO_LIMIT = 'ALL';
-
+    
     /**
      * @var array
      */
@@ -70,7 +71,7 @@ class Postgres extends DbAdapter {
         'interval' => Column::TYPE_STRING,
         'timetz' => Column::TYPE_TIME,
     ];
-
+    
     // types
     /*
         bool
@@ -103,40 +104,44 @@ class Postgres extends DbAdapter {
         uuid
         jsonb
      */
-
+    
     /**
      * @var bool - false: transaction queries like BEGIN TRANSACTION, COMMIT and ROLLBACK will not be remembered
      * into $this->lastQuery
      */
     public $rememberTransactionQueries = false;
-
+    
     /**
      * @var bool
      */
     protected $inTransaction = false;
-
+    
     static protected $conditionOperatorsMap = [
         'REGEXP' => '~*',
         'NOT REGEXP' => '!~*',
         'REGEX' => '~*',
         'NOT REGEX' => '!~*',
     ];
-
-    static public function getConnectionConfigClass(): string {
+    
+    static public function getConnectionConfigClass(): string
+    {
         return PostgresConfig::class;
     }
-
-    static protected function _isValidDbEntityName(string $name): bool {
+    
+    static protected function _isValidDbEntityName(string $name): bool
+    {
         // $name can literally be anything when quoted and it is always quoted unless developer skips quotes
         // https://www.postgresql.org/docs/10/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
         return preg_match('%^[a-zA-Z_].*$%', $name) > 0;
     }
-
-    public function __construct(PostgresConfig $connectionConfig) {
+    
+    public function __construct(PostgresConfig $connectionConfig)
+    {
         parent::__construct($connectionConfig);
     }
-
-    public function disconnect() {
+    
+    public function disconnect()
+    {
         try {
             $this->query('SELECT pg_terminate_backend(pg_backend_pid());');
         } catch (\PDOException $exc) {
@@ -144,38 +149,47 @@ class Postgres extends DbAdapter {
         }
         return parent::disconnect();
     }
-
-    public function isDbSupportsTableSchemas(): bool {
+    
+    public function isDbSupportsTableSchemas(): bool
+    {
         return true;
     }
-
-    public function getDefaultTableSchema(): ?string {
-        return $this->getConnectionConfig()->getDefaultSchemaName();
+    
+    public function getDefaultTableSchema(): ?string
+    {
+        return $this->getConnectionConfig()
+            ->getDefaultSchemaName();
     }
-
-    public function setTimezone(string $timezone) {
+    
+    public function setTimezone(string $timezone)
+    {
         $this->exec(DbExpr::create("SET SESSION TIME ZONE ``$timezone``"));
         return $this;
     }
     
-    public function setSearchPath(string $newSearchPath) {
+    public function setSearchPath(string $newSearchPath)
+    {
         $this->exec(DbExpr::create("SET search_path TO {$newSearchPath}"));
         return $this;
     }
-
-    public function addDataTypeCastToExpression(string $dataType, string $expression): string {
+    
+    public function addDataTypeCastToExpression(string $dataType, string $expression): string
+    {
         return '(' . $expression . ')::' . $dataType;
     }
-
-    public function getConditionOperatorsMap() {
+    
+    public function getConditionOperatorsMap()
+    {
         return static::$conditionOperatorsMap;
     }
-
-    public function inTransaction(): bool {
+    
+    public function inTransaction(): bool
+    {
         return $this->inTransaction;
     }
-
-    public function begin(bool $readOnly = false, ?string $transactionType = null) {
+    
+    public function begin(bool $readOnly = false, ?string $transactionType = null)
+    {
         $this->guardTransaction('begin');
         if (empty($transactionType)) {
             $transactionType = static::TRANSACTION_TYPE_DEFAULT;
@@ -197,8 +211,9 @@ class Postgres extends DbAdapter {
         }
         return $this;
     }
-
-    public function commit() {
+    
+    public function commit()
+    {
         $this->guardTransaction('commit');
         $lastQuery = $this->getLastQuery();
         $this->exec('COMMIT');
@@ -207,8 +222,9 @@ class Postgres extends DbAdapter {
         }
         $this->inTransaction = false;
     }
-
-    public function rollBack() {
+    
+    public function rollBack()
+    {
         $this->guardTransaction('rollback');
         $lastQuery = $this->getLastQuery();
         $this->inTransaction = false;
@@ -217,7 +233,7 @@ class Postgres extends DbAdapter {
             $this->lastQuery = $lastQuery;
         }
     }
-
+    
     protected function resolveQueryWithReturningColumns(
         $query,
         $table,
@@ -240,10 +256,10 @@ class Postgres extends DbAdapter {
                     "Inserting data into table {$table} resulted in modification of 0 rows. Query: " . $this->getLastQuery(),
                     DbException::CODE_INSERT_FAILED
                 );
-            } else if ($operation === 'insert_many' && count($data) !== $statement->rowCount()) {
+            } elseif ($operation === 'insert_many' && count($data) !== $statement->rowCount()) {
                 throw new DbException(
                     "Inserting data into table {$table} resulted in modification of {$statement->rowCount()} rows while "
-                        . count($data). ' rows should be inserted. Query: ' . $this->getLastQuery(),
+                    . count($data) . ' rows should be inserted. Query: ' . $this->getLastQuery(),
                     DbException::CODE_INSERT_FAILED
                 );
             }
@@ -263,7 +279,8 @@ class Postgres extends DbAdapter {
      * @return TableDescription
      * @throws \PDOException
      */
-    public function describeTable(string $table, ?string $schema = null): TableDescription {
+    public function describeTable(string $table, ?string $schema = null): TableDescription
+    {
         if (empty($schema)) {
             $schema = $this->getDefaultTableSchema();
         }
@@ -332,53 +349,60 @@ class Postgres extends DbAdapter {
         }
         return $description;
     }
-
+    
     /**
      * @param $dbType
      * @return string
      */
-    protected function convertDbTypeToOrmType($dbType) {
+    protected function convertDbTypeToOrmType($dbType)
+    {
         return array_key_exists($dbType, static::$dbTypeToOrmType)
             ? static::$dbTypeToOrmType[$dbType]
             : Column::TYPE_STRING;
     }
-
+    
     /**
      * @param string $default
      * @return array|bool|DbExpr|float|int|string|string[]|null
      */
-    protected function cleanDefaultValueForColumnDescription($default) {
+    protected function cleanDefaultValueForColumnDescription($default)
+    {
         if ($default === null || $default === '' || preg_match('%^NULL::%i', $default)) {
             return null;
-        } else if (preg_match("%^'((?:[^']|'')*?)'(?:::(bpchar|character varying|char|jsonb?|xml|macaddr|varchar|inet|cidr|text|uuid))?$%", $default, $matches)) {
+        } elseif (preg_match(
+            "%^'((?:[^']|'')*?)'(?:::(bpchar|character varying|char|jsonb?|xml|macaddr|varchar|inet|cidr|text|uuid))?$%",
+            $default,
+            $matches
+        )) {
             return str_replace("''", "'", $matches[1]);
-        } else if (preg_match("%^'(\d+(?:\.\d*)?)'(?:::(numeric|decimal|(?:small|medium|big)?int(?:eger)?(?:2|4|8)?))?$%", $default, $matches)) {
+        } elseif (preg_match("%^'(\d+(?:\.\d*)?)'(?:::(numeric|decimal|(?:small|medium|big)?int(?:eger)?(?:2|4|8)?))?$%", $default, $matches)) {
             return (float)$matches[1];
-        } else if ($default === 'true') {
+        } elseif ($default === 'true') {
             return true;
-        } else if ($default === 'false') {
+        } elseif ($default === 'false') {
             return false;
-        } else if (ValidateValue::isInteger($default)) {
+        } elseif (ValidateValue::isInteger($default)) {
             return (int)$default;
-        } else if (strlen($tmp = trim($default, "'")) > 0 && ValidateValue::isFloat($tmp)) {
+        } elseif (strlen($tmp = trim($default, "'")) > 0 && ValidateValue::isFloat($tmp)) {
             return (float)$tmp;
         } else {
             return DbExpr::create($default);
         }
     }
-
+    
     /**
      * @param string $typeDescription
      * @return array - index 0: limit; index 1: precision
      */
-    protected function extractLimitAndPrecisionForColumnDescription($typeDescription) {
+    protected function extractLimitAndPrecisionForColumnDescription($typeDescription)
+    {
         if (preg_match('%\((\d+)(?:,(\d+))?\)$%', $typeDescription, $matches)) {
             return [(int)$matches[1], !isset($matches[2]) ? null : (int)$matches[2]];
         } else {
             return [null, null];
         }
     }
-
+    
     /**
      * Quote a db entity name like 'table.col_name -> json_key1 ->> json_key2'
      * or 'table.col_name -> json_key1 ->> integer_as_index' or 'table.col_name -> json_key1 ->> `integer_as_key`'
@@ -388,7 +412,8 @@ class Postgres extends DbAdapter {
      *      indexes 2, 4, 6, ...: json key name or other selector ('json_key1', 'json_key2')
      * @return string - quoted entity name and json selector
      */
-    protected function quoteJsonSelectorExpression(array $sequence) {
+    protected function quoteJsonSelectorExpression(array $sequence)
+    {
         $sequence[0] = $this->quoteDbEntityName($sequence[0]);
         for ($i = 2, $max = count($sequence); $i < $max; $i += 2) {
             if (!ctype_digit($sequence[$i])) {
@@ -406,13 +431,14 @@ class Postgres extends DbAdapter {
      * @return string
      * @throws \InvalidArgumentException
      */
-    public function assembleConditionValue($value, string $operator, bool $valueAlreadyQuoted = false): string {
+    public function assembleConditionValue($value, string $operator, bool $valueAlreadyQuoted = false): string
+    {
         if (in_array($operator, ['@>', '<@'], true)) {
             if ($valueAlreadyQuoted) {
                 if (!is_string($value)) {
                     throw new \InvalidArgumentException(
                         'Condition value with $valueAlreadyQuoted === true must be a string. '
-                             . gettype($value) . ' received'
+                        . gettype($value) . ' received'
                     );
                 }
                 return $value . '::jsonb';
@@ -433,7 +459,8 @@ class Postgres extends DbAdapter {
      * @param bool $valueAlreadyQuoted
      * @return string
      */
-    public function assembleCondition(string $quotedColumn, string $operator, $rawValue, bool $valueAlreadyQuoted = false): string {
+    public function assembleCondition(string $quotedColumn, string $operator, $rawValue, bool $valueAlreadyQuoted = false): string
+    {
         // jsonb opertaors - '?', '?|' or '?&' interfere with prepared PDO statements that use '?' to insert values
         // so it is impossible to use this operators directly. We need to use workarounds
         if (in_array($operator, ['?', '?|', '?&'], true)) {
@@ -468,7 +495,8 @@ class Postgres extends DbAdapter {
      * @return bool
      * @throws \PDOException
      */
-    public function hasTable(string $table, ?string $schema = null): bool {
+    public function hasTable(string $table, ?string $schema = null): bool
+    {
         if (empty($schema)) {
             $schema = $this->getDefaultTableSchema();
         }
@@ -478,7 +506,7 @@ class Postgres extends DbAdapter {
         );
         return !empty($exists);
     }
-
+    
     /**
      * Listen for DB notifications (mostly for PostgreSQL LISTEN...NOTIFY)
      * @param string $channel
@@ -488,10 +516,12 @@ class Postgres extends DbAdapter {
      * @param int $sleepAfterNotificationMs - miliseconds to sleep after notification consumed
      * @return void
      */
-    public function listen(string $channel, \Closure $handler, int $sleepIfNoNotificationMs = 1000, int $sleepAfterNotificationMs = 0) {
+    public function listen(string $channel, \Closure $handler, int $sleepIfNoNotificationMs = 1000, int $sleepAfterNotificationMs = 0)
+    {
         $this->exec(DbExpr::create("LISTEN `$channel`"));
         while (1) {
-            $result = $this->getConnection()->pgsqlGetNotify(\PDO::FETCH_ASSOC, $sleepIfNoNotificationMs);
+            $result = $this->getConnection()
+                ->pgsqlGetNotify(\PDO::FETCH_ASSOC, $sleepIfNoNotificationMs);
             if ($result) {
                 $continue = $handler($result['payload'] ?: null, $result['pid'] ?: null);
                 if ($continue === false) {
@@ -504,5 +534,5 @@ class Postgres extends DbAdapter {
             }
         }
     }
-
+    
 }

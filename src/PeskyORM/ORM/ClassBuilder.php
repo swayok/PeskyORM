@@ -8,8 +8,9 @@ use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\TableDescription;
 use Swayok\Utils\StringUtils;
 
-class ClassBuilder {
-
+class ClassBuilder
+{
+    
     /**
      * @var string
      */
@@ -26,25 +27,28 @@ class ClassBuilder {
      * @var TableDescription
      */
     protected $tableDescription;
-
-    public function __construct($tableName, DbAdapterInterface $connection) {
+    
+    public function __construct($tableName, DbAdapterInterface $connection)
+    {
         $this->tableName = $tableName;
         $this->connection = $connection;
     }
-
+    
     /**
      * @param $schema
      */
-    public function setDbSchemaName($schema) {
+    public function setDbSchemaName($schema)
+    {
         $this->dbSchemaName = $schema;
     }
-
+    
     /**
      * @param string $namespace
      * @param null|string $parentClass
      * @return string
      */
-    public function buildTableClass($namespace, $parentClass = null) {
+    public function buildTableClass($namespace, $parentClass = null)
+    {
         if ($parentClass === null) {
             $parentClass = Table::class;
         }
@@ -74,7 +78,7 @@ class {$this::makeTableClassName($this->tableName)} extends {$this->getShortClas
 
 VIEW;
     }
-
+    
     /**
      * @param string $namespace
      * @param null|string $parentClass
@@ -84,7 +88,8 @@ VIEW;
      * )
      * @return string
      */
-    public function buildStructureClass($namespace, $parentClass = null, array $traitsForColumns = []) {
+    public function buildStructureClass($namespace, $parentClass = null, array $traitsForColumns = [])
+    {
         if ($parentClass === null) {
             $parentClass = TableStructure::class;
         }
@@ -124,13 +129,14 @@ $getSchemaMethod
 
 VIEW;
     }
-
+    
     /**
      * @param string $namespace
      * @param null|string $parentClass
      * @return string
      */
-    public function buildRecordClass($namespace, $parentClass = null) {
+    public function buildRecordClass($namespace, $parentClass = null)
+    {
         if ($parentClass === null) {
             $parentClass = Record::class;
         }
@@ -158,62 +164,69 @@ class {$this::makeRecordClassName($this->tableName)} extends {$this->getShortCla
 
 VIEW;
     }
-
+    
     /**
      * @return TableDescription
      */
-    protected function getTableDescription() {
+    protected function getTableDescription()
+    {
         if (!$this->tableDescription) {
             $this->tableDescription = $this->connection->describeTable($this->tableName, $this->dbSchemaName);
         }
         return $this->tableDescription;
     }
-
+    
     /**
      * @param string $tableName
      * @return string
      */
-    static public function convertTableNameToClassName($tableName) {
+    static public function convertTableNameToClassName($tableName)
+    {
         return StringUtils::classify($tableName);
     }
-
+    
     /**
      * @param string $tableName
      * @return string
      */
-    static public function makeTableClassName($tableName) {
+    static public function makeTableClassName($tableName)
+    {
         return static::convertTableNameToClassName($tableName) . 'Table';
     }
-
+    
     /**
      * @param string $tableName
      * @return string
      */
-    static public function makeTableStructureClassName($tableName) {
+    static public function makeTableStructureClassName($tableName)
+    {
         return static::convertTableNameToClassName($tableName) . 'TableStructure';
     }
-
+    
     /**
      * @param string $tableName
      * @return string
      */
-    static public function makeRecordClassName($tableName) {
+    static public function makeRecordClassName($tableName)
+    {
         return StringUtils::singularize(static::convertTableNameToClassName($tableName));
     }
-
+    
     /**
      * @param string $fullClassName
      * @return string
      */
-    protected function getShortClassName($fullClassName) {
+    protected function getShortClassName($fullClassName)
+    {
         return basename(str_replace('\\', '/', $fullClassName));
     }
-
+    
     /**
      * @param array $traitsForColumns
      * @return array - [traits:string, class_includes:string, used_columns:array]
      */
-    protected function makeTraitsForTableStructure(array $traitsForColumns) {
+    protected function makeTraitsForTableStructure(array $traitsForColumns)
+    {
         if (empty($traitsForColumns)) {
             return ['', '', []];
         }
@@ -221,7 +234,10 @@ VIEW;
         $traits = [];
         $classesToInclude = [];
         $usedColumns = [];
-        $columnsNames = array_keys($this->getTableDescription()->getColumns());
+        $columnsNames = array_keys(
+            $this->getTableDescription()
+                ->getColumns()
+        );
         foreach ($traitsForColumns as $traitClass) {
             $traitMethods = (new \ReflectionClass($traitClass))->getMethods(\ReflectionMethod::IS_PRIVATE);
             if (empty($traitMethods)) {
@@ -248,18 +264,22 @@ VIEW;
         $usedColumns = array_unique($usedColumns);
         return [
             count($usedColumns) ? "\n    use " . implode(",\n        ", $traits) . ";\n" : '',
-            count($usedColumns) ? "\nuse " . implode(";\nuse ", $classesToInclude). ';' : '',
-            $usedColumns
+            count($usedColumns) ? "\nuse " . implode(";\nuse ", $classesToInclude) . ';' : '',
+            $usedColumns,
         ];
     }
-
+    
     /**
      * @param array $excludeColumns - columns to exclude (already included via traits)
      * @return string
      */
-    protected function makeColumnsMethodsForTableStructure(array $excludeColumns = []) {
+    protected function makeColumnsMethodsForTableStructure(array $excludeColumns = [])
+    {
         $columns = [];
-        foreach ($this->getTableDescription()->getColumns() as $columnDescription) {
+        foreach (
+            $this->getTableDescription()
+                ->getColumns() as $columnDescription
+        ) {
             if (in_array($columnDescription->getName(), $excludeColumns, true)) {
                 continue;
             }
@@ -268,16 +288,16 @@ VIEW;
         return {$this->makeColumnConfig($columnDescription)};
     }
 VIEW;
-
         }
         return implode("\n\n", $columns);
     }
-
+    
     /**
      * @param ColumnDescription $columnDescription
      * @return string
      */
-    protected function makeColumnConfig(ColumnDescription $columnDescription) {
+    protected function makeColumnConfig(ColumnDescription $columnDescription)
+    {
         $ret = "Column::create({$this->getConstantNameForColumnType($columnDescription->getOrmType())})";
         if ($columnDescription->isPrimaryKey()) {
             $ret .= "\n            ->primaryKey()";
@@ -292,23 +312,28 @@ VIEW;
         $default = $columnDescription->getDefault();
         if ($default !== null && !$columnDescription->isPrimaryKey()) {
             if ($default instanceof DbExpr) {
-                $default = "DbExpr::create('" . addslashes($default->setWrapInBrackets(false)->get()) . "')";
-            } else if (is_string($default)) {
+                $default = "DbExpr::create('" . addslashes(
+                        $default->setWrapInBrackets(false)
+                            ->get()
+                    ) . "')";
+            } elseif (is_string($default)) {
                 $default = "'" . addslashes($default) . "'";
-            } else if (is_bool($default)) {
+            } elseif (is_bool($default)) {
                 $default = $default ? 'true' : 'false';
             }
             $ret .= "\n            ->setDefaultValue({$default})";
         }
         return $ret;
     }
-
+    
     private $typeValueToTypeConstantName;
+    
     /**
      * @param string $columnTypeValue - like 'string', 'integer', etc..
      * @return string like Column::TYPE_*
      */
-    protected function getConstantNameForColumnType($columnTypeValue) {
+    protected function getConstantNameForColumnType($columnTypeValue)
+    {
         if ($this->typeValueToTypeConstantName === null) {
             $this->typeValueToTypeConstantName = array_flip(
                 array_filter(
@@ -322,11 +347,12 @@ VIEW;
         }
         return 'Column::' . $this->typeValueToTypeConstantName[$columnTypeValue];
     }
-
+    
     /**
      * @return string
      */
-    protected function makePhpDocForRecord() {
+    protected function makePhpDocForRecord()
+    {
         $description = $this->getTableDescription();
         $getters = [];
         $setters = [];
@@ -346,7 +372,8 @@ VIEW;
     /**
      * @return bool
      */
-    protected function hasDateOrTimestampColumns() {
+    protected function hasDateOrTimestampColumns()
+    {
         $description = $this->getTableDescription();
         $types = [
             Column::TYPE_TIMESTAMP,
@@ -361,12 +388,13 @@ VIEW;
         }
         return false;
     }
-
+    
     /**
      * @param ColumnDescription $columnDescription
      * @return string
      */
-    protected function getPhpTypeByColumnDescription(ColumnDescription $columnDescription) {
+    protected function getPhpTypeByColumnDescription(ColumnDescription $columnDescription)
+    {
         switch ($columnDescription->getOrmType()) {
             case Column::TYPE_INT:
                 $type = 'int';
@@ -382,12 +410,13 @@ VIEW;
         }
         return ($columnDescription->isNullable() ? 'null|' : '') . $type;
     }
-
+    
     /**
      * @param $ormType
      * @return array - key: format name; value: php type
      */
-    protected function getFormattersForOrmType($ormType) {
+    protected function getFormattersForOrmType($ormType)
+    {
         $formats = RecordValueHelpers::getValueFormatterAndFormatsByType($ormType)[1];
         $formatToPhpType = [];
         foreach ($formats as $formatName) {
@@ -410,11 +439,12 @@ VIEW;
         }
         return $formatToPhpType;
     }
-
+    
     /**
      * @return string
      */
-    protected function makePhpDocForTableStructure() {
+    protected function makePhpDocForTableStructure()
+    {
         $description = $this->getTableDescription();
         $getters = [];
         foreach ($description->getColumns() as $columnDescription) {
@@ -422,5 +452,5 @@ VIEW;
         }
         return implode("\n", $getters);
     }
-
+    
 }

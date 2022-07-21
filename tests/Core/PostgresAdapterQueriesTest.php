@@ -9,23 +9,28 @@ use PeskyORM\Core\DbExpr;
 use PHPUnit\Framework\TestCase;
 use Tests\PeskyORMTest\TestingApp;
 
-class PostgresAdapterQueriesTest extends TestCase {
-
-    public static function setUpBeforeClass(): void {
+class PostgresAdapterQueriesTest extends TestCase
+{
+    
+    public static function setUpBeforeClass(): void
+    {
         TestingApp::clearTables(static::getValidAdapter());
     }
-
-    public static function tearDownAfterClass(): void {
+    
+    public static function tearDownAfterClass(): void
+    {
         TestingApp::clearTables(static::getValidAdapter());
     }
-
-    static private function getValidAdapter() {
+    
+    static private function getValidAdapter()
+    {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
     
-    public function testInvalidValueInQuery() {
+    public function testInvalidValueInQuery()
+    {
         $this->expectException(PDOException::class);
         $this->expectExceptionMessage("invalid input syntax for type json");
         $adapter = static::getValidAdapter();
@@ -36,7 +41,8 @@ class PostgresAdapterQueriesTest extends TestCase {
         $adapter->rollBack();
     }
     
-    public function testInvalidTableInQuery() {
+    public function testInvalidTableInQuery()
+    {
         $this->expectException(PDOException::class);
         $this->expectExceptionMessage("relation \"abrakadabra\" does not exist");
         $adapter = static::getValidAdapter();
@@ -44,8 +50,9 @@ class PostgresAdapterQueriesTest extends TestCase {
             DbExpr::create('INSERT INTO `abrakadabra` (`key`, `value`) VALUES (``test_key``, ``test_value``)')
         );
     }
-
-    public function testQueriesAndTransactions() {
+    
+    public function testQueriesAndTransactions()
+    {
         $adapter = static::getValidAdapter();
         $insertQuery = DbExpr::create('INSERT INTO `settings` (`key`, `value`) VALUES(``test_key``, ``"test_value"``)');
         $selectQuery = DbExpr::create('SELECT * FROM `settings` WHERE `key` = ``test_key``');
@@ -79,7 +86,8 @@ class PostgresAdapterQueriesTest extends TestCase {
         ], $record);
     }
     
-    public function testTransactionsNestingPrevention() {
+    public function testTransactionsNestingPrevention()
+    {
         $this->expectException(\PeskyORM\Exception\DbException::class);
         $this->expectExceptionMessage("Already in transaction");
         $adapter = static::getValidAdapter();
@@ -87,7 +95,8 @@ class PostgresAdapterQueriesTest extends TestCase {
         $adapter->begin();
     }
     
-    public function testTransactionCommitWithoutBegin() {
+    public function testTransactionCommitWithoutBegin()
+    {
         $this->expectException(\PeskyORM\Exception\DbException::class);
         $this->expectExceptionMessage("Attempt to commit not started transaction");
         $adapter = static::getValidAdapter();
@@ -95,15 +104,17 @@ class PostgresAdapterQueriesTest extends TestCase {
         $adapter->commit();
     }
     
-    public function testTransactionRollbackWithoutBegin() {
+    public function testTransactionRollbackWithoutBegin()
+    {
         $this->expectException(\PeskyORM\Exception\DbException::class);
         $this->expectExceptionMessage("Attempt to rollback not started transaction");
         $adapter = static::getValidAdapter();
         $adapter->rollBack();
         $adapter->rollBack();
     }
-
-    public function testTransactionTypes() {
+    
+    public function testTransactionTypes()
+    {
         $adapter = static::getValidAdapter();
         $adapter->rememberTransactionQueries = true;
         $adapter->begin(true);
@@ -115,7 +126,7 @@ class PostgresAdapterQueriesTest extends TestCase {
         $adapter->rollBack();
         $this->assertEquals('ROLLBACK', $adapter->getLastQuery());
         $this->assertFalse($adapter->inTransaction());
-
+        
         $adapter->begin(true, Postgres::TRANSACTION_TYPE_DEFAULT);
         $this->assertEquals(
             'BEGIN ISOLATION LEVEL ' . Postgres::TRANSACTION_TYPE_DEFAULT . ' READ ONLY',
@@ -123,21 +134,21 @@ class PostgresAdapterQueriesTest extends TestCase {
         );
         $adapter->commit();
         $this->assertEquals('COMMIT', $adapter->getLastQuery());
-
+        
         $adapter->begin(false, Postgres::TRANSACTION_TYPE_READ_COMMITTED);
         $this->assertEquals(
             'BEGIN ISOLATION LEVEL ' . Postgres::TRANSACTION_TYPE_READ_COMMITTED,
             trim($adapter->getLastQuery())
         );
         $adapter->rollBack();
-
+        
         $adapter->begin(true, Postgres::TRANSACTION_TYPE_REPEATABLE_READ);
         $this->assertEquals(
             'BEGIN ISOLATION LEVEL ' . Postgres::TRANSACTION_TYPE_REPEATABLE_READ . ' READ ONLY',
             trim($adapter->getLastQuery())
         );
         $adapter->rollBack();
-
+        
         $adapter->begin(true, Postgres::TRANSACTION_TYPE_SERIALIZABLE);
         $this->assertEquals(
             'BEGIN ISOLATION LEVEL ' . Postgres::TRANSACTION_TYPE_SERIALIZABLE . ' READ ONLY',
@@ -146,7 +157,8 @@ class PostgresAdapterQueriesTest extends TestCase {
         $adapter->rollBack();
     }
     
-    public function testInvalidTransactionType() {
+    public function testInvalidTransactionType()
+    {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Unknown transaction type 'abrakadabra' for PostgreSQL");
         $adapter = static::getValidAdapter();
@@ -155,5 +167,5 @@ class PostgresAdapterQueriesTest extends TestCase {
         }
         $adapter->begin(true, 'abrakadabra');
     }
-
+    
 }

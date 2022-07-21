@@ -7,28 +7,33 @@ use PeskyORM\Core\DbExpr;
 use PHPUnit\Framework\TestCase;
 use Tests\PeskyORMTest\TestingApp;
 
-class MysqlAdapterQueriesTest extends TestCase {
-
-    public static function tearDownAfterClass(): void {
+class MysqlAdapterQueriesTest extends TestCase
+{
+    
+    public static function tearDownAfterClass(): void
+    {
         TestingApp::clearTables(static::getValidAdapter());
     }
-
-    static private function getValidAdapter() {
+    
+    static private function getValidAdapter()
+    {
         return TestingApp::getMysqlConnection();
     }
     
-    public function testInvalidValueInQuery() {
+    public function testInvalidValueInQuery()
+    {
         $this->expectException(PDOException::class);
         $this->expectExceptionMessage("Column 'key' cannot be null");
         $adapter = static::getValidAdapter();
         $adapter->begin();
         $adapter->exec(
-            DbExpr::create('INSERT INTO `settings` (`key`, `value`) VALUES (null, ``test_value``)')
+            DbExpr::create('INSERT INTO `settings` (`key`, `value`) VALUES (NULL, ``test_value``)')
         );
         $adapter->rollBack();
     }
     
-    public function testInvalidTableInQuery() {
+    public function testInvalidTableInQuery()
+    {
         $this->expectException(PDOException::class);
         $this->expectExceptionMessageMatches("%Table '.*?\.abrakadabra' doesn't exist%i");
         $adapter = static::getValidAdapter();
@@ -36,8 +41,9 @@ class MysqlAdapterQueriesTest extends TestCase {
             DbExpr::create('INSERT INTO `abrakadabra` (`key`, `value`) VALUES (``test_key``, ``test_value``)')
         );
     }
-
-    public function testQueriesAndTransactions() {
+    
+    public function testQueriesAndTransactions()
+    {
         $adapter = static::getValidAdapter();
         $insertQuery = DbExpr::create('INSERT INTO `settings` (`key`, `value`) VALUES(``test_key``, ``"test_value"``)');
         $selectQuery = DbExpr::create('SELECT * FROM `settings` WHERE `key` = ``test_key``');
@@ -71,7 +77,8 @@ class MysqlAdapterQueriesTest extends TestCase {
         ], $record);
     }
     
-    public function testTransactionsNestingPrevention() {
+    public function testTransactionsNestingPrevention()
+    {
         $this->expectException(\PeskyORM\Exception\DbException::class);
         $this->expectExceptionMessage("Already in transaction");
         $adapter = static::getValidAdapter();
@@ -79,7 +86,8 @@ class MysqlAdapterQueriesTest extends TestCase {
         $adapter->begin();
     }
     
-    public function testTransactionCommitWithoutBegin() {
+    public function testTransactionCommitWithoutBegin()
+    {
         $this->expectException(\PeskyORM\Exception\DbException::class);
         $this->expectExceptionMessage("Attempt to commit not started transaction");
         $adapter = static::getValidAdapter();
@@ -87,7 +95,8 @@ class MysqlAdapterQueriesTest extends TestCase {
         $adapter->commit();
     }
     
-    public function testTransactionRollbackWithoutBegin() {
+    public function testTransactionRollbackWithoutBegin()
+    {
         $this->expectException(\PeskyORM\Exception\DbException::class);
         $this->expectExceptionMessage("Attempt to rollback not started transaction");
         $adapter = static::getValidAdapter();

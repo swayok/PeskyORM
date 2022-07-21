@@ -2,7 +2,10 @@
 
 namespace PeskyORM\Core;
 
-interface DbAdapterInterface {
+use PeskyORM\Exception\DbException;
+
+interface DbAdapterInterface
+{
     
     /**
      * Class name that implements DbConnectionConfigInterface
@@ -25,7 +28,7 @@ interface DbAdapterInterface {
      * @return $this
      */
     public function onConnect(\Closure $callback, ?string $code = null);
-
+    
     /**
      * @return $this
      */
@@ -36,8 +39,8 @@ interface DbAdapterInterface {
      * @return null|string
      */
     public function getLastQuery(): ?string;
-
-     /**
+    
+    /**
      * @param string|DbExpr $query
      * @return int|array = array: returned if $returning argument is not empty
      */
@@ -49,7 +52,7 @@ interface DbAdapterInterface {
      * @return \PDOStatement|array|string|null
      */
     public function query($query, ?string $fetchData = null);
-
+    
     /**
      * Listen for DB notifications (mostly for PostgreSQL LISTEN...NOTIFY)
      * @param string $channel
@@ -60,7 +63,7 @@ interface DbAdapterInterface {
      * @return void
      */
     public function listen(string $channel, \Closure $handler, int $sleepIfNoNotificationMs = 1000, int $sleepAfterNotificationMs = 0);
-
+    
     /**
      * Set DB timezone for current session
      * @param string $timezone
@@ -127,7 +130,7 @@ interface DbAdapterInterface {
      * @throws \InvalidArgumentException
      */
     public function update(string $table, array $data, $conditions, array $dataTypes = [], $returning = false);
-
+    
     /**
      * @param string $table
      * @param string|DbExpr $conditions - WHERE conditions
@@ -152,12 +155,12 @@ interface DbAdapterInterface {
      * @return $this
      */
     public function begin(bool $readOnly = false, ?string $transactionType = null);
-
+    
     /**
      * @return $this
      */
     public function commit();
-
+    
     /**
      * @return $this
      */
@@ -261,7 +264,7 @@ interface DbAdapterInterface {
      * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\DbException
+     * @throws DbException
      * @throws \InvalidArgumentException
      */
     public function select(string $table, array $columns = [], $conditionsAndOptions = null): array;
@@ -275,7 +278,7 @@ interface DbAdapterInterface {
      * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\DbException
+     * @throws DbException
      * @throws \InvalidArgumentException
      */
     public function selectColumn(string $table, $column, $conditionsAndOptions = null): array;
@@ -289,7 +292,7 @@ interface DbAdapterInterface {
      * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\DbException
+     * @throws DbException
      * @throws \InvalidArgumentException
      */
     public function selectAssoc(string $table, $keysColumn, $valuesColumn, $conditionsAndOptions = null): array;
@@ -302,7 +305,7 @@ interface DbAdapterInterface {
      * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\DbException
+     * @throws DbException
      * @throws \InvalidArgumentException
      */
     public function selectOne(string $table, array $columns = [], $conditionsAndOptions = null): array;
@@ -315,7 +318,7 @@ interface DbAdapterInterface {
      * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return mixed
      * @throws \PDOException
-     * @throws \PeskyORM\Exception\DbException
+     * @throws DbException
      * @throws \InvalidArgumentException
      */
     public function selectValue(string $table, DbExpr $expression, $conditionsAndOptions = null);
@@ -354,5 +357,5 @@ interface DbAdapterInterface {
      * @return DbExpr
      */
     static public function getExpressionToSetDefaultValueForAColumn(): DbExpr;
-
+    
 }

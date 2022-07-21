@@ -4,11 +4,13 @@ namespace PeskyORM\Exception;
 
 use Swayok\Utils\Set;
 
-class InvalidDataException extends OrmException {
-
+class InvalidDataException extends OrmException
+{
+    
     protected $errors = [];
-
-    public function __construct(array $errors) {
+    
+    public function __construct(array $errors)
+    {
         $message = [];
         foreach ($errors as $key => $error) {
             $errorMsg = '';
@@ -24,14 +26,15 @@ class InvalidDataException extends OrmException {
         parent::__construct(static::MESSAGE_INVALID_DATA . implode('; ', $message), static::CODE_INVALID_DATA);
         $this->errors = $errors;
     }
-
+    
     /**
      * @param bool $flatten - false: return errors as is; true: flatten errors (2 levels only)
      * Example: $errors = ['images' => ['source.0' => ['error message1', 'error message 2'], 'source.1' => ['err']];
      * returned array will be: ['images.source.0' => ['error message1', 'error message 2'], 'images.source.1' => ['err']]
      * @return array
      */
-    public function getErrors($flatten = true) {
+    public function getErrors($flatten = true)
+    {
         if (!$flatten) {
             return $this->errors;
         }
@@ -47,5 +50,5 @@ class InvalidDataException extends OrmException {
         }
         return $flatErrors;
     }
-
+    
 }

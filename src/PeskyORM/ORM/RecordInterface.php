@@ -2,38 +2,42 @@
 
 namespace PeskyORM\ORM;
 
-interface RecordInterface {
+use PeskyORM\Exception\OrmException;
+use PeskyORM\Exception\RecordNotFoundException;
 
+interface RecordInterface
+{
+    
     /**
      * Create new empty record
      * @return static
      */
     static public function newEmptyRecord();
-
+    
     /**
      * @return TableInterface
      */
     static public function getTable();
-
+    
     /**
      * @param string $name
      * @return bool
      */
     static public function hasColumn($name): bool;
-
+    
     /**
      * @param string $name
      * @param string|null $format - filled when $name is something like 'timestamp_as_date' (returns 'date')
      * @return Column
      */
     static public function getColumn(string $name, string &$format = null);
-
+    
     /**
      * Resets all values and related records
      * @return $this|RecordInterface
      */
     public function reset();
-
+    
     /**
      * Get a value from specific $columnName with optional $format
      * @param string|Column $column
@@ -41,7 +45,7 @@ interface RecordInterface {
      * @return mixed
      */
     public function getValue($column, ?string $format = null);
-
+    
     /**
      * Check if there is a value for $columnName
      * @param string $column
@@ -49,7 +53,7 @@ interface RecordInterface {
      * @return bool
      */
     public function hasValue($column, bool $trueIfThereIsDefaultValue = false): bool;
-
+    
     /**
      * Set a $value for $columnName
      * @param string|Column $column
@@ -58,26 +62,26 @@ interface RecordInterface {
      * @return $this|RecordInterface
      */
     public function updateValue($column, $value, bool $isFromDb);
-
+    
     /**
      * Get a value of the primary key column
      * @return mixed
      */
     public function getPrimaryKeyValue();
-
+    
     /**
      * Check if there is a value for primary key column
      * @return bool
      */
     public function hasPrimaryKeyValue(): bool;
-
+    
     /**
      * Check if current Record exists in DB
      * @param bool $useDbQuery - false: use only primary key value to check existence | true: use db query
      * @return bool
      */
     public function existsInDb(bool $useDbQuery = false): bool;
-
+    
     /**
      * Get existing related object(s) or read them
      * @param string $relationName
@@ -85,21 +89,21 @@ interface RecordInterface {
      * @return Record|RecordsSet
      */
     public function getRelatedRecord(string $relationName, bool $loadIfNotSet = false);
-
+    
     /**
      * Read related object(s). If there are already loaded object(s) - they will be overwritten
      * @param string $relationName - name of relation defined in TableStructure
      * @return $this|RecordInterface
      */
     public function readRelatedRecord(string $relationName);
-
+    
     /**
      * Check if related object(s) are stored in this Record
      * @param string $relationName
      * @return bool
      */
-    public function isRelatedRecordAttached(string $relationName): bool ;
-
+    public function isRelatedRecordAttached(string $relationName): bool;
+    
     /**
      * @param string|Relation $relationName
      * @param array|Record|RecordsArray $relatedRecord
@@ -108,14 +112,14 @@ interface RecordInterface {
      * @return $this|RecordInterface
      */
     public function updateRelatedRecord($relationName, $relatedRecord, ?bool $isFromDb = null, bool $haltOnUnknownColumnNames = true);
-
+    
     /**
      * Remove related record
      * @param string $relationName
      * @return $this|RecordInterface
      */
     public function unsetRelatedRecord(string $relationName);
-
+    
     /**
      * Fill record values from passed $data.
      * Note: all existing record values will be removed
@@ -126,7 +130,7 @@ interface RecordInterface {
      * @throws \InvalidArgumentException
      */
     public function fromData(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true);
-
+    
     /**
      * Fill record values from passed $data.
      * All values are marked as loaded from DB and any unknows column names will raise exception
@@ -135,7 +139,7 @@ interface RecordInterface {
      * @throws \InvalidArgumentException
      */
     public function fromDbData(array $data);
-
+    
     /**
      * Fill record values with data fetched from DB by primary key value ($pkValue)
      * @param int|float|string $pkValue
@@ -144,7 +148,7 @@ interface RecordInterface {
      * @return $this|RecordInterface
      */
     public function fetchByPrimaryKey($pkValue, array $columns = [], array $readRelatedRecords = []);
-
+    
     /**
      * Fill record values with data fetched from DB by $conditionsAndOptions
      * Note: relations can be loaded via 'CONTAIN' key in $conditionsAndOptions
@@ -154,30 +158,30 @@ interface RecordInterface {
      * @return $this|RecordInterface
      */
     public function fetch(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = []);
-
+    
     /**
      * Reload data for current record.
      * Note: record must exist in DB
      * @param array $columns - columns to read
      * @param array $readRelatedRecords - also read related records
      * @return $this|RecordInterface
-     * @throws \PeskyORM\Exception\RecordNotFoundException
+     * @throws RecordNotFoundException
      */
     public function reload(array $columns = [], array $readRelatedRecords = []);
-
+    
     /**
      * Read values for specific columns
      * @param array $columns - columns to read
      * @return $this|RecordInterface
-     * @throws \PeskyORM\Exception\OrmException
+     * @throws OrmException
      * @throws \UnexpectedValueException
      * @throws \PDOException
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
-     * @throws \PeskyORM\Exception\RecordNotFoundException
+     * @throws RecordNotFoundException
      */
     public function readColumns(array $columns = []);
-
+    
     /**
      * Update several values
      * Note: it does not save this values to DB, only stores them locally
@@ -188,7 +192,7 @@ interface RecordInterface {
      * @throws \InvalidArgumentException
      */
     public function updateValues(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true);
-
+    
     /**
      * Start collecting column updates
      * To save collected values use commit(); to restore previous values use rollback()
@@ -199,7 +203,7 @@ interface RecordInterface {
      * @throws \BadMethodCallException
      */
     public function begin();
-
+    
     /**
      * Restore values updated since begin()
      * Note: throws exception if used without begin()
@@ -207,7 +211,7 @@ interface RecordInterface {
      * @throws \BadMethodCallException
      */
     public function rollback();
-
+    
     /**
      * Save values changed since begin() to DB
      * Note: throws exception if used without begin()
@@ -221,7 +225,7 @@ interface RecordInterface {
      * @throws \BadMethodCallException
      */
     public function commit(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false);
-
+    
     /**
      * Save all values and requested relations to Db
      * Note: throws exception if used after begin() but before commit() or rollback()
@@ -235,7 +239,7 @@ interface RecordInterface {
      * @throws \BadMethodCallException
      */
     public function save(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false);
-
+    
     /**
      * Save requested relations to DB
      * @param array $relationsToSave
@@ -247,7 +251,7 @@ interface RecordInterface {
      * @throws \BadMethodCallException
      */
     public function saveRelations(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false);
-
+    
     /**
      * Delete current Record from DB
      * Note: this Record must exist in DB
@@ -257,7 +261,7 @@ interface RecordInterface {
      * @throws \BadMethodCallException
      */
     public function delete(bool $resetAllValuesAfterDelete = true, bool $deleteFiles = true);
-
+    
     /**
      * Get required values as array
      * @param array $columnsNames - empty: return all columns
@@ -272,7 +276,7 @@ interface RecordInterface {
         bool $loadRelatedRecordsIfNotSet = false,
         bool $withFilesInfo = true
     ): array;
-
+    
     /**
      * Get required values as array but exclude file columns
      * @param array $columnsNames - empty: return all columns
@@ -285,7 +289,7 @@ interface RecordInterface {
         array $relatedRecordsNames = [],
         bool $loadRelatedRecordsIfNotSet = false
     ): array;
-
+    
     /**
      * Collect default values for the columns
      * Note: if there is no default value for a column - null will be returned
@@ -293,7 +297,7 @@ interface RecordInterface {
      * @param bool $ignoreColumnsThatCannotBeSetManually - true: if column does not exist in DB - its value will not be returned
      * @param bool $nullifyDbExprValues - true: if default value is DbExpr - replace it by null
      * @return array
-     * @throws \PeskyORM\Exception\OrmException
+     * @throws OrmException
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException

@@ -17,12 +17,14 @@ use PeskyORM\ORM\Record;
  * @property Record $Children
  * @property Record $VeryLongRelationNameSoItMustBeShortened
  */
-class TestingAdmin extends Record {
-
+class TestingAdmin extends Record
+{
+    
     /**
      * @return TestingAdminsTable
      */
-    static public function getTable() {
+    static public function getTable()
+    {
         return TestingAdminsTable::getInstance();
     }
 }

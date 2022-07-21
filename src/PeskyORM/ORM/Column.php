@@ -1,6 +1,7 @@
 <?php
 
 namespace PeskyORM\ORM;
+
 use PeskyORM\Core\DbExpr;
 
 /**
@@ -15,8 +16,9 @@ use PeskyORM\Core\DbExpr;
  * Value getter workflow:
  * $this->valueGetter closure is called and it will possibly call $this->valueFormatter closure
  */
-class Column {
-
+class Column
+{
+    
     const TYPE_INT = 'integer';
     const TYPE_FLOAT = 'float';
     const TYPE_BOOL = 'boolean';
@@ -37,12 +39,12 @@ class Column {
     const TYPE_FILE = 'file';
     const TYPE_IMAGE = 'image';
     const TYPE_BLOB = 'blob';
-
+    
     const NAME_VALIDATION_REGEXP = '%^[a-z][a-z0-9_]*$%';    //< snake_case
-
+    
     const DEFAULT_VALUE_NOT_SET = '___NOT_SET___';
     const VALID_DEFAULT_VALUE_UNDEFINED = '___UNDEFINED___';
-
+    
     const VALUE_CANNOT_BE_NULL = 'value_cannot_be_null';
     const VALUE_MUST_BE_BOOLEAN = 'value_must_be_boolean';
     const VALUE_MUST_BE_INTEGER = 'value_must_be_integer';
@@ -62,10 +64,10 @@ class Column {
     const VALUE_MUST_BE_STRING = 'value_must_be_string';
     const VALUE_MUST_BE_STRING_OR_NUMERIC = 'value_must_be_string_or_numeric';
     const VALUE_MUST_BE_ARRAY = 'value_must_be_array';
-
+    
     const CASE_SENSITIVE = true;
     const CASE_INSENSITIVE = false;
-
+    
     /**
      * @var array
      */
@@ -90,7 +92,7 @@ class Column {
         self::VALUE_MUST_BE_STRING_OR_NUMERIC => 'Value must be a string or a number.',
         self::VALUE_MUST_BE_ARRAY => 'Value must be an array.',
     ];
-
+    
     /**
      * @var array
      */
@@ -99,7 +101,7 @@ class Column {
      * @var null|array
      */
     static protected $defaultClosures;
-
+    
     // params that can be set directly or calculated
     /**
      * @var TableStructure
@@ -290,7 +292,7 @@ class Column {
      * @var null|\Closure
      */
     protected $valueAutoUpdater = null;
-
+    
     // calculated params (not allowed to be set directly)
     /**
      * @var bool
@@ -310,16 +312,16 @@ class Column {
      * @var Relation|null
      */
     protected $foreignKeyRelation = false;
-
+    
     // service params
-    static public $fileTypes = array(
+    static public $fileTypes = [
         self::TYPE_FILE,
         self::TYPE_IMAGE,
-    );
-
-    static public $imageFileTypes = array(
+    ];
+    
+    static public $imageFileTypes = [
         self::TYPE_IMAGE,
-    );
+    ];
     
     /**
      * @param string $name
@@ -328,40 +330,46 @@ class Column {
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    static public function create($type, $name = null) {
+    static public function create($type, $name = null)
+    {
         return new static($name, $type);
     }
-
+    
     /**
      * @param string $name
      * @param string $type
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    public function __construct($name, $type) {
+    public function __construct($name, $type)
+    {
         if (!empty($name)) {
             $this->setName($name);
         }
         $this->setType($type);
         $this->setDefaultClosures();
     }
-
+    
     /**
      * @return \Closure[]
      */
-    static protected function getDefaultClosures() {
+    static protected function getDefaultClosures()
+    {
         if (self::$defaultClosures === null) {
             self::$defaultClosures = [
                 'valueGetter' => function (RecordValue $valueContainer, $format = null) {
-                    $class = $valueContainer->getColumn()->getClosuresClass();
+                    $class = $valueContainer->getColumn()
+                        ->getClosuresClass();
                     return $class::valueGetter($valueContainer, $format);
                 },
                 'valueExistenceChecker' => function (RecordValue $valueContainer, $checkDefaultValue = false) {
-                    $class = $valueContainer->getColumn()->getClosuresClass();
+                    $class = $valueContainer->getColumn()
+                        ->getClosuresClass();
                     return $class::valueExistenceChecker($valueContainer, $checkDefaultValue);
                 },
                 'valueSetter' => function ($newValue, $isFromDb, RecordValue $valueContainer, $trustDataReceivedFromDb) {
-                    $class = $valueContainer->getColumn()->getClosuresClass();
+                    $class = $valueContainer->getColumn()
+                        ->getClosuresClass();
                     return $class::valueSetter($newValue, $isFromDb, $valueContainer, $trustDataReceivedFromDb);
                 },
                 'valueValidator' => function ($value, $isFromDb, $isForCondition, Column $column) {
@@ -385,23 +393,27 @@ class Column {
                     return $class::valuePreprocessor($newValue, $isFromDb, $isForValidation, $column);
                 },
                 'valueSavingExtender' => function (RecordValue $valueContainer, $isUpdate, array $savedData) {
-                    $class = $valueContainer->getColumn()->getClosuresClass();
+                    $class = $valueContainer->getColumn()
+                        ->getClosuresClass();
                     $class::valueSavingExtender($valueContainer, $isUpdate, $savedData);
                 },
                 'valueDeleteExtender' => function (RecordValue $valueContainer, $deleteFiles) {
-                    $class = $valueContainer->getColumn()->getClosuresClass();
+                    $class = $valueContainer->getColumn()
+                        ->getClosuresClass();
                     $class::valueDeleteExtender($valueContainer, $deleteFiles);
                 },
                 'valueFormatter' => function (RecordValue $valueContainer, $format) {
-                    $class = $valueContainer->getColumn()->getClosuresClass();
+                    $class = $valueContainer->getColumn()
+                        ->getClosuresClass();
                     return $class::valueFormatter($valueContainer, $format);
                 },
             ];
         }
         return self::$defaultClosures;
     }
-
-    protected function setDefaultClosures() {
+    
+    protected function setDefaultClosures()
+    {
         $closures = static::getDefaultClosures();
         $this->setValueGetter($closures['valueGetter']);
         $this->setValueExistenceChecker($closures['valueExistenceChecker']);
@@ -417,30 +429,33 @@ class Column {
         $closuresClass = $this->getClosuresClass();
         $this->setValueFormatter($closures['valueFormatter'], $closuresClass::getValueFormats($this));
     }
-
+    
     /**
      * @return array - 0 - \Closure $formatter; 1 - array $formats
      */
-    protected function detectValueFormatterByType() {
+    protected function detectValueFormatterByType()
+    {
         return RecordValueHelpers::getValueFormatterAndFormatsByType($this->getType());
     }
-
+    
     /**
      * @return TableStructure
      */
-    public function getTableStructure() {
+    public function getTableStructure()
+    {
         return $this->tableStructure;
     }
-
+    
     /**
      * @param TableStructure $tableStructure
      * @return $this
      */
-    public function setTableStructure(TableStructure $tableStructure) {
+    public function setTableStructure(TableStructure $tableStructure)
+    {
         $this->tableStructure = $tableStructure;
         return $this;
     }
-
+    
     /**
      * Class that provides all closures for a column.
      * Note: if some closure is defined via Column->setClosureName(\Closure $fn) then $fn will be used istead of
@@ -449,7 +464,8 @@ class Column {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setClosuresClass($class) {
+    public function setClosuresClass($class)
+    {
         if (
             !is_string($class)
             || !class_exists($class)
@@ -462,39 +478,43 @@ class Column {
         $this->defaultClosuresClass = $class;
         return $this;
     }
-
+    
     /**
      * @return string|ColumnClosuresInterface
      */
-    public function getClosuresClass(): string {
+    public function getClosuresClass(): string
+    {
         return $this->defaultClosuresClass;
     }
-
+    
     /**
      * @return string
      * @throws \UnexpectedValueException
      */
-    public function getName() {
+    public function getName()
+    {
         if (empty($this->name)) {
             throw new \UnexpectedValueException('DB column name is not provided');
         }
         return $this->name;
     }
-
+    
     /**
      * @return bool
      */
-    public function hasName() {
+    public function hasName()
+    {
         return !empty($this->name);
     }
-
+    
     /**
      * @param string $name
      * @return $this
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    public function setName($name) {
+    public function setName($name)
+    {
         if ($this->hasName()) {
             throw new \BadMethodCallException('Column name alteration is forbidden');
         }
@@ -503,33 +523,36 @@ class Column {
         }
         if (!preg_match(static::NAME_VALIDATION_REGEXP, $name)) {
             throw new \InvalidArgumentException(
-                "\$name argument contains invalid value: '$name'. Pattern: " . static::NAME_VALIDATION_REGEXP  . '. Example: snake_case1'
+                "\$name argument contains invalid value: '$name'. Pattern: " . static::NAME_VALIDATION_REGEXP . '. Example: snake_case1'
             );
         }
         $this->name = $name;
         return $this;
     }
-
+    
     /**
      * @return string
      */
-    public function getType() {
+    public function getType()
+    {
         return $this->type;
     }
-
+    
     /**
      * @return bool
      */
-    public function isEnum() {
+    public function isEnum()
+    {
         return $this->getType() === static::TYPE_ENUM;
     }
-
+    
     /**
      * @param string $type
      * @return $this
      * @throws \InvalidArgumentException
      */
-    protected function setType($type) {
+    protected function setType($type)
+    {
         if (!is_string($type) && !is_numeric($type)) {
             throw new \InvalidArgumentException('$type argument must be a string, integer or float');
         }
@@ -545,46 +568,51 @@ class Column {
         }
         return $this;
     }
-
+    
     /**
      * @return boolean
      */
-    public function isValueCanBeNull() {
+    public function isValueCanBeNull()
+    {
         return $this->valueCanBeNull;
     }
-
+    
     /**
      * @return $this
      */
-    public function allowsNullValues() {
+    public function allowsNullValues()
+    {
         $this->valueCanBeNull = true;
         return $this;
     }
-
+    
     /**
      * @return $this
      */
-    public function disallowsNullValues() {
+    public function disallowsNullValues()
+    {
         $this->valueCanBeNull = false;
         return $this;
     }
-
+    
     /**
      * @param bool $bool
      * @return $this
      */
-    public function setIsNullableValue($bool) {
+    public function setIsNullableValue($bool)
+    {
         $this->valueCanBeNull = (bool)$bool;
         return $this;
     }
-
+    
     /**
      * Computed value that indicates if value must be not empty
      * @return bool
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      */
-    public function isValueRequiredToBeNotEmpty() {
+    public function isValueRequiredToBeNotEmpty()
+    {
         return (
             !$this->isValueCanBeNull()
             && (
@@ -594,63 +622,69 @@ class Column {
             )
         );
     }
-
+    
     /**
      * @return $this
      */
-    public function trimsValue() {
+    public function trimsValue()
+    {
         $this->trimValue = true;
         return $this;
     }
-
+    
     /**
      * @return bool
      */
-    public function isValueTrimmingRequired() {
+    public function isValueTrimmingRequired()
+    {
         return $this->trimValue;
     }
-
+    
     /**
      * @return $this
      */
-    public function lowercasesValue() {
+    public function lowercasesValue()
+    {
         $this->lowercaseValue = true;
         return $this;
     }
-
+    
     /**
      * @return bool
      */
-    public function isValueLowercasingRequired() {
+    public function isValueLowercasingRequired()
+    {
         return $this->lowercaseValue;
     }
-
+    
     /**
      * Get default value set via $this->setDefaultValue()
      * @return mixed - may be a \Closure: function() { return 'default value'; }
      * @throws \UnexpectedValueException
      * @throws \BadMethodCallException
      */
-    public function getDefaultValueAsIs() {
+    public function getDefaultValueAsIs()
+    {
         if (!$this->hasDefaultValue()) {
             throw new \BadMethodCallException("Default value for column '{$this->getName()}' is not set");
         }
         return $this->defaultValue;
     }
-
+    
     /**
      * Get validated default value
      * @param mixed|\Closure $fallbackValue - value to be returned when default value was not configured (may be a \Closure)
      * @return mixed - validated default value or $fallbackValue or return from $this->validDefaultValueGetter
      * @throws \UnexpectedValueException
      */
-    public function getValidDefaultValue($fallbackValue = null) {
+    public function getValidDefaultValue($fallbackValue = null)
+    {
         if ($this->validDefaultValue === self::VALID_DEFAULT_VALUE_UNDEFINED) {
             $rememberValidDefaultValue = true;
             if ($this->validDefaultValueGetter) {
                 $defaultValue = call_user_func($this->validDefaultValueGetter, $fallbackValue, $this);
                 $excPrefix = 'Default value received from validDefaultValueGetter Closure';
-            } else if ($this->hasDefaultValue()) {
+            } elseif ($this->hasDefaultValue()) {
                 $defaultValue = $this->defaultValue;
                 $excPrefix = 'Default value';
             } else {
@@ -680,60 +714,66 @@ class Column {
         }
         return $this->validDefaultValue;
     }
-
+    
     /**
      * @param \Closure $validDefaultValueGetter - function ($fallbackValue, Column $column) { return 'default'; }
      * @return $this
      */
-    public function setValidDefaultValueGetter(\Closure $validDefaultValueGetter) {
+    public function setValidDefaultValueGetter(\Closure $validDefaultValueGetter)
+    {
         $this->validDefaultValueGetter = $validDefaultValueGetter;
         return $this;
     }
-
+    
     /**
      * @return bool
      */
-    public function hasDefaultValue() {
+    public function hasDefaultValue()
+    {
         if ($this->hasDefaultValue === null) {
             return $this->defaultValue !== self::DEFAULT_VALUE_NOT_SET || $this->validDefaultValueGetter;
         }
         return $this->hasDefaultValue();
     }
-
+    
     /**
      * @param mixed $defaultValue - may be a \Closure: function() { return 'default value'; }
      * @return $this
      */
-    public function setDefaultValue($defaultValue) {
+    public function setDefaultValue($defaultValue)
+    {
         $this->defaultValue = $defaultValue;
         $this->validDefaultValue = self::VALID_DEFAULT_VALUE_UNDEFINED;
         return $this;
     }
-
+    
     /**
      * @return boolean
      */
-    public function isEmptyStringMustBeConvertedToNull() {
+    public function isEmptyStringMustBeConvertedToNull()
+    {
         if ($this->convertEmptyStringToNull === null) {
             return $this->isValueCanBeNull();
         } else {
             return $this->convertEmptyStringToNull;
         }
     }
-
+    
     /**
      * @return $this
      */
-    public function convertsEmptyStringToNull() {
+    public function convertsEmptyStringToNull()
+    {
         $this->convertEmptyStringToNull = true;
         return $this;
     }
-
+    
     /**
      * @return array
      * @throws \UnexpectedValueException
      */
-    public function getAllowedValues() {
+    public function getAllowedValues()
+    {
         if ($this->allowedValues instanceof \Closure) {
             $allowedValues = call_user_func($this->allowedValues);
             if (!is_array($allowedValues) || empty($allowedValues)) {
@@ -743,56 +783,62 @@ class Column {
         }
         return $this->allowedValues;
     }
-
+    
     /**
      * @param array|\Closure $allowedValues - \Closure: function () { return [] }
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setAllowedValues($allowedValues) {
+    public function setAllowedValues($allowedValues)
+    {
         if (!($allowedValues instanceof \Closure) && (!is_array($allowedValues) || empty($allowedValues))) {
             throw new \InvalidArgumentException('$allowedValues argument cannot be empty');
         }
         $this->allowedValues = $allowedValues;
         return $this;
     }
-
+    
     /**
      * @return boolean
      */
-    public function isItPrimaryKey() {
+    public function isItPrimaryKey()
+    {
         return $this->isPrimaryKey;
     }
-
+    
     /**
      * @return $this
      */
-    public function primaryKey() {
+    public function primaryKey()
+    {
         $this->isPrimaryKey = true;
         return $this;
     }
-
+    
     /**
      * @return boolean
      */
-    public function isValueMustBeUnique() {
+    public function isValueMustBeUnique()
+    {
         return $this->isValueMustBeUnique;
     }
-
+    
     /**
      * @return bool
      */
-    public function isUniqueContraintCaseSensitive() {
+    public function isUniqueContraintCaseSensitive()
+    {
         return $this->isUniqueContraintCaseSensitive;
     }
-
+    
     /**
      * @return array
      */
-    public function getUniqueContraintAdditonalColumns() {
+    public function getUniqueContraintAdditonalColumns()
+    {
         return $this->uniqueContraintAdditonalColumns;
     }
-
+    
     /**
      * Note: there is no automatic uniqueness validation in DefaultColumnClosures class!
      * @param bool $caseSensitive - true: compare values as is; false: compare lowercased values (emails for example);
@@ -802,7 +848,8 @@ class Column {
      *      For example: when 'title' column must be unique within 'category' (category_id column)
      * @return $this
      */
-    public function uniqueValues($caseSensitive = self::CASE_SENSITIVE, ...$withinColumns) {
+    public function uniqueValues($caseSensitive = self::CASE_SENSITIVE, ...$withinColumns)
+    {
         $this->isValueMustBeUnique = true;
         $this->isUniqueContraintCaseSensitive = (bool)$caseSensitive;
         $this->uniqueContraintAdditonalColumns = count($withinColumns) === 1 && isset($withinColumns[0]) && is_array($withinColumns[0])
@@ -810,79 +857,88 @@ class Column {
             : $withinColumns;
         return $this;
     }
-
+    
     /**
      * @return $this
      */
-    public function doesNotExistInDb() {
+    public function doesNotExistInDb()
+    {
         $this->existsInDb = false;
         return $this;
     }
-
+    
     /**
      * Is this column exists in DB?
      * @return bool
      */
-    public function isItExistsInDb() {
+    public function isItExistsInDb()
+    {
         return $this->existsInDb;
     }
-
+    
     /**
      * @return $this
      */
-    public function valueCannotBeSetOrChanged() {
+    public function valueCannotBeSetOrChanged()
+    {
         $this->isValueCanBeSetOrChanged = false;
         return $this;
     }
-
+    
     /**
      * @return bool|int - one of self::ON_UPDATE, self::ON_CREATE, self::ON_ALL, self::ON_NONE
      */
-    public function isValueCanBeSetOrChanged() {
+    public function isValueCanBeSetOrChanged()
+    {
         return $this->isValueCanBeSetOrChanged;
     }
-
+    
     /**
      * Value contains a lot of data and should not be fetched by '*' selects
      * @return $this
      */
-    public function valueIsHeavy() {
+    public function valueIsHeavy()
+    {
         $this->isHeavy = true;
         return $this;
     }
-
+    
     /**
      * @return bool
      */
-    public function isValueHeavy(): bool {
+    public function isValueHeavy(): bool
+    {
         return $this->isHeavy;
     }
-
+    
     /**
      * @return Relation[]
      */
-    public function getRelations() {
+    public function getRelations()
+    {
         if ($this->relations === null) {
             /** @noinspection StaticInvocationViaThisInspection */
             $this->relations = $this->tableStructure->getColumnRelations($this->getName());
         }
         return $this->relations;
     }
-
+    
     /**
      * @param $relationName
      * @return bool
      */
-    public function hasRelation($relationName) {
+    public function hasRelation($relationName)
+    {
         return isset($this->getRelations()[$relationName]);
     }
-
+    
     /**
      * @param string $relationName
      * @return Relation
      * @throws \InvalidArgumentException
      */
-    public function getRelation($relationName) {
+    public function getRelation($relationName)
+    {
         if (!$this->hasRelation($relationName)) {
             throw new \InvalidArgumentException(
                 "Column '{$this->getName()}' is not linked with '{$relationName}' relation"
@@ -890,11 +946,12 @@ class Column {
         }
         return $this->relations[$relationName];
     }
-
+    
     /**
      * @return null|Relation
      */
-    public function getForeignKeyRelation() {
+    public function getForeignKeyRelation()
+    {
         if ($this->foreignKeyRelation === false) {
             $this->foreignKeyRelation = null;
             foreach ($this->getRelations() as $relation) {
@@ -906,21 +963,23 @@ class Column {
         }
         return $this->foreignKeyRelation;
     }
-
+    
     /**
      * @return boolean
      */
-    public function isItAForeignKey() {
+    public function isItAForeignKey()
+    {
         return $this->getForeignKeyRelation() !== null;
     }
-
+    
     /**
      * @param Relation $relation - relation that stores values for this column
      * @return $this
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      */
-    protected function itIsForeignKey(Relation $relation) {
+    protected function itIsForeignKey(Relation $relation)
+    {
         if ($this->foreignKeyRelation) {
             throw new \InvalidArgumentException(
                 'Conflict detected for column ' . $this->getName() . ': relation ' . $relation->getName() . ' pretends to be the source of '
@@ -931,66 +990,74 @@ class Column {
         $this->foreignKeyRelation = $relation;
         return $this;
     }
-
+    
     /**
      * @return boolean
      */
-    public function isItAFile() {
+    public function isItAFile()
+    {
         return $this->isFile;
     }
-
+    
     /**
      * @return $this
      */
-    protected function itIsFile() {
+    protected function itIsFile()
+    {
         $this->isFile = true;
         return $this;
     }
-
+    
     /**
      * @return boolean
      */
-    public function isItAnImage() {
+    public function isItAnImage()
+    {
         return $this->isImage;
     }
-
+    
     /**
      * @return $this
      */
-    protected function itIsImage() {
+    protected function itIsImage()
+    {
         $this->isImage = true;
         return $this;
     }
-
+    
     /**
      * @return boolean
      */
-    public function isValuePrivate() {
+    public function isValuePrivate()
+    {
         return $this->isPrivate;
     }
     
     /**
-     * @deprecated - use isValuePrivate()
      * @return bool
+     * @deprecated - use isValuePrivate()
      */
-    public function isPrivateValue() {
+    public function isPrivateValue()
+    {
         return $this->isPrivateValue;
     }
-
+    
     /**
      * Value will not appear in Record->toArray() results
      * @return $this
      */
-    public function privateValue() {
+    public function privateValue()
+    {
         $this->isPrivateValue = true;
         return $this;
     }
     
     /**
-     * @deprecated - use privateValue()
      * @return $this
+     * @deprecated - use privateValue()
      */
-    public function valueIsPrivate() {
+    public function valueIsPrivate()
+    {
         $this->isPrivate = true;
         return $this;
     }
@@ -998,16 +1065,18 @@ class Column {
     /**
      * @return array
      */
-    static public function getValidationErrorsMessages() {
+    static public function getValidationErrorsMessages()
+    {
         return static::$validationErrorsMessages ?: static::$defaultValidationErrorsMessages;
     }
-
+    
     /**
      * Provide custom validation errors messages.
      * Default errors are listed in static::$defaultValidationErrorsLocalization
      * @param array $validationErrorsMessages
      */
-    static public function setValidationErrorsMessages(array $validationErrorsMessages) {
+    static public function setValidationErrorsMessages(array $validationErrorsMessages)
+    {
         if (!empty($validationErrorsMessages)) {
             static::$validationErrorsMessages = array_merge(
                 static::$defaultValidationErrorsMessages,
@@ -1015,85 +1084,94 @@ class Column {
             );
         }
     }
-
+    
     /**
      * @return \Closure
      */
-    public function getValueSetter() {
+    public function getValueSetter()
+    {
         return $this->valueSetter;
     }
-
+    
     /**
      * Sets new value. Called after value validation
      * @param \Closure $valueSetter = function ($newValue, $isFromDb, RecordValue $valueContainer, $trustDataReceivedFromDb) { modify $valueContainer }
      * @return $this
      */
-    public function setValueSetter(\Closure $valueSetter) {
+    public function setValueSetter(\Closure $valueSetter)
+    {
         $this->valueSetter = $valueSetter;
         return $this;
     }
-
+    
     /**
      * @return \Closure
      */
-    public function getValuePreprocessor() {
+    public function getValuePreprocessor()
+    {
         return $this->valuePreprocessor;
     }
-
+    
     /**
      * Function to preprocess raw value for validation and normalization
      * @param \Closure $newValuePreprocessor = function ($value, $isFromDb, Column $column) { return $value }
      * @return $this
      */
-    public function setValuePreprocessor($newValuePreprocessor) {
+    public function setValuePreprocessor($newValuePreprocessor)
+    {
         $this->valuePreprocessor = $newValuePreprocessor;
         return $this;
     }
-
+    
     /**
      * Get function that returns a column value
      * @return \Closure
      */
-    public function getValueGetter() {
+    public function getValueGetter()
+    {
         return $this->valueGetter;
     }
-
+    
     /**
      * @param \Closure $valueGetter = function (RecordValue $value, $format = null) { return $value->getValue(); }
      * Note: do not forget to provide valueExistenceChecker in case of columns that do not exist in db
      * @return $this
      */
-    public function setValueGetter(\Closure $valueGetter) {
+    public function setValueGetter(\Closure $valueGetter)
+    {
         $this->valueGetter = $valueGetter;
         return $this;
     }
-
+    
     /**
      * Get function that checks if column value is set
      * @return \Closure
      */
-    public function getValueExistenceChecker() {
+    public function getValueExistenceChecker()
+    {
         return $this->valueExistenceChecker;
     }
-
+    
     /**
      * Set function that checks if column value is set and returns boolean value (true: value is set)
      * Note: column value is set if it has any value (even null) or default value
      * @param \Closure $valueChecker = function (RecordValue $value, $checkDefaultValue = false) { return true; }
      * @return $this
      */
-    public function setValueExistenceChecker(\Closure $valueChecker) {
+    public function setValueExistenceChecker(\Closure $valueChecker)
+    {
         $this->valueExistenceChecker = $valueChecker;
         return $this;
     }
-
+    
     /**
      * @return \Closure
      */
-    public function getValueValidator() {
+    public function getValueValidator()
+    {
         return $this->valueValidator;
     }
-
+    
     /**
      * @param \Closure $validator = function ($value, $isFromDb, $isForCondition, Column $column) { return ['validation error 1', ...]; }
      * Notes:
@@ -1102,37 +1180,41 @@ class Column {
      * to use that additional validators if needed
      * @return $this
      */
-    public function setValueValidator(\Closure $validator) {
+    public function setValueValidator(\Closure $validator)
+    {
         $this->valueValidator = $validator;
         return $this;
     }
-
+    
     /**
      * @return \Closure
      */
-    public function getValueIsAllowedValidator() {
+    public function getValueIsAllowedValidator()
+    {
         return $this->valueIsAllowedValidator;
     }
-
+    
     /**
      * @param \Closure $validator = function ($value, $isFromDb, $isForCondition, Column $column) { return ['validation error 1', ...]; }
      * Notes:
      * - If you do not use not default value validator - you'll need to call this one manually
      * @return $this
      */
-    public function setValueIsAllowedValidator(\Closure $validator) {
+    public function setValueIsAllowedValidator(\Closure $validator)
+    {
         $this->valueIsAllowedValidator = $validator;
         return $this;
     }
-
+    
     /**
      * Note: it should not be used as public. Better use setValueValidator() method
      * @return \Closure
      */
-    public function getValueValidatorExtender() {
+    public function getValueValidatorExtender()
+    {
         return $this->valueValidatorExtender;
     }
-
+    
     /**
      * Additional validation called after
      * @param \Closure $extender - function ($value, $isFromDb, $isForCondition, Column $column) { return ['validation error 1', ...]; }
@@ -1141,21 +1223,23 @@ class Column {
      * - If there is no errors - return empty array
      * @return $this
      */
-    public function extendValueValidator(\Closure $extender) {
+    public function extendValueValidator(\Closure $extender)
+    {
         $this->valueValidatorExtender = $extender;
         return $this;
     }
-
+    
     /**
      * Alias for Column::extendValueValidator
-     * @see Column::extendValueValidator
      * @param \Closure $validator
      * @return $this
+     * @see Column::extendValueValidator
      */
-    public function setValueValidatorExtender(\Closure $validator) {
+    public function setValueValidatorExtender(\Closure $validator)
+    {
         return $this->extendValueValidator($validator);
     }
-
+    
     /**
      * Validates a new value
      * @param mixed|RecordValue $value
@@ -1167,38 +1251,42 @@ class Column {
      * @return array
      * @throws \UnexpectedValueException
      */
-    public function validateValue($value, $isFromDb = false, $isForCondition = false) {
+    public function validateValue($value, $isFromDb = false, $isForCondition = false)
+    {
         $errors = call_user_func($this->getValueValidator(), $value, $isFromDb, $isForCondition, $this);
         if (!is_array($errors)) {
             throw new \UnexpectedValueException('Validator closure must return an array');
         }
         return $errors;
     }
-
+    
     /**
      * @return \Closure
      */
-    public function getValueNormalizer() {
+    public function getValueNormalizer()
+    {
         return $this->valueNormalizer;
     }
-
+    
     /**
      * Function to process new value (for example: convert a value to proper data type)
      * @param \Closure $normalizer - function ($value, $isFromDb, Column $column) { return 'normalized value'; }
      * @return $this
      */
-    public function setValueNormalizer(\Closure $normalizer) {
+    public function setValueNormalizer(\Closure $normalizer)
+    {
         $this->valueNormalizer = $normalizer;
         return $this;
     }
-
+    
     /**
      * @return \Closure
      */
-    public function getValueSavingExtender() {
+    public function getValueSavingExtender()
+    {
         return $this->valueSavingExtender;
     }
-
+    
     /**
      * Additional processing for a column's value during a save.
      * WARNING: to be triggered one of conditions is required to be true:
@@ -1216,18 +1304,20 @@ class Column {
      * @return $this
      * @throws \UnexpectedValueException
      */
-    public function setValueSavingExtender(\Closure $valueSaver) {
+    public function setValueSavingExtender(\Closure $valueSaver)
+    {
         $this->valueSavingExtender = $valueSaver;
         return $this;
     }
-
+    
     /**
      * @return \Closure
      */
-    public function getValueDeleteExtender() {
+    public function getValueDeleteExtender()
+    {
         return $this->valueDeleteExtender;
     }
-
+    
     /**
      * Designed to manage file-related Column
      * Called after Record::afterDelete() and after transaction started inside Record::delete() was closed
@@ -1240,31 +1330,35 @@ class Column {
      * @return $this
      * @throws \UnexpectedValueException
      */
-    public function setValueDeleteExtender(\Closure $valueDeleteExtender) {
+    public function setValueDeleteExtender(\Closure $valueDeleteExtender)
+    {
         $this->valueDeleteExtender = $valueDeleteExtender;
         return $this;
     }
-
+    
     /**
      * @return \Closure
      */
-    public function getValueFormatter() {
+    public function getValueFormatter()
+    {
         return $this->valueFormatter;
     }
-
+    
     /**
      * Function to transform original value into another format and return result. Used by default value getter
      * @param \Closure $valueFormatter - function (RecordValue $valueContainer, $format) { return 'formatted value'; }
      * @param array $formattersNames - list of formats
      * @return $this
      */
-    public function setValueFormatter(\Closure $valueFormatter, array $formattersNames) {
+    public function setValueFormatter(\Closure $valueFormatter, array $formattersNames)
+    {
         $this->valueFormatter = $valueFormatter;
         $this->defaultValueFormattersNames = $formattersNames;
         return $this;
     }
     
-    public function getValueFormattersNames(): array {
+    public function getValueFormattersNames(): array
+    {
         return array_merge($this->defaultValueFormattersNames, array_keys($this->customValueFormatters));
     }
     
@@ -1273,41 +1367,46 @@ class Column {
      * @param \Closure $formatter = function(RecordValue $valueContainer) { return $modifiedValue }
      * @return $this
      */
-    public function addCustomValueFormatter(string $name, \Closure $formatter) {
+    public function addCustomValueFormatter(string $name, \Closure $formatter)
+    {
         $this->customValueFormatters[$name] = $formatter;
         return $this;
     }
     
-    public function getCustomValueFormatters(): array {
+    public function getCustomValueFormatters(): array
+    {
         return $this->customValueFormatters;
     }
-
+    
     /**
      * @param \Closure $valueGenerator = function (array|RecordInterface $record) { return 'value' }
      * @return $this
      */
-    public function autoUpdateValueOnEachSaveWith(\Closure $valueGenerator) {
+    public function autoUpdateValueOnEachSaveWith(\Closure $valueGenerator)
+    {
         $this->valueAutoUpdater = $valueGenerator;
         return $this;
     }
-
+    
     /**
      * @param RecordInterface|Record|array
      * @return \Closure|null
      * @throws \UnexpectedValueException
      */
-    public function getAutoUpdateForAValue($record) {
+    public function getAutoUpdateForAValue($record)
+    {
         if (empty($this->valueAutoUpdater)) {
             throw new \UnexpectedValueException('Value auto updater function is not set');
         }
         return call_user_func($this->valueAutoUpdater, $record);
     }
-
+    
     /**
      * @return bool
      */
-    public function isAutoUpdatingValue() {
+    public function isAutoUpdatingValue()
+    {
         return !empty($this->valueAutoUpdater);
     }
-
+    
 }

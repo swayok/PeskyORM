@@ -5,15 +5,16 @@ namespace PeskyORM\ORM;
 use PeskyORM\Core\DbAdapter;
 use Swayok\Utils\StringUtils;
 
-abstract class FakeTableStructure extends TableStructure {
-
+abstract class FakeTableStructure extends TableStructure
+{
+    
     static private $fakesCreated = 0;
     protected $allColumnsProcessed = true;
     protected $allRelationsProcessed = true;
     protected $treatAnyColumnNameAsValid = true;
     protected $connectionName = 'default';
     protected $connectionNameWritable = 'default';
-
+    
     /**
      * @param string $tableName
      * @param TableStructureInterface|null $tableStructureToCopy - use this table structure as parent class for a fake one
@@ -21,7 +22,8 @@ abstract class FakeTableStructure extends TableStructure {
      * @return FakeTableStructure|TableStructureInterface
      * @throws \InvalidArgumentException
      */
-    static public function makeNewFakeStructure(string $tableName, ?TableStructureInterface $tableStructureToCopy = null) {
+    static public function makeNewFakeStructure(string $tableName, ?TableStructureInterface $tableStructureToCopy = null)
+    {
         $tableName = trim($tableName);
         if ($tableName === '' || !DbAdapter::isValidDbEntityName($tableName, false)) {
             throw new \InvalidArgumentException(
@@ -42,7 +44,7 @@ abstract class FakeTableStructure extends TableStructure {
             $dbSchema = 'parent::getSchema()';
         }
         $className = 'FakeTableStructure' . static::$fakesCreated . 'For' . StringUtils::classify($tableName);
-
+        
         $class = <<<VIEW
 namespace {$namespace};
 
@@ -69,12 +71,14 @@ VIEW;
         $fullClassName = $namespace . '\\' . $className;
         return $fullClassName::getInstance();
     }
-
-    protected function loadConfigs() {
-        $this->pk = $this->columns['id'] = Column::create(Column::TYPE_INT, 'id')->primaryKey();
+    
+    protected function loadConfigs()
+    {
+        $this->pk = $this->columns['id'] = Column::create(Column::TYPE_INT, 'id')
+            ->primaryKey();
         parent::loadConfigs();
     }
-
+    
     /**
      * @param array $columns - key-value array where key is column name and value is column type or
      *          key is int and value is column name or instance of Column class
@@ -82,7 +86,8 @@ VIEW;
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    public function setTableColumns(array $columns) {
+    public function setTableColumns(array $columns)
+    {
         $this->columns = [];
         foreach ($columns as $name => $typeOrColumnInstance) {
             if (is_int($name)) {
@@ -101,14 +106,14 @@ VIEW;
             }
             if ($this->columns[$name]->isItAFile()) {
                 $this->fileColumns[] = $this->columns[$name];
-            } else if ($this->columns[$name]->isItPrimaryKey()) {
+            } elseif ($this->columns[$name]->isItPrimaryKey()) {
                 $this->pk = $this->columns[$name];
             }
         }
         $this->treatAnyColumnNameAsValid = count($this->columns) === 0;
         return $this;
     }
-
+    
     /**
      * @param $columnName
      * @return $this
@@ -116,11 +121,13 @@ VIEW;
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    public function markColumnAsPrimaryKey($columnName) {
-        $this->pk = static::getColumn($columnName)->primaryKey();
+    public function markColumnAsPrimaryKey($columnName)
+    {
+        $this->pk = static::getColumn($columnName)
+            ->primaryKey();
         return $this;
     }
-
+    
     /**
      * @param TableStructure $structure
      * @param bool $append - true: existing structure will be appended; false - replaced
@@ -129,7 +136,8 @@ VIEW;
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    public function mimicTableStructure(TableStructure $structure, $append = false) {
+    public function mimicTableStructure(TableStructure $structure, $append = false)
+    {
         if (!$append) {
             $this->columns = [];
             $this->relations = [];
@@ -150,7 +158,8 @@ VIEW;
      * @param bool $writable - true: connection must have access to write data into DB
      * @return string
      */
-    static public function getConnectionName(bool $writable): string {
+    static public function getConnectionName(bool $writable): string
+    {
         return $writable ? static::getInstance()->connectionNameWritable : static::getInstance()->connectionName;
     }
     
@@ -158,7 +167,8 @@ VIEW;
      * @param string $columnName
      * @return bool
      */
-    static public function hasColumn(string $columnName): bool {
+    static public function hasColumn(string $columnName): bool
+    {
         return static::getInstance()->treatAnyColumnNameAsValid || parent::hasColumn($columnName);
     }
     
@@ -169,18 +179,19 @@ VIEW;
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    static public function getColumn(string $columnName): Column {
+    static public function getColumn(string $columnName): Column
+    {
         if (static::getInstance()->treatAnyColumnNameAsValid && !parent::hasColumn($columnName)) {
             static::getInstance()->columns[$columnName] = Column::create(Column::TYPE_STRING, $columnName);
         }
         return parent::getColumn($columnName);
     }
-
-    protected function loadColumnsConfigsFromPrivateMethods() {
-
+    
+    protected function loadColumnsConfigsFromPrivateMethods()
+    {
     }
-
-    protected function createMissingColumnsConfigsFromDbTableDescription() {
-
+    
+    protected function createMissingColumnsConfigsFromDbTableDescription()
+    {
     }
 }

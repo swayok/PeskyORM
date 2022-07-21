@@ -6,13 +6,16 @@ use Tests\PeskyORMTest\TestingApp;
 
 require_once __DIR__ . '/PostgresAdapterInsertDataTest.php';
 
-class MysqlAdapterInsertDataTest extends PostgresAdapterInsertDataTest {
-
-    static protected function getValidAdapter() {
+class MysqlAdapterInsertDataTest extends PostgresAdapterInsertDataTest
+{
+    
+    static protected function getValidAdapter()
+    {
         return TestingApp::getMysqlConnection();
     }
-
-    public function convertTestDataForAdminsTableAssert($data) {
+    
+    public function convertTestDataForAdminsTableAssert($data)
+    {
         foreach ($data as &$item) {
             $item['id'] = "{$item['id']}";
             $item['is_superadmin'] = $item['is_superadmin'] ? '1' : '0';
@@ -23,5 +26,5 @@ class MysqlAdapterInsertDataTest extends PostgresAdapterInsertDataTest {
         }
         return $data;
     }
-
+    
 }

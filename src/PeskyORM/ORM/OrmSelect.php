@@ -8,8 +8,9 @@ use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
 
-class OrmSelect extends AbstractSelect {
-
+class OrmSelect extends AbstractSelect
+{
+    
     /**
      * @var TableInterface
      */
@@ -49,77 +50,99 @@ class OrmSelect extends AbstractSelect {
      * @param string|null $tableAlias - used for relations / alias for table in case if it is not $table::getAlias()
      * @return static
      */
-    static public function from(TableInterface $table, ?string $tableAlias = null) {
+    static public function from(TableInterface $table, ?string $tableAlias = null)
+    {
         return new static($table);
     }
-
+    
     /**
      * @param TableInterface $table - table name or Table object
      * @param string|null $tableAlias - used for relations / alias for table in case if it is not $table::getAlias()
      */
-    public function __construct(TableInterface $table, ?string $tableAlias = null) {
+    public function __construct(TableInterface $table, ?string $tableAlias = null)
+    {
         $this->tableStructure = $table::getStructure();
         $this->table = $table;
-        $this->setTableAlias($tableAlias ?: $this->getTable()->getAlias());
-    }
-
-    public function getTableName(): string {
-        return $this->getTableStructure()->getTableName();
+        $this->setTableAlias(
+            $tableAlias
+                ?: $this->getTable()
+                ->getAlias()
+        );
     }
     
-    public function setTableAlias(string $tableAlias) {
+    public function getTableName(): string
+    {
+        return $this->getTableStructure()
+            ->getTableName();
+    }
+    
+    public function setTableAlias(string $tableAlias)
+    {
         $this->tableAlias = $tableAlias;
         return $this;
     }
-
-    public function getTableAlias(): string {
+    
+    public function getTableAlias(): string
+    {
         return $this->tableAlias;
     }
-
-    public function getTableSchemaName(): ?string {
-        return $this->getTableStructure()->getSchema();
+    
+    public function getTableSchemaName(): ?string
+    {
+        return $this->getTableStructure()
+            ->getSchema();
     }
-
-    public function getConnection(): DbAdapterInterface {
-        return $this->getTable()->getConnection(false);
+    
+    public function getConnection(): DbAdapterInterface
+    {
+        return $this->getTable()
+            ->getConnection(false);
     }
-
-    public function getTable(): TableInterface {
+    
+    public function getTable(): TableInterface
+    {
         return $this->table;
     }
     
-    public function setRecordClass(?string $class) {
+    public function setRecordClass(?string $class)
+    {
         $this->recordClass = $class;
         return $this;
     }
     
-    public function getNewRecord() {
-        return $this->recordClass ? new $this->recordClass : $this->table->newRecord();
+    public function getNewRecord()
+    {
+        return $this->recordClass ? new $this->recordClass() : $this->table->newRecord();
     }
-
-    public function getTableStructure(): TableStructure {
+    
+    public function getTableStructure(): TableStructure
+    {
         return $this->tableStructure;
     }
-
+    
     /**
      * @return Record|RecordInterface
      */
-    public function fetchOneAsDbRecord(): RecordInterface {
-        return $this->getNewRecord()->fromDbData($this->fetchOne());
+    public function fetchOneAsDbRecord(): RecordInterface
+    {
+        return $this->getNewRecord()
+            ->fromDbData($this->fetchOne());
     }
-
+    
     /**
      * @param OrmJoinInfo $joinInfo
      * @param bool $append
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function join(OrmJoinInfo $joinInfo, bool $append = true) {
+    public function join(OrmJoinInfo $joinInfo, bool $append = true)
+    {
         $this->_join($joinInfo, $append);
         return $this;
     }
     
-    public function getCountQuery(bool $ignoreLeftJoins = true): string {
+    public function getCountQuery(bool $ignoreLeftJoins = true): string
+    {
         if ($this->distinct) {
             $pkColumnName = $this->tableStructure->getPkColumnName();
             if (empty($this->distinctColumns) || in_array($pkColumnName, $this->distinctColumns, true)) {
@@ -130,7 +153,7 @@ class OrmSelect extends AbstractSelect {
                     if ($distinctColumnInfo['join_name'] === null && $distinctColumnInfo['json_selector'] === null) {
                         if (!$columnInfo) {
                             $columnInfo = $distinctColumnInfo;
-                        } else if ($distinctColumnInfo['name'] === $pkColumnName) {
+                        } elseif ($distinctColumnInfo['name'] === $pkColumnName) {
                             $columnInfo = $distinctColumnInfo;
                             break;
                         }
@@ -150,20 +173,23 @@ class OrmSelect extends AbstractSelect {
     }
     
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
-
-    protected function normalizeJoinDataForRecord(AbstractJoinInfo $joinConfig, array $data): array {
+    
+    protected function normalizeJoinDataForRecord(AbstractJoinInfo $joinConfig, array $data): array
+    {
         $data = parent::normalizeJoinDataForRecord($joinConfig, $data);
         if ($joinConfig instanceof OrmJoinInfo) {
-            $pkName = $joinConfig->getForeignDbTable()->getPkColumnName();
+            $pkName = $joinConfig->getForeignDbTable()
+                ->getPkColumnName();
             if (array_key_exists($pkName, $data) && $data[$pkName] === null) {
-                 // not existing related record
+                // not existing related record
                 return [];
             }
         }
         return $data;
     }
-
-    protected function beforeQueryBuilding() {
+    
+    protected function beforeQueryBuilding()
+    {
         if ($this->isDirty('joins') || $this->isDirty('with')) {
             $this->setDirty('columns');
             $this->setDirty('distinct');
@@ -192,24 +218,29 @@ class OrmSelect extends AbstractSelect {
         }
         parent::beforeQueryBuilding();
     }
-
-    protected function processRawColumns() {
+    
+    protected function processRawColumns()
+    {
         parent::processRawColumns();
         foreach ($this->columnsToSelectFromJoinedRelations as $joinName => $columns) {
             try {
-                $this->getJoin($joinName)->setForeignColumnsToSelect(empty($columns) ? [] : $columns);
+                $this->getJoin($joinName)
+                    ->setForeignColumnsToSelect(empty($columns) ? [] : $columns);
             } catch (\InvalidArgumentException $exc) {
                 throw new \UnexpectedValueException('SELECT: ' . $exc->getMessage(), 0);
             }
         }
         return $this;
     }
-
-    protected function normalizeWildcardColumn(?string $joinName = null, ?array $excludeColumns = null, bool $includeHeavyColumns = false): array {
+    
+    protected function normalizeWildcardColumn(?string $joinName = null, ?array $excludeColumns = null, bool $includeHeavyColumns = false): array
+    {
         if ($joinName === null) {
             $tableStructure = $this->getTableStructure();
         } else {
-            $tableStructure = $this->getJoin($joinName)->getForeignDbTable()->getTableStructure();
+            $tableStructure = $this->getJoin($joinName)
+                ->getForeignDbTable()
+                ->getTableStructure();
         }
         $normalizedColumns = [];
         if (!$excludeColumns) {
@@ -222,7 +253,7 @@ class OrmSelect extends AbstractSelect {
         }
         return $normalizedColumns;
     }
-
+    
     protected function resolveColumnsToBeSelectedForJoin(
         string $joinName,
         $columns,
@@ -242,14 +273,19 @@ class OrmSelect extends AbstractSelect {
                     $filteredColumns = array_merge(
                         $filteredColumns,
                         array_diff(
-                            array_keys($this->getJoin($joinName)->getForeignDbTable()->getTableStructure()->getColumnsThatExistInDb()),
+                            array_keys(
+                                $this->getJoin($joinName)
+                                    ->getForeignDbTable()
+                                    ->getTableStructure()
+                                    ->getColumnsThatExistInDb()
+                            ),
                             (array)$columnName
                         )
                     );
-                } else if (!is_int($columnAlias) && (is_array($columnName) || $columnName === '*')) {
+                } elseif (!is_int($columnAlias) && (is_array($columnName) || $columnName === '*')) {
                     // subrealtion
                     $this->resolveColumnsToBeSelectedForJoin($columnAlias, $columnName, $joinName, false);
-                } else if (preg_match('%^(.*)\.\*$%', $columnName, $matches)) {
+                } elseif (preg_match('%^(.*)\.\*$%', $columnName, $matches)) {
                     // subrealtion like 'SubRel.*'
                     $this->resolveColumnsToBeSelectedForJoin($matches[1], '*', $joinName, false);
                 } else {
@@ -275,19 +311,21 @@ class OrmSelect extends AbstractSelect {
         }
         $this->joinedRelationsParents[$joinName] = $parentJoinName;
     }
-
+    
     /**
      * @param string $joinName - 'Name' or 'Name.SubName'
      * @return OrmJoinInfo
      */
-    protected function getJoin(string $joinName) {
+    protected function getJoin(string $joinName)
+    {
         $joins = explode('.', $joinName);
         foreach ($joins as $subJoin) {
             if (
                 !$this->hasJoin($subJoin, true)
                 && (
                     array_key_exists($subJoin, $this->joinedRelationsParents) //< array_key_exists is correct
-                    || $this->getTableStructure()->hasRelation($subJoin)
+                    || $this->getTableStructure()
+                        ->hasRelation($subJoin)
                 )
             ) {
                 $this->addJoinFromRelation($subJoin);
@@ -295,18 +333,20 @@ class OrmSelect extends AbstractSelect {
         }
         return parent::getJoin($joins[count($joins) - 1]);
     }
-
+    
     /**
      * Load relation and all its parents
      * @param string $joinName
      * @return $this
      * @throws \UnexpectedValueException
      */
-    protected function addJoinFromRelation(string $joinName) {
+    protected function addJoinFromRelation(string $joinName)
+    {
         if (!$this->hasJoin($joinName, false)) {
             if (
                 !array_key_exists($joinName, $this->joinedRelationsParents) //< array_key_exists is correct
-                && $this->getTableStructure()->hasRelation($joinName)
+                && $this->getTableStructure()
+                    ->hasRelation($joinName)
             ) {
                 // this may happen only when relation is used in WHERE or HAVING
                 $this->joinedRelationsParents[$joinName] = null;
@@ -317,22 +357,27 @@ class OrmSelect extends AbstractSelect {
             $parentJoinName = $this->joinedRelationsParents[$joinName];
             if ($parentJoinName === null) {
                 // join on base table
-                if ($this->getTableStructure()->getRelation($relationName)->getType() === Relation::HAS_MANY) {
+                if ($this->getTableStructure()
+                        ->getRelation($relationName)
+                        ->getType() === Relation::HAS_MANY) {
                     throw new \UnexpectedValueException(
                         "Relation '{$relationName}' has type 'HAS MANY' and should not be used as JOIN (not optimal). "
-                            . 'Select that records outside of OrmSelect.'
+                        . 'Select that records outside of OrmSelect.'
                     );
                 }
-                $joinConfig = $this->getTable()->getJoinConfigForRelation($relationName, $this->getTableAlias(), $joinName);
+                $joinConfig = $this->getTable()
+                    ->getJoinConfigForRelation($relationName, $this->getTableAlias(), $joinName);
             } else {
                 // join on other join
                 $this->addJoinFromRelation($parentJoinName);
                 $parentJoin = $this->getJoin($parentJoinName);
                 $foreignTable = $parentJoin->getForeignDbTable();
-                if ($foreignTable->getTableStructure()->getRelation($relationName)->getType() === Relation::HAS_MANY) {
+                if ($foreignTable->getTableStructure()
+                        ->getRelation($relationName)
+                        ->getType() === Relation::HAS_MANY) {
                     throw new \UnexpectedValueException(
                         "Relation '{$relationName}' has type 'HAS MANY' and should not be used as JOIN (not optimal). "
-                            . 'Select that records outside of OrmSelect.'
+                        . 'Select that records outside of OrmSelect.'
                     );
                 }
                 $joinConfig = $foreignTable::getJoinConfigForRelation($relationName, $parentJoin->getJoinName(), $joinName);
@@ -347,7 +392,7 @@ class OrmSelect extends AbstractSelect {
         }
         return $this;
     }
-
+    
     /**
      * @param array $conditions
      * @param string $subject
@@ -355,7 +400,8 @@ class OrmSelect extends AbstractSelect {
      * @return string
      * @throws \UnexpectedValueException
      */
-    protected function makeConditions(array $conditions, string $subject = 'WHERE', ?string $joinName = null): string {
+    protected function makeConditions(array $conditions, string $subject = 'WHERE', ?string $joinName = null): string
+    {
         $assembled = Utils::assembleWhereConditionsFromArray(
             $this->getConnection(),
             $conditions,
@@ -366,12 +412,13 @@ class OrmSelect extends AbstractSelect {
             function ($columnName, $rawValue) use ($subject, $joinName) {
                 if ($rawValue instanceof DbExpr) {
                     return $this->quoteDbExpr($rawValue);
-                } else if ($rawValue instanceof AbstractSelect) {
+                } elseif ($rawValue instanceof AbstractSelect) {
                     return '(' . $rawValue->getQuery() . ')';
-                } else if (!($columnName instanceof DbExpr)) {
+                } elseif (!($columnName instanceof DbExpr)) {
                     $columnInfo = $this->analyzeColumnName($columnName, null, $joinName, $subject);
                     if ($columnInfo['join_name'] === null) {
-                        $column = $this->getTableStructure()->getColumn($columnInfo['name']);
+                        $column = $this->getTableStructure()
+                            ->getColumn($columnInfo['name']);
                     } else {
                         $column = $this
                             ->getJoin($columnInfo['join_name'])
@@ -388,14 +435,14 @@ class OrmSelect extends AbstractSelect {
                                     break;
                                 }
                             }
-                        } else if ($rawValue !== null) {
+                        } elseif ($rawValue !== null) {
                             $errors = $column->validateValue($rawValue, false, true);
                         }
                     }
                     if (!empty($errors)) {
                         throw new \UnexpectedValueException(
                             "Invalid {$subject} condition value provided for column [{$columnName}]. Value: "
-                                . var_export($rawValue, true) . '; Errors: ' . implode('; ', $errors)
+                            . var_export($rawValue, true) . '; Errors: ' . implode('; ', $errors)
                         );
                     }
                 }
@@ -405,35 +452,39 @@ class OrmSelect extends AbstractSelect {
         $assembled = trim($assembled);
         return empty($assembled) ? '' : " {$subject} {$assembled}";
     }
-
-    protected function makeColumnNameWithAliasForQuery(array $columnInfo, bool $itIsWithQuery = false): string {
+    
+    protected function makeColumnNameWithAliasForQuery(array $columnInfo, bool $itIsWithQuery = false): string
+    {
         $this->validateColumnInfo($columnInfo, 'SELECT');
         return parent::makeColumnNameWithAliasForQuery($columnInfo, $itIsWithQuery);
     }
-
-    protected function makeColumnNameForCondition(array $columnInfo, string $subject = 'WHERE'): string {
+    
+    protected function makeColumnNameForCondition(array $columnInfo, string $subject = 'WHERE'): string
+    {
         $this->validateColumnInfoForCondition($columnInfo, $subject);
         return parent::makeColumnNameForCondition($columnInfo);
     }
-
+    
     /**
      * @param string $joinName
      * @return string
      * @throws \InvalidArgumentException
      */
-    protected function getRelationNameByJoinName(string $joinName): string {
+    protected function getRelationNameByJoinName(string $joinName): string
+    {
         if (!isset($joinName, $this->joinNameToRelationName)) {
             throw new \InvalidArgumentException("There is no known relation for join named '{$joinName}'");
         }
         return $this->joinNameToRelationName[$joinName];
     }
-
+    
     /**
      * @param array $columnInfo
      * @param string $subject - used in exceptions, can be 'SELECT', 'ORDER BY', 'GROUP BY', 'WHERE' or 'HAVING'
      * @throws \UnexpectedValueException
      */
-    protected function validateColumnInfo(array $columnInfo, string $subject) {
+    protected function validateColumnInfo(array $columnInfo, string $subject)
+    {
         if ($columnInfo['name'] instanceof DbExpr) {
             if (
                 $columnInfo['name']->isValidationAllowed()
@@ -448,22 +499,24 @@ class OrmSelect extends AbstractSelect {
             }
         } else {
             if ($columnInfo['join_name'] === null) {
-                $isValid = $this->getTableStructure()->hasColumn($columnInfo['name']);
+                $isValid = $this->getTableStructure()
+                    ->hasColumn($columnInfo['name']);
                 if (!$isValid) {
                     throw new \UnexpectedValueException(
                         "{$subject}: Column with name [{$columnInfo['name']}] not found in "
-                            . get_class($this->getTableStructure())
+                        . get_class($this->getTableStructure())
                     );
                 }
             } else {
                 $join = $this->getJoin($columnInfo['join_name']);
                 if (!($join instanceof CrossJoinInfo)) {
-                    $foreignTableStructure = $join->getForeignDbTable()->getTableStructure();
+                    $foreignTableStructure = $join->getForeignDbTable()
+                        ->getTableStructure();
                     $isValid = $columnInfo['name'] === '*' || $foreignTableStructure::hasColumn($columnInfo['name']);
                     if (!$isValid) {
                         throw new \UnexpectedValueException(
                             "{$subject}: Column with name [{$columnInfo['join_name']}.{$columnInfo['name']}] not found in "
-                                . get_class($foreignTableStructure)
+                            . get_class($foreignTableStructure)
                         );
                     }
                 }
@@ -471,8 +524,9 @@ class OrmSelect extends AbstractSelect {
         }
     }
     
-    protected function validateColumnInfoForCondition(array $columnInfo, string $subject) {
+    protected function validateColumnInfoForCondition(array $columnInfo, string $subject)
+    {
         $this->validateColumnInfo($columnInfo, $subject);
     }
-
+    
 }

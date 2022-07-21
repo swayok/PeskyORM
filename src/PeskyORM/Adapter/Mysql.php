@@ -12,10 +12,11 @@ use PeskyORM\Exception\DbException;
 use PeskyORM\ORM\Column;
 use Swayok\Utils\ValidateValue;
 
-class Mysql extends DbAdapter {
-
+class Mysql extends DbAdapter
+{
+    
     const ENTITY_NAME_QUOTES = '`';
-
+    
     static protected $dataTypesMap = [
         'bytea' => 'BINARY',
         'date' => 'DATE',
@@ -35,7 +36,7 @@ class Mysql extends DbAdapter {
         'int8' => 'SIGNED INTEGER',
         'bigint' => 'SIGNED INTEGER',
     ];
-
+    
     protected static $conditionOperatorsMap = [
         'SIMILAR TO' => 'LIKE',
         'NOT SIMILAR TO' => 'NOT LIKE',
@@ -46,7 +47,7 @@ class Mysql extends DbAdapter {
         'REGEX' => 'REGEXP',
         'NOT REGEX' => 'NOT REGEXP',
     ];
-
+    
     protected static $dbTypeToOrmType = [
         'bool' => Column::TYPE_BOOL,
         'blob' => Column::TYPE_BLOB,
@@ -81,38 +82,46 @@ class Mysql extends DbAdapter {
         'timestamp' => Column::TYPE_TIMESTAMP,
         'year' => Column::TYPE_INT,
     ];
-
-    static public function getConnectionConfigClass(): string {
+    
+    static public function getConnectionConfigClass(): string
+    {
         return MysqlConfig::class;
     }
-
-    public function __construct(MysqlConfig $connectionConfig) {
+    
+    public function __construct(MysqlConfig $connectionConfig)
+    {
         parent::__construct($connectionConfig);
     }
-
-    public function isDbSupportsTableSchemas(): bool {
+    
+    public function isDbSupportsTableSchemas(): bool
+    {
         return false;
     }
-
-    public function getDefaultTableSchema(): ?string {
+    
+    public function getDefaultTableSchema(): ?string
+    {
         return null;
     }
-
-    public function setTimezone(string $timezone) {
+    
+    public function setTimezone(string $timezone)
+    {
         $this->exec(DbExpr::create("SET time_zone = ``$timezone``"));
         return $this;
     }
     
-    public function setSearchPath(string $newSearchPath) {
+    public function setSearchPath(string $newSearchPath)
+    {
         // todo: find out if there is something similar in mysql
         return $this;
     }
-
-    public function addDataTypeCastToExpression(string $dataType, string $expression): string {
+    
+    public function addDataTypeCastToExpression(string $dataType, string $expression): string
+    {
         return 'CAST(' . $expression . ' AS ' . $this->getRealDataType($dataType) . ')';
     }
-
-    protected function getRealDataType($dataType) {
+    
+    protected function getRealDataType($dataType)
+    {
         $dataType = strtolower($dataType);
         if (array_key_exists($dataType, static::$dataTypesMap)) {
             return static::$dataTypesMap[$dataType];
@@ -120,11 +129,12 @@ class Mysql extends DbAdapter {
             return 'CHAR';
         }
     }
-
-    public function getConditionOperatorsMap() {
+    
+    public function getConditionOperatorsMap()
+    {
         return static::$conditionOperatorsMap;
     }
-
+    
     protected function resolveQueryWithReturningColumns(
         $query,
         $table,
@@ -156,7 +166,7 @@ class Mysql extends DbAdapter {
                 throw new \InvalidArgumentException("\$operation '$operation' is not supported by " . __CLASS__);
         }
     }
-
+    
     protected function resolveInsertOneQueryWithReturningColumns(
         $table,
         array $data,
@@ -167,28 +177,30 @@ class Mysql extends DbAdapter {
         parent::insert($table, $data, $dataTypes, false);
         $insertQuery = $this->getLastQuery();
         $id = $this->quoteValue(
-            Utils::getDataFromStatement($this->query('SELECT LAST_INSERT_ID()'),
-            Utils::FETCH_VALUE
-        ));
+            Utils::getDataFromStatement(
+                $this->query('SELECT LAST_INSERT_ID()'),
+                Utils::FETCH_VALUE
+            )
+        );
         $pkName = $this->quoteDbEntityName($pkName);
         $query = DbExpr::create("SELECT {$returning} FROM {$table} WHERE $pkName=$id");
         $stmnt = $this->query($query);
         if (!$stmnt->rowCount()) {
             throw new DbException(
                 'No data received for $returning request after insert. Insert: ' . $insertQuery
-                    . '. Select: ' . $this->getLastQuery(),
+                . '. Select: ' . $this->getLastQuery(),
                 DbException::CODE_RETURNING_FAILED
             );
-        } else if ($stmnt->rowCount() > 1) {
+        } elseif ($stmnt->rowCount() > 1) {
             throw new DbException(
                 'Received more then 1 record for $returning request after insert. Insert: ' . $insertQuery
-                    . '. Select: ' . $this->getLastQuery(),
+                . '. Select: ' . $this->getLastQuery(),
                 DbException::CODE_RETURNING_FAILED
             );
         }
         return Utils::getDataFromStatement($stmnt, Utils::FETCH_FIRST);
     }
-
+    
     protected function resolveInsertManyQueryWithReturningColumns(
         $table,
         array $columns,
@@ -199,10 +211,15 @@ class Mysql extends DbAdapter {
     ) {
         parent::insertMany($table, $columns, $data, $dataTypes, false);
         $insertQuery = $this->getLastQuery();
-        $id1 = (int)trim($this->quoteValue(
-            Utils::getDataFromStatement($this->query('SELECT LAST_INSERT_ID()'),
-            Utils::FETCH_VALUE
-        )), "'");
+        $id1 = (int)trim(
+            $this->quoteValue(
+                Utils::getDataFromStatement(
+                    $this->query('SELECT LAST_INSERT_ID()'),
+                    Utils::FETCH_VALUE
+                )
+            ),
+            "'"
+        );
         if ($id1 === 0) {
             throw new DbException(
                 'Failed to get IDs of inserted records. LAST_INSERT_ID() returned 0',
@@ -218,19 +235,19 @@ class Mysql extends DbAdapter {
         if (!$stmnt->rowCount()) {
             throw new DbException(
                 'No data received for $returning request after insert. '
-                    . "Insert: {$insertQuery}. Select: {$this->getLastQuery()}",
+                . "Insert: {$insertQuery}. Select: {$this->getLastQuery()}",
                 DbException::CODE_RETURNING_FAILED
             );
-        } else if ($stmnt->rowCount() !== count($data)) {
+        } elseif ($stmnt->rowCount() !== count($data)) {
             throw new DbException(
                 "Received amount of records ({$stmnt->rowCount()}) differs from expected (" . count($data) . ')'
-                    . '. Insert: ' . $insertQuery . '. Select: ' . $this->getLastQuery(),
+                . '. Insert: ' . $insertQuery . '. Select: ' . $this->getLastQuery(),
                 DbException::CODE_RETURNING_FAILED
             );
         }
         return Utils::getDataFromStatement($stmnt, Utils::FETCH_ALL);
     }
-
+    
     protected function resolveUpdateQueryWithReturningColumns(
         $updateQuery,
         $table,
@@ -246,13 +263,13 @@ class Mysql extends DbAdapter {
         if ($stmnt->rowCount() !== $rowsUpdated) {
             throw new DbException(
                 "Received amount of records ({$stmnt->rowCount()}) differs from expected ({$rowsUpdated})"
-                    . '. Update: ' . $updateQuery . '. Select: ' . $this->getLastQuery(),
+                . '. Update: ' . $updateQuery . '. Select: ' . $this->getLastQuery(),
                 DbException::CODE_RETURNING_FAILED
             );
         }
         return Utils::getDataFromStatement($stmnt, Utils::FETCH_ALL);
     }
-
+    
     protected function resolveDeleteQueryWithReturningColumns(
         $query,
         $table,
@@ -278,7 +295,8 @@ class Mysql extends DbAdapter {
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function describeTable(string $table, ?string $schema = null): TableDescription {
+    public function describeTable(string $table, ?string $schema = null): TableDescription
+    {
         $description = new TableDescription($table, $schema);
         /** @var array $columns */
         $columns = $this->query(DbExpr::create("SHOW COLUMNS IN `$table`"), Utils::FETCH_ALL);
@@ -299,52 +317,55 @@ class Mysql extends DbAdapter {
         }
         return $description;
     }
-
+    
     /**
      * @param $dbType
      * @return string
      */
-    protected function convertDbTypeToOrmType($dbType) {
+    protected function convertDbTypeToOrmType($dbType)
+    {
         $dbType = strtolower(preg_replace(['%\s*unsigned$%i', '%\([^)]+\)$%'], ['', ''], $dbType));
         return array_key_exists($dbType, static::$dbTypeToOrmType)
             ? static::$dbTypeToOrmType[$dbType]
             : Column::TYPE_STRING;
     }
-
+    
     /**
      * @param string $default
      * @return bool|DbExpr|float|int|string|null
      */
-    protected function cleanDefaultValueForColumnDescription($default) {
+    protected function cleanDefaultValueForColumnDescription($default)
+    {
         if ($default === null || $default === '') {
             return $default;
-        } else if ($default === 'CURRENT_TIMESTAMP') {
+        } elseif ($default === 'CURRENT_TIMESTAMP') {
             return DbExpr::create('NOW()');
-        } else if ($default === 'true') {
+        } elseif ($default === 'true') {
             return true;
-        } else if ($default === 'false') {
+        } elseif ($default === 'false') {
             return false;
-        } else if (ValidateValue::isInteger($default)) {
+        } elseif (ValidateValue::isInteger($default)) {
             return (int)$default;
-        } else if (ValidateValue::isFloat($default)) {
+        } elseif (ValidateValue::isFloat($default)) {
             return (float)$default;
         } else {
             return $default; //< it seems like there is still no possibility to use functions as default value
         }
     }
-
+    
     /**
      * @param string $typeDescription
      * @return array - index 0: limit; index 1: precision
      */
-    protected function extractLimitAndPrecisionForColumnDescription($typeDescription) {
+    protected function extractLimitAndPrecisionForColumnDescription($typeDescription)
+    {
         if (preg_match('%\((\d+)(?:,(\d+))?\)( unsigned)?$%', $typeDescription, $matches)) {
             return [(int)$matches[1], !isset($matches[2]) ? null : (int)$matches[2]];
         } else {
             return [null, null];
         }
     }
-
+    
     /**
      * Quote a db entity name like 'table.col_name -> json_key1 ->> json_key2'
      * @param array $sequence -
@@ -356,7 +377,8 @@ class Mysql extends DbAdapter {
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    protected function quoteJsonSelectorExpression(array $sequence) {
+    protected function quoteJsonSelectorExpression(array $sequence)
+    {
         $sequence[0] = $this->quoteDbEntityName($sequence[0]);
         $max = count($sequence);
         // prepare keys
@@ -387,14 +409,15 @@ class Mysql extends DbAdapter {
         }
         return $result;
     }
-
+    
     /**
      * @param string $key
      * @return string
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    protected function quoteJsonSelectorValue($key) {
+    protected function quoteJsonSelectorValue($key)
+    {
         if ($key[0] === '[') {
             $key = '$' . $key;
         } else {
@@ -411,13 +434,14 @@ class Mysql extends DbAdapter {
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function assembleConditionValue($value, string $operator, bool $valueAlreadyQuoted = false): string {
+    public function assembleConditionValue($value, string $operator, bool $valueAlreadyQuoted = false): string
+    {
         if (in_array($operator, ['@>', '<@'], true)) {
             if ($valueAlreadyQuoted) {
                 if (!is_string($value)) {
                     throw new \InvalidArgumentException(
                         'Condition value with $valueAlreadyQuoted === true must be a string. '
-                             . gettype($value) . ' received'
+                        . gettype($value) . ' received'
                     );
                 }
                 return $value;
@@ -440,7 +464,8 @@ class Mysql extends DbAdapter {
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function assembleCondition(string $quotedColumn, string $operator, $rawValue, bool $valueAlreadyQuoted = false): string {
+    public function assembleCondition(string $quotedColumn, string $operator, $rawValue, bool $valueAlreadyQuoted = false): string
+    {
         if (in_array($operator, ['?', '?|', '?&'], true)) {
             if (!is_array($rawValue)) {
                 $rawValue = [$valueAlreadyQuoted ? $rawValue : $this->quoteJsonSelectorValue($rawValue)];
@@ -453,7 +478,7 @@ class Mysql extends DbAdapter {
             $values = implode(', ', $rawValue);
             $howMany = $this->quoteValue($operator === '?|' ? 'one' : 'many');
             return "JSON_CONTAINS_PATH($quotedColumn, $howMany, $values)";
-        } else if (in_array($operator, ['@>', '<@'], true)) {
+        } elseif (in_array($operator, ['@>', '<@'], true)) {
             $value = $this->assembleConditionValue($rawValue, $operator, $valueAlreadyQuoted);
             return "JSON_CONTAINS($quotedColumn, $value)";
         } else {
@@ -470,14 +495,15 @@ class Mysql extends DbAdapter {
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public function hasTable(string $table, ?string $schema = null): bool {
+    public function hasTable(string $table, ?string $schema = null): bool
+    {
         $exists = (bool)$this->query(
             DbExpr::create("SELECT true FROM `information_schema`.`tables` WHERE `table_name` = ``$table``"),
             static::FETCH_VALUE
         );
         return !empty($exists);
     }
-
+    
     /**
      * Listen for DB notifications (mostly for PostgreSQL LISTEN...NOTIFY)
      * @param string $channel
@@ -487,8 +513,9 @@ class Mysql extends DbAdapter {
      * @param int $sleepAfterNotificationMs - miliseconds to sleep after notification consumed
      * @return void
      */
-    public function listen(string $channel, \Closure $handler, int $sleepIfNoNotificationMs = 1000, int $sleepAfterNotificationMs = 0) {
+    public function listen(string $channel, \Closure $handler, int $sleepIfNoNotificationMs = 1000, int $sleepAfterNotificationMs = 0)
+    {
         throw new \BadMethodCallException('MySQL does not support notifications');
     }
-
+    
 }

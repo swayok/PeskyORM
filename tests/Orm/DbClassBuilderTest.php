@@ -14,16 +14,18 @@ use Tests\PeskyORMTest\Traits\TestingCreatedAtColumnTrait;
 use Tests\PeskyORMTest\Traits\TestingIdColumnTrait;
 use Tests\PeskyORMTest\Traits\TestingTimestampColumnsTrait;
 
-class DbClassBuilderTest extends TestCase {
-
+class DbClassBuilderTest extends TestCase
+{
+    
     /**
      * @param string $tableName
      * @return ClassBuilder
      */
-    protected function getBuilder($tableName = 'admins') {
+    protected function getBuilder($tableName = 'admins')
+    {
         return new ClassBuilder($tableName, TestingApp::getPgsqlConnection());
     }
-
+    
     /**
      * @param ClassBuilder $object
      * @param string $methodName
@@ -31,14 +33,16 @@ class DbClassBuilderTest extends TestCase {
      * @return mixed
      * @internal param string $propertyName
      */
-    private function callObjectMethod($object, $methodName, ...$args) {
+    private function callObjectMethod($object, $methodName, ...$args)
+    {
         $reflection = new ReflectionClass($object);
         $method = $reflection->getMethod($methodName);
         $method->setAccessible(true);
         return $method->invokeArgs($object, $args);
     }
-
-    public function testBuilderServiceMethods() {
+    
+    public function testBuilderServiceMethods()
+    {
         static::assertEquals('Admins', ClassBuilder::convertTableNameToClassName('admins'));
         static::assertEquals('SomeTables', ClassBuilder::convertTableNameToClassName('some_tables'));
         static::assertEquals('AdminsTable', ClassBuilder::makeTableClassName('admins'));
@@ -61,8 +65,9 @@ class DbClassBuilderTest extends TestCase {
             $this->callObjectMethod($builder, 'getConstantNameForColumnType', 'integer')
         );
     }
-
-    public function testTableAndRecordClassBuilding() {
+    
+    public function testTableAndRecordClassBuilding()
+    {
         $builder = $this->getBuilder();
         static::assertEquals(
             preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/table_class1.txt')),
@@ -81,8 +86,9 @@ class DbClassBuilderTest extends TestCase {
             preg_replace("%[\r\n\t]+%", '', $builder->buildRecordClass('App\\Db', TestingAdmin::class))
         );
     }
-
-    public function testMakeColumnConfig() {
+    
+    public function testMakeColumnConfig()
+    {
         $builder = $this->getBuilder();
         $columnDescr = new \PeskyORM\Core\ColumnDescription('test', 'integer', Column::TYPE_INT);
         $columnDescr->setIsPrimaryKey(true);
@@ -160,8 +166,9 @@ class DbClassBuilderTest extends TestCase {
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
     }
-
-    public function testDbStructureClassBuilder() {
+    
+    public function testDbStructureClassBuilder()
+    {
         $builder = $this->getBuilder();
         static::assertEquals(
             preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/structure_class1.txt')),

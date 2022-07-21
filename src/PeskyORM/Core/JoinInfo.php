@@ -4,8 +4,9 @@ namespace PeskyORM\Core;
 
 use Swayok\Utils\StringUtils;
 
-class JoinInfo extends AbstractJoinInfo {
-
+class JoinInfo extends AbstractJoinInfo
+{
+    
     /**
      * @param string $joinName
      * @param string $localTableName
@@ -39,7 +40,7 @@ class JoinInfo extends AbstractJoinInfo {
             $foreignTableSchema
         );
     }
-
+    
     /**
      * @param string $joinName
      * @param string $localTableName
@@ -67,7 +68,7 @@ class JoinInfo extends AbstractJoinInfo {
             ->setJoinType($joinType)
             ->setConfigForForeignTable($foreignTableName, $foreignColumnName, $foreignTableSchema);
     }
-
+    
     /**
      * @param string $tableName
      * @param string $columnName
@@ -75,7 +76,8 @@ class JoinInfo extends AbstractJoinInfo {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setConfigForLocalTable(string $tableName, string $columnName, ?string $tableSchema = null) {
+    public function setConfigForLocalTable(string $tableName, string $columnName, ?string $tableSchema = null)
+    {
         $this
             ->setTableName($tableName)
             ->setColumnName($columnName);
@@ -84,7 +86,7 @@ class JoinInfo extends AbstractJoinInfo {
         }
         return $this;
     }
-
+    
     /**
      * @param string $foreignTableName
      * @param string $foreignColumnName
@@ -92,7 +94,8 @@ class JoinInfo extends AbstractJoinInfo {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setConfigForForeignTable(string $foreignTableName, string $foreignColumnName, ?string $foreignTableSchema = null) {
+    public function setConfigForForeignTable(string $foreignTableName, string $foreignColumnName, ?string $foreignTableSchema = null)
+    {
         $this
             ->setForeignTableName($foreignTableName)
             ->setForeignColumnName($foreignColumnName);
@@ -101,39 +104,42 @@ class JoinInfo extends AbstractJoinInfo {
         }
         return $this;
     }
-
+    
     /**
      * @param string $foreignTableName
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setForeignTableName(string $foreignTableName) {
+    public function setForeignTableName(string $foreignTableName)
+    {
         if (empty($foreignTableName)) {
             throw new \InvalidArgumentException('$foreignTableName argument must be a not-empty string');
         }
         $this->foreignTableName = $foreignTableName;
         return $this;
     }
-
+    
     /**
      * @param null|string $schema
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setForeignTableSchema(?string $schema) {
+    public function setForeignTableSchema(?string $schema)
+    {
         if ($schema !== null && empty($schema)) {
             throw new \InvalidArgumentException('$schema argument must be a not-empty string or null');
         }
         $this->foreignTableSchema = $schema;
         return $this;
     }
-
+    
     /**
      * @param string $tableName
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setTableName(string $tableName) {
+    public function setTableName(string $tableName)
+    {
         if (empty($tableName)) {
             throw new \InvalidArgumentException('$tableName argument must be a not-empty string');
         }
@@ -143,18 +149,19 @@ class JoinInfo extends AbstractJoinInfo {
         }
         return $this;
     }
-
+    
     /**
      * @param null|string $schema
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setTableSchema(?string $schema) {
+    public function setTableSchema(?string $schema)
+    {
         if ($schema !== null && empty($schema)) {
             throw new \InvalidArgumentException('$schema argument must be a not-empty string or null');
         }
         $this->tableSchema = $schema;
         return $this;
     }
-
+    
 }

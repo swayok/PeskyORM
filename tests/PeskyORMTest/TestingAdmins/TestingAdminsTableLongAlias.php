@@ -4,17 +4,21 @@ namespace Tests\PeskyORMTest\TestingAdmins;
 
 use Tests\PeskyORMTest\TestingBaseTable;
 
-class TestingAdminsTableLongAlias extends TestingBaseTable {
-
-    public function getTableAlias(): string {
+class TestingAdminsTableLongAlias extends TestingBaseTable
+{
+    
+    public function getTableAlias(): string
+    {
         return 'TestingAdminsTableLongAliasReallyLooooooong';
     }
-
-    public function getTableStructure() {
+    
+    public function getTableStructure()
+    {
         return TestingAdminsTableStructure::getInstance();
     }
-
-    public function newRecord() {
+    
+    public function newRecord()
+    {
         return TestingAdmin::newEmptyRecord();
     }
 }

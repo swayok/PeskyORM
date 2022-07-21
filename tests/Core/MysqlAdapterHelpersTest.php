@@ -7,42 +7,46 @@ use Tests\PeskyORMTest\TestingApp;
 
 require_once __DIR__ . '/PostgresAdapterHelpersTest.php';
 
-class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest {
-
-    static protected function getValidAdapter() {
+class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
+{
+    
+    static protected function getValidAdapter()
+    {
         return TestingApp::getMysqlConnection();
     }
-
-    public function testConvertConditionOperatorForStringComparison() {
+    
+    public function testConvertConditionOperatorForStringComparison()
+    {
         $adapter = self::getValidAdapter();
-
+        
         $operator = $adapter->convertConditionOperator('SIMILAR TO', 'qweq');
         static::assertEquals('LIKE', $operator);
         $operator = $adapter->convertConditionOperator('NOT SIMILAR TO', 'qwe');
         static::assertEquals('NOT LIKE', $operator);
-
+        
         $operator = $adapter->convertConditionOperator('REGEXP', 'qwe');
         static::assertEquals('REGEXP', $operator);
         $operator = $adapter->convertConditionOperator('NOT REGEXP', 'qwe');
         static::assertEquals('NOT REGEXP', $operator);
-
+        
         $operator = $adapter->convertConditionOperator('REGEX', 'eqe');
         static::assertEquals('REGEXP', $operator);
         $operator = $adapter->convertConditionOperator('NOT REGEX', 'qwe');
         static::assertEquals('NOT REGEXP', $operator);
-
+        
         $operator = $adapter->convertConditionOperator('~', 'qwe');
         static::assertEquals('REGEXP', $operator);
         $operator = $adapter->convertConditionOperator('!~', 'qew');
         static::assertEquals('NOT REGEXP', $operator);
-
+        
         $operator = $adapter->convertConditionOperator('~*', 'ewqe');
         static::assertEquals('REGEXP', $operator);
         $operator = $adapter->convertConditionOperator('!~*', 'qwe');
         static::assertEquals('NOT REGEXP', $operator);
     }
-
-    public function testQuoteJsonSelectorValue() {
+    
+    public function testQuoteJsonSelectorValue()
+    {
         static::assertEquals(
             "'$.key'",
             $this->invokePrivateAdapterMethod('quoteJsonSelectorValue', 'key')
@@ -56,23 +60,35 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest {
             $this->invokePrivateAdapterMethod('quoteJsonSelectorValue', '[0]')
         );
     }
-
-    public function testQuoteJsonSelectorExpression() {
+    
+    public function testQuoteJsonSelectorExpression()
+    {
         static::assertEquals(
             'JSON_UNQUOTE(JSON_EXTRACT(JSON_EXTRACT(`table`.`col_name`->\'$.key1\'->>\'$.key 2\', \'$.key 3\'), \'$.key 4\'))',
             $this->invokePrivateAdapterMethod('quoteJsonSelectorExpression', [
-                'table.col_name', '->', 'key1', '->>', '"key 2"', '#>', '`key 3`', '#>>', "'key 4'"
+                'table.col_name',
+                '->',
+                'key1',
+                '->>',
+                '"key 2"',
+                '#>',
+                '`key 3`',
+                '#>>',
+                "'key 4'",
             ])
         );
         static::assertEquals(
             '`table`.`col_name`->\'$[2]\'',
             $this->invokePrivateAdapterMethod('quoteJsonSelectorExpression', [
-                'table.col_name', '->', '2'
+                'table.col_name',
+                '->',
+                '2',
             ])
         );
     }
-
-    public function testAssembleConditionValueAdapterSpecific() {
+    
+    public function testAssembleConditionValueAdapterSpecific()
+    {
         $adapter = static::getValidAdapter();
         static::assertEquals(
             $adapter->quoteValue('string'),
@@ -99,8 +115,9 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest {
             $adapter->assembleConditionValue(json_encode([1, 2, 3]), '<@', true)
         );
     }
-
-    public function testAssembleConditionAdapterSpecific() {
+    
+    public function testAssembleConditionAdapterSpecific()
+    {
         $adapter = static::getValidAdapter();
         $column = $adapter->quoteDbEntityName('colname');
         $one = $adapter->quoteValue('one');
@@ -162,14 +179,15 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest {
             $adapter->assembleCondition($column, '?&', ['test1', '[0][1]'], true)
         );
     }
-
+    
     /**
      * @covers Postgres::extractLimitAndPrecisionForColumnDescription()
      * @covers Postgres::cleanDefaultValueForColumnDescription()
      * @covers DbAdapter::describeTable()
      * @covers Postgres::describeTable()
      */
-    public function testDescribeTable() {
+    public function testDescribeTable()
+    {
         // Mysql::extractLimitAndPrecisionForColumnDescription()
         static::assertEquals(
             [null, null],
@@ -259,7 +277,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest {
         static::assertEquals('settings', $description->getName());
         static::assertEquals(null, $description->getDbSchema());
         static::assertCount(3, $description->getColumns());
-
+        
         $idCol = $description->getColumn('id');
         static::assertEquals('id', $idCol->getName());
         static::assertEquals('int(11)', $idCol->getDbType());
@@ -271,7 +289,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest {
         static::assertFalse($idCol->isUnique());
         static::assertFalse($idCol->isForeignKey());
         static::assertFalse($idCol->isNullable());
-
+        
         $keyCol = $description->getColumn('key');
         static::assertEquals('key', $keyCol->getName());
         static::assertEquals('varchar(100)', $keyCol->getDbType());
@@ -283,7 +301,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest {
         static::assertTrue($keyCol->isUnique());
         static::assertFalse($keyCol->isForeignKey());
         static::assertFalse($keyCol->isNullable());
-
+        
         $valueCol = $description->getColumn('value');
         static::assertEquals('value', $valueCol->getName());
         static::assertEquals('text', $valueCol->getDbType());
@@ -295,17 +313,32 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest {
         static::assertFalse($valueCol->isUnique());
         static::assertFalse($valueCol->isForeignKey());
         static::assertFalse($valueCol->isNullable());
-
+        
         $description = $adapter->describeTable('admins');
         static::assertEquals('admins', $description->getName());
         static::assertEquals(null, $description->getDbSchema());
         static::assertCount(16, $description->getColumns());
-        static::assertTrue($description->getColumn('login')->isUnique());
-        static::assertTrue($description->getColumn('email')->isUnique());
-        static::assertFalse($description->getColumn('parent_id')->isForeignKey()); //< description does not show this
-        static::assertTrue($description->getColumn('remember_token')->isNullable());
-        static::assertEquals(DbExpr::create('NOW()'), $description->getColumn('created_at')->getDefault());
+        static::assertTrue(
+            $description->getColumn('login')
+                ->isUnique()
+        );
+        static::assertTrue(
+            $description->getColumn('email')
+                ->isUnique()
+        );
+        static::assertFalse(
+            $description->getColumn('parent_id')
+                ->isForeignKey()
+        ); //< description does not show this
+        static::assertTrue(
+            $description->getColumn('remember_token')
+                ->isNullable()
+        );
+        static::assertEquals(DbExpr::create('NOW()'),
+            $description->getColumn('created_at')
+                ->getDefault()
+        );
     }
-
-
+    
+    
 }

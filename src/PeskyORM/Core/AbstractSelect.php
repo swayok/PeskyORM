@@ -10,8 +10,9 @@ use Swayok\Utils\ValidateValue;
 /**
  * @method join(AbstractJoinInfo $joinInfo, bool $append = true) //< it is impossible to overwrite method to use child class instead of AbstractJoinInfo
  */
-abstract class AbstractSelect {
-
+abstract class AbstractSelect
+{
+    
     /**
      * @var array - key = full table alias or join name; value - short alias
      */
@@ -92,27 +93,27 @@ abstract class AbstractSelect {
      * @var array
      */
     protected $columnAliasToColumnInfo = [];
-
+    
     /**
      * @return string
      */
     abstract public function getTableName(): string;
-
+    
     /**
      * @return string
      */
     abstract public function getTableAlias(): string;
-
+    
     /**
      * @return string|null
      */
     abstract public function getTableSchemaName(): ?string;
-
+    
     /**
      * @return DbAdapterInterface
      */
     abstract public function getConnection(): DbAdapterInterface;
-
+    
     /**
      * Build query from passed array
      * @param array $conditionsAndOptions - list of conditions and special keys:
@@ -125,17 +126,19 @@ abstract class AbstractSelect {
      *      'JOINS' - array of JoinInfo
      * @return $this
      */
-    public function fromConfigsArray(array $conditionsAndOptions) {
+    public function fromConfigsArray(array $conditionsAndOptions)
+    {
         $conditionsAndOptions = $this->normalizeConditionsAndOptionsArray($conditionsAndOptions);
         $this->parseNormalizedConfigsArray($conditionsAndOptions);
         return $this;
     }
-
+    
     /**
      * @param array $conditionsAndOptions
      * @throws \InvalidArgumentException
      */
-    protected function parseNormalizedConfigsArray(array $conditionsAndOptions) {
+    protected function parseNormalizedConfigsArray(array $conditionsAndOptions)
+    {
         // WITH
         if (!empty($conditionsAndOptions['WITH'])) {
             if (!is_array($conditionsAndOptions['WITH'])) {
@@ -148,7 +151,8 @@ abstract class AbstractSelect {
                     throw new \InvalidArgumentException(
                         "WITH key in \$conditionsAndOptions argument contains invalid value for key {$selectAlias}. Value must be an instance of AbstractSelect class"
                     );
-                } else if (!$this->getConnection()->isValidDbEntityName($selectAlias, false)) {
+                } elseif (!$this->getConnection()
+                    ->isValidDbEntityName($selectAlias, false)) {
                     throw new \InvalidArgumentException(
                         "WITH key in \$conditionsAndOptions argument contains invalid key {$selectAlias}. Key must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)"
                     );
@@ -185,10 +189,10 @@ abstract class AbstractSelect {
             foreach ($conditionsAndOptions['ORDER'] as $columnName => $direction) {
                 if ($direction instanceof DbExpr || is_int($columnName)) {
                     $this->orderBy($direction);
-                } else if (!preg_match('%^(asc|desc)(\s*(nulls)\s*(first|last))?$%i', $direction)) {
+                } elseif (!preg_match('%^(asc|desc)(\s*(nulls)\s*(first|last))?$%i', $direction)) {
                     throw new \InvalidArgumentException(
                         "ORDER key contains invalid direction '{$direction}' for a column '{$columnName}'. "
-                            . "'ASC' or 'DESC' with optional 'NULLS FIRST' or 'NULLS LAST' expected"
+                        . "'ASC' or 'DESC' with optional 'NULLS FIRST' or 'NULLS LAST' expected"
                     );
                 } else {
                     $this->orderBy($columnName, $direction);
@@ -237,80 +241,91 @@ abstract class AbstractSelect {
             $this->where($conditions);
         }
     }
-
-    protected function getListOfSpecialKeysInConditionsAndOptions(): array {
+    
+    protected function getListOfSpecialKeysInConditionsAndOptions(): array
+    {
         return ['LIMIT', 'OFFSET', 'HAVING', 'GROUP', 'ORDER', 'JOINS', 'DISTINCT'];
     }
-
+    
     /**
      * @return array
      */
-    public function fetchOne(): array {
+    public function fetchOne(): array
+    {
         return $this->_fetch(Utils::FETCH_FIRST);
     }
-
+    
     /**
      * @return array
      */
-    public function fetchMany(): array {
+    public function fetchMany(): array
+    {
         return $this->_fetch(Utils::FETCH_ALL);
     }
-
+    
     /**
      * @return array
      * @throws \BadMethodCallException
      */
-    public function fetchNextPage(): array {
+    public function fetchNextPage(): array
+    {
         if (!$this->limit) {
             throw new \BadMethodCallException('It is impossible to use pagination when there is no limit');
         }
         $this->offset($this->offset + $this->limit);
         return $this->_fetch(Utils::FETCH_ALL);
     }
-
+    
     /**
      * @return array
      * @throws \BadMethodCallException
      */
-    public function fetchPrevPage(): array {
+    public function fetchPrevPage(): array
+    {
         if (!$this->limit) {
             throw new \BadMethodCallException('It is impossible to use pagination when there is no limit');
         }
         $this->offset($this->offset - $this->limit);
         return $this->_fetch(Utils::FETCH_ALL);
     }
-
+    
     /**
      * Count records matching provided conditions and options
      * @param bool $ignoreLeftJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
      * @return int
      */
-    public function fetchCount(bool $ignoreLeftJoins = true): int {
-        return (int)$this->getConnection()->query($this->getCountQuery($ignoreLeftJoins), Utils::FETCH_VALUE);
+    public function fetchCount(bool $ignoreLeftJoins = true): int
+    {
+        return (int)$this->getConnection()
+            ->query($this->getCountQuery($ignoreLeftJoins), Utils::FETCH_VALUE);
     }
-
+    
     /**
      * Tests if there is at least 1 record matching provided conditions and options
      * @param bool $ignoreLeftJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
      * @return bool
      */
-    public function fetchExistence(bool $ignoreLeftJoins = true): bool {
-        return (int)$this->getConnection()->query($this->getExistenceQuery($ignoreLeftJoins), Utils::FETCH_VALUE) === 1;
+    public function fetchExistence(bool $ignoreLeftJoins = true): bool
+    {
+        return (int)$this->getConnection()
+                ->query($this->getExistenceQuery($ignoreLeftJoins), Utils::FETCH_VALUE) === 1;
     }
-
+    
     /**
      * @return array
      */
-    public function fetchColumn(): array {
+    public function fetchColumn(): array
+    {
         return $this->_fetch(Utils::FETCH_COLUMN);
     }
-
+    
     /**
      * @param string|DbExpr $keysColumn
      * @param string|DbExpr $valuesColumn
      * @return array
      */
-    public function fetchAssoc($keysColumn, $valuesColumn): array {
+    public function fetchAssoc($keysColumn, $valuesColumn): array
+    {
         $this->columns(['key' => $keysColumn, 'value' => $valuesColumn]);
         /** @var array $records */
         $records = $this->_fetch(Utils::FETCH_ALL);
@@ -320,24 +335,28 @@ abstract class AbstractSelect {
         }
         return $assoc;
     }
-
+    
     /**
      * @param DbExpr $expression
      * @return string
      */
-    public function fetchValue(DbExpr $expression): ?string {
-        return $this->columns([$expression])->_fetch(Utils::FETCH_VALUE);
+    public function fetchValue(DbExpr $expression): ?string
+    {
+        return $this->columns([$expression])
+            ->_fetch(Utils::FETCH_VALUE);
     }
-
+    
     /**
      * @param string $selectionType - one of PeskyORM\Core\Utils::FETCH_*
      * @return array|string|null
      */
-    protected function _fetch(string $selectionType) {
-        $data = $this->getConnection()->query($this->getQuery(), $selectionType);
+    protected function _fetch(string $selectionType)
+    {
+        $data = $this->getConnection()
+            ->query($this->getQuery(), $selectionType);
         if (in_array($selectionType, [Utils::FETCH_COLUMN, Utils::FETCH_VALUE], true)) {
             return $data;
-        } else if ($selectionType === Utils::FETCH_FIRST) {
+        } elseif ($selectionType === Utils::FETCH_FIRST) {
             $shortColumnAliasToAlias = array_flip($this->shortColumnAliases);
             $shortJoinAliasToAlias = array_flip($this->shortJoinAliases);
             return $this->normalizeRecord($data, $shortColumnAliasToAlias, $shortJoinAliasToAlias);
@@ -351,8 +370,9 @@ abstract class AbstractSelect {
             return $records;
         }
     }
-
-    public function getQuery(): string {
+    
+    public function getQuery(): string
+    {
         $this->beforeQueryBuilding();
         $with = $this->makeWithQueries();
         $columns = $this->makeColumnsForQuery();
@@ -361,7 +381,7 @@ abstract class AbstractSelect {
         $this->notDirty();
         return "{$with}SELECT {$columns} {$fromTableAndOthers}";
     }
-
+    
     /**
      * Make a simplified query without LIMIT, OFFSET and ORDER BY
      * Note: DISTINCT keyword is not applied!
@@ -370,7 +390,8 @@ abstract class AbstractSelect {
      * @param bool $ignoreLimitAndOffset
      * @return string
      */
-    protected function getSimplifiedQuery(string $expression, bool $ignoreLeftJoins = true, bool $ignoreLimitAndOffset = false): string {
+    protected function getSimplifiedQuery(string $expression, bool $ignoreLeftJoins = true, bool $ignoreLimitAndOffset = false): string
+    {
         $this->beforeQueryBuilding();
         $with = $this->makeWithQueries();
         $fromTableAndOthers = $this->buildQueryPartsAfterSelectColumns($ignoreLeftJoins, false, !$ignoreLimitAndOffset);
@@ -378,11 +399,12 @@ abstract class AbstractSelect {
         $this->notDirty();
         return "{$with}SELECT $expression {$fromTableAndOthers}";
     }
-
+    
     /**
      * @return string
      */
-    public function buildQueryToBeUsedInWith(): string {
+    public function buildQueryToBeUsedInWith(): string
+    {
         $this->beforeQueryBuilding();
         $columns = $this->makeColumnsForQuery(true);
         $fromTableAndOthers = $this->buildQueryPartsAfterSelectColumns(false, true, true);
@@ -390,14 +412,15 @@ abstract class AbstractSelect {
         $this->notDirty();
         return "SELECT {$columns} {$fromTableAndOthers}";
     }
-
+    
     /**
      * @param bool $ignoreLeftJoins
      * @param bool $withOrderBy
      * @param bool $withLimitAndOffset
      * @return string
      */
-    protected function buildQueryPartsAfterSelectColumns(bool $ignoreLeftJoins, bool $withOrderBy, bool $withLimitAndOffset): string {
+    protected function buildQueryPartsAfterSelectColumns(bool $ignoreLeftJoins, bool $withOrderBy, bool $withLimitAndOffset): string
+    {
         $table = $this->makeTableNameWithAliasForQuery(
             $this->getTableName(),
             $this->getTableAlias(),
@@ -412,26 +435,28 @@ abstract class AbstractSelect {
         $joins = $this->makeJoins($ignoreLeftJoins);
         return "FROM {$table}{$joins}{$conditions}{$groupBy}{$having}{$orderBy}{$limit}{$offset}";
     }
-
+    
     /**
      * @param bool $ignoreLeftJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
      * @return string
      */
-    public function getCountQuery(bool $ignoreLeftJoins = true): string {
+    public function getCountQuery(bool $ignoreLeftJoins = true): string
+    {
         if ($this->distinct) {
             throw new BadMethodCallException('Cannot determine column name to use for COUNT(DISTINCT {column_name})');
         }
         return $this->getSimplifiedQuery('COUNT(*)', $ignoreLeftJoins, true);
     }
-
+    
     /**
      * @param bool $ignoreLeftJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
      * @return string
      */
-    public function getExistenceQuery(bool $ignoreLeftJoins = true): string {
+    public function getExistenceQuery(bool $ignoreLeftJoins = true): string
+    {
         return $this->getSimplifiedQuery('1', $ignoreLeftJoins, true) . ' LIMIT 1';
     }
-
+    
     /**
      * @param array $columns - formats:
      *  - array === []: all columns
@@ -459,20 +484,22 @@ abstract class AbstractSelect {
      * Note: all relations used here will be autoloaded
      * @return $this
      */
-    public function columns(...$columns) {
+    public function columns(...$columns)
+    {
         $this->columnsRaw = $columns;
         $this->columns = [];
         $this->setDirty('columns');
         return $this;
     }
-
+    
     /**
      * Set distinct flag to query (SELECT DISTINCT fields ...) or ((SELECT DISTINCT ON ($columns) fields)
      * @param bool $value
      * @param null|array $columns - list of columns to be disctinct
      * @return $this
      */
-    public function distinct(bool $value = true, ?array $columns = null) {
+    public function distinct(bool $value = true, ?array $columns = null)
+    {
         $this->distinct = $value;
         $this->distinctColumns = [];
         if (!empty($columns)) {
@@ -483,7 +510,7 @@ abstract class AbstractSelect {
         $this->setDirty('distinct');
         return $this;
     }
-
+    
     /**
      * Set Conditions
      * @param array $conditions - may contain:
@@ -501,13 +528,14 @@ abstract class AbstractSelect {
      * @throws \InvalidArgumentException
      * @see Utils::assembleWhereConditionsFromArray() for more details about operators and features
      */
-    public function where(array $conditions, bool $append = false) {
+    public function where(array $conditions, bool $append = false)
+    {
         $this->where = $append ? array_merge($this->where, $conditions) : $conditions;
         $this->setDirty('where');
         $this->setDirty('joins');
         return $this;
     }
-
+    
     /**
      * Add ORDER BY
      * @param string|DbExpr $columnName - 'field1', 'JoinName.field1', DbExpr::create('RAND()')
@@ -517,7 +545,8 @@ abstract class AbstractSelect {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function orderBy($columnName, $direction = 'asc', bool $append = true) {
+    public function orderBy($columnName, $direction = 'asc', bool $append = true)
+    {
         if (empty($columnName)) {
             throw new \InvalidArgumentException('$columnName argument cannot be empty');
         }
@@ -527,13 +556,13 @@ abstract class AbstractSelect {
         }
         if (is_bool($direction)) {
             $direction = $direction ? 'asc' : 'desc';
-        } else if (!preg_match('%^(asc|desc)(\s*(nulls)\s*(first|last))?$%i', $direction)) {
+        } elseif (!preg_match('%^(asc|desc)(\s*(nulls)\s*(first|last))?$%i', $direction)) {
             throw new \InvalidArgumentException(
                 '$direction argument must be a boolean or string ("ASC" or "DESC" with optional "NULLS LAST" or "NULLS FIRST")'
             );
         }
         if (!$append) {
-           $this->removeOrdering();
+            $this->removeOrdering();
         }
         if ($isDbExpr) {
             $this->orderBy[] = $columnName;
@@ -545,34 +574,37 @@ abstract class AbstractSelect {
         $this->setDirty('orderBy');
         return $this;
     }
-
+    
     /**
      * @param array $columnInfo
      * @return string
      */
-    protected function makeKeyForOrderBy(array $columnInfo): string {
+    protected function makeKeyForOrderBy(array $columnInfo): string
+    {
         return ($columnInfo['join_name'] ?: $this->getTableAlias()) . '.' . $columnInfo['name'];
     }
-
+    
     /**
      * @param string|DbExpr $columnName
      * @return bool
      */
-    public function hasOrderingForColumn($columnName): bool {
+    public function hasOrderingForColumn($columnName): bool
+    {
         $columnInfo = $this->analyzeColumnName($columnName, null, null, 'ORDER BY');
         return isset($this->orderBy[$this->makeKeyForOrderBy($columnInfo)]);
     }
-
+    
     /**
      * Remove order by (used to speedup existence test)
      * @return $this
      */
-    public function removeOrdering() {
+    public function removeOrdering()
+    {
         $this->orderBy = [];
         $this->setDirty('orderBy');
         return $this;
     }
-
+    
     /**
      * Add GROUP BY
      * @param array $columns - can contain 'col1' and 'ModelAlias.col1', DbExpr::create('expression')
@@ -580,14 +612,15 @@ abstract class AbstractSelect {
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function groupBy(array $columns, bool $append = true) {
+    public function groupBy(array $columns, bool $append = true)
+    {
         if (!$append) {
             $this->groupBy = [];
         }
         foreach ($columns as $index => $columnName) {
             if ($columnName instanceof DbExpr) {
                 $this->groupBy[] = $columnName;
-            } else if (is_string($columnName)) {
+            } elseif (is_string($columnName)) {
                 $columnInfo = $this->analyzeColumnName($columnName, null, null, 'GROUP BY');
                 $key = ($columnInfo['join_name'] ?: $this->getTableAlias()) . '.' . $columnInfo['name'];
                 $this->groupBy[$key] = $columnInfo;
@@ -600,88 +633,100 @@ abstract class AbstractSelect {
         $this->setDirty('groupBy');
         return $this;
     }
-
+    
     /**
      * Set LIMIT
      * @param int $limit - 0 = no limit;
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function limit(int $limit) {
+    public function limit(int $limit)
+    {
         if ($limit < 0) {
             throw new \InvalidArgumentException('$limit argument must be an integer value >= 0');
         }
         $this->limit = $limit;
         return $this;
     }
-
+    
     /**
      * Remove LIMIT
      * @return $this
      */
-    public function noLimit() {
+    public function noLimit()
+    {
         $this->limit(0);
         return $this;
     }
-
-    public function getLimit(): int {
+    
+    public function getLimit(): int
+    {
         return $this->limit;
     }
-
+    
     /**
      * Set/Remove OFFSET
      * @param int $offset - 0 = no offset
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function offset(int $offset) {
+    public function offset(int $offset)
+    {
         if ($offset < 0) {
             throw new \InvalidArgumentException('$offset argument must be an integer value >= 0');
         }
         $this->offset = $offset;
         return $this;
     }
-
-    public function getOffset(): int {
+    
+    public function getOffset(): int
+    {
         return $this->offset;
     }
-
-    public function getOrderByColumns(): array {
+    
+    public function getOrderByColumns(): array
+    {
         return $this->orderBy;
     }
-
-    public function getGroupByColumns(): array {
+    
+    public function getGroupByColumns(): array
+    {
         return $this->groupBy;
     }
-
+    
     /**
      * Set LIMIT and OFFSET at once
      * @param int $limit - 0 = no limit;
      * @param int $offset - 0 = no offset
      * @return $this
      */
-    public function page(int $limit, int $offset = 0) {
-        return $this->limit($limit)->offset($offset);
+    public function page(int $limit, int $offset = 0)
+    {
+        return $this->limit($limit)
+            ->offset($offset);
     }
-
+    
     /**
      * @param array $conditions
      * @return $this
      */
-    public function having(array $conditions) {
+    public function having(array $conditions)
+    {
         $this->having = $conditions;
         $this->setDirty('having');
         return $this;
     }
-
+    
     /**
      * @param AbstractSelect $select - a sub select that can be used as "table" in main select
      * @param string $selectAlias - alias for passed $select (access to the select will be available using this alias)
      * @param bool $append
      * @return $this
      */
-    public function with(AbstractSelect $select, string $selectAlias, bool $append = true) {
-        if (!$this->getConnection()->isValidDbEntityName($selectAlias, false)) {
+    public function with(AbstractSelect $select, string $selectAlias, bool $append = true)
+    {
+        if (!$this->getConnection()
+            ->isValidDbEntityName($selectAlias, false)) {
             throw new \InvalidArgumentException(
                 '$selectAlias argument does not fit DB entity naming rules (usually alphanumeric string with underscores)'
             );
@@ -701,21 +746,23 @@ abstract class AbstractSelect {
         $this->setDirty('with');
         return $this;
     }
-
+    
     /**
      * @return AbstractSelect[]
      */
-    protected function getWithQueries(): array {
+    protected function getWithQueries(): array
+    {
         return $this->with;
     }
-
+    
     /**
      * @param AbstractJoinInfo $joinConfig
      * @param bool $append - false: reset joins list so it will only contain this join
      * @return $this
      * @throws \InvalidArgumentException
      */
-    protected function _join(AbstractJoinInfo $joinConfig, bool $append = true) {
+    protected function _join(AbstractJoinInfo $joinConfig, bool $append = true)
+    {
         if (!$joinConfig->isValid()) {
             throw new \InvalidArgumentException("Join config with name '{$joinConfig->getJoinName()}' is not valid");
         }
@@ -730,7 +777,8 @@ abstract class AbstractSelect {
         return $this;
     }
     
-    public function crossJoin(CrossJoinInfo $joinConfig, bool $append = true) {
+    public function crossJoin(CrossJoinInfo $joinConfig, bool $append = true)
+    {
         // @see CROSS JOIN docs for details
         if (!$joinConfig->isValid()) {
             throw new \InvalidArgumentException("Cross join config with name '{$joinConfig->getJoinName()}' is not valid");
@@ -745,38 +793,42 @@ abstract class AbstractSelect {
         $this->setDirty('joins');
         return $this;
     }
-
+    
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
-
+    
     /**
      * @param string $subject - set subject as dirty
      * @return $this
      */
-    protected function setDirty(string $subject) {
+    protected function setDirty(string $subject)
+    {
         if ($this->isDirty !== null) {
             $this->isDirty[] = $subject;
         }
         return $this;
     }
-
+    
     /**
      * @param null|string $subject - null: any dirt? | string: is $subject dirty?
      * @return bool
      */
-    protected function isDirty(?string $subject = null): bool {
+    protected function isDirty(?string $subject = null): bool
+    {
         if ($subject === null) {
             return $this->isDirty === null || !empty($this->isDirty);
         } else {
             return $this->isDirty === null || in_array($subject, $this->isDirty, true);
         }
     }
-
-    protected function notDirty() {
+    
+    protected function notDirty()
+    {
         $this->isDirty = [];
         return $this;
     }
-
-    protected function beforeQueryBuilding() {
+    
+    protected function beforeQueryBuilding()
+    {
         $this->shortJoinAliases = [];
         if ($this->isDirty('where') || $this->isDirty('having')) {
             $this->joinsUsedInWhereAndHavingConditions = [];
@@ -785,16 +837,17 @@ abstract class AbstractSelect {
             $this->processRawColumns();
         }
     }
-
+    
     /**
      * @return $this
      */
-    protected function processRawColumns() {
+    protected function processRawColumns()
+    {
         $this->columnAliasToColumnInfo = [];
         $this->columns = $this->normalizeColumnsList($this->columnsRaw, null, true, 'SELECT');
         return $this;
     }
-
+    
     /**
      * Analyze $columnName and return information about column
      * Examples:
@@ -857,7 +910,7 @@ abstract class AbstractSelect {
         $isDbExpr = $columnName instanceof DbExpr;
         if (!is_string($columnName) && !$isDbExpr) {
             throw new \InvalidArgumentException($errorsPrefix . '$columnName argument must be a string or instance of DbExpr class');
-        } else if (!$isDbExpr && trim($columnName) === '') {
+        } elseif (!$isDbExpr && trim($columnName) === '') {
             throw new \InvalidArgumentException($errorsPrefix . '$columnName argument is not allowed to be an empty string');
         }
         /** @var DbExpr|string $columnName */
@@ -900,19 +953,19 @@ abstract class AbstractSelect {
                 $ret['join_name'] = $joinName;
             }
             unset($columnName, $joinName, $columnAlias); //< to prevent faulty usage
-    
+            
             if ($ret['name'] === '*') {
                 $ret['type_cast'] = null;
                 $ret['alias'] = null;
                 $ret['json_selector'] = null;
-            } else if (!$this->getConnection()->isValidDbEntityName($ret['json_selector'] ?: $ret['name'], true)) {
+            } elseif (!$this->getConnection()
+                ->isValidDbEntityName($ret['json_selector'] ?: $ret['name'], true)) {
                 if ($ret['json_selector']) {
                     throw new \InvalidArgumentException("{$errorsPrefix}Invalid json selector: [{$ret['json_selector']}]");
                 } else {
                     throw new \InvalidArgumentException("{$errorsPrefix}Invalid column name: [{$ret['name']}]");
                 }
             }
-            
         }
         
         // nullify join name if it same as current table alias
@@ -928,24 +981,26 @@ abstract class AbstractSelect {
         
         return $ret;
     }
-
+    
     /**
      * @param string $columnNameOrAlias
      * @param null|string $tableAliasOrJoinName
      * @return string
      */
-    protected function makeColumnAlias(string $columnNameOrAlias, ?string $tableAliasOrJoinName = null): string {
+    protected function makeColumnAlias(string $columnNameOrAlias, ?string $tableAliasOrJoinName = null): string
+    {
         $joinShortAlias = $this->getShortJoinAlias($tableAliasOrJoinName ?: $this->getTableAlias());
         return '_' . $joinShortAlias . '__' . $this->getShortColumnAlias($columnNameOrAlias);
     }
-
+    
     /**
      * @param array $columnInfo - return of $this->analyzeColumnName($columnName)
      * @param bool $itIsWithQuery - true: building a query for WITH
      * @return string - something like: "JoinAlias"."column_name"::typecast as "ColumnAlias"
      * @throws \InvalidArgumentException
      */
-    protected function makeColumnNameWithAliasForQuery(array $columnInfo, bool $itIsWithQuery = false): string {
+    protected function makeColumnNameWithAliasForQuery(array $columnInfo, bool $itIsWithQuery = false): string
+    {
         $tableAlias = $columnInfo['join_name'] ?: $this->getTableAlias();
         $isDbExpr = $columnInfo['name'] instanceof DbExpr;
         if ($isDbExpr) {
@@ -954,11 +1009,12 @@ abstract class AbstractSelect {
             $columnName = $this->quoteDbEntityName($this->getShortJoinAlias($tableAlias)) . '.' . $this->quoteDbEntityName($columnInfo['name']);
         }
         if ($columnInfo['type_cast']) {
-            $columnName = $this->getConnection()->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
+            $columnName = $this->getConnection()
+                ->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
         }
         if ($columnInfo['name'] === '*' || ($isDbExpr && empty($columnInfo['alias']))) {
             return $columnName;
-        } else if ($itIsWithQuery) {
+        } elseif ($itIsWithQuery) {
             if ($columnInfo['alias']) {
                 return $columnName . ' AS ' . $this->quoteDbEntityName($columnInfo['alias']);
             } else {
@@ -970,7 +1026,8 @@ abstract class AbstractSelect {
         }
     }
     
-    protected function makeColumnAliasFromColumnInfo(array $columnInfo): ?string {
+    protected function makeColumnAliasFromColumnInfo(array $columnInfo): ?string
+    {
         if ($columnInfo['name'] instanceof DbExpr && !$columnInfo['alias']) {
             return null;
         }
@@ -981,49 +1038,55 @@ abstract class AbstractSelect {
         }
         return $this->makeColumnAlias($columnInfo['alias'] ?: $columnInfo['name'], $tableAlias);
     }
-
+    
     /**
      * @param string $tableName
      * @param string $tableAlias
      * @param string|null $tableSchema
      * @return string - something like "table_name" AS "ShortAlias" or "schema_name"."table_name" AS "ShortAlias"
      */
-    protected function makeTableNameWithAliasForQuery(string $tableName, string $tableAlias, ?string $tableSchema = null): string {
-        $schema = !empty($tableSchema) && $this->getConnection()->isDbSupportsTableSchemas()
+    protected function makeTableNameWithAliasForQuery(string $tableName, string $tableAlias, ?string $tableSchema = null): string
+    {
+        $schema = !empty($tableSchema) && $this->getConnection()
+            ->isDbSupportsTableSchemas()
             ? $this->quoteDbEntityName($tableSchema) . '.'
             : '';
         return $schema . $this->quoteDbEntityName($tableName) . ' AS ' . $this->quoteDbEntityName($this->getShortJoinAlias($tableAlias));
     }
-
+    
     /**
      * @param array $columnInfo - return of $this->analyzeColumnName($columnName)
      * @param string $subject - may be used for exception messages in child classes
      * @return string `TableAlias`.`column_name`::typecast
      */
-    protected function makeColumnNameForCondition(array $columnInfo, string $subject = 'WHERE'): string {
+    protected function makeColumnNameForCondition(array $columnInfo, string $subject = 'WHERE'): string
+    {
         $tableAlias = $columnInfo['join_name'] ?: $this->getTableAlias();
         $columnName = $this->quoteDbEntityName($this->getShortJoinAlias($tableAlias)) . '.'
             . $this->quoteDbEntityName($columnInfo['json_selector'] ?: $columnInfo['name']);
         if ($columnInfo['type_cast']) {
-            $columnName = $this->getConnection()->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
+            $columnName = $this->getConnection()
+                ->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
         }
         return $columnName;
     }
-
+    
     /**
      * Add columns into options and resolve contains
      * @param array $conditionsAndOptions
      * @return array
      */
-    protected function normalizeConditionsAndOptionsArray(array $conditionsAndOptions): array {
+    protected function normalizeConditionsAndOptionsArray(array $conditionsAndOptions): array
+    {
         if (isset($conditionsAndOptions['JOIN'])) {
             $conditionsAndOptions['JOINS'] = $conditionsAndOptions['JOIN'];
             unset($conditionsAndOptions['JOIN']);
         }
         return $conditionsAndOptions;
     }
-
-    protected function getShortJoinAlias(string $alias): string  {
+    
+    protected function getShortJoinAlias(string $alias): string
+    {
         if (!isset($this->shortJoinAliases[$alias])) {
             // maybe it is already an alias?
             if (preg_match('%^[a-z][a-zA-Z0-9]{8}\d$%', $alias) && in_array($alias, $this->shortJoinAliases, true)) {
@@ -1036,8 +1099,9 @@ abstract class AbstractSelect {
         }
         return $this->shortJoinAliases[$alias];
     }
-
-    protected function getShortColumnAlias(string $alias): string {
+    
+    protected function getShortColumnAlias(string $alias): string
+    {
         if (!isset($this->shortColumnAliases[$alias])) {
             $this->shortColumnAliases[$alias] = mb_strlen($alias) > 16
                 ? chr(random_int(97, 122)) . hash('crc32b', $alias) . random_int(0, 9)
@@ -1045,13 +1109,14 @@ abstract class AbstractSelect {
         }
         return $this->shortColumnAliases[$alias];
     }
-
+    
     /**
      * Replace long join names and table alias by short ones inside $dbExpr
      * @param DbExpr $dbExpr
      * @return DbExpr
      */
-    protected function modifyTableAliasAndJoinNamesInDbExpr(DbExpr $dbExpr): DbExpr {
+    protected function modifyTableAliasAndJoinNamesInDbExpr(DbExpr $dbExpr): DbExpr
+    {
         $tableAlias = $this->getTableAlias();
         $replaces = ["%`{$tableAlias}`\.%" => '`' . $this->getShortJoinAlias($tableAlias) . '`.'];
         foreach ($this->joins as $joinConfig) {
@@ -1064,7 +1129,7 @@ abstract class AbstractSelect {
         }
         return $dbExpr->applyReplaces($replaces);
     }
-
+    
     /**
      * @param array $columns
      * @param null|string $joinName
@@ -1105,7 +1170,7 @@ abstract class AbstractSelect {
                     );
                 }
                 // we're good to go - no more validation needed
-            } else if (
+            } elseif (
                 !is_numeric($columnAlias)
                 && (
                     is_array($columnName)
@@ -1114,12 +1179,12 @@ abstract class AbstractSelect {
             ) {
                 $this->resolveColumnsToBeSelectedForJoin($columnAlias, $columnName, $joinName, false);
                 continue;
-            } else if (!is_string($columnName) && !($columnName instanceof DbExpr)) {
+            } elseif (!is_string($columnName) && !($columnName instanceof DbExpr)) {
                 throw new \InvalidArgumentException(
                     "Invalid column name for a key '$columnAlias'. "
                     . '$columns argument must contain only strings and instances of DbExpr class.'
                 );
-            } else if (empty($columnName)) {
+            } elseif (empty($columnName)) {
                 throw new \InvalidArgumentException(
                     "\$columns argument contains an empty column name for a key '$columnAlias'"
                 );
@@ -1136,7 +1201,7 @@ abstract class AbstractSelect {
                     $normalizedColumns,
                     $this->normalizeWildcardColumn($joinName, [], $columnName === '**')
                 );
-            } else if ($columnAlias === '*' || $columnAlias === '**') {
+            } elseif ($columnAlias === '*' || $columnAlias === '**') {
                 /** @noinspection SlowArrayOperationsInLoopInspection */
                 $normalizedColumns = array_merge(
                     $normalizedColumns,
@@ -1166,7 +1231,7 @@ abstract class AbstractSelect {
         }
         return $normalizedColumns;
     }
-
+    
     /**
      * Normalize '*' column name
      * @param null|string $joinName
@@ -1174,10 +1239,11 @@ abstract class AbstractSelect {
      * @param bool $includeHeavyColumns - used in OrmSelect
      * @return array - returns list of $this->analyzeColumnName() results
      */
-    protected function normalizeWildcardColumn(?string $joinName = null, ?array $excludeColumns = null, bool $includeHeavyColumns = false): array {
+    protected function normalizeWildcardColumn(?string $joinName = null, ?array $excludeColumns = null, bool $includeHeavyColumns = false): array
+    {
         return [$this->analyzeColumnName('*', null, $joinName, 'SELECT')];
     }
-
+    
     /**
      * Decide what to do if join name mentioned in columns list
      * @param string $joinName
@@ -1196,14 +1262,15 @@ abstract class AbstractSelect {
             "You must use JoinInfo->setForeignColumnsToSelect() to set the columns list to select for join named '{$joinName}'"
         );
     }
-
+    
     /**
      * @param array $conditions
      * @param string $subject - can be 'WHERE', 'HAVING' or ''
      * @param null|string $joinName - string: used when assembling conditions for join
      * @return string
      */
-    protected function makeConditions(array $conditions, string $subject = 'WHERE', ?string $joinName = null): string {
+    protected function makeConditions(array $conditions, string $subject = 'WHERE', ?string $joinName = null): string
+    {
         $assembled = Utils::assembleWhereConditionsFromArray(
             $this->getConnection(),
             $conditions,
@@ -1214,7 +1281,7 @@ abstract class AbstractSelect {
             function ($columnName, $rawValue) {
                 if ($rawValue instanceof DbExpr) {
                     return $this->quoteDbExpr($rawValue);
-                } else if ($rawValue instanceof AbstractSelect) {
+                } elseif ($rawValue instanceof AbstractSelect) {
                     return '(' . $rawValue->getQuery() . ')';
                 } else {
                     return $rawValue;
@@ -1224,14 +1291,15 @@ abstract class AbstractSelect {
         $assembled = trim($assembled);
         return empty($assembled) ? '' : " {$subject} {$assembled}";
     }
-
+    
     /**
      * @param string|DbExpr $columnName
      * @param string|null $joinName
      * @param string $subject - 'WHERE', 'HAVING', etc - the part of a query we are qouting the column for
      * @return string
      */
-    protected function columnQuoterForConditions($columnName, ?string $joinName, string $subject): string {
+    protected function columnQuoterForConditions($columnName, ?string $joinName, string $subject): string
+    {
         $columnInfo = $this->analyzeColumnName($columnName, null, $joinName, $subject);
         if (!empty($columnInfo['join_name']) && in_array($subject, ['WHERE', 'HAVING'], true)) {
             $joins = explode('.', $columnInfo['join_name']);
@@ -1242,8 +1310,9 @@ abstract class AbstractSelect {
         }
         return $this->makeColumnNameForCondition($columnInfo, $subject);
     }
-
-    protected function makeGroupBy(): string  {
+    
+    protected function makeGroupBy(): string
+    {
         $groups = [];
         foreach ($this->groupBy as $column) {
             if ($column instanceof DbExpr) {
@@ -1254,8 +1323,9 @@ abstract class AbstractSelect {
         }
         return count($groups) ? ' GROUP BY ' . implode(', ', $groups) : '';
     }
-
-    protected function makeOrderBy(): string {
+    
+    protected function makeOrderBy(): string
+    {
         $orders = [];
         foreach ($this->orderBy as $columnInfo) {
             if ($columnInfo instanceof DbExpr) {
@@ -1266,8 +1336,9 @@ abstract class AbstractSelect {
         }
         return count($orders) ? ' ORDER BY ' . implode(', ', $orders) : '';
     }
-
-    protected function makeJoins(bool $ignoreLeftJoins = false): string {
+    
+    protected function makeJoins(bool $ignoreLeftJoins = false): string
+    {
         $joins = [];
         foreach ($this->joins as $joinConfig) {
             if (
@@ -1292,27 +1363,30 @@ abstract class AbstractSelect {
         }
         return count($joins) ? ' ' . implode(' ', $joins) : '';
     }
-
-    protected function isJoinUsedInWhereOrHavingConditions(AbstractJoinInfo $joinConfig): bool {
+    
+    protected function isJoinUsedInWhereOrHavingConditions(AbstractJoinInfo $joinConfig): bool
+    {
         return (
             in_array($this->getShortJoinAlias($joinConfig->getJoinName()), $this->joinsUsedInWhereAndHavingConditions, true)
             || in_array($joinConfig->getJoinName(), $this->joinsUsedInWhereAndHavingConditions, true)
         );
     }
-
-    protected function makeJoinConditions(AbstractJoinInfo $joinConfig): string {
+    
+    protected function makeJoinConditions(AbstractJoinInfo $joinConfig): string
+    {
         $shortJoinName = $this->getShortJoinAlias($joinConfig->getJoinName());
         $conditions = array_merge(
             [
                 $this->getShortJoinAlias($joinConfig->getTableAlias()) . '.' . $joinConfig->getColumnName()
-                    => DbExpr::create("`{$shortJoinName}`.`{$joinConfig->getForeignColumnName()}`", false),
+                => DbExpr::create("`{$shortJoinName}`.`{$joinConfig->getForeignColumnName()}`", false),
             ],
             $joinConfig->getAdditionalJoinConditions()
         );
         return trim($this->makeConditions($conditions, '', $joinConfig->getJoinName()));
     }
-
-    protected function makeWithQueries(): string {
+    
+    protected function makeWithQueries(): string
+    {
         $queries = [];
         foreach ($this->with as $alias => $select) {
             $select->replaceWithQueries(array_diff_key($this->with, [$alias => '']));
@@ -1320,7 +1394,7 @@ abstract class AbstractSelect {
         }
         return count($queries) ? 'WITH ' . implode(', ', $queries) . ' ' : '';
     }
-
+    
     /**
      * Replace all WITH queries for this select. Used by main select to populate WITH queries among all WITH queries
      * so that there will be no problems building queries that depend on other WITH queries.
@@ -1328,18 +1402,20 @@ abstract class AbstractSelect {
      * @param array $withQueries
      * @return $this
      */
-    protected function replaceWithQueries(array $withQueries) {
+    protected function replaceWithQueries(array $withQueries)
+    {
         $this->with = $withQueries;
         $this->setDirty('with');
         return $this;
     }
-
+    
     /**
      * @param bool $itIsWithQuery - true: building a query for WITH
      * @return string
      * @throws \UnexpectedValueException
      */
-    protected function makeColumnsForQuery(bool $itIsWithQuery = false): string {
+    protected function makeColumnsForQuery(bool $itIsWithQuery = false): string
+    {
         $columns = [];
         foreach ($this->columns as $columnInfo) {
             if (is_string($columnInfo)) {
@@ -1359,7 +1435,8 @@ abstract class AbstractSelect {
         return $this->makeDistinctForQuery() . implode(', ', $columns);
     }
     
-    protected function makeDistinctForQuery() {
+    protected function makeDistinctForQuery()
+    {
         if (!$this->distinct) {
             return '';
         }
@@ -1373,12 +1450,13 @@ abstract class AbstractSelect {
         }
         return $ret;
     }
-
+    
     /**
      * @param bool $itIsWithQuery - true: building a query for WITH
      * @return array
      */
-    protected function collectJoinedColumnsForQuery(bool $itIsWithQuery = false): array {
+    protected function collectJoinedColumnsForQuery(bool $itIsWithQuery = false): array
+    {
         $columns = [];
         foreach ($this->joins as $joinConfig) {
             $columnsToJoin = $joinConfig->getForeignColumnsToSelect();
@@ -1405,15 +1483,17 @@ abstract class AbstractSelect {
         }
         return $columns;
     }
-
-    protected function makeLimit(): string {
+    
+    protected function makeLimit(): string
+    {
         return $this->limit > 0 ? ' LIMIT ' . $this->limit : '';
     }
-
-    protected function makeOffset(): string {
+    
+    protected function makeOffset(): string
+    {
         return $this->offset > 0 ? ' OFFSET ' . $this->offset : '';
     }
-
+    
     /**
      * Convert key-value array received from DB to nested array with joins data stored under join names inside
      * main array. Also decodes columns aliases (keys in original array)
@@ -1422,7 +1502,8 @@ abstract class AbstractSelect {
      * @param array $shortJoinAliasToAlias = $shortJoinAliasToAlias = array_flip($this->shortJoinAliases);
      * @return array - ['col1' => 'val1', 'col2' => 'val2', 'Join1Name' => ['jcol1' => 'jvalue1', ...], ...]
      */
-    private function normalizeRecord(array $record, array $shortColumnAliasToAlias, array $shortJoinAliasToAlias): array {
+    private function normalizeRecord(array $record, array $shortColumnAliasToAlias, array $shortJoinAliasToAlias): array
+    {
         if (empty($record)) {
             return [];
         }
@@ -1433,7 +1514,7 @@ abstract class AbstractSelect {
                 $colInfo = $this->columnAliasToColumnInfo[$columnAlias];
                 $group = $colInfo['parent'] ?? $colInfo['join_name'];
                 $dataBlocks[$group ?: $this->getTableAlias()][$colInfo['alias'] ?: $colInfo['name']] = $value;
-            } else if (preg_match('%^_(.+?)__(.+?)$%', $columnAlias, $colInfo)) {
+            } elseif (preg_match('%^_(.+?)__(.+?)$%', $columnAlias, $colInfo)) {
                 [, $tableAlias, $column] = $colInfo;
                 if (isset($shortJoinAliasToAlias[$tableAlias])) {
                     $tableAlias = $shortJoinAliasToAlias[$tableAlias];
@@ -1463,7 +1544,7 @@ abstract class AbstractSelect {
                         'data' => $data,
                     ];
                 }
-            } else if (count($joinConfig->getForeignColumnsToSelect()) > 0) {
+            } elseif (count($joinConfig->getForeignColumnsToSelect()) > 0) {
                 if ($joinConfig->getTableAlias() === $this->getTableAlias()) {
                     $nested[$joinConfig->getJoinName()] = [];
                 } else {
@@ -1479,13 +1560,14 @@ abstract class AbstractSelect {
         }
         return $nested;
     }
-
+    
     /**
      * Insert deeply nested joins data into record data
      * @param array $joins
      * @param array $data
      */
-    protected function placeDataOfDeepNestedJoinsIntoRecord(array $joins, array &$data) {
+    protected function placeDataOfDeepNestedJoinsIntoRecord(array $joins, array &$data)
+    {
         /** @var JoinInfo[] $usedJoins */
         $usedJoins = [];
         foreach ($joins as $index => $join) {
@@ -1511,46 +1593,54 @@ abstract class AbstractSelect {
             }
         }
     }
-
+    
     /**
      * Normalize data received for related record or join
      * @param AbstractJoinInfo $joinConfig
      * @param array $data
      * @return array
      */
-    protected function normalizeJoinDataForRecord(AbstractJoinInfo $joinConfig, array $data): array {
+    protected function normalizeJoinDataForRecord(AbstractJoinInfo $joinConfig, array $data): array
+    {
         return $data;
     }
-
+    
     /**
      * @param DbExpr $expr
      * @return string
      */
-    protected function quoteDbExpr(DbExpr $expr): string {
-        return $this->getConnection()->quoteDbExpr($this->modifyTableAliasAndJoinNamesInDbExpr($expr));
+    protected function quoteDbExpr(DbExpr $expr): string
+    {
+        return $this->getConnection()
+            ->quoteDbExpr($this->modifyTableAliasAndJoinNamesInDbExpr($expr));
     }
-
+    
     /**
      * @param string $name
      * @return string
      */
-    protected function quoteDbEntityName($name): string {
-        return $this->getConnection()->quoteDbEntityName($name);
+    protected function quoteDbEntityName($name): string
+    {
+        return $this->getConnection()
+            ->quoteDbEntityName($name);
     }
-
+    
     /**
      * @param mixed $value
      * @return string
      */
-    protected function quoteValue($value): string {
-        return $this->getConnection()->quoteValue($value);
+    protected function quoteValue($value): string
+    {
+        return $this->getConnection()
+            ->quoteValue($value);
     }
-
+    
     /**
      * Validate if there are all joins defined for all table aliases used in query
      * @throws \UnexpectedValueException
      */
-    protected function validateIfThereAreEnoughJoins() {
+    protected function validateIfThereAreEnoughJoins()
+    {
         $missingJoins = [];
         foreach ($this->shortJoinAliases as $fullAlias => $notUsed) {
             if (
@@ -1569,22 +1659,24 @@ abstract class AbstractSelect {
     }
 
 //    abstract public function join(AbstractJoinInfo $joinInfo, bool $append = true); //< it is impossible to overwrite method to use child class instead of AbstractJoinInfo
-
+    
     /**
      * @param string $alias
      * @param bool $mayBeShort - true: alias may be received from $this->getShortJoinAlias()
      * @return bool
      */
-    protected function hasWithQuery(string $alias, bool $mayBeShort = false): bool {
+    protected function hasWithQuery(string $alias, bool $mayBeShort = false): bool
+    {
         return isset($this->with[$alias]) || ($mayBeShort && in_array($alias, $this->shortJoinAliases, true));
     }
-
+    
     /**
      * @param string $joinName
      * @param bool $mayBeShort - true: alias may be received from $this->getShortJoinAlias()
      * @return bool
      */
-    protected function hasJoin(string $joinName, bool $mayBeShort = false): bool {
+    protected function hasJoin(string $joinName, bool $mayBeShort = false): bool
+    {
         return (
             isset($this->joins[$joinName])
             || isset($this->crossJoins[$joinName])
@@ -1594,27 +1686,29 @@ abstract class AbstractSelect {
             )
         );
     }
-
+    
     /**
      * @param string $joinName
      * @return JoinInfo|OrmJoinInfo|CrossJoinInfo
      * @throws \UnexpectedValueException
      */
-    protected function getJoin(string $joinName) {
+    protected function getJoin(string $joinName)
+    {
         if (!$this->hasJoin($joinName, true)) {
             throw new \UnexpectedValueException("Join config with name [{$joinName}] not found");
         }
         if (isset($this->joins[$joinName])) {
             return $this->joins[$joinName];
-        } else if (isset($this->crossJoins[$joinName])) {
+        } elseif (isset($this->crossJoins[$joinName])) {
             return $this->crossJoins[$joinName];
         } else {
             $alias = array_flip($this->shortJoinAliases)[$joinName];
             return $this->joins[$alias] ?: $this->crossJoins[$alias];
         }
     }
-
-    public function __clone() {
+    
+    public function __clone()
+    {
         foreach ($this->joins as $key => $joinConfig) {
             $this->joins[$key] = clone $joinConfig;
         }

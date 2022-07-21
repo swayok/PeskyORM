@@ -2,13 +2,14 @@
 
 namespace PeskyORM\Core;
 
-class Utils {
-
+class Utils
+{
+    
     const FETCH_ALL = 'all';
     const FETCH_FIRST = 'first';
     const FETCH_VALUE = 'value';
     const FETCH_COLUMN = 'column';
-
+    
     /**
      * Get data from $statement according to required $type
      * @param \PDOStatement $statement
@@ -16,9 +17,10 @@ class Utils {
      * @return array|string
      * @throws \InvalidArgumentException
      */
-    static public function getDataFromStatement(\PDOStatement $statement, $type = self::FETCH_ALL) {
+    static public function getDataFromStatement(\PDOStatement $statement, $type = self::FETCH_ALL)
+    {
         $type = strtolower($type);
-        if (!in_array($type, array(self::FETCH_COLUMN, self::FETCH_ALL, self::FETCH_FIRST, self::FETCH_VALUE), true)) {
+        if (!in_array($type, [self::FETCH_COLUMN, self::FETCH_ALL, self::FETCH_FIRST, self::FETCH_VALUE], true)) {
             throw new \InvalidArgumentException("Unknown processing type [{$type}]");
         }
         if ($statement->rowCount() > 0) {
@@ -33,13 +35,13 @@ class Utils {
                 default:
                     return $statement->fetchAll(\PDO::FETCH_ASSOC);
             }
-        } else if ($type === self::FETCH_VALUE) {
+        } elseif ($type === self::FETCH_VALUE) {
             return null;
         } else {
             return [];
         }
     }
-
+    
     /**
      * we have next cases:
      * 1. $value is instance of DbExpr (converted to quoted string), $column - index
@@ -114,7 +116,7 @@ class Utils {
                         throw new \InvalidArgumentException(
                             '$conditions argument may contain only objects of class DbExpr or AbstractSelect. Other objects are forbidden. Key: ' . (string)$column
                         );
-                    } else if ($valueIsSubSelect && is_numeric($column)) {
+                    } elseif ($valueIsSubSelect && is_numeric($column)) {
                         throw new \InvalidArgumentException(
                             '$conditions argument may contain objects of class AbstractSelect only with non-numeric keys. Key: ' . (string)$column
                         );
@@ -127,7 +129,7 @@ class Utils {
                     // 1 - custom expressions
                     $assembled[] = $conditionValuePreprocessor(null, $rawValue, $connection);
                     continue;
-                } else if (
+                } elseif (
                     (
                         is_numeric($column)
                         && is_array($rawValue)
@@ -220,12 +222,12 @@ class Utils {
             $ret['join_name'] = $joinName;
         }
         unset($columnName, $joinName, $columnAlias); //< to prevent faulty usage
-    
+        
         if ($ret['name'] === '*') {
             $ret['type_cast'] = null;
             $ret['alias'] = null;
             $ret['json_selector'] = null;
-        } else if (!$connection->isValidDbEntityName($ret['json_selector'] ?: $ret['name'], true)) {
+        } elseif (!$connection->isValidDbEntityName($ret['json_selector'] ?: $ret['name'], true)) {
             if ($ret['json_selector']) {
                 throw new \InvalidArgumentException('Invalid json selector: [' . $ret['json_selector'] . ']');
             } else {
@@ -244,7 +246,8 @@ class Utils {
         return $ret;
     }
     
-    static public function splitColumnName(string $columnName): array {
+    static public function splitColumnName(string $columnName): array
+    {
         $typeCast = null;
         $columnAlias = null;
         $joinName = null;
@@ -282,7 +285,8 @@ class Utils {
      * @param DbAdapterInterface $connection
      * @return string
      */
-    static public function analyzeAndQuoteColumnNameForCondition(string $columnName, DbAdapterInterface $connection): string {
+    static public function analyzeAndQuoteColumnNameForCondition(string $columnName, DbAdapterInterface $connection): string
+    {
         $columnInfo = static::analyzeColumnName($connection, $columnName, null, null);
         $quotedTableAlias = '';
         if ($columnInfo['join_name']) {
@@ -300,10 +304,11 @@ class Utils {
      * @param DbAdapterInterface $connection
      * @return mixed - in most cases it is string
      */
-    static public function preprocessConditionValue($rawValue, DbAdapterInterface $connection) {
+    static public function preprocessConditionValue($rawValue, DbAdapterInterface $connection)
+    {
         if ($rawValue instanceof DbExpr) {
             return $connection->quoteDbExpr($rawValue);
-        } else if ($rawValue instanceof AbstractSelect) {
+        } elseif ($rawValue instanceof AbstractSelect) {
             return '(' . $rawValue->getQuery() . ')';
         } else {
             return $rawValue;

@@ -2,7 +2,8 @@
 
 namespace PeskyORM\ORM;
 
-interface TableStructureInterface {
+interface TableStructureInterface
+{
     
     /**
      * @return $this
@@ -89,6 +90,6 @@ interface TableStructureInterface {
      * @return Relation[]
      */
     static public function getRelations(): array;
-
-
+    
+    
 }

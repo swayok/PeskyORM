@@ -6,23 +6,28 @@ use PeskyORM\Core\DbExpr;
 use PHPUnit\Framework\TestCase;
 use Tests\PeskyORMTest\TestingApp;
 
-class PostgresAdapterSelectDataTest extends TestCase {
-
-    static public function setUpBeforeClass(): void {
+class PostgresAdapterSelectDataTest extends TestCase
+{
+    
+    static public function setUpBeforeClass(): void
+    {
         TestingApp::clearTables(static::getValidAdapter());
     }
-
-    static public function tearDownAfterClass(): void {
+    
+    static public function tearDownAfterClass(): void
+    {
         TestingApp::clearTables(static::getValidAdapter());
     }
-
-    static protected function getValidAdapter() {
+    
+    static protected function getValidAdapter()
+    {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
-
-    public function getTestDataForAdminsTableInsert() {
+    
+    public function getTestDataForAdminsTableInsert()
+    {
         return [
             [
                 'id' => 1,
@@ -39,7 +44,7 @@ class PostgresAdapterSelectDataTest extends TestCase {
                 'is_active' => 1,
                 'name' => 'Lionel Freeman',
                 'email' => 'diam.at.pretium@idmollisnec.co.uk',
-                'timezone' => 'Europe/Moscow'
+                'timezone' => 'Europe/Moscow',
             ],
             [
                 'id' => 2,
@@ -56,12 +61,13 @@ class PostgresAdapterSelectDataTest extends TestCase {
                 'is_active' => false,
                 'name' => 'Jasper Waller',
                 'email' => 'elit@eratvelpede.org',
-                'timezone' => 'Europe/Moscow'
-            ]
+                'timezone' => 'Europe/Moscow',
+            ],
         ];
     }
-
-    public function convertTestDataForAdminsTableAssert($data) {
+    
+    public function convertTestDataForAdminsTableAssert($data)
+    {
         foreach ($data as &$item) {
             $item['id'] = "{$item['id']}";
             $item['is_superadmin'] = (bool)$item['is_superadmin'];
@@ -70,48 +76,57 @@ class PostgresAdapterSelectDataTest extends TestCase {
         }
         return $data;
     }
-
-    public function testSelects() {
+    
+    public function testSelects()
+    {
         $adapter = static::getValidAdapter();
         TestingApp::clearTables($adapter);
         $testData = $this->getTestDataForAdminsTableInsert();
         $dataForAssert = $this->convertTestDataForAdminsTableAssert($testData);
         $adapter->insertMany('admins', array_keys($testData[0]), $testData);
-
+        
         $data = $adapter->select('admins', [], DbExpr::create('ORDER BY `id`', false));
         $this->assertEquals($dataForAssert[0], $data[0]);
         $this->assertEquals($dataForAssert[1], $data[1]);
-
-        $data = $adapter->select('admins', ['id', 'parent_id'], DbExpr::create(
-            "WHERE `id` IN (``{$testData[0]['id']}``)"
-        ));
+        
+        $data = $adapter->select(
+            'admins',
+            ['id', 'parent_id'],
+            DbExpr::create(
+                "WHERE `id` IN (``{$testData[0]['id']}``)"
+            )
+        );
         $this->assertCount(1, $data);
         $this->assertCount(2, $data[0]);
         $this->assertArrayHasKey('id', $data[0]);
         $this->assertArrayHasKey('parent_id', $data[0]);
         $this->assertArraySubset($data[0], $dataForAssert[0]);
-
-        $data = $adapter->selectOne('admins', [], DbExpr::create(
-            "WHERE `id` IN (``{$testData[0]['id']}``)"
-        ));
+        
+        $data = $adapter->selectOne(
+            'admins',
+            [],
+            DbExpr::create(
+                "WHERE `id` IN (``{$testData[0]['id']}``)"
+            )
+        );
         $this->assertEquals($dataForAssert[0], $data);
-
+        
         $data = $adapter->selectColumn('admins', 'email', DbExpr::create('ORDER BY `id`'));
         $this->assertCount(2, $data);
         $this->assertEquals([$dataForAssert[0]['email'], $dataForAssert[1]['email']], $data);
-
+        
         $data = $adapter->selectAssoc('admins', 'id', 'email', DbExpr::create('ORDER BY `id`'));
         $this->assertCount(2, $data);
         $this->assertEquals(
             [
                 $dataForAssert[0]['id'] => $dataForAssert[0]['email'],
-                $dataForAssert[1]['id'] => $dataForAssert[1]['email']
+                $dataForAssert[1]['id'] => $dataForAssert[1]['email'],
             ],
             $data
         );
-
+        
         $data = $adapter->selectValue('admins', DbExpr::create('COUNT(`*`)'));
         $this->assertEquals(2, $data);
     }
-
+    
 }
