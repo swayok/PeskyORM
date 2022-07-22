@@ -326,14 +326,8 @@ abstract class AbstractSelect
      */
     public function fetchAssoc($keysColumn, $valuesColumn): array
     {
-        $this->columns(['key' => $keysColumn, 'value' => $valuesColumn]);
-        /** @var array $records */
-        $records = $this->_fetch(Utils::FETCH_ALL);
-        $assoc = [];
-        foreach ($records as $data) {
-            $assoc[$data['key']] = $data['value'];
-        }
-        return $assoc;
+        return $this->columns(['key' => $keysColumn, 'value' => $valuesColumn])
+            ->_fetch(Utils::FETCH_KEY_PAIR);
     }
     
     /**
@@ -354,7 +348,7 @@ abstract class AbstractSelect
     {
         $data = $this->getConnection()
             ->query($this->getQuery(), $selectionType);
-        if (in_array($selectionType, [Utils::FETCH_COLUMN, Utils::FETCH_VALUE], true)) {
+        if (in_array($selectionType, [Utils::FETCH_COLUMN, Utils::FETCH_VALUE, Utils::FETCH_KEY_PAIR], true)) {
             return $data;
         } elseif ($selectionType === Utils::FETCH_FIRST) {
             $shortColumnAliasToAlias = array_flip($this->shortColumnAliases);
@@ -539,7 +533,7 @@ abstract class AbstractSelect
     /**
      * Add ORDER BY
      * @param string|DbExpr $columnName - 'field1', 'JoinName.field1', DbExpr::create('RAND()')
-     * @param bool|string $direction - 'ASC' or true; 'DESC' or false; Optional suffixes: 'NULLS LAST' or 'NULLS FIRST';
+     * @param bool|string|null $direction - 'ASC' or true; 'DESC' or false; Optional suffixes: 'NULLS LAST' or 'NULLS FIRST';
      *      Ignored if $columnName instance of DbExpr
      * @param bool $append - true: append to existing orders | false: replace existsing orders
      * @return $this
@@ -556,7 +550,7 @@ abstract class AbstractSelect
         }
         if (is_bool($direction)) {
             $direction = $direction ? 'asc' : 'desc';
-        } elseif (!preg_match('%^(asc|desc)(\s*(nulls)\s*(first|last))?$%i', $direction)) {
+        } elseif (!$isDbExpr && !preg_match('%^(asc|desc)(\s*(nulls)\s*(first|last))?$%i', $direction)) {
             throw new \InvalidArgumentException(
                 '$direction argument must be a boolean or string ("ASC" or "DESC" with optional "NULLS LAST" or "NULLS FIRST")'
             );
@@ -922,12 +916,16 @@ abstract class AbstractSelect
             $columnAlias = trim($columnAlias);
             if ($columnAlias === '') {
                 throw new \InvalidArgumentException($errorsPrefix . '$columnAlias argument is not allowed to be an empty string');
+            } elseif (!$this->getConnection()->isValidDbEntityName($columnAlias)) {
+                throw new \InvalidArgumentException($errorsPrefix . "\$columnAlias argument contains invalid db entity name: [$columnAlias]");
             }
         }
         if ($joinName !== null) {
             $joinName = trim($joinName);
             if ($joinName === '') {
                 throw new \InvalidArgumentException($errorsPrefix . '$joinName argument is not allowed to be an empty string');
+            } elseif (!$this->getConnection()->isValidDbEntityName($joinName)) {
+                throw new \InvalidArgumentException($errorsPrefix . "\$joinName argument contains invalid db entity name: [$joinName]");
             }
         }
         if ($isDbExpr) {
@@ -960,8 +958,7 @@ abstract class AbstractSelect
                 $ret['type_cast'] = null;
                 $ret['alias'] = null;
                 $ret['json_selector'] = null;
-            } elseif (!$this->getConnection()
-                ->isValidDbEntityName($ret['json_selector'] ?: $ret['name'], true)) {
+            } elseif (!$this->getConnection()->isValidDbEntityName($ret['json_selector'] ?: $ret['name'], true)) {
                 if ($ret['json_selector']) {
                     throw new \InvalidArgumentException("{$errorsPrefix}Invalid json selector: [{$ret['json_selector']}]");
                 } else {
@@ -1049,8 +1046,7 @@ abstract class AbstractSelect
      */
     protected function makeTableNameWithAliasForQuery(string $tableName, string $tableAlias, ?string $tableSchema = null): string
     {
-        $schema = !empty($tableSchema) && $this->getConnection()
-            ->isDbSupportsTableSchemas()
+        $schema = !empty($tableSchema) && $this->getConnection()->isDbSupportsTableSchemas()
             ? $this->quoteDbEntityName($tableSchema) . '.'
             : '';
         return $schema . $this->quoteDbEntityName($tableName) . ' AS ' . $this->quoteDbEntityName($this->getShortJoinAlias($tableAlias));
@@ -1065,10 +1061,9 @@ abstract class AbstractSelect
     {
         $tableAlias = $columnInfo['join_name'] ?: $this->getTableAlias();
         $columnName = $this->quoteDbEntityName($this->getShortJoinAlias($tableAlias)) . '.'
-            . $this->quoteDbEntityName($columnInfo['json_selector'] ?: $columnInfo['name']);
+            . $this->quoteDbEntityName($columnInfo['json_selector'] ?? $columnInfo['name']);
         if ($columnInfo['type_cast']) {
-            $columnName = $this->getConnection()
-                ->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
+            $columnName = $this->getConnection()->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
         }
         return $columnName;
     }

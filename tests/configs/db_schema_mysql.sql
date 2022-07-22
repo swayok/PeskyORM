@@ -25,7 +25,7 @@ CREATE TABLE `admins`
     `email`                 varchar(100)          DEFAULT NULL,
     `timezone`              varchar(50)  NOT NULL DEFAULT 'UTC',
     `not_changeable_column` varchar(50)  NOT NULL DEFAULT 'not changable',
-    `big_data`              text         NOT NULL DEFAULT 'biiiiiiig data',
+    `big_data`              text         NOT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `login` (`login`),
     UNIQUE KEY `email` (`email`),

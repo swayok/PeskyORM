@@ -3,6 +3,7 @@
 namespace Tests\Core;
 
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\Select;
 use PHPUnit\Framework\TestCase;
 use Tests\PeskyORMTest\TestingApp;
 
@@ -127,6 +128,31 @@ class PostgresAdapterSelectDataTest extends TestCase
         
         $data = $adapter->selectValue('admins', DbExpr::create('COUNT(`*`)'));
         $this->assertEquals(2, $data);
+    }
+    
+    public function testInvalidAnalyzeColumnName1()
+    {
+        $this->expectException(\PDOException::class);
+        $this->expectExceptionMessage('ERROR:  column "test test" does not exist');
+        // it is actually valid for PostgreSQL but not valid for MySQL
+        static::getValidAdapter()->selectColumn('admins', 'test test');
+    }
+    
+    public function testInvalidAnalyzeColumnName2()
+    {
+        $this->expectException(\PDOException::class);
+        $this->expectExceptionMessage('ERROR:  column "test%test" does not exist');
+        // it is actually valid for PostgreSQL but not valid for MySQL
+        static::getValidAdapter()->selectColumn('admins', 'test%test');
+    }
+    
+    public function testInvalidWith1()
+    {
+        $select = new Select('admins', static::getValidAdapter());
+        $withSelect = new Select('admins', static::getValidAdapter());
+        // it is actually valid for PostgreSQL but not valid for MySQL
+        $select->with($withSelect, 'asdas as das das');
+        static::assertTrue(true);
     }
     
 }

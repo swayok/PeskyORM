@@ -62,6 +62,7 @@ class DbSelectTest extends TestCase
                 'name' => 'Lionel Freeman',
                 'email' => 'diam.at.pretium@idmollisnec.co.uk',
                 'timezone' => 'Europe/Moscow',
+                'big_data' => 'maaaaaaaaaaaaaaaaaaaaaany data'
             ],
             [
                 'id' => 2,
@@ -79,6 +80,7 @@ class DbSelectTest extends TestCase
                 'name' => 'Jasper Waller',
                 'email' => 'elit@eratvelpede.org',
                 'timezone' => 'Europe/Moscow',
+                'big_data' => 'maaaaaaaaaaaaaaaaaaaaaany data'
             ],
         ];
     }
@@ -135,8 +137,8 @@ class DbSelectTest extends TestCase
     
     public function testInvalidTableNameInConstructor2()
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$tableName argument must be a not-empty string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessageMatches('%Argument #1 .* must be of type string, null given%i');
         Select::from(null, static::getValidAdapter());
     }
     
@@ -282,66 +284,66 @@ class DbSelectTest extends TestCase
         $this->callObjectMethod($dbSelect, 'analyzeColumnName', [false]);
     }
     
-    public function testInvalidAnalyzeColumnName15()
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid column name or json selector: [test test]");
-        $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test test']);
-    }
-    
     public function testInvalidAnalyzeColumnName16()
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid column name or json selector: [0test]");
+        $this->expectExceptionMessage("Invalid column name: [0test]");
         $dbSelect = static::getNewSelect();
         $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['0test']);
     }
     
-    public function testInvalidAnalyzeColumnName17()
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid column name or json selector: [test%test]");
-        $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test%test']);
-    }
-    
     public function testInvalidAnalyzeColumnName21()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$alias argument must be a string or null");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessageMatches("%Argument #2 .*? must be of type \?string, array given%");
         $dbSelect = static::getNewSelect();
         $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', []]);
-    }
-    
-    public function testInvalidAnalyzeColumnName22()
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$alias argument must be a string or null");
-        $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', false]);
     }
     
     public function testInvalidAnalyzeColumnName23()
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$alias argument is not allowed to be an empty string");
+        $this->expectExceptionMessage("\$columnAlias argument is not allowed to be an empty string");
         $dbSelect = static::getNewSelect();
         $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', '']);
+    }
+    
+    public function testInvalidAnalyzeColumnName24()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$columnAlias argument contains invalid db entity name: [1]");
+        $dbSelect = static::getNewSelect();
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', true]);
+    }
+    
+    public function testInvalidAnalyzeColumnName25()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$columnAlias argument is not allowed to be an empty string");
+        $dbSelect = static::getNewSelect();
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', false]);
+    }
+    
+    public function testInvalidAnalyzeColumnName30()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$joinName argument contains invalid db entity name: [1]");
+        $dbSelect = static::getNewSelect();
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', null, true]);
     }
     
     public function testInvalidAnalyzeColumnName31()
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$joinName argument must be a string or null");
+        $this->expectExceptionMessage("\$joinName argument is not allowed to be an empty string");
         $dbSelect = static::getNewSelect();
         $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', null, false]);
     }
     
     public function testInvalidAnalyzeColumnName32()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$joinName argument must be a string or null");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessageMatches("%Argument #3 .*? must be of type \?string, array given%");
         $dbSelect = static::getNewSelect();
         $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', null, []]);
     }
@@ -363,6 +365,7 @@ class DbSelectTest extends TestCase
                 'alias' => null,
                 'join_name' => null,
                 'type_cast' => null,
+                'json_selector' => null
             ],
             $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['*', 'test'])
         );
@@ -372,6 +375,8 @@ class DbSelectTest extends TestCase
                 'alias' => null,
                 'join_name' => 'JoinAlias',
                 'type_cast' => null,
+                'parent' => 'Admins',
+                'json_selector' => null
             ],
             $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['JoinAlias.*', 'test'])
         );
@@ -381,6 +386,7 @@ class DbSelectTest extends TestCase
                 'alias' => 'not_id',
                 'join_name' => null,
                 'type_cast' => null,
+                'json_selector' => null
             ],
             $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['id as not_id'])
         );
@@ -390,6 +396,7 @@ class DbSelectTest extends TestCase
                 'alias' => null,
                 'join_name' => null,
                 'type_cast' => 'int',
+                'json_selector' => null
             ],
             $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['Admins.id::int'])
         );
@@ -399,13 +406,15 @@ class DbSelectTest extends TestCase
                 'alias' => null,
                 'join_name' => 'Other',
                 'type_cast' => 'int',
+                'json_selector' => null
             ],
             $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['Other.id::int'])
         );
         $dbExpr = DbExpr::create('Other.id::int');
         $columnInfo = $this->callObjectMethod($dbSelect, 'analyzeColumnName', [$dbExpr]);
-        static::assertArraySubset(
+        static::assertEquals(
             [
+                'name' => $dbExpr,
                 'alias' => null,
                 'join_name' => null,
                 'type_cast' => null,
@@ -415,8 +424,9 @@ class DbSelectTest extends TestCase
         static::assertInstanceOf(DbExpr::class, $columnInfo['name']);
         static::assertEquals($dbExpr->get(), $columnInfo['name']->get());
         $columnInfo = $this->callObjectMethod($dbSelect, 'analyzeColumnName', [$dbExpr, 'dbexpr']);
-        static::assertArraySubset(
+        static::assertEquals(
             [
+                'name' => $dbExpr,
                 'alias' => 'dbexpr',
                 'join_name' => null,
                 'type_cast' => null,
@@ -500,7 +510,7 @@ class DbSelectTest extends TestCase
             )
         );
         static::assertEquals(
-            'SELECT "Admins"."id"::integer AS "_Admins__id" FROM "admins" AS "Admins"',
+            'SELECT ("Admins"."id")::integer AS "_Admins__id" FROM "admins" AS "Admins"',
             rtrim(
                 $dbSelect->columns(['id::integer'])
                     ->getQuery()
@@ -521,7 +531,7 @@ class DbSelectTest extends TestCase
             )
         );
         static::assertEquals(
-            'SELECT "Admins"."id"::int AS "_Admins__id", "Admins"."login" AS "_Admins__login" FROM "admins" AS "Admins"',
+            'SELECT ("Admins"."id")::int AS "_Admins__id", "Admins"."login" AS "_Admins__login" FROM "admins" AS "Admins"',
             rtrim(
                 $dbSelect->columns('id::int', 'login')
                     ->getQuery()
@@ -627,32 +637,32 @@ class DbSelectTest extends TestCase
     {
         $dbSelect = static::getNewSelect();
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY "Admins"."id" ASC',
+            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY "Admins"."id" asc',
             $dbSelect->orderBy('id')
                 ->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY "Admins"."id" DESC',
+            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY "Admins"."id" desc',
             $dbSelect->orderBy('Admins.id', false, true)
                 ->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY "Admins"."id"::integer ASC',
+            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY ("Admins"."id")::integer asc',
             $dbSelect->orderBy('Admins.id::integer', true, true)
                 ->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY "Admins"."id" DESC',
+            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY "Admins"."id" desc',
             $dbSelect->orderBy('Admins.id', false, true)
                 ->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY "Admins"."id" DESC, "Admins"."email" DESC',
+            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY "Admins"."id" desc, "Admins"."email" desc',
             $dbSelect->orderBy('email', false)
                 ->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY (RANDOM())',
+            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY RANDOM()',
             $dbSelect->orderBy(DbExpr::create('RANDOM()'), null, false)
                 ->getQuery()
         );
@@ -734,32 +744,30 @@ class DbSelectTest extends TestCase
     
     public function testInvalidLimit1()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$limit argument must be an integer");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type int%");
         static::getNewSelect()
             ->limit(null);
     }
     
     public function testInvalidLimit2()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$limit argument must be an integer");
-        static::getNewSelect()
+        $select = static::getNewSelect()
             ->limit(true);
+        static::assertEquals(1, $select->getLimit());
     }
     
     public function testInvalidLimit3()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$limit argument must be an integer");
-        static::getNewSelect()
+        $select = static::getNewSelect()
             ->limit(false);
+        static::assertEquals(0, $select->getLimit());
     }
     
     public function testInvalidLimit4()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$limit argument must be an integer");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type int%");
         /** @noinspection PhpParamsInspection */
         static::getNewSelect()
             ->limit([]);
@@ -767,8 +775,8 @@ class DbSelectTest extends TestCase
     
     public function testInvalidLimit5()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$limit argument must be an integer");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type int%");
         /** @noinspection PhpParamsInspection */
         static::getNewSelect()
             ->limit($this);
@@ -784,32 +792,30 @@ class DbSelectTest extends TestCase
     
     public function testInvalidOffset1()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$offset argument must be an integer");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type int%");
         static::getNewSelect()
             ->offset(null);
     }
     
     public function testInvalidOffset2()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$offset argument must be an integer");
-        static::getNewSelect()
+        $select = static::getNewSelect()
             ->offset(true);
+        static::assertEquals(1, $select->getOffset());
     }
     
     public function testInvalidOffset3()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$offset argument must be an integer");
-        static::getNewSelect()
+        $select = static::getNewSelect()
             ->offset(false);
+        static::assertEquals(0, $select->getOffset());
     }
     
     public function testInvalidOffset4()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$offset argument must be an integer");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type int%");
         /** @noinspection PhpParamsInspection */
         static::getNewSelect()
             ->offset([]);
@@ -817,8 +823,8 @@ class DbSelectTest extends TestCase
     
     public function testInvalidOffset5()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$offset argument must be an integer");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type int%");
         /** @noinspection PhpParamsInspection */
         static::getNewSelect()
             ->offset($this);
@@ -910,13 +916,13 @@ class DbSelectTest extends TestCase
                 ->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" WHERE "Admins"."id"::int = \'1\' HAVING "Admins"."login"::varchar = \'2\'',
+            'SELECT "Admins".* FROM "admins" AS "Admins" WHERE ("Admins"."id")::int = \'1\' HAVING ("Admins"."login")::varchar = \'2\'',
             $dbSelect->where(['id::int' => '1'])
                 ->having(['login::varchar' => '2'])
                 ->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" WHERE "Admins"."id"::int = \'1\' AND "Admins"."login" = \'3\' HAVING "Admins"."login"::varchar = \'2\' AND "Admins"."email" = \'3\'',
+            'SELECT "Admins".* FROM "admins" AS "Admins" WHERE ("Admins"."id")::int = \'1\' AND "Admins"."login" = \'3\' HAVING ("Admins"."login")::varchar = \'2\' AND "Admins"."email" = \'3\'',
             $dbSelect->where(['id::int' => '1', 'login' => '3'])
                 ->having(['login::varchar' => '2', 'email' => '3'])
                 ->getQuery()
@@ -1002,22 +1008,10 @@ class DbSelectTest extends TestCase
         );
     }
     
-    public function testInvalidWith1()
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(
-            "\$selectAlias argument must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)"
-        );
-        static::getNewSelect()
-            ->with(static::getNewSelect(), 'asdas as das das');
-    }
-    
     public function testInvalidWith2()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(
-            "\$selectAlias argument must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)"
-        );
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessageMatches("%Argument #2 .*? must be of type string%");
         /** @noinspection PhpParamsInspection */
         static::getNewSelect()
             ->with(static::getNewSelect(), []);
@@ -1025,10 +1019,8 @@ class DbSelectTest extends TestCase
     
     public function testInvalidWith3()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(
-            "\$selectAlias argument must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)"
-        );
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessageMatches("%Argument #2 .*? must be of type string%");
         /** @noinspection PhpParamsInspection */
         static::getNewSelect()
             ->with(static::getNewSelect(), $this);
@@ -1094,7 +1086,7 @@ class DbSelectTest extends TestCase
             ])
         );
         static::assertEquals(
-            '"JoinAlias"."colname"::int AS "_JoinAlias__colname"',
+            '("JoinAlias"."colname")::int AS "_JoinAlias__colname"',
             $this->callObjectMethod($dbSelect, 'makeColumnNameWithAliasForQuery', [
                 [
                     'name' => 'colname',
@@ -1105,7 +1097,7 @@ class DbSelectTest extends TestCase
             ])
         );
         static::assertEquals(
-            '"JoinAlias"."colname"::int AS "_JoinAlias__colalias"',
+            '("JoinAlias"."colname")::int AS "_JoinAlias__colalias"',
             $this->callObjectMethod($dbSelect, 'makeColumnNameWithAliasForQuery', [
                 [
                     'name' => 'colname',
@@ -1148,7 +1140,7 @@ class DbSelectTest extends TestCase
             ])
         );
         static::assertEquals(
-            '"Admins"."colname"::int',
+            '("Admins"."colname")::int',
             $this->callObjectMethod($dbSelect, 'makeColumnNameForCondition', [
                 [
                     'name' => 'colname',
@@ -1159,7 +1151,7 @@ class DbSelectTest extends TestCase
             ])
         );
         static::assertEquals(
-            '"JoinAlias"."colname"::int',
+            '("JoinAlias"."colname")::int',
             $this->callObjectMethod($dbSelect, 'makeColumnNameForCondition', [
                 [
                     'name' => 'colname',
@@ -1203,8 +1195,8 @@ class DbSelectTest extends TestCase
     
     public function testInvalidSetDbSchemaName1()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$schema argument must be a not-empty string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type string, null given%");
         static::getNewSelect()
             ->setTableSchemaName(null);
     }
@@ -1212,7 +1204,7 @@ class DbSelectTest extends TestCase
     public function testInvalidSetDbSchemaName2()
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$schema argument must be a not-empty string");
+        $this->expectExceptionMessage("\$schema argument value cannot be empty");
         static::getNewSelect()
             ->setTableSchemaName('');
     }
@@ -1220,7 +1212,7 @@ class DbSelectTest extends TestCase
     public function testInvalidSetDbSchemaName3()
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$schema argument must be a not-empty string");
+        $this->expectExceptionMessage("\$schema argument value is invalid: [1]");
         static::getNewSelect()
             ->setTableSchemaName(true);
     }
@@ -1228,15 +1220,15 @@ class DbSelectTest extends TestCase
     public function testInvalidSetDbSchemaName4()
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$schema argument must be a not-empty string");
+        $this->expectExceptionMessage("\$schema argument value cannot be empty");
         static::getNewSelect()
             ->setTableSchemaName(false);
     }
     
     public function testInvalidSetDbSchemaName5()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$schema argument must be a not-empty string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type string%");
         /** @noinspection PhpParamsInspection */
         static::getNewSelect()
             ->setTableSchemaName(['arr']);
@@ -1244,8 +1236,8 @@ class DbSelectTest extends TestCase
     
     public function testInvalidSetDbSchemaName6()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$schema argument must be a not-empty string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type string%");
         /** @noinspection PhpParamsInspection */
         static::getNewSelect()
             ->setTableSchemaName($this);
@@ -1260,26 +1252,6 @@ class DbSelectTest extends TestCase
                 ->getTableSchemaName()
         );
         static::assertEquals('SELECT "Admins".* FROM "test_schema"."admins" AS "Admins"', $dbSelect->getQuery());
-    }
-    
-    public function testInvalidFromConfigsArrayColumns1()
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("COLUMNS key in \$conditionsAndOptions argument must be an array or '*'");
-        static::getNewSelect()
-            ->fromConfigsArray([
-                'COLUMNS' => $this,
-            ]);
-    }
-    
-    public function testInvalidFromConfigsArrayColumns2()
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("COLUMNS key in \$conditionsAndOptions argument must be an array or '*'");
-        static::getNewSelect()
-            ->fromConfigsArray([
-                'COLUMNS' => true,
-            ]);
     }
     
     public function testInvalidFromConfigsArrayOrder1()
@@ -1482,7 +1454,6 @@ class DbSelectTest extends TestCase
                 'colname2' => 'value2',
                 'colname3' => 'value3',
             ],
-            'COLUMNS' => ['colname', 'colname2', 'colname3', '*'],
             'ORDER' => ['colname', 'Test.admin_id' => 'desc'],
             'LIMIT' => 10,
             'OFFSET' => 20,
@@ -1498,8 +1469,9 @@ class DbSelectTest extends TestCase
         ];
         /** @noinspection SqlAggregates */
         static::assertEquals(
-            'SELECT "Admins"."colname" AS "_Admins__colname", "Admins"."colname2" AS "_Admins__colname2", "Admins"."colname3" AS "_Admins__colname3", "Admins".*, "Test"."admin_id" AS "_Test__admin_id", "Test"."value" AS "_Test__setting_value" FROM "admins" AS "Admins" LEFT JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."admin_id") WHERE "Admins"."colname" = \'value\' AND ("Admins"."colname2" = \'value2\' OR "Admins"."colname3" = \'value3\') GROUP BY "Admins"."colname", "Test"."admin_id" HAVING "Admins"."colname3" = \'value\' AND "Test"."admin_id" > \'1\' ORDER BY "Admins"."colname" ASC, "Test"."admin_id" DESC LIMIT 10 OFFSET 20',
+            'SELECT "Admins"."colname" AS "_Admins__colname", "Admins"."colname2" AS "_Admins__colname2", "Admins"."colname3" AS "_Admins__colname3", "Admins".*, "Test"."admin_id" AS "_Test__admin_id", "Test"."value" AS "_Test__setting_value" FROM "admins" AS "Admins" LEFT JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."admin_id") WHERE "Admins"."colname" = \'value\' AND ("Admins"."colname2" = \'value2\' OR "Admins"."colname3" = \'value3\') GROUP BY "Admins"."colname", "Test"."admin_id" HAVING "Admins"."colname3" = \'value\' AND "Test"."admin_id" > \'1\' ORDER BY "Admins"."colname" asc, "Test"."admin_id" desc LIMIT 10 OFFSET 20',
             static::getNewSelect()
+                ->columns('colname', 'colname2', 'colname3', '*')
                 ->fromConfigsArray($configs)
                 ->getQuery()
         );
@@ -1508,6 +1480,7 @@ class DbSelectTest extends TestCase
     
     public function testNormalizeRecord()
     {
+        static::assertTrue(true);
         // todo: add tests
     }
 }

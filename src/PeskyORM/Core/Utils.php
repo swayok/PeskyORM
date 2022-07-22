@@ -9,31 +9,38 @@ class Utils
     public const FETCH_FIRST = 'first';
     public const FETCH_VALUE = 'value';
     public const FETCH_COLUMN = 'column';
+    public const FETCH_KEY_PAIR = 'key_pair';
+    public const FETCH_STATEMENT = 'statement';
+    public const FETCH_ROWS_COUNT = 'rows_cunt';
     
     /**
      * Get data from $statement according to required $type
      * @param \PDOStatement $statement
-     * @param string $type = 'first', 'all', 'value', 'column'
-     * @return array|string
+     * @param string $type = one of \PeskyORM\Core\FETCH_*
+     * @return array|string|int|\PDOStatement
      * @throws \InvalidArgumentException
      */
-    static public function getDataFromStatement(\PDOStatement $statement, $type = self::FETCH_ALL)
+    static public function getDataFromStatement(\PDOStatement $statement, string $type = self::FETCH_ALL)
     {
         $type = strtolower($type);
-        if (!in_array($type, [self::FETCH_COLUMN, self::FETCH_ALL, self::FETCH_FIRST, self::FETCH_VALUE], true)) {
-            throw new \InvalidArgumentException("Unknown processing type [{$type}]");
-        }
-        if ($statement->rowCount() > 0) {
+        if ($type === self::FETCH_STATEMENT) {
+            return $statement;
+        } elseif ($type === self::FETCH_ROWS_COUNT) {
+            return $statement->rowCount();
+        } elseif ($statement->rowCount() > 0) {
             switch ($type) {
                 case self::FETCH_COLUMN:
                     return $statement->fetchAll(\PDO::FETCH_COLUMN);
+                case self::FETCH_KEY_PAIR:
+                    return $statement->fetchAll(\PDO::FETCH_KEY_PAIR);
                 case self::FETCH_VALUE:
                     return $statement->fetchColumn(0);
                 case self::FETCH_FIRST:
                     return $statement->fetch(\PDO::FETCH_ASSOC);
                 case self::FETCH_ALL:
-                default:
                     return $statement->fetchAll(\PDO::FETCH_ASSOC);
+                default:
+                    throw new \InvalidArgumentException("Unknown processing type [{$type}]");
             }
         } elseif ($type === self::FETCH_VALUE) {
             return null;

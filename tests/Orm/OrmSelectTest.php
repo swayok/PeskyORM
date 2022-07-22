@@ -858,7 +858,7 @@ class OrmSelectTest extends TestCase
     public function testInvalidOrderBy3()
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("ORDER BY: Invalid column name or json selector: [Parent.qweasd ASC]");
+        $this->expectExceptionMessage("ORDER BY: Invalid db entity name: [Parent.qweasd ASC]");
         static::getNewSelect()
             ->orderBy('Parent.qweasd ASC')
             ->getQuery();
@@ -867,7 +867,7 @@ class OrmSelectTest extends TestCase
     public function testInvalidOrderBy4()
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("ORDER BY: Invalid column name or json selector: [Parent.Parent.id]");
+        $this->expectExceptionMessage("ORDER BY: Invalid db entity name: [Parent.Parent.id]");
         static::getNewSelect()
             ->orderBy('Parent.Parent.id')
             ->getQuery();
@@ -896,7 +896,7 @@ class OrmSelectTest extends TestCase
     public function testInvalidGroupBy3()
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("GROUP BY: Invalid column name or json selector: [Parent.qweasd ASC]");
+        $this->expectExceptionMessage("GROUP BY: Invalid db entity name: [Parent.qweasd ASC]");
         static::getNewSelect()
             ->groupBy(['Parent.qweasd ASC'])
             ->getQuery();
@@ -905,7 +905,7 @@ class OrmSelectTest extends TestCase
     public function testInvalidGroupBy4()
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("GROUP BY: Invalid column name or json selector: [Parent.Parent.id]");
+        $this->expectExceptionMessage("GROUP BY: Invalid db entity name: [Parent.Parent.id]");
         static::getNewSelect()
             ->groupBy(['Parent.Parent.id'])
             ->getQuery();

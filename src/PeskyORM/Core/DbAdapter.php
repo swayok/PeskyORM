@@ -2,6 +2,7 @@
 
 namespace PeskyORM\Core;
 
+use PDOStatement;
 use PeskyORM\Core\Utils as OrmUtils;
 use PeskyORM\Exception\DbException;
 use Swayok\Utils\Utils;
@@ -22,6 +23,9 @@ abstract class DbAdapter implements DbAdapterInterface
     public const FETCH_FIRST = OrmUtils::FETCH_FIRST;
     public const FETCH_VALUE = OrmUtils::FETCH_VALUE;
     public const FETCH_COLUMN = OrmUtils::FETCH_COLUMN;
+    public const FETCH_KEY_PAIR = OrmUtils::FETCH_KEY_PAIR;
+    public const FETCH_STATEMENT = OrmUtils::FETCH_STATEMENT;
+    public const FETCH_ROWS_COUNT = OrmUtils::FETCH_ROWS_COUNT;
     
     /**
      * Traces of all transactions (required for debug)
@@ -209,10 +213,10 @@ abstract class DbAdapter implements DbAdapterInterface
     
     /**
      * @param string|DbExpr $query
-     * @param string|null $fetchData - null: return PDOStatement; string: one of \PeskyORM\Core\Utils::FETCH_*
-     * @return array|false|\PDOStatement|string|null
+     * @param string $fetchData - how to fetch data (one of DbAdapter::FETCH_*)
+     * @return array|false|\PDOStatement|string|null|int
      */
-    public function query($query, ?string $fetchData = null)
+    public function query($query, string $fetchData = self::FETCH_STATEMENT)
     {
         if ($query instanceof DbExpr) {
             $query = $this->quoteDbExpr($query->setWrapInBrackets(false));
@@ -221,11 +225,8 @@ abstract class DbAdapter implements DbAdapterInterface
         try {
             $stmnt = $this->getConnection()
                 ->query($query);
-            if (!$fetchData) {
-                return $stmnt;
-            } else {
-                return OrmUtils::getDataFromStatement($stmnt, $fetchData);
-            }
+            
+            return OrmUtils::getDataFromStatement($stmnt, $fetchData);
         } catch (\PDOException $exc) {
             $exc = $this->getDetailedException($query, null, $exc);
             if ($this->inTransaction()) {
@@ -272,6 +273,44 @@ abstract class DbAdapter implements DbAdapterInterface
     public function exec($query)
     {
         return $this->_exec($query);
+    }
+    
+    /**
+     * @param string|DbExpr $query
+     * @param array $options - see PDO::prepare()
+     * @return int|array = array: returned if $returning argument is not empty
+     */
+    public function prepare($query, array $options = []): PDOStatement
+    {
+        if ($query instanceof DbExpr) {
+            $query = $this->quoteDbExpr($query->setWrapInBrackets(false));
+        }
+        return $this->getConnection()->prepare($query, $options);
+    }
+    
+    /**
+     * @param PDOStatement $statement
+     * @param array $inserts
+     * @param string $fetchData - how to fetch data (one of DbAdapter::FETCH_*)
+     * @return int|array|PDOStatement = array: returned if $returning argument is not empty
+     */
+    public function execPrepared(PDOStatement $statement, array $inserts = [], string $fetchData = self::FETCH_STATEMENT)
+    {
+        try {
+            if (!$statement->execute($inserts)) {
+                $exc = $this->getDetailedException($statement->queryString, $statement);
+                if ($exc !== null) {
+                    throw $exc;
+                }
+            }
+            return OrmUtils::getDataFromStatement($statement, $fetchData);
+        } catch (\PDOException $exc) {
+            $exc = $this->getDetailedException($statement->queryString, $statement, $exc);
+            if ($this->inTransaction() && stripos($statement->queryString, 'ROLLBACK') !== 0) {
+                $this->rollBack(); //< error within transactions makes it broken in postgresql
+            }
+            throw $exc;
+        }
     }
     
     /**
@@ -782,11 +821,9 @@ abstract class DbAdapter implements DbAdapterInterface
      * @param string $query - failed query
      * @param null|\PDOStatement|\PDO $pdoStatement
      * @param null|\PDOException $originalException
-     * @return \PDOException or null if no error
-     * @throws \InvalidArgumentException
-     * @throws \PDOException
+     * @return \PDOException|null
      */
-    protected function getDetailedException($query, $pdoStatement = null, $originalException = null)
+    protected function getDetailedException($query, $pdoStatement = null, $originalException = null): ?\PDOException
     {
         $errorInfo = $this->getPdoError($pdoStatement);
         if ($errorInfo['message'] === null) {
@@ -835,7 +872,7 @@ abstract class DbAdapter implements DbAdapterInterface
             return '*';
         }
         if (!static::isValidDbEntityName($name)) {
-            throw new \InvalidArgumentException("Invalid db entity name [$name]");
+            throw new \InvalidArgumentException("Invalid db entity name: [$name]");
         }
         if (preg_match('%[-#]>%', $name)) {
             // we've got a json selector like 'Alias.col_name->json_key1' 'Alias.col_name ->>json_key1',

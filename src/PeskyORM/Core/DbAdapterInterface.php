@@ -2,6 +2,7 @@
 
 namespace PeskyORM\Core;
 
+use PDOStatement;
 use PeskyORM\Exception\DbException;
 
 interface DbAdapterInterface
@@ -48,10 +49,24 @@ interface DbAdapterInterface
     
     /**
      * @param string|DbExpr $query
-     * @param string|null $fetchData - null: return PDOStatement; string: one of \PeskyORM\Core\Utils::FETCH_*
+     * @return int|array = array: returned if $returning argument is not empty
+     */
+    public function prepare($query, array $options = []): PDOStatement;
+    
+    /**
+     * @param PDOStatement $statement
+     * @param array $inserts
+     * @param string $fetchData - how to fetch data (one of DbAdapter::FETCH_*)
+     * @return int|array|PDOStatement = array: returned if $returning argument is not empty
+     */
+    public function execPrepared(PDOStatement $statement, array $inserts = [], string $fetchData = DbAdapter::FETCH_STATEMENT);
+    
+    /**
+     * @param string|DbExpr $query
+     * @param string|null $fetchData - how to fetch data (one of DbAdapter::FETCH_*)
      * @return \PDOStatement|array|string|null
      */
-    public function query($query, ?string $fetchData = null);
+    public function query($query, string $fetchData = DbAdapter::FETCH_STATEMENT);
     
     /**
      * Listen for DB notifications (mostly for PostgreSQL LISTEN...NOTIFY)

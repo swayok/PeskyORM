@@ -34,7 +34,7 @@ class TestingApp
                 MysqlConfig::fromArray(static::getGlobalConfigs()['mysql'])
             );
             static::getMysqlConnection()
-                ->exec(file_get_contents(__DIR__ . '/../../configs/db_schema_mysql.sql'));
+                ->exec(file_get_contents(__DIR__ . '/../configs/db_schema_mysql.sql'));
             date_default_timezone_set('UTC');
         }
         return static::$mysqlConnection;
@@ -50,7 +50,7 @@ class TestingApp
             );
             DbConnectionsManager::addAlternativeNameForConnection('default', 'writable');
             static::getPgsqlConnection()
-                ->exec(file_get_contents(__DIR__ . '/../../configs/db_schema_pgsql.sql'));
+                ->exec(file_get_contents(__DIR__ . '/../configs/db_schema_pgsql.sql'));
             static::$pgsqlConnection->query('SET LOCAL TIME ZONE "UTC"');
             date_default_timezone_set('UTC');
         }

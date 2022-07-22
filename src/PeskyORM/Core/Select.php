@@ -59,7 +59,9 @@ class Select extends AbstractSelect
     public function setTableSchemaName(string $schema)
     {
         if (empty($schema)) {
-            throw new \InvalidArgumentException('$schema argument must be a not-empty string');
+            throw new \InvalidArgumentException('$schema argument value cannot be empty');
+        } elseif (!$this->getConnection()->isValidDbEntityName($schema)) {
+            throw new \InvalidArgumentException("\$schema argument value is invalid: [$schema]");
         }
         $this->dbSchema = $schema;
         return $this;
