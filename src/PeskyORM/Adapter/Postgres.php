@@ -460,7 +460,10 @@ class Postgres extends DbAdapter
         // jsonb opertaors - '?', '?|' or '?&' interfere with prepared PDO statements that use '?' to insert values
         // so it is impossible to use this operators directly. We need to use workarounds
         if (in_array($operator, ['?', '?|', '?&'], true)) {
-            if ($operator === '?') {
+            if (PHP_MAJOR_VERSION === 7 && PHP_MINOR_VERSION >= 4) {
+                // escape operators to be ??, ??|, ??& (available since php 7.4.0)
+                return parent::assembleCondition($quotedColumn, '?' . $operator, $rawValue, $valueAlreadyQuoted);
+            } elseif ($operator === '?') {
                 $value = $this->assembleConditionValue($rawValue, $operator, $valueAlreadyQuoted);
                 return "jsonb_exists($quotedColumn, $value)";
             } else {

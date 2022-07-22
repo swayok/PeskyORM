@@ -482,7 +482,7 @@ class Mysql extends DbAdapter
                 unset($localValue);
             }
             $values = implode(', ', $rawValue);
-            $howMany = $this->quoteValue($operator === '?|' ? 'one' : 'many');
+            $howMany = $this->quoteValue($operator === '?|' ? 'one' : 'many', \PDO::PARAM_STR);
             return "JSON_CONTAINS_PATH($quotedColumn, $howMany, $values)";
         } elseif (in_array($operator, ['@>', '<@'], true)) {
             $value = $this->assembleConditionValue($rawValue, $operator, $valueAlreadyQuoted);
