@@ -86,64 +86,41 @@ class RecordValue
         }
     }
     
-    /**
-     * @return Column
-     */
-    public function getColumn()
+    public function getColumn(): Column
     {
         return $this->column;
     }
     
-    /**
-     * @return Record
-     */
-    public function getRecord()
+    public function getRecord(): Record
     {
         return $this->record;
     }
     
-    /**
-     * @return boolean
-     */
-    public function isItFromDb()
+    public function isItFromDb(): bool
     {
         return $this->isFromDb;
     }
     
     /**
-     * @param boolean $isFromDb
      * @return $this
      */
-    public function setIsFromDb($isFromDb)
+    public function setIsFromDb(bool $isFromDb)
     {
         $this->isFromDb = $isFromDb;
         return $this;
     }
     
-    /**
-     * @return bool
-     */
-    public function hasValue()
+    public function hasValue(): bool
     {
         return $this->hasValue;
     }
     
-    /**
-     * @return bool
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
-     */
-    public function hasValueOrDefault()
+    public function hasValueOrDefault(): bool
     {
         return $this->hasValue() || $this->isDefaultValueCanBeSet();
     }
     
-    /**
-     * @return boolean
-     */
-    public function hasDefaultValue()
+    public function hasDefaultValue(): bool
     {
         return $this->getColumn()
             ->hasDefaultValue();
@@ -151,7 +128,6 @@ class RecordValue
     
     /**
      * @return mixed
-     * @throws \UnexpectedValueException
      */
     public function getDefaultValue()
     {
@@ -164,7 +140,6 @@ class RecordValue
      * When there is no default value this method will avoid validation of a NULL value so that there will be no
      * exception 'default value is not valid' if column is not nullable
      * @return mixed
-     * @throws \UnexpectedValueException
      */
     public function getDefaultValueOrNull()
     {
@@ -172,14 +147,7 @@ class RecordValue
             ->getValidDefaultValue() : null;
     }
     
-    /**
-     * @return boolean
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
-     */
-    public function isDefaultValueCanBeSet()
+    public function isDefaultValueCanBeSet(): bool
     {
         if ($this->isDefaultValueCanBeSet === null) {
             if (!$this->hasDefaultValue()) {
@@ -209,10 +177,8 @@ class RecordValue
      * @param mixed $preprocessedValue
      * @param boolean $isFromDb
      * @return $this
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
      */
-    public function setRawValue($rawValue, $preprocessedValue, $isFromDb)
+    public function setRawValue($rawValue, $preprocessedValue, bool $isFromDb)
     {
         $this->setOldValue($this);
         $this->rawValue = $rawValue;
@@ -229,7 +195,6 @@ class RecordValue
     /**
      * @return mixed
      * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
      */
     public function getValue()
     {
@@ -241,10 +206,7 @@ class RecordValue
     
     /**
      * @return mixed
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
      */
     public function getValueOrDefault()
     {
@@ -269,7 +231,6 @@ class RecordValue
      * @param mixed $rawValue - needed to verify that valid value once was same as raw value
      * @return $this
      * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
      */
     public function setValidValue($value, $rawValue)
     {
@@ -284,10 +245,7 @@ class RecordValue
         return $this;
     }
     
-    /**
-     * @return bool
-     */
-    public function hasOldValue()
+    public function hasOldValue(): bool
     {
         return $this->hasOldValue;
     }
@@ -295,7 +253,6 @@ class RecordValue
     /**
      * @return mixed
      * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
      */
     public function getOldValue()
     {
@@ -306,10 +263,7 @@ class RecordValue
     }
     
     /**
-     * @param RecordValue $oldValueObject
      * @return $this
-     * @throws \UnexpectedValueException
-     * @throws \BadMethodCallException
      */
     public function setOldValue(RecordValue $oldValueObject)
     {
@@ -322,11 +276,9 @@ class RecordValue
     }
     
     /**
-     * @return bool
      * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
      */
-    public function isOldValueWasFromDb()
+    public function isOldValueWasFromDb(): bool
     {
         if (!$this->hasOldValue()) {
             throw new \BadMethodCallException("Old value is not set for {$this->getColumnInfoForException()}");
@@ -334,16 +286,12 @@ class RecordValue
         return $this->oldValueIsFromDb;
     }
     
-    /**
-     * @return array
-     */
-    public function getValidationErrors()
+    public function getValidationErrors(): array
     {
         return $this->validationErrors;
     }
     
     /**
-     * @param array $validationErrors
      * @return $this
      */
     public function setValidationErrors(array $validationErrors)
@@ -353,20 +301,15 @@ class RecordValue
         return $this;
     }
     
-    /**
-     * @return bool
-     */
-    public function isValidated()
+    public function isValidated(): bool
     {
         return $this->isValidated;
     }
     
     /**
-     * @return bool
      * @throws \BadMethodCallException
-     * @throws \UnexpectedValueException
      */
-    public function isValid()
+    public function isValid(): bool
     {
         if (!$this->isValidated()) {
             throw new \BadMethodCallException("Value was not validated for {$this->getColumnInfoForException()}");
@@ -375,12 +318,11 @@ class RecordValue
     }
     
     /**
-     * @param null|string $key
+     * @param null|string|int|float $key
      * @param mixed|\Closure $default
      * @param bool $storeDefaultValueIfUsed - if default value is used - save it to custom info as new value
      * @return mixed
      * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
      */
     public function getCustomInfo($key = null, $default = null, $storeDefaultValueIfUsed = false)
     {
@@ -418,11 +360,10 @@ class RecordValue
     }
     
     /**
-     * @param string $key
+     * @param string|int|float $key
      * @param mixed $value
      * @return $this
      * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
      */
     public function addCustomInfo($key, $value)
     {
@@ -440,9 +381,8 @@ class RecordValue
      * @param null|string $key
      * @return $this
      * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
      */
-    public function removeCustomInfo($key = null)
+    public function removeCustomInfo(?string $key = null)
     {
         if ($key === null) {
             $this->customInfo = [];
@@ -459,10 +399,10 @@ class RecordValue
     }
     
     /**
-     * @param mixed $data
+     * @param array|null $data
      * @return $this
      */
-    public function setDataForSavingExtender($data)
+    public function setDataForSavingExtender(?array $data)
     {
         $this->dataForSavingExtender = $data;
         return $this;
@@ -471,7 +411,7 @@ class RecordValue
     /**
      * @return array
      */
-    public function pullDataForSavingExtender(): array
+    public function pullDataForSavingExtender(): ?array
     {
         $data = $this->dataForSavingExtender;
         $this->dataForSavingExtender = null;
@@ -482,7 +422,7 @@ class RecordValue
      * Collects all properties. Used by Record::serialize()
      * @return array
      */
-    public function serialize()
+    public function serialize(): array
     {
         $data = get_object_vars($this);
         unset($data['column'], $data['record']);
