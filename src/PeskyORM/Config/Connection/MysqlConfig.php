@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\Config\Connection;
 
 use PeskyORM\Core\DbConnectionConfigInterface;
@@ -26,9 +28,9 @@ class MysqlConfig implements DbConnectionConfigInterface
      */
     static public function fromArray(array $config, ?string $name = null)
     {
-        $dbName = $config['database'] ?: null;
-        $user = $config['username'] ?: null;
-        $password = $config['password'] ?: null;
+        $dbName = $config['database'] ?? null;
+        $user = $config['username'] ?? null;
+        $password = $config['password'] ?? null;
         $object = new static($dbName, $user, $password);
         if ($name) {
             $object->setName($name);

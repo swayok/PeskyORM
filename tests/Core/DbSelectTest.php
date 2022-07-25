@@ -1,6 +1,8 @@
 <?php
 /** @noinspection SqlRedundantOrderingDirection */
 
+declare(strict_types=1);
+
 namespace Tests\Core;
 
 use InvalidArgumentException;
@@ -139,6 +141,7 @@ class DbSelectTest extends TestCase
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessageMatches('%Argument #1 .* must be of type string, null given%i');
+        /** @noinspection PhpStrictTypeCheckingInspection */
         Select::from(null, static::getValidAdapter());
     }
     
@@ -746,22 +749,24 @@ class DbSelectTest extends TestCase
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type int%");
-        static::getNewSelect()
-            ->limit(null);
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getNewSelect()->limit(null);
     }
     
     public function testInvalidLimit2()
     {
-        $select = static::getNewSelect()
-            ->limit(true);
-        static::assertEquals(1, $select->getLimit());
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type int%");
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getNewSelect()->limit(true);
     }
     
     public function testInvalidLimit3()
     {
-        $select = static::getNewSelect()
-            ->limit(false);
-        static::assertEquals(0, $select->getLimit());
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type int%");
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getNewSelect()->limit(false);
     }
     
     public function testInvalidLimit4()
@@ -769,8 +774,8 @@ class DbSelectTest extends TestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type int%");
         /** @noinspection PhpParamsInspection */
-        static::getNewSelect()
-            ->limit([]);
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getNewSelect()->limit([]);
     }
     
     public function testInvalidLimit5()
@@ -778,38 +783,39 @@ class DbSelectTest extends TestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type int%");
         /** @noinspection PhpParamsInspection */
-        static::getNewSelect()
-            ->limit($this);
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getNewSelect()->limit($this);
     }
     
     public function testInvalidLimit6()
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$limit argument must be an integer value >= 0");
-        static::getNewSelect()
-            ->limit(-1);
+        static::getNewSelect()->limit(-1);
     }
     
     public function testInvalidOffset1()
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type int%");
-        static::getNewSelect()
-            ->offset(null);
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getNewSelect()->offset(null);
     }
     
     public function testInvalidOffset2()
     {
-        $select = static::getNewSelect()
-            ->offset(true);
-        static::assertEquals(1, $select->getOffset());
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type int%");
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getNewSelect()->offset(true);
     }
     
     public function testInvalidOffset3()
     {
-        $select = static::getNewSelect()
-            ->offset(false);
-        static::assertEquals(0, $select->getOffset());
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type int%");
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getNewSelect()->offset(false);
     }
     
     public function testInvalidOffset4()
@@ -817,8 +823,8 @@ class DbSelectTest extends TestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type int%");
         /** @noinspection PhpParamsInspection */
-        static::getNewSelect()
-            ->offset([]);
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getNewSelect()->offset([]);
     }
     
     public function testInvalidOffset5()
@@ -826,8 +832,8 @@ class DbSelectTest extends TestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type int%");
         /** @noinspection PhpParamsInspection */
-        static::getNewSelect()
-            ->offset($this);
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getNewSelect()->offset($this);
     }
     
     public function testInvalidOffset6()
@@ -1013,8 +1019,8 @@ class DbSelectTest extends TestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessageMatches("%Argument #2 .*? must be of type string%");
         /** @noinspection PhpParamsInspection */
-        static::getNewSelect()
-            ->with(static::getNewSelect(), []);
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getNewSelect()->with(static::getNewSelect(), []);
     }
     
     public function testInvalidWith3()
@@ -1022,8 +1028,8 @@ class DbSelectTest extends TestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessageMatches("%Argument #2 .*? must be of type string%");
         /** @noinspection PhpParamsInspection */
-        static::getNewSelect()
-            ->with(static::getNewSelect(), $this);
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getNewSelect()->with(static::getNewSelect(), $this);
     }
     
     public function testInvalidWith4()
@@ -1197,32 +1203,31 @@ class DbSelectTest extends TestCase
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type string, null given%");
-        static::getNewSelect()
-            ->setTableSchemaName(null);
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getNewSelect()->setTableSchemaName(null);
     }
     
     public function testInvalidSetDbSchemaName2()
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$schema argument value cannot be empty");
-        static::getNewSelect()
-            ->setTableSchemaName('');
+        static::getNewSelect()->setTableSchemaName('');
     }
     
     public function testInvalidSetDbSchemaName3()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$schema argument value is invalid: [1]");
-        static::getNewSelect()
-            ->setTableSchemaName(true);
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #1 (\$schema) must be of type string");
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getNewSelect()->setTableSchemaName(true);
     }
     
     public function testInvalidSetDbSchemaName4()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$schema argument value cannot be empty");
-        static::getNewSelect()
-            ->setTableSchemaName(false);
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #1 (\$schema) must be of type string");
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getNewSelect()->setTableSchemaName(false);
     }
     
     public function testInvalidSetDbSchemaName5()
@@ -1230,8 +1235,8 @@ class DbSelectTest extends TestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type string%");
         /** @noinspection PhpParamsInspection */
-        static::getNewSelect()
-            ->setTableSchemaName(['arr']);
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getNewSelect()->setTableSchemaName(['arr']);
     }
     
     public function testInvalidSetDbSchemaName6()
@@ -1239,8 +1244,8 @@ class DbSelectTest extends TestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type string%");
         /** @noinspection PhpParamsInspection */
-        static::getNewSelect()
-            ->setTableSchemaName($this);
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getNewSelect()->setTableSchemaName($this);
     }
     
     public function testSetDbSchemaName()

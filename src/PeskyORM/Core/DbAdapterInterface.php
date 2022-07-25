@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\Core;
 
 use PDOStatement;
-use PeskyORM\Exception\DbException;
 
 interface DbAdapterInterface
 {
@@ -49,6 +50,7 @@ interface DbAdapterInterface
     
     /**
      * @param string|DbExpr $query
+     * @param array $options - see PDO::prepare()
      * @return int|array = array: returned if $returning argument is not empty
      */
     public function prepare($query, array $options = []): PDOStatement;
@@ -64,7 +66,7 @@ interface DbAdapterInterface
     /**
      * @param string|DbExpr $query
      * @param string|null $fetchData - how to fetch data (one of DbAdapter::FETCH_*)
-     * @return \PDOStatement|array|string|null
+     * @return \PDOStatement|array|string|null|int|bool|float
      */
     public function query($query, string $fetchData = DbAdapter::FETCH_STATEMENT);
     
@@ -101,11 +103,9 @@ interface DbAdapterInterface
      * @param bool|array $returning - return some data back after $data inserted to $table
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
-     *          - array: list of columns to return values for
-     * @param string $pkName
-     * @return array|bool - array returned only if $returning is not empty
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
+     *          - array: list of columns names to return values for
+     * @param string $pkName - Name of primary key for $returning in DB drivers that support only getLastInsertId()
+     * @return bool|array - array returned only if $returning is not empty
      */
     public function insert(string $table, array $data, array $dataTypes = [], $returning = false, string $pkName = 'id');
     
@@ -119,11 +119,9 @@ interface DbAdapterInterface
      * @param bool|array $returning - return some data back after $data inserted to $table
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
-     *          - array: list of columns to return values for
+     *          - array: list of columns names to return values for
      * @param string $pkName - Name of primary key for $returning in DB drivers that support only getLastInsertId()
      * @return bool|array - array returned only if $returning is not empty
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
     public function insertMany(string $table, array $columns, array $data, array $dataTypes = [], $returning = false, string $pkName = 'id');
     
@@ -137,12 +135,10 @@ interface DbAdapterInterface
      * @param bool|array $returning - return some data back after $data inserted to $table
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
-     *          - array: list of columns to return values for
+     *          - array: list of columns names to return values for
      * @return array|int - information about update execution
      *          - int: number of modified rows (when $returning === false)
      *          - array: modified records (when $returning !== false)
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
     public function update(string $table, array $data, $conditions, array $dataTypes = [], $returning = false);
     
@@ -152,16 +148,11 @@ interface DbAdapterInterface
      * @param bool|array $returning - return some data back after $data inserted to $table
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
-     *          - array: list of columns to return values for
+     *          - array: list of columns names to return values for
      * @return int|array - int: number of deleted records | array: returned only if $returning is not empty
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
-    public function delete($table, $conditions, $returning = false);
+    public function delete(string $table, $conditions, $returning = false);
     
-    /**
-     * @return bool
-     */
     public function inTransaction(): bool;
     
     /**
@@ -207,16 +198,12 @@ interface DbAdapterInterface
     
     /**
      * Quote passed value
-     * @param mixed $value
+     * @param string|int|float|bool|array|DbExpr|AbstractSelect|null $value
      * @param int|null $valueDataType - one of \PDO::PARAM_* or null for autodetection (detects bool, null, string only)
      * @return string
      */
     public function quoteValue($value, ?int $valueDataType = null): string;
     
-    /**
-     * @param DbExpr $expression
-     * @return string
-     */
     public function quoteDbExpr(DbExpr $expression): string;
     
     /**
@@ -234,19 +221,17 @@ interface DbAdapterInterface
     
     /**
      * @param string $operator
-     * @param string|array|int|float $value
+     * @param array|float|int|string|bool|null|DbExpr $value
      * @return string
-     * @throws \InvalidArgumentException
      */
     public function convertConditionOperator(string $operator, $value): string;
     
     /**
-     * @param string|array|int|float $value
+     * Assemble value for condition
+     * @param string|array|int|float|bool|DbExpr|null $value
      * @param string $operator
      * @param bool $valueAlreadyQuoted
-     * @return mixed
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
+     * @return string
      */
     public function assembleConditionValue($value, string $operator, bool $valueAlreadyQuoted = false): string;
     
@@ -254,7 +239,7 @@ interface DbAdapterInterface
      * Assemble condition from prepared parts
      * @param string $quotedColumn
      * @param string $operator
-     * @param mixed $rawValue
+     * @param string|array|int|float|bool|DbExpr|null $rawValue
      * @param bool $valueAlreadyQuoted
      * @return string
      */
@@ -277,27 +262,21 @@ interface DbAdapterInterface
      * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
      * @param string $table
      * @param array $columns - empty array means "all columns" (SELECT *), must contain only strings and DbExpr objects
-     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
-     * @throws \PDOException
-     * @throws DbException
-     * @throws \InvalidArgumentException
      */
-    public function select(string $table, array $columns = [], $conditionsAndOptions = null): array;
+    public function select(string $table, array $columns = [], ?DbExpr $conditionsAndOptions = null): array;
     
     /**
      * Select many records form DB by compiling simple query from passed parameters returning an array with values for
      * specified $column.
-     * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
+     * The query is something like: "SELECT $column FROM $table $conditionsAndOptions"
      * @param string $table
      * @param string|DbExpr $column
-     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
-     * @throws \PDOException
-     * @throws DbException
-     * @throws \InvalidArgumentException
      */
-    public function selectColumn(string $table, $column, $conditionsAndOptions = null): array;
+    public function selectColumn(string $table, $column, ?DbExpr $conditionsAndOptions = null): array;
     
     /**
      * Select many records form DB by compiling simple query from passed parameters returning an associative array.
@@ -305,39 +284,30 @@ interface DbAdapterInterface
      * @param string $table
      * @param string|DbExpr $keysColumn
      * @param string|DbExpr $valuesColumn
-     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
-     * @throws \PDOException
-     * @throws DbException
-     * @throws \InvalidArgumentException
      */
-    public function selectAssoc(string $table, $keysColumn, $valuesColumn, $conditionsAndOptions = null): array;
+    public function selectAssoc(string $table, $keysColumn, $valuesColumn, ?DbExpr $conditionsAndOptions = null): array;
     
     /**
      * Select first matching record form DB by compiling simple query from passed parameters.
      * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
      * @param string $table
      * @param array $columns - empty array means "all columns" (SELECT *), must contain only strings and DbExpr objects
-     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
-     * @throws \PDOException
-     * @throws DbException
-     * @throws \InvalidArgumentException
      */
-    public function selectOne(string $table, array $columns = [], $conditionsAndOptions = null): array;
+    public function selectOne(string $table, array $columns = [], ?DbExpr $conditionsAndOptions = null): array;
     
     /**
      * Select a value form DB by compiling simple query from passed parameters.
      * The query is something like: "SELECT $expression FROM $table $conditionsAndOptions"
      * @param string $table
      * @param DbExpr $expression - something like "COUNT(*)" or anything else
-     * @param DbExpr $conditionsAndOptions - Anything to add to query after "FROM $table"
-     * @return mixed
-     * @throws \PDOException
-     * @throws DbException
-     * @throws \InvalidArgumentException
+     * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @return string|null|int|bool|float
      */
-    public function selectValue(string $table, DbExpr $expression, $conditionsAndOptions = null);
+    public function selectValue(string $table, DbExpr $expression, ?DbExpr $conditionsAndOptions = null);
     
     /**
      * Make a simple SELECT query from passed parameters
@@ -345,8 +315,6 @@ interface DbAdapterInterface
      * @param array $columns - empty array means "all columns" (SELECT *), must contain only strings and DbExpr objects
      * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return string - something like: "SELECT $columns FROM $table $conditionsAndOptions"
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
      */
     public function makeSelectQuery(string $table, array $columns = [], ?DbExpr $conditionsAndOptions = null): string;
     

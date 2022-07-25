@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\Adapter;
 
 use PeskyORM\Config\Connection\PostgresConfig;
@@ -174,16 +176,15 @@ class Postgres extends DbAdapter
         return '(' . $expression . ')::' . $dataType;
     }
     
-    public function getConditionOperatorsMap()
-    {
-        return static::$conditionOperatorsMap;
-    }
-    
     public function inTransaction(): bool
     {
         return $this->inTransaction;
     }
     
+    /**
+     * {@inheritDoc}
+     * @throws \InvalidArgumentException
+     */
     public function begin(bool $readOnly = false, ?string $transactionType = null)
     {
         $this->guardTransaction('begin');
@@ -230,16 +231,20 @@ class Postgres extends DbAdapter
         }
     }
     
+    /**
+     * {@inheritDoc}
+     * @throws DbException
+     */
     protected function resolveQueryWithReturningColumns(
-        $query,
-        $table,
+        string $query,
+        string $table,
         array $columns,
         array $data,
         array $dataTypes,
         $returning,
-        $pkName,
-        $operation
-    ) {
+        ?string $pkName,
+        string $operation
+    ): array {
         if ($returning === true) {
             $query .= ' RETURNING *';
         } else {
@@ -399,16 +404,7 @@ class Postgres extends DbAdapter
         }
     }
     
-    /**
-     * Quote a db entity name like 'table.col_name -> json_key1 ->> json_key2'
-     * or 'table.col_name -> json_key1 ->> integer_as_index' or 'table.col_name -> json_key1 ->> `integer_as_key`'
-     * @param array $sequence -
-     *      index 0: base entity name ('table.col_name' or 'col_name');
-     *      indexes 1, 3, 5, ...: selection operator (->, ->>, #>, #>>);
-     *      indexes 2, 4, 6, ...: json key name or other selector ('json_key1', 'json_key2')
-     * @return string - quoted entity name and json selector
-     */
-    protected function quoteJsonSelectorExpression(array $sequence)
+    protected function quoteJsonSelectorExpression(array $sequence): string
     {
         $sequence[0] = $this->quoteDbEntityName($sequence[0]);
         for ($i = 2, $max = count($sequence); $i < $max; $i += 2) {
@@ -420,13 +416,6 @@ class Postgres extends DbAdapter
         return implode('', $sequence);
     }
     
-    /**
-     * @param mixed $value
-     * @param string $operator
-     * @param bool $valueAlreadyQuoted
-     * @return string
-     * @throws \InvalidArgumentException
-     */
     public function assembleConditionValue($value, string $operator, bool $valueAlreadyQuoted = false): string
     {
         if (in_array($operator, ['@>', '<@'], true)) {
@@ -447,14 +436,6 @@ class Postgres extends DbAdapter
         }
     }
     
-    /**
-     * Assemble condition from prepared parts
-     * @param string $quotedColumn
-     * @param string $operator
-     * @param mixed $rawValue
-     * @param bool $valueAlreadyQuoted
-     * @return string
-     */
     public function assembleCondition(string $quotedColumn, string $operator, $rawValue, bool $valueAlreadyQuoted = false): string
     {
         // jsonb opertaors - '?', '?|' or '?&' interfere with prepared PDO statements that use '?' to insert values

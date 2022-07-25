@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\Core;
 
-use http\Exception\BadMethodCallException;
 use PeskyORM\ORM\CrossJoinInfo;
 use PeskyORM\ORM\OrmJoinInfo;
 use Swayok\Utils\ValidateValue;
@@ -332,9 +333,9 @@ abstract class AbstractSelect
     
     /**
      * @param DbExpr $expression
-     * @return string
+     * @return string|null|int
      */
-    public function fetchValue(DbExpr $expression): ?string
+    public function fetchValue(DbExpr $expression)
     {
         return $this->columns([$expression])
             ->_fetch(Utils::FETCH_VALUE);
@@ -342,7 +343,7 @@ abstract class AbstractSelect
     
     /**
      * @param string $selectionType - one of PeskyORM\Core\Utils::FETCH_*
-     * @return array|string|null
+     * @return array|string|null|int|bool
      */
     protected function _fetch(string $selectionType)
     {
@@ -437,7 +438,7 @@ abstract class AbstractSelect
     public function getCountQuery(bool $ignoreLeftJoins = true): string
     {
         if ($this->distinct) {
-            throw new BadMethodCallException('Cannot determine column name to use for COUNT(DISTINCT {column_name})');
+            throw new \BadMethodCallException('Cannot determine column name to use for COUNT(DISTINCT {column_name})');
         }
         return $this->getSimplifiedQuery('COUNT(*)', $ignoreLeftJoins, true);
     }

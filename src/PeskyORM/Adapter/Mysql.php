@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\Adapter;
 
 use PeskyORM\Config\Connection\MysqlConfig;
@@ -120,7 +122,7 @@ class Mysql extends DbAdapter
         return 'CAST(' . $expression . ' AS ' . $this->getRealDataType($dataType) . ')';
     }
     
-    protected function getRealDataType($dataType)
+    protected function getRealDataType(string $dataType): string
     {
         $dataType = strtolower($dataType);
         if (array_key_exists($dataType, static::$dataTypesMap)) {
@@ -130,24 +132,16 @@ class Mysql extends DbAdapter
         }
     }
     
-    public function getConditionOperatorsMap()
-    {
-        return static::$conditionOperatorsMap;
-    }
-    
-    /**
-     * {@inheritdoc}
-     */
     protected function resolveQueryWithReturningColumns(
-        $query,
-        $table,
+        string $query,
+        string $table,
         array $columns,
         array $data,
         array $dataTypes,
         $returning,
-        $pkName,
-        $operation
-    ) {
+        ?string $pkName,
+        string $operation
+    ): array {
         $returning = $returning === true ? '*' : $this->buildColumnsList($returning, false);
         switch ($operation) {
             case 'insert':
@@ -373,17 +367,10 @@ class Mysql extends DbAdapter
     }
     
     /**
-     * Quote a db entity name like 'table.col_name -> json_key1 ->> json_key2'
-     * @param array $sequence -
-     *      index 0: base entity name ('table.col_name' or 'col_name');
-     *      indexes 1, 3, 5, ...: selection operator (->, ->>, #>, #>>);
-     *      indexes 2, 4, 6, ...: json key name or other selector ('json_key1', 'json_key2')
-     * @return string - quoted entity name and json selector
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
+     * {@inheritDoc}
+     * @throws DbException
      */
-    protected function quoteJsonSelectorExpression(array $sequence)
+    protected function quoteJsonSelectorExpression(array $sequence): string
     {
         $sequence[0] = $this->quoteDbEntityName($sequence[0]);
         $max = count($sequence);
@@ -432,14 +419,6 @@ class Mysql extends DbAdapter
         return $this->quoteValue($key, \PDO::PARAM_STR);
     }
     
-    /**
-     * @param mixed $value
-     * @param string $operator
-     * @param bool $valueAlreadyQuoted
-     * @return string
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
-     */
     public function assembleConditionValue($value, string $operator, bool $valueAlreadyQuoted = false): string
     {
         if (in_array($operator, ['@>', '<@'], true)) {
@@ -460,16 +439,6 @@ class Mysql extends DbAdapter
         }
     }
     
-    /**
-     * Assemble condition from prepared parts
-     * @param string $quotedColumn
-     * @param string $operator
-     * @param mixed $rawValue
-     * @param bool $valueAlreadyQuoted
-     * @return string
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
-     */
     public function assembleCondition(string $quotedColumn, string $operator, $rawValue, bool $valueAlreadyQuoted = false): string
     {
         if (in_array($operator, ['?', '?|', '?&'], true)) {

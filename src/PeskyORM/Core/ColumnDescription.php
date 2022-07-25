@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\Core;
 
 use PeskyORM\ORM\Column;

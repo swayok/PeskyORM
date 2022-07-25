@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\Core;
 
 class Utils
@@ -17,7 +19,7 @@ class Utils
      * Get data from $statement according to required $type
      * @param \PDOStatement $statement
      * @param string $type = one of \PeskyORM\Core\FETCH_*
-     * @return array|string|int|\PDOStatement
+     * @return array|string|int|\PDOStatement|null
      * @throws \InvalidArgumentException
      */
     static public function getDataFromStatement(\PDOStatement $statement, string $type = self::FETCH_ALL)
@@ -27,14 +29,16 @@ class Utils
             return $statement;
         } elseif ($type === self::FETCH_ROWS_COUNT) {
             return $statement->rowCount();
-        } elseif ($statement->rowCount() > 0) {
+        } elseif ($statement->rowCount() === 0) {
+            return $type === self::FETCH_VALUE ? null : [];
+        } else {
             switch ($type) {
                 case self::FETCH_COLUMN:
                     return $statement->fetchAll(\PDO::FETCH_COLUMN);
                 case self::FETCH_KEY_PAIR:
                     return $statement->fetchAll(\PDO::FETCH_KEY_PAIR);
                 case self::FETCH_VALUE:
-                    return $statement->fetchColumn(0);
+                    return $statement->fetchColumn();
                 case self::FETCH_FIRST:
                     return $statement->fetch(\PDO::FETCH_ASSOC);
                 case self::FETCH_ALL:
@@ -42,10 +46,6 @@ class Utils
                 default:
                     throw new \InvalidArgumentException("Unknown processing type [{$type}]");
             }
-        } elseif ($type === self::FETCH_VALUE) {
-            return null;
-        } else {
-            return [];
         }
     }
     

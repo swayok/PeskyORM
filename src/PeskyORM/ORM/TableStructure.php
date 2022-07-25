@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\ORM;
 
 use PeskyORM\Core\DbConnectionsManager;
@@ -355,6 +357,7 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * @param string $columnName
      * @return Column
+     * @throws \InvalidArgumentException
      */
     protected function _getColumn(string $columnName): Column
     {
@@ -368,6 +371,7 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * Make Column object for private method (if not made yet) and return it
      * @param \ReflectionMethod $method
+     * @throws OrmException
      */
     protected function loadColumnConfigFromMethodReflection(\ReflectionMethod $method)
     {
@@ -377,8 +381,9 @@ abstract class TableStructure implements TableStructureInterface
         $method->setAccessible(false);
         if (!($column instanceof Column)) {
             $class = static::class;
-            throw new \UnexpectedValueException(
-                "Method {$class}->{$method->getName()}() must return instance of \\PeskyORM\\ORM\\Column class"
+            throw new OrmException(
+                "Method {$class}->{$method->getName()}() must return instance of \\PeskyORM\\ORM\\Column class",
+                OrmException::CODE_INVALID_TABLE_COLUMN_CONFIG
             );
         }
         if (!$column->hasName()) {
@@ -387,6 +392,10 @@ abstract class TableStructure implements TableStructureInterface
         $this->addColumn($column);
     }
     
+    /**
+     * @return void
+     * @throws OrmException
+     */
     protected function addColumn(Column $column)
     {
         $column->setTableStructure($this);
@@ -394,8 +403,9 @@ abstract class TableStructure implements TableStructureInterface
         if ($column->isItPrimaryKey()) {
             if (!empty($this->pk)) {
                 $class = static::class;
-                throw new \UnexpectedValueException(
-                    "2 primary keys in one table is forbidden: '{$this->pk->getName()}' and '{$column->getName()}' (class: {$class})"
+                throw new OrmException(
+                    "2 primary keys in one table is forbidden: '{$this->pk->getName()}' and '{$column->getName()}' (class: {$class})",
+                    OrmException::CODE_INVALID_TABLE_COLUMN_CONFIG
                 );
             }
             $this->pk = $column;
@@ -415,6 +425,9 @@ abstract class TableStructure implements TableStructureInterface
         return isset($this->columns[$columnName]);
     }
     
+    /**
+     * @throws \InvalidArgumentException
+     */
     protected function _getRelation(string $relationName): Relation
     {
         if (!$this->_hasRelation($relationName)) {
@@ -431,7 +444,8 @@ abstract class TableStructure implements TableStructureInterface
     
     /**
      * Make Relation object for private method (if not made yet) and return it
-     * @param \ReflectionMethod $method
+     * @return void
+     * @throws OrmException
      */
     protected function loadRelationConfigFromMethodReflection(\ReflectionMethod $method)
     {
@@ -441,8 +455,9 @@ abstract class TableStructure implements TableStructureInterface
         $method->setAccessible(false);
         if (!($config instanceof Relation)) {
             $class = static::class;
-            throw new \UnexpectedValueException(
-                "Method {$class}->{$method->getName()}() must return instance of \\PeskyORM\\ORM\\Relation class"
+            throw new OrmException(
+                "Method {$class}->{$method->getName()}() must return instance of \\PeskyORM\\ORM\\Relation class",
+                OrmException::CODE_INVALID_TABLE_RELATION_CONFIG
             );
         }
         if (!$config->hasName()) {
@@ -462,9 +477,6 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * @param string $name
      * @return Column|Relation
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
     public function __get($name)
     {

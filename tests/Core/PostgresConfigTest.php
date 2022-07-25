@@ -5,7 +5,6 @@ namespace Tests\Core;
 use InvalidArgumentException;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PHPUnit\Framework\TestCase;
-use TypeError;
 
 class PostgresConfigTest extends TestCase
 {
@@ -179,8 +178,8 @@ class PostgresConfigTest extends TestCase
     
     public function testInvalidOptions()
     {
-        $this->expectException(TypeError::class);
-        $this->expectExceptionMessage("setOptions() must be of the type array");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #1 (\$options) must be of type array");
         $config = new PostgresConfig('test', 'test', 'test');
         $config->setOptions(null);
     }
@@ -188,9 +187,10 @@ class PostgresConfigTest extends TestCase
     public function testValidConfig()
     {
         $config = new PostgresConfig('dbname', 'username', 'password');
+        $defaultOptions = $config->getOptions();
         $this->assertEquals('username', $config->getUserName());
         $this->assertEquals('password', $config->getUserPassword());
-        $this->assertEquals([], $config->getOptions());
+        $this->assertEquals($defaultOptions, $config->getOptions());
         $this->assertEquals('pgsql:host=localhost;port=5432;dbname=dbname', $config->getPdoConnectionString());
         
         $config->setDbHost('192.168.0.1');
@@ -255,11 +255,14 @@ class PostgresConfigTest extends TestCase
             'host' => '',
             'options' => '',
         ];
+        $emptyConfig = new PostgresConfig('test', 'user', 'pass');
+        $defaultOptions = $emptyConfig->getOptions();
+    
         $config = PostgresConfig::fromArray($test);
         $this->assertEquals("pgsql:host=localhost;port=5432;dbname={$test['database']}", $config->getPdoConnectionString());
         $this->assertEquals($test['username'], $config->getUserName());
         $this->assertEquals($test['password'], $config->getUserPassword());
-        $this->assertEquals([], $config->getOptions());
+        $this->assertEquals($defaultOptions, $config->getOptions());
     }
     
     public function testValidConfigFromArray2()

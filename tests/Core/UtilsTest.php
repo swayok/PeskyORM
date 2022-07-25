@@ -2,7 +2,6 @@
 
 namespace Tests\Core;
 
-use PDOStatement;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
@@ -65,6 +64,7 @@ class UtilsTest extends TestCase
                 'name' => 'Lionel Freeman',
                 'email' => 'diam.at.pretium@idmollisnec.co.uk',
                 'timezone' => 'Europe/Moscow',
+                'big_data' => 'biiiiiiig data'
             ],
             [
                 'id' => 2,
@@ -82,6 +82,7 @@ class UtilsTest extends TestCase
                 'name' => 'Jasper Waller',
                 'email' => 'elit@eratvelpede.org',
                 'timezone' => 'Europe/Moscow',
+                'big_data' => 'biiiiiiig data'
             ],
         ];
     }
@@ -101,7 +102,8 @@ class UtilsTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Unknown processing type [???]");
-        Utils::getDataFromStatement(new PDOStatement(), '???');
+        $statement = static::getValidAdapter()->query(DbExpr::create('SELECT 1'));
+        Utils::getDataFromStatement($statement, '???');
     }
     
     public function testGetDataFromStatement()

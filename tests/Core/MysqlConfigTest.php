@@ -1,11 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Core;
 
 use InvalidArgumentException;
 use PeskyORM\Config\Connection\MysqlConfig;
 use PHPUnit\Framework\TestCase;
-use TypeError;
 
 class MysqlConfigTest extends TestCase
 {
@@ -179,25 +180,27 @@ class MysqlConfigTest extends TestCase
     
     public function testInvalidOptions()
     {
-        $this->expectException(TypeError::class);
-        $this->expectExceptionMessage("setOptions() must be of the type array");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #1 (\$options) must be of type array");
         $config = new MysqlConfig('test', 'test', 'test');
         $config->setOptions(null);
     }
     
     public function testInvalidCharset()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("DB charset argument cannot be empty");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #1 (\$charset) must be of type string");
         $config = new MysqlConfig('test', 'test', 'test');
+        /** @noinspection PhpStrictTypeCheckingInspection */
         $config->setCharset(null);
     }
     
     public function testInvalidCharset2()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("DB charset argument must be a string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #1 (\$charset) must be of type string");
         $config = new MysqlConfig('test', 'test', 'test');
+        /** @noinspection PhpStrictTypeCheckingInspection */
         $config->setCharset(true);
     }
     

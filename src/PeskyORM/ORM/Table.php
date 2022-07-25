@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\ORM;
 
+use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbConnectionsManager;
 use PeskyORM\Core\DbExpr;
@@ -139,7 +142,7 @@ abstract class Table implements TableInterface
     }
     
     /**
-     * @return DbExpr
+     * @see DbAdapter::getExpressionToSetDefaultValueForAColumn()
      * @throws \BadMethodCallException
      */
     static public function getExpressionToSetDefaultValueForAColumn(): DbExpr
@@ -372,9 +375,7 @@ abstract class Table implements TableInterface
     }
     
     /**
-     * @param bool $readOnly
-     * @param null|string $transactionType
-     * @return void
+     * @see DbAdapter::begin()
      */
     static public function beginTransaction(bool $readOnly = false, ?string $transactionType = null)
     {
@@ -383,7 +384,7 @@ abstract class Table implements TableInterface
     }
     
     /**
-     * @return bool
+     * @see DbAdapter::inTransaction()
      */
     static public function inTransaction(): bool
     {
@@ -392,6 +393,7 @@ abstract class Table implements TableInterface
     }
     
     /**
+     * @see DbAdapter::commit()
      * @return void
      */
     static public function commitTransaction()
@@ -401,6 +403,7 @@ abstract class Table implements TableInterface
     }
     
     /**
+     * @see DbAdapter::rollBack()
      * @return void
      */
     static public function rollBackTransaction()
@@ -420,8 +423,7 @@ abstract class Table implements TableInterface
     }
     
     /**
-     * @param string $name
-     * @return string
+     * @see DbAdapter::quoteDbEntityName()
      */
     static public function quoteDbEntityName(string $name): string
     {
@@ -430,9 +432,7 @@ abstract class Table implements TableInterface
     }
     
     /**
-     * @param mixed $value
-     * @param int $fieldInfoOrType
-     * @return string
+     * @see DbAdapter::quoteValue()
      */
     static public function quoteValue($value, int $fieldInfoOrType = \PDO::PARAM_STR): string
     {
@@ -441,8 +441,7 @@ abstract class Table implements TableInterface
     }
     
     /**
-     * @param DbExpr $value
-     * @return string
+     * @see DbAdapter::quoteDbExpr()
      */
     static public function quoteDbExpr(DbExpr $value): string
     {
@@ -451,10 +450,7 @@ abstract class Table implements TableInterface
     }
     
     /**
-     * @param string|DbExpr $query
-     * @param string|null $fetchData - null: return PDOStatement; string: one of \PeskyORM\Core\Utils::FETCH_*
-     * @return \PDOStatement|array
-     * @throws \PDOException
+     * @see DbAdapter::query()
      */
     static public function query($query, ?string $fetchData = null)
     {
@@ -463,9 +459,7 @@ abstract class Table implements TableInterface
     }
     
     /**
-     * @param string|DbExpr $query
-     * @return int|array = array: returned if $returning argument is not empty
-     * @throws \PDOException
+     * @see DbAdapter::exec()
      */
     static public function exec($query)
     {
@@ -474,13 +468,7 @@ abstract class Table implements TableInterface
     }
     
     /**
-     * @param array $data
-     * @param bool|array $returning - return some data back after $data inserted to $table
-     *          - true: return values for all columns of inserted table row
-     *          - false: do not return anything
-     *          - array: list of columns to return values for
-     * @return array|bool - array returned only if $returning is not empty
-     * @throws \PDOException
+     * @see DbAdapter::insert()
      */
     static public function insert(array $data, $returning = false)
     {
@@ -526,14 +514,7 @@ abstract class Table implements TableInterface
     }
     
     /**
-     * @param array $columns - list of column names to insert data for
-     * @param array $rows - data to insert
-     * @param bool|array $returning - return some data back after $data inserted to $table
-     *          - true: return values for all columns of inserted table row
-     *          - false: do not return anything
-     *          - array: list of columns to return values for
-     * @return array|bool - array returned only if $returning is not empty
-     * @throws \PDOException
+     * @see DbAdapter::insertMany()
      */
     static public function insertMany(array $columns, array $rows, $returning = false)
     {
@@ -545,14 +526,7 @@ abstract class Table implements TableInterface
     }
     
     /**
-     * @param array $columns - list of column names to insert data for
-     * @param array $rows - data to insert
-     * @param bool|array $returning - return some data back after $data inserted to $table
-     *          - true: return values for all columns of inserted table row
-     *          - false: do not return anything
-     *          - array: list of columns to return values for
-     * @return array|bool - array returned only if $returning is not empty
-     * @throws \PDOException
+     * @see DbAdapter::insertMany()
      */
     static public function insertManyAsIs(array $columns, array $rows, $returning = false)
     {
@@ -567,23 +541,13 @@ abstract class Table implements TableInterface
     }
     
     /**
-     * @param array $data - key-value array where key = table column and value = value of associated column
-     * @param array $conditions - WHERE conditions
-     * @param bool|array $returning - return some data back after $data inserted to $table
-     *          - true: return values for all columns of inserted table row
-     *          - false: do not return anything
-     *          - array: list of columns to return values for
-     * @return array|int - information about update execution
-     *          - int: number of modified rows (when $returning === false)
-     *          - array: modified records (when $returning !== false)
-     * @throws \PDOException
+     * @see DbAdapter::update()
      */
     static public function update(array $data, array $conditions, $returning = false)
     {
         return static::getConnection(true)
             ->update(
-                static::getNameWithSchema() . ' AS ' . static::getInstance()
-                    ->getTableAlias(),
+                static::getNameWithSchema() . ' AS ' . static::getInstance()->getTableAlias(),
                 $data,
                 Utils::assembleWhereConditionsFromArray(static::getConnection(true), $conditions),
                 static::getPdoDataTypesForColumns(),
@@ -592,20 +556,13 @@ abstract class Table implements TableInterface
     }
     
     /**
-     * @param array $conditions - WHERE conditions
-     * @param bool|array $returning - return some data back after $data inserted to $table
-     *          - true: return values for all columns of inserted table row
-     *          - false: do not return anything
-     *          - array: list of columns to return values for
-     * @return int|array - int: number of deleted records | array: returned only if $returning is not empty
-     * @throws \PDOException
+     * @see DbAdapterInterface::delete()
      */
     static public function delete(array $conditions = [], $returning = false)
     {
         return static::getConnection(true)
             ->delete(
-                static::getNameWithSchema() . ' AS ' . static::getInstance()
-                    ->getTableAlias(),
+                static::getNameWithSchema() . ' AS ' . static::getInstance()->getTableAlias(),
                 Utils::assembleWhereConditionsFromArray(static::getConnection(), $conditions),
                 $returning
             );
@@ -618,8 +575,7 @@ abstract class Table implements TableInterface
      */
     static public function getNameWithSchema(): string
     {
-        $tableStructure = static::getInstance()
-            ->getTableStructure();
+        $tableStructure = static::getInstance()->getTableStructure();
         return ltrim($tableStructure::getSchema() . '.' . $tableStructure::getTableName(), '.');
     }
     
