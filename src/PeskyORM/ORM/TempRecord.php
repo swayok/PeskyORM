@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\ORM;
 
 class TempRecord implements RecordInterface
@@ -19,22 +21,15 @@ class TempRecord implements RecordInterface
     }
     
     /**
-     * @param array $data
-     * @param bool $existsInDb
-     * @param null|string $tableName
-     * @return $this
-     * @throws \InvalidArgumentException
+     * @return static
      */
-    static public function newTempRecord(array $data, $existsInDb = false, $tableName = null)
+    static public function newTempRecord(array $data, bool $existsInDb = false, ?string $tableName = null)
     {
         return static::newEmptyRecord()
             ->fromData($data, $existsInDb)
             ->setTableName($tableName);
     }
     
-    /**
-     * @return TableInterface
-     */
     static public function getTable()
     {
         throw new \BadMethodCallException('Temp Record has not Table');

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\ORM;
 
 use PeskyORM\Core\JoinInfo;
