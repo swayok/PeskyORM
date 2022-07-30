@@ -175,7 +175,7 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
     public function testQuotingOfInvalidDbEntity6()
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid db entity name [colname->->]");
+        $this->expectExceptionMessage("Invalid db entity name: [colname->->]");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName('colname->->');
     }
@@ -183,7 +183,7 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
     public function testQuotingOfInvalidDbEntity7()
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid db entity name [colname-> ->]");
+        $this->expectExceptionMessage("Invalid db entity name: [colname-> ->]");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName('colname-> ->');
     }

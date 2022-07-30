@@ -1,9 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Core;
 
-use InvalidArgumentException;
-use PDOException;
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
 use PHPUnit\Framework\TestCase;
@@ -31,7 +31,7 @@ class PostgresAdapterQueriesTest extends TestCase
     
     public function testInvalidValueInQuery()
     {
-        $this->expectException(PDOException::class);
+        $this->expectException(\PDOException::class);
         $this->expectExceptionMessage("invalid input syntax for type json");
         $adapter = static::getValidAdapter();
         $adapter->begin();
@@ -43,7 +43,7 @@ class PostgresAdapterQueriesTest extends TestCase
     
     public function testInvalidTableInQuery()
     {
-        $this->expectException(PDOException::class);
+        $this->expectException(\PDOException::class);
         $this->expectExceptionMessage("relation \"abrakadabra\" does not exist");
         $adapter = static::getValidAdapter();
         $adapter->exec(
@@ -159,13 +159,20 @@ class PostgresAdapterQueriesTest extends TestCase
     
     public function testInvalidTransactionType()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Unknown transaction type 'abrakadabra' for PostgreSQL");
         $adapter = static::getValidAdapter();
         if ($adapter->inTransaction()) {
             $adapter->rollBack();
         }
         $adapter->begin(true, 'abrakadabra');
+    }
+    
+    public function testPreparedSelectQuery()
+    {
+        $adapter = static::getValidAdapter();
+        $statement = $adapter->prepare(DbExpr::create('SELECT * FROM `admins` WHERE `id`=? AND `is_active`=?'));
+        static::assertEquals('SELECT * FROM "admins" WHERE "id"=? AND "is_active"=?', $statement->queryString);
     }
     
 }

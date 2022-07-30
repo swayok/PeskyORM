@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Core;
 
-use InvalidArgumentException;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PHPUnit\Framework\TestCase;
 
@@ -11,28 +12,28 @@ class PostgresConfigTest extends TestCase
     
     public function testInvalidDbName()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB name argument cannot be empty");
         new PostgresConfig(null, null, null);
     }
     
     public function testInvalidDbName2()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB name argument cannot be empty");
         new PostgresConfig('', null, null);
     }
     
     public function testInvalidDbName3()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB name argument cannot be empty");
         new PostgresConfig(false, null, null);
     }
     
     public function testInvalidDbName4()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB name argument cannot be empty");
         /** @noinspection PhpParamsInspection */
         new PostgresConfig([], null, null);
@@ -40,35 +41,35 @@ class PostgresConfigTest extends TestCase
     
     public function testInvalidDbName5()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB name argument must be a string");
         new PostgresConfig(true, null, null);
     }
     
     public function testInvalidDbUser()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB user argument cannot be empty");
         new PostgresConfig('test', null, null);
     }
     
     public function testInvalidDbUser2()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB user argument cannot be empty");
         new PostgresConfig('test', '', null);
     }
     
     public function testInvalidDbUser3()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB user argument cannot be empty");
         new PostgresConfig('test', false, null);
     }
     
     public function testInvalidDbUser4()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB user argument cannot be empty");
         /** @noinspection PhpParamsInspection */
         new PostgresConfig('test', [], null);
@@ -76,28 +77,28 @@ class PostgresConfigTest extends TestCase
     
     public function testInvalidDbUser5()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB user argument must be a string");
         new PostgresConfig('test', true, null);
     }
     
     public function testInvalidDbPassword()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB password argument cannot be empty");
         new PostgresConfig('test', 'test', null);
     }
     
     public function testInvalidDbPassword2()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB password argument cannot be empty");
         new PostgresConfig('test', 'test', '');
     }
     
     public function testInvalidDbPassword3()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB password argument cannot be empty");
         new PostgresConfig('test', 'test', false);
     }
@@ -105,7 +106,7 @@ class PostgresConfigTest extends TestCase
     
     public function testInvalidDbPassword4()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB password argument cannot be empty");
         /** @noinspection PhpParamsInspection */
         new PostgresConfig('test', 'test', []);
@@ -113,14 +114,14 @@ class PostgresConfigTest extends TestCase
     
     public function testInvalidDbPassword5()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB password argument must be a string");
         new PostgresConfig('test', 'test', true);
     }
     
     public function testInvalidDbHost()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB host argument cannot be empty");
         $config = new PostgresConfig('test', 'test', 'test');
         $config->setDbHost(null);
@@ -128,7 +129,7 @@ class PostgresConfigTest extends TestCase
     
     public function testInvalidDbHost2()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB host argument cannot be empty");
         $config = new PostgresConfig('test', 'test', 'test');
         /** @noinspection PhpParamsInspection */
@@ -137,7 +138,7 @@ class PostgresConfigTest extends TestCase
     
     public function testInvalidDbHost3()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB host argument must be a string");
         $config = new PostgresConfig('test', 'test', 'test');
         $config->setDbHost(true);
@@ -145,7 +146,7 @@ class PostgresConfigTest extends TestCase
     
     public function testInvalidDbHost4()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB host argument cannot be empty");
         $config = new PostgresConfig('test', 'test', 'test');
         $config->setDbHost(false);
@@ -153,7 +154,7 @@ class PostgresConfigTest extends TestCase
     
     public function testInvalidDbPort()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB port argument must be an integer number");
         $config = new PostgresConfig('test', 'test', 'test');
         $config->setDbPort('test');
@@ -161,7 +162,7 @@ class PostgresConfigTest extends TestCase
     
     public function testInvalidDbPort2()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB port argument must be an integer number");
         $config = new PostgresConfig('test', 'test', 'test');
         $config->setDbPort(null);
@@ -169,7 +170,7 @@ class PostgresConfigTest extends TestCase
     
     public function testInvalidDbPort3()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB port argument must be an integer number");
         $config = new PostgresConfig('test', 'test', 'test');
         /** @noinspection PhpParamsInspection */
@@ -209,14 +210,14 @@ class PostgresConfigTest extends TestCase
     
     public function testInvalidDbNameFromArray()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB name argument");
         PostgresConfig::fromArray([]);
     }
     
     public function testInvalidDbUserFromArray()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB user argument");
         PostgresConfig::fromArray([
             'database' => 'test',
@@ -225,7 +226,7 @@ class PostgresConfigTest extends TestCase
     
     public function testInvalidDbPasswordFromArray()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB password argument");
         PostgresConfig::fromArray([
             'database' => 'test',
@@ -235,7 +236,7 @@ class PostgresConfigTest extends TestCase
     
     public function testInvalidDbPortFromArray()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DB port argument must be an integer number");
         PostgresConfig::fromArray([
             'database' => 'test',

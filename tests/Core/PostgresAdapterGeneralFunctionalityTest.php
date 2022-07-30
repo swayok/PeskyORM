@@ -2,16 +2,13 @@
 
 namespace Tests\Core;
 
-use InvalidArgumentException;
 use PDO;
-use PDOException;
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbExpr;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use Tests\PeskyORMTest\TestingApp;
-use TypeError;
 
 class PostgresAdapterGeneralFunctionalityTest extends TestCase
 {
@@ -33,8 +30,8 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
     
     public function testConnectionWithInvalidUserName()
     {
-        $this->expectException(PDOException::class);
-        $this->expectExceptionMessage("password authentication failed for user");
+        $this->expectException(\PDOException::class);
+        $this->expectExceptionMessageMatches("(password authentication failed for user|role .*? does not exist)");
         $config = PostgresConfig::fromArray([
             'database' => 'totally_not_existing_db',
             'username' => 'totally_not_existing_user',
@@ -46,8 +43,8 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
     
     public function testConnectionWithInvalidUserName2()
     {
-        $this->expectException(PDOException::class);
-        $this->expectExceptionMessage("password authentication failed for user");
+        $this->expectException(\PDOException::class);
+        $this->expectExceptionMessageMatches("(password authentication failed for user|database .*? does not exist)");
         $config = PostgresConfig::fromArray([
             'database' => 'totally_not_existing_db',
             'username' => static::getValidAdapter()
@@ -61,7 +58,7 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
     
     public function testConnectionWithInvalidDbName()
     {
-        $this->expectException(PDOException::class);
+        $this->expectException(\PDOException::class);
         $this->expectExceptionMessage("database \"totally_not_existing_db\" does not exist");
         $config = PostgresConfig::fromArray([
             'database' => 'totally_not_existing_db',
@@ -78,7 +75,7 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
     
     public function testConnectionWithInvalidUserPassword()
     {
-        $this->expectException(PDOException::class);
+        $this->expectException(\PDOException::class);
         $this->expectExceptionMessage("password authentication failed for user");
         $config = PostgresConfig::fromArray([
             'database' => static::getValidAdapter()
@@ -132,7 +129,7 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidDbEntity()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Invalid db entity name");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName('";DROP table1;');
@@ -140,8 +137,8 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidDbEntity2()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Db entity name must be a not empty string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #1 (\$name) must be of type string");
         $adapter = static::getValidAdapter();
         /** @noinspection PhpParamsInspection */
         $adapter->quoteDbEntityName(['arrr']);
@@ -149,8 +146,8 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidDbEntity3()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Db entity name must be a not empty string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #1 (\$name) must be of type string");
         $adapter = static::getValidAdapter();
         /** @noinspection PhpParamsInspection */
         $adapter->quoteDbEntityName($adapter);
@@ -158,15 +155,15 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidDbEntity4()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Db entity name must be a not empty string");
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid db entity name: [1]");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName(true);
     }
     
     public function testQuotingOfInvalidDbEntity5()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Db entity name must be a not empty string");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName(false);
@@ -174,23 +171,23 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidDbEntity6()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid db entity name [colname->->]");
+        // OK for PostgreSQL
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName('colname->->');
+        static::assertTrue(true);
     }
     
     public function testQuotingOfInvalidDbEntity7()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid db entity name [colname-> ->]");
+        // OK for PostgreSQL
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName('colname-> ->');
+        static::assertTrue(true);
     }
     
     public function testQuotingOfInvalidDbEntity8()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Db entity name must be a not empty string");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName('');
@@ -198,15 +195,15 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidDbValueType()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Value in \$fieldType argument must be a constant like");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #2 (\$valueDataType) must be of type ?int");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue('test', 'abrakadabra');
     }
     
     public function testQuotingOfInvalidIntDbValue()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$value expected to be integer or numeric string. String [abrakadabra] received");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue('abrakadabra', PDO::PARAM_INT);
@@ -214,15 +211,16 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidIntDbValue2()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$value expected to be integer or numeric string. Object fo class [\PeskyORM\Adapter\Postgres] received");
         $adapter = static::getValidAdapter();
+        /** @noinspection PhpParamsInspection */
         $adapter->quoteValue($adapter, PDO::PARAM_INT);
     }
     
     public function testQuotingOfInvalidIntDbValue3()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$value expected to be integer or numeric string. Array received");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue(['key' => 'val'], PDO::PARAM_INT);
@@ -230,15 +228,15 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidIntDbValue4()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$value expected to be integer or numeric string. Resource received");
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$value expected to be integer or numeric string. Object fo class [\CurlHandle] received");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue(curl_init('http://test.url'), PDO::PARAM_INT);
     }
     
     public function testQuotingOfInvalidIntDbValue5()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$value expected to be integer or numeric string. Boolean [true] received");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue(true, PDO::PARAM_INT);
@@ -246,7 +244,7 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidIntDbValue6()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$value expected to be integer or numeric string. Boolean [false] received");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue(false, PDO::PARAM_INT);
@@ -254,8 +252,8 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidDbExpr()
     {
-        $this->expectException(TypeError::class);
-        $this->expectExceptionMessage("must be an instance of PeskyORM\Core\DbExpr, string given");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #1 (\$expression) must be of type PeskyORM\Core\DbExpr");
         $adapter = static::getValidAdapter();
         /** @noinspection PhpParamsInspection */
         $adapter->quoteDbExpr('test');
@@ -305,12 +303,12 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
         $method = (new ReflectionClass($adapter))->getMethod('buildColumnsList');
         $method->setAccessible(true);
         $colsList = $method->invoke($adapter, ['column1', 'alias.column2']);
-        $this->assertEquals('("column1","alias"."column2")', $colsList);
+        $this->assertEquals('("column1", "alias"."column2")', $colsList);
     }
     
     public function testInvalidColumnsInBuildValuesList()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$columns argument cannot be empty");
         $adapter = static::getValidAdapter();
         $method = (new ReflectionClass($adapter))->getMethod('buildValuesList');
@@ -320,7 +318,7 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
     
     public function testInvalidDataInBuildValuesList()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$valuesAssoc array does not contain key [col2]");
         $adapter = static::getValidAdapter();
         $method = (new ReflectionClass($adapter))->getMethod('buildValuesList');
@@ -344,9 +342,9 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
         ];
         $columns = array_keys($data);
         $valsList = $method->invoke($adapter, $columns, $data);
-        $this->assertEquals("('val1','1',NULL,TRUE,FALSE,'','1.22')", $valsList);
+        $this->assertEquals("('val1', '1', NULL, TRUE, FALSE, '', '1.22')", $valsList);
         $valsList = $method->invoke($adapter, $columns, $data, ['col2' => PDO::PARAM_BOOL]);
-        $this->assertEquals("('val1',TRUE,NULL,TRUE,FALSE,'','1.22')", $valsList);
+        $this->assertEquals("('val1', TRUE, NULL, TRUE, FALSE, '', '1.22')", $valsList);
     }
     
     

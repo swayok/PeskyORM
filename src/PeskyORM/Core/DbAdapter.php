@@ -263,25 +263,6 @@ abstract class DbAdapter implements DbAdapterInterface
         return $this->getConnection()->prepare($query, $options);
     }
     
-    public function execPrepared(PDOStatement $statement, array $inserts = [], string $fetchData = self::FETCH_STATEMENT)
-    {
-        try {
-            if (!$statement->execute($inserts)) {
-                $exc = $this->getDetailedException($statement->queryString, $statement);
-                if ($exc !== null) {
-                    throw $exc;
-                }
-            }
-            return OrmUtils::getDataFromStatement($statement, $fetchData);
-        } catch (\PDOException $exc) {
-            $exc = $this->getDetailedException($statement->queryString, $statement, $exc);
-            if ($this->inTransaction() && stripos($statement->queryString, 'ROLLBACK') !== 0) {
-                $this->rollBack(); //< error within transactions makes it broken in postgresql
-            }
-            throw $exc;
-        }
-    }
-    
     public function insert(string $table, array $data, array $dataTypes = [], $returning = false, string $pkName = 'id')
     {
         $this->guardTableNameArg($table);
@@ -373,7 +354,7 @@ abstract class DbAdapter implements DbAdapterInterface
         $this->guardTableNameArg($table);
         $this->guardDataArg($data);
         $this->guardConditionsArg($conditions);
-        [$tableName, $tableAlias] = preg_split('%\s+AS\s+%i', $table, 2);
+        [$tableName, $tableAlias] = $this->extractTableNameAndAlias($table);
         if (empty($tableAlias) || trim($tableAlias) === '') {
             $tableAlias = '';
         } else {
@@ -402,7 +383,7 @@ abstract class DbAdapter implements DbAdapterInterface
         $this->guardTableNameArg($table);
         $this->guardConditionsArg($conditions);
         $this->guardReturningArg($returning);
-        [$tableName, $tableAlias] = preg_split('%\s+AS\s+%i', $table, 2);
+        [$tableName, $tableAlias] = $this->extractTableNameAndAlias($table);
         if (empty($tableAlias) || trim($tableAlias) === '') {
             $tableAlias = '';
         } else {
@@ -426,22 +407,34 @@ abstract class DbAdapter implements DbAdapterInterface
         }
     }
     
-    /**
-     * @throws \InvalidArgumentException
-     */
-    private function guardTableNameArg($table)
+    protected function extractTableNameAndAlias(string $tableNameWithAlias): array
     {
-        if (empty($table) || !is_string($table) || is_numeric($table)) {
-            throw new \InvalidArgumentException('$table argument cannot be empty and must be a non-numeric string');
-        }
+        $parts = preg_split('%\s+AS\s+%i', $tableNameWithAlias, 2);
+        $tableName = $parts[0];
+        $tableAlias = $parts[1] ?? null;
+        return [$tableName, $tableAlias];
     }
     
     /**
      * @throws \InvalidArgumentException
      */
+    private function guardTableNameArg(string $table)
+    {
+        if (empty($table)) {
+            throw new \InvalidArgumentException('$table argument cannot be empty and must be a non-numeric string');
+        } else if (!static::isValidDbEntityName($table)) {
+            throw new \InvalidArgumentException('$table must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)');
+        }
+    }
+    
+    /**
+     * @param string|DbExpr $conditions
+     * @throws \InvalidArgumentException
+     */
     private function guardConditionsArg($conditions)
     {
         if (!is_string($conditions) && !($conditions instanceof DbExpr)) {
+            // todo: remove in v3
             throw new \InvalidArgumentException('$conditions argument must be a string or DbExpr object');
         } elseif (empty($conditions)) {
             throw new \InvalidArgumentException(
@@ -451,20 +444,12 @@ abstract class DbAdapter implements DbAdapterInterface
     }
     
     /**
-     * @throws \InvalidArgumentException
-     */
-    private function guardConditionsAndOptionsArg($conditionsAndOptions)
-    {
-        if (!empty($conditionsAndOptions) && !($conditionsAndOptions instanceof DbExpr)) {
-            throw new \InvalidArgumentException('$conditionsAndOptions argument must be an instance of DbExpr class');
-        }
-    }
-    
-    /**
+     * @param bool|array $returning
      * @throws \InvalidArgumentException
      */
     private function guardReturningArg($returning)
     {
+        // todo: remove in v3
         if (!is_array($returning) && !is_bool($returning)) {
             throw new \InvalidArgumentException('$returning argument must be array or boolean');
         }
@@ -473,12 +458,12 @@ abstract class DbAdapter implements DbAdapterInterface
     /**
      * @throws \InvalidArgumentException
      */
-    private function guardPkNameArg($pkName)
+    private function guardPkNameArg(string $pkName)
     {
         if (empty($pkName)) {
             throw new \InvalidArgumentException('$pkName argument cannot be empty');
-        } elseif (!is_string($pkName)) {
-            throw new \InvalidArgumentException('$pkName argument must be a string');
+        } else if (!static::isValidDbEntityName($pkName)) {
+            throw new \InvalidArgumentException('$pkName must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)');
         }
         $this->quoteDbEntityName($pkName);
     }
@@ -985,9 +970,13 @@ abstract class DbAdapter implements DbAdapterInterface
             if (empty($value)) {
                 throw new \InvalidArgumentException('Empty array is not allowed as condition value');
             } else {
-                $quotedValues = [];
-                foreach ($value as $val) {
-                    $quotedValues[] = $valueAlreadyQuoted ? $value : $this->quoteValue($val);
+                if ($valueAlreadyQuoted) {
+                    $quotedValues = $value;
+                } else {
+                    $quotedValues = [];
+                    foreach ($value as $val) {
+                        $quotedValues[] = $this->quoteValue($val);
+                    }
                 }
                 return '(' . implode(', ', $quotedValues) . ')';
             }
@@ -1087,7 +1076,6 @@ abstract class DbAdapter implements DbAdapterInterface
         } else {
             $this->guardColumnsArg($columns);
         }
-        $this->guardConditionsAndOptionsArg($conditionsAndOptions);
         $suffix = $conditionsAndOptions ? ' ' . $this->quoteDbExpr($conditionsAndOptions) : '';
         return 'SELECT ' . $this->buildColumnsList($columns, false) . ' FROM ' . $this->quoteDbEntityName($table) . $suffix;
     }

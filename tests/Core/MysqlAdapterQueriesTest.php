@@ -103,4 +103,11 @@ class MysqlAdapterQueriesTest extends TestCase
         $adapter->rollBack();
         $adapter->rollBack();
     }
+    
+    public function testPreparedSelectQuery()
+    {
+        $adapter = static::getValidAdapter();
+        $statement = $adapter->prepare(DbExpr::create('SELECT * FROM `admins` WHERE `id`=? AND `is_active`=?'));
+        static::assertEquals('SELECT * FROM `admins` WHERE `id`=? AND `is_active`=?', $statement->queryString);
+    }
 }

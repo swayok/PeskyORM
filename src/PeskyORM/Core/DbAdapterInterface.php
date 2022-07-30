@@ -56,14 +56,6 @@ interface DbAdapterInterface
     public function prepare($query, array $options = []): PDOStatement;
     
     /**
-     * @param PDOStatement $statement
-     * @param array $inserts
-     * @param string $fetchData - how to fetch data (one of DbAdapter::FETCH_*)
-     * @return int|array|PDOStatement = array: returned if $returning argument is not empty
-     */
-    public function execPrepared(PDOStatement $statement, array $inserts = [], string $fetchData = DbAdapter::FETCH_STATEMENT);
-    
-    /**
      * @param string|DbExpr $query
      * @param string|null $fetchData - how to fetch data (one of DbAdapter::FETCH_*)
      * @return \PDOStatement|array|string|null|int|bool|float

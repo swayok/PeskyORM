@@ -2,6 +2,7 @@
 
 namespace Tests\Core;
 
+use InvalidArgumentException;
 use PeskyORM\Core\DbExpr;
 use Tests\PeskyORMTest\TestingApp;
 
@@ -340,5 +341,19 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
         );
     }
     
+    public function testInvalidPkName4()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid db entity name");
+        $this->invokePrivateAdapterMethod('guardPkNameArg', 'teasd as das d 90as9()');
+    }
     
+    public function testIsValidDbEntityNameAndJsonSelector2() {
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test test->test'));
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test#test->test'));
+    
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test test'));
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test$test'));
+        static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test->test', false));
+    }
 }
