@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\Profiling;
 
 use PDO;
-use PDOException;
 use PDOStatement;
 
 /**
@@ -114,13 +115,13 @@ class TraceablePDOStatement extends PDOStatement
         $exc = $result = null;
         try {
             $result = parent::execute($params);
-        } catch (PDOException $e) {
+        } catch (\PDOException $e) {
             $exc = $e;
         }
         
         if ($result === false && $this->pdo->getAttribute(PDO::ATTR_ERRMODE) !== PDO::ERRMODE_EXCEPTION) {
             $error = $this->errorInfo();
-            $exc = new PDOException($error[2], (int)$error[0]);
+            $exc = new \PDOException($error[2], (int)$error[0]);
         }
         
         $trace->end($exc, $this->rowCount());

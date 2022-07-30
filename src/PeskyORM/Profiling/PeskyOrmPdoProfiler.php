@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\Profiling;
 
 use PeskyORM\Core\DbAdapter;
@@ -30,9 +32,9 @@ class PeskyOrmPdoProfiler
      * Adds a new PDO instance to be collector
      *
      * @param TraceablePDO $pdo
-     * @param string $name Optional connection name
+     * @param string|null $name Optional connection name
      */
-    static public function addConnection(TraceablePDO $pdo, $name = null)
+    static public function addConnection(TraceablePDO $pdo, ?string $name = null)
     {
         if ($name === null) {
             $name = spl_object_hash($pdo);
@@ -45,15 +47,12 @@ class PeskyOrmPdoProfiler
      *
      * @return TraceablePDO[]
      */
-    static public function getConnections()
+    static public function getConnections(): array
     {
         return static::$connections;
     }
     
-    /**
-     * @return array
-     */
-    static public function collect()
+    static public function collect(): array
     {
         $data = [
             'statements_count' => 0,
@@ -83,7 +82,7 @@ class PeskyOrmPdoProfiler
      * @param TraceablePDO $pdo
      * @return array
      */
-    static protected function collectPDO(TraceablePDO $pdo)
+    static protected function collectPDO(TraceablePDO $pdo): array
     {
         $stmts = [];
         /** @var TracedStatement $stmt */
@@ -117,11 +116,7 @@ class PeskyOrmPdoProfiler
         ];
     }
     
-    /**
-     * @param float $seconds
-     * @return string
-     */
-    static public function formatDuration($seconds)
+    static public function formatDuration(float $seconds): string
     {
         if ($seconds < 0.001) {
             return round($seconds * 1000000) . 'μs';
@@ -132,19 +127,14 @@ class PeskyOrmPdoProfiler
         return round($seconds, 2) . 's';
     }
     
-    /**
-     * @param int|float $size
-     * @param int $precision
-     * @return string
-     */
-    static public function formatBytes($size, $precision = 2)
+    static public function formatBytes(int $size, int $precision = 2): string
     {
-        if ($size === 0 || $size === null) {
+        if ($size === 0) {
             return '0B';
         }
         
         $sign = $size < 0 ? '-' : '';
-        $size = abs($size);
+        $size = (int)abs($size);
         
         $base = log($size) / log(1024);
         $suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];

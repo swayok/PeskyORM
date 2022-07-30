@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\Profiling;
 
 use PDO;
-use PDOException;
 
 /**
  * A PDO proxy which traces statements
@@ -19,11 +20,11 @@ class TraceablePDO extends PDO
     
     /**
      * @param PDO $pdo
-     * @param null $databaseName
+     * @param null|string $databaseName
      * @noinspection PhpMissingParentConstructorInspection
      * @noinspection MagicMethodsValidityInspection
      */
-    public function __construct(PDO $pdo, $databaseName = null)
+    public function __construct(PDO $pdo, ?string $databaseName = null)
     {
         $this->pdo = $pdo;
         $this->pdo->setAttribute(PDO::ATTR_STATEMENT_CLASS, [TraceablePDOStatement::class, [$this]]);
@@ -208,7 +209,7 @@ class TraceablePDO extends PDO
      * @return mixed  The result of the call
      * @throws \PDOException
      */
-    protected function profileCall($method, $sql, array $args)
+    protected function profileCall(string $method, string $sql, array $args)
     {
         $trace = new TracedStatement($sql);
         $trace->start();
@@ -216,13 +217,13 @@ class TraceablePDO extends PDO
         $ex = $result = null;
         try {
             $result = call_user_func_array([$this->pdo, $method], $args);
-        } catch (PDOException $e) {
+        } catch (\PDOException $e) {
             $ex = $e;
         }
         
         if ($this->pdo->getAttribute(PDO::ATTR_ERRMODE) !== PDO::ERRMODE_EXCEPTION && $result === false) {
             $error = $this->pdo->errorInfo();
-            $ex = new PDOException($error[2], $error[0]);
+            $ex = new \PDOException($error[2], $error[0]);
         }
         
         $trace->end($ex, $result instanceof \PDOStatement ? $result->rowCount() : 0);
@@ -237,8 +238,6 @@ class TraceablePDO extends PDO
     
     /**
      * Adds an executed TracedStatement
-     *
-     * @param TracedStatement $stmt
      */
     public function addExecutedStatement(TracedStatement $stmt)
     {
@@ -247,10 +246,8 @@ class TraceablePDO extends PDO
     
     /**
      * Returns the accumulated execution time of statements
-     *
-     * @return int
      */
-    public function getAccumulatedStatementsDuration()
+    public function getAccumulatedStatementsDuration(): int
     {
         return array_reduce($this->executedStatements, function ($duration, $statement) {
             /** @var $statement TracedStatement */
@@ -260,10 +257,8 @@ class TraceablePDO extends PDO
     
     /**
      * Returns overall memory usage after performing all statements
-     *
-     * @return int
      */
-    public function getMemoryUsage()
+    public function getMemoryUsage(): int
     {
         return array_reduce($this->executedStatements, function ($memoryUsed, $statement) {
             /** @var $statement TracedStatement */
@@ -273,10 +268,8 @@ class TraceablePDO extends PDO
     
     /**
      * Returns the peak memory usage while performing statements
-     *
-     * @return int
      */
-    public function getPeakMemoryUsage()
+    public function getPeakMemoryUsage(): int
     {
         return array_reduce($this->executedStatements, function ($maxMemoryUsed, $statement) {
             /** @var $statement TracedStatement */
@@ -287,20 +280,16 @@ class TraceablePDO extends PDO
     
     /**
      * Returns the list of executed statements as TracedStatement objects
-     *
-     * @return array
      */
-    public function getExecutedStatements()
+    public function getExecutedStatements(): array
     {
         return $this->executedStatements;
     }
     
     /**
      * Returns the list of failed statements
-     *
-     * @return array
      */
-    public function getFailedExecutedStatements()
+    public function getFailedExecutedStatements(): array
     {
         return array_filter($this->executedStatements, function ($statement) {
             return !$statement->isSuccess();
@@ -308,30 +297,27 @@ class TraceablePDO extends PDO
     }
     
     /**
-     * @param $name
      * @return mixed
      */
-    public function __get($name)
+    public function __get(string $name)
     {
         return $this->pdo->$name;
     }
     
     /** @noinspection MagicMethodsValidityInspection */
     /**
-     * @param $name
-     * @param $value
+     * @param string $name
+     * @param mixed $value
      */
-    public function __set($name, $value)
+    public function __set(string $name, $value)
     {
         $this->pdo->$name = $value;
     }
     
     /**
-     * @param $name
-     * @param $args
      * @return mixed
      */
-    public function __call($name, $args)
+    public function __call(string $name, array $args)
     {
         return call_user_func_array([$this->pdo, $name], $args);
     }

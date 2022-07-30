@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\Profiling;
 
 /**
@@ -41,11 +43,6 @@ class TracedStatement
     /** @var \Throwable|null */
     protected $exception;
     
-    /**
-     * @param string $sql
-     * @param array $params
-     * @param string|null $preparedId
-     */
     public function __construct(string $sql, array $params = [], ?string $preparedId = null)
     {
         $this->sql = $sql;
@@ -53,22 +50,12 @@ class TracedStatement
         $this->preparedId = $preparedId;
     }
     
-    /**
-     * @param float|null $startTime
-     * @param float|null $startMemory
-     */
     public function start(?float $startTime = null, ?float $startMemory = null)
     {
         $this->startTime = $startTime ?: microtime(true);
         $this->startMemory = $startMemory ?: memory_get_usage(false);
     }
     
-    /**
-     * @param \Throwable|null $exception
-     * @param int $rowCount
-     * @param float|null $endTime
-     * @param int|null $endMemory
-     */
     public function end(?\Throwable $exception = null, int $rowCount = 0, ?float $endTime = null, ?int $endMemory = null)
     {
         $this->endTime = $endTime ?: microtime(true);
@@ -81,9 +68,6 @@ class TracedStatement
     
     /**
      * Check parameters for illegal (non UTF-8) strings, like Binary data.
-     *
-     * @param array $params
-     * @return array
      */
     public function checkParameters(array $params): array
     {
@@ -98,8 +82,6 @@ class TracedStatement
     
     /**
      * Returns the SQL string used for the query
-     *
-     * @return string
      */
     public function getSql(): string
     {
@@ -108,11 +90,8 @@ class TracedStatement
     
     /**
      * Returns the SQL string with any parameters used embedded
-     *
-     * @param string $quotationChar
-     * @return string
      */
-    public function getSqlWithParams($quotationChar = '<>'): string
+    public function getSqlWithParams(string $quotationChar = '<>'): string
     {
         if (($l = strlen($quotationChar)) > 1) {
             $quoteLeft = substr($quotationChar, 0, $l / 2);
@@ -137,8 +116,6 @@ class TracedStatement
     
     /**
      * Returns the number of rows affected/returned
-     *
-     * @return int
      */
     public function getRowCount(): int
     {
@@ -147,8 +124,6 @@ class TracedStatement
     
     /**
      * Returns an array of parameters used with the query
-     *
-     * @return array
      */
     public function getParameters(): array
     {
@@ -162,8 +137,6 @@ class TracedStatement
     
     /**
      * Returns the prepared statement id
-     *
-     * @return string|null
      */
     public function getPreparedId(): ?string
     {
@@ -172,25 +145,17 @@ class TracedStatement
     
     /**
      * Checks if this is a prepared statement
-     *
-     * @return boolean
      */
     public function isPrepared(): bool
     {
         return $this->preparedId !== null;
     }
     
-    /**
-     * @return float
-     */
     public function getStartTime(): float
     {
         return $this->startTime;
     }
     
-    /**
-     * @return float
-     */
     public function getEndTime(): float
     {
         return $this->endTime;
@@ -198,25 +163,17 @@ class TracedStatement
     
     /**
      * Returns the duration in seconds of the execution
-     *
-     * @return float
      */
     public function getDuration(): float
     {
         return $this->duration;
     }
     
-    /**
-     * @return int
-     */
     public function getStartMemory(): int
     {
         return $this->startMemory;
     }
     
-    /**
-     * @return int
-     */
     public function getEndMemory(): int
     {
         return $this->endMemory;
@@ -224,8 +181,6 @@ class TracedStatement
     
     /**
      * Returns the memory usage during the execution
-     *
-     * @return int
      */
     public function getMemoryUsage(): int
     {
@@ -234,8 +189,6 @@ class TracedStatement
     
     /**
      * Checks if the statement was successful
-     *
-     * @return boolean
      */
     public function isSuccess(): bool
     {
@@ -244,8 +197,6 @@ class TracedStatement
     
     /**
      * Returns the exception triggered
-     *
-     * @return \Throwable|null
      */
     public function getException(): ?\Throwable
     {
@@ -254,8 +205,6 @@ class TracedStatement
     
     /**
      * Returns the exception's code
-     *
-     * @return int
      */
     public function getErrorCode(): int
     {
@@ -264,8 +213,6 @@ class TracedStatement
     
     /**
      * Returns the exception's message
-     *
-     * @return string
      */
     public function getErrorMessage(): string
     {
