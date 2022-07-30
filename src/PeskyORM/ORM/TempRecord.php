@@ -146,19 +146,16 @@ class TempRecord implements RecordInterface
     }
     
     /**
-     * @param bool $exists
      * @return $this
      */
-    public function setEsistsInDb($exists)
+    public function setExistsInDb(bool $exists)
     {
-        $this->existsInDb = (bool)$exists;
+        $this->existsInDb = $exists;
         return $this;
     }
     
     /**
      * Get existing related object(s) or read them
-     * @param string $relationName
-     * @param bool $loadIfNotSet - true: read relation data if it is not set
      * @return Record|RecordsSet
      */
     public function getRelatedRecord(string $relationName, bool $loadIfNotSet = false)
@@ -178,8 +175,6 @@ class TempRecord implements RecordInterface
     
     /**
      * Check if related object(s) are stored in this Record
-     * @param string $relationName
-     * @return bool
      */
     public function isRelatedRecordAttached(string $relationName): bool
     {
@@ -200,7 +195,6 @@ class TempRecord implements RecordInterface
     
     /**
      * Remove related record
-     * @param string $relationName
      * @return $this
      */
     public function unsetRelatedRecord(string $relationName)
@@ -211,23 +205,19 @@ class TempRecord implements RecordInterface
     /**
      * Fill record values from passed $data.
      * Note: all existing record values will be removed
-     * @param array $data
-     * @param bool $isFromDb - true: marks values as loaded from DB
-     * @param bool $haltOnUnknownColumnNames - exception will be thrown if there are unknown column names in $data
      * @return $this
      * @throws \InvalidArgumentException
      */
     public function fromData(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true)
     {
         $this->data = $data;
-        $this->setEsistsInDb($isFromDb);
+        $this->setExistsInDb($isFromDb);
         return $this;
     }
     
     /**
      * Fill record values from passed $data.
      * All values are marked as loaded from DB and any unknows column names will raise exception
-     * @param array $data
      * @return $this
      * @throws \InvalidArgumentException
      */
@@ -252,9 +242,6 @@ class TempRecord implements RecordInterface
     /**
      * Fill record values with data fetched from DB by $conditionsAndOptions
      * Note: relations can be loaded via 'CONTAIN' key in $conditionsAndOptions
-     * @param array $conditionsAndOptions
-     * @param array $columns - empty: get all columns
-     * @param array $readRelatedRecords - also read related records
      * @return $this
      * @throws \BadMethodCallException
      */
@@ -266,8 +253,6 @@ class TempRecord implements RecordInterface
     /**
      * Reload data for current record.
      * Note: record must exist in DB
-     * @param array $columns - columns to read
-     * @param array $readRelatedRecords - also read related records
      * @return $this
      * @throws \BadMethodCallException
      */
@@ -278,7 +263,6 @@ class TempRecord implements RecordInterface
     
     /**
      * Read values for specific columns
-     * @param array $columns - columns to read
      * @return $this
      * @throws \BadMethodCallException
      */

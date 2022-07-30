@@ -36,10 +36,6 @@ abstract class AbstractJoinInfo
     /** @var array */
     protected $foreignColumnsToSelect = ['*'];
     
-    /**
-     * @param string $joinName
-     * @throws \InvalidArgumentException
-     */
     public function __construct(string $joinName)
     {
         $this->setJoinName($joinName);
@@ -51,7 +47,6 @@ abstract class AbstractJoinInfo
     }
     
     /**
-     * @param string $columnName
      * @return $this
      * @throws \InvalidArgumentException
      */
@@ -70,7 +65,6 @@ abstract class AbstractJoinInfo
     }
     
     /**
-     * @param string $foreignColumnName
      * @return $this
      * @throws \InvalidArgumentException
      */
@@ -99,7 +93,6 @@ abstract class AbstractJoinInfo
     }
     
     /**
-     * @param string $joinName
      * @return $this
      * @throws \InvalidArgumentException
      */
@@ -123,7 +116,6 @@ abstract class AbstractJoinInfo
     }
     
     /**
-     * @param string $joinType
      * @return $this
      * @throws \InvalidArgumentException
      */
@@ -161,7 +153,6 @@ abstract class AbstractJoinInfo
     }
     
     /**
-     * @param string $alias
      * @return $this
      * @throws \InvalidArgumentException
      */
@@ -180,7 +171,6 @@ abstract class AbstractJoinInfo
     }
     
     /**
-     * @param array $additionalJoinConditions
      * @return $this
      */
     public function setAdditionalJoinConditions(array $additionalJoinConditions)
@@ -207,10 +197,7 @@ abstract class AbstractJoinInfo
         return $this;
     }
     
-    /**
-     * @return bool
-     */
-    public function isValid()
+    public function isValid(): bool
     {
         return (
             $this->hasTableName()

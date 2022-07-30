@@ -30,7 +30,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      */
     protected $dbRecords = [];
     /**
-     * @var bool
+     * @var bool|null
      */
     protected $isFromDb = null;
     /**
@@ -42,7 +42,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      */
     protected $isDbRecordDataValidationDisabled = false;
     /**
-     * @var Record
+     * @var Record|null
      */
     protected $dbRecordForIteration = null;
     /**
@@ -107,7 +107,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function injectHasManyRelationData($relationName, array $columnsToSelect = ['*'])
+    public function injectHasManyRelationData(string $relationName, array $columnsToSelect = ['*'])
     {
         $relation = $this->table->getTableStructure()
             ->getRelation($relationName);
@@ -122,10 +122,6 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         return $this;
     }
     
-    /**
-     * @param Relation $relation
-     * @param array $columnsToSelect
-     */
     protected function injectHasManyRelationDataIntoRecords(Relation $relation, array $columnsToSelect = ['*'])
     {
         $relationName = $relation->getName();
@@ -163,7 +159,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     /**
      * @return RecordInterface|Record
      */
-    protected function getDbRecordObjectForIteration()
+    protected function getDbRecordObjectForIteration(): RecordInterface
     {
         if ($this->dbRecordForIteration === null) {
             $this->dbRecordForIteration = $this->getNewRecord();
@@ -206,11 +202,9 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     }
     
     /**
-     * @param int $index
-     * @return mixed
      * @throws \InvalidArgumentException
      */
-    protected function getRecordDataByIndex($index)
+    protected function getRecordDataByIndex(int $index): array
     {
         if (!$this->offsetExists($index)) {
             throw new \InvalidArgumentException("Array does not contain index '{$index}'");
@@ -251,10 +245,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         return $this;
     }
     
-    /**
-     * @return bool
-     */
-    public function isDbRecordInstanceReuseDuringIterationEnabled()
+    public function isDbRecordInstanceReuseDuringIterationEnabled(): bool
     {
         return $this->isDbRecordInstanceReuseEnabled;
     }
@@ -300,7 +291,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     }
     
     /**
-     * @return bool|null - null: mixed
+     * @return bool|null - null: mixed, will be autodetected based on primary key value existence
      */
     public function isRecordsFromDb(): ?bool
     {
@@ -430,7 +421,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * @param null|\Closure $filter - closure compatible with array_filter()
      * @return array
      */
-    public function getValuesForColumn($columnName, $defaultValue = null, \Closure $filter = null): array
+    public function getValuesForColumn(string $columnName, $defaultValue = null, \Closure $filter = null): array
     {
         $records = $this->toArrays();
         $ret = [];
@@ -450,7 +441,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * @param bool $resetOriginalRecordsArray
      * @return RecordsArray - new RecordsArray (not RecordsSet!)
      */
-    public function filterRecords(\Closure $filter, $resetOriginalRecordsArray = false): RecordsArray
+    public function filterRecords(\Closure $filter, bool $resetOriginalRecordsArray = false): RecordsArray
     {
         $newArray = new self($this->table, array_filter($this->toObjects(), $filter), $this->isFromDb);
         if ($resetOriginalRecordsArray) {
@@ -463,7 +454,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * @param int $index - record's index
      * @return RecordInterface|Record
      */
-    protected function convertToObject($index)
+    protected function convertToObject(int $index): RecordInterface
     {
         if (empty($this->dbRecords[$index])) {
             $data = $this->getRecordDataByIndex($index);
@@ -512,9 +503,9 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     
     /**
      * Return the current element
-     * @return RecordInterface|Record
+     * @return RecordInterface|Record|null
      */
-    public function current()
+    public function current(): ?RecordInterface
     {
         if (!$this->offsetExists($this->iteratorPosition)) {
             return null;
@@ -561,7 +552,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * @return RecordInterface|Record|mixed
      * @throws \BadMethodCallException
      */
-    public function first($columnName = null)
+    public function first(?string $columnName = null)
     {
         if ($this->count() === 0) {
             throw new \BadMethodCallException('There is no records');
@@ -577,7 +568,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * @return RecordInterface|Record|mixed
      * @throws \BadMethodCallException
      */
-    public function last($columnName = null)
+    public function last(?string $columnName = null)
     {
         if ($this->count() === 0) {
             throw new \BadMethodCallException('There is no records');
@@ -674,7 +665,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * Count elements of an object
      * @return int
      */
-    public function totalCount()
+    public function totalCount(): int
     {
         return $this->count();
     }
@@ -698,10 +689,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         return $this;
     }
     
-    /**
-     * @return bool
-     */
-    public function isReadOnlyModeEnabled()
+    public function isReadOnlyModeEnabled(): bool
     {
         return $this->readOnlyMode;
     }

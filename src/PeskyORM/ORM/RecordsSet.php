@@ -85,7 +85,6 @@ class RecordsSet extends RecordsArray
     /**
      * @param Relation $relation
      * @param array $columnsToSelect
-     *
      */
     protected function injectHasManyRelationDataIntoRecords(Relation $relation, array $columnsToSelect = ['*'])
     {
@@ -97,7 +96,6 @@ class RecordsSet extends RecordsArray
             parent::injectHasManyRelationDataIntoRecords($relation, $columnsToSelect);
         }
     }
-    
     
     /**
      * For internal use only!
@@ -261,9 +259,6 @@ class RecordsSet extends RecordsArray
         return $this;
     }
     
-    /**
-     * @inheritDoc
-     */
     public function toArrays($closureOrColumnsListOrMethodName = null, array $argumentsForMethod = [], bool $enableReadOnlyMode = true): array
     {
         if ($closureOrColumnsListOrMethodName) {
@@ -273,22 +268,12 @@ class RecordsSet extends RecordsArray
         }
     }
     
-    /**
-     * Whether a record with specified index exists
-     * @param int $index - an offset to check for.
-     * @return boolean - true on success or false on failure.
-     */
     public function offsetExists($index)
     {
         return is_int($index) && $index >= 0 && $index < $this->count();
     }
     
-    /**
-     * @param int $index
-     * @return array|null
-     * @throws \InvalidArgumentException
-     */
-    protected function getRecordDataByIndex($index)
+    protected function getRecordDataByIndex(int $index): array
     {
         if (!$this->offsetExists($index)) {
             throw new \InvalidArgumentException("Array does not contain index '{$index}'");
@@ -337,7 +322,7 @@ class RecordsSet extends RecordsArray
      * @param bool|null $ignoreLeftJoins - null: use $this->ignoreLeftJoinsForCount | bool: change $this->ignoreLeftJoinsForCount
      * @return int
      */
-    public function totalCount(?bool $ignoreLeftJoins = null)
+    public function totalCount(?bool $ignoreLeftJoins = null): int
     {
         if ($ignoreLeftJoins !== null && $this->ignoreLeftJoinsForCount !== $ignoreLeftJoins) {
             // $this->ignoreLeftJoinsForCount differs from previous one - reset total records count

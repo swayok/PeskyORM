@@ -6,20 +6,14 @@ namespace PeskyORM\ORM;
 
 use PeskyORM\Core\AbstractSelect;
 use PeskyORM\Core\DbExpr;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class DefaultColumnClosures implements ColumnClosuresInterface
 {
     
     /**
-     * @param mixed $newValue
-     * @param boolean $isFromDb
-     * @param RecordValue $valueContainer
-     * @param bool $trustDataReceivedFromDb
-     * @return RecordValue
      * @throws \BadMethodCallException
      */
-    static public function valueSetter($newValue, $isFromDb, RecordValue $valueContainer, $trustDataReceivedFromDb)
+    static public function valueSetter($newValue, bool $isFromDb, RecordValue $valueContainer, bool $trustDataReceivedFromDb): RecordValue
     {
         $column = $valueContainer->getColumn();
         if (!$isFromDb && !$column->isValueCanBeSetOrChanged()) {
@@ -67,10 +61,6 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         return $valueContainer;
     }
     
-    /**
-     * Uses $column->convertsEmptyValueToNull(), $column->mustTrimValue() and $column->mustLowercaseValue()
-     * @return mixed
-     */
     static public function valuePreprocessor($value, bool $isFromDb, bool $isForValidation, Column $column)
     {
         if ($isFromDb && !$isForValidation) {
@@ -92,12 +82,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         return $value;
     }
     
-    /**
-     * @param RecordValue $value
-     * @param null|string $format
-     * @return mixed
-     */
-    static public function valueGetter(RecordValue $value, $format = null)
+    static public function valueGetter(RecordValue $value, ?string $format = null)
     {
         if ($format !== null) {
             if (!is_string($format) && !is_numeric($format)) {
@@ -116,25 +101,15 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         }
     }
     
-    /**
-     * @param RecordValue $valueContainer
-     * @param bool $checkDefaultValue
-     * @return bool
-     */
-    static public function valueExistenceChecker(RecordValue $valueContainer, $checkDefaultValue = false)
+    static public function valueExistenceChecker(RecordValue $valueContainer, bool $checkDefaultValue = false): bool
     {
         return $checkDefaultValue ? $valueContainer->hasValueOrDefault() : $valueContainer->hasValue();
     }
     
     /**
-     * @param mixed $value
-     * @param bool $isFromDb
-     * @param bool $isForCondition
-     * @param Column $column
-     * @return array
      * @throws \UnexpectedValueException
      */
-    static public function valueValidator($value, $isFromDb, $isForCondition, Column $column)
+    static public function valueValidator($value, bool $isFromDb, bool $isForCondition, Column $column): array
     {
         $errors = RecordValueHelpers::isValidDbColumnValue(
             $column,
@@ -163,13 +138,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         return $errors;
     }
     
-    /**
-     * @param RecordValue|mixed $value
-     * @param bool $isFromDb
-     * @param Column $column
-     * @return array
-     */
-    static public function valueIsAllowedValidator($value, $isFromDb, Column $column)
+    static public function valueIsAllowedValidator($value, bool $isFromDb, Column $column): array
     {
         return RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn(
             $column,
@@ -179,57 +148,30 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         );
     }
     
-    /**
-     * @param mixed $value
-     * @param bool $isFromDb
-     * @param Column $column
-     * @return AbstractSelect|bool|DbExpr|float|int|string|UploadedFile|null
-     */
-    static public function valueNormalizer($value, $isFromDb, Column $column)
+    static public function valueNormalizer($value, bool $isFromDb, Column $column)
     {
         return $isFromDb
             ? RecordValueHelpers::normalizeValueReceivedFromDb($value, $column->getType())
             : RecordValueHelpers::normalizeValue($value, $column->getType());
     }
     
-    /**
-     * @param RecordValue $valueContainer
-     * @param bool $isUpdate
-     * @param array $savedData
-     * @return void
-     */
-    static public function valueSavingExtender(RecordValue $valueContainer, $isUpdate, array $savedData)
+    static public function valueSavingExtender(RecordValue $valueContainer, bool $isUpdate, array $savedData)
     {
     }
     
-    /**
-     * @param RecordValue $valueContainer
-     * @param bool $deleteFiles
-     * @return void
-     */
-    static public function valueDeleteExtender(RecordValue $valueContainer, $deleteFiles)
+    static public function valueDeleteExtender(RecordValue $valueContainer, bool $deleteFiles)
     {
     }
     
-    /**
-     * @param mixed $value
-     * @param bool $isFromDb
-     * @param Column $column
-     * @return array - list of error messages (empty list = no errors)
-     */
-    static public function valueValidatorExtender($value, $isFromDb, Column $column)
+    static public function valueValidatorExtender($value, bool $isFromDb, Column $column): array
     {
         return [];
     }
     
     /**
-     * Formats value according to required $format
-     * @param RecordValue $valueContainer
-     * @param string $format
-     * @return mixed
      * @throws \InvalidArgumentException
      */
-    static public function valueFormatter(RecordValue $valueContainer, $format)
+    static public function valueFormatter(RecordValue $valueContainer, string $format)
     {
         $column = $valueContainer->getColumn();
         $customFormatters = $column->getCustomValueFormatters();
@@ -246,12 +188,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         return $formatter($valueContainer, $format);
     }
     
-    /**
-     * @param Column $column
-     * @param array $additionalFormats
-     * @return array
-     */
-    static public function getValueFormats(Column $column, array $additionalFormats = [])
+    static public function getValueFormats(Column $column, array $additionalFormats = []): array
     {
         [, $formats] = RecordValueHelpers::getValueFormatterAndFormatsByType($column->getType());
         return array_unique(array_merge($formats, $additionalFormats));

@@ -22,7 +22,6 @@ class OrmJoinInfo extends AbstractJoinInfo
      * @param TableInterface $foreignTable
      * @param string $foreignColumnName
      * @return $this
-     * @throws \InvalidArgumentException
      */
     static public function create(
         string $joinName,
@@ -49,7 +48,6 @@ class OrmJoinInfo extends AbstractJoinInfo
      * @param string $joinType
      * @param TableInterface $foreignTable
      * @param string $foreignColumnName
-     * @throws \InvalidArgumentException
      */
     public function __construct(
         string $joinName,
@@ -70,7 +68,6 @@ class OrmJoinInfo extends AbstractJoinInfo
      * @param TableInterface $table
      * @param string $columnName
      * @return $this
-     * @throws \InvalidArgumentException
      */
     public function setConfigForLocalTable(TableInterface $table, string $columnName)
     {
@@ -83,7 +80,6 @@ class OrmJoinInfo extends AbstractJoinInfo
      * @param TableInterface $foreignTable
      * @param string $foreignColumnName
      * @return $this
-     * @throws \InvalidArgumentException
      */
     public function setConfigForForeignTable(TableInterface $foreignTable, string $foreignColumnName)
     {
@@ -95,7 +91,6 @@ class OrmJoinInfo extends AbstractJoinInfo
     /**
      * @param TableInterface $dbTable
      * @return $this
-     * @throws \InvalidArgumentException
      */
     public function setDbTable(TableInterface $dbTable)
     {
@@ -134,8 +129,7 @@ class OrmJoinInfo extends AbstractJoinInfo
     }
     
     /**
-     * @param array $columns
-     * @return $this
+     * {@inheritDoc}
      * @throws \InvalidArgumentException
      */
     public function setForeignColumnsToSelect(...$columns)

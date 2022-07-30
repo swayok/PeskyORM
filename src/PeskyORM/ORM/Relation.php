@@ -46,7 +46,6 @@ class Relation
      * @param string|TableInterface $foreignTableClass
      * @param string $foreignColumnName
      * @return static
-     * @throws \InvalidArgumentException
      */
     static public function create(
         string $localColumnName,
@@ -62,7 +61,6 @@ class Relation
      * @param string $type
      * @param string|TableInterface $foreignTableClass
      * @param string $foreignColumnName
-     * @throws \InvalidArgumentException
      */
     public function __construct(
         string $localColumnName,
@@ -117,11 +115,10 @@ class Relation
     }
     
     /**
-     * @param string $type
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setType($type)
+    public function setType(string $type)
     {
         if (!is_string($type)) {
             throw new \InvalidArgumentException('$type argument must be a string');
@@ -140,7 +137,6 @@ class Relation
     }
     
     /**
-     * @param string $localColumnName
      * @return $this
      * @throws \InvalidArgumentException
      */
@@ -185,7 +181,6 @@ class Relation
     }
     
     /**
-     * @return TableInterface
      * @throws \BadMethodCallException
      */
     public function getForeignTable(): TableInterface
@@ -204,7 +199,6 @@ class Relation
     }
     
     /**
-     * @return string
      * @throws \InvalidArgumentException
      */
     public function getForeignColumnName(): string
@@ -222,7 +216,6 @@ class Relation
     }
     
     /**
-     * @param string $foreignColumnName
      * @return $this
      * @throws \InvalidArgumentException
      */
@@ -233,11 +226,6 @@ class Relation
     }
     
     /**
-     * @param TableInterface $localTable
-     * @param null|string $localTableAlias
-     * @param bool $forStandaloneSelect
-     * @param Record|null $localRecord
-     * @return array
      * @throws \UnexpectedValueException
      */
     public function getAdditionalJoinConditions(
@@ -324,15 +312,6 @@ class Relation
         return $this;
     }
     
-    /**
-     * Convert to OrmJoinInfo
-     * @param TableInterface $localTable
-     * @param string|null $localTableAlias
-     * @param string|null $joinName
-     * @param string|null $joinType
-     * @return OrmJoinInfo
-     * @throws \InvalidArgumentException
-     */
     public function toOrmJoinConfig(
         TableInterface $localTable,
         ?string $localTableAlias = null,

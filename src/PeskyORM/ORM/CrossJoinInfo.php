@@ -38,7 +38,7 @@ class CrossJoinInfo extends AbstractJoinInfo
         return $this->joinQuery;
     }
     
-    public function isValid()
+    public function isValid(): bool
     {
         return true;
     }

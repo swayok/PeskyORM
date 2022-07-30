@@ -30,26 +30,18 @@ class ClassBuilder
      */
     protected $tableDescription;
     
-    public function __construct($tableName, DbAdapterInterface $connection)
+    public function __construct(string $tableName, DbAdapterInterface $connection)
     {
         $this->tableName = $tableName;
         $this->connection = $connection;
     }
     
-    /**
-     * @param $schema
-     */
-    public function setDbSchemaName($schema)
+    public function setDbSchemaName(string $schema)
     {
         $this->dbSchemaName = $schema;
     }
     
-    /**
-     * @param string $namespace
-     * @param null|string $parentClass
-     * @return string
-     */
-    public function buildTableClass($namespace, $parentClass = null)
+    public function buildTableClass(string $namespace, ?string $parentClass = null): string
     {
         if ($parentClass === null) {
             $parentClass = Table::class;
@@ -84,13 +76,10 @@ VIEW;
     /**
      * @param string $namespace
      * @param null|string $parentClass
-     * @param array $traitsForColumns - array (
-     *      NameOfTrait1::class,
-     *      NameOfTrait2::class,
-     * )
+     * @param array $traitsForColumns = [NameOfTrait1::class, NameOfTrait2::class]
      * @return string
      */
-    public function buildStructureClass($namespace, $parentClass = null, array $traitsForColumns = [])
+    public function buildStructureClass(string $namespace, ?string $parentClass = null, array $traitsForColumns = []): string
     {
         if ($parentClass === null) {
             $parentClass = TableStructure::class;
@@ -132,12 +121,7 @@ $getSchemaMethod
 VIEW;
     }
     
-    /**
-     * @param string $namespace
-     * @param null|string $parentClass
-     * @return string
-     */
-    public function buildRecordClass($namespace, $parentClass = null)
+    public function buildRecordClass(string $namespace, ?string $parentClass = null): string
     {
         if ($parentClass === null) {
             $parentClass = Record::class;
@@ -167,10 +151,7 @@ class {$this::makeRecordClassName($this->tableName)} extends {$this->getShortCla
 VIEW;
     }
     
-    /**
-     * @return TableDescription
-     */
-    protected function getTableDescription()
+    protected function getTableDescription(): TableDescription
     {
         if (!$this->tableDescription) {
             $this->tableDescription = $this->connection->describeTable($this->tableName, $this->dbSchemaName);
@@ -178,56 +159,36 @@ VIEW;
         return $this->tableDescription;
     }
     
-    /**
-     * @param string $tableName
-     * @return string
-     */
-    static public function convertTableNameToClassName($tableName)
+    static public function convertTableNameToClassName(string $tableName): string
     {
         return StringUtils::classify($tableName);
     }
     
-    /**
-     * @param string $tableName
-     * @return string
-     */
-    static public function makeTableClassName($tableName)
+    static public function makeTableClassName(string $tableName): string
     {
         return static::convertTableNameToClassName($tableName) . 'Table';
     }
     
-    /**
-     * @param string $tableName
-     * @return string
-     */
-    static public function makeTableStructureClassName($tableName)
+    static public function makeTableStructureClassName(string $tableName): string
     {
         return static::convertTableNameToClassName($tableName) . 'TableStructure';
     }
     
-    /**
-     * @param string $tableName
-     * @return string
-     */
-    static public function makeRecordClassName($tableName)
+    static public function makeRecordClassName(string $tableName): string
     {
         return StringUtils::singularize(static::convertTableNameToClassName($tableName));
     }
     
-    /**
-     * @param string $fullClassName
-     * @return string
-     */
-    protected function getShortClassName($fullClassName)
+    protected function getShortClassName(string $fullClassName): string
     {
         return basename(str_replace('\\', '/', $fullClassName));
     }
     
     /**
      * @param array $traitsForColumns
-     * @return array - [traits:string, class_includes:string, used_columns:array]
+     * @return array = [traits:string, class_includes:string, used_columns:array]
      */
-    protected function makeTraitsForTableStructure(array $traitsForColumns)
+    protected function makeTraitsForTableStructure(array $traitsForColumns): array
     {
         if (empty($traitsForColumns)) {
             return ['', '', []];
@@ -275,7 +236,7 @@ VIEW;
      * @param array $excludeColumns - columns to exclude (already included via traits)
      * @return string
      */
-    protected function makeColumnsMethodsForTableStructure(array $excludeColumns = [])
+    protected function makeColumnsMethodsForTableStructure(array $excludeColumns = []): string
     {
         $columns = [];
         foreach (
@@ -298,7 +259,7 @@ VIEW;
      * @param ColumnDescription $columnDescription
      * @return string
      */
-    protected function makeColumnConfig(ColumnDescription $columnDescription)
+    protected function makeColumnConfig(ColumnDescription $columnDescription): string
     {
         $ret = "Column::create({$this->getConstantNameForColumnType($columnDescription->getOrmType())})";
         if ($columnDescription->isPrimaryKey()) {
@@ -334,7 +295,7 @@ VIEW;
      * @param string $columnTypeValue - like 'string', 'integer', etc..
      * @return string like Column::TYPE_*
      */
-    protected function getConstantNameForColumnType($columnTypeValue)
+    protected function getConstantNameForColumnType(string $columnTypeValue): string
     {
         if ($this->typeValueToTypeConstantName === null) {
             $this->typeValueToTypeConstantName = array_flip(
@@ -350,10 +311,7 @@ VIEW;
         return 'Column::' . $this->typeValueToTypeConstantName[$columnTypeValue];
     }
     
-    /**
-     * @return string
-     */
-    protected function makePhpDocForRecord()
+    protected function makePhpDocForRecord(): string
     {
         $description = $this->getTableDescription();
         $getters = [];
@@ -371,10 +329,7 @@ VIEW;
         return implode("\n", $getters) . "\n *\n" . implode("\n", $setters);
     }
     
-    /**
-     * @return bool
-     */
-    protected function hasDateOrTimestampColumns()
+    protected function hasDateOrTimestampColumns(): bool
     {
         $description = $this->getTableDescription();
         $types = [
@@ -391,11 +346,7 @@ VIEW;
         return false;
     }
     
-    /**
-     * @param ColumnDescription $columnDescription
-     * @return string
-     */
-    protected function getPhpTypeByColumnDescription(ColumnDescription $columnDescription)
+    protected function getPhpTypeByColumnDescription(ColumnDescription $columnDescription): string
     {
         switch ($columnDescription->getOrmType()) {
             case Column::TYPE_INT:
@@ -414,10 +365,9 @@ VIEW;
     }
     
     /**
-     * @param $ormType
      * @return array - key: format name; value: php type
      */
-    protected function getFormattersForOrmType($ormType)
+    protected function getFormattersForOrmType(string $ormType): array
     {
         $formats = RecordValueHelpers::getValueFormatterAndFormatsByType($ormType)[1];
         $formatToPhpType = [];
@@ -442,10 +392,7 @@ VIEW;
         return $formatToPhpType;
     }
     
-    /**
-     * @return string
-     */
-    protected function makePhpDocForTableStructure()
+    protected function makePhpDocForTableStructure(): string
     {
         $description = $this->getTableDescription();
         $getters = [];

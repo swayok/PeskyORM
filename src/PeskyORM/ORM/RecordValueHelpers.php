@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\ORM;
 
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use PeskyORM\Core\AbstractSelect;
 use PeskyORM\Core\DbExpr;
 use Swayok\Utils\NormalizeValue;
@@ -22,7 +23,7 @@ abstract class RecordValueHelpers
      * @param array $errorMessages
      * @return array
      */
-    static public function isValidDbColumnValue(Column $column, $value, $isFromDb, $isForCondition, array $errorMessages = [])
+    static public function isValidDbColumnValue(Column $column, $value, bool $isFromDb, bool $isForCondition, array $errorMessages = [])
     {
         if (is_object($value) && ($value instanceof DbExpr || is_subclass_of($value, AbstractSelect::class))) {
             return [];
@@ -68,7 +69,7 @@ abstract class RecordValueHelpers
      * @param array $errorMessages
      * @return array
      */
-    static public function isValueFitsDataType($value, $type, bool $isForCondition, array $errorMessages = [])
+    static public function isValueFitsDataType($value, string $type, bool $isForCondition, array $errorMessages = [])
     {
         switch ($type) {
             case Column::TYPE_BOOL:
@@ -190,9 +191,9 @@ abstract class RecordValueHelpers
     static public function isValueWithinTheAllowedValuesOfTheColumn(
         Column $column,
         $value,
-        $isFromDb,
+        bool $isFromDb,
         array $errorMessages = []
-    ) {
+    ): array {
         $allowedValues = $column->getAllowedValues();
         $isEnum = $column->isEnum();
         if (count($allowedValues) === 0) {
@@ -227,12 +228,7 @@ abstract class RecordValueHelpers
         return [];
     }
     
-    /**
-     * @param array $errorMessages
-     * @param string $key
-     * @return string
-     */
-    static public function getErrorMessage(array $errorMessages, $key)
+    static public function getErrorMessage(array $errorMessages, string $key): string
     {
         return array_key_exists($key, $errorMessages) ? $errorMessages[$key] : $key;
     }
@@ -243,7 +239,7 @@ abstract class RecordValueHelpers
      * @param string $type - one of Column::TYPE_*
      * @return null|string|UploadedFile|DbExpr|AbstractSelect|bool|int|float
      */
-    static public function normalizeValue($value, $type)
+    static public function normalizeValue($value, string $type)
     {
         if ($value === null) {
             return null;
@@ -291,7 +287,7 @@ abstract class RecordValueHelpers
      * @param string $type - one of Column::TYPE_*
      * @return null|string|UploadedFile|DbExpr
      */
-    static public function normalizeValueReceivedFromDb($value, $type)
+    static public function normalizeValueReceivedFromDb($value, string $type)
     {
         if ($value === null) {
             return null;
@@ -311,7 +307,11 @@ abstract class RecordValueHelpers
         }
     }
     
-    static public function normalizeFile($value)
+    /**
+     * @param array|UploadedFile $value
+     * @return UploadedFile
+     */
+    static public function normalizeFile($value): UploadedFile
     {
         if ($value instanceof UploadedFile) {
             return $value;
@@ -362,6 +362,9 @@ abstract class RecordValueHelpers
         return [$formatter, $formats];
     }
     
+    /**
+     * @return mixed
+     */
     static protected function getSimpleValueFormContainer(RecordValue $valueContainer)
     {
         $value = $valueContainer->getValueOrDefault();
@@ -371,11 +374,11 @@ abstract class RecordValueHelpers
         return $value;
     }
     
-    static public function formatTimestamp(RecordValue $valueContainer, $format)
+    /**
+     * @return string|int|CarbonImmutable
+     */
+    static public function formatTimestamp(RecordValue $valueContainer, string $format)
     {
-        if (!is_string($format)) {
-            throw new \InvalidArgumentException('$format argument must be a string');
-        }
         return $valueContainer->getCustomInfo('format:' . $format, function (RecordValue $valueContainer) use ($format) {
             $value = static::getSimpleValueFormContainer($valueContainer);
             switch ($format) {
@@ -386,19 +389,18 @@ abstract class RecordValueHelpers
                 case 'unix_ts':
                     return strtotime($value);
                 case 'carbon':
-                    return Carbon::parse($value)
-                        ->toImmutable();
+                    return CarbonImmutable::parse($value);
                 default:
                     throw new \InvalidArgumentException("Requested value format '$format' is not implemented");
             }
         }, true);
     }
     
-    static public function formatDate(RecordValue $valueContainer, $format)
+    /**
+     * @return string|int|CarbonImmutable
+     */
+    static public function formatDate(RecordValue $valueContainer, string $format)
     {
-        if (!is_string($format)) {
-            throw new \InvalidArgumentException('$format argument must be a string');
-        }
         return $valueContainer->getCustomInfo('format:' . $format, function (RecordValue $valueContainer) use ($format) {
             $value = static::getSimpleValueFormContainer($valueContainer);
             switch ($format) {
@@ -414,11 +416,11 @@ abstract class RecordValueHelpers
         }, true);
     }
     
-    static public function formatTime(RecordValue $valueContainer, $format)
+    /**
+     * @return string|CarbonImmutable
+     */
+    static public function formatTime(RecordValue $valueContainer, string $format)
     {
-        if (!is_string($format)) {
-            throw new \InvalidArgumentException('$format argument must be a string');
-        }
         return $valueContainer->getCustomInfo('format:' . $format, function (RecordValue $valueContainer) use ($format) {
             $value = static::getSimpleValueFormContainer($valueContainer);
             if ($format === 'unix_ts') {
@@ -429,11 +431,11 @@ abstract class RecordValueHelpers
         }, true);
     }
     
-    static public function formatJson(RecordValue $valueContainer, $format)
+    /**
+     * @return array|\stdClass
+     */
+    static public function formatJson(RecordValue $valueContainer, string $format)
     {
-        if (!is_string($format)) {
-            throw new \InvalidArgumentException('$format argument must be a string');
-        }
         return $valueContainer->getCustomInfo('format:' . $format, function (RecordValue $valueContainer) use ($format) {
             $value = static::getSimpleValueFormContainer($valueContainer);
             switch ($format) {

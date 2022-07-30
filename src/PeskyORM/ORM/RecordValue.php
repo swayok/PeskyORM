@@ -25,14 +25,30 @@ class RecordValue
      * @var bool
      */
     protected $oldValueIsFromDb = false;
-    
+    /**
+     * @var bool
+     */
     protected $isFromDb = false;
+    /**
+     * @var bool
+     */
     protected $hasValue = false;
+    /**
+     * @var bool
+     */
     protected $hasOldValue = false;
+    /**
+     * @var bool
+     */
     protected $isValidated = false;
+    /**
+     * @var array
+     */
     protected $validationErrors = [];
+    /**
+     * @var bool|null
+     */
     protected $isDefaultValueCanBeSet = null;
-    
     /**
      * @var array
      */
@@ -46,25 +62,19 @@ class RecordValue
      */
     protected $column;
     /**
-     * @var Record
+     * @var RecordInterface
      */
     protected $record;
     
     /**
-     * @param Column $dbTableColumn
-     * @param Record $record
      * @return static
      */
-    static public function create(Column $dbTableColumn, Record $record)
+    static public function create(Column $dbTableColumn, RecordInterface $record)
     {
         return new static($dbTableColumn, $record);
     }
     
-    /**
-     * @param Column $dbTableColumn
-     * @param Record $record
-     */
-    public function __construct(Column $dbTableColumn, Record $record)
+    public function __construct(Column $dbTableColumn, RecordInterface $record)
     {
         $this->column = $dbTableColumn;
         $this->record = $record;
@@ -81,7 +91,7 @@ class RecordValue
         if (is_object($this->oldValue)) {
             $this->oldValue = clone $this->oldValue;
         }
-        foreach ($this->customInfo as $key => &$value) {
+        foreach ($this->customInfo as &$value) {
             if (is_object($value)) {
                 $value = clone $value;
             }
@@ -93,7 +103,7 @@ class RecordValue
         return $this->column;
     }
     
-    public function getRecord(): Record
+    public function getRecord(): RecordInterface
     {
         return $this->record;
     }
@@ -320,13 +330,13 @@ class RecordValue
     }
     
     /**
-     * @param null|string|int|float $key
+     * @param null|string $key
      * @param mixed|\Closure $default
      * @param bool $storeDefaultValueIfUsed - if default value is used - save it to custom info as new value
      * @return mixed
      * @throws \InvalidArgumentException
      */
-    public function getCustomInfo($key = null, $default = null, $storeDefaultValueIfUsed = false)
+    public function getCustomInfo(?string $key = null, $default = null, bool $storeDefaultValueIfUsed = false)
     {
         if ($key === null) {
             return $this->customInfo;
@@ -352,7 +362,6 @@ class RecordValue
     }
     
     /**
-     * @param array $data
      * @return $this
      */
     public function setCustomInfo(array $data)
@@ -362,12 +371,12 @@ class RecordValue
     }
     
     /**
-     * @param string|int|float $key
+     * @param string $key
      * @param mixed $value
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function addCustomInfo($key, $value)
+    public function addCustomInfo(string $key, $value)
     {
         if (!is_string($key) && !is_numeric($key)) {
             throw new \InvalidArgumentException(
@@ -380,7 +389,6 @@ class RecordValue
     }
     
     /**
-     * @param null|string $key
      * @return $this
      * @throws \InvalidArgumentException
      */
