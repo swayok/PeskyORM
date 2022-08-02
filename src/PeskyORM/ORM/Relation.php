@@ -205,11 +205,14 @@ class Relation
     {
         if (
             $this->getType() === static::HAS_MANY
-            && $this->getForeignTable()
-                ->getPkColumnName() === $this->foreignColumnName
+            && $this->getForeignTable()->getPkColumnName() === $this->foreignColumnName
         ) {
             throw new \InvalidArgumentException(
                 'Foreign column is a primary key column. It makes no sense for HAS MANY relation'
+            );
+        } else if (!$this->getForeignTable()->getTableStructure()->hasColumn($this->foreignColumnName)) {
+            throw new \InvalidArgumentException(
+                "Related table {$this->getForeignTableClass()} has no column '{$this->foreignColumnName}'. Relation: " . $this->getName()
             );
         }
         return $this->foreignColumnName;

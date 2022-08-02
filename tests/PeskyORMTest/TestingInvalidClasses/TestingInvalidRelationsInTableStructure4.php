@@ -3,9 +3,11 @@
 namespace Tests\PeskyORMTest\TestingInvalidClasses;
 
 use PeskyORM\ORM\Column;
+use PeskyORM\ORM\Relation;
 use PeskyORM\ORM\TableStructure;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 
-class TestingInvalidRelationsInTableStructure extends TableStructure
+class TestingInvalidRelationsInTableStructure4 extends TableStructure
 {
     
     static public function getTableName(): string
@@ -19,10 +21,9 @@ class TestingInvalidRelationsInTableStructure extends TableStructure
             ->primaryKey();
     }
     
-    
-    private function InvalidClass()
+    private function InvalidForeignColumnName()
     {
-        return $this;
+        return Relation::create('valid', Relation::HAS_MANY, TestingAdminsTable::class, 'foreign_invalid');
     }
     
 }

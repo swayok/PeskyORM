@@ -5,24 +5,26 @@ namespace Tests\PeskyORMTest\TestingInvalidClasses;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\TableStructure;
 
-class TestingInvalidRelationsInTableStructure extends TableStructure
+class TestingTwoPrimaryKeysColumnsTableStructure extends TableStructure
 {
     
+    /**
+     * @return string
+     */
     static public function getTableName(): string
     {
-        return 'some_table';
+        return 'invalid';
     }
     
-    private function valid()
+    private function pk1()
     {
         return Column::create(Column::TYPE_INT)
             ->primaryKey();
     }
     
-    
-    private function InvalidClass()
+    private function pk2()
     {
-        return $this;
+        return Column::create(Column::TYPE_INT)
+            ->primaryKey();
     }
-    
 }

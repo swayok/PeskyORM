@@ -102,10 +102,10 @@ abstract class TableStructure implements TableStructureInterface
         if (static::$autoloadConfigsFromPrivateMethods) {
             $this->loadColumnsConfigsFromPrivateMethods();
         }
+        $this->loadColumnsConfigs();
         if (static::$autodetectColumnsConfigs) {
             $this->createMissingColumnsConfigsFromDbTableDescription();
         }
-        $this->loadColumnsConfigs();
         $this->loadRelationsConfigs();
         $this->analyze();
         $this->validate();
@@ -231,9 +231,12 @@ abstract class TableStructure implements TableStructureInterface
      */
     static public function hasFileColumn(string $columnName): bool
     {
-        return static::getInstance()
-            ->_getColumn($columnName)
-            ->isItAFile();
+        return (
+            static::getInstance()->_hasColumn($columnName)
+            && static::getInstance()
+                ->_getColumn($columnName)
+                ->isItAFile()
+        );
     }
     
     /**
@@ -340,7 +343,6 @@ abstract class TableStructure implements TableStructureInterface
                     ->setIsNullableValue($columnDescription->isNullable());
                 if ($columnDescription->isPrimaryKey()) {
                     $column->primaryKey();
-                    $this->pk = $column;
                 }
                 if ($columnDescription->isUnique()) {
                     $column->uniqueValues();
@@ -348,7 +350,7 @@ abstract class TableStructure implements TableStructureInterface
                 if ($columnDescription->getDefault() !== null) {
                     $column->setDefaultValue($columnDescription->getDefault());
                 }
-                $this->columns[$columnName] = $column;
+                $this->addColumn($column);
             }
         }
         // todo: add possibility to cache table description

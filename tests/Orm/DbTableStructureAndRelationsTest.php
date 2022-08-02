@@ -15,7 +15,11 @@ use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use Tests\PeskyORMTest\TestingApp;
 use Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidColumnsInTableStructure;
 use Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure;
+use Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure2;
+use Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure3;
+use Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure4;
 use Tests\PeskyORMTest\TestingInvalidClasses\TestingNoPkColumnInTableStructure;
+use Tests\PeskyORMTest\TestingInvalidClasses\TestingTwoPrimaryKeysColumnsTableStructure;
 use Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 
 class DbTableStructureAndRelationsTest extends BaseTestCase
@@ -43,14 +47,16 @@ class DbTableStructureAndRelationsTest extends BaseTestCase
     public function testAbsentPkColumn()
     {
         $this->expectException(OrmException::class);
-        $this->expectExceptionMessage("Table schema must contain primary key");
+        $this->expectExceptionMessage(
+            "TableStructure Tests\PeskyORMTest\TestingInvalidClasses\TestingNoPkColumnInTableStructure must contain primary key"
+        );
         TestingNoPkColumnInTableStructure::getInstance();
     }
     
     public function testDuplicateConstruct()
     {
         $this->expectException(\BadMethodCallException::class);
-        $this->expectExceptionMessage("Attempt to create 2nd instance of class PeskyORM\ORM\TableStructure");
+        $this->expectExceptionMessage("Attempt to create 2nd instance of class Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         $class = new ReflectionClass(TestingAdminsTableStructure::class);
         $method = $class->getConstructor();
         $method->setAccessible(true);
@@ -69,14 +75,15 @@ class DbTableStructureAndRelationsTest extends BaseTestCase
     public function testTableStructureColumns()
     {
         $columns = TestingAdminsTableStructure::getColumns();
-        static::assertCount(19, $columns);
+        static::assertCount(22, $columns);
         static::assertTrue(TestingAdminsTableStructure::hasPkColumn());
         static::assertEquals('id', TestingAdminsTableStructure::getPkColumnName());
         static::assertTrue(TestingAdminsTableStructure::hasColumn('login'));
         static::assertFalse(TestingAdminsTableStructure::hasColumn('abrakadabra'));
         static::assertInstanceOf(Column::class, TestingAdminsTableStructure::getColumn('login'));
         static::assertInstanceOf(Column::class, TestingAdminsTableStructure::getPkColumn());
-        static::assertEquals('id',
+        static::assertEquals(
+            'id',
             TestingAdminsTableStructure::getPkColumn()
                 ->getName()
         );
@@ -106,64 +113,70 @@ class DbTableStructureAndRelationsTest extends BaseTestCase
     public function testInvalidColumnGet()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Table does not contain column named 'abrakadabra'");
+        $this->expectExceptionMessage("Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure does not know about column named 'abrakadabra'");
         TestingAdminsTableStructure::getColumn('abrakadabra');
     }
     
     public function testInvalidRelationGet()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no relation 'abrakadabra' in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage(
+            "Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure does not know about relation named 'abrakadabra'"
+        );
         TestingAdminsTableStructure::getRelation('abrakadabra');
     }
     
     public function testInvalidTableStructure1()
     {
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Method 'invalid' must return instance of \PeskyORM\ORM\Column class");
+        $this->expectException(OrmException::class);
+        $this->expectExceptionMessage(
+            "Method Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidColumnsInTableStructure->invalid() must return instance of \PeskyORM\ORM\Column class"
+        );
         TestingInvalidColumnsInTableStructure::getColumn('invalid');
     }
     
     public function testInvalidTableStructure2()
     {
-        $this->expectException(\UnexpectedValueException::class);
+        $this->expectException(OrmException::class);
         $this->expectExceptionMessage("2 primary keys in one table is forbidden");
-        TestingInvalidColumnsInTableStructure::getColumn('pk1');
-        TestingInvalidColumnsInTableStructure::getColumn('pk2');
+        TestingTwoPrimaryKeysColumnsTableStructure::getColumn('pk1');
+        TestingTwoPrimaryKeysColumnsTableStructure::getColumn('pk2');
     }
     
     public function testInvalidTableStructure3()
     {
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Method 'InvalidClass' must return instance of \PeskyORM\ORM\Relation class");
+        $this->expectException(OrmException::class);
+        $this->expectExceptionMessage(
+            "Method Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure->InvalidClass() must return instance of \PeskyORM\ORM\Relation class"
+        );
         TestingInvalidRelationsInTableStructure::getRelation('InvalidClass');
     }
     
     public function testInvalidTableStructure4()
     {
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Table 'some_table' has no column 'local_invalid' or column is not defined yet");
-        TestingInvalidRelationsInTableStructure::getRelation('InvalidLocalColumnName');
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$foreignTableClass argument contains invalid value: class '___class_invalid' does not exist");
+        TestingInvalidRelationsInTableStructure2::getRelation('InvalidForeignTableClass');
     }
     
     public function testInvalidTableStructure5()
     {
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Table 'admins' has no column 'foreign_invalid' or column is not defined yet");
-        TestingInvalidRelationsInTableStructure::getRelation('InvalidForeignColumnName');
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure3 does not know about column named 'local_invalid'");
+        TestingInvalidRelationsInTableStructure3::getRelation('InvalidLocalColumnName');
     }
     
     public function testInvalidTableStructure6()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$foreignTableClass argument contains invalid value: class '___class_invalid' does not exist");
-        TestingInvalidRelationsInTableStructure::getRelation('InvalidForeignTableClass');
+        $this->expectExceptionMessage("Related table Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable has no column 'foreign_invalid'");
+        TestingInvalidRelationsInTableStructure4::getRelation('InvalidForeignColumnName')->getForeignColumnName();
     }
     
     public function testCreateMissingColumnConfigsFromDbTableDescription()
     {
         $structure = TestingAdmins4TableStructure::getInstance();
-        static::assertCount(16, $structure::getColumns());
+        static::assertCount(17, $structure::getColumns());
         static::assertEquals(
             [
                 'updated_at',
@@ -182,6 +195,7 @@ class DbTableStructureAndRelationsTest extends BaseTestCase
                 'email',
                 'timezone',
                 'not_changeable_column',
+                'big_data',
             ],
             array_keys($structure::getColumns())
         );
@@ -199,7 +213,7 @@ class DbTableStructureAndRelationsTest extends BaseTestCase
         static::assertTrue(
             $structure::getColumn('parent_id')
                 ->isItAForeignKey()
-        ); //< its not a mistake - it is affected only be existing relation
+        ); //< its not a mistake - it is affected only by existing relation
         static::assertTrue(
             $structure::getColumn('email')
                 ->isValueMustBeUnique()
@@ -246,7 +260,8 @@ class DbTableStructureAndRelationsTest extends BaseTestCase
             $structure::getColumn('language')
                 ->hasDefaultValue()
         );
-        static::assertEquals('en',
+        static::assertEquals(
+            'en',
             $structure::getColumn('language')
                 ->getDefaultValueAsIs()
         );
@@ -254,7 +269,8 @@ class DbTableStructureAndRelationsTest extends BaseTestCase
             $structure::getColumn('is_superadmin')
                 ->hasDefaultValue()
         );
-        static::assertEquals(false,
+        static::assertEquals(
+            false,
             $structure::getColumn('is_superadmin')
                 ->getDefaultValueAsIs()
         );
@@ -262,7 +278,8 @@ class DbTableStructureAndRelationsTest extends BaseTestCase
             $structure::getColumn('remember_token')
                 ->hasDefaultValue()
         );
-        static::assertEquals('',
+        static::assertEquals(
+            '',
             $structure::getColumn('remember_token')
                 ->getDefaultValueAsIs()
         );
@@ -270,7 +287,8 @@ class DbTableStructureAndRelationsTest extends BaseTestCase
             $structure::getColumn('created_at')
                 ->hasDefaultValue()
         );
-        static::assertEquals(DbExpr::create('now()'),
+        static::assertEquals(
+            DbExpr::create('now()'),
             $structure::getColumn('created_at')
                 ->getDefaultValueAsIs()
         );
@@ -287,7 +305,8 @@ class DbTableStructureAndRelationsTest extends BaseTestCase
             $structure::getColumn('ip')
                 ->hasDefaultValue()
         );
-        static::assertEquals('192.168.1.1',
+        static::assertEquals(
+            '192.168.1.1',
             $structure::getColumn('ip')
                 ->getDefaultValueAsIs()
         );
@@ -295,7 +314,8 @@ class DbTableStructureAndRelationsTest extends BaseTestCase
             $structure::getColumn('role')
                 ->hasDefaultValue()
         );
-        static::assertEquals('',
+        static::assertEquals(
+            '',
             $structure::getColumn('role')
                 ->getDefaultValueAsIs()
         );
@@ -303,7 +323,8 @@ class DbTableStructureAndRelationsTest extends BaseTestCase
             $structure::getColumn('is_active')
                 ->hasDefaultValue()
         );
-        static::assertEquals(true,
+        static::assertEquals(
+            true,
             $structure::getColumn('is_active')
                 ->getDefaultValueAsIs()
         );
@@ -311,7 +332,8 @@ class DbTableStructureAndRelationsTest extends BaseTestCase
             $structure::getColumn('timezone')
                 ->hasDefaultValue()
         );
-        static::assertEquals('UTC',
+        static::assertEquals(
+            'UTC',
             $structure::getColumn('timezone')
                 ->getDefaultValueAsIs()
         );
@@ -319,72 +341,89 @@ class DbTableStructureAndRelationsTest extends BaseTestCase
             $structure::getColumn('not_changeable_column')
                 ->hasDefaultValue()
         );
-        static::assertEquals('not changable',
+        static::assertEquals(
+            'not changable',
             $structure::getColumn('not_changeable_column')
                 ->getDefaultValueAsIs()
         );
         // types
-        static::assertEquals(Column::TYPE_BOOL,
+        static::assertEquals(
+            Column::TYPE_BOOL,
             $structure::getColumn('is_active')
                 ->getType()
         );
-        static::assertEquals(Column::TYPE_BOOL,
+        static::assertEquals(
+            Column::TYPE_BOOL,
             $structure::getColumn('is_superadmin')
                 ->getType()
         );
-        static::assertEquals(Column::TYPE_STRING,
+        static::assertEquals(
+            Column::TYPE_STRING,
             $structure::getColumn('ip')
                 ->getType()
         );
-        static::assertEquals(Column::TYPE_INT,
+        static::assertEquals(
+            Column::TYPE_INT,
             $structure::getColumn('id')
                 ->getType()
         );
-        static::assertEquals(Column::TYPE_INT,
+        static::assertEquals(
+            Column::TYPE_INT,
             $structure::getColumn('parent_id')
                 ->getType()
         );
-        static::assertEquals(Column::TYPE_TIMESTAMP_WITH_TZ,
+        static::assertEquals(
+            Column::TYPE_TIMESTAMP_WITH_TZ,
             $structure::getColumn('created_at')
                 ->getType()
         );
-        static::assertEquals(Column::TYPE_TIMESTAMP,
+        static::assertEquals(
+            Column::TYPE_TIMESTAMP,
             $structure::getColumn('updated_at')
                 ->getType()
         );
-        static::assertEquals(Column::TYPE_STRING,
+        static::assertEquals(
+            Column::TYPE_STRING,
             $structure::getColumn('language')
                 ->getType()
         );
-        static::assertEquals(Column::TYPE_STRING,
+        static::assertEquals(
+            Column::TYPE_STRING,
             $structure::getColumn('login')
                 ->getType()
         );
-        static::assertEquals(Column::TYPE_STRING,
+        static::assertEquals(
+            Column::TYPE_STRING,
             $structure::getColumn('password')
                 ->getType()
         );
-        static::assertEquals(Column::TYPE_STRING,
+        static::assertEquals(
+            Column::TYPE_STRING,
             $structure::getColumn('remember_token')
                 ->getType()
         );
-        static::assertEquals(Column::TYPE_STRING,
+        static::assertEquals(
+            Column::TYPE_STRING,
             $structure::getColumn('role')
                 ->getType()
         );
-        static::assertEquals(Column::TYPE_STRING,
+        static::assertEquals(
+            Column::TYPE_STRING,
             $structure::getColumn('name')
                 ->getType()
         );
-        static::assertEquals(Column::TYPE_STRING,
+        static::assertEquals(
+            Column::TYPE_STRING,
             $structure::getColumn('email')
                 ->getType()
         );
-        static::assertEquals(Column::TYPE_STRING,
+        static::assertEquals(
+            Column::TYPE_STRING,
             $structure::getColumn('timezone')
                 ->getType()
         );
-        static::assertEquals(Column::TYPE_STRING,
+        static::assertEquals(
+            Column::TYPE_STRING,
             $structure::getColumn('not_changeable_column')
                 ->getType()
         );
