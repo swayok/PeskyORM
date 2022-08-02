@@ -443,7 +443,7 @@ class Column
     /**
      * @return TableStructure
      */
-    public function getTableStructure()
+    public function getTableStructure(): TableStructure
     {
         return $this->tableStructure;
     }
@@ -928,8 +928,7 @@ class Column
     public function getRelations()
     {
         if ($this->relations === null) {
-            /** @noinspection StaticInvocationViaThisInspection */
-            $this->relations = $this->tableStructure->getColumnRelations($this->getName());
+            $this->relations = $this->getTableStructure()->getColumnRelations($this->getName());
         }
         return $this->relations;
     }

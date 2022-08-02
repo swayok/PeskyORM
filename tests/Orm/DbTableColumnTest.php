@@ -10,6 +10,7 @@ use PeskyORM\ORM\DefaultColumnClosures;
 use Swayok\Utils\NormalizeValue;
 use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
+use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use Tests\PeskyORMTest\TestingApp;
 
 class DbTableColumnTest extends BaseTestCase
@@ -82,11 +83,7 @@ class DbTableColumnTest extends BaseTestCase
         static::assertInstanceOf(Column::class, $obj);
         static::assertEquals(Column::TYPE_BOOL, $obj->getType());
         static::assertFalse($obj->hasName());
-        static::assertEquals(
-            'test',
-            $obj->setName('test')
-                ->getName()
-        );
+        static::assertEquals('id', $obj->setName('id')->getName());
         static::assertTrue($obj->hasName());
         static::assertInstanceOf(\Closure::class, $obj->getValueGetter());
         static::assertInstanceOf(\Closure::class, $obj->getValueExistenceChecker());
@@ -99,7 +96,6 @@ class DbTableColumnTest extends BaseTestCase
         static::assertInstanceOf(\Closure::class, $obj->getValueSavingExtender());
         static::assertInstanceOf(\Closure::class, $obj->getValueDeleteExtender());
         static::assertTrue($obj->isItExistsInDb());
-        static::assertTrue($obj->isValueCanBeNull());
         static::assertFalse($obj->isItPrimaryKey());
         static::assertTrue($obj->isValueCanBeSetOrChanged());
         static::assertFalse($obj->isValueLowercasingRequired());
@@ -107,11 +103,33 @@ class DbTableColumnTest extends BaseTestCase
         static::assertFalse($obj->isValuePrivate());
         static::assertFalse($obj->isValueTrimmingRequired());
         static::assertFalse($obj->isAutoUpdatingValue());
-        static::assertFalse($obj->isEmptyStringMustBeConvertedToNull());
         static::assertFalse($obj->isEnum());
         static::assertFalse($obj->isItAFile());
-        static::assertFalse($obj->isItAForeignKey());
         static::assertFalse($obj->isItAnImage());
+        static::assertTrue($obj->isValueCanBeNull());
+        static::assertTrue($obj->isEmptyStringMustBeConvertedToNull());
+        $obj->disallowsNullValues();
+        static::assertFalse($obj->isValueCanBeNull());
+        static::assertFalse($obj->isEmptyStringMustBeConvertedToNull());
+    
+        $obj->setTableStructure(TestingAdminsTableStructure::getInstance());
+        static::assertFalse($obj->isItAForeignKey());
+        $obj->primaryKey();
+        static::assertTrue($obj->isItPrimaryKey());
+    
+        $obj = Column::create(Column::TYPE_BOOL, 'parent_id');
+        $obj->setTableStructure(TestingAdminsTableStructure::getInstance());
+        static::assertTrue($obj->isItAForeignKey());
+    }
+    
+    public function testTableStructureNotSet1()
+    {
+        $obj = Column::create(Column::TYPE_BOOL);
+        static::assertInstanceOf(Column::class, $obj);
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('PeskyORM\ORM\Column::getTableStructure(): Return value must be of type PeskyORM\ORM\TableStructure, null returned');
+        /** @noinspection PhpExpressionResultUnusedInspection */
+        $obj->getTableStructure();
     }
     
     public function testInvalidName1()
@@ -162,21 +180,21 @@ class DbTableColumnTest extends BaseTestCase
     public function testInvalidNameSet4()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessageMatches("%\$name argument contains invalid value: .*?\. Pattern: .*?\. Example: snake_case1%");
+        $this->expectExceptionMessage("\$name argument contains invalid value: 'two words'. Pattern: %^[a-z][a-z0-9_]*$%. Example: snake_case1");
         Column::create(Column::TYPE_BLOB, 'two words');
     }
     
     public function testInvalidNameSet5()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessageMatches("%\$name argument contains invalid value: .*?\. Pattern: .*?\. Example: snake_case1%");
+        $this->expectExceptionMessage("\$name argument contains invalid value: 'camelCase'. Pattern: %^[a-z][a-z0-9_]*$%. Example: snake_case1");
         Column::create(Column::TYPE_DATE, 'camelCase');
     }
     
     public function testInvalidNameSet6()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessageMatches("%\$name argument contains invalid value: .*?\. Pattern: .*?\. Example: snake_case1%");
+        $this->expectExceptionMessage("\$name argument contains invalid value: 'UpperCase'. Pattern: %^[a-z][a-z0-9_]*$%. Example: snake_case1");
         Column::create(Column::TYPE_EMAIL, 'UpperCase');
     }
     
@@ -212,13 +230,14 @@ class DbTableColumnTest extends BaseTestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Value format 'time' is not supported for column 'login'. Supported formats: none");
         $rec = TestingAdmin::newEmptyRecord();
+        $rec->updateValue('login', 'test', false);
+        static::assertEquals('test', $rec->getValue('login'));
         /** @var \PeskyORM\ORM\RecordValue $value */
         $value = $this->getObjectPropertyValue($rec, 'values')['login'];
         static::assertEquals(
             '11:00:00',
             call_user_func(
-                $value->getColumn()
-                    ->getValueFormatter(),
+                $value->getColumn()->getValueFormatter(),
                 $value,
                 'time'
             )
@@ -255,8 +274,9 @@ class DbTableColumnTest extends BaseTestCase
     public function testInvalidDefaultValueGet2()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Default value for column 'name' is not valid. Errors: Value must be of a boolean data type");
+        $this->expectExceptionMessage("Default value for column Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->name is not valid. Errors: Value must be of a boolean data type.");
         Column::create(Column::TYPE_BOOL, 'name')
+            ->setTableStructure(TestingAdminsTableStructure::getInstance())
             ->setDefaultValue(-1)
             ->getValidDefaultValue();
     }
@@ -265,9 +285,10 @@ class DbTableColumnTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
-            "Fallback value of the default value for column 'name' is not valid. Errors: Value must be of a boolean data type"
+            "Fallback value of the default value for column Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->name is not valid. Errors: Value must be of a boolean data type."
         );
         Column::create(Column::TYPE_BOOL, 'name')
+            ->setTableStructure(TestingAdminsTableStructure::getInstance())
             ->getValidDefaultValue(-1);
     }
     
@@ -275,9 +296,10 @@ class DbTableColumnTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
-            "Default value received from validDefaultValueGetter closure for column 'name' is not valid. Errors: Value must be of a boolean data type"
+            "Default value received from validDefaultValueGetter Closure for column Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->name is not valid. Errors: Value must be of a boolean data type."
         );
         Column::create(Column::TYPE_BOOL, 'name')
+            ->setTableStructure(TestingAdminsTableStructure::getInstance())
             ->setValidDefaultValueGetter(function ($fallback) {
                 return -1;
             })
@@ -318,7 +340,7 @@ class DbTableColumnTest extends BaseTestCase
         });
         $obj->setDefaultValue(true);
         static::assertTrue($obj->hasDefaultValue());
-        static::assertTrue(true, $obj->getDefaultValueAsIs());
+        static::assertTrue($obj->getDefaultValueAsIs());
         static::assertFalse($obj->getValidDefaultValue(false));
         
         // default value that needs normalization
@@ -422,8 +444,10 @@ class DbTableColumnTest extends BaseTestCase
     public function testInvalidGetRelation()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Relation 'Test' does not exist");
+        $this->expectExceptionMessage("Column 'id' is not linked with 'Test' relation");
         Column::create(Column::TYPE_ENUM)
+            ->setName('id')
+            ->setTableStructure(TestingAdminsTableStructure::getInstance())
             ->getRelation('Test');
     }
     
@@ -458,7 +482,8 @@ class DbTableColumnTest extends BaseTestCase
         static::assertInstanceOf(\Closure::class, $obj->getValuePreprocessor());
         static::assertInstanceOf(\Closure::class, $obj->getValueSavingExtender());
         static::assertInstanceOf(\Closure::class, $obj->getValueDeleteExtender());
-        static::assertEquals([], call_user_func($obj->getValueValidatorExtender(), '1', false, $obj));
+        static::assertEquals([], call_user_func($obj->getValueValidatorExtender(), '1', false, false, $obj));
+        static::assertEquals([], call_user_func($obj->getValueValidatorExtender(), '1', false, true, $obj));
     }
     
 }
