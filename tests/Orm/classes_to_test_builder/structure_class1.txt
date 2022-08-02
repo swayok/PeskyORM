@@ -24,115 +24,136 @@ use PeskyORM\Core\DbExpr;
  * @property-read Column    $email
  * @property-read Column    $timezone
  * @property-read Column    $not_changeable_column
+ * @property-read Column    $big_data
  */
-class AdminsTableStructure extends TableStructure {
+class AdminsTableStructure extends TableStructure
+{
 
-    /**
-     * @return string
-     */
-    static public function getTableName() {
+    public static function getTableName(): string
+    {
         return 'admins';
     }
 
-    /**
-     * @return string|null
-     */
-    static public function getSchema() {
-        return null;
-    }
-
-    private function id() {
+    private function id(): Column
+    {
         return Column::create(Column::TYPE_INT)
             ->primaryKey()
-            ->disallowsNullValues();
-    }
-
-    private function login() {
-        return Column::create(Column::TYPE_STRING)
-            ->uniqueValues()
-            ->disallowsNullValues();
-    }
-
-    private function password() {
-        return Column::create(Column::TYPE_STRING)
-            ->disallowsNullValues();
-    }
-
-    private function parent_id() {
-        return Column::create(Column::TYPE_INT)
+            ->disallowsNullValues()
             ->convertsEmptyStringToNull();
     }
 
-    private function created_at() {
-        return Column::create(Column::TYPE_TIMESTAMP_WITH_TZ)
-            ->disallowsNullValues()
-            ->setDefaultValue(DbExpr::create('now()'));
-    }
-
-    private function updated_at() {
-        return Column::create(Column::TYPE_TIMESTAMP_WITH_TZ)
-            ->disallowsNullValues()
-            ->setDefaultValue(DbExpr::create('now()'));
-    }
-
-    private function remember_token() {
+    private function login(): Column
+    {
         return Column::create(Column::TYPE_STRING)
+            ->uniqueValues()
+            ->disallowsNullValues()
+            ->convertsEmptyStringToNull();
+    }
+
+    private function password(): Column
+    {
+        return Column::create(Column::TYPE_STRING)
+            ->disallowsNullValues()
+            ->convertsEmptyStringToNull();
+    }
+
+    private function parent_id(): Column
+    {
+        return Column::create(Column::TYPE_INT);
+    }
+
+    private function created_at(): Column
+    {
+        return Column::create(Column::TYPE_TIMESTAMP_WITH_TZ)
+            ->disallowsNullValues()
             ->convertsEmptyStringToNull()
+            ->setDefaultValue(DbExpr::create('now()'));
+    }
+
+    private function updated_at(): Column
+    {
+        return Column::create(Column::TYPE_TIMESTAMP_WITH_TZ)
+            ->disallowsNullValues()
+            ->convertsEmptyStringToNull()
+            ->setDefaultValue(DbExpr::create('now()'));
+    }
+
+    private function remember_token(): Column
+    {
+        return Column::create(Column::TYPE_STRING)
             ->setDefaultValue('');
     }
 
-    private function is_superadmin() {
+    private function is_superadmin(): Column
+    {
         return Column::create(Column::TYPE_BOOL)
             ->disallowsNullValues()
+            ->convertsEmptyStringToNull()
             ->setDefaultValue(false);
     }
 
-    private function language() {
+    private function language(): Column
+    {
         return Column::create(Column::TYPE_STRING)
-            ->convertsEmptyStringToNull()
             ->setDefaultValue('en');
     }
 
-    private function ip() {
+    private function ip(): Column
+    {
         return Column::create(Column::TYPE_STRING)
-            ->convertsEmptyStringToNull()
             ->setDefaultValue('192.168.1.1');
     }
 
-    private function role() {
+    private function role(): Column
+    {
         return Column::create(Column::TYPE_STRING)
             ->disallowsNullValues()
+            ->convertsEmptyStringToNull()
             ->setDefaultValue('');
     }
 
-    private function is_active() {
+    private function is_active(): Column
+    {
         return Column::create(Column::TYPE_BOOL)
             ->disallowsNullValues()
+            ->convertsEmptyStringToNull()
             ->setDefaultValue(true);
     }
 
-    private function name() {
+    private function name(): Column
+    {
         return Column::create(Column::TYPE_STRING)
             ->disallowsNullValues()
+            ->convertsEmptyStringToNull()
             ->setDefaultValue('');
     }
 
-    private function email() {
+    private function email(): Column
+    {
         return Column::create(Column::TYPE_STRING)
-            ->uniqueValues()
-            ->convertsEmptyStringToNull();
+            ->uniqueValues();
     }
 
-    private function timezone() {
+    private function timezone(): Column
+    {
         return Column::create(Column::TYPE_STRING)
             ->disallowsNullValues()
+            ->convertsEmptyStringToNull()
             ->setDefaultValue('UTC');
     }
 
-    private function not_changeable_column() {
+    private function not_changeable_column(): Column
+    {
         return Column::create(Column::TYPE_STRING)
-            ->convertsEmptyStringToNull()
             ->setDefaultValue('not changable');
+    }
+
+    private function big_data(): Column
+    {
+        return Column::create(Column::TYPE_TEXT)
+            ->disallowsNullValues()
+            ->convertsEmptyStringToNull()
+            ->setDefaultValue('biiiiiiig data');
     }
 
 }

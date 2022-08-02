@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Core;
 
 require_once __DIR__ . '/PostgresAdapterSelectDataTest.php';

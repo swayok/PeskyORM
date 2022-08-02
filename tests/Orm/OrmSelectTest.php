@@ -1,6 +1,8 @@
 <?php
 /** @noinspection SqlRedundantOrderingDirection */
 
+declare(strict_types=1);
+
 namespace Tests\Orm;
 
 use InvalidArgumentException;

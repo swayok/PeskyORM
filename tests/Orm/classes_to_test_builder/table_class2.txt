@@ -2,28 +2,23 @@
 
 namespace App\Db;
 
-use PeskyORMTest\TestingBaseTable;
+use Tests\PeskyORMTest\TestingBaseTable;
 
-class AdminsTable extends TestingBaseTable {
+class AdminsTable extends TestingBaseTable
+{
 
-    /**
-     * @return AdminsTableStructure
-     */
-    public function getTableStructure() {
+    public function getTableStructure(): AdminsTableStructure
+    {
         return AdminsTableStructure::getInstance();
     }
 
-    /**
-     * @return Admin
-     */
-    public function newRecord() {
+    public function newRecord(): Admin
+    {
         return new Admin();
     }
 
-    /**
-     * @return string
-     */
-    public function getTableAlias() {
+    public function getTableAlias(): string
+    {
         return 'Admins';
     }
 

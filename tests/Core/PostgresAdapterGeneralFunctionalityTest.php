@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Core;
 
 use PDO;
@@ -40,6 +42,7 @@ class PostgresAdapterGeneralFunctionalityTest extends BaseTestCase
         $this->expectExceptionMessage("Argument #1 (\$name) must be of type string");
         $adapter = static::getValidAdapter();
         /** @noinspection PhpParamsInspection */
+        /** @noinspection PhpStrictTypeCheckingInspection */
         $adapter->quoteDbEntityName(['arrr']);
     }
     
@@ -49,22 +52,25 @@ class PostgresAdapterGeneralFunctionalityTest extends BaseTestCase
         $this->expectExceptionMessage("Argument #1 (\$name) must be of type string");
         $adapter = static::getValidAdapter();
         /** @noinspection PhpParamsInspection */
+        /** @noinspection PhpStrictTypeCheckingInspection */
         $adapter->quoteDbEntityName($adapter);
     }
     
     public function testQuotingOfInvalidDbEntity4()
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid db entity name: [1]");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #1 (\$name) must be of type string");
         $adapter = static::getValidAdapter();
+        /** @noinspection PhpStrictTypeCheckingInspection */
         $adapter->quoteDbEntityName(true);
     }
     
     public function testQuotingOfInvalidDbEntity5()
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Db entity name must be a not empty string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #1 (\$name) must be of type string");
         $adapter = static::getValidAdapter();
+        /** @noinspection PhpStrictTypeCheckingInspection */
         $adapter->quoteDbEntityName(false);
     }
     
@@ -97,6 +103,7 @@ class PostgresAdapterGeneralFunctionalityTest extends BaseTestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage("Argument #2 (\$valueDataType) must be of type ?int");
         $adapter = static::getValidAdapter();
+        /** @noinspection PhpStrictTypeCheckingInspection */
         $adapter->quoteValue('test', 'abrakadabra');
     }
     

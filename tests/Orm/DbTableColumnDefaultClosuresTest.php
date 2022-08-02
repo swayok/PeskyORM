@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Orm;
 
 use PeskyORM\ORM\Column;
@@ -69,7 +71,7 @@ class DbTableColumnDefaultClosuresTest extends BaseTestCase
             ->setAllowedValues(['a', 'b']);
         static::assertEquals([], DefaultColumnClosures::valueIsAllowedValidator('a', false, $column));
         static::assertEquals(
-            ['Value is not allowed: c'],
+            ['Value is not allowed: c.'],
             DefaultColumnClosures::valueIsAllowedValidator('c', false, $column)
         );
     }
@@ -82,11 +84,11 @@ class DbTableColumnDefaultClosuresTest extends BaseTestCase
                 return $value === 'a' ? ['extender!!!'] : [];
             });
         static::assertEquals(
-            ['Value is not allowed: c'],
+            ['Value is not allowed: c.'],
             DefaultColumnClosures::valueValidator('c', false, false, $column)
         );
         static::assertEquals(
-            ['Value must be a string or a number'],
+            ['Value must be a string or a number.'],
             DefaultColumnClosures::valueValidator(true, false, false, $column)
         );
         static::assertEquals(
@@ -183,7 +185,7 @@ class DbTableColumnDefaultClosuresTest extends BaseTestCase
         static::assertEquals(2, $valueObj->getOldValue());
         static::assertTrue($valueObj->isValidated());
         static::assertFalse($valueObj->isValid());
-        static::assertEquals(['Value must be of an integer data type'], $valueObj->getValidationErrors());
+        static::assertEquals(['Value must be of an integer data type.'], $valueObj->getValidationErrors());
     }
     
 }

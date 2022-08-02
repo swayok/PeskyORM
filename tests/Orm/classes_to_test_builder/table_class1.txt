@@ -4,26 +4,21 @@ namespace App\Db;
 
 use PeskyORM\ORM\Table;
 
-class AdminsTable extends Table {
+class AdminsTable extends Table
+{
 
-    /**
-     * @return AdminsTableStructure
-     */
-    public function getTableStructure() {
+    public function getTableStructure(): AdminsTableStructure
+    {
         return AdminsTableStructure::getInstance();
     }
 
-    /**
-     * @return Admin
-     */
-    public function newRecord() {
+    public function newRecord(): Admin
+    {
         return new Admin();
     }
 
-    /**
-     * @return string
-     */
-    public function getTableAlias() {
+    public function getTableAlias(): string
+    {
         return 'Admins';
     }
 
