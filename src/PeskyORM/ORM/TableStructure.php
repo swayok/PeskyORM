@@ -6,6 +6,7 @@ namespace PeskyORM\ORM;
 
 use PeskyORM\Core\DbConnectionsManager;
 use PeskyORM\Core\JoinInfo;
+use PeskyORM\Core\TableDescription;
 use PeskyORM\Exception\OrmException;
 
 abstract class TableStructure implements TableStructureInterface
@@ -152,7 +153,6 @@ abstract class TableStructure implements TableStructureInterface
     
     /**
      * @param bool $writable - true: connection must have access to write data into DB
-     * @return string
      */
     static public function getConnectionName(bool $writable): string
     {
@@ -164,20 +164,12 @@ abstract class TableStructure implements TableStructureInterface
         return null;
     }
     
-    /**
-     * @param string $columnName
-     * @return bool
-     */
     static public function hasColumn(string $columnName): bool
     {
         return static::getInstance()
             ->_hasColumn($columnName);
     }
     
-    /**
-     * @param string $columnName
-     * @return Column
-     */
     static public function getColumn(string $columnName): Column
     {
         return static::getInstance()
@@ -192,43 +184,27 @@ abstract class TableStructure implements TableStructureInterface
         return static::getInstance()->columns;
     }
     
-    /**
-     * @return string|null
-     */
     static public function getPkColumnName(): ?string
     {
         $column = static::getPkColumn();
         return $column ? $column->getName() : null;
     }
     
-    /**
-     * @return Column
-     */
     static public function getPkColumn(): ?Column
     {
         return static::getInstance()->pk;
     }
     
-    /**
-     * @return bool
-     */
     static public function hasPkColumn(): bool
     {
         return static::getInstance()->pk !== null;
     }
     
-    /**
-     * @return bool
-     */
     static public function hasFileColumns(): bool
     {
         return count(static::getInstance()->fileColumns) > 0;
     }
     
-    /**
-     * @param string $columnName
-     * @return bool
-     */
     static public function hasFileColumn(string $columnName): bool
     {
         return (
@@ -263,20 +239,12 @@ abstract class TableStructure implements TableStructureInterface
         return static::getInstance()->columsThatDoNotExistInDb;
     }
     
-    /**
-     * @param string $relationName
-     * @return bool
-     */
     static public function hasRelation(string $relationName): bool
     {
         return static::getInstance()
             ->_hasRelation($relationName);
     }
     
-    /**
-     * @param string $relationName
-     * @return Relation
-     */
     static public function getRelation(string $relationName): Relation
     {
         return static::getInstance()
@@ -292,7 +260,6 @@ abstract class TableStructure implements TableStructureInterface
     }
     
     /**
-     * @param string $columnName
      * @return Relation[]
      */
     static public function getColumnRelations(string $columnName): array
@@ -335,8 +302,7 @@ abstract class TableStructure implements TableStructureInterface
      */
     protected function createMissingColumnsConfigsFromDbTableDescription()
     {
-        $description = DbConnectionsManager::getConnection(static::getConnectionName(false))
-            ->describeTable(static::getTableName(), static::getSchema());
+        $description = $this->getTableDescription();
         foreach ($description->getColumns() as $columnName => $columnDescription) {
             if (!$this->_hasColumn($columnName)) {
                 $column = Column::create($columnDescription->getOrmType(), $columnName)
@@ -353,12 +319,20 @@ abstract class TableStructure implements TableStructureInterface
                 $this->addColumn($column);
             }
         }
-        // todo: add possibility to cache table description
     }
     
     /**
-     * @param string $columnName
-     * @return Column
+     * Override this method if you want to cache table description.
+     * Use serialize($tableDescription) to save it to cache as string.
+     * Use unserialize($cachedTableDescription) to restore into TableDescription object.
+     */
+    protected function getTableDescription(): TableDescription
+    {
+        return DbConnectionsManager::getConnection(static::getConnectionName(false))
+            ->describeTable(static::getTableName(), static::getSchema());
+    }
+    
+    /**
      * @throws \InvalidArgumentException
      */
     protected function _getColumn(string $columnName): Column
@@ -372,7 +346,6 @@ abstract class TableStructure implements TableStructureInterface
     
     /**
      * Make Column object for private method (if not made yet) and return it
-     * @param \ReflectionMethod $method
      * @throws OrmException
      */
     protected function loadColumnConfigFromMethodReflection(\ReflectionMethod $method)
@@ -468,9 +441,6 @@ abstract class TableStructure implements TableStructureInterface
         $this->addRelation($config);
     }
     
-    /**
-     * @param Relation $relation
-     */
     protected function addRelation(Relation $relation)
     {
         $this->relations[$relation->getName()] = $relation;
