@@ -7,11 +7,11 @@ namespace Tests\Core;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
-use PHPUnit\Framework\TestCase;
 use Swayok\Utils\Set;
+use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingApp;
 
-class UtilsTest extends TestCase
+class UtilsTest extends BaseTestCase
 {
     
     /** @var PostgresConfig */

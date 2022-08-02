@@ -4,10 +4,10 @@ namespace Tests\Core;
 
 use PDOException;
 use PeskyORM\Core\DbExpr;
-use PHPUnit\Framework\TestCase;
+use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingApp;
 
-class MysqlAdapterQueriesTest extends TestCase
+class MysqlAdapterQueriesTest extends BaseTestCase
 {
     
     public static function tearDownAfterClass(): void
@@ -49,29 +49,29 @@ class MysqlAdapterQueriesTest extends TestCase
         $selectQuery = DbExpr::create('SELECT * FROM `settings` WHERE `key` = ``test_key``');
         $adapter->begin();
         $rowsAffected = $adapter->exec($insertQuery);
-        $this->assertEquals(
+        static::assertEquals(
             "INSERT INTO `settings` (`key`, `value`) VALUES('test_key', '\\\"test_value\\\"')",
             $adapter->getLastQuery()
         );
-        $this->assertEquals(1, $rowsAffected);
+        static::assertEquals(1, $rowsAffected);
         $stmnt = $adapter->query($selectQuery);
-        $this->assertEquals(1, $stmnt->rowCount());
+        static::assertEquals(1, $stmnt->rowCount());
         $record = \PeskyORM\Core\Utils::getDataFromStatement($stmnt, \PeskyORM\Core\Utils::FETCH_FIRST);
-        $this->assertArraySubset([
+        static::assertArraySubset([
             'key' => 'test_key',
             'value' => '"test_value"',
         ], $record);
         // test rollback
         $adapter->rollBack();
         $stmnt = $adapter->query($selectQuery);
-        $this->assertEquals(0, $stmnt->rowCount());
+        static::assertEquals(0, $stmnt->rowCount());
         // test commit
         $adapter->begin();
         $adapter->exec($insertQuery);
         $adapter->commit();
         $stmnt = $adapter->query($selectQuery);
-        $this->assertEquals(1, $stmnt->rowCount());
-        $this->assertArraySubset([
+        static::assertEquals(1, $stmnt->rowCount());
+        static::assertArraySubset([
             'key' => 'test_key',
             'value' => '"test_value"',
         ], $record);

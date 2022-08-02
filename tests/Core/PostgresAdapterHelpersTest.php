@@ -9,12 +9,12 @@ use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\TableDescription;
 use PeskyORM\ORM\Column;
-use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
+use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingApp;
 
-class PostgresAdapterHelpersTest extends TestCase
+class PostgresAdapterHelpersTest extends BaseTestCase
 {
     
     static protected function getValidAdapter()

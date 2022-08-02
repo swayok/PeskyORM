@@ -2,12 +2,12 @@
 
 namespace Tests\Orm;
 
-use PHPUnit\Framework\TestCase;
+use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 use Tests\PeskyORMTest\TestingApp;
 use Tests\PeskyORMTest\TestingSettings\TestingSettingsTable;
 
-class StaticPropertiesAndMethodsTest extends TestCase
+class StaticPropertiesAndMethodsTest extends BaseTestCase
 {
     
     public static function setUpBeforeClass(): void

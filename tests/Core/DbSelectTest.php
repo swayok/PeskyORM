@@ -10,13 +10,13 @@ use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\JoinInfo;
 use PeskyORM\Core\Select;
-use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use Swayok\Utils\Set;
+use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingApp;
 use UnexpectedValueException;
 
-class DbSelectTest extends TestCase
+class DbSelectTest extends BaseTestCase
 {
     
     static public function setUpBeforeClass(): void

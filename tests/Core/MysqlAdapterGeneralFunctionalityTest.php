@@ -2,18 +2,13 @@
 
 namespace Tests\Core;
 
-use InvalidArgumentException;
 use PDO;
-use PDOException;
-use PeskyORM\Adapter\Mysql;
-use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Core\DbExpr;
-use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingApp;
-use TypeError;
 
-class MysqlAdapterGeneralFunctionalityTest extends TestCase
+class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
 {
     
     public static function setUpBeforeClass(): void
@@ -31,108 +26,9 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
         return TestingApp::getMysqlConnection();
     }
     
-    public function testConnectionWithInvalidUserName()
-    {
-        $this->expectException(PDOException::class);
-        $this->expectExceptionMessage("Access denied for user");
-        $config = MysqlConfig::fromArray([
-            'database' => 'totally_not_existing_db',
-            'username' => 'totally_not_existing_user',
-            'password' => 'this_password_is_for_not_existing_user',
-        ]);
-        $adapter = new Mysql($config);
-        $adapter->getConnection();
-    }
-    
-    public function testConnectionWithInvalidUserName2()
-    {
-        $this->expectException(PDOException::class);
-        $this->expectExceptionMessage("Access denied for user");
-        $config = MysqlConfig::fromArray([
-            'database' => 'totally_not_existing_db',
-            'username' => self::getValidAdapter()
-                ->getConnectionConfig()
-                ->getUserName(),
-            'password' => 'this_password_is_for_not_existing_user',
-        ]);
-        $adapter = new Mysql($config);
-        $adapter->getConnection();
-    }
-    
-    public function testConnectionWithInvalidDbName()
-    {
-        $this->expectException(PDOException::class);
-        $this->expectExceptionMessage("Access denied for user");
-        $config = MysqlConfig::fromArray([
-            'database' => 'totally_not_existing_db',
-            'username' => self::getValidAdapter()
-                ->getConnectionConfig()
-                ->getUserName(),
-            'password' => self::getValidAdapter()
-                ->getConnectionConfig()
-                ->getUserPassword(),
-        ]);
-        $adapter = new Mysql($config);
-        $adapter->getConnection();
-    }
-    
-    public function testConnectionWithInvalidUserPassword()
-    {
-        $this->expectException(PDOException::class);
-        $this->expectExceptionMessage("Access denied for user");
-        $config = MysqlConfig::fromArray([
-            'database' => self::getValidAdapter()
-                ->getConnectionConfig()
-                ->getDbName(),
-            'username' => self::getValidAdapter()
-                ->getConnectionConfig()
-                ->getUserName(),
-            'password' => 'this_password_is_for_not_existing_user',
-        ]);
-        $adapter = new Mysql($config);
-        $adapter->getConnection();
-    }
-    
-    /**
-     * Note: very slow
-     */
-    /*public function testConnectionWithInvalidDbPort2() {
-        $this->expectException(PDOException::class);
-        $this->expectExceptionMessage('SQLSTATE[HY000]');
-        $config = MysqlConfig::fromArray([
-            'database' => self::getValidAdapter()->getConnectionConfig()->getDbName(),
-            'username' => self::getValidAdapter()->getConnectionConfig()->getUserName(),
-            'password' => self::getValidAdapter()->getConnectionConfig()->getUserPassword(),
-            'port' => '9999'
-        ]);
-        $adapter = new Mysql($config);
-        $adapter->getConnection();
-    }*/
-    
-    public function testValidConnection()
-    {
-        $adapter = static::getValidAdapter();
-        $adapter->getConnection();
-        $stmnt = $adapter->query('SELECT 1');
-        $this->assertEquals(1, $stmnt->rowCount());
-    }
-    
-    public function testDisconnect()
-    {
-        $adapter = static::getValidAdapter();
-        $adapter->getConnection();
-        $adapter->disconnect();
-        $reflector = new ReflectionClass($adapter);
-        $prop = $reflector->getProperty('pdo');
-        $prop->setAccessible(true);
-        $this->assertEquals(null, $prop->getValue($adapter));
-        $reflector->getProperty('pdo')
-            ->setAccessible(false);
-    }
-    
     public function testQuotingOfInvalidDbEntity()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Invalid db entity name");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName('";DROP table1;');
@@ -140,8 +36,8 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidDbEntity2()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Db entity name must be a not empty string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #1 (\$name) must be of type string");
         $adapter = static::getValidAdapter();
         /** @noinspection PhpParamsInspection */
         $adapter->quoteDbEntityName(['arrr']);
@@ -149,8 +45,8 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidDbEntity3()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Db entity name must be a not empty string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #1 (\$name) must be of type string");
         $adapter = static::getValidAdapter();
         /** @noinspection PhpParamsInspection */
         $adapter->quoteDbEntityName($adapter);
@@ -158,15 +54,15 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidDbEntity4()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Db entity name must be a not empty string");
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid db entity name: [1]");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName(true);
     }
     
     public function testQuotingOfInvalidDbEntity5()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Db entity name must be a not empty string");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName(false);
@@ -174,7 +70,7 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidDbEntity6()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Invalid db entity name: [colname->->]");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName('colname->->');
@@ -182,7 +78,7 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidDbEntity7()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Invalid db entity name: [colname-> ->]");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName('colname-> ->');
@@ -190,7 +86,7 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidDbEntity8()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Db entity name must be a not empty string");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName('');
@@ -198,15 +94,15 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidDbValueType()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Value in \$fieldType argument must be a constant like");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #2 (\$valueDataType) must be of type ?int");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue('test', 'abrakadabra');
     }
     
     public function testQuotingOfInvalidIntDbValue()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$value expected to be integer or numeric string. String [abrakadabra] received");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue('abrakadabra', PDO::PARAM_INT);
@@ -214,7 +110,7 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidIntDbValue2()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$value expected to be integer or numeric string. Object fo class [\PeskyORM\Adapter\Mysql] received");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue($adapter, PDO::PARAM_INT);
@@ -222,7 +118,7 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidIntDbValue3()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$value expected to be integer or numeric string. Array received");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue(['key' => 'val'], PDO::PARAM_INT);
@@ -230,15 +126,15 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidIntDbValue4()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$value expected to be integer or numeric string. Resource received");
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("\$value expected to be integer or numeric string.");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue(curl_init('http://test.url'), PDO::PARAM_INT);
     }
     
     public function testQuotingOfInvalidIntDbValue5()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$value expected to be integer or numeric string. Boolean [true] received");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue(true, PDO::PARAM_INT);
@@ -246,7 +142,7 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidIntDbValue6()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$value expected to be integer or numeric string. Boolean [false] received");
         $adapter = static::getValidAdapter();
         $adapter->quoteValue(false, PDO::PARAM_INT);
@@ -254,8 +150,8 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
     
     public function testQuotingOfInvalidDbExpr()
     {
-        $this->expectException(TypeError::class);
-        $this->expectExceptionMessage("must be an instance of PeskyORM\Core\DbExpr, string given");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #1 (\$expression) must be of type PeskyORM\Core\DbExpr");
         $adapter = static::getValidAdapter();
         /** @noinspection PhpParamsInspection */
         $adapter->quoteDbExpr('test');
@@ -265,59 +161,59 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
     {
         $adapter = static::getValidAdapter();
         // names
-        $this->assertEquals('`table1`', $adapter->quoteDbEntityName('table1'));
-        $this->assertEquals('*', $adapter->quoteDbEntityName('*'));
-        $this->assertEquals('`table`.`colname`', $adapter->quoteDbEntityName('table.colname'));
-        $this->assertEquals(
+        static::assertEquals('`table1`', $adapter->quoteDbEntityName('table1'));
+        static::assertEquals('*', $adapter->quoteDbEntityName('*'));
+        static::assertEquals('`table`.`colname`', $adapter->quoteDbEntityName('table.colname'));
+        static::assertEquals(
             '`table`.`colname`->\'$.jsonkey\'',
             $adapter->quoteDbEntityName('table.colname->jsonkey')
         );
-        $this->assertEquals(
+        static::assertEquals(
             'JSON_EXTRACT(`table`.`colname`, \'$.jsonkey\')',
             $adapter->quoteDbEntityName('table.colname #> jsonkey')
         );
-        $this->assertEquals(
+        static::assertEquals(
             '`table`.`colname`->>\'$[0][1]\'',
             $adapter->quoteDbEntityName('table.colname ->> [0][1]')
         );
-        $this->assertEquals(
+        static::assertEquals(
             'JSON_UNQUOTE(JSON_EXTRACT(`table`.`colname`, \'$.json key\'))',
             $adapter->quoteDbEntityName('table.colname #>> \'json key\'')
         );
-        $this->assertEquals(
+        static::assertEquals(
             '`table`.`colname`->\'$.json key\'',
             $adapter->quoteDbEntityName('table.colname -> "json key"')
         );
-        $this->assertEquals(
+        static::assertEquals(
             '`table`.`colname`->\'$.json key\'->>\'$.json key 2\'',
             $adapter->quoteDbEntityName('table.colname -> "json key" ->> json key 2')
         );
-        $this->assertEquals(
+        static::assertEquals(
             'JSON_UNQUOTE(JSON_EXTRACT(`table`.`colname`->\'$.json key\', \'$.json key 2\'))',
             $adapter->quoteDbEntityName('table.colname -> "json key" #>> json key 2')
         );
-        $this->assertEquals(
+        static::assertEquals(
             'JSON_UNQUOTE(JSON_EXTRACT(JSON_EXTRACT(`table`.`colname`, \'$.json key\'), \'$.json key 2\'))',
             $adapter->quoteDbEntityName('table.colname #> "json key" #>> json key 2')
         );
         // values
-        $this->assertEquals("'\\';DROP table1;'", $adapter->quoteValue('\';DROP table1;'));
-        $this->assertEquals('1', $adapter->quoteValue(true));
-        $this->assertEquals('1', $adapter->quoteValue(1, PDO::PARAM_BOOL));
-        $this->assertEquals('1', $adapter->quoteValue('1', PDO::PARAM_BOOL));
-        $this->assertEquals('0', $adapter->quoteValue(false));
-        $this->assertEquals('0', $adapter->quoteValue(0, PDO::PARAM_BOOL));
-        $this->assertEquals('0', $adapter->quoteValue('0', PDO::PARAM_BOOL));
-        $this->assertEquals('NULL', $adapter->quoteValue(null));
-        $this->assertEquals('NULL', $adapter->quoteValue('abrakadabra', PDO::PARAM_NULL));
-        $this->assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_INT));
-        $this->assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_BOOL));
-        $this->assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_STR));
-        $this->assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_LOB));
-        $this->assertEquals("'123'", $adapter->quoteValue(123));
-        $this->assertEquals("'123'", $adapter->quoteValue(123, PDO::PARAM_INT));
+        static::assertEquals("'\\';DROP table1;'", $adapter->quoteValue('\';DROP table1;'));
+        static::assertEquals('1', $adapter->quoteValue(true));
+        static::assertEquals('1', $adapter->quoteValue(1, PDO::PARAM_BOOL));
+        static::assertEquals('1', $adapter->quoteValue('1', PDO::PARAM_BOOL));
+        static::assertEquals('0', $adapter->quoteValue(false));
+        static::assertEquals('0', $adapter->quoteValue(0, PDO::PARAM_BOOL));
+        static::assertEquals('0', $adapter->quoteValue('0', PDO::PARAM_BOOL));
+        static::assertEquals('NULL', $adapter->quoteValue(null));
+        static::assertEquals('NULL', $adapter->quoteValue('abrakadabra', PDO::PARAM_NULL));
+        static::assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_INT));
+        static::assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_BOOL));
+        static::assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_STR));
+        static::assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_LOB));
+        static::assertEquals("'123'", $adapter->quoteValue(123));
+        static::assertEquals("'123'", $adapter->quoteValue(123, PDO::PARAM_INT));
         /** @noinspection SqlWithoutWhere */
-        $this->assertEquals(
+        static::assertEquals(
             'DELETE FROM `table1` WHERE `col1` = \'value1\'',
             $adapter->quoteDbExpr(DbExpr::create('DELETE FROM `table1` WHERE `col1` = ``value1``'))
         );
@@ -329,12 +225,12 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
         $method = (new ReflectionClass($adapter))->getMethod('buildColumnsList');
         $method->setAccessible(true);
         $colsList = $method->invoke($adapter, ['column1', 'alias.column2']);
-        $this->assertEquals('(`column1`,`alias`.`column2`)', $colsList);
+        static::assertEquals('(`column1`, `alias`.`column2`)', $colsList);
     }
     
     public function testInvalidColumnsInBuildValuesList()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$columns argument cannot be empty");
         $adapter = static::getValidAdapter();
         $method = (new ReflectionClass($adapter))->getMethod('buildValuesList');
@@ -344,7 +240,7 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
     
     public function testInvalidDataInBuildValuesList()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$valuesAssoc array does not contain key [col2]");
         $adapter = static::getValidAdapter();
         $method = (new ReflectionClass($adapter))->getMethod('buildValuesList');
@@ -368,8 +264,8 @@ class MysqlAdapterGeneralFunctionalityTest extends TestCase
         ];
         $columns = array_keys($data);
         $valsList = $method->invoke($adapter, $columns, $data);
-        $this->assertEquals("('val1','1',NULL,1,0,'','1.22')", $valsList);
+        static::assertEquals("('val1', '1', NULL, 1, 0, '', '1.22')", $valsList);
         $valsList = $method->invoke($adapter, $columns, $data, ['col2' => PDO::PARAM_BOOL]);
-        $this->assertEquals("('val1',1,NULL,1,0,'','1.22')", $valsList);
+        static::assertEquals("('val1', 1, NULL, 1, 0, '', '1.22')", $valsList);
     }
 }

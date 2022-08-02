@@ -7,11 +7,11 @@ namespace Tests\Core;
 use PDO;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
-use PHPUnit\Framework\TestCase;
+use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\Data\TestDataForAdminsTable;
 use Tests\PeskyORMTest\TestingApp;
 
-class PostgresAdapterUpdateDataTest extends TestCase
+class PostgresAdapterUpdateDataTest extends BaseTestCase
 {
     use TestDataForAdminsTable;
     
@@ -43,7 +43,7 @@ class PostgresAdapterUpdateDataTest extends TestCase
         $adapter->insertMany('settings', ['key', 'value'], $testData1);
         $update1 = ['value' => json_encode('test_value1.1')];
         $adapter->update('settings', $update1, DbExpr::create("`key` = ``{$testData1[0]['key']}``"));
-        $this->assertEquals(
+        static::assertEquals(
             $adapter->quoteDbExpr(
                 DbExpr::create(
                     "UPDATE `settings` SET `value`=``\"test_value1.1\"`` WHERE (`key` = ``{$testData1[0]['key']}``)",
@@ -61,8 +61,8 @@ class PostgresAdapterUpdateDataTest extends TestCase
             ),
             Utils::FETCH_ALL
         );
-        $this->assertArraySubset(array_replace($testData1[0], $update1), $data[0]);
-        $this->assertArraySubset($testData1[1], $data[1]);
+        static::assertArraySubset(array_replace($testData1[0], $update1), $data[0]);
+        static::assertArraySubset($testData1[1], $data[1]);
         
         $testData2 = $this->getTestDataForAdminsTableInsert();
         $adapter->insertMany('admins', array_keys($testData2[0]), $testData2);
@@ -92,12 +92,12 @@ class PostgresAdapterUpdateDataTest extends TestCase
         $testData2[0] = array_replace($testData2[0], $update2);
         $testData2[1] = array_replace($testData2[1], $update2);
         $dataForAssert = $this->convertTestDataForAdminsTableAssert($testData2);
-        $this->assertEquals($dataForAssert[0], $data[0]);
-        $this->assertEquals($dataForAssert[0]['is_active'], $data[0]['is_active']);
-        $this->assertEquals($dataForAssert[0]['parent_id'], $data[0]['parent_id']);
-        $this->assertEquals($dataForAssert[1], $data[1]);
-        $this->assertEquals($dataForAssert[1]['is_active'], $data[1]['is_active']);
-        $this->assertEquals($dataForAssert[1]['parent_id'], $data[1]['parent_id']);
+        static::assertEquals($dataForAssert[0], $data[0]);
+        static::assertEquals($dataForAssert[0]['is_active'], $data[0]['is_active']);
+        static::assertEquals($dataForAssert[0]['parent_id'], $data[0]['parent_id']);
+        static::assertEquals($dataForAssert[1], $data[1]);
+        static::assertEquals($dataForAssert[1]['is_active'], $data[1]['is_active']);
+        static::assertEquals($dataForAssert[1]['parent_id'], $data[1]['parent_id']);
     }
     
 }

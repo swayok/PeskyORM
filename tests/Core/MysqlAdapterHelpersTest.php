@@ -318,7 +318,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
         $description = $adapter->describeTable('admins');
         static::assertEquals('admins', $description->getName());
         static::assertEquals(null, $description->getDbSchema());
-        static::assertCount(16, $description->getColumns());
+        static::assertCount(17, $description->getColumns());
         static::assertTrue(
             $description->getColumn('login')
                 ->isUnique()
@@ -344,7 +344,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
     public function testInvalidPkName4()
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid db entity name");
+        $this->expectExceptionMessage("\$pkName must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)");
         $this->invokePrivateAdapterMethod('guardPkNameArg', 'teasd as das d 90as9()');
     }
     

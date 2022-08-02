@@ -11,11 +11,11 @@ use PeskyORM\ORM\Record;
 use PeskyORM\ORM\RecordsArray;
 use PeskyORM\ORM\RecordsSet;
 use PeskyORM\ORM\RecordValue;
-use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use Swayok\Utils\NormalizeValue;
 use Swayok\Utils\Set;
 use Swayok\Utils\StringUtils;
+use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdmin2;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdmin3;
@@ -27,7 +27,7 @@ use Tests\PeskyORMTest\TestingSettings\TestingSettingsTable;
 use Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 use UnexpectedValueException;
 
-class DbRecordTest extends TestCase
+class DbRecordTest extends BaseTestCase
 {
     
     public static function setUpBeforeClass(): void

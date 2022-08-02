@@ -7,11 +7,11 @@ namespace Tests\Core;
 use PDO;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
-use PHPUnit\Framework\TestCase;
+use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\Data\TestDataForAdminsTable;
 use Tests\PeskyORMTest\TestingApp;
 
-class PostgresAdapterInsertDataTest extends TestCase
+class PostgresAdapterInsertDataTest extends BaseTestCase
 {
     use TestDataForAdminsTable;
     
@@ -42,7 +42,7 @@ class PostgresAdapterInsertDataTest extends TestCase
             $adapter->query(DbExpr::create("SELECT * FROM `settings` WHERE `key` = ``{$testData1['key']}``")),
             Utils::FETCH_FIRST
         );
-        $this->assertArraySubset($testData1, $data);
+        static::assertArraySubset($testData1, $data);
         
         $testData2 = $this->getTestDataForAdminsTableInsert()[0];
         $adapter->insert('admins', $testData2, [
@@ -56,9 +56,9 @@ class PostgresAdapterInsertDataTest extends TestCase
             Utils::FETCH_FIRST
         );
         $dataForAssert = $this->convertTestDataForAdminsTableAssert([$testData2])[0];
-        $this->assertEquals($dataForAssert, $data);
-        $this->assertEquals($dataForAssert['is_active'], $data['is_active']);
-        $this->assertNull($data['parent_id']);
+        static::assertEquals($dataForAssert, $data);
+        static::assertEquals($dataForAssert['is_active'], $data['is_active']);
+        static::assertNull($data['parent_id']);
         
         // insert already within transaction
         $adapter->begin();
@@ -73,10 +73,10 @@ class PostgresAdapterInsertDataTest extends TestCase
             [],
             ['id', 'key']
         );
-        $this->assertArrayHasKey('id', $return);
-        $this->assertArrayHasKey('key', $return);
-        $this->assertArrayNotHasKey('value', $return);
-        $this->assertEquals('test_key_returning1', $return['key']);
+        static::assertArrayHasKey('id', $return);
+        static::assertArrayHasKey('key', $return);
+        static::assertArrayNotHasKey('value', $return);
+        static::assertEquals('test_key_returning1', $return['key']);
         
         $return = $adapter->insert(
             'settings',
@@ -84,12 +84,12 @@ class PostgresAdapterInsertDataTest extends TestCase
             [],
             true
         );
-        $this->assertArrayHasKey('id', $return);
-        $this->assertArrayHasKey('key', $return);
-        $this->assertArrayHasKey('value', $return);
-        $this->assertGreaterThanOrEqual(1, $return['id']);
-        $this->assertEquals('test_key_returning2', $return['key']);
-        $this->assertEquals(json_encode('test_value1'), $return['value']);
+        static::assertArrayHasKey('id', $return);
+        static::assertArrayHasKey('key', $return);
+        static::assertArrayHasKey('value', $return);
+        static::assertGreaterThanOrEqual(1, $return['id']);
+        static::assertEquals('test_key_returning2', $return['key']);
+        static::assertEquals(json_encode('test_value1'), $return['value']);
     }
     
     public function testInvalidColumnsForInsertMany()
@@ -125,7 +125,7 @@ class PostgresAdapterInsertDataTest extends TestCase
             ['key' => 'test_key2', 'value' => json_encode('test_value2')],
         ];
         $adapter->insertMany('settings', ['key', 'value'], $testData1);
-        $this->assertEquals(
+        static::assertEquals(
             $adapter->quoteDbExpr(
                 DbExpr::create(
                     'INSERT INTO `settings` (`key`, `value`) VALUES '
@@ -145,8 +145,8 @@ class PostgresAdapterInsertDataTest extends TestCase
             ),
             Utils::FETCH_ALL
         );
-        $this->assertArraySubset($testData1[0], $data[0]);
-        $this->assertArraySubset($testData1[1], $data[1]);
+        static::assertArraySubset($testData1[0], $data[0]);
+        static::assertArraySubset($testData1[1], $data[1]);
         $data = $adapter->query(
             DbExpr::create(
                 "SELECT * FROM `settings` WHERE (`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)) ORDER BY `key`",
@@ -154,8 +154,8 @@ class PostgresAdapterInsertDataTest extends TestCase
             ),
             Utils::FETCH_ALL
         );
-        $this->assertArraySubset($testData1[0], $data[0]);
-        $this->assertArraySubset($testData1[1], $data[1]);
+        static::assertArraySubset($testData1[0], $data[0]);
+        static::assertArraySubset($testData1[1], $data[1]);
         
         $testData2 = $this->getTestDataForAdminsTableInsert();
         $adapter->insertMany('admins', array_keys($testData2[0]), $testData2, [
@@ -173,12 +173,12 @@ class PostgresAdapterInsertDataTest extends TestCase
             Utils::FETCH_ALL
         );
         $dataForAssert = $this->convertTestDataForAdminsTableAssert($testData2);
-        $this->assertEquals($dataForAssert[0], $data[0]);
-        $this->assertEquals($dataForAssert[1], $data[1]);
-        $this->assertEquals($dataForAssert[0]['is_active'], $data[0]['is_active']);
-        $this->assertEquals($dataForAssert[1]['is_active'], $data[1]['is_active']);
-        $this->assertNull($data[0]['parent_id']);
-        $this->assertEquals($dataForAssert[1]['parent_id'], $data[1]['parent_id']);
+        static::assertEquals($dataForAssert[0], $data[0]);
+        static::assertEquals($dataForAssert[1], $data[1]);
+        static::assertEquals($dataForAssert[0]['is_active'], $data[0]['is_active']);
+        static::assertEquals($dataForAssert[1]['is_active'], $data[1]['is_active']);
+        static::assertNull($data[0]['parent_id']);
+        static::assertEquals($dataForAssert[1]['parent_id'], $data[1]['parent_id']);
     }
     
     public function testInsertManyReturning()
@@ -191,28 +191,28 @@ class PostgresAdapterInsertDataTest extends TestCase
             ['key' => 'test_key_returning3', 'value' => json_encode('test_value1')],
         ];
         $return = $adapter->insertMany('settings', ['key', 'value'], $testData3, [], true);
-        $this->assertCount(2, $return);
-        $this->assertArrayHasKey('id', $return[0]);
-        $this->assertArraySubset($testData3[0], $return[0]);
-        $this->assertGreaterThanOrEqual(1, $return[0]['id']);
-        $this->assertArrayHasKey('id', $return[1]);
-        $this->assertArraySubset($testData3[1], $return[1]);
-        $this->assertGreaterThanOrEqual(1, $return[1]['id']);
+        static::assertCount(2, $return);
+        static::assertArrayHasKey('id', $return[0]);
+        static::assertArraySubset($testData3[0], $return[0]);
+        static::assertGreaterThanOrEqual(1, $return[0]['id']);
+        static::assertArrayHasKey('id', $return[1]);
+        static::assertArraySubset($testData3[1], $return[1]);
+        static::assertGreaterThanOrEqual(1, $return[1]['id']);
         
         $testData4 = [
             ['key' => 'test_key_returning4', 'value' => json_encode('test_value1')],
             ['key' => 'test_key_returning5', 'value' => json_encode('test_value1')],
         ];
         $return = $adapter->insertMany('settings', ['key', 'value'], $testData4, [], ['id']);
-        $this->assertCount(2, $return);
-        $this->assertArrayHasKey('id', $return[0]);
-        $this->assertArrayNotHasKey('key', $return[0]);
-        $this->assertArrayNotHasKey('value', $return[0]);
-        $this->assertGreaterThanOrEqual(1, $return[0]['id']);
-        $this->assertArrayHasKey('id', $return[1]);
-        $this->assertArrayNotHasKey('key', $return[1]);
-        $this->assertArrayNotHasKey('value', $return[1]);
-        $this->assertGreaterThanOrEqual(1, $return[1]['id']);
+        static::assertCount(2, $return);
+        static::assertArrayHasKey('id', $return[0]);
+        static::assertArrayNotHasKey('key', $return[0]);
+        static::assertArrayNotHasKey('value', $return[0]);
+        static::assertGreaterThanOrEqual(1, $return[0]['id']);
+        static::assertArrayHasKey('id', $return[1]);
+        static::assertArrayNotHasKey('key', $return[1]);
+        static::assertArrayNotHasKey('value', $return[1]);
+        static::assertGreaterThanOrEqual(1, $return[1]['id']);
     }
     
 }

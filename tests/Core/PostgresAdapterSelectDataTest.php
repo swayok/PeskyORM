@@ -6,11 +6,11 @@ namespace Tests\Core;
 
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Select;
-use PHPUnit\Framework\TestCase;
+use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\Data\TestDataForAdminsTable;
 use Tests\PeskyORMTest\TestingApp;
 
-class PostgresAdapterSelectDataTest extends TestCase
+class PostgresAdapterSelectDataTest extends BaseTestCase
 {
     use TestDataForAdminsTable;
     
@@ -40,8 +40,8 @@ class PostgresAdapterSelectDataTest extends TestCase
         $adapter->insertMany('admins', array_keys($testData[0]), $testData);
         
         $data = $adapter->select('admins', [], DbExpr::create('ORDER BY `id`', false));
-        $this->assertEquals($dataForAssert[0], $data[0]);
-        $this->assertEquals($dataForAssert[1], $data[1]);
+        static::assertEquals($dataForAssert[0], $data[0]);
+        static::assertEquals($dataForAssert[1], $data[1]);
         
         $data = $adapter->select(
             'admins',
@@ -50,11 +50,11 @@ class PostgresAdapterSelectDataTest extends TestCase
                 "WHERE `id` IN (``{$testData[0]['id']}``)"
             )
         );
-        $this->assertCount(1, $data);
-        $this->assertCount(2, $data[0]);
-        $this->assertArrayHasKey('id', $data[0]);
-        $this->assertArrayHasKey('parent_id', $data[0]);
-        $this->assertArraySubset($data[0], $dataForAssert[0]);
+        static::assertCount(1, $data);
+        static::assertCount(2, $data[0]);
+        static::assertArrayHasKey('id', $data[0]);
+        static::assertArrayHasKey('parent_id', $data[0]);
+        static::assertArraySubset($data[0], $dataForAssert[0]);
         
         $data = $adapter->selectOne(
             'admins',
@@ -63,15 +63,15 @@ class PostgresAdapterSelectDataTest extends TestCase
                 "WHERE `id` IN (``{$testData[0]['id']}``)"
             )
         );
-        $this->assertEquals($dataForAssert[0], $data);
+        static::assertEquals($dataForAssert[0], $data);
         
         $data = $adapter->selectColumn('admins', 'email', DbExpr::create('ORDER BY `id`'));
-        $this->assertCount(2, $data);
-        $this->assertEquals([$dataForAssert[0]['email'], $dataForAssert[1]['email']], $data);
+        static::assertCount(2, $data);
+        static::assertEquals([$dataForAssert[0]['email'], $dataForAssert[1]['email']], $data);
         
         $data = $adapter->selectAssoc('admins', 'id', 'email', DbExpr::create('ORDER BY `id`'));
-        $this->assertCount(2, $data);
-        $this->assertEquals(
+        static::assertCount(2, $data);
+        static::assertEquals(
             [
                 $dataForAssert[0]['id'] => $dataForAssert[0]['email'],
                 $dataForAssert[1]['id'] => $dataForAssert[1]['email'],
@@ -80,7 +80,7 @@ class PostgresAdapterSelectDataTest extends TestCase
         );
         
         $data = $adapter->selectValue('admins', DbExpr::create('COUNT(`*`)'));
-        $this->assertEquals(2, $data);
+        static::assertEquals(2, $data);
     }
     
     public function testInvalidAnalyzeColumnName1()

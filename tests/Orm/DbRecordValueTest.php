@@ -5,13 +5,13 @@ namespace Tests\Orm;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\RecordValue;
-use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use Tests\PeskyORMTest\TestingApp;
 
-class DbRecordValueTest extends TestCase
+class DbRecordValueTest extends BaseTestCase
 {
     
     public static function setUpBeforeClass(): void

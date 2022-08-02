@@ -4,8 +4,8 @@ namespace Tests\Orm;
 
 use PeskyORM\ORM\ClassBuilder;
 use PeskyORM\ORM\Column;
-use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use Tests\PeskyORMTest\TestingApp;
@@ -14,7 +14,7 @@ use Tests\PeskyORMTest\Traits\TestingCreatedAtColumnTrait;
 use Tests\PeskyORMTest\Traits\TestingIdColumnTrait;
 use Tests\PeskyORMTest\Traits\TestingTimestampColumnsTrait;
 
-class DbClassBuilderTest extends TestCase
+class DbClassBuilderTest extends BaseTestCase
 {
     
     /**

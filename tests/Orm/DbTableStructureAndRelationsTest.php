@@ -6,8 +6,8 @@ use PeskyORM\Core\DbExpr;
 use PeskyORM\Exception\OrmException;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Relation;
-use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdmins4TableStructure;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use Tests\PeskyORMTest\TestingApp;
@@ -16,7 +16,7 @@ use Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStruc
 use Tests\PeskyORMTest\TestingInvalidClasses\TestingNoPkColumnInTableStructure;
 use Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 
-class DbTableStructureAndRelationsTest extends TestCase
+class DbTableStructureAndRelationsTest extends BaseTestCase
 {
     
     public static function setUpBeforeClass(): void

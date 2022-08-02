@@ -144,7 +144,13 @@ class Postgres extends DbAdapter
     
     public function disconnect()
     {
-        $this->query('SELECT pg_terminate_backend(pg_backend_pid());');
+        try {
+            $this->query('SELECT pg_terminate_backend(pg_backend_pid());');
+        } catch (\PDOException $exception) {
+            if (stripos($exception->getMessage(), 'terminating connection due to administrator command') === false) {
+                throw $exception;
+            }
+        }
         return parent::disconnect();
     }
     

@@ -10,9 +10,9 @@ use PeskyORM\Core\Select;
 use PeskyORM\ORM\FakeTable;
 use PeskyORM\ORM\OrmJoinInfo;
 use PeskyORM\ORM\OrmSelect;
-use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use Swayok\Utils\Set;
+use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableLongAlias;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
@@ -20,7 +20,7 @@ use Tests\PeskyORMTest\TestingApp;
 use Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 use UnexpectedValueException;
 
-class OrmSelectTest extends TestCase
+class OrmSelectTest extends BaseTestCase
 {
     
     public static function setUpBeforeClass(): void

@@ -4,10 +4,10 @@ namespace Tests\Core;
 
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
-use PHPUnit\Framework\TestCase;
+use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingApp;
 
-class PostgresAdapterDeleteDataTest extends TestCase
+class PostgresAdapterDeleteDataTest extends BaseTestCase
 {
     
     static public function setUpBeforeClass(): void
@@ -44,7 +44,7 @@ class PostgresAdapterDeleteDataTest extends TestCase
         ];
         $adapter->insertMany('settings', ['key', 'value'], $testData1);
         $rowsDeleted = $adapter->delete('settings', DbExpr::create("`key` = ``{$testData1[0]['key']}``"));
-        $this->assertEquals(
+        static::assertEquals(
             $adapter->quoteDbExpr(
                 DbExpr::create(
                     "DELETE FROM `settings` WHERE (`key` = ``{$testData1[0]['key']}``)",
@@ -53,7 +53,7 @@ class PostgresAdapterDeleteDataTest extends TestCase
             ),
             $adapter->getLastQuery()
         );
-        $this->assertEquals(1, $rowsDeleted);
+        static::assertEquals(1, $rowsDeleted);
         $count = Utils::getDataFromStatement(
             $adapter->query(
                 DbExpr::create(
@@ -63,7 +63,7 @@ class PostgresAdapterDeleteDataTest extends TestCase
             ),
             Utils::FETCH_VALUE
         );
-        $this->assertEquals(1, $count);
+        static::assertEquals(1, $count);
     }
     
     public function testDeleteReturning()
@@ -79,8 +79,8 @@ class PostgresAdapterDeleteDataTest extends TestCase
             DbExpr::create("`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)"),
             true
         );
-        $this->assertCount(2, $deletedRecords);
-        $this->assertEquals($insertedData, $deletedRecords);
+        static::assertCount(2, $deletedRecords);
+        static::assertEquals($insertedData, $deletedRecords);
         
         $insertedData = $adapter->insertMany('settings', ['key', 'value'], $testData1, [], ['id', 'value']);
         $deletedRecords = $adapter->delete(
@@ -88,8 +88,8 @@ class PostgresAdapterDeleteDataTest extends TestCase
             DbExpr::create("`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)"),
             ['id', 'value']
         );
-        $this->assertCount(2, $deletedRecords);
-        $this->assertEquals($insertedData, $deletedRecords);
+        static::assertCount(2, $deletedRecords);
+        static::assertEquals($insertedData, $deletedRecords);
     }
     
 }

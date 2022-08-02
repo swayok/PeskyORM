@@ -3,14 +3,12 @@
 namespace Tests\Core;
 
 use PDO;
-use PeskyORM\Adapter\Postgres;
-use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbExpr;
-use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingApp;
 
-class PostgresAdapterGeneralFunctionalityTest extends TestCase
+class PostgresAdapterGeneralFunctionalityTest extends BaseTestCase
 {
     
     public static function setUpBeforeClass(): void
@@ -26,105 +24,6 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
     static private function getValidAdapter()
     {
         return TestingApp::getPgsqlConnection();
-    }
-    
-    public function testConnectionWithInvalidUserName()
-    {
-        $this->expectException(\PDOException::class);
-        $this->expectExceptionMessageMatches("(password authentication failed for user|role .*? does not exist)");
-        $config = PostgresConfig::fromArray([
-            'database' => 'totally_not_existing_db',
-            'username' => 'totally_not_existing_user',
-            'password' => 'this_password_is_for_not_existing_user',
-        ]);
-        $adapter = new Postgres($config);
-        $adapter->getConnection();
-    }
-    
-    public function testConnectionWithInvalidUserName2()
-    {
-        $this->expectException(\PDOException::class);
-        $this->expectExceptionMessageMatches("(password authentication failed for user|database .*? does not exist)");
-        $config = PostgresConfig::fromArray([
-            'database' => 'totally_not_existing_db',
-            'username' => static::getValidAdapter()
-                ->getConnectionConfig()
-                ->getUserName(),
-            'password' => 'this_password_is_for_not_existing_user',
-        ]);
-        $adapter = new Postgres($config);
-        $adapter->getConnection();
-    }
-    
-    public function testConnectionWithInvalidDbName()
-    {
-        $this->expectException(\PDOException::class);
-        $this->expectExceptionMessage("database \"totally_not_existing_db\" does not exist");
-        $config = PostgresConfig::fromArray([
-            'database' => 'totally_not_existing_db',
-            'username' => static::getValidAdapter()
-                ->getConnectionConfig()
-                ->getUserName(),
-            'password' => static::getValidAdapter()
-                ->getConnectionConfig()
-                ->getUserPassword(),
-        ]);
-        $adapter = new Postgres($config);
-        $adapter->getConnection();
-    }
-    
-    public function testConnectionWithInvalidUserPassword()
-    {
-        $this->expectException(\PDOException::class);
-        $this->expectExceptionMessage("password authentication failed for user");
-        $config = PostgresConfig::fromArray([
-            'database' => static::getValidAdapter()
-                ->getConnectionConfig()
-                ->getDbName(),
-            'username' => static::getValidAdapter()
-                ->getConnectionConfig()
-                ->getUserName(),
-            'password' => 'this_password_is_for_not_existing_user',
-        ]);
-        $adapter = new Postgres($config);
-        $adapter->getConnection();
-    }
-    
-    /**
-     * Note: very slow
-     */
-    /*public function testConnectionWithInvalidDbPort2() {
-        $this->expectException(PDOException::class);
-        $this->expectExceptionMessage('could not connect to server');
-        $config = PostgresConfig::fromArray([
-            'database' => static::getValidAdapter()->getConnectionConfig()->getDbName(),
-            'username' => static::getValidAdapter()->getConnectionConfig()->getUserName(),
-            'password' => static::getValidAdapter()->getConnectionConfig()->getUserPassword(),
-            'port' => '9999'
-        ]);
-        $adapter = new Postgres($config);
-        $adapter->getConnection();
-    }*/
-    
-    public function testValidConnection()
-    {
-        $adapter = static::getValidAdapter();
-        $adapter->getConnection();
-        $stmnt = $adapter->query('SELECT 1');
-        $this->assertEquals(1, $stmnt->rowCount());
-    }
-    
-    public function testDisconnect()
-    {
-        $adapter = static::getValidAdapter();
-        $adapter->getConnection();
-        $adapter->disconnect();
-        $reflector = new ReflectionClass($adapter);
-        $prop = $reflector->getProperty('pdo');
-        $prop->setAccessible(true);
-        $this->assertEquals(null, $prop->getValue($adapter));
-        $reflector->getProperty('pdo')
-            ->setAccessible(false);
     }
     
     public function testQuotingOfInvalidDbEntity()
@@ -263,35 +162,35 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
     {
         $adapter = static::getValidAdapter();
         // names
-        $this->assertEquals('"table1"', $adapter->quoteDbEntityName('table1'));
-        $this->assertEquals('*', $adapter->quoteDbEntityName('*'));
-        $this->assertEquals('"table"."colname"', $adapter->quoteDbEntityName('table.colname'));
-        $this->assertEquals('"table"."colname"->\'jsonkey\'', $adapter->quoteDbEntityName('table.colname->jsonkey'));
-        $this->assertEquals('"table"."colname"#>\'jsonkey\'', $adapter->quoteDbEntityName('table.colname #> jsonkey'));
-        $this->assertEquals('"table"."colname"->>\'json key\'', $adapter->quoteDbEntityName('table.colname ->> json key'));
-        $this->assertEquals('"table"."colname"#>>\'json key\'', $adapter->quoteDbEntityName('table.colname #>> \'json key\''));
-        $this->assertEquals('"table"."colname"->\'json key\'', $adapter->quoteDbEntityName('table.colname -> "json key"'));
-        $this->assertEquals(
+        static::assertEquals('"table1"', $adapter->quoteDbEntityName('table1'));
+        static::assertEquals('*', $adapter->quoteDbEntityName('*'));
+        static::assertEquals('"table"."colname"', $adapter->quoteDbEntityName('table.colname'));
+        static::assertEquals('"table"."colname"->\'jsonkey\'', $adapter->quoteDbEntityName('table.colname->jsonkey'));
+        static::assertEquals('"table"."colname"#>\'jsonkey\'', $adapter->quoteDbEntityName('table.colname #> jsonkey'));
+        static::assertEquals('"table"."colname"->>\'json key\'', $adapter->quoteDbEntityName('table.colname ->> json key'));
+        static::assertEquals('"table"."colname"#>>\'json key\'', $adapter->quoteDbEntityName('table.colname #>> \'json key\''));
+        static::assertEquals('"table"."colname"->\'json key\'', $adapter->quoteDbEntityName('table.colname -> "json key"'));
+        static::assertEquals(
             '"table"."colname"->\'json key\'->>\'json key 2\'',
             $adapter->quoteDbEntityName('table.colname -> "json key" ->> json key 2')
         );
         // values
-        $this->assertEquals("''';DROP table1;'", $adapter->quoteValue('\';DROP table1;'));
-        $this->assertEquals('TRUE', $adapter->quoteValue(true));
-        $this->assertEquals('TRUE', $adapter->quoteValue(1, PDO::PARAM_BOOL));
-        $this->assertEquals('TRUE', $adapter->quoteValue('1', PDO::PARAM_BOOL));
-        $this->assertEquals('FALSE', $adapter->quoteValue(false));
-        $this->assertEquals('FALSE', $adapter->quoteValue(0, PDO::PARAM_BOOL));
-        $this->assertEquals('FALSE', $adapter->quoteValue('0', PDO::PARAM_BOOL));
-        $this->assertEquals('NULL', $adapter->quoteValue(null));
-        $this->assertEquals('NULL', $adapter->quoteValue('abrakadabra', PDO::PARAM_NULL));
-        $this->assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_INT));
-        $this->assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_BOOL));
-        $this->assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_STR));
-        $this->assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_LOB));
-        $this->assertEquals("'123'", $adapter->quoteValue(123));
-        $this->assertEquals("'123'", $adapter->quoteValue(123, PDO::PARAM_INT));
-        $this->assertEquals(
+        static::assertEquals("''';DROP table1;'", $adapter->quoteValue('\';DROP table1;'));
+        static::assertEquals('TRUE', $adapter->quoteValue(true));
+        static::assertEquals('TRUE', $adapter->quoteValue(1, PDO::PARAM_BOOL));
+        static::assertEquals('TRUE', $adapter->quoteValue('1', PDO::PARAM_BOOL));
+        static::assertEquals('FALSE', $adapter->quoteValue(false));
+        static::assertEquals('FALSE', $adapter->quoteValue(0, PDO::PARAM_BOOL));
+        static::assertEquals('FALSE', $adapter->quoteValue('0', PDO::PARAM_BOOL));
+        static::assertEquals('NULL', $adapter->quoteValue(null));
+        static::assertEquals('NULL', $adapter->quoteValue('abrakadabra', PDO::PARAM_NULL));
+        static::assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_INT));
+        static::assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_BOOL));
+        static::assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_STR));
+        static::assertEquals('NULL', $adapter->quoteValue(null, PDO::PARAM_LOB));
+        static::assertEquals("'123'", $adapter->quoteValue(123));
+        static::assertEquals("'123'", $adapter->quoteValue(123, PDO::PARAM_INT));
+        static::assertEquals(
             'DELETE FROM "table1" WHERE "col1" = \'value1\'',
             $adapter->quoteDbExpr(DbExpr::create('DELETE FROM `table1` WHERE `col1` = ``value1``'))
         );
@@ -303,7 +202,7 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
         $method = (new ReflectionClass($adapter))->getMethod('buildColumnsList');
         $method->setAccessible(true);
         $colsList = $method->invoke($adapter, ['column1', 'alias.column2']);
-        $this->assertEquals('("column1", "alias"."column2")', $colsList);
+        static::assertEquals('("column1", "alias"."column2")', $colsList);
     }
     
     public function testInvalidColumnsInBuildValuesList()
@@ -342,9 +241,9 @@ class PostgresAdapterGeneralFunctionalityTest extends TestCase
         ];
         $columns = array_keys($data);
         $valsList = $method->invoke($adapter, $columns, $data);
-        $this->assertEquals("('val1', '1', NULL, TRUE, FALSE, '', '1.22')", $valsList);
+        static::assertEquals("('val1', '1', NULL, TRUE, FALSE, '', '1.22')", $valsList);
         $valsList = $method->invoke($adapter, $columns, $data, ['col2' => PDO::PARAM_BOOL]);
-        $this->assertEquals("('val1', TRUE, NULL, TRUE, FALSE, '', '1.22')", $valsList);
+        static::assertEquals("('val1', TRUE, NULL, TRUE, FALSE, '', '1.22')", $valsList);
     }
     
     

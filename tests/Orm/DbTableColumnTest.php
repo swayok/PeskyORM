@@ -5,12 +5,12 @@ namespace Tests\Orm;
 use InvalidArgumentException;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\DefaultColumnClosures;
-use PHPUnit\Framework\TestCase;
 use Swayok\Utils\NormalizeValue;
+use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use Tests\PeskyORMTest\TestingApp;
 
-class DbTableColumnTest extends TestCase
+class DbTableColumnTest extends BaseTestCase
 {
     
     public static function setUpBeforeClass(): void

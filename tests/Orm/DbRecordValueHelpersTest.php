@@ -5,13 +5,13 @@ namespace Tests\Orm;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\RecordValue;
 use PeskyORM\ORM\RecordValueHelpers;
-use PHPUnit\Framework\TestCase;
 use SplFileInfo;
 use Swayok\Utils\NormalizeValue;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingSettings\TestingSetting;
 
-class DbRecordValueHelpersTest extends TestCase
+class DbRecordValueHelpersTest extends BaseTestCase
 {
     
     public static function setUpBeforeClass(): void
