@@ -60,7 +60,7 @@ abstract class TableStructure implements TableStructureInterface
     /** @var array */
     protected $columnsRelations = [];
     
-    /** @var TableStructure[] */
+    /** @var TableStructureInterface[] */
     static private $instances = [];
     
     /**
@@ -102,10 +102,10 @@ abstract class TableStructure implements TableStructureInterface
         if (static::$autoloadConfigsFromPrivateMethods) {
             $this->loadColumnsConfigsFromPrivateMethods();
         }
-        $this->loadColumnsConfigs();
         if (static::$autodetectColumnsConfigs) {
             $this->createMissingColumnsConfigsFromDbTableDescription();
         }
+        $this->loadColumnsConfigs(); //< this is correct place - here virtual columns may use real columns
         $this->loadRelationsConfigs();
         $this->analyze();
         $this->validate();
