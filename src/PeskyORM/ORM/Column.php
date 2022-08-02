@@ -771,6 +771,15 @@ class Column
     }
     
     /**
+     * @return $this
+     */
+    public function setConvertEmptyStringToNull(?bool $convert)
+    {
+        $this->convertEmptyStringToNull = $convert;
+        return $this;
+    }
+    
+    /**
      * @return array
      * @throws \UnexpectedValueException
      */
@@ -1233,7 +1242,7 @@ class Column
     
     /**
      * Alias for Column::extendValueValidator
-     * @param \Closure $validator
+     * @param \Closure $validator - function ($value, $isFromDb, $isForCondition, Column $column) { return ['validation error 1', ...]; }
      * @return $this
      * @see Column::extendValueValidator
      */

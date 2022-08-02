@@ -80,7 +80,7 @@ class DbTableColumnDefaultClosuresTest extends BaseTestCase
     {
         $column = Column::create(Column::TYPE_ENUM, 'test')
             ->setAllowedValues(['a', 'b'])
-            ->setValueValidatorExtender(function ($value, $isFromDb, Column $column) {
+            ->setValueValidatorExtender(function ($value, $isFromDb, $isForCondition, Column $column) {
                 return $value === 'a' ? ['extender!!!'] : [];
             });
         static::assertEquals(
@@ -116,9 +116,10 @@ class DbTableColumnDefaultClosuresTest extends BaseTestCase
     
     public function testInvalidFormatInValueGetter2()
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$format argument for column 'created_at' must be a string or a number.");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #2 (\$format) must be of type ?string");
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('created_at'), TestingAdmin::_());
+        /** @noinspection PhpStrictTypeCheckingInspection */
         DefaultColumnClosures::valueGetter($valueObj, false);
     }
     

@@ -45,7 +45,7 @@ class DbRecordValueHelpersTest extends BaseTestCase
     {
         $column = Column::create(Column::TYPE_STRING, 'test');
         static::assertFalse($column->isValueTrimmingRequired());
-        static::assertFalse($column->isEmptyStringMustBeConvertedToNull());
+        static::assertTrue($column->isEmptyStringMustBeConvertedToNull());
         static::assertFalse($column->isValueLowercasingRequired());
         static::assertEquals(' ', RecordValueHelpers::preprocessColumnValue($column, ' ', false, false));
         $column->trimsValue();
@@ -71,8 +71,8 @@ class DbRecordValueHelpersTest extends BaseTestCase
         static::assertTrue(RecordValueHelpers::normalizeValue('false', Column::TYPE_BOOL));
         static::assertTrue(RecordValueHelpers::normalizeValue(1, Column::TYPE_BOOL));
         static::assertTrue(RecordValueHelpers::normalizeValue(2, Column::TYPE_BOOL));
-        static::assertTrue(RecordValueHelpers::normalizeValue([], Column::TYPE_BOOL));
-        static::assertTrue(RecordValueHelpers::normalizeValue('', Column::TYPE_BOOL));
+        static::assertFalse(RecordValueHelpers::normalizeValue([], Column::TYPE_BOOL));
+        static::assertFalse(RecordValueHelpers::normalizeValue('', Column::TYPE_BOOL));
         static::assertFalse(RecordValueHelpers::normalizeValue(0, Column::TYPE_BOOL));
         static::assertFalse(RecordValueHelpers::normalizeValue('0', Column::TYPE_BOOL));
         static::assertFalse(RecordValueHelpers::normalizeValue(false, Column::TYPE_BOOL));
@@ -366,21 +366,21 @@ class DbRecordValueHelpersTest extends BaseTestCase
         static::assertNotEmpty($ret);
         static::assertIsArray($ret);
         static::assertCount(2, $ret);
-        static::assertEquals(['date', 'time', 'unix_ts'], $ret[1]);
+        static::assertEquals(['date', 'time', 'unix_ts', 'carbon'], $ret[1]);
         static::assertInstanceOf(\Closure::class, $ret[0]);
         
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_TIMESTAMP);
         static::assertNotEmpty($ret);
         static::assertIsArray($ret);
         static::assertCount(2, $ret);
-        static::assertEquals(['date', 'time', 'unix_ts'], $ret[1]);
+        static::assertEquals(['date', 'time', 'unix_ts', 'carbon'], $ret[1]);
         static::assertInstanceOf(\Closure::class, $ret[0]);
         
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_TIMESTAMP_WITH_TZ);
         static::assertNotEmpty($ret);
         static::assertIsArray($ret);
         static::assertCount(2, $ret);
-        static::assertEquals(['date', 'time', 'unix_ts'], $ret[1]);
+        static::assertEquals(['date', 'time', 'unix_ts', 'carbon'], $ret[1]);
         static::assertInstanceOf(\Closure::class, $ret[0]);
     }
     
@@ -390,7 +390,7 @@ class DbRecordValueHelpersTest extends BaseTestCase
         static::assertNotEmpty($ret);
         static::assertIsArray($ret);
         static::assertCount(2, $ret);
-        static::assertEquals(['unix_ts'], $ret[1]);
+        static::assertEquals(['unix_ts', 'carbon'], $ret[1]);
         static::assertInstanceOf(\Closure::class, $ret[0]);
         
         $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_TIME);
@@ -430,8 +430,9 @@ class DbRecordValueHelpersTest extends BaseTestCase
     
     public function testInvalidFormatTimestamp1()
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$format argument must be a string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #2 (\$format) must be of type string");
+        /** @noinspection PhpStrictTypeCheckingInspection */
         RecordValueHelpers::formatTimestamp(
             $this->createDbRecordValue(Column::TYPE_TIMESTAMP, '2016-09-01 01:02:03'),
             []
@@ -440,8 +441,9 @@ class DbRecordValueHelpersTest extends BaseTestCase
     
     public function testInvalidFormatTimestamp2()
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$format argument must be a string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #2 (\$format) must be of type string");
+        /** @noinspection PhpStrictTypeCheckingInspection */
         RecordValueHelpers::formatTimestamp(
             $this->createDbRecordValue(Column::TYPE_TIMESTAMP, '2016-09-01 01:02:03'),
             null
@@ -450,8 +452,9 @@ class DbRecordValueHelpersTest extends BaseTestCase
     
     public function testInvalidFormatTimestamp3()
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$format argument must be a string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument #2 (\$format) must be of type string");
+        /** @noinspection PhpStrictTypeCheckingInspection */
         RecordValueHelpers::formatTimestamp(
             $this->createDbRecordValue(Column::TYPE_TIMESTAMP, '2016-09-01 01:02:03'),
             true
@@ -858,9 +861,9 @@ class DbRecordValueHelpersTest extends BaseTestCase
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('"1.11"', Column::TYPE_JSON, true));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('[]', Column::TYPE_JSON, true));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('["a"]', Column::TYPE_JSON, true));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('{1:1.11}', Column::TYPE_JSON, true));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('{"a":}', Column::TYPE_JSON, true));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('{"a":"b",}', Column::TYPE_JSON, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('{1:1.11}', Column::TYPE_JSON, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('{"a":}', Column::TYPE_JSON, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType('{"a":"b",}', Column::TYPE_JSON, true));
     }
     
     public function testIsValueFitsDataTypeEmail()
@@ -916,11 +919,11 @@ class DbRecordValueHelpersTest extends BaseTestCase
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_STRING, false));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_STRING, false));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_STRING, false));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_STRING, false));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_STRING, false));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_STRING, false));
-        static::assertEquals(['string'],
-            RecordValueHelpers::isValueFitsDataType(-1.25, Column::TYPE_STRING, false, ['value_must_be_string' => 'string']));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_STRING, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_STRING, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_STRING, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-1.25, Column::TYPE_STRING, false));
+        static::assertEquals(['string'], RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_STRING, false, ['value_must_be_string' => 'string']));
         // for conditions
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('str', Column::TYPE_STRING, true));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType('', Column::TYPE_STRING, true));
@@ -930,9 +933,10 @@ class DbRecordValueHelpersTest extends BaseTestCase
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(false, Column::TYPE_STRING, true));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType([], Column::TYPE_STRING, true));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_STRING, true));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_STRING, true));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_STRING, true));
-        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_STRING, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(-1, Column::TYPE_STRING, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1, Column::TYPE_STRING, true));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType(1.25, Column::TYPE_STRING, true));
+        static::assertEquals(['string'], RecordValueHelpers::isValueFitsDataType(null, Column::TYPE_STRING, true, ['value_must_be_string' => 'string']));
     }
     
     public function testIsValueFitsDataTypeEnum()
@@ -972,11 +976,13 @@ class DbRecordValueHelpersTest extends BaseTestCase
             'size' => filesize(__DIR__ . '/files/test_file.jpg'),
             'error' => 0,
         ];
-        $invalidFileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['error']); //< is_uploaded_file() will fail
+        $validUploadedFileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['error']); //< is_uploaded_file() will fail
         $validFileObj = new SplFileInfo($file['tmp_name']);
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_FILE, false));
-        static::assertEquals(['value_must_be_file'], RecordValueHelpers::isValueFitsDataType($invalidFileObj, Column::TYPE_FILE, false));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType($validFileObj, Column::TYPE_FILE, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($validUploadedFileObj, Column::TYPE_FILE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(['not_a_file'], Column::TYPE_FILE, false));
+        static::assertEquals($message, RecordValueHelpers::isValueFitsDataType(new \stdClass(), Column::TYPE_FILE, false));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('', Column::TYPE_FILE, false));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('true', Column::TYPE_FILE, false));
         static::assertEquals($message, RecordValueHelpers::isValueFitsDataType('false', Column::TYPE_FILE, false));
@@ -1034,12 +1040,14 @@ class DbRecordValueHelpersTest extends BaseTestCase
             'size' => filesize(__DIR__ . '/files/test_file.jpg'),
             'error' => 0,
         ];
-        $invalidFileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['error']); //< is_uploaded_file() will fail
+        $validUploadedFileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['error']); //< is_uploaded_file() will fail
         $validFileObj = new SplFileInfo($file['tmp_name']);
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_FILE, false));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE, false));
-        static::assertEquals(['value_must_be_image'], RecordValueHelpers::isValueFitsDataType($invalidFileObj, Column::TYPE_IMAGE, false));
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType($validFileObj, Column::TYPE_IMAGE, false));
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($validUploadedFileObj, Column::TYPE_IMAGE, false));
+        static::assertEquals(['value_must_be_image'], RecordValueHelpers::isValueFitsDataType(['not_a_file'], Column::TYPE_IMAGE, false));
+        static::assertEquals(['value_must_be_image'], RecordValueHelpers::isValueFitsDataType(new \stdClass(), Column::TYPE_IMAGE, false));
         $file['name'] = 'image_jpg';
         $file['type'] = 'image/jpeg';
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE, false));
@@ -1051,11 +1059,16 @@ class DbRecordValueHelpersTest extends BaseTestCase
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE, false));
         
         $file['type'] = 'text/plain';
-        $file['tmp_name'] = __DIR__ . '/files/test_file_jpg';
-        $fileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['error']);
-        static::assertEquals(['image'],
-            RecordValueHelpers::isValueFitsDataType($fileObj, Column::TYPE_IMAGE, false, ['value_must_be_image' => 'image']));
+        $file['tmp_name'] = __DIR__ . '/files/test_file_jpg'; //< mime autodetection will solve this
         static::assertEquals([], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE, false));
+        
+        $fileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['error']);
+        static::assertEquals([], RecordValueHelpers::isValueFitsDataType($fileObj, Column::TYPE_IMAGE, false));
+    
+        $file['tmp_name'] = __DIR__ . '/files/test_file.docx';
+        static::assertEquals(['image'], RecordValueHelpers::isValueFitsDataType($file, Column::TYPE_IMAGE, false, ['value_must_be_image' => 'image']));
+        $fileObj = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['error']);
+        static::assertEquals(['image'], RecordValueHelpers::isValueFitsDataType($fileObj, Column::TYPE_IMAGE, false, ['value_must_be_image' => 'image']));
     }
     
     public function testIsValidDbColumnValue()
@@ -1154,9 +1167,13 @@ class DbRecordValueHelpersTest extends BaseTestCase
         static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'test'], false));
         static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, null, false));
         static::assertEquals($message1, RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'ups', false));
-        static::assertEquals($message1, RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, '', false));
         static::assertEquals($message2, RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['ups'], false));
         static::assertEquals($message2, RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'ups'], false));
+        // column is nullable so it converts empty string to null -> there should not be any errors with empty string
+        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, '', false));
+        $column->setConvertEmptyStringToNull(false);
+        // and now it will fail
+        static::assertEquals($message1, RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, '', false));
     }
     
     public function testIsValueWithinTheAllowedValuesOfTheNotEnumColumn()
@@ -1188,12 +1205,14 @@ class DbRecordValueHelpersTest extends BaseTestCase
                 ['one_of_values_is_not_allowed' => 'bad value']
             )
         );
+        // column is nullable so it converts empty string to null -> there should not be any errors with empty string
+        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, '', false));
+        $column->setConvertEmptyStringToNull(false);
+        // and now it will fail
         static::assertEquals(
             ['no-no!'],
             RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, '', false, ['value_is_not_allowed' => 'no-no!'])
         );
-        $column->convertsEmptyStringToNull();
-        static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, '', false));
     }
     
 }

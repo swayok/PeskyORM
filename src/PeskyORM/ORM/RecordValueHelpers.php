@@ -28,7 +28,7 @@ abstract class RecordValueHelpers
         if (is_object($value) && ($value instanceof DbExpr || is_subclass_of($value, AbstractSelect::class))) {
             return [];
         }
-        $preprocessedValue = static::preprocessColumnValue($column, $value, true, $isFromDb);
+        $preprocessedValue = static::preprocessColumnValue($column, $value, $isFromDb, true);
         // null value?
         if ($preprocessedValue === null) {
             if ($isForCondition) {
@@ -205,7 +205,7 @@ abstract class RecordValueHelpers
                 return [];
             }
         }
-        $preprocessedValue = static::preprocessColumnValue($column, $value, true, $isFromDb);
+        $preprocessedValue = static::preprocessColumnValue($column, $value, $isFromDb, true);
         // column is nullable and value is null or should be converted to null
         if ($preprocessedValue === null && ($column->isValueCanBeNull() || ($isFromDb && $value !== null))) {
             return [];
