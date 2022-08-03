@@ -31,6 +31,15 @@ abstract class Table implements TableInterface
     }
     
     /**
+     * Resets class instances (used for testing only, that's why it is private)
+     * @noinspection PhpUnusedPrivateMethodInspection
+     */
+    static private function resetInstances()
+    {
+        self::$instances = [];
+    }
+    
+    /**
      * Shortcut for static::getInstance()
      * @return $this
      */
@@ -248,10 +257,10 @@ abstract class Table implements TableInterface
      * @param DbExpr $expression - example: DbExpr::create('COUNT(*)'), DbExpr::create('SUM(`field`)')
      * @param array $conditions
      * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return string|null
+     * @return string|int|float|null
      * @throws \PDOException
      */
-    static public function selectValue(DbExpr $expression, array $conditions = [], ?\Closure $configurator = null): ?string
+    static public function selectValue(DbExpr $expression, array $conditions = [], ?\Closure $configurator = null)
     {
         return static::makeSelect(['value' => $expression], $conditions, $configurator)
             ->fetchValue($expression);
@@ -699,15 +708,6 @@ abstract class Table implements TableInterface
             }
         }
         return $rows;
-    }
-    
-    /** @noinspection PhpUnusedPrivateMethodInspection */
-    /**
-     * Resets class instances (used for testing only, that's why it is private)
-     */
-    static private function resetInstances()
-    {
-        self::$instances = [];
     }
     
 }

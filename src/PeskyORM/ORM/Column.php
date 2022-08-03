@@ -191,11 +191,6 @@ class Column
      */
     protected $isValueCanBeSetOrChanged = true;
     /**
-     * When true - value will not be added to the results of Record::toArray() call
-     * @var bool
-     */
-    protected $isPrivateValue = false;
-    /**
      * Then true - value contains a lot of data and should not be fetched by '*' selects
      * @var bool
      */
@@ -1044,29 +1039,10 @@ class Column
     }
     
     /**
-     * @return bool
-     * @deprecated - use isValuePrivate()
-     */
-    public function isPrivateValue()
-    {
-        return $this->isPrivateValue;
-    }
-    
-    /**
-     * Value will not appear in Record->toArray() results
+     * Value will not appear in Record->toArray() results and in iteration
      * @return $this
      */
     public function privateValue()
-    {
-        $this->isPrivateValue = true;
-        return $this;
-    }
-    
-    /**
-     * @return $this
-     * @deprecated - use privateValue()
-     */
-    public function valueIsPrivate()
     {
         $this->isPrivate = true;
         return $this;

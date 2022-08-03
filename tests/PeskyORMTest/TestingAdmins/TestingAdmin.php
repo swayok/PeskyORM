@@ -5,25 +5,26 @@ namespace Tests\PeskyORMTest\TestingAdmins;
 use PeskyORM\ORM\Record;
 
 /**
- * @method $this setId($value, $isFromDb = false)
- * @method $this setParent($value, $isFromDb = false)
- * @method $this setChildren($value, $isFromDb = false)
- *
+ * @property int $id
+ * @property int $parent_id
+ * @property string $login
+ * @property string $email
+ * @property string $password
  * @property string $created_at_as_date
- * @property integer $parent_id
  *
  * @property Record $Parent
  * @property Record $HasOne
  * @property Record $Children
  * @property Record $VeryLongRelationNameSoItMustBeShortened
+ *
+ * @method $this setId($value, $isFromDb = false)
+ * @method $this setParent($value, $isFromDb = false)
+ * @method $this setChildren($value, $isFromDb = false)
  */
 class TestingAdmin extends Record
 {
     
-    /**
-     * @return TestingAdminsTable
-     */
-    static public function getTable()
+    static public function getTable(): TestingAdminsTable
     {
         return TestingAdminsTable::getInstance();
     }

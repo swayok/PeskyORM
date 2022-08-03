@@ -18,13 +18,13 @@ class DbTableColumnTest extends BaseTestCase
     
     public static function setUpBeforeClass(): void
     {
-        TestingApp::cleanInstancesOfDbTablesAndStructures();
+        TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
         TestingApp::getPgsqlConnection();
     }
     
     public static function tearDownAfterClass(): void
     {
-        TestingApp::cleanInstancesOfDbTablesAndStructures();
+        TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
     }
     
     /**

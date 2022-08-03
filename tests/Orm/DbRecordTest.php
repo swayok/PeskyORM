@@ -34,19 +34,19 @@ class DbRecordTest extends BaseTestCase
     
     public static function setUpBeforeClass(): void
     {
-        TestingApp::cleanInstancesOfDbTablesAndStructures();
+        TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
     }
     
     public static function tearDownAfterClass(): void
     {
         TestingApp::clearTables(static::getValidAdapter());
-        TestingApp::cleanInstancesOfDbTablesAndStructures();
+        TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
     }
     
     protected function setUp(): void
     {
         TestingApp::clearTables(static::getValidAdapter());
-        TestingApp::cleanInstancesOfDbTablesAndStructures();
+        TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
     }
     
     static protected function getValidAdapter()
@@ -199,7 +199,7 @@ class DbRecordTest extends BaseTestCase
         $rec->updateValues(['Parent' => ['id' => 2, 'parent_id' => null]], true);
         static::assertCount(1, $this->getObjectPropertyValue($rec, 'relatedRecords'));
         /** @var RecordValue $valId1 */
-        $valId1 = $this->callObjectMethod($rec, 'getValueObject', 'id');
+        $valId1 = $this->callObjectMethod($rec, 'getValueContainer', 'id');
         static::assertFalse($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
         $rec->begin()
             ->updateValue('parent_id', 3, false);
@@ -215,11 +215,11 @@ class DbRecordTest extends BaseTestCase
         static::assertFalse($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
         static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
         /** @var RecordValue $valId2 */
-        $valId2 = $this->callObjectMethod($rec, 'getValueObject', 'id');
+        $valId2 = $this->callObjectMethod($rec, 'getValueContainer', 'id');
         static::assertFalse($valId2->hasOldValue());
         $rec->updateValue('id', 2, true);
         /** @var RecordValue $valId3 */
-        $valId3 = $this->callObjectMethod($rec, 'getValueObject', 'id');
+        $valId3 = $this->callObjectMethod($rec, 'getValueContainer', 'id');
         static::assertEquals(2, $valId3->getValue());
     }
     
@@ -229,39 +229,48 @@ class DbRecordTest extends BaseTestCase
         static::assertInstanceOf(TestingSetting::class, TestingSetting::_());
         static::assertInstanceOf(TestingSetting::class, TestingSetting::newEmptyRecord());
         static::assertInstanceOf(TestingSettingsTable::class, TestingSetting::getTable());
+        static::assertSame(TestingSettingsTable::getInstance(), TestingSetting::getTable());
         static::assertInstanceOf(TestingSettingsTableStructure::class, TestingSetting::getTableStructure());
+        static::assertSame(TestingSettingsTableStructure::getInstance(), TestingSetting::getTableStructure());
         
         static::assertInstanceOf(TestingAdmin::class, TestingAdmin::_());
         static::assertInstanceOf(TestingAdmin::class, TestingAdmin::newEmptyRecord());
         static::assertInstanceOf(TestingAdminsTable::class, TestingAdmin::getTable());
+        static::assertSame(TestingAdminsTable::getInstance(), TestingAdmin::getTable());
         static::assertInstanceOf(TestingAdminsTableStructure::class, TestingAdmin::getTableStructure());
+        static::assertSame(TestingAdminsTableStructure::getInstance(), TestingAdmin::getTableStructure());
         
         // columns
-        static::assertEquals(TestingAdminsTableStructure::getColumns(), TestingAdmin::getColumns());
+        static::assertSame(TestingAdminsTableStructure::getColumns(), TestingAdmin::getColumns());
         static::assertTrue(TestingAdmin::hasColumn('language'));
-        static::assertEquals(
+        static::assertSame(
             TestingAdminsTableStructure::getColumn('language'),
             TestingAdmin::getColumn('language')
         );
-        static::assertEquals(
+        static::assertSame(
             TestingAdminsTableStructure::getColumn('parent_id'),
             TestingAdmin::getColumn('parent_id')
         );
-        static::assertEquals(
+        static::assertSame(
             TestingAdminsTableStructure::getColumn('id'),
             TestingAdmin::getPrimaryKeyColumn()
         );
+        static::assertEquals('id', TestingAdmin::getPrimaryKeyColumnName());
         
-        static::assertEquals(TestingSettingsTableStructure::getColumns(), TestingSetting::getColumns());
+        static::assertSame(TestingSettingsTableStructure::getColumns(), TestingSetting::getColumns());
         static::assertFalse(TestingSetting::hasColumn('language'));
         static::assertTrue(TestingSetting::hasColumn('key'));
-        static::assertEquals(
+        static::assertSame(
             TestingSettingsTableStructure::getColumn('key'),
             TestingSetting::getColumn('key')
         );
-        static::assertEquals(
+        static::assertSame(
             TestingSettingsTableStructure::getColumn('value'),
             TestingSetting::getColumn('value')
+        );
+        static::assertSame(
+            TestingSettingsTableStructure::getColumn('id'),
+            TestingSetting::getPrimaryKeyColumn()
         );
         static::assertEquals('id', TestingSetting::getPrimaryKeyColumnName());
         
@@ -286,11 +295,18 @@ class DbRecordTest extends BaseTestCase
         // validate value
         static::assertEquals([], TestingAdmin::validateValue('language', 'ru', true));
         static::assertEquals([], TestingAdmin::validateValue('language', 'ru', false));
-        static::assertEquals(['Value is not allowed: qq'], TestingAdmin::validateValue('language', 'qq', true));
-        static::assertEquals(['Value is not allowed: qq'], TestingAdmin::validateValue('language', 'qq', false));
+        static::assertEquals(['Value is not allowed: qq.'], TestingAdmin::validateValue('language', 'qq', true));
+        static::assertEquals(['Value is not allowed: qq.'], TestingAdmin::validateValue('language', 'qq', false));
         
         // columns that exist in db or not
-        static::assertEquals(['avatar', 'some_file', 'not_existing_column'], array_keys(TestingAdmin::getColumnsThatDoNotExistInDb()));
+        $expectedNotExistingColumnsList = [
+            'avatar',
+            'some_file',
+            'not_existing_column',
+            'not_existing_column_with_default_value',
+            'not_existing_column_with_calculated_value',
+        ];
+        static::assertEquals($expectedNotExistingColumnsList, array_keys(TestingAdmin::getColumnsThatDoNotExistInDb()));
         static::assertEquals([], array_keys(TestingSetting::getColumnsThatDoNotExistInDb()));
         static::assertEquals(
             [
@@ -310,6 +326,7 @@ class DbRecordTest extends BaseTestCase
                 'email',
                 'timezone',
                 'not_changeable_column',
+                'big_data',
             ],
             array_keys(TestingAdmin::getColumnsThatExistInDb())
         );
@@ -320,8 +337,8 @@ class DbRecordTest extends BaseTestCase
     {
         $rec = TestingAdmin::newEmptyRecord();
         $this->callObjectMethod($rec, 'createValueObject', $rec::getColumn('id'));
-        static::assertInstanceOf(RecordValue::class, $this->callObjectMethod($rec, 'getValueObject', 'id'));
-        static::assertInstanceOf(RecordValue::class, $this->callObjectMethod($rec, 'getValueObject', $rec::getColumn('id')));
+        static::assertInstanceOf(RecordValue::class, $this->callObjectMethod($rec, 'getValueContainer', 'id'));
+        static::assertInstanceOf(RecordValue::class, $this->callObjectMethod($rec, 'getValueContainer', $rec::getColumn('id')));
     }
     
     public function testResetValue()
@@ -350,16 +367,20 @@ class DbRecordTest extends BaseTestCase
         static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
     }
     
-    public function testGetValueObject()
+    public function testgetValueContainer()
     {
         $rec = TestingAdmin::newEmptyRecord();
+        static::assertArrayNotHasKey('id', $this->getObjectPropertyValue($rec, 'values')); //< lazy load
+        $container1 = $this->callObjectMethod($rec, 'getValueContainer', 'id');
         static::assertEquals(
             $this->getObjectPropertyValue($rec, 'values')['id'],
-            $this->callObjectMethod($rec, 'getValueObject', 'id')
+            $container1
         );
+        static::assertArrayNotHasKey('parent_id', $this->getObjectPropertyValue($rec, 'values')); //< lazy load
+        $container2 = $this->callObjectMethod($rec, 'getValueContainer', $rec::getColumn('parent_id'));
         static::assertEquals(
             $this->getObjectPropertyValue($rec, 'values')['parent_id'],
-            $this->callObjectMethod($rec, 'getValueObject', $rec::getColumn('parent_id'))
+            $container2
         );
     }
     
@@ -383,10 +404,10 @@ class DbRecordTest extends BaseTestCase
         static::assertFalse($rec->hasValue('id', false));
         static::assertTrue($rec->hasValue('id', true));
         
-        $val = $this->callObjectMethod($rec, 'getValueObject', 'id');
-        static::assertFalse($this->callObjectMethod($rec, '_hasValue', $val));
-        static::assertFalse($this->callObjectMethod($rec, '_hasValue', $val, false));
-        static::assertTrue($this->callObjectMethod($rec, '_hasValue', $val, true));
+//        $val = $this->callObjectMethod($rec, 'getValueContainer', 'id');
+//        static::assertFalse($this->callObjectMethod($rec, '_hasValue', $val));
+//        static::assertFalse($this->callObjectMethod($rec, '_hasValue', $val, false));
+//        static::assertTrue($this->callObjectMethod($rec, '_hasValue', $val, true));
         
         $rec->updateValue('id', 2, true);
         static::assertTrue($rec->hasValue('id', false));
@@ -438,7 +459,7 @@ class DbRecordTest extends BaseTestCase
     public function testInvalidSetPkValue()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("It is forbidden to set primary key value when \$isFromDb === false");
+        $this->expectExceptionMessage("It is forbidden to change primary key value when \$isFromDb === false");
         $rec = new TestingAdmin();
         $rec->updateValue('id', 1, false);
     }
@@ -446,7 +467,7 @@ class DbRecordTest extends BaseTestCase
     public function testInvalidUnsetValue()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Table does not contain column named 'invalidcolumn'");
+        $this->expectExceptionMessage("There is no column 'invalidcolumn' in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         $rec = new TestingAdmin();
         $rec->unsetValue('invalidcolumn');
     }
@@ -459,14 +480,14 @@ class DbRecordTest extends BaseTestCase
         static::assertTrue($rec->hasValue('id'));
         static::assertEquals(2, $rec->getValue('id'));
         /** @var RecordValue $val */
-        $val = $this->callObjectMethod($rec, 'getValueObject', 'id');
+        $val = $this->callObjectMethod($rec, 'getValueContainer', 'id');
         static::assertTrue($val->isItFromDb());
         static::assertFalse($val->hasOldValue());
         $rec->updateValue('id', 3, true);
         static::assertTrue($rec->hasValue('id'));
         static::assertEquals(3, $rec->getValue('id'));
         /** @var RecordValue $val */
-        $val = $this->callObjectMethod($rec, 'getValueObject', 'id');
+        $val = $this->callObjectMethod($rec, 'getValueContainer', 'id');
         static::assertTrue($val->isItFromDb());
         static::assertTrue($val->hasOldValue());
         static::assertEquals(2, $val->getOldValue());
@@ -479,7 +500,7 @@ class DbRecordTest extends BaseTestCase
         static::assertArrayHasKey('parent_id', $this->getObjectPropertyValue($rec, 'valuesBackup'));
         static::assertNotEquals(
             $this->getObjectPropertyValue($rec, 'valuesBackup')['parent_id'],
-            $this->callObjectMethod($rec, 'getValueObject', 'parent_id')
+            $this->callObjectMethod($rec, 'getValueContainer', 'parent_id')
         );
         $rec->rollback();
         
@@ -568,7 +589,6 @@ class DbRecordTest extends BaseTestCase
                 'login' => null,
                 'password' => null,
                 'created_at' => null,
-                'updated_at' => null,
                 'remember_token' => null,
                 'is_superadmin' => false,
                 'language' => 'en',
@@ -578,7 +598,7 @@ class DbRecordTest extends BaseTestCase
                 'name' => '',
                 'email' => null,
                 'timezone' => 'UTC',
-                'not_changeable_column' => null,
+                'big_data' => null,
             ],
             $rec->getDefaults()
         );
@@ -605,6 +625,9 @@ class DbRecordTest extends BaseTestCase
                 'some_file' => null,
                 'not_changeable_column' => null,
                 'not_existing_column' => null,
+                'not_existing_column_with_default_value' => 'default',
+                'not_existing_column_with_calculated_value' => null,
+                'big_data' => null,
             ],
             $rec->getDefaults([], false, false)
         );
@@ -645,7 +668,7 @@ class DbRecordTest extends BaseTestCase
     public function testInvalidRelationRequestInToArray3()
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no relation 'Invalid' in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("There is no relation 'Invalid' in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         TestingAdmin::fromArray(['id' => 1], true)
             ->toArrayWithoutFiles(['id'], ['Invalid']);
     }
@@ -653,7 +676,7 @@ class DbRecordTest extends BaseTestCase
     public function testInvalidRelationRequestInToArray3Alt()
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no column 'Invalid' in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("There is no column 'Invalid' in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         TestingAdmin::fromArray(['id' => 1], true)
             ->toArrayWithoutFiles(['id', 'Invalid']);
     }
@@ -667,17 +690,15 @@ class DbRecordTest extends BaseTestCase
         $reflection = new ReflectionClass($rec);
         $method = $reflection->getMethod('getColumnValueForToArray');
         $method->setAccessible(true);
-        static::assertEquals(null, $method->invoke($rec, 'id', null, null, false));
-        static::assertEquals(1, $method->invoke($rec, 'parent_id', null, null, false));
-        static::assertEquals('en', $method->invoke($rec, 'language', null, null, false));
-        static::assertEquals(null, $method->invoke($rec, 'avatar', null, null, false));
-        static::assertEquals(null, $method->invoke($rec, 'avatar', null, null, true));
+        static::assertEquals(null, $method->invoke($rec, 'id'));
+        static::assertEquals(1, $method->invoke($rec, 'parent_id'));
+        static::assertEquals('en', $method->invoke($rec, 'language'));
+        static::assertEquals(null, $method->invoke($rec, 'avatar'));
         $rec->updateValue('id', 2, true);
-        static::assertEquals(2, $method->invoke($rec, 'id', null, null, false));
-        static::assertEquals(1, $method->invoke($rec, 'parent_id', null, null, false));
-        static::assertEquals(null, $method->invoke($rec, 'language', null, null, false));
-        static::assertEquals(null, $method->invoke($rec, 'avatar', null, null, false));
-        static::assertEquals(null, $method->invoke($rec, 'avatar', null, null, true));
+        static::assertEquals(2, $method->invoke($rec, 'id'));
+        static::assertEquals(1, $method->invoke($rec, 'parent_id'));
+        static::assertEquals(null, $method->invoke($rec, 'language'));
+        static::assertEquals(null, $method->invoke($rec, 'avatar'));
         $method->setAccessible(false);
     }
     
@@ -712,6 +733,13 @@ class DbRecordTest extends BaseTestCase
                 'big_data' => null,
             ],
             $rec->toArrayWithoutFiles()
+        );
+    
+        static::assertEquals(
+            [
+                'password' => null
+            ],
+            $rec->toArrayWithoutFiles(['password'])
         );
         
         $admin = $this->getDataForSingleAdmin(true);
@@ -777,7 +805,7 @@ class DbRecordTest extends BaseTestCase
         $toArrayPartial = $rec->toArrayWithoutFiles(['id', 'parent_id', 'login' => 'alias', 'role']);
         $expected['alias'] = $expected['login'];
         unset($expected['login']);
-        static::assertEquals(array_merge(['id' => null], $adminNoIdNormalized), $toArrayPartial);
+        static::assertEquals(array_merge(['id' => null], $expected), $toArrayPartial);
         
         // has one / belongs to relations (not existing in db)
         $rec->updateRelatedRecord('Parent', [], false);
@@ -804,6 +832,7 @@ class DbRecordTest extends BaseTestCase
         $expected['Parent']['created_at'] .= '+00';
         $expected['Parent']['updated_at'] .= '+00';
         $expected['Parent']['not_existing_column_with_calculated_value'] = 'calculated-' . $expected['Parent']['id'];
+        unset($expected['Parent']['big_data']); //< heavy so it won't be fetched
         $toArrayRelation = $rec->fetchByPrimaryKey($insertedRecords[1]['id'])
             ->toArrayWithoutFiles(['id'], ['Parent'], true);
         static::assertEquals($expected, $toArrayRelation);
@@ -833,12 +862,14 @@ class DbRecordTest extends BaseTestCase
         $expected['Children'][0]['updated_at'] .= '+00';
         /** @noinspection UnsupportedStringOffsetOperationsInspection */
         $expected['Children'][0]['not_existing_column_with_calculated_value'] = 'calculated-' . $expected['Children'][0]['id'];
+        unset($expected['Children'][0]['big_data']);
         /** @noinspection UnsupportedStringOffsetOperationsInspection */
         $expected['Children'][1]['created_at'] .= '+00';
         /** @noinspection UnsupportedStringOffsetOperationsInspection */
         $expected['Children'][1]['updated_at'] .= '+00';
         /** @noinspection UnsupportedStringOffsetOperationsInspection */
         $expected['Children'][1]['not_existing_column_with_calculated_value'] = 'calculated-' . $expected['Children'][1]['id'];
+        unset($expected['Children'][1]['big_data']);
         $toArrayRelation = $rec->fetchByPrimaryKey($insertedRecords[0]['id'])
             ->toArrayWithoutFiles(['id'], ['Children'], true);
         static::assertEquals($expected, $toArrayRelation);
@@ -878,6 +909,50 @@ class DbRecordTest extends BaseTestCase
     public function testToArray3()
     {
         $rec = TestingAdmin::new1();
+        $admin = $this->getDataForSingleAdmin(true);
+        $admin['password'] = password_hash('password', PASSWORD_BCRYPT);
+        $admin['Parent'] = $admin;
+        $admin['Parent']['id'] = $admin['id'] + 1;
+        $admin['Parent']['parent_id'] = $admin['id'];
+    
+        $toArray = $rec->fromData($admin, true)
+            ->toArrayWithoutFiles([
+                'email' => function ($value, TestingAdmin $record) {
+                    return $value;
+                },
+                'login' => function () {
+                    return 'fake_login';
+                },
+                'password' => function ($value) {
+                    return $value;
+                },
+                'not_existing' => function (TestingAdmin $record) {
+                    return $record->login;
+                },
+                'Parent' => [
+                    'id',
+                    'parent_id',
+                    'password' => function () {
+                        return null;
+                    },
+                    'not_existing' => function (TestingAdmin $record) {
+                        return $record->parent_id;
+                    },
+                ]
+            ]);
+        $expected = [
+            'email' => $admin['email'],
+            'login' => 'fake_login',
+            'password' => $admin['password'],
+            'not_existing' => $admin['login'],
+            'Parent' => [
+                'id' => $admin['Parent']['id'],
+                'parent_id' => $admin['Parent']['parent_id'],
+                'password' => null,
+                'not_existing' => $admin['Parent']['parent_id'],
+            ]
+        ];
+        static::assertEquals($expected, $toArray);
     }
     
     /**
@@ -889,7 +964,7 @@ class DbRecordTest extends BaseTestCase
         $rec = TestingAdmin::fromArray($this->getDataForSingleAdmin(true), true);
         $recSerialized = serialize($rec);
         static::assertEquals(
-            'C:39:"PeskyORMTest\TestingAdmins\TestingAdmin":3870:{{"props":{"existsInDb":true},"values":{"id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"login":{"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","rawValue":"2AE351AF-131D-6654-9DB2-79B8F273986C","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"parent_id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"created_at":{"value":"2015-05-14 02:12:05","rawValue":"2015-05-14 02:12:05","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"updated_at":{"value":"2015-06-10 19:30:24","rawValue":"2015-06-10 19:30:24","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"remember_token":{"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","rawValue":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_superadmin":{"value":true,"rawValue":true,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"language":{"value":"en","rawValue":"en","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"ip":{"value":"192.168.0.1","rawValue":"192.168.0.1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"role":{"value":"admin","rawValue":"admin","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_active":{"value":true,"rawValue":"1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"name":{"value":"Lionel Freeman","rawValue":"Lionel Freeman","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"email":{"value":"diam.at.pretium@idmollisnec.co.uk","rawValue":"diam.at.pretium@idmollisnec.co.uk","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"timezone":{"value":"Europe\/Moscow","rawValue":"Europe\/Moscow","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null}}}}',
+            'C:45:"Tests\PeskyORMTest\TestingAdmins\TestingAdmin":4139:{{"props":{"existsInDb":true},"values":{"id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"login":{"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","rawValue":"2AE351AF-131D-6654-9DB2-79B8F273986C","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"parent_id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"created_at":{"value":"2015-05-14 02:12:05","rawValue":"2015-05-14 02:12:05","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"updated_at":{"value":"2015-06-10 19:30:24","rawValue":"2015-06-10 19:30:24","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"remember_token":{"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","rawValue":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_superadmin":{"value":true,"rawValue":true,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"language":{"value":"en","rawValue":"en","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"ip":{"value":"192.168.0.1","rawValue":"192.168.0.1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"role":{"value":"admin","rawValue":"admin","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_active":{"value":true,"rawValue":"1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"name":{"value":"Lionel Freeman","rawValue":"Lionel Freeman","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"email":{"value":"diam.at.pretium@idmollisnec.co.uk","rawValue":"diam.at.pretium@idmollisnec.co.uk","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"timezone":{"value":"Europe\/Moscow","rawValue":"Europe\/Moscow","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"big_data":{"value":"biiiig data","rawValue":"biiiig data","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null}}}}',
             $recSerialized
         );
         /** @var TestingAdmin $recUnserialized */
@@ -904,7 +979,7 @@ class DbRecordTest extends BaseTestCase
         $rec->fromData($this->getDataForSingleAdmin(false), false);
         $recSerialized = serialize($rec);
         static::assertEquals(
-            'C:39:"PeskyORMTest\TestingAdmins\TestingAdmin":3644:{{"props":{"existsInDb":null},"values":{"login":{"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","rawValue":"2AE351AF-131D-6654-9DB2-79B8F273986C","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"parent_id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"created_at":{"value":"2015-05-14 02:12:05","rawValue":"2015-05-14 02:12:05","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"updated_at":{"value":"2015-06-10 19:30:24","rawValue":"2015-06-10 19:30:24","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"remember_token":{"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","rawValue":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_superadmin":{"value":true,"rawValue":true,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"language":{"value":"en","rawValue":"en","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"ip":{"value":"192.168.0.1","rawValue":"192.168.0.1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"role":{"value":"admin","rawValue":"admin","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_active":{"value":true,"rawValue":"1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"name":{"value":"Lionel Freeman","rawValue":"Lionel Freeman","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"email":{"value":"diam.at.pretium@idmollisnec.co.uk","rawValue":"diam.at.pretium@idmollisnec.co.uk","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"timezone":{"value":"Europe\/Moscow","rawValue":"Europe\/Moscow","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null}}}}',
+            'C:45:"Tests\PeskyORMTest\TestingAdmins\TestingAdmin":3914:{{"props":{"existsInDb":null},"values":{"login":{"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","rawValue":"2AE351AF-131D-6654-9DB2-79B8F273986C","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"parent_id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"created_at":{"value":"2015-05-14 02:12:05","rawValue":"2015-05-14 02:12:05","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"updated_at":{"value":"2015-06-10 19:30:24","rawValue":"2015-06-10 19:30:24","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"remember_token":{"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","rawValue":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_superadmin":{"value":true,"rawValue":true,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"language":{"value":"en","rawValue":"en","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"ip":{"value":"192.168.0.1","rawValue":"192.168.0.1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"role":{"value":"admin","rawValue":"admin","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_active":{"value":true,"rawValue":"1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"name":{"value":"Lionel Freeman","rawValue":"Lionel Freeman","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"email":{"value":"diam.at.pretium@idmollisnec.co.uk","rawValue":"diam.at.pretium@idmollisnec.co.uk","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"timezone":{"value":"Europe\/Moscow","rawValue":"Europe\/Moscow","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"big_data":{"value":"biiiig data","rawValue":"biiiig data","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null}}}}',
             $recSerialized
         );
         /** @var TestingAdmin $recUnserialized */
@@ -922,7 +997,7 @@ class DbRecordTest extends BaseTestCase
         $rec = TestingAdmin::newEmptyRecord();
         $rec->updateValue('parent_id', 1, false);
         /** @var RecordValue $val */
-        $val = $this->callObjectMethod($rec, 'getValueObject', 'parent_id');
+        $val = $this->callObjectMethod($rec, 'getValueContainer', 'parent_id');
         static::assertFalse($val->isItFromDb());
         static::assertFalse($rec->isValueFromDb('parent_id'));
         $rec
@@ -935,14 +1010,14 @@ class DbRecordTest extends BaseTestCase
     public function testInvalidFromData1()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$data argument contains unknown column name or relation name: '0'");
+        $this->expectExceptionMessage("\$data argument contains unknown column name or relation name Tests\PeskyORMTest\TestingAdmins\TestingAdmin->0 (\$isFromDb: false).");
         TestingAdmin::fromArray(['unknown_col']);
     }
     
     public function testInvalidFromData2()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$data argument contains unknown column name or relation name: 'unknown_col'");
+        $this->expectExceptionMessage("\$data argument contains unknown column name or relation name Tests\PeskyORMTest\TestingAdmins\TestingAdmin->unknown_col (\$isFromDb: false).");
         TestingAdmin::fromArray(['unknown_col' => 1]);
     }
     
@@ -957,14 +1032,24 @@ class DbRecordTest extends BaseTestCase
     {
         $adminWithId = $this->getDataForSingleAdmin(true);
         $normalizedAdminWithId = $this->normalizeAdmin($adminWithId, false, false);
+        $normalizedAdminWithId['not_existing_column_with_calculated_value'] = 'calculated-' . $normalizedAdminWithId['id'];
         $adminWithoutId = $this->getDataForSingleAdmin(false);
         $normalizedAdminWithoutId = $this->normalizeAdmin($adminWithoutId, null);
-        $columns = array_merge(array_keys($adminWithId), ['password', 'not_existing_column', 'not_changeable_column']);
-        
+        $normalizedAdminWithoutId['password'] = null;
+        $columns = array_merge(
+            array_keys($adminWithId),
+            [
+                'password', 'not_existing_column', 'not_changeable_column',
+            ]
+        );
+    
         $rec = TestingAdmin::fromArray([]);
-        static::assertEquals($rec->getDefaults($columns, false), array_merge($rec->toArrayWithoutFiles(), ['password' => null]));
+        static::assertEquals($rec->getDefaults($columns, false), $rec->toArrayWithoutFiles($columns));
         
         $rec = TestingAdmin::fromArray($adminWithoutId, false);
+    
+        $columns[] = 'not_existing_column_with_default_value';
+        $columns[] = 'not_existing_column_with_calculated_value';
         static::assertFalse($rec->isValueFromDb('parent_id'));
         static::assertEquals($normalizedAdminWithoutId, $rec->toArrayWithoutFiles($columns));
         
@@ -1060,29 +1145,34 @@ class DbRecordTest extends BaseTestCase
                 ->getValue('password')
         );
         unset($recordsAdded[0]['password']);
+        $expected = $recordsAdded[0];
+        $expected['created_at'] .= '+00';
+        $expected['updated_at'] .= '+00';
         static::assertEquals(
-            $recordsAdded[0],
+            $expected,
             $rec->getRelatedRecord('Parent', false)
-                ->toArrayWithoutFiles()
+                ->toArrayWithoutFiles(['*' => ['not_existing_column_with_calculated_value']])
         );
         static::assertCount(2, $relatedRecords['Children']);
         static::assertCount(2, $rec->getRelatedRecord('Children', false));
         $expected = [$recordsAdded[3], $recordsAdded[7]];
         $expected[0]['created_at'] .= '+00';
         $expected[0]['updated_at'] .= '+00';
+        unset($expected[0]['big_data']); //< not laoded automatically bacuase heavy
         $expected[1]['created_at'] .= '+00';
         $expected[1]['updated_at'] .= '+00';
+        unset($expected[1]['big_data']); //< not laoded automatically because heavy
         static::assertEquals(
             $expected,
             $rec->getRelatedRecord('Children', false)
-                ->toArrays()
+                ->toArrays(['*', 'password'])
         );
     }
     
     public function testInvalidColumnInFromDb1()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("SELECT: Column with name [invalid] not found in PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("SELECT: Column with name [invalid] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         TestingAdmin::newEmptyRecord()
             ->fetch(['id' => 1], ['invalid']);
     }
@@ -1091,7 +1181,7 @@ class DbRecordTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage(
-            "Invalid column name for a key '0'. \$columns argument must contain only strings and instances of DbExpr class."
+            "\$columns argument contains invalid list of columns. Each value can only be a string or DbExpr object."
         );
         TestingAdmin::newEmptyRecord()
             ->fetch(['id' => 1], [['invalid']]);
@@ -1988,7 +2078,7 @@ class DbRecordTest extends BaseTestCase
         static::assertFalse($this->getObjectPropertyValue($rec, 'valuesBackup')['email']->hasValue());
         static::assertEquals('email.was@changed.hehe', $rec->getValue('email'));
         static::assertFalse(
-            $this->callObjectMethod($rec, 'getValueObject', 'email')
+            $this->callObjectMethod($rec, 'getValueContainer', 'email')
                 ->hasOldValue()
         );
         $rec->rollback();
@@ -1996,7 +2086,7 @@ class DbRecordTest extends BaseTestCase
         static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
         static::assertFalse($rec->hasValue('email'));
         static::assertFalse(
-            $this->callObjectMethod($rec, 'getValueObject', 'email')
+            $this->callObjectMethod($rec, 'getValueContainer', 'email')
                 ->hasOldValue()
         );
         
@@ -2013,11 +2103,11 @@ class DbRecordTest extends BaseTestCase
         static::assertEquals('email.was@changed.hehe', $rec->getValue('email'));
         static::assertEquals('email.was@changed.hehe', $rec->getValue('login'));
         static::assertFalse(
-            $this->callObjectMethod($rec, 'getValueObject', 'email')
+            $this->callObjectMethod($rec, 'getValueContainer', 'email')
                 ->hasOldValue()
         );
         static::assertFalse(
-            $this->callObjectMethod($rec, 'getValueObject', 'login')
+            $this->callObjectMethod($rec, 'getValueContainer', 'login')
                 ->hasOldValue()
         );
         $rec->rollback();
@@ -2025,11 +2115,11 @@ class DbRecordTest extends BaseTestCase
         static::assertFalse($rec->hasValue('email'));
         static::assertFalse($rec->hasValue('login'));
         static::assertFalse(
-            $this->callObjectMethod($rec, 'getValueObject', 'email')
+            $this->callObjectMethod($rec, 'getValueContainer', 'email')
                 ->hasOldValue()
         );
         static::assertFalse(
-            $this->callObjectMethod($rec, 'getValueObject', 'login')
+            $this->callObjectMethod($rec, 'getValueContainer', 'login')
                 ->hasOldValue()
         );
         
@@ -2049,7 +2139,7 @@ class DbRecordTest extends BaseTestCase
         static::assertEquals('email.was@changed.hehe', $rec->getValue('email'));
         static::assertEquals(
             $data['email'],
-            $this->callObjectMethod($rec, 'getValueObject', 'email')
+            $this->callObjectMethod($rec, 'getValueContainer', 'email')
                 ->getOldValue()
         );
         $rec->rollback();
@@ -2057,7 +2147,7 @@ class DbRecordTest extends BaseTestCase
         static::assertTrue($rec->hasValue('email'));
         static::assertEquals($data['email'], $rec->getValue('email'));
         static::assertFalse(
-            $this->callObjectMethod($rec, 'getValueObject', 'email')
+            $this->callObjectMethod($rec, 'getValueContainer', 'email')
                 ->hasOldValue()
         );
         static::assertEquals($data, $rec->toArrayWithoutFiles());
@@ -2075,12 +2165,12 @@ class DbRecordTest extends BaseTestCase
         static::assertEquals('email.was@changed.hehe', $rec->getValue('login'));
         static::assertEquals(
             $data['email'],
-            $this->callObjectMethod($rec, 'getValueObject', 'email')
+            $this->callObjectMethod($rec, 'getValueContainer', 'email')
                 ->getOldValue()
         );
         static::assertEquals(
             $data['login'],
-            $this->callObjectMethod($rec, 'getValueObject', 'login')
+            $this->callObjectMethod($rec, 'getValueContainer', 'login')
                 ->getOldValue()
         );
         $rec->rollback();
@@ -2089,11 +2179,11 @@ class DbRecordTest extends BaseTestCase
         static::assertTrue($rec->hasValue('login'));
         static::assertEquals($data, $rec->toArrayWithoutFiles());
         static::assertFalse(
-            $this->callObjectMethod($rec, 'getValueObject', 'email')
+            $this->callObjectMethod($rec, 'getValueContainer', 'email')
                 ->hasOldValue()
         );
         static::assertFalse(
-            $this->callObjectMethod($rec, 'getValueObject', 'login')
+            $this->callObjectMethod($rec, 'getValueContainer', 'login')
                 ->hasOldValue()
         );
     }

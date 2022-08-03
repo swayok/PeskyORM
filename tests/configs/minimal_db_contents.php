@@ -20,6 +20,7 @@ return [
             'email' => 'diam.at.pretium@idmollisnec.co.uk',
             'timezone' => 'Europe/Moscow',
             'not_changeable_column' => 'not changable',
+            'big_data' => 'biiiiiiig data'
         ],
         [
             'id' => 2,
@@ -39,6 +40,7 @@ return [
             'email' => 'elit@eratvelpede.org',
             'timezone' => 'Europe/Moscow',
             'not_changeable_column' => 'not changable',
+            'big_data' => 'biiiiiiig data'
         ],
         [
             'id' => 3,
@@ -58,6 +60,7 @@ return [
             'email' => 'volutpat.nunc@vulputate.org',
             'timezone' => 'Europe/Moscow',
             'not_changeable_column' => 'not changable',
+            'big_data' => 'biiiiiiig data'
         ],
         [
             'id' => 4,
@@ -77,6 +80,7 @@ return [
             'email' => 'dictum.cursus@vulputateveliteu.edu',
             'timezone' => 'Europe/Moscow',
             'not_changeable_column' => 'not changable',
+            'big_data' => 'biiiiiiig data'
         ],
         [
             'id' => 5,
@@ -96,6 +100,7 @@ return [
             'email' => 'neque@consectetuer.net',
             'timezone' => 'Europe/Moscow',
             'not_changeable_column' => 'not changable',
+            'big_data' => 'biiiiiiig data'
         ],
         [
             'id' => 6,
@@ -115,6 +120,7 @@ return [
             'email' => 'consectetuer.ipsum.nunc@odioAliquamvulputate.co.uk',
             'timezone' => 'Europe/Moscow',
             'not_changeable_column' => 'not changable',
+            'big_data' => 'biiiiiiig data'
         ],
         [
             'id' => 7,
@@ -134,6 +140,7 @@ return [
             'email' => 'et@sapiengravidanon.net',
             'timezone' => 'Europe/Moscow',
             'not_changeable_column' => 'not changable',
+            'big_data' => 'biiiiiiig data'
         ],
         [
             'id' => 8,
@@ -153,6 +160,7 @@ return [
             'email' => 'cursus.luctus.ipsum@egestasa.org',
             'timezone' => 'Europe/Moscow',
             'not_changeable_column' => 'not changable',
+            'big_data' => 'biiiiiiig data'
         ],
         [
             'id' => 9,
@@ -172,6 +180,7 @@ return [
             'email' => 'Nulla.dignissim@ametornarelectus.org',
             'timezone' => 'Europe/Moscow',
             'not_changeable_column' => 'not changable',
+            'big_data' => 'biiiiiiig data'
         ],
         [
             'id' => 10,
@@ -191,6 +200,7 @@ return [
             'email' => 'at@nunc.org',
             'timezone' => 'Europe/Moscow',
             'not_changeable_column' => 'not changable',
+            'big_data' => 'biiiiiiig data'
         ],
     ],
     'settings' => [

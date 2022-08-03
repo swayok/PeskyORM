@@ -77,6 +77,15 @@ abstract class TableStructure implements TableStructureInterface
     }
     
     /**
+     * Resets class instances (used for testing only, that's why it is private)
+     * @noinspection PhpUnusedPrivateMethodInspection
+     */
+    static private function resetInstances()
+    {
+        self::$instances = [];
+    }
+    
+    /**
      * @return $this
      */
     final static public function i(): TableStructureInterface
@@ -484,15 +493,6 @@ abstract class TableStructure implements TableStructureInterface
     public function __isset($name)
     {
         return $this->_hasColumn($name) || $this->_hasRelation($name);
-    }
-    
-    /** @noinspection PhpUnusedPrivateMethodInspection */
-    /**
-     * Resets class instances (used for testing only, that's why it is private)
-     */
-    static private function resetInstances()
-    {
-        self::$instances = [];
     }
     
 }

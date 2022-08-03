@@ -145,10 +145,10 @@ interface TableInterface
      * @param DbExpr $expression - example: DbExpr::create('COUNT(*)'), DbExpr::create('SUM(`field`)')
      * @param array $conditions
      * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return string|null
+     * @return
      * @throws \InvalidArgumentException
      */
-    static public function selectValue(DbExpr $expression, array $conditions = [], ?\Closure $configurator = null): ?string;
+    static public function selectValue(DbExpr $expression, array $conditions = [], ?\Closure $configurator = null);
     
     /**
      * Does table contain any record matching provided condition

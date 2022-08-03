@@ -8,6 +8,7 @@ use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbConnectionsManager;
+use PeskyORM\ORM\Record;
 use PeskyORM\ORM\Table;
 use PeskyORM\ORM\TableStructure;
 
@@ -108,7 +109,7 @@ class TestingApp
         $adapter->exec('TRUNCATE TABLE admins');
     }
     
-    static public function cleanInstancesOfDbTablesAndStructures()
+    static public function cleanInstancesOfDbTablesAndRecordsAndStructures()
     {
         $class = new \ReflectionClass(Table::class);
         $method = $class->getMethod('resetInstances');
@@ -118,6 +119,12 @@ class TestingApp
         
         $class = new \ReflectionClass(TableStructure::class);
         $method = $class->getMethod('resetInstances');
+        $method->setAccessible(true);
+        $method->invoke(null);
+        $method->setAccessible(false);
+    
+        $class = new \ReflectionClass(Record::class);
+        $method = $class->getMethod('resetColumnsCache');
         $method->setAccessible(true);
         $method->invoke(null);
         $method->setAccessible(false);

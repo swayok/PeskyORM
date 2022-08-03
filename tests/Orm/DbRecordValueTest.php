@@ -19,12 +19,12 @@ class DbRecordValueTest extends BaseTestCase
     public static function setUpBeforeClass(): void
     {
         TestingApp::getPgsqlConnection();
-        TestingApp::cleanInstancesOfDbTablesAndStructures();
+        TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
     }
     
     public static function tearDownAfterClass(): void
     {
-        TestingApp::cleanInstancesOfDbTablesAndStructures();
+        TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
     }
     
     /**

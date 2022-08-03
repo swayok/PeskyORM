@@ -16,10 +16,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
 {
     
     /**
-     * @var TableStructureInterface[]
-     */
-    private static $tableStructures = [];
-    /**
      * @var array
      */
     private static $columns = [];
@@ -161,13 +157,18 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @return TableStructure|TableStructureInterface
      */
-    static public function getTableStructure()
+    static public function getTableStructure(): TableStructureInterface
     {
-        if (!isset(self::$tableStructures[static::class])) {
-            self::$tableStructures[static::class] = static::getTable()
-                ->getStructure();
-        }
-        return self::$tableStructures[static::class];
+        return static::getTable()->getStructure();
+    }
+    
+    /**
+     * Resets cached columns instances (used for testing only, that's why it is private)
+     * @noinspection PhpUnusedPrivateMethodInspection
+     */
+    static private function resetColumnsCache()
+    {
+        self::$columns = [];
     }
     
     /**
@@ -177,6 +178,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     static public function getColumns(bool $includeFormats = false): array
     {
         return self::getCachedColumnsOrRelations($includeFormats ? 'columns_and_formats' : 'columns');
+    }
+    
+    /**
+     * @return Column[] - key = column name
+     */
+    static public function getNotPrivateColumns(): array
+    {
+        return self::getCachedColumnsOrRelations('not_private_columns');
     }
     
     /**
@@ -208,6 +217,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             self::$columns[static::class] = [
                 'columns' => $columns,
                 'columns_and_formats' => [],
+                'not_private_columns' => array_filter($columns, function (Column $column) {
+                    return !$column->isValuePrivate();
+                }),
                 'db_columns' => $tableStructure::getColumnsThatExistInDb(),
                 'not_db_columns' => $tableStructure::getColumnsThatDoNotExistInDb(),
                 'file_columns' => $tableStructure::getFileColumns(),
@@ -807,7 +819,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     && $this->_existsInDbViaQuery()
                 );
             }
-            return $this->existsInDbReally;
+            return (bool)$this->existsInDbReally;
         } else {
             if ($this->existsInDb === null) {
                 $this->existsInDb = (
@@ -816,7 +828,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     && (!$useDbQuery || $this->_existsInDbViaQuery())
                 );
             }
-            return $this->existsInDb;
+            return (bool)$this->existsInDb;
         }
     }
     
@@ -1097,11 +1109,20 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 $columnsFromRelations[$relationName] = (array)$realtionColumns;
             }
         }
+        try {
+            $columnsToSelectFromMainTable = array_unique($columns);
+        } catch (\Throwable $exception) {
+            if (stripos($exception->getMessage(), 'Array to string conversion') !== false) {
+                throw new \InvalidArgumentException(
+                    '$columns argument contains invalid list of columns. Each value can only be a string or DbExpr object. $columns = '
+                    . json_encode($columns, JSON_UNESCAPED_UNICODE)
+                );
+            } else {
+                throw $exception;
+            }
+        }
         $record = static::getTable()
-            ->selectOne(
-                array_merge(array_unique($columns), $columnsFromRelations),
-                $conditionsAndOptions
-            );
+            ->selectOne(array_merge($columnsToSelectFromMainTable, $columnsFromRelations), $conditionsAndOptions);
         if (empty($record)) {
             $this->reset();
         } else {
@@ -1835,7 +1856,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     ): array {
         // normalize column names
         if (empty($columnsNames) || (count($columnsNames) === 1 && isset($columnsNames[0]) && $columnsNames[0] === '*')) {
-            $columnsNames = array_keys(static::getColumns());
+            $columnsNames = array_keys(static::getNotPrivateColumns());
         } elseif (in_array('*', $columnsNames, true)) {
             $excludeDuplicatesFromWildcard = [];
             foreach ($columnsNames as $index => $columnName) {
@@ -1848,12 +1869,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     }
                 }
             }
-            $wildcardColumns = array_diff(array_keys(static::getColumns()), $excludeDuplicatesFromWildcard);
+            $wildcardColumns = array_diff(array_keys(static::getNotPrivateColumns()), $excludeDuplicatesFromWildcard);
             $columnsNames = array_merge($wildcardColumns, $columnsNames);
         } elseif (isset($columnsNames['*'])) {
             // exclude some columns from wildcard
             $columnsNames = array_merge(
-                array_diff(array_keys(static::getColumns()), (array)$columnsNames['*']),
+                array_diff(array_keys(static::getNotPrivateColumns()), (array)$columnsNames['*']),
                 $columnsNames
             );
             unset($columnsNames['*']);
@@ -1882,6 +1903,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         // collect data for columns
         $data = [];
         foreach ($columnsNames as $index => $columnName) {
+            $columnAlias = null; //< to be safe
+            $isset = null; //< to be safe
             if (
                 (!is_int($index) && (is_array($columnName) || $columnName === '*' || static::hasRelation($index)))
                 || (is_string($columnName) && static::hasRelation($columnName))
@@ -1913,14 +1936,22 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                         $valueModifier,
                         $loadRelatedRecordsIfNotSet,
                         !$withFilesInfo,
-                        $isset
+                        $isset,
+                        true
                     );
                 } else {
-                    $value = $this->getColumnValueForToArray($columnName, $columnAlias, $valueModifier, !$withFilesInfo, $isset);
+                    $value = $this->getColumnValueForToArray(
+                        $columnName,
+                        $columnAlias,
+                        $valueModifier,
+                        !$withFilesInfo,
+                        $isset,
+                        true
+                    );
                 }
                 // $columnAlias may be modified in $this->getColumnValueForToArray()
                 $data[$columnAlias] = $value;
-                if (is_bool($isset) && !$isset) {
+                if ($isset === false) {
                     unset($data[$columnAlias]);
                 }
             }
@@ -1992,26 +2023,28 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * Get column value if it is set or null in any other cases
      * @param string $columnName
-     * @param string $columnAlias - it is a reference because it can be altered by KeyValuePair returend from $valueModifier \Closure
+     * @param string|null $columnAlias - it is a reference because it can be altered by KeyValuePair returend from $valueModifier \Closure
      * @param null|\Closure $valueModifier - \Closure to modify value = function ($value, Record $record) { return $value; }
      * @param bool $returnNullForFiles - false: return file information for file column | true: return null for file column
      * @param bool $isset - true: value is set | false: value is not set
+     *  @param bool $skipPrivateValueCheck - true: return real value even if column is private (Column::isValuePrivate())
      * @return mixed
      */
     protected function getColumnValueForToArray(
-        $columnName,
-        &$columnAlias = null,
+        string $columnName,
+        ?string &$columnAlias = null,
         ?\Closure $valueModifier = null,
         bool $returnNullForFiles = false,
-        ?bool &$isset = null
+        ?bool &$isset = null,
+        bool $skipPrivateValueCheck = false
     ) {
         $isset = false;
         if ($valueModifier && !static::hasColumn($columnName)) {
             return $this->modifyValueForToArray(null, $columnAlias, null, $valueModifier, $isset);
         }
         $column = static::getColumn($columnName, $format);
-        if ($column->isValuePrivate()) {
-            return $this->modifyValueForToArray($columnName, $columnAlias, null, $valueModifier, $isset);
+        if (!$skipPrivateValueCheck && $column->isValuePrivate()) {
+            return null;
         }
         if ($this->isReadOnly()) {
             if (array_key_exists($columnName, $this->readOnlyData)) {
@@ -2084,6 +2117,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      *      - if $columnName is set: function ($value, Record $record) { return $value };
      *      - if $columnName is empty: function (Record $record) { return $record->column };
      *      Both versions may return KeyValuePair object (not recommended if $columnName is empty)
+     * @param bool|null $hasValue
      * @return mixed
      */
     protected function modifyValueForToArray($columnName, &$columnAlias, $value, ?\Closure $valueModifier, &$hasValue = null)
@@ -2107,18 +2141,22 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * Get nested value if it is set or null in any other cases
      * @param array $parts - parts of nested path ('Relation.Subrelation.column' => ['Relation', 'Subrelation', 'column']
+     * @param string|null $columnAlias - it is a reference because it can be altered by KeyValuePair returend from $valueModifier \Closure
+     * @param null|\Closure $valueModifier - \Closure to modify value = function ($value, Record $record) { return $value; }
      * @param bool $loadRelatedRecordsIfNotSet - true: read required missing related objects from DB
      * @param bool $returnNullForFiles - false: return file information for file column | true: return null for file column
      * @param bool|null $isset - true: value is set | false: value is not set
+     * @param bool $skipPrivateValueCheck - true: return real value even if column is private (Column::isValuePrivate())
      * @return mixed
      */
     protected function getNestedValueForToArray(
         array $parts,
-        &$columnAlias = null,
+        ?string &$columnAlias = null,
         ?\Closure $valueModifier = null,
         bool $loadRelatedRecordsIfNotSet = false,
         bool $returnNullForFiles = false,
-        ?bool &$isset = null
+        ?bool &$isset = null,
+        bool $skipPrivateValueCheck = false
     ) {
         $relationName = array_shift($parts);
         $relatedRecord = $this->getRelatedRecord($relationName, $loadRelatedRecordsIfNotSet);
@@ -2126,7 +2164,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             // ignore related records without non-default data
             if ($relatedRecord->existsInDb() || $relatedRecord->hasAnyNonDefaultValues()) {
                 if (count($parts) === 1) {
-                    return $relatedRecord->getColumnValueForToArray($parts[0], $columnAlias, $valueModifier, $returnNullForFiles, $isset);
+                    return $relatedRecord->getColumnValueForToArray(
+                        $parts[0],
+                        $columnAlias,
+                        $valueModifier,
+                        $returnNullForFiles,
+                        $isset,
+                        $skipPrivateValueCheck
+                    );
                 } else {
                     return $relatedRecord->getNestedValueForToArray(
                         $parts,
@@ -2134,7 +2179,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                         $valueModifier,
                         $loadRelatedRecordsIfNotSet,
                         $returnNullForFiles,
-                        $isset
+                        $isset,
+                        $skipPrivateValueCheck
                     );
                 }
             }
@@ -2231,7 +2277,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     public function key()
     {
         if ($this->valid()) {
-            return array_keys(static::getColumns())[$this->iteratorIdx];
+            return array_keys(static::getNotPrivateColumns())[$this->iteratorIdx];
         } else {
             return null;
         }
@@ -2243,7 +2289,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     public function valid()
     {
-        return array_key_exists($this->iteratorIdx, array_keys(static::getColumns()));
+        return array_key_exists($this->iteratorIdx, array_keys(static::getNotPrivateColumns()));
     }
     
     /**
