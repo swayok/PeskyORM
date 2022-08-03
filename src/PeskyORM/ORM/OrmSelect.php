@@ -245,10 +245,16 @@ class OrmSelect extends AbstractSelect
                 ->getTableStructure();
         }
         $normalizedColumns = [];
-        if (!$excludeColumns) {
+        if ($excludeColumns === null) {
             $excludeColumns = [];
         }
-        foreach ($tableStructure::getColumnsThatExistInDb() as $columnName => $config) {
+        $existingColumns = $tableStructure::getColumnsThatExistInDb();
+        if (empty($existingColumns)) {
+            throw new \UnexpectedValueException(
+                __METHOD__ . '(): ' . get_class($tableStructure) . ' has no columns that exist in DB'
+            );
+        }
+        foreach ($existingColumns as $columnName => $config) {
             if (($includeHeavyColumns || !$config->isValueHeavy()) && !in_array($columnName, $excludeColumns, true)) {
                 $normalizedColumns[] = $this->analyzeColumnName($columnName, null, $joinName, 'SELECT');
             }

@@ -1651,7 +1651,7 @@ abstract class AbstractSelect
         }
         if (count($missingJoins) > 0) {
             throw new \UnexpectedValueException(
-                'There are no joins with names: ' . implode(', ', $missingJoins)
+                'Select does not have joins with next names: ' . implode(', ', $missingJoins)
             );
         }
     }

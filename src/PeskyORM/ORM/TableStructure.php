@@ -260,6 +260,14 @@ abstract class TableStructure implements TableStructureInterface
     }
     
     /**
+     * @return Relation[][]
+     */
+    static public function getColumnsRelations(): array
+    {
+        return static::getInstance()->columnsRelations;
+    }
+    
+    /**
      * @return Relation[]
      */
     static public function getColumnRelations(string $columnName): array

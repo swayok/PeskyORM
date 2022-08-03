@@ -630,7 +630,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidOrderBy7()
     {
         $this->expectException(UnexpectedValueException::class);
-        $this->expectExceptionMessage("There are no joins with names: OtherTable");
+        $this->expectExceptionMessage("Select does not have joins with next names: OtherTable");
         static::getNewSelect()
             ->orderBy('OtherTable.id')
             ->getQuery();
@@ -714,7 +714,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidGroupBy6()
     {
         $this->expectException(UnexpectedValueException::class);
-        $this->expectExceptionMessage("There are no joins with names: OtherTable");
+        $this->expectExceptionMessage("Select does not have joins with next names: OtherTable");
         static::getNewSelect()
             ->groupBy(['OtherTable.id'])
             ->getQuery();
@@ -896,7 +896,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidWhereUsingUnknownJoin()
     {
         $this->expectException(UnexpectedValueException::class);
-        $this->expectExceptionMessage("There are no joins with names: Test");
+        $this->expectExceptionMessage("Select does not have joins with next names: Test");
         static::getNewSelect()
             ->where(['Test.id' => 1])
             ->getQuery();
@@ -905,7 +905,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidHavingUsingUnknownJoin()
     {
         $this->expectException(UnexpectedValueException::class);
-        $this->expectExceptionMessage("There are no joins with names: Test");
+        $this->expectExceptionMessage("Select does not have joins with next names: Test");
         static::getNewSelect()
             ->having(['Test.id' => 1])
             ->getQuery();
