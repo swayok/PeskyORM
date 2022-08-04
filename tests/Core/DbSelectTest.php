@@ -10,7 +10,6 @@ use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\JoinInfo;
 use PeskyORM\Core\Select;
-use ReflectionClass;
 use Swayok\Utils\Set;
 use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingApp;
@@ -101,33 +100,6 @@ class DbSelectTest extends BaseTestCase
             $item['not_changeable_column'] = 'not changable';
         }
         return $data;
-    }
-    
-    /**
-     * @param Select $object
-     * @param string $propertyName
-     * @return mixed
-     */
-    private function getObjectPropertyValue($object, $propertyName)
-    {
-        $reflection = new ReflectionClass($object);
-        $prop = $reflection->getProperty($propertyName);
-        $prop->setAccessible(true);
-        return $prop->getValue($object);
-    }
-    
-    /**
-     * @param Select $object
-     * @param string $methodName
-     * @param array $args
-     * @return mixed
-     */
-    private function callObjectMethod($object, $methodName, array $args = [])
-    {
-        $reflection = new ReflectionClass($object);
-        $method = $reflection->getMethod($methodName);
-        $method->setAccessible(true);
-        return $method->invokeArgs($object, $args);
     }
     
     public function testInvalidTableNameInConstructor1()
@@ -260,7 +232,7 @@ class DbSelectTest extends BaseTestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$columnName argument must be a string or instance of DbExpr class");
         $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', [null]);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', null);
     }
     
     public function testInvalidAnalyzeColumnName12()
@@ -268,7 +240,7 @@ class DbSelectTest extends BaseTestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$columnName argument is not allowed to be an empty string");
         $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['']);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', '');
     }
     
     public function testInvalidAnalyzeColumnName13()
@@ -276,7 +248,7 @@ class DbSelectTest extends BaseTestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$columnName argument must be a string or instance of DbExpr class");
         $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', [[]]);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', []);
     }
     
     public function testInvalidAnalyzeColumnName14()
@@ -284,7 +256,7 @@ class DbSelectTest extends BaseTestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$columnName argument must be a string or instance of DbExpr class");
         $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', [false]);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', false);
     }
     
     public function testInvalidAnalyzeColumnName16()
@@ -292,7 +264,7 @@ class DbSelectTest extends BaseTestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Invalid column name: [0test]");
         $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['0test']);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', '0test');
     }
     
     public function testInvalidAnalyzeColumnName21()
@@ -300,7 +272,7 @@ class DbSelectTest extends BaseTestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessageMatches("%Argument #2 .*? must be of type \?string, array given%");
         $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', []]);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', 'test', []);
     }
     
     public function testInvalidAnalyzeColumnName23()
@@ -308,7 +280,7 @@ class DbSelectTest extends BaseTestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$columnAlias argument is not allowed to be an empty string");
         $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', '']);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', 'test', '');
     }
     
     public function testInvalidAnalyzeColumnName24()
@@ -316,7 +288,7 @@ class DbSelectTest extends BaseTestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$columnAlias argument contains invalid db entity name: [1]");
         $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', true]);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', 'test', true);
     }
     
     public function testInvalidAnalyzeColumnName25()
@@ -324,7 +296,7 @@ class DbSelectTest extends BaseTestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$columnAlias argument is not allowed to be an empty string");
         $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', false]);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', 'test', false);
     }
     
     public function testInvalidAnalyzeColumnName30()
@@ -332,7 +304,7 @@ class DbSelectTest extends BaseTestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$joinName argument contains invalid db entity name: [1]");
         $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', null, true]);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', 'test', null, true);
     }
     
     public function testInvalidAnalyzeColumnName31()
@@ -340,7 +312,7 @@ class DbSelectTest extends BaseTestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$joinName argument is not allowed to be an empty string");
         $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', null, false]);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', 'test', null, false);
     }
     
     public function testInvalidAnalyzeColumnName32()
@@ -348,7 +320,7 @@ class DbSelectTest extends BaseTestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessageMatches("%Argument #3 .*? must be of type \?string, array given%");
         $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', null, []]);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', 'test', null, []);
     }
     
     public function testInvalidAnalyzeColumnName33()
@@ -356,7 +328,7 @@ class DbSelectTest extends BaseTestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("\$joinName argument is not allowed to be an empty string");
         $dbSelect = static::getNewSelect();
-        $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['test', null, '']);
+        $this->callObjectMethod($dbSelect, 'analyzeColumnName', 'test', null, '');
     }
     
     public function testAnalyzeColumnName()
@@ -370,7 +342,7 @@ class DbSelectTest extends BaseTestCase
                 'type_cast' => null,
                 'json_selector' => null
             ],
-            $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['*', 'test'])
+            $this->callObjectMethod($dbSelect, 'analyzeColumnName', '*', 'test')
         );
         static::assertEquals(
             [
@@ -381,7 +353,7 @@ class DbSelectTest extends BaseTestCase
                 'parent' => 'Admins',
                 'json_selector' => null
             ],
-            $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['JoinAlias.*', 'test'])
+            $this->callObjectMethod($dbSelect, 'analyzeColumnName', 'JoinAlias.*', 'test')
         );
         static::assertEquals(
             [
@@ -391,7 +363,7 @@ class DbSelectTest extends BaseTestCase
                 'type_cast' => null,
                 'json_selector' => null
             ],
-            $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['id as not_id'])
+            $this->callObjectMethod($dbSelect, 'analyzeColumnName', 'id as not_id')
         );
         static::assertEquals(
             [
@@ -401,7 +373,7 @@ class DbSelectTest extends BaseTestCase
                 'type_cast' => 'int',
                 'json_selector' => null
             ],
-            $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['Admins.id::int'])
+            $this->callObjectMethod($dbSelect, 'analyzeColumnName', 'Admins.id::int')
         );
         static::assertEquals(
             [
@@ -411,10 +383,10 @@ class DbSelectTest extends BaseTestCase
                 'type_cast' => 'int',
                 'json_selector' => null
             ],
-            $this->callObjectMethod($dbSelect, 'analyzeColumnName', ['Other.id::int'])
+            $this->callObjectMethod($dbSelect, 'analyzeColumnName', 'Other.id::int')
         );
         $dbExpr = DbExpr::create('Other.id::int');
-        $columnInfo = $this->callObjectMethod($dbSelect, 'analyzeColumnName', [$dbExpr]);
+        $columnInfo = $this->callObjectMethod($dbSelect, 'analyzeColumnName', $dbExpr);
         static::assertEquals(
             [
                 'name' => $dbExpr,
@@ -426,7 +398,7 @@ class DbSelectTest extends BaseTestCase
         );
         static::assertInstanceOf(DbExpr::class, $columnInfo['name']);
         static::assertEquals($dbExpr->get(), $columnInfo['name']->get());
-        $columnInfo = $this->callObjectMethod($dbSelect, 'analyzeColumnName', [$dbExpr, 'dbexpr']);
+        $columnInfo = $this->callObjectMethod($dbSelect, 'analyzeColumnName', $dbExpr, 'dbexpr');
         static::assertEquals(
             [
                 'name' => $dbExpr,
@@ -564,7 +536,7 @@ class DbSelectTest extends BaseTestCase
         // test column alias shortening
         $query = $dbSelect->columns(['VeryLongColumnAliasSoItMustBeShortened' => 'id'])
             ->getQuery();
-        $shortAlias = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', ['VeryLongColumnAliasSoItMustBeShortened']);
+        $shortAlias = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', 'VeryLongColumnAliasSoItMustBeShortened');
         static::assertEquals(
             'SELECT "Admins"."id" AS "_Admins__' . $shortAlias . '" FROM "admins" AS "Admins"',
             $query
@@ -1007,7 +979,7 @@ class DbSelectTest extends BaseTestCase
             ->setAdditionalJoinConditions(['VeryLongJoinNameSoItMustBeShortened.parentId' => null]);
         $query = $dbSelect->join($joinConfig, false)
             ->getQuery();
-        $shortJoinName = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', [$joinConfig->getJoinName()]);
+        $shortJoinName = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', $joinConfig->getJoinName());
         static::assertEquals(
             'SELECT "Admins".* FROM "admins" AS "Admins" RIGHT JOIN "settings" AS "' . $shortJoinName . '" ON ("Admins"."id" = "' . $shortJoinName . '"."id" AND "' . $shortJoinName . '"."parentId" IS NULL)',
             $query
@@ -1069,11 +1041,11 @@ class DbSelectTest extends BaseTestCase
         $dbSelect = static::getNewSelect();
         static::assertEquals(
             '_Admins__colname',
-            $this->callObjectMethod($dbSelect, 'makeColumnAlias', ['colname'])
+            $this->callObjectMethod($dbSelect, 'makeColumnAlias', 'colname')
         );
         static::assertEquals(
             '_JoinAlias__colname',
-            $this->callObjectMethod($dbSelect, 'makeColumnAlias', ['colname', 'JoinAlias'])
+            $this->callObjectMethod($dbSelect, 'makeColumnAlias', 'colname', 'JoinAlias')
         );
     }
     
@@ -1083,34 +1055,28 @@ class DbSelectTest extends BaseTestCase
         static::assertEquals(
             '"Admins"."colname" AS "_Admins__colname"',
             $this->callObjectMethod($dbSelect, 'makeColumnNameWithAliasForQuery', [
-                [
-                    'name' => 'colname',
-                    'alias' => null,
-                    'join_name' => null,
-                    'type_cast' => null,
-                ],
+                'name' => 'colname',
+                'alias' => null,
+                'join_name' => null,
+                'type_cast' => null,
             ])
         );
         static::assertEquals(
             '("JoinAlias"."colname")::int AS "_JoinAlias__colname"',
             $this->callObjectMethod($dbSelect, 'makeColumnNameWithAliasForQuery', [
-                [
-                    'name' => 'colname',
-                    'alias' => null,
-                    'join_name' => 'JoinAlias',
-                    'type_cast' => 'int',
-                ],
+                'name' => 'colname',
+                'alias' => null,
+                'join_name' => 'JoinAlias',
+                'type_cast' => 'int',
             ])
         );
         static::assertEquals(
             '("JoinAlias"."colname")::int AS "_JoinAlias__colalias"',
             $this->callObjectMethod($dbSelect, 'makeColumnNameWithAliasForQuery', [
-                [
-                    'name' => 'colname',
-                    'alias' => 'colalias',
-                    'join_name' => 'JoinAlias',
-                    'type_cast' => 'int',
-                ],
+                'name' => 'colname',
+                'alias' => 'colalias',
+                'join_name' => 'JoinAlias',
+                'type_cast' => 'int',
             ])
         );
     }
@@ -1120,12 +1086,14 @@ class DbSelectTest extends BaseTestCase
         $dbSelect = static::getNewSelect();
         static::assertEquals(
             '"admins" AS "Admins"',
-            $this->callObjectMethod($dbSelect, 'makeTableNameWithAliasForQuery', ['admins', 'Admins'])
+            $this->callObjectMethod($dbSelect, 'makeTableNameWithAliasForQuery', 'admins', 'Admins')
         );
         $expr = $this->callObjectMethod(
             $dbSelect,
             'makeTableNameWithAliasForQuery',
-            ['admins', 'SomeTooLongTableAliasToMakeSystemShortenIt', 'other']
+            'admins',
+            'SomeTooLongTableAliasToMakeSystemShortenIt',
+            'other'
         );
         static::assertNotEquals('"other"."admins" AS "SomeTooLongTableAliasToMakeSystemShortenIt"', $expr);
         static::assertRegExp('%"other"\."admins" AS "[a-z][a-z0-9]+[0-9]"%', $expr);
@@ -1137,34 +1105,28 @@ class DbSelectTest extends BaseTestCase
         static::assertEquals(
             '"Admins"."colname"',
             $this->callObjectMethod($dbSelect, 'makeColumnNameForCondition', [
-                [
-                    'name' => 'colname',
-                    'alias' => null,
-                    'join_name' => null,
-                    'type_cast' => null,
-                ],
+                'name' => 'colname',
+                'alias' => null,
+                'join_name' => null,
+                'type_cast' => null,
             ])
         );
         static::assertEquals(
             '("Admins"."colname")::int',
             $this->callObjectMethod($dbSelect, 'makeColumnNameForCondition', [
-                [
-                    'name' => 'colname',
-                    'alias' => 'colalias',
-                    'join_name' => null,
-                    'type_cast' => 'int',
-                ],
+                'name' => 'colname',
+                'alias' => 'colalias',
+                'join_name' => null,
+                'type_cast' => 'int',
             ])
         );
         static::assertEquals(
             '("JoinAlias"."colname")::int',
             $this->callObjectMethod($dbSelect, 'makeColumnNameForCondition', [
-                [
-                    'name' => 'colname',
-                    'alias' => 'colalias',
-                    'join_name' => 'JoinAlias',
-                    'type_cast' => 'int',
-                ],
+                'name' => 'colname',
+                'alias' => 'colalias',
+                'join_name' => 'JoinAlias',
+                'type_cast' => 'int',
             ])
         );
     }
@@ -1174,11 +1136,11 @@ class DbSelectTest extends BaseTestCase
         $dbSelect = static::getNewSelect();
         static::assertEquals(
             'Admins',
-            $this->callObjectMethod($dbSelect, 'getShortJoinAlias', ['Admins'])
+            $this->callObjectMethod($dbSelect, 'getShortJoinAlias', 'Admins')
         );
         for ($i = 0; $i < 30; $i++) {
             // it uses rand so it will be better to test it many times
-            $alias = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', ['SomeTooLongTableAliasToMakeSystemShortenIt']);
+            $alias = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', 'SomeTooLongTableAliasToMakeSystemShortenIt');
             static::assertNotEquals('SomeTooLongTableAliasToMakeSystemShortenIt', $alias);
             static::assertRegExp('%^[a-z][a-z0-9]+$%', $alias);
         }
@@ -1189,11 +1151,11 @@ class DbSelectTest extends BaseTestCase
         $dbSelect = static::getNewSelect();
         static::assertEquals(
             'parent_id',
-            $this->callObjectMethod($dbSelect, 'getShortColumnAlias', ['parent_id'])
+            $this->callObjectMethod($dbSelect, 'getShortColumnAlias', 'parent_id')
         );
         for ($i = 0; $i < 30; $i++) {
             // it uses rand so it will be better to test it many times
-            $alias = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', ['SomeTooLongColumnAliasToMakeSystemShortenIt']);
+            $alias = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', 'SomeTooLongColumnAliasToMakeSystemShortenIt');
             static::assertNotEquals('SomeTooLongColumnAliasToMakeSystemShortenIt', $alias);
             static::assertRegExp('%^[a-z][a-z0-9]+$%', $alias);
         }

@@ -27,19 +27,6 @@ class DbTableColumnTest extends BaseTestCase
         TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
     }
     
-    /**
-     * @param object $object
-     * @param string $propertyName
-     * @return mixed
-     */
-    private function getObjectPropertyValue($object, $propertyName)
-    {
-        $reflection = new \ReflectionClass($object);
-        $prop = $reflection->getProperty($propertyName);
-        $prop->setAccessible(true);
-        return $prop->getValue($object);
-    }
-    
     public function testInvalidConstructor1()
     {
         $this->expectException(\InvalidArgumentException::class);

@@ -265,9 +265,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param string $name
      * @return bool
      */
-    static public function hasColumn($name): bool
+    static public function hasColumn(string $name): bool
     {
-        return isset(static::getColumns(true)[$name]);
+        return static::_hasColumn($name, true);
+    }
+    
+    static protected function _hasColumn(string $name, bool $includeFormatters)
+    {
+        return isset(static::getColumns($includeFormatters)[$name]);
     }
     
     static public function getPrimaryKeyColumn(): Column
@@ -668,45 +673,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             throw new InvalidDataException([$colName => $valueContainer->getValidationErrors()]);
         }
         if ($isFromDb) {
-            // check if all loaded relations still properly linked and unset relations if not
-            $relations = $column->getRelations();
-            if (count($relations) > 0) {
-                $finalValue = $this->getValue($column);
-                // unset relation if relation's linking column value differs from current one
-                foreach ($column->getRelations() as $relation) {
-                    if ($this->isRelatedRecordAttached($relation->getName())) {
-                        $relatedRecord = $this->getRelatedRecord($relation->getName(), false);
-                        $relatedColumnName = $relation->getForeignColumnName();
-                        switch ($relation->getType()) {
-                            case Relation::HAS_ONE:
-                            case Relation::BELONGS_TO:
-                                if (
-                                    isset($relatedRecord[$relatedColumnName])
-                                    && $relatedRecord[$relatedColumnName] !== $finalValue
-                                ) {
-                                    $this->unsetRelatedRecord($relation->getName());
-                                }
-                                break;
-                            case Relation::HAS_MANY:
-                                /** @var RecordsSet $relatedRecord */
-                                if (!$relatedRecord->areRecordsFetchedFromDb()) {
-                                    // not fetched yet - remove without counting and other testing to prevent
-                                    // unnecessary DB queries
-                                    $this->unsetRelatedRecord($relation->getName());
-                                } elseif ($relatedRecord->count() > 0) {
-                                    $firstRelatedRecord = $relatedRecord->first();
-                                    if (
-                                        isset($firstRelatedRecord[$relatedColumnName])
-                                        && $firstRelatedRecord[$relatedColumnName] !== $finalValue
-                                    ) {
-                                        $this->unsetRelatedRecord($relation->getName());
-                                    }
-                                }
-                                break;
-                        }
-                    }
-                }
-            }
+            $this->unsetNotRelatedRecordsForColumnAfterValueUpdate($column);
         }
         if (
             $prevPkValue !== null
@@ -719,6 +686,49 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             $this->onPrimaryKeyChangeForRecordReceivedFromDb($prevPkValue);
         }
         return $this;
+    }
+    
+    protected function unsetNotRelatedRecordsForColumnAfterValueUpdate(Column $column)
+    {
+        // check if all loaded relations still properly linked and unset relations if not
+        $relations = $column->getRelations();
+        if (count($relations) > 0) {
+            $finalValue = $this->getValue($column);
+            // unset relation if relation's linking column value differs from current one
+            foreach ($column->getRelations() as $relation) {
+                if ($this->isRelatedRecordAttached($relation->getName())) {
+                    $relatedRecord = $this->getRelatedRecord($relation->getName(), false);
+                    $relatedColumnName = $relation->getForeignColumnName();
+                    switch ($relation->getType()) {
+                        case Relation::HAS_ONE:
+                        case Relation::BELONGS_TO:
+                            if (
+                                isset($relatedRecord[$relatedColumnName])
+                                && $relatedRecord[$relatedColumnName] !== $finalValue
+                            ) {
+                                $this->unsetRelatedRecord($relation->getName());
+                            }
+                            break;
+                        case Relation::HAS_MANY:
+                            /** @var RecordsSet $relatedRecord */
+                            if (!$relatedRecord->areRecordsFetchedFromDb()) {
+                                // not fetched yet - remove without counting and other testing to prevent
+                                // unnecessary DB queries
+                                $this->unsetRelatedRecord($relation->getName());
+                            } elseif ($relatedRecord->count() > 0) {
+                                $firstRelatedRecord = $relatedRecord->first();
+                                if (
+                                    isset($firstRelatedRecord[$relatedColumnName])
+                                    && $firstRelatedRecord[$relatedColumnName] !== $finalValue
+                                ) {
+                                    $this->unsetRelatedRecord($relation->getName());
+                                }
+                            }
+                            break;
+                    }
+                }
+            }
+        }
     }
     
     /**
@@ -901,12 +911,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     
     /**
      * Remove related record
-     * @param string $relationName
      * @return $this
      */
     public function unsetRelatedRecord(string $relationName)
     {
-        static::getRelation($relationName);
         unset($this->relatedRecords[$relationName]);
         return $this;
     }
@@ -1403,7 +1411,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
     
     /**
-     * @param array $columnsToSave
+     * @param string[] $columnsToSave
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws InvalidDataException
@@ -1423,7 +1431,18 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             $this->runColumnSavingExtenders($columnsToSave, [], [], $isUpdate);
             return;
         }
-        $diff = array_diff($columnsToSave, array_keys(static::getColumns()));
+        try {
+            $diff = array_diff($columnsToSave, array_keys(static::getColumns()));
+        } catch (\Throwable $exception) {
+            if (stripos($exception->getMessage(), 'Array to string conversion') !== false) {
+                throw new \InvalidArgumentException(
+                    '$columnsToSave argument contains invalid list of columns. Each value can only be a string. $columns = '
+                    . json_encode($columnsToSave, JSON_UNESCAPED_UNICODE)
+                );
+            } else {
+                throw $exception;
+            }
+        }
         if (count($diff)) {
             throw new \InvalidArgumentException(
                 '$columnsToSave argument contains unknown columns: ' . implode(', ', $diff)
@@ -1514,10 +1533,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
     
     /**
-     * @param array $columnsToSave
+     * @param array $columnsToSave - passed by reference to be able to add some columns for saving in child classes
      * @param bool $isUpdate
      * @return array
-     * @noinspection PhpParameterByRefIsNotUsedAsReferenceInspection
      */
     protected function collectValuesForSave(array &$columnsToSave, bool $isUpdate): array
     {
@@ -1525,12 +1543,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         // collect values that are not from DB
         foreach ($columnsToSave as $columnName) {
             $column = static::getColumn($columnName);
+            $valueContainer = $this->getValueContainerByColumnConfig($column);
             if (
                 $column->isItExistsInDb()
                 && !$column->isItPrimaryKey()
                 && $this->_hasValue($column, true)
-                && !$this->getValueContainerByColumnConfig($column)
-                    ->isItFromDb()
+                && !$valueContainer->isItFromDb()
             ) {
                 $data[$columnName] = $this->_getValue($column, null);
             }
@@ -1681,7 +1699,18 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         if (count($relationsToSave) === 1 && $relationsToSave[0] === '*') {
             $relationsToSave = array_keys($relations);
         } else {
-            $diff = array_diff($relationsToSave, array_keys($relations));
+            try {
+                $diff = array_diff($relationsToSave, array_keys($relations));
+            } catch (\Throwable $exception) {
+                if (stripos($exception->getMessage(), 'Array to string conversion') !== false) {
+                    throw new \InvalidArgumentException(
+                        '$relationsToSave argument contains invalid list of columns. Each value can only be a string. $relationsToSave = '
+                        . json_encode($relationsToSave, JSON_UNESCAPED_UNICODE)
+                    );
+                } else {
+                    throw $exception;
+                }
+            }
             if (count($diff)) {
                 throw new \InvalidArgumentException(
                     '$relationsToSave argument contains unknown relations: ' . implode(', ', $diff)
@@ -2302,7 +2331,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     
     /**
      * Proxy to _hasValue() or isRelatedRecordCanBeRead();
-     * NOTE: it is not isset()
+     * NOTE: same as isset() when calling isset($record[$columnName]) and also used by empty($record[$columnName])
      * @param string $key - column name or relation name
      * @return boolean - true on success or false on failure.
      * @throws \InvalidArgumentException
@@ -2314,10 +2343,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             $column = static::getColumn($key, $format);
             if (!$this->_hasValue($column, false)) {
                 return false;
-            } elseif ($format) {
-                return $this->_getValue($column, $format) !== null;
             } else {
-                return true;
+                return $this->_getValue($column, $format) !== null;
             }
         } elseif (static::hasRelation($key)) {
             if (!$this->isRelatedRecordCanBeRead($key)) {
@@ -2326,9 +2353,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             $record = $this->getRelatedRecord($key, true);
             return $record instanceof RecordInterface ? $record->existsInDb() : $record->count();
         } else {
-            throw new \InvalidArgumentException(
-                'There is no column or relation with name ' . $key . ' in ' . static::class
-            );
+            $this->throwInvalidColumneOrRelationException($key);
         }
     }
     
@@ -2345,10 +2370,15 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         } elseif (static::hasRelation($key)) {
             return $this->getRelatedRecord($key, true);
         } else {
-            throw new \InvalidArgumentException(
-                'There is no column or relation with name ' . $key . ' in ' . static::class
-            );
+            $this->throwInvalidColumneOrRelationException($key);
         }
+    }
+    
+    protected function throwInvalidColumneOrRelationException(string $name)
+    {
+        throw new \InvalidArgumentException(
+            'There is no column or relation with name [' . $name . '] in ' . static::class
+        );
     }
     
     /**
@@ -2361,14 +2391,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     {
         if ($this->isReadOnly()) {
             throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
-        } elseif (static::hasColumn($key)) {
+        } elseif (static::_hasColumn($key, false)) {
             $this->_updateValue(static::getColumn($key), $value, $key === static::getPrimaryKeyColumnName());
         } elseif (static::hasRelation($key)) {
             $this->updateRelatedRecord($key, $value, null);
         } else {
-            throw new \InvalidArgumentException(
-                'There is no column or relation with name ' . $key . ' in ' . static::class
-            );
+            $this->throwInvalidColumneOrRelationException($key);
         }
     }
     
@@ -2382,14 +2410,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     {
         if ($this->isReadOnly()) {
             throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
-        } elseif (static::hasColumn($key)) {
+        } elseif (static::_hasColumn($key, false)) {
             return $this->unsetValue($key);
         } elseif (static::hasRelation($key)) {
             return $this->unsetRelatedRecord($key);
         } else {
-            throw new \InvalidArgumentException(
-                'There is no column or relation with name ' . $key . ' in ' . static::class
-            );
+            $this->throwInvalidColumneOrRelationException($key);
         }
     }
     
@@ -2418,12 +2444,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     public function __isset($name)
     {
-        $hasValue = $this->offsetExists($name);
-        if (!$hasValue) {
-            return false;
-        } else {
-            return $this->offsetGet($name) !== null;
-        }
+        return $this->offsetExists($name);
     }
     
     /**
@@ -2444,7 +2465,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     public function __call($name, array $arguments)
     {
-        $isValidName = preg_match('%^set([A-Z][a-zA-Z0-9]*)$%', $name, $nameParts);
+        $isValidName = preg_match('%^set([A-Z][a-zA-Z0-9]*)$%', $name, $nameParts) > 0;
         if (!$isValidName) {
             throw new \BadMethodCallException(
                 "Magic method '{$name}(\$value, \$isFromDb = false)' is forbidden. You can magically call only methods starting with 'set', for example: setId(1)"
@@ -2479,7 +2500,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             $this->updateRelatedRecord($nameParts[1], $value, $isFromDb);
         } else {
             $columnName = StringUtils::underscore($nameParts[1]);
-            if (!static::hasColumn($columnName)) {
+            if (!static::_hasColumn($columnName, false)) {
                 throw new \BadMethodCallException(
                     "Magic method '{$name}(\$value, \$isFromDb = false)' is not linked with any column or relation"
                 );

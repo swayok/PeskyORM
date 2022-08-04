@@ -175,6 +175,14 @@ class TestingAdmins3TableStructure extends TableStructure
             });
     }
     
+    private function big_data()
+    {
+        return Column::create(Column::TYPE_TEXT)
+            ->disallowsNullValues()
+            ->setDefaultValue('this is big data value! really! I\'m not joking!')
+            ->valueIsHeavy();
+    }
+    
     private function not_changeable_column()
     {
         return Column::create(Column::TYPE_STRING)
@@ -199,7 +207,7 @@ class TestingAdmins3TableStructure extends TableStructure
     
     private function VeryLongRelationNameSoItMustBeShortened()
     {
-        return Relation::create('parent_id', Relation::BELONGS_TO, TestingAdminsTable::class, 'id');
+        return Relation::create('login', Relation::BELONGS_TO, TestingAdminsTable::class, 'id');
     }
     
     

@@ -49,12 +49,12 @@ trait TestDataForAdminsTable
         ];
     }
     
-    public function convertTestDataForAdminsTableAssert(array $data): array
+    public function convertTestDataForAdminsTableAssert(array $data, bool $convertIdToString = true): array
     {
         $adapter = $this->getValidAdapter();
         if ($adapter instanceof Postgres) {
             foreach ($data as &$item) {
-                $item['id'] = (string)$item['id'];
+                $item['id'] = $convertIdToString ? (string)$item['id'] : (int)$item['id'];
                 $item['is_superadmin'] = (bool)$item['is_superadmin'];
                 $item['is_active'] = (bool)$item['is_active'];
                 $item['not_changeable_column'] = 'not changable';

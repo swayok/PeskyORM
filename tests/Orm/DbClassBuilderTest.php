@@ -6,7 +6,6 @@ namespace Tests\Orm;
 
 use PeskyORM\ORM\ClassBuilder;
 use PeskyORM\ORM\Column;
-use ReflectionClass;
 use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
@@ -26,21 +25,6 @@ class DbClassBuilderTest extends BaseTestCase
     protected function getBuilder($tableName = 'admins')
     {
         return new ClassBuilder($tableName, TestingApp::getPgsqlConnection());
-    }
-    
-    /**
-     * @param ClassBuilder $object
-     * @param string $methodName
-     * @param array $args
-     * @return mixed
-     * @internal param string $propertyName
-     */
-    private function callObjectMethod($object, $methodName, ...$args)
-    {
-        $reflection = new ReflectionClass($object);
-        $method = $reflection->getMethod($methodName);
-        $method->setAccessible(true);
-        return $method->invokeArgs($object, $args);
     }
     
     public function testBuilderServiceMethods()

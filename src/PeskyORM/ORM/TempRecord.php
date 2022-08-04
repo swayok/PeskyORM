@@ -39,7 +39,7 @@ class TempRecord implements RecordInterface
      * @param string $name
      * @return bool
      */
-    static public function hasColumn($name): bool
+    static public function hasColumn(string $name): bool
     {
         return false;
     }

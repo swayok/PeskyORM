@@ -214,6 +214,7 @@ class TestingAdminsTableStructure extends TableStructure
     {
         return Column::create(Column::TYPE_TEXT)
             ->disallowsNullValues()
+            ->setDefaultValue('this is big data value! really! I\'m not joking!')
             ->valueIsHeavy();
     }
     

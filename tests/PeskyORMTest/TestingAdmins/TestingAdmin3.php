@@ -14,5 +14,10 @@ class TestingAdmin3 extends Record
     {
         return TestingAdmins3Table::getInstance();
     }
+
+    public function runColumnSavingExtenders(array $columnsToSave, array $dataSavedToDb, array $updatesReceivedFromDb, bool $isUpdate)
+    {
+        parent::runColumnSavingExtenders($columnsToSave, $dataSavedToDb, $updatesReceivedFromDb, $isUpdate);
+    }
     
 }

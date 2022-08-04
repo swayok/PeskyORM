@@ -7,7 +7,6 @@ namespace Tests\Orm;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\RecordValue;
-use ReflectionClass;
 use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
@@ -34,19 +33,6 @@ class DbRecordValueTest extends BaseTestCase
     protected function getClonedColumn($columnName)
     {
         return clone TestingAdminsTableStructure::getColumn($columnName);
-    }
-    
-    /**
-     * @param RecordValue $object
-     * @param string $propertyName
-     * @return mixed
-     */
-    private function getObjectPropertyValue($object, $propertyName)
-    {
-        $reflection = new ReflectionClass($object);
-        $prop = $reflection->getProperty($propertyName);
-        $prop->setAccessible(true);
-        return $prop->getValue($object);
     }
     
     public function testConstructAndClone()

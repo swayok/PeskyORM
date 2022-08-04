@@ -11,9 +11,9 @@ use PeskyORM\Core\Select;
 use PeskyORM\ORM\FakeTable;
 use PeskyORM\ORM\OrmJoinInfo;
 use PeskyORM\ORM\OrmSelect;
-use ReflectionClass;
 use Swayok\Utils\Set;
 use Tests\PeskyORMTest\BaseTestCase;
+use Tests\PeskyORMTest\Data\TestDataForAdminsTable;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableLongAlias;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
@@ -22,6 +22,8 @@ use Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 
 class OrmSelectTest extends BaseTestCase
 {
+    
+    use TestDataForAdminsTable;
     
     public static function setUpBeforeClass(): void
     {
@@ -41,43 +43,6 @@ class OrmSelectTest extends BaseTestCase
     static protected function getNewSelect()
     {
         return OrmSelect::from(TestingAdminsTable::getInstance());
-    }
-    
-    public function convertTestDataForAdminsTableAssert($data)
-    {
-        foreach ($data as &$item) {
-            $item['id'] = (string)$item['id'];
-            $item['is_superadmin'] = (bool)$item['is_superadmin'];
-            $item['is_active'] = (bool)$item['is_active'];
-        }
-        return $data;
-    }
-    
-    /**
-     * @param OrmSelect $object
-     * @param string $propertyName
-     * @return mixed
-     */
-    private function getObjectPropertyValue($object, $propertyName)
-    {
-        $reflection = new ReflectionClass($object);
-        $prop = $reflection->getProperty($propertyName);
-        $prop->setAccessible(true);
-        return $prop->getValue($object);
-    }
-    
-    /**
-     * @param OrmSelect $object
-     * @param string $methodName
-     * @param array $args
-     * @return mixed
-     */
-    private function callObjectMethod($object, $methodName, array $args = [])
-    {
-        $reflection = new ReflectionClass($object);
-        $method = $reflection->getMethod($methodName);
-        $method->setAccessible(true);
-        return $method->invokeArgs($object, $args);
     }
     
     public function testConstructorAndBasicFetching()
@@ -109,11 +74,8 @@ class OrmSelectTest extends BaseTestCase
         static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
         
         $insertedData = TestingApp::fillAdminsTable(2);
-        $testData = $this->convertTestDataForAdminsTableAssert($insertedData);
-        $testData[0]['created_at'] .= '+00';
-        $testData[0]['updated_at'] .= '+00';
-        $testData[1]['created_at'] .= '+00';
-        $testData[1]['updated_at'] .= '+00';
+        $testData = $this->convertTestDataForAdminsTableAssert($insertedData, true);
+        unset($testData[0]['big_data'], $testData[1]['big_data']);
         $dbSelect->columns('*');
         $count = $dbSelect->fetchCount();
         static::assertEquals(2, $count);
@@ -225,7 +187,7 @@ class OrmSelectTest extends BaseTestCase
             if (!$column->isItExistsInDb()) {
                 continue;
             }
-            $shortName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', [$column->getName()]);
+            $shortName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', $column->getName());
             if ($column->isValueHeavy()) {
                 $bigDataColsInfo[] = [
                     'name' => $column->getName(),
@@ -485,7 +447,7 @@ class OrmSelectTest extends BaseTestCase
                 ->getColumns() as $column
         ) {
             if ($column->isItExistsInDb()) {
-                $shortName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', [$column->getName()]);
+                $shortName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', $column->getName());
                 $colsInSelectForParent[] = '"Parent"."' . $column->getName() . '" AS "_Parent__' . $shortName . '"';
                 $colsInSelectForParent2[] = '"Parent2"."' . $column->getName() . '" AS "_Parent2__' . $shortName . '"';
             }
@@ -514,10 +476,10 @@ class OrmSelectTest extends BaseTestCase
             ]
         )
             ->getQuery();
-        $shortJoinName = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', ['VeryLongRelationNameSoItMustBeShortened']);
-        $shortJoinName2 = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', ['VeryLongRelationNameSoItMustBeShortened2']);
-        $shortColumnName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', ['VeryLongColumnAliasSoItMustBeShortened']);
-        $shortColumnName2 = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', ['VeryLongColumnAliasSoItMustBeShortened2']);
+        $shortJoinName = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', 'VeryLongRelationNameSoItMustBeShortened');
+        $shortJoinName2 = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', 'VeryLongRelationNameSoItMustBeShortened2');
+        $shortColumnName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', 'VeryLongColumnAliasSoItMustBeShortened');
+        $shortColumnName2 = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', 'VeryLongColumnAliasSoItMustBeShortened2');
         static::assertEquals(
             'SELECT "Admins"."id" AS "_Admins__' . $shortColumnName . '", "' . $shortJoinName . '"."id" AS "_' . $shortJoinName . '__id", "' . $shortJoinName2 . '"."id" AS "_' . $shortJoinName2 . '__' . $shortColumnName2 . '" FROM "admins" AS "Admins" LEFT JOIN "admins" AS "' . $shortJoinName . '" ON ("Admins"."login" = "' . $shortJoinName . '"."id") LEFT JOIN "admins" AS "' . $shortJoinName2 . '" ON ("' . $shortJoinName . '"."login" = "' . $shortJoinName2 . '"."id")',
             $query
@@ -672,7 +634,7 @@ class OrmSelectTest extends BaseTestCase
             ->columns(['id'])
             ->having([])
             ->getQuery();
-        $shortAlias = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', ['VeryLongRelationNameSoItMustBeShortened']);
+        $shortAlias = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', 'VeryLongRelationNameSoItMustBeShortened');
         static::assertEquals(
             'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins" LEFT JOIN "admins" AS "' . $shortAlias . '" ON ("Admins"."login" = "' . $shortAlias . '"."id") WHERE "' . $shortAlias . '"."parent_id" IS NOT NULL',
             $query
@@ -680,7 +642,7 @@ class OrmSelectTest extends BaseTestCase
         $query = $dbSelect->where([])
             ->having(['VeryLongRelationNameSoItMustBeShortened.parent_id !=' => null])
             ->getQuery();
-        $shortAlias = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', ['VeryLongRelationNameSoItMustBeShortened']);
+        $shortAlias = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', 'VeryLongRelationNameSoItMustBeShortened');
         static::assertEquals(
             'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins" LEFT JOIN "admins" AS "' . $shortAlias . '" ON ("Admins"."login" = "' . $shortAlias . '"."id") HAVING "' . $shortAlias . '"."parent_id" IS NOT NULL',
             $query
@@ -714,7 +676,7 @@ class OrmSelectTest extends BaseTestCase
                 ->getColumns() as $column
         ) {
             if ($column->isItExistsInDb()) {
-                $shortName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', [$column->getName()]);
+                $shortName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', $column->getName());
                 $colsInSelectForTest[] = '"Test"."' . $column->getName() . '" AS "_Test__' . $shortName . '"';
             }
         }
@@ -755,45 +717,51 @@ class OrmSelectTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("Test: Column with name [qqq] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
-        $this->callObjectMethod(static::getNewSelect(), 'validateColumnInfo', [
+        $this->callObjectMethod(
+            static::getNewSelect(),
+            'validateColumnInfo',
             [
                 'name' => 'qqq',
                 'join_name' => null,
                 'alias' => null,
                 'type_cast' => null,
             ],
-            'Test',
-        ]);
+            'Test'
+        );
     }
     
     public function testInvalidValidateColumnInfo2()
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("Test: Column with name [Parent.qqq] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
-        $this->callObjectMethod(static::getNewSelect(), 'validateColumnInfo', [
+        $this->callObjectMethod(
+            static::getNewSelect(),
+            'validateColumnInfo',
             [
                 'name' => 'qqq',
                 'join_name' => 'Parent',
                 'alias' => null,
                 'type_cast' => null,
             ],
-            'Test',
-        ]);
+            'Test'
+        );
     }
     
     public function testInvalidValidateColumnInfo3()
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("Test: Column with name [Parent.qqq] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
-        $this->callObjectMethod(self::getNewSelect(), 'validateColumnInfo', [
+        $this->callObjectMethod(
+            self::getNewSelect(),
+            'validateColumnInfo',
             [
                 'name' => DbExpr::create('`Parent`.`id` + `Parent`.`qqq`'),
                 'join_name' => null,
                 'alias' => null,
                 'type_cast' => null,
             ],
-            'Test',
-        ]);
+            'Test'
+        );
     }
     
     public function testInvalidValidateColumnInfo4()
@@ -802,15 +770,17 @@ class OrmSelectTest extends BaseTestCase
         $this->expectExceptionMessage(
             "Relation 'Children' has type 'HAS MANY' and should not be used as JOIN (not optimal). Select that records outside of OrmSelect."
         );
-        $this->callObjectMethod(self::getNewSelect(), 'validateColumnInfo', [
+        $this->callObjectMethod(
+            self::getNewSelect(),
+            'validateColumnInfo',
             [
                 'name' => 'id',
                 'join_name' => 'Children',
                 'alias' => null,
                 'type_cast' => null,
             ],
-            'Test',
-        ]);
+            'Test'
+        );
     }
     
     public function testValidateColumnInfo()
@@ -823,7 +793,7 @@ class OrmSelectTest extends BaseTestCase
             'alias' => null,
             'type_cast' => null,
         ];
-        $this->callObjectMethod($select, 'validateColumnInfo', [$info, 'Test']);
+        $this->callObjectMethod($select, 'validateColumnInfo', $info, 'Test');
         
         $info = [
             'name' => 'id',
@@ -831,7 +801,7 @@ class OrmSelectTest extends BaseTestCase
             'alias' => null,
             'type_cast' => null,
         ];
-        $this->callObjectMethod($select, 'validateColumnInfo', [$info, 'Test']);
+        $this->callObjectMethod($select, 'validateColumnInfo', $info, 'Test');
         
         $info = [
             'name' => 'parent_id',
@@ -839,7 +809,7 @@ class OrmSelectTest extends BaseTestCase
             'alias' => null,
             'type_cast' => null,
         ];
-        $this->callObjectMethod($select, 'validateColumnInfo', [$info, 'Test']);
+        $this->callObjectMethod($select, 'validateColumnInfo', $info, 'Test');
         
         static::assertTrue(true);
     }

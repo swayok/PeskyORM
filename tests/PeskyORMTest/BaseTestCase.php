@@ -7,6 +7,7 @@ use PHPUnit\Framework\Exception;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 class BaseTestCase extends TestCase
 {
@@ -42,5 +43,26 @@ class BaseTestCase extends TestCase
         $constraint = new ArraySubset($subset, $checkForObjectIdentity);
         
         static::assertThat($array, $constraint, $message);
+    }
+    
+    protected function getObjectPropertyValue($object, string $propertyName)
+    {
+        $reflection = new ReflectionClass($object);
+        $prop = $reflection->getProperty($propertyName);
+        $prop->setAccessible(true);
+        return $prop->getValue($object);
+    }
+    
+    protected function callObjectMethod($object, string $methodName, ...$args)
+    {
+        return $this->getMethodReflection($object, $methodName)->invokeArgs($object, $args);
+    }
+    
+    protected function getMethodReflection($object, string $methodName)
+    {
+        $reflection = new ReflectionClass($object);
+        $method = $reflection->getMethod($methodName);
+        $method->setAccessible(true);
+        return $method;
     }
 }
