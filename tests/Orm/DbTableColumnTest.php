@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Orm;
 
-use InvalidArgumentException;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\DefaultColumnClosures;
 use Swayok\Utils\NormalizeValue;
@@ -29,38 +28,43 @@ class DbTableColumnTest extends BaseTestCase
     
     public function testInvalidConstructor1()
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$type argument must be a string, integer or float");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($type) must be of type string');
+        /** @noinspection PhpStrictTypeCheckingInspection */
         Column::create(null);
     }
     
     public function testInvalidConstructor2()
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$type argument must be a string, integer or float");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($type) must be of type string');
         /** @noinspection PhpParamsInspection */
+        /** @noinspection PhpStrictTypeCheckingInspection */
         Column::create([]);
     }
     
     public function testInvalidConstructor3()
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$type argument must be a string, integer or float");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($type) must be of type string');
         /** @noinspection PhpParamsInspection */
+        /** @noinspection PhpStrictTypeCheckingInspection */
         Column::create($this);
     }
     
     public function testInvalidConstructor4()
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$type argument must be a string, integer or float");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($type) must be of type string');
+        /** @noinspection PhpStrictTypeCheckingInspection */
         Column::create(true);
     }
     
     public function testInvalidConstructor5()
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$type argument must be a string, integer or float");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($type) must be of type string');
+        /** @noinspection PhpStrictTypeCheckingInspection */
         Column::create(false);
     }
     
@@ -129,38 +133,46 @@ class DbTableColumnTest extends BaseTestCase
     
     public function testInvalidName2()
     {
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("DB column name is not provided");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('PeskyORM\ORM\Column::create(): Argument #2 ($name) must be of type ?string');
+        /** @noinspection PhpStrictTypeCheckingInspection */
         Column::create(Column::TYPE_STRING, false)
             ->getName();
     }
     
     public function testInvalidName3()
     {
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("DB column name is not provided");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('PeskyORM\ORM\Column::create(): Argument #2 ($name) must be of type ?string');
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        /** @noinspection PhpParamsInspection */
         Column::create(Column::TYPE_STRING, [])
             ->getName();
     }
     
     public function testInvalidNameSet1()
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$name argument must be a string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('PeskyORM\ORM\Column::create(): Argument #2 ($name) must be of type ?string');
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        /** @noinspection PhpParamsInspection */
         Column::create(Column::TYPE_INT, ['arr']);
     }
     
     public function testInvalidNameSet2()
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$name argument must be a string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('PeskyORM\ORM\Column::create(): Argument #2 ($name) must be of type ?string');
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        /** @noinspection PhpParamsInspection */
         Column::create(Column::TYPE_FLOAT, $this);
     }
     
     public function testInvalidNameSet3()
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$name argument must be a string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('PeskyORM\ORM\Column::create(): Argument #2 ($name) must be of type ?string');
+        /** @noinspection PhpStrictTypeCheckingInspection */
         Column::create(Column::TYPE_IPV4_ADDRESS, true);
     }
     
@@ -214,7 +226,7 @@ class DbTableColumnTest extends BaseTestCase
     
     public function testInvalidValueFormat()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Value format 'time' is not supported for column 'login'. Supported formats: none");
         $rec = TestingAdmin::newEmptyRecord();
         $rec->updateValue('login', 'test', false);
@@ -440,7 +452,7 @@ class DbTableColumnTest extends BaseTestCase
     
     public function testInvalidSetClosuresClass1()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$class argument must be a string and contain a full name of a calss that implements ColumnClosuresInterface");
         Column::create(Column::TYPE_STRING)
             ->setClosuresClass(TestingAdmin::class);
@@ -448,9 +460,10 @@ class DbTableColumnTest extends BaseTestCase
     
     public function testInvalidSetClosuresClass2()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$class argument must be a string and contain a full name of a calss that implements ColumnClosuresInterface");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($class) must be of type string');
         /** @noinspection PhpParamsInspection */
+        /** @noinspection PhpStrictTypeCheckingInspection */
         Column::create(Column::TYPE_STRING)
             ->setClosuresClass(new DefaultColumnClosures());
     }
