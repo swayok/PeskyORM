@@ -22,7 +22,7 @@ use Tests\PeskyORMTest\TestingInvalidClasses\TestingNoPkColumnInTableStructure;
 use Tests\PeskyORMTest\TestingInvalidClasses\TestingTwoPrimaryKeysColumnsTableStructure;
 use Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 
-class DbTableStructureAndRelationsTest extends BaseTestCase
+class TableStructureAndRelationsTest extends BaseTestCase
 {
     
     public static function setUpBeforeClass(): void

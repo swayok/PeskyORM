@@ -12,7 +12,7 @@ use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use Tests\PeskyORMTest\TestingApp;
 
-class DbTableColumnDefaultClosuresTest extends BaseTestCase
+class DefaultColumnClosuresTest extends BaseTestCase
 {
     
     public static function setUpBeforeClass(): void

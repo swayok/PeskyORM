@@ -11,8 +11,9 @@ use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use Tests\PeskyORMTest\TestingApp;
+use Tests\PeskyORMTest\TestingValueToObjectConverter;
 
-class DbTableColumnTest extends BaseTestCase
+class ColumnTest extends BaseTestCase
 {
     
     public static function setUpBeforeClass(): void
@@ -423,6 +424,7 @@ class DbTableColumnTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$allowedValues argument cannot be empty");
+        /** @noinspection PhpParamsInspection */
         $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(null);
         $obj->getAllowedValues();
@@ -453,7 +455,7 @@ class DbTableColumnTest extends BaseTestCase
     public function testInvalidSetClosuresClass1()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$class argument must be a string and contain a full name of a calss that implements ColumnClosuresInterface");
+        $this->expectExceptionMessage("\$className argument must be a string and contain a full name of a class that implements ColumnClosuresInterface");
         Column::create(Column::TYPE_STRING)
             ->setClosuresClass(TestingAdmin::class);
     }
@@ -484,6 +486,26 @@ class DbTableColumnTest extends BaseTestCase
         static::assertInstanceOf(\Closure::class, $obj->getValueDeleteExtender());
         static::assertEquals([], call_user_func($obj->getValueValidatorExtender(), '1', false, false, $obj));
         static::assertEquals([], call_user_func($obj->getValueValidatorExtender(), '1', false, true, $obj));
+    }
+    
+    public function testInvalidSetClassNameForValueToObjectFormatter()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('$className argument must be a string and contain a full name of a class that implements PeskyORM\ORM\ValueToObjectConverterInterface');
+        Column::create(Column::TYPE_STRING)
+            ->setClassNameForValueToObjectFormatter(DefaultColumnClosures::class);
+    }
+    
+    public function testSetClassNameForValueToObjectFormatter()
+    {
+        $obj = Column::create(Column::TYPE_STRING)
+            ->setClassNameForValueToObjectFormatter(TestingValueToObjectConverter::class);
+        
+        static::assertEquals(TestingValueToObjectConverter::class, $obj->getObjectClassNameForValueToObjectFormatter());
+    
+        $obj = Column::create(Column::TYPE_STRING)
+            ->setClassNameForValueToObjectFormatter(null);
+        static::assertNull($obj->getObjectClassNameForValueToObjectFormatter());
     }
     
 }

@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingSettings\TestingSetting;
 
-class DbRecordValueHelpersTest extends BaseTestCase
+class RecordValueHelpersTest extends BaseTestCase
 {
     
     public static function setUpBeforeClass(): void

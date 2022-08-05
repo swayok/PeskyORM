@@ -12,7 +12,7 @@ use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use Tests\PeskyORMTest\TestingApp;
 
-class DbRecordValueTest extends BaseTestCase
+class RecordValueTest extends BaseTestCase
 {
     
     public static function setUpBeforeClass(): void

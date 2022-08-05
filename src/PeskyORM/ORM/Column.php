@@ -310,6 +310,11 @@ class Column
      */
     protected $foreignKeyRelation = false;
     
+    /**
+     * @var null|string
+     */
+    protected $classNameForValueToObjectFormatter = null;
+    
     // service params
     static public $fileTypes = [
         self::TYPE_FILE,
@@ -444,21 +449,21 @@ class Column
      * Class that provides all closures for a column.
      * Note: if some closure is defined via Column->setClosureName(\Closure $fn) then $fn will be used istead of
      * same closure provided by class
-     * @param string|ColumnClosuresInterface $class - class that implements ColumnClosuresInterface
+     * @param string|ColumnClosuresInterface $className - class that implements ColumnClosuresInterface
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setClosuresClass(string $class)
+    public function setClosuresClass(string $className)
     {
         if (
-            !class_exists($class)
-            || !(new \ReflectionClass($class))->implementsInterface(ColumnClosuresInterface::class)
+            !class_exists($className)
+            || !(new \ReflectionClass($className))->implementsInterface(ColumnClosuresInterface::class)
         ) {
             throw new \InvalidArgumentException(
-                '$class argument must be a string and contain a full name of a calss that implements ColumnClosuresInterface'
+                '$className argument must be a string and contain a full name of a class that implements ColumnClosuresInterface'
             );
         }
-        $this->defaultClosuresClass = $class;
+        $this->defaultClosuresClass = $className;
         return $this;
     }
     
@@ -859,7 +864,8 @@ class Column
     public function getRelations(): array
     {
         if ($this->relations === null) {
-            $this->relations = $this->getTableStructure()->getColumnRelations($this->getName());
+            $this->relations = $this->getTableStructure()
+                ->getColumnRelations($this->getName());
         }
         return $this->relations;
     }
@@ -1271,6 +1277,37 @@ class Column
     public function isAutoUpdatingValue(): bool
     {
         return !empty($this->valueAutoUpdater);
+    }
+    
+    /**
+     * Used in 'object' formatter for columns with JSON values and also can be used in custom formatters
+     * @param string|null $className - must implement PeskyORM\ORM\ValueToObjectConverterInterface or extend PeskyORM\ORM\ValueToObjectConverter class
+     * Note: you can use PeskyORM\ORM\Traits\ConvertsArrayToObject trait for simple situations
+     * @return $this
+     */
+    public function setClassNameForValueToObjectFormatter(?string $className)
+    {
+        if (
+            $className
+            && (
+                !class_exists($className)
+                || !(new \ReflectionClass($className))->implementsInterface(ValueToObjectConverterInterface::class)
+            )
+        ) {
+            throw new \InvalidArgumentException(
+                '$className argument must be a string and contain a full name of a class that implements ' . ValueToObjectConverterInterface::class
+            );
+        }
+        $this->classNameForValueToObjectFormatter = $className;
+        return $this;
+    }
+    
+    /**
+     * @return string|null|ValueToObjectConverterInterface
+     */
+    public function getObjectClassNameForValueToObjectFormatter(): ?string
+    {
+        return $this->classNameForValueToObjectFormatter;
     }
     
 }

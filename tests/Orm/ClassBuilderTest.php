@@ -15,7 +15,7 @@ use Tests\PeskyORMTest\Traits\TestingCreatedAtColumnTrait;
 use Tests\PeskyORMTest\Traits\TestingIdColumnTrait;
 use Tests\PeskyORMTest\Traits\TestingTimestampColumnsTrait;
 
-class DbClassBuilderTest extends BaseTestCase
+class ClassBuilderTest extends BaseTestCase
 {
     
     /**

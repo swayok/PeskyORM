@@ -26,7 +26,7 @@ use Tests\PeskyORMTest\TestingSettings\TestingSetting;
 use Tests\PeskyORMTest\TestingSettings\TestingSettingsTable;
 use Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 
-class DbRecordTest extends BaseTestCase
+class RecordTest extends BaseTestCase
 {
     
     public static function setUpBeforeClass(): void
