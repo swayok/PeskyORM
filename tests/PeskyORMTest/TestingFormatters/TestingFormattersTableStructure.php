@@ -29,6 +29,12 @@ class TestingFormattersTableStructure extends TableStructure
             ->setDefaultValue(DbExpr::create('NOW()'));
     }
     
+    private function created_at_unix(): Column
+    {
+        return Column::create(Column::TYPE_UNIX_TIMESTAMP)
+            ->allowsNullValues();
+    }
+    
     private function creation_date(): Column
     {
         return Column::create(Column::TYPE_DATE)
@@ -37,20 +43,20 @@ class TestingFormattersTableStructure extends TableStructure
     
     private function creation_time(): Column
     {
-        return Column::create(Column::TYPE_DATE)
+        return Column::create(Column::TYPE_TIME)
             ->allowsNullValues();
     }
     
     private function json_data1(): Column
     {
-        return Column::create(Column::TYPE_DATE)
+        return Column::create(Column::TYPE_JSONB)
             ->disallowsNullValues()
             ->setDefaultValue('{}');
     }
     
     private function json_data2(): Column
     {
-        return Column::create(Column::TYPE_DATE)
+        return Column::create(Column::TYPE_JSON)
             ->disallowsNullValues()
             ->setClassNameForValueToObjectFormatter(TestingFormatterJsonObject::class);
     }

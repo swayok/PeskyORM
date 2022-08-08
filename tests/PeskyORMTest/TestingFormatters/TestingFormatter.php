@@ -15,6 +15,12 @@ use PeskyORM\ORM\RecordValue;
  * @property int    $created_at_as_unix_ts
  * @property CarbonImmutable $created_at_as_carbon
  *
+ * @property string $created_at_unix
+ * @property string $created_at_unix_as_date
+ * @property string $created_at_unix_as_time
+ * @property string $created_at_unix_as_date_time
+ * @property CarbonImmutable $created_at_unix_as_carbon
+ *
  * @property string $creation_date
  * @property int    $creation_date_as_unix_ts
  * @property CarbonImmutable $creation_date_as_carbon
@@ -32,6 +38,7 @@ use PeskyORM\ORM\RecordValue;
  *
  * @method $this setId($value, $isFromDb = false)
  * @method $this setCreatedAt($value, $isFromDb = false)
+ * @method $this setCreatedAtUnix($value, $isFromDb = false)
  * @method $this setCreationDate($value, $isFromDb = false)
  * @method $this setCreationTime($value, $isFromDb = false)
  * @method $this setJsonData1($value, $isFromDb = false)

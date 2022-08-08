@@ -11,6 +11,7 @@ abstract class RecordValueFormatters
 {
     
     public const FORMAT_DATE = 'date';
+    public const FORMAT_DATE_TIME = 'date_time';
     public const FORMAT_TIME = 'time';
     public const FORMAT_UNIX_TS = 'unix_ts';
     public const FORMAT_CARBON = 'carbon';
@@ -23,6 +24,16 @@ abstract class RecordValueFormatters
             static::FORMAT_DATE => static::getTimestampToDateFormatter(),
             static::FORMAT_TIME => static::getTimestampToTimeFormatter(),
             static::FORMAT_UNIX_TS => static::getDateTimeToUnixTsFormatter(),
+            static::FORMAT_CARBON => static::getTimestampToCarbonFormatter(),
+        ];
+    }
+    
+    static public function getUnixTimestampFormatters(): array
+    {
+        return [
+            static::FORMAT_DATE_TIME => static::getUnixTimestampToDateTimeFormatter(),
+            static::FORMAT_DATE => static::getTimestampToDateFormatter(),
+            static::FORMAT_TIME => static::getTimestampToTimeFormatter(),
             static::FORMAT_CARBON => static::getTimestampToCarbonFormatter(),
         ];
     }
@@ -95,13 +106,32 @@ abstract class RecordValueFormatters
         return $formatter;
     }
     
+    static public function getUnixTimestampToDateTimeFormatter(): \Closure
+    {
+        static $formatter = null;
+        if (!$formatter) {
+            $formatter = static::wrapGetterIntoFormatter(static::FORMAT_DATE_TIME, function (RecordValue $valueContainer): string {
+                $value = static::getSimpleValueFormContainer($valueContainer);
+                if (is_numeric($value) && $value > 0) {
+                    return date('Y-m-d H:i:s', $value);
+                }
+                static::throwInvalidValueException($valueContainer, 'unix timestamp', $value);
+            });
+        }
+        return $formatter;
+    }
+    
     static public function getTimestampToCarbonFormatter(): \Closure
     {
         static $formatter = null;
         if (!$formatter) {
             $formatter = static::wrapGetterIntoFormatter(static::FORMAT_CARBON, function (RecordValue $valueContainer): CarbonImmutable {
                 $value = static::getSimpleValueFormContainer($valueContainer);
-                $carbon = CarbonImmutable::parse($value);
+                if (is_numeric($value)) {
+                    $carbon = CarbonImmutable::createFromTimestampUTC($value);
+                } else {
+                    $carbon = CarbonImmutable::parse($value);
+                }
                 if ($carbon->isValid()) {
                     return $carbon;
                 }
@@ -133,7 +163,7 @@ abstract class RecordValueFormatters
         static $formatter = null;
         if (!$formatter) {
             // todo: add return type in php8+: array|string|bool|null|int|float
-            $formatter = static::wrapGetterIntoFormatter(static::FORMAT_DATE, function (RecordValue $valueContainer) {
+            $formatter = static::wrapGetterIntoFormatter(static::FORMAT_ARRAY, function (RecordValue $valueContainer) {
                 $value = static::getSimpleValueFormContainer($valueContainer);
                 if (ValidateValue::isJson($value, true)) {
                     return $value;
@@ -149,31 +179,25 @@ abstract class RecordValueFormatters
     {
         static $formatter = null;
         if (!$formatter) {
-            $formatter = static::wrapGetterIntoFormatter(static::FORMAT_DATE, function (RecordValue $valueContainer) {
+            $formatter = static::wrapGetterIntoFormatter(static::FORMAT_OBJECT, function (RecordValue $valueContainer) {
                 $value = static::getSimpleValueFormContainer($valueContainer);
-                $targetClassName = $valueContainer->getColumn()
-                    ->getObjectClassNameForValueToObjectFormatter();
-                if (!is_object($value) && !ValidateValue::isJson($value, true)) {
-                    static::throwInvalidValueException($valueContainer, 'json', $value);
-                }
-                // value conditionally decoded in ValidateValue::isJson()
-                if (is_array($value)) {
-                    return $targetClassName ? $targetClassName::createObjectFromArray($value) : (object)$value;
-                } elseif (is_object($value)) {
-                    if (!$targetClassName || $value instanceof ValueToObjectConverterInterface) {
+                if (ValidateValue::isJson($value, true)) {
+                    $targetClassName = $valueContainer->getColumn()
+                        ->getObjectClassNameForValueToObjectFormatter();
+                    // value conditionally decoded in ValidateValue::isJson()
+                    if (is_array($value)) {
+                        // value is array and can be converted to $targetClassName object or \stdClass object
+                        return $targetClassName
+                            ? $targetClassName::createObjectFromArray($value)
+                            : json_decode(json_encode($value, JSON_UNESCAPED_UNICODE), false);
+                        // encode-decode needed to be sure all nested arrays will also be encoded as \stdClass - not effective
+                    } elseif ($targetClassName) {
+                        throw new \UnexpectedValueException('Record value must be a json string, array, or object');
+                    } else {
                         return $value;
                     }
-                    // try to convert to object of $targetClassName
-                    if ($value instanceof \stdClass) {
-                        return $targetClassName::createObjectFromArray((array)$value);
-                    } else {
-                        return $targetClassName::createObjectFromObject($value);
-                    }
-                } elseif ($targetClassName) {
-                    throw new \UnexpectedValueException('Record value must be a json string, array, or object');
-                } else {
-                    return $value;
                 }
+                static::throwInvalidValueException($valueContainer, 'json', $value);
             });
         }
         return $formatter;

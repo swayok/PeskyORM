@@ -80,7 +80,7 @@ class Column
         self::VALUE_MUST_BE_FLOAT => 'Value must be of a numeric data type.',
         self::VALUE_MUST_BE_IMAGE => 'Value must be an uploaded image info.',
         self::VALUE_MUST_BE_FILE => 'Value must be an uploaded file info.',
-        self::VALUE_MUST_BE_JSON => 'Value must be of a json data type.',
+        self::VALUE_MUST_BE_JSON => 'Value must be a json-encoded string or array.',
         self::VALUE_MUST_BE_IPV4_ADDRESS => 'Value must be an IPv4 address.',
         self::VALUE_MUST_BE_EMAIL => 'Value must be an email.',
         self::VALUE_MUST_BE_TIMEZONE_OFFSET => 'Value must be a valid timezone offset.',
