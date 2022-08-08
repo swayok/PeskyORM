@@ -7,6 +7,7 @@ use PeskyORM\Exception\InvalidDataException;
 use PeskyORM\ORM\RecordValueFormatters;
 use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingFormatters\TestingFormatter;
+use Tests\PeskyORMTest\TestingFormatters\TestingFormatterJsonObject;
 
 class RecordValueFormattersTest extends BaseTestCase
 {
@@ -36,23 +37,29 @@ class RecordValueFormattersTest extends BaseTestCase
         $valueContainer = $record->getValueContainer('created_at');
         static::assertEquals($dateTime, $record->created_at);
         static::assertEquals($dateTime, $valueContainer->getValue());
+        
+        $valueContainerAlt = TestingFormatter::fromArray(['created_at' => $dateTime])
+            ->getValueContainer('created_at'); //< needed to avoid formatter cache
+        static::assertNotSame($valueContainer, $valueContainerAlt);
+        static::assertEquals($valueContainer->getValue(), $valueContainerAlt->getValue());
+        
         // date formatter
         $date = date('Y-m-d', $ts);
         static::assertEquals($date, $record->created_at_as_date);
-        static::assertEquals($date, RecordValueFormatters::getTimestampToDateFormatter()($valueContainer));
+        static::assertEquals($date, RecordValueFormatters::getTimestampToDateFormatter()($valueContainerAlt));
         // time formatter
         $time = date('H:i:s', $ts);
         static::assertEquals($time, $record->created_at_as_time);
-        static::assertEquals($time, RecordValueFormatters::getTimestampToTimeFormatter()($valueContainer));
+        static::assertEquals($time, RecordValueFormatters::getTimestampToTimeFormatter()($valueContainerAlt));
         // unix_ts formatter
         static::assertEquals($ts, $record->created_at_as_unix_ts);
-        static::assertEquals($ts, RecordValueFormatters::getDateTimeToUnixTsFormatter()($valueContainer));
+        static::assertEquals($ts, RecordValueFormatters::getDateTimeToUnixTsFormatter()($valueContainerAlt));
         // carbon formatter
         static::assertInstanceOf(CarbonImmutable::class, $record->created_at_as_carbon);
         static::assertEquals($dateTime, $record->created_at_as_carbon->format('Y-m-d H:i:s'));
-        static::assertInstanceOf(CarbonImmutable::class, RecordValueFormatters::getTimestampToCarbonFormatter()($valueContainer));
-        static::assertEquals($dateTime, RecordValueFormatters::getTimestampToCarbonFormatter()($valueContainer)->format('Y-m-d H:i:s'));
-    
+        static::assertInstanceOf(CarbonImmutable::class, RecordValueFormatters::getTimestampToCarbonFormatter()($valueContainerAlt));
+        static::assertEquals($dateTime, RecordValueFormatters::getTimestampToCarbonFormatter()($valueContainerAlt)->format('Y-m-d H:i:s'));
+        
         // test value changing and formatted values cache cleanup
         $updatedDate = '2022-01-01';
         $updatedTime = '23:59:59';
@@ -91,24 +98,30 @@ class RecordValueFormattersTest extends BaseTestCase
         $valueContainer = $record->getValueContainer('created_at_unix');
         static::assertEquals($ts, $record->created_at_unix);
         static::assertEquals($ts, $valueContainer->getValue());
+        
+        $valueContainerAlt = TestingFormatter::fromArray(['created_at_unix' => $ts])
+            ->getValueContainer('created_at_unix'); //< needed to avoid formatter cache
+        static::assertNotSame($valueContainer, $valueContainerAlt);
+        static::assertEquals($valueContainer->getValue(), $valueContainerAlt->getValue());
+        
         // data-time formatter
         $dateTime = date('Y-m-d H:i:s', $ts);
         static::assertEquals($dateTime, $record->created_at_unix_as_date_time);
-        static::assertEquals($dateTime, RecordValueFormatters::getUnixTimestampToDateTimeFormatter()($valueContainer));
+        static::assertEquals($dateTime, RecordValueFormatters::getUnixTimestampToDateTimeFormatter()($valueContainerAlt));
         // date formatter
         $date = date('Y-m-d', $ts);
         static::assertEquals($date, $record->created_at_unix_as_date);
-        static::assertEquals($date, RecordValueFormatters::getTimestampToDateFormatter()($valueContainer));
+        static::assertEquals($date, RecordValueFormatters::getTimestampToDateFormatter()($valueContainerAlt));
         // time formatter
         $time = date('H:i:s', $ts);
         static::assertEquals($time, $record->created_at_unix_as_time);
-        static::assertEquals($time, RecordValueFormatters::getTimestampToTimeFormatter()($valueContainer));
+        static::assertEquals($time, RecordValueFormatters::getTimestampToTimeFormatter()($valueContainerAlt));
         // carbon formatter
         static::assertInstanceOf(CarbonImmutable::class, $record->created_at_as_carbon);
         static::assertEquals($dateTime, $record->created_at_as_carbon->format('Y-m-d H:i:s'));
-        static::assertInstanceOf(CarbonImmutable::class, RecordValueFormatters::getTimestampToCarbonFormatter()($valueContainer));
-        static::assertEquals($dateTime, RecordValueFormatters::getTimestampToCarbonFormatter()($valueContainer)->format('Y-m-d H:i:s'));
-    
+        static::assertInstanceOf(CarbonImmutable::class, RecordValueFormatters::getTimestampToCarbonFormatter()($valueContainerAlt));
+        static::assertEquals($dateTime, RecordValueFormatters::getTimestampToCarbonFormatter()($valueContainerAlt)->format('Y-m-d H:i:s'));
+        
         // test value changing and formatted values cache cleanup
         $updatedDate = '2022-01-01';
         $updatedTime = '23:59:59';
@@ -144,14 +157,20 @@ class RecordValueFormattersTest extends BaseTestCase
         $valueContainer = $record->getValueContainer('creation_date');
         static::assertEquals($date, $record->creation_date);
         static::assertEquals($date, $valueContainer->getValue());
+        
+        $valueContainerAlt = TestingFormatter::fromArray(['creation_date' => $dateTime])
+            ->getValueContainer('creation_date'); //< needed to avoid formatter cache
+        static::assertNotSame($valueContainer, $valueContainerAlt);
+        static::assertEquals($valueContainer->getValue(), $valueContainerAlt->getValue());
+        
         // unix_ts formatter
         static::assertEquals($ts, $record->creation_date_as_unix_ts);
-        static::assertEquals($ts, RecordValueFormatters::getDateTimeToUnixTsFormatter()($valueContainer));
+        static::assertEquals($ts, RecordValueFormatters::getDateTimeToUnixTsFormatter()($valueContainerAlt));
         // carbon formatter
         static::assertInstanceOf(CarbonImmutable::class, $record->creation_date_as_carbon);
         static::assertEquals($dateTime, $record->creation_date_as_carbon->format('Y-m-d H:i:s'));
-        static::assertInstanceOf(CarbonImmutable::class, RecordValueFormatters::getDateToCarbonFormatter()($valueContainer));
-        static::assertEquals($dateTime, RecordValueFormatters::getDateToCarbonFormatter()($valueContainer)->format('Y-m-d H:i:s'));
+        static::assertInstanceOf(CarbonImmutable::class, RecordValueFormatters::getDateToCarbonFormatter()($valueContainerAlt));
+        static::assertEquals($dateTime, RecordValueFormatters::getDateToCarbonFormatter()($valueContainerAlt)->format('Y-m-d H:i:s'));
     }
     
     public function testTimeFormatters()
@@ -173,9 +192,15 @@ class RecordValueFormattersTest extends BaseTestCase
         $valueContainer = $record->getValueContainer('creation_time');
         static::assertEquals($time, $record->creation_time);
         static::assertEquals($time, $valueContainer->getValue());
+    
+        $valueContainerAlt = TestingFormatter::fromArray(['creation_time' => $time])
+            ->getValueContainer('creation_time'); //< needed to avoid formatter cache
+        static::assertNotSame($valueContainer, $valueContainerAlt);
+        static::assertEquals($valueContainer->getValue(), $valueContainerAlt->getValue());
+        
         // unix_ts formatter
         static::assertEquals($ts, $record->creation_time_as_unix_ts);
-        static::assertEquals($ts, RecordValueFormatters::getDateTimeToUnixTsFormatter()($valueContainer));
+        static::assertEquals($ts, RecordValueFormatters::getDateTimeToUnixTsFormatter()($valueContainerAlt));
     }
     
     public function testJsonFormatters1()
@@ -200,36 +225,110 @@ class RecordValueFormattersTest extends BaseTestCase
             'key4' => null,
             'key5' => 'string',
             'key6' => [
-                'subkey' => ''
+                'subkey' => '',
             ],
             'key7' => [
-                1, 2, 3
-            ]
+                1,
+                2,
+                3,
+            ],
         ];
         $json = json_encode($data);
         $record = TestingFormatter::fromArray(['json_data1' => $json]);
         $valueContainer = $record->getValueContainer('json_data1');
         static::assertEquals($json, $record->json_data1);
         static::assertEquals($json, $valueContainer->getValue());
+    
+        $valueContainerAlt = TestingFormatter::fromArray(['json_data1' => $json])
+            ->getValueContainer('json_data1'); //< needed to avoid formatter cache
+        static::assertNotSame($valueContainer, $valueContainerAlt);
+        static::assertEquals($valueContainer->getValue(), $valueContainerAlt->getValue());
+        
         // array formatter
         static::assertEquals($data, $record->json_data1_as_array);
-        static::assertEquals($data, RecordValueFormatters::getJsonToArrayFormatter()($valueContainer));
+        static::assertEquals($data, RecordValueFormatters::getJsonToArrayFormatter()($valueContainerAlt));
         // object formatter
         static::assertInstanceOf(\stdClass::class, $record->json_data1_as_object);
         $object = (object)$data;
         $object->key6 = (object)$object->key6;
         static::assertEquals($object, $record->json_data1_as_object);
-        static::assertEquals($object, RecordValueFormatters::getJsonToObjectFormatter()($valueContainer));
+        static::assertEquals($object, RecordValueFormatters::getJsonToObjectFormatter()($valueContainerAlt));
         
         // test array as incoming value
         $record = TestingFormatter::fromArray(['json_data1' => $data]);
         $valueContainer = $record->getValueContainer('json_data1');
+        $valueContainerAlt = TestingFormatter::fromArray(['json_data1' => $json])
+            ->getValueContainer('json_data1'); //< needed to avoid formatter cache
+        static::assertNotSame($valueContainer, $valueContainerAlt);
+        static::assertEquals($valueContainer->getValue(), $valueContainerAlt->getValue());
         static::assertEquals($json, $record->json_data1);
-        static::assertEquals($json, $valueContainer->getValue());
+        static::assertEquals($json, $valueContainerAlt->getValue());
     }
     
-    // todo: test json_data2
+    public function testJsonFormatters2()
+    {
+        $formatters = RecordValueFormatters::getJsonFormatters();
+        static::assertIsArray($formatters);
+        
+        static::assertSame(
+            [
+                RecordValueFormatters::FORMAT_ARRAY => RecordValueFormatters::getJsonToArrayFormatter(),
+                RecordValueFormatters::FORMAT_OBJECT => RecordValueFormatters::getJsonToObjectFormatter(),
+            ],
+            $formatters
+        );
+        static::assertInstanceOf(\Closure::class, $formatters[RecordValueFormatters::FORMAT_ARRAY]);
+        static::assertInstanceOf(\Closure::class, $formatters[RecordValueFormatters::FORMAT_OBJECT]);
+        
+        $data = [
+            'key1' => 1,
+            'key2' => '2',
+            'key3' => true,
+            'key4' => null,
+            'key5' => 'string',
+            'key6' => [
+                'subkey' => '',
+            ],
+            'key7' => [
+                1,
+                2,
+                3,
+            ],
+        ];
+        $json = json_encode($data);
+        $record = TestingFormatter::fromArray(['json_data2' => $json]);
+        $valueContainer = $record->getValueContainer('json_data2');
+        static::assertEquals($json, $record->json_data2);
+        static::assertEquals($json, $valueContainer->getValue());
     
+        $valueContainerAlt = TestingFormatter::fromArray(['json_data2' => $json])
+            ->getValueContainer('json_data2'); //< needed to avoid formatter cache
+        static::assertNotSame($valueContainer, $valueContainerAlt);
+        static::assertEquals($valueContainer->getValue(), $valueContainerAlt->getValue());
+        
+        // array formatter
+        static::assertEquals($data, $record->json_data2_as_array);
+        static::assertEquals($data, RecordValueFormatters::getJsonToArrayFormatter()($valueContainerAlt));
+        // object formatter
+        static::assertInstanceOf(\stdClass::class, $record->json_data2_as_object);
+        $object = new TestingFormatterJsonObject();
+        $object->key1 = $data['key1'];
+        $object->key2 = $data['key2'];
+        $object->key3 = $data['key3'];
+        $object->other = array_diff_key($data, ['key1' => '', 'key2' => '', 'key3' => '']);
+        static::assertEquals($object, $record->json_data2_as_object);
+        static::assertEquals($object, RecordValueFormatters::getJsonToObjectFormatter()($valueContainerAlt));
+        
+        // test array as incoming value
+        $record = TestingFormatter::fromArray(['json_data2' => $data]);
+        $valueContainer = $record->getValueContainer('json_data2');
+        $valueContainerAlt = TestingFormatter::fromArray(['json_data2' => $json])
+            ->getValueContainer('json_data2'); //< needed to avoid formatter cache
+        static::assertNotSame($valueContainer, $valueContainerAlt);
+        static::assertEquals($valueContainer->getValue(), $valueContainerAlt->getValue());
+        static::assertEquals($json, $record->json_data2);
+        static::assertEquals($json, $valueContainerAlt->getValue());
+    }
     
     public function testDbExprValueInValueContainer()
     {
@@ -245,7 +344,9 @@ class RecordValueFormattersTest extends BaseTestCase
     public function testInvalidTimestamp1()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Tests\PeskyORMTest\TestingFormatters\TestingFormatter(no PK value)->created_at contains invalid date-time value: [invalid_date]");
+        $this->expectExceptionMessage(
+            "Tests\PeskyORMTest\TestingFormatters\TestingFormatter(no PK value)->created_at contains invalid date-time value: [invalid_date]"
+        );
         $record = TestingFormatter::newEmptyRecord();
         $valueContainer = $record->getValueContainer('created_at');
         $valueContainer->setRawValue('invalid_date', 'invalid_date', false);
@@ -258,7 +359,9 @@ class RecordValueFormattersTest extends BaseTestCase
     public function testInvalidDate1()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Tests\PeskyORMTest\TestingFormatters\TestingFormatter(no PK value)->creation_date contains invalid date-time value: [invalid_date]");
+        $this->expectExceptionMessage(
+            "Tests\PeskyORMTest\TestingFormatters\TestingFormatter(no PK value)->creation_date contains invalid date-time value: [invalid_date]"
+        );
         $record = TestingFormatter::newEmptyRecord();
         $valueContainer = $record->getValueContainer('creation_date');
         $valueContainer->setRawValue('invalid_date', 'invalid_date', false);
@@ -271,7 +374,9 @@ class RecordValueFormattersTest extends BaseTestCase
     public function testInvalidTime1()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Tests\PeskyORMTest\TestingFormatters\TestingFormatter(no PK value)->creation_time contains invalid date-time value: [invalid_time]");
+        $this->expectExceptionMessage(
+            "Tests\PeskyORMTest\TestingFormatters\TestingFormatter(no PK value)->creation_time contains invalid date-time value: [invalid_time]"
+        );
         $record = TestingFormatter::newEmptyRecord();
         $valueContainer = $record->getValueContainer('creation_time');
         $valueContainer->setRawValue('invalid_time', 'invalid_time', false);
@@ -284,7 +389,9 @@ class RecordValueFormattersTest extends BaseTestCase
     public function testInvalidUnixTs1()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Tests\PeskyORMTest\TestingFormatters\TestingFormatter(no PK value)->created_at_unix contains invalid date-time value: [invalid_ts]");
+        $this->expectExceptionMessage(
+            "Tests\PeskyORMTest\TestingFormatters\TestingFormatter(no PK value)->created_at_unix contains invalid date-time value: [invalid_ts]"
+        );
         $record = TestingFormatter::newEmptyRecord();
         $valueContainer = $record->getValueContainer('created_at_unix');
         $valueContainer->setRawValue('invalid_ts', 'invalid_ts', false);
@@ -297,7 +404,9 @@ class RecordValueFormattersTest extends BaseTestCase
     public function testInvalidJson1()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Tests\PeskyORMTest\TestingFormatters\TestingFormatter(no PK value)->json_data1 contains invalid date-time value: [invalid_json]");
+        $this->expectExceptionMessage(
+            "Tests\PeskyORMTest\TestingFormatters\TestingFormatter(no PK value)->json_data1 contains invalid date-time value: [invalid_json]"
+        );
         $record = TestingFormatter::newEmptyRecord();
         $valueContainer = $record->getValueContainer('json_data1');
         $valueContainer->setRawValue('invalid_json', 'invalid_json', false);
@@ -310,7 +419,9 @@ class RecordValueFormattersTest extends BaseTestCase
     public function testInvalidJson2()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Tests\PeskyORMTest\TestingFormatters\TestingFormatter(no PK value)->json_data2 contains invalid date-time value: [invalid_json]");
+        $this->expectExceptionMessage(
+            "Tests\PeskyORMTest\TestingFormatters\TestingFormatter(no PK value)->json_data2 contains invalid date-time value: [invalid_json]"
+        );
         $record = TestingFormatter::newEmptyRecord();
         $valueContainer = $record->getValueContainer('json_data2');
         $valueContainer->setRawValue('invalid_json', 'invalid_json', false);

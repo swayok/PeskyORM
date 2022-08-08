@@ -16,7 +16,7 @@ trait ConvertsArrayToObject
             }
         }
         if (!empty($unknownProperties)) {
-            $obj->handleUnknownArrayKeys($data, $unknownProperties);
+            $obj->handleUnknownArrayKeys($unknownProperties, $data);
         }
         return $obj;
     }

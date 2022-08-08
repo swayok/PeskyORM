@@ -68,6 +68,7 @@ abstract class RecordValueFormatters
             $formatter = static::wrapGetterIntoFormatter(static::FORMAT_DATE, function (RecordValue $valueContainer): string {
                 $value = static::getSimpleValueFormContainer($valueContainer);
                 if (ValidateValue::isDateTime($value, true)) {
+                    // $value converted to unix timestamp in ValidateValue::isDateTime()
                     return date(NormalizeValue::DATE_FORMAT, $value);
                 }
                 static::throwInvalidValueException($valueContainer, 'date-time', $value);
@@ -83,7 +84,8 @@ abstract class RecordValueFormatters
             $formatter = static::wrapGetterIntoFormatter(static::FORMAT_TIME, function (RecordValue $valueContainer): string {
                 $value = static::getSimpleValueFormContainer($valueContainer);
                 if (ValidateValue::isDateTime($value, true)) {
-                    return date(NormalizeValue::TIME_FORMAT, strtotime($value));
+                    // $value converted to unix timestamp in ValidateValue::isDateTime()
+                    return date(NormalizeValue::TIME_FORMAT, $value);
                 }
                 static::throwInvalidValueException($valueContainer, 'date-time', $value);
             });
@@ -98,7 +100,8 @@ abstract class RecordValueFormatters
             $formatter = static::wrapGetterIntoFormatter(static::FORMAT_UNIX_TS, function (RecordValue $valueContainer): int {
                 $value = static::getSimpleValueFormContainer($valueContainer);
                 if (ValidateValue::isDateTime($value, true)) {
-                    return strtotime($value);
+                    // $value converted to unix timestamp in ValidateValue::isDateTime()
+                    return $value;
                 }
                 static::throwInvalidValueException($valueContainer, 'date-time', $value);
             });
@@ -223,7 +226,8 @@ abstract class RecordValueFormatters
         };
     }
     
-    static private function throwInvalidValueException(RecordValue $valueContainer, string $expectedValueType, $value) {
+    static private function throwInvalidValueException(RecordValue $valueContainer, string $expectedValueType, $value)
+    {
         if (!is_scalar($value)) {
             $value = json_encode($value, JSON_UNESCAPED_UNICODE);
         }
@@ -235,11 +239,11 @@ abstract class RecordValueFormatters
                 $recordId = '(#' . $record->getPrimaryKeyValue() . ')';
             }
         } catch (\Throwable $prevException) {
-        
         }
         throw new \UnexpectedValueException(
-            get_class($record) . $recordId . '->' . $valueContainer->getColumn()->getName()
-                . ' contains invalid ' . $expectedValueType . ' value: [' . $value . ']',
+            get_class($record) . $recordId . '->' . $valueContainer->getColumn()
+                ->getName()
+            . ' contains invalid ' . $expectedValueType . ' value: [' . $value . ']',
             0,
             $prevException
         );
