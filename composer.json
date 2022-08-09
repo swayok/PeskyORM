@@ -18,8 +18,8 @@
         "issues": "https://github.com/swayok/PeskyORM/issues"
     },
     "autoload": {
-        "psr-0": {
-            "PeskyORM": "src/"
+        "psr-4": {
+            "PeskyORM\\": "src/"
         }
     },
     "autoload-dev": {
