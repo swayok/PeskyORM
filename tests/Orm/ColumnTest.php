@@ -463,7 +463,7 @@ class ColumnTest extends BaseTestCase
     public function testInvalidSetClosuresClass2()
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($class) must be of type string');
+        $this->expectExceptionMessage('PeskyORM\ORM\Column::setClosuresClass(): Argument #1 ($className) must be of type string');
         /** @noinspection PhpParamsInspection */
         /** @noinspection PhpStrictTypeCheckingInspection */
         Column::create(Column::TYPE_STRING)

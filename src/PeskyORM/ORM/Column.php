@@ -273,11 +273,12 @@ class Column
      */
     protected $valueFormatter = null;
     /**
-     * List of value formatters names. Used in default getter to add possibility to convert original value to specific format.
+     * List of default value formatters for column type.
+     * Used in default getter to add possibility to convert original value to specific format.
      * For example: convert json to array, or timestamp like 2016-05-24 17:24:00 to unix timestamp
-     * @var null|\Closure
+     * @var null|\Closure[]
      */
-    protected $defaultValueFormattersNames = [];
+    protected $valueFormattersForColumnType = null;
     /**
      * List of custom value formatters. Used in $this->valueFormatter to extend default list of formatters.
      * @var \Closure[]
@@ -419,16 +420,7 @@ class Column
         $this->setValueDeleteExtender($closures['valueDeleteExtender']);
         /** @var DefaultColumnClosures $closuresClass */
         $closuresClass = $this->getClosuresClass();
-        $this->setValueFormatter($closures['valueFormatter'], $closuresClass::getValueFormats($this));
-    }
-    
-    /**
-     * @return array - 0 - \Closure $formatter; 1 - array $formats
-     */
-    protected function detectValueFormatterByType(): array
-    {
-        // todo: refator this
-        return RecordValueHelpers::getValueFormatterAndFormatsByType($this->getType());
+        $this->setValueFormatter($closures['valueFormatter']);
     }
     
     public function getTableStructure(): TableStructure
@@ -532,6 +524,7 @@ class Column
                 $this->itIsImage();
             }
         }
+        $this->valueFormattersForColumnType = null;
         return $this;
     }
     
@@ -1218,21 +1211,30 @@ class Column
     }
     
     /**
-     * Function to transform original value into another format and return result. Used by default value getter
+     * Function to transform original value into another format and return result. Used in value getter
      * @param \Closure $valueFormatter - function (RecordValue $valueContainer, $format) { return 'formatted value'; }
-     * @param array $formattersNames - list of formats
      * @return $this
      */
-    public function setValueFormatter(\Closure $valueFormatter, array $formattersNames)
+    public function setValueFormatter(\Closure $valueFormatter)
     {
         $this->valueFormatter = $valueFormatter;
-        $this->defaultValueFormattersNames = $formattersNames;
         return $this;
     }
     
     public function getValueFormattersNames(): array
     {
-        return array_merge($this->defaultValueFormattersNames, array_keys($this->customValueFormatters));
+        return array_merge(
+            array_keys($this->getValueFormattersForColumnType()),
+            array_keys($this->customValueFormatters)
+        );
+    }
+    
+    public function getValueFormattersForColumnType(): array
+    {
+        if ($this->valueFormattersForColumnType === null) {
+            $this->valueFormattersForColumnType = RecordValueFormatters::getFormattersForColumnType($this->getType());
+        }
+        return $this->valueFormattersForColumnType;
     }
     
     /**
@@ -1263,10 +1265,10 @@ class Column
     
     /**
      * @param RecordInterface|array $record
-     * @return \Closure|null
+     * @return mixed
      * @throws \UnexpectedValueException
      */
-    public function getAutoUpdateForAValue($record): ?\Closure
+    public function getAutoUpdateForAValue($record)
     {
         if (empty($this->valueAutoUpdater)) {
             throw new \UnexpectedValueException('Value auto updater function is not set');

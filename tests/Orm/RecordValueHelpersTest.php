@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace Tests\Orm;
 
 use PeskyORM\ORM\Column;
-use PeskyORM\ORM\RecordValue;
 use PeskyORM\ORM\RecordValueHelpers;
 use SplFileInfo;
 use Swayok\Utils\NormalizeValue;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Tests\PeskyORMTest\BaseTestCase;
-use Tests\PeskyORMTest\TestingSettings\TestingSetting;
 
 class RecordValueHelpersTest extends BaseTestCase
 {
@@ -20,19 +18,6 @@ class RecordValueHelpersTest extends BaseTestCase
     {
         date_default_timezone_set('UTC');
         parent::setUpBeforeClass();
-    }
-    
-    /**
-     * @param string $type
-     * @param mixed $value
-     * @return RecordValue
-     */
-    private function createDbRecordValue($type, $value)
-    {
-        $obj = RecordValue::create(Column::create($type, 'test'), TestingSetting::_());
-        $obj->setRawValue($value, $value, true)
-            ->setValidValue($value, $value);
-        return $obj;
     }
     
     public function testGetErrorMessage()
@@ -358,146 +343,6 @@ class RecordValueHelpersTest extends BaseTestCase
         static::assertEquals('0', RecordValueHelpers::normalizeValue(0, Column::TYPE_STRING));
         static::assertEquals('1', RecordValueHelpers::normalizeValue(true, Column::TYPE_STRING));
         static::assertEquals('string', RecordValueHelpers::normalizeValue('string', Column::TYPE_IPV4_ADDRESS));
-    }
-    
-    public function testGetValueFormatterAndFormatsByTypeForTimestamps()
-    {
-        $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_UNIX_TIMESTAMP);
-        static::assertNotEmpty($ret);
-        static::assertIsArray($ret);
-        static::assertCount(2, $ret);
-        static::assertEquals(['date', 'time', 'unix_ts', 'carbon'], $ret[1]);
-        static::assertInstanceOf(\Closure::class, $ret[0]);
-        
-        $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_TIMESTAMP);
-        static::assertNotEmpty($ret);
-        static::assertIsArray($ret);
-        static::assertCount(2, $ret);
-        static::assertEquals(['date', 'time', 'unix_ts', 'carbon'], $ret[1]);
-        static::assertInstanceOf(\Closure::class, $ret[0]);
-        
-        $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_TIMESTAMP_WITH_TZ);
-        static::assertNotEmpty($ret);
-        static::assertIsArray($ret);
-        static::assertCount(2, $ret);
-        static::assertEquals(['date', 'time', 'unix_ts', 'carbon'], $ret[1]);
-        static::assertInstanceOf(\Closure::class, $ret[0]);
-    }
-    
-    public function testGetValueFormatterAndFormatsByTypeForDateAndTime()
-    {
-        $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_DATE);
-        static::assertNotEmpty($ret);
-        static::assertIsArray($ret);
-        static::assertCount(2, $ret);
-        static::assertEquals(['unix_ts', 'carbon'], $ret[1]);
-        static::assertInstanceOf(\Closure::class, $ret[0]);
-        
-        $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_TIME);
-        static::assertNotEmpty($ret);
-        static::assertIsArray($ret);
-        static::assertCount(2, $ret);
-        static::assertEquals(['unix_ts'], $ret[1]);
-        static::assertInstanceOf(\Closure::class, $ret[0]);
-    }
-    
-    public function testGetValueFormatterAndFormatsByTypeForJson()
-    {
-        $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_JSON);
-        static::assertNotEmpty($ret);
-        static::assertIsArray($ret);
-        static::assertCount(2, $ret);
-        static::assertEquals(['array', 'object'], $ret[1]);
-        static::assertInstanceOf(\Closure::class, $ret[0]);
-        
-        $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_JSONB);
-        static::assertNotEmpty($ret);
-        static::assertIsArray($ret);
-        static::assertCount(2, $ret);
-        static::assertEquals(['array', 'object'], $ret[1]);
-        static::assertInstanceOf(\Closure::class, $ret[0]);
-    }
-    
-    public function testGetValueFormatterAndFormatsByTypeForOthers()
-    {
-        $ret = RecordValueHelpers::getValueFormatterAndFormatsByType(Column::TYPE_STRING);
-        static::assertNotEmpty($ret);
-        static::assertIsArray($ret);
-        static::assertCount(2, $ret);
-        static::assertEquals([], $ret[1]);
-        static::assertNull($ret[0]);
-    }
-    
-    public function testInvalidFormatTimestamp1()
-    {
-        $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage("Argument #2 (\$format) must be of type string");
-        /** @noinspection PhpStrictTypeCheckingInspection */
-        RecordValueHelpers::formatTimestamp(
-            $this->createDbRecordValue(Column::TYPE_TIMESTAMP, '2016-09-01 01:02:03'),
-            []
-        );
-    }
-    
-    public function testInvalidFormatTimestamp2()
-    {
-        $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage("Argument #2 (\$format) must be of type string");
-        /** @noinspection PhpStrictTypeCheckingInspection */
-        RecordValueHelpers::formatTimestamp(
-            $this->createDbRecordValue(Column::TYPE_TIMESTAMP, '2016-09-01 01:02:03'),
-            null
-        );
-    }
-    
-    public function testInvalidFormatTimestamp3()
-    {
-        $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage("Argument #2 (\$format) must be of type string");
-        /** @noinspection PhpStrictTypeCheckingInspection */
-        RecordValueHelpers::formatTimestamp(
-            $this->createDbRecordValue(Column::TYPE_TIMESTAMP, '2016-09-01 01:02:03'),
-            true
-        );
-    }
-    
-    public function testInvalidFormatTimestamp4()
-    {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Requested value format 'not_existing_format' is not implemented");
-        RecordValueHelpers::formatTimestamp(
-            $this->createDbRecordValue(Column::TYPE_TIMESTAMP, '2016-09-01 01:02:03'),
-            'not_existing_format'
-        );
-    }
-    
-    public function testFormatTimestamp()
-    {
-        $valueObj = $this->createDbRecordValue(Column::TYPE_TIMESTAMP, '2016-09-01 01:02:03');
-        static::assertEquals('2016-09-01', RecordValueHelpers::formatTimestamp($valueObj, 'date'));
-        static::assertEquals('01:02:03', RecordValueHelpers::formatTimestamp($valueObj, 'time'));
-        static::assertEquals(strtotime($valueObj->getValue()), RecordValueHelpers::formatTimestamp($valueObj, 'unix_ts'));
-    }
-    
-    public function testFormatDateOrTime()
-    {
-        $valueObj = $this->createDbRecordValue(Column::TYPE_DATE, '2016-09-01');
-        static::assertEquals(strtotime($valueObj->getValue()), RecordValueHelpers::formatDate($valueObj, 'unix_ts'));
-        
-        $valueObj = $this->createDbRecordValue(Column::TYPE_TIME, '12:34:56');
-        static::assertEquals(strtotime($valueObj->getValue()), RecordValueHelpers::formatDate($valueObj, 'unix_ts'));
-    }
-    
-    public function testFormatJson()
-    {
-        $value = ['test' => 'value', 'val'];
-        $valueObj = $this->createDbRecordValue(Column::TYPE_JSON, json_encode($value));
-        static::assertEquals($value, RecordValueHelpers::formatJson($valueObj, 'array'));
-        static::assertEquals(json_decode(json_encode($value)), RecordValueHelpers::formatJson($valueObj, 'object'));
-        
-        $valueObj = $this->createDbRecordValue(Column::TYPE_JSONB, '"invalidjson');
-        static::assertEquals(false, RecordValueHelpers::formatJson($valueObj, 'array'));
-        static::assertEquals(false, RecordValueHelpers::formatJson($valueObj, 'object'));
     }
     
     public function testIsValueFitsDataTypeBool()

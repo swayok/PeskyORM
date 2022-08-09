@@ -379,9 +379,9 @@ VIEW;
      */
     protected function getFormattersForOrmType(string $ormType): array
     {
-        $formats = RecordValueHelpers::getValueFormatterAndFormatsByType($ormType)[1];
+        $formats = RecordValueFormatters::getFormattersForColumnType($ormType);
         $formatToPhpType = [];
-        foreach ($formats as $formatName) {
+        foreach ($formats as $formatName => $formatterClosure) {
             switch ($formatName) {
                 case 'unix_ts':
                     $formatToPhpType[$formatName] = 'int';

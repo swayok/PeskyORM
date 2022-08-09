@@ -2546,6 +2546,16 @@ class RecordTest extends BaseTestCase
         unset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)->created_at_as_date);
     }
     
+    public function testGetValueWothFormatterInName()
+    {
+        $record = TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true);
+        $expected = date('Y-m-d', strtotime($record->created_at));
+        
+        static::assertEquals($expected, $record->getValue('created_at', 'date'));
+        static::assertEquals($expected, $record->getValue('created_at_as_date'));
+        static::assertEquals($expected, $record->getValue('created_at_as_time', 'date'));
+    }
+    
     /**
      * @covers Record::offsetExists()
      * @covers Record::offsetGet()

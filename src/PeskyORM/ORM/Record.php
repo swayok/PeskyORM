@@ -490,7 +490,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     public function getValue($column, ?string $format = null)
     {
-        return $this->_getValue(is_string($column) ? static::getColumn($column) : $column, $format);
+        if (is_string($column)) {
+            $column = static::getColumn($column, $maybeFormat);
+            if ($maybeFormat && !$format) {
+                $format = $maybeFormat;
+            }
+        }
+        return $this->_getValue($column, $format);
     }
     
     /**

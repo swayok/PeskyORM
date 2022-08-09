@@ -85,11 +85,6 @@ class DefaultColumnClosures implements ColumnClosuresInterface
     static public function valueGetter(RecordValue $value, ?string $format = null)
     {
         if ($format !== null) {
-            if (!is_string($format) && !is_numeric($format)) {
-                throw new \InvalidArgumentException(
-                    "\$format argument for column '{$value->getColumn()->getName()}' must be a string or a number."
-                );
-            }
             return call_user_func(
                 $value->getColumn()
                     ->getValueFormatter(),
@@ -178,19 +173,14 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         if (isset($customFormatters[$format])) {
             return $customFormatters[$format]($valueContainer);
         }
-        [$formatter, $formats] = RecordValueHelpers::getValueFormatterAndFormatsByType($column->getType());
-        if (!in_array($format, $formats, true)) {
-            throw new \InvalidArgumentException(
-                "Value format '{$format}' is not supported for column '{$column->getName()}'."
-                . ' Supported formats: ' . (count($formats) ? implode(', ', $formats) : 'none')
-            );
+        $typeFormatters = $column->getValueFormattersForColumnType();
+        if (isset($typeFormatters[$format])) {
+            return $typeFormatters[$format]($valueContainer);
         }
-        return $formatter($valueContainer, $format);
-    }
-    
-    static public function getValueFormats(Column $column, array $additionalFormats = []): array
-    {
-        [, $formats] = RecordValueHelpers::getValueFormatterAndFormatsByType($column->getType());
-        return array_unique(array_merge($formats, $additionalFormats));
+        $formats = $column->getValueFormattersNames();
+        throw new \InvalidArgumentException(
+            "Value format '{$format}' is not supported for column '{$column->getName()}'."
+            . ' Supported formats: ' . (count($formats) ? implode(', ', $formats) : 'none')
+        );
     }
 }

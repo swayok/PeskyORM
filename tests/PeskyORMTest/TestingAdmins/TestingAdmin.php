@@ -11,6 +11,7 @@ use PeskyORM\ORM\RecordsSet;
  * @property string $login
  * @property string $email
  * @property string $password
+ * @property string $created_at
  * @property string $created_at_as_date
  *
  * @property TestingAdmin $Parent

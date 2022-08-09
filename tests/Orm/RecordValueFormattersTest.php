@@ -1,16 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Orm;
 
 use Carbon\CarbonImmutable;
 use PeskyORM\Exception\InvalidDataException;
+use PeskyORM\ORM\RecordValue;
 use PeskyORM\ORM\RecordValueFormatters;
 use Tests\PeskyORMTest\BaseTestCase;
 use Tests\PeskyORMTest\TestingFormatters\TestingFormatter;
 use Tests\PeskyORMTest\TestingFormatters\TestingFormatterJsonObject;
+use Tests\PeskyORMTest\TestingFormatters\TestingFormattersTableStructure;
 
 class RecordValueFormattersTest extends BaseTestCase
 {
+    
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        $this->callObjectMethod(TestingFormatter::newEmptyRecord(), 'resetColumnsCache');
+    }
     
     public function testTimestampFormatters()
     {
@@ -76,7 +86,6 @@ class RecordValueFormattersTest extends BaseTestCase
     
     public function testUnixTimestampFormatters()
     {
-        // todo: test later
         $formatters = RecordValueFormatters::getUnixTimestampFormatters();
         static::assertIsArray($formatters);
         static::assertSame(
@@ -117,8 +126,8 @@ class RecordValueFormattersTest extends BaseTestCase
         static::assertEquals($time, $record->created_at_unix_as_time);
         static::assertEquals($time, RecordValueFormatters::getTimestampToTimeFormatter()($valueContainerAlt));
         // carbon formatter
-        static::assertInstanceOf(CarbonImmutable::class, $record->created_at_as_carbon);
-        static::assertEquals($dateTime, $record->created_at_as_carbon->format('Y-m-d H:i:s'));
+        static::assertInstanceOf(CarbonImmutable::class, $record->created_at_unix_as_carbon);
+        static::assertEquals($dateTime, $record->created_at_unix_as_carbon->format('Y-m-d H:i:s'));
         static::assertInstanceOf(CarbonImmutable::class, RecordValueFormatters::getTimestampToCarbonFormatter()($valueContainerAlt));
         static::assertEquals($dateTime, RecordValueFormatters::getTimestampToCarbonFormatter()($valueContainerAlt)->format('Y-m-d H:i:s'));
         
@@ -192,7 +201,7 @@ class RecordValueFormattersTest extends BaseTestCase
         $valueContainer = $record->getValueContainer('creation_time');
         static::assertEquals($time, $record->creation_time);
         static::assertEquals($time, $valueContainer->getValue());
-    
+        
         $valueContainerAlt = TestingFormatter::fromArray(['creation_time' => $time])
             ->getValueContainer('creation_time'); //< needed to avoid formatter cache
         static::assertNotSame($valueContainer, $valueContainerAlt);
@@ -238,7 +247,7 @@ class RecordValueFormattersTest extends BaseTestCase
         $valueContainer = $record->getValueContainer('json_data1');
         static::assertEquals($json, $record->json_data1);
         static::assertEquals($json, $valueContainer->getValue());
-    
+        
         $valueContainerAlt = TestingFormatter::fromArray(['json_data1' => $json])
             ->getValueContainer('json_data1'); //< needed to avoid formatter cache
         static::assertNotSame($valueContainer, $valueContainerAlt);
@@ -300,7 +309,7 @@ class RecordValueFormattersTest extends BaseTestCase
         $valueContainer = $record->getValueContainer('json_data2');
         static::assertEquals($json, $record->json_data2);
         static::assertEquals($json, $valueContainer->getValue());
-    
+        
         $valueContainerAlt = TestingFormatter::fromArray(['json_data2' => $json])
             ->getValueContainer('json_data2'); //< needed to avoid formatter cache
         static::assertNotSame($valueContainer, $valueContainerAlt);
@@ -310,7 +319,7 @@ class RecordValueFormattersTest extends BaseTestCase
         static::assertEquals($data, $record->json_data2_as_array);
         static::assertEquals($data, RecordValueFormatters::getJsonToArrayFormatter()($valueContainerAlt));
         // object formatter
-        static::assertInstanceOf(\stdClass::class, $record->json_data2_as_object);
+        static::assertInstanceOf(TestingFormatterJsonObject::class, $record->json_data2_as_object);
         $object = new TestingFormatterJsonObject();
         $object->key1 = $data['key1'];
         $object->key2 = $data['key2'];
@@ -437,5 +446,69 @@ class RecordValueFormattersTest extends BaseTestCase
         $this->expectExceptionMessage("Validation errors: [json_data1] Value must be a json-encoded string or array.");
         TestingFormatter::newEmptyRecord()
             ->setJsonData1(json_decode(json_encode(['test' => 1]), false)); //< \stdObject
+    }
+    
+    public function testInvalidCustomFormatter1()
+    {
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('PeskyORM\ORM\Column::addCustomValueFormatter(): Argument #2 ($formatter) must be of type Closure');
+        $record = TestingFormatter::newEmptyRecord();
+        /** @noinspection PhpParamsInspection */
+        $record::getColumn('json_data1')
+            ->addCustomValueFormatter('test', $this);
+    }
+    
+    public function testInvalidCustomFormatter2()
+    {
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('PeskyORM\ORM\Column::addCustomValueFormatter(): Argument #2 ($formatter) must be of type Closure');
+        $record = TestingFormatter::newEmptyRecord();
+        /** @noinspection PhpParamsInspection */
+        $record::getColumn('json_data1')
+            ->addCustomValueFormatter('test', null);
+    }
+    
+    public function testInvalidCustomFormatter3()
+    {
+        // modification of custom formatters can only be done during initial column declaration in TableStructure
+        // or before Record::getColumn() or Record::hasColumn() were used
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage(
+            "There is no column 'json_data1_as_test' in Tests\PeskyORMTest\TestingFormatters\TestingFormattersTableStructure"
+        );
+        $record = TestingFormatter::newEmptyRecord();
+        $record::getColumn('json_data1')
+            ->addCustomValueFormatter('test', function () {
+            });
+        $record->getValue('json_data1_as_test');
+    }
+    
+    public function testCustomFormatter1()
+    {
+        $this->expectException(\BadMethodCallException::class);
+        $this->expectExceptionMessage('test');
+        TestingFormattersTableStructure::getColumn('json_data1')
+            ->addCustomValueFormatter('test', function () {
+                throw new \BadMethodCallException('test');
+            });
+        $record = TestingFormatter::newEmptyRecord();
+        $record->getValue('json_data1_as_test');
+    }
+    
+    public function testCustomFormatter2()
+    {
+        TestingFormattersTableStructure::getColumn('json_data1')
+            ->addCustomValueFormatter('test', function (RecordValue $valueContainer) {
+                $value = $valueContainer->getRecord()->getValue($valueContainer->getColumn(), 'array');
+                $value['test'] = true;
+                return $value;
+            });
+        $record = TestingFormatter::newEmptyRecord();
+        static::assertEquals(['test' => true], $record->getValue('json_data1_as_test'));
+        
+        $data = ['key1' => 'value1'];
+        $record = $record->setJsonData1(['key1' => 'value1']);
+        $expected = $data + ['test' => true];
+        static::assertEquals($expected, $record->getValue('json_data1_as_test'));
     }
 }

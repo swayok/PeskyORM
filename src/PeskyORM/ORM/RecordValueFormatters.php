@@ -18,6 +18,23 @@ abstract class RecordValueFormatters
     public const FORMAT_ARRAY = 'array';
     public const FORMAT_OBJECT = 'object';
     
+    static public function getFormattersForColumnType(string $columnType): array
+    {
+        static $map = null;
+        if ($map === null) {
+            $map = [
+                Column::TYPE_TIMESTAMP => static::getTimestampFormatters(),
+                Column::TYPE_DATE => static::getDateFormatters(),
+                Column::TYPE_TIME => static::getTimeFormatters(),
+                Column::TYPE_UNIX_TIMESTAMP => static::getUnixTimestampFormatters(),
+                Column::TYPE_JSON => static::getJsonFormatters(),
+            ];
+            $map[Column::TYPE_TIMESTAMP_WITH_TZ] = $map[Column::TYPE_TIMESTAMP];
+            $map[Column::TYPE_JSONB] = $map[Column::TYPE_JSON];
+        }
+        return $map[$columnType] ?? [];
+    }
+    
     static public function getTimestampFormatters(): array
     {
         return [
