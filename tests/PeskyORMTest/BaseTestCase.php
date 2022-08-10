@@ -3,16 +3,15 @@
 namespace PeskyORM\Tests\PeskyORMTest;
 
 use ArrayAccess;
-use PeskyORM\Tests\PeskyORMTest\Traits\CallsProtectedPropertiesAndMethods;
 use PHPUnit\Framework\Exception;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
+use Swayok\Utils\ReflectionUtils;
 
 class BaseTestCase extends TestCase
 {
-    use CallsProtectedPropertiesAndMethods;
-    
     /**
      * Asserts that an array has a specified subset.
      *
@@ -44,6 +43,21 @@ class BaseTestCase extends TestCase
         $constraint = new ArraySubset($subset, $checkForObjectIdentity);
         
         static::assertThat($array, $constraint, $message);
+    }
+    
+    protected function getObjectPropertyValue($object, string $propertyName)
+    {
+        return ReflectionUtils::getObjectPropertyValue($object, $propertyName);
+    }
+    
+    protected function callObjectMethod($object, string $methodName, ...$args)
+    {
+        return ReflectionUtils::callObjectMethod($object, $methodName, ...$args);
+    }
+    
+    protected function getMethodReflection($object, string $methodName): ReflectionMethod
+    {
+        return ReflectionUtils::getMethodReflection($object, $methodName);
     }
     
 }
