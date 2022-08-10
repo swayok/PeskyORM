@@ -1,8 +1,8 @@
 <?php
 
-namespace Tests\PeskyORMTest\TestingAdmins;
+namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
-use Tests\PeskyORMTest\TestingBaseTable;
+use PeskyORM\Tests\PeskyORMTest\TestingBaseTable;
 
 class TestingAdmins3Table extends TestingBaseTable
 {

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Tests\Orm;
+namespace PeskyORM\Tests\Orm;
 
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\RecordValueHelpers;
+use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use SplFileInfo;
 use Swayok\Utils\NormalizeValue;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Tests\PeskyORMTest\BaseTestCase;
 
 class RecordValueHelpersTest extends BaseTestCase
 {

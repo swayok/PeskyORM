@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Orm;
+namespace PeskyORM\Tests\Orm;
 
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Exception\InvalidDataException;
@@ -11,20 +11,20 @@ use PeskyORM\ORM\Record;
 use PeskyORM\ORM\RecordsArray;
 use PeskyORM\ORM\RecordsSet;
 use PeskyORM\ORM\RecordValue;
+use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin2;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin3;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
+use PeskyORM\Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Tests\PeskyORMTest\TestingSettings\TestingSetting;
+use PeskyORM\Tests\PeskyORMTest\TestingSettings\TestingSettingsTable;
+use PeskyORM\Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 use ReflectionClass;
 use Swayok\Utils\NormalizeValue;
 use Swayok\Utils\Set;
 use Swayok\Utils\StringUtils;
-use Tests\PeskyORMTest\BaseTestCase;
-use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
-use Tests\PeskyORMTest\TestingAdmins\TestingAdmin2;
-use Tests\PeskyORMTest\TestingAdmins\TestingAdmin3;
-use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
-use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
-use Tests\PeskyORMTest\TestingApp;
-use Tests\PeskyORMTest\TestingSettings\TestingSetting;
-use Tests\PeskyORMTest\TestingSettings\TestingSettingsTable;
-use Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 
 class RecordTest extends BaseTestCase
 {
@@ -436,7 +436,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidUnsetValue()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no column 'invalidcolumn' in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("There is no column 'invalidcolumn' in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         $rec = new TestingAdmin();
         $rec->unsetValue('invalidcolumn');
     }
@@ -637,7 +637,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidRelationRequestInToArray3()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no relation 'Invalid' in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("There is no relation 'Invalid' in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         TestingAdmin::fromArray(['id' => 1], true)
             ->toArrayWithoutFiles(['id'], ['Invalid']);
     }
@@ -645,7 +645,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidRelationRequestInToArray3Alt()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no column 'Invalid' in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("There is no column 'Invalid' in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         TestingAdmin::fromArray(['id' => 1], true)
             ->toArrayWithoutFiles(['id', 'Invalid']);
     }
@@ -933,7 +933,7 @@ class RecordTest extends BaseTestCase
         $rec = TestingAdmin::fromArray($this->getDataForSingleAdmin(true), true);
         $recSerialized = serialize($rec);
         static::assertEquals(
-            'C:45:"Tests\PeskyORMTest\TestingAdmins\TestingAdmin":4139:{{"props":{"existsInDb":true},"values":{"id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"login":{"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","rawValue":"2AE351AF-131D-6654-9DB2-79B8F273986C","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"parent_id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"created_at":{"value":"2015-05-14 02:12:05","rawValue":"2015-05-14 02:12:05","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"updated_at":{"value":"2015-06-10 19:30:24","rawValue":"2015-06-10 19:30:24","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"remember_token":{"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","rawValue":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_superadmin":{"value":true,"rawValue":true,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"language":{"value":"en","rawValue":"en","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"ip":{"value":"192.168.0.1","rawValue":"192.168.0.1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"role":{"value":"admin","rawValue":"admin","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_active":{"value":true,"rawValue":"1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"name":{"value":"Lionel Freeman","rawValue":"Lionel Freeman","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"email":{"value":"diam.at.pretium@idmollisnec.co.uk","rawValue":"diam.at.pretium@idmollisnec.co.uk","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"timezone":{"value":"Europe\/Moscow","rawValue":"Europe\/Moscow","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"big_data":{"value":"biiiig data","rawValue":"biiiig data","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null}}}}',
+            'C:54:"PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin":4139:{{"props":{"existsInDb":true},"values":{"id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"login":{"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","rawValue":"2AE351AF-131D-6654-9DB2-79B8F273986C","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"parent_id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"created_at":{"value":"2015-05-14 02:12:05","rawValue":"2015-05-14 02:12:05","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"updated_at":{"value":"2015-06-10 19:30:24","rawValue":"2015-06-10 19:30:24","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"remember_token":{"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","rawValue":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_superadmin":{"value":true,"rawValue":true,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"language":{"value":"en","rawValue":"en","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"ip":{"value":"192.168.0.1","rawValue":"192.168.0.1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"role":{"value":"admin","rawValue":"admin","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_active":{"value":true,"rawValue":"1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"name":{"value":"Lionel Freeman","rawValue":"Lionel Freeman","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"email":{"value":"diam.at.pretium@idmollisnec.co.uk","rawValue":"diam.at.pretium@idmollisnec.co.uk","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"timezone":{"value":"Europe\/Moscow","rawValue":"Europe\/Moscow","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"big_data":{"value":"biiiig data","rawValue":"biiiig data","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null}}}}',
             $recSerialized
         );
         /** @var TestingAdmin $recUnserialized */
@@ -948,7 +948,7 @@ class RecordTest extends BaseTestCase
         $rec->fromData($this->getDataForSingleAdmin(false), false);
         $recSerialized = serialize($rec);
         static::assertEquals(
-            'C:45:"Tests\PeskyORMTest\TestingAdmins\TestingAdmin":3914:{{"props":{"existsInDb":null},"values":{"login":{"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","rawValue":"2AE351AF-131D-6654-9DB2-79B8F273986C","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"parent_id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"created_at":{"value":"2015-05-14 02:12:05","rawValue":"2015-05-14 02:12:05","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"updated_at":{"value":"2015-06-10 19:30:24","rawValue":"2015-06-10 19:30:24","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"remember_token":{"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","rawValue":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_superadmin":{"value":true,"rawValue":true,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"language":{"value":"en","rawValue":"en","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"ip":{"value":"192.168.0.1","rawValue":"192.168.0.1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"role":{"value":"admin","rawValue":"admin","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_active":{"value":true,"rawValue":"1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"name":{"value":"Lionel Freeman","rawValue":"Lionel Freeman","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"email":{"value":"diam.at.pretium@idmollisnec.co.uk","rawValue":"diam.at.pretium@idmollisnec.co.uk","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"timezone":{"value":"Europe\/Moscow","rawValue":"Europe\/Moscow","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"big_data":{"value":"biiiig data","rawValue":"biiiig data","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null}}}}',
+            'C:54:"PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin":3914:{{"props":{"existsInDb":null},"values":{"login":{"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","rawValue":"2AE351AF-131D-6654-9DB2-79B8F273986C","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"parent_id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"created_at":{"value":"2015-05-14 02:12:05","rawValue":"2015-05-14 02:12:05","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"updated_at":{"value":"2015-06-10 19:30:24","rawValue":"2015-06-10 19:30:24","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"remember_token":{"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","rawValue":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_superadmin":{"value":true,"rawValue":true,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"language":{"value":"en","rawValue":"en","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"ip":{"value":"192.168.0.1","rawValue":"192.168.0.1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"role":{"value":"admin","rawValue":"admin","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_active":{"value":true,"rawValue":"1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"name":{"value":"Lionel Freeman","rawValue":"Lionel Freeman","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"email":{"value":"diam.at.pretium@idmollisnec.co.uk","rawValue":"diam.at.pretium@idmollisnec.co.uk","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"timezone":{"value":"Europe\/Moscow","rawValue":"Europe\/Moscow","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"big_data":{"value":"biiiig data","rawValue":"biiiig data","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null}}}}',
             $recSerialized
         );
         /** @var TestingAdmin $recUnserialized */
@@ -979,14 +979,14 @@ class RecordTest extends BaseTestCase
     public function testInvalidFromData1()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$data argument contains unknown column name or relation name Tests\PeskyORMTest\TestingAdmins\TestingAdmin->0 (\$isFromDb: false).");
+        $this->expectExceptionMessage("\$data argument contains unknown column name or relation name PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin->0 (\$isFromDb: false).");
         TestingAdmin::fromArray(['unknown_col']);
     }
     
     public function testInvalidFromData2()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$data argument contains unknown column name or relation name Tests\PeskyORMTest\TestingAdmins\TestingAdmin->unknown_col (\$isFromDb: false).");
+        $this->expectExceptionMessage("\$data argument contains unknown column name or relation name PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin->unknown_col (\$isFromDb: false).");
         TestingAdmin::fromArray(['unknown_col' => 1]);
     }
     
@@ -1141,7 +1141,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidColumnInFromDb1()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("SELECT: Column with name [invalid] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("SELECT: Column with name [invalid] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         TestingAdmin::newEmptyRecord()
             ->fetch(['id' => 1], ['invalid']);
     }
@@ -1159,7 +1159,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidConditionInFromDb()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("WHERE: Column with name [invalid] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("WHERE: Column with name [invalid] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         TestingAdmin::newEmptyRecord()
             ->fetch(['invalid' => 1], ['id']);
     }
@@ -1167,7 +1167,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidRelationInFromDb()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no relation 'Invalid' in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("There is no relation 'Invalid' in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         TestingAdmin::newEmptyRecord()
             ->fetch(['id' => 1], ['id'], ['Invalid']);
     }
@@ -1372,7 +1372,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidGetRelatedRecord2()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no relation 'InvalidRelation' in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("There is no relation 'InvalidRelation' in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         TestingAdmin::newEmptyRecord()
             ->getRelatedRecord('InvalidRelation');
     }
@@ -1380,7 +1380,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidIsRelatedRecordAttached()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no relation 'InvalidRelation' in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("There is no relation 'InvalidRelation' in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         TestingAdmin::newEmptyRecord()
             ->isRelatedRecordAttached('InvalidRelation');
     }
@@ -1388,7 +1388,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidSetRelatedRecord1()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no relation 'InvalidRelation' in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("There is no relation 'InvalidRelation' in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         TestingAdmin::newEmptyRecord()
             ->updateRelatedRecord('InvalidRelation', []);
     }
@@ -1487,7 +1487,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidReadRelatedRecord1()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no relation 'InvalidRelation' in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("There is no relation 'InvalidRelation' in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         TestingAdmin::newEmptyRecord()
             ->readRelatedRecord('InvalidRelation');
     }
@@ -1496,7 +1496,7 @@ class RecordTest extends BaseTestCase
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage(
-            "Record Tests\PeskyORMTest\TestingAdmins\TestingAdmin has not enough data to read related record 'Parent'. You need to provide a value for 'parent_id' column."
+            "Record PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin has not enough data to read related record 'Parent'. You need to provide a value for 'parent_id' column."
         );
         TestingAdmin::newEmptyRecord()
             ->readRelatedRecord('Parent');
@@ -1553,7 +1553,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidUpdateValuesData1()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$data argument contains unknown column name or relation name Tests\PeskyORMTest\TestingAdmins\TestingAdmin->invalid_col (\$isFromDb: true). Possibly column 'invalid_col' exists in DB but not defined in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("\$data argument contains unknown column name or relation name PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin->invalid_col (\$isFromDb: true). Possibly column 'invalid_col' exists in DB but not defined in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         TestingAdmin::newEmptyRecord()
             ->updateValues(['id' => 1, 'invalid_col' => 2], true);
     }
@@ -1569,7 +1569,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidUpdateValuesData3()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$data argument contains unknown column name or relation name Tests\PeskyORMTest\TestingAdmins\TestingAdmin->Parent2 (\$isFromDb: true). Possibly column 'Parent2' exists in DB but not defined in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("\$data argument contains unknown column name or relation name PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin->Parent2 (\$isFromDb: true). Possibly column 'Parent2' exists in DB but not defined in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         TestingAdmin::newEmptyRecord()
             ->updateValues(['id' => 1, 'Parent' => [], 'Parent2' => null], true);
     }
@@ -1585,7 +1585,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidUpdateValuesData5()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Values update failed: record Tests\PeskyORMTest\TestingAdmins\TestingAdmin does not exist in DB while \$isFromDb === true. Possibly you've missed a primary key value in \$data argument.");
+        $this->expectExceptionMessage("Values update failed: record PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin does not exist in DB while \$isFromDb === true. Possibly you've missed a primary key value in \$data argument.");
         TestingAdmin::newEmptyRecord()
             ->updateValues(['email' => 'test@email.cc'], true);
     }
@@ -2486,7 +2486,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidArrayAccess2()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
+        $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         $rec = TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true);
         $rec['invalidcolname'];
     }
@@ -2494,7 +2494,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidMagicGetter()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
+        $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         /** @noinspection PhpUndefinedFieldInspection */
         TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)->invalidcolname;
     }
@@ -2502,14 +2502,14 @@ class RecordTest extends BaseTestCase
     public function testInvalidMagicIsset()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
+        $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         isset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)->invalidcolname);
     }
     
     public function testInvalidArrayOffsetIsset1()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
+        $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         isset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)['invalidcolname']);
     }
     
@@ -2521,28 +2521,28 @@ class RecordTest extends BaseTestCase
     public function testInvalidArrayOffsetUnset1()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
+        $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         unset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)['invalidcolname']);
     }
     
     public function testInvalidArrayOffsetUnset2()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no column or relation with name [created_at_as_date] in Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
+        $this->expectExceptionMessage("There is no column or relation with name [created_at_as_date] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         unset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)['created_at_as_date']);
     }
     
     public function testInvalidMagicPropertyUnset1()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
+        $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         unset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)->invalidcolname);
     }
     
     public function testInvalidMagicPropertyUnset2()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no column or relation with name [created_at_as_date] in Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
+        $this->expectExceptionMessage("There is no column or relation with name [created_at_as_date] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         unset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)->created_at_as_date);
     }
     
@@ -2642,7 +2642,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidMagicPropertySetter1()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
+        $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         /** @noinspection PhpUndefinedFieldInspection */
         TestingAdmin::newEmptyRecord()->invalidcolname = 1;
     }
@@ -2650,21 +2650,21 @@ class RecordTest extends BaseTestCase
     public function testInvalidMagicPropertySetter2()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no column or relation with name [created_at_as_date] in Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
+        $this->expectExceptionMessage("There is no column or relation with name [created_at_as_date] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         TestingAdmin::newEmptyRecord()->created_at_as_date = 1;
     }
     
     public function testInvalidArrayAccessSetter1()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
+        $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         TestingAdmin::newEmptyRecord()['invalidcolname'] = 1;
     }
     
     public function testInvalidArrayAccessSetter2()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("There is no column or relation with name [created_at_as_date] in Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
+        $this->expectExceptionMessage("There is no column or relation with name [created_at_as_date] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         TestingAdmin::newEmptyRecord()['created_at_as_date'] = 1;
     }
     

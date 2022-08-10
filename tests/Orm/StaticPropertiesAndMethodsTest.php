@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Tests\Orm;
+namespace PeskyORM\Tests\Orm;
 
-use Tests\PeskyORMTest\BaseTestCase;
-use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
-use Tests\PeskyORMTest\TestingApp;
-use Tests\PeskyORMTest\TestingSettings\TestingSettingsTable;
+use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
+use PeskyORM\Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Tests\PeskyORMTest\TestingSettings\TestingSettingsTable;
 
 class StaticPropertiesAndMethodsTest extends BaseTestCase
 {

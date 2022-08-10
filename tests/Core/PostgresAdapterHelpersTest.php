@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Tests\Core;
+namespace PeskyORM\Tests\Core;
 
 use InvalidArgumentException;
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\TableDescription;
 use PeskyORM\ORM\Column;
+use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
+use PeskyORM\Tests\PeskyORMTest\TestingApp;
 use ReflectionClass;
 use ReflectionMethod;
-use Tests\PeskyORMTest\BaseTestCase;
-use Tests\PeskyORMTest\TestingApp;
 
 class PostgresAdapterHelpersTest extends BaseTestCase
 {

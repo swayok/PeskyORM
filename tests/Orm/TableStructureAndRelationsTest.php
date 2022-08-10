@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Tests\Orm;
+namespace PeskyORM\Tests\Orm;
 
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Exception\OrmException;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Relation;
+use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmins4TableStructure;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
+use PeskyORM\Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidColumnsInTableStructure;
+use PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure;
+use PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure2;
+use PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure3;
+use PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure4;
+use PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingNoPkColumnInTableStructure;
+use PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingTwoPrimaryKeysColumnsTableStructure;
+use PeskyORM\Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 use ReflectionClass;
-use Tests\PeskyORMTest\BaseTestCase;
-use Tests\PeskyORMTest\TestingAdmins\TestingAdmins4TableStructure;
-use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
-use Tests\PeskyORMTest\TestingApp;
-use Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidColumnsInTableStructure;
-use Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure;
-use Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure2;
-use Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure3;
-use Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure4;
-use Tests\PeskyORMTest\TestingInvalidClasses\TestingNoPkColumnInTableStructure;
-use Tests\PeskyORMTest\TestingInvalidClasses\TestingTwoPrimaryKeysColumnsTableStructure;
-use Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 
 class TableStructureAndRelationsTest extends BaseTestCase
 {
@@ -48,7 +48,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
     {
         $this->expectException(OrmException::class);
         $this->expectExceptionMessage(
-            "TableStructure Tests\PeskyORMTest\TestingInvalidClasses\TestingNoPkColumnInTableStructure must contain primary key"
+            "TableStructure PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingNoPkColumnInTableStructure must contain primary key"
         );
         TestingNoPkColumnInTableStructure::getInstance();
     }
@@ -56,7 +56,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
     public function testDuplicateConstruct()
     {
         $this->expectException(\BadMethodCallException::class);
-        $this->expectExceptionMessage("Attempt to create 2nd instance of class Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("Attempt to create 2nd instance of class PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         $class = new ReflectionClass(TestingAdminsTableStructure::class);
         $method = $class->getConstructor();
         $method->setAccessible(true);
@@ -130,7 +130,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
     {
         $this->expectException(OrmException::class);
         $this->expectExceptionMessage(
-            "Method Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidColumnsInTableStructure->invalid() must return instance of \PeskyORM\ORM\Column class"
+            "Method PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidColumnsInTableStructure->invalid() must return instance of \PeskyORM\ORM\Column class"
         );
         TestingInvalidColumnsInTableStructure::getColumn('invalid');
     }
@@ -147,7 +147,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
     {
         $this->expectException(OrmException::class);
         $this->expectExceptionMessage(
-            "Method Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure->InvalidClass() must return instance of \PeskyORM\ORM\Relation class"
+            "Method PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure->InvalidClass() must return instance of \PeskyORM\ORM\Relation class"
         );
         TestingInvalidRelationsInTableStructure::getRelation('InvalidClass');
     }
@@ -169,7 +169,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
     public function testInvalidTableStructure6()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Related table Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable has no column 'foreign_invalid'");
+        $this->expectExceptionMessage("Related table PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable has no column 'foreign_invalid'");
         TestingInvalidRelationsInTableStructure4::getRelation('InvalidForeignColumnName')->getForeignColumnName();
     }
     

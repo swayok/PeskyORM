@@ -3,7 +3,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Orm;
+namespace PeskyORM\Tests\Orm;
 
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
@@ -11,14 +11,14 @@ use PeskyORM\Core\Select;
 use PeskyORM\ORM\FakeTable;
 use PeskyORM\ORM\OrmJoinInfo;
 use PeskyORM\ORM\OrmSelect;
+use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
+use PeskyORM\Tests\PeskyORMTest\Data\TestDataForAdminsTable;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableLongAlias;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
+use PeskyORM\Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 use Swayok\Utils\Set;
-use Tests\PeskyORMTest\BaseTestCase;
-use Tests\PeskyORMTest\Data\TestDataForAdminsTable;
-use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
-use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableLongAlias;
-use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
-use Tests\PeskyORMTest\TestingApp;
-use Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 
 class OrmSelectTest extends BaseTestCase
 {
@@ -106,7 +106,7 @@ class OrmSelectTest extends BaseTestCase
     public function testInvalidJoinsSet()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("SELECT: Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure does not know about relation named 'OtherTable'");
+        $this->expectExceptionMessage("SELECT: PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure does not know about relation named 'OtherTable'");
         static::getNewSelect()
             ->columns(['id', 'OtherTable.id'])
             ->getQuery();
@@ -115,7 +115,7 @@ class OrmSelectTest extends BaseTestCase
     public function testNotExistingColumnName1()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("SELECT: Column with name [asid] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("SELECT: Column with name [asid] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()
             ->columns(['asid'])
             ->getQuery();
@@ -124,7 +124,7 @@ class OrmSelectTest extends BaseTestCase
     public function testNotExistingColumnName2()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("SELECT: Column with name [Parent.asid] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("SELECT: Column with name [Parent.asid] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()
             ->columns(['id', 'Parent.asid'])
             ->getQuery();
@@ -133,7 +133,7 @@ class OrmSelectTest extends BaseTestCase
     public function testNotExistingColumnName3()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("SELECT: Column with name [asid] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("SELECT: Column with name [asid] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         // Parent is column alias, not a relation
         static::getNewSelect()
             ->columns(['Parent' => 'asid'])
@@ -144,7 +144,7 @@ class OrmSelectTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
-            "SELECT: Column with name [Parent.asid] and alias [asialias] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure"
+            "SELECT: Column with name [Parent.asid] and alias [asialias] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure"
         );
         static::getNewSelect()
             ->columns(['id', 'Parent' => ['asialias' => 'asid']])
@@ -165,7 +165,7 @@ class OrmSelectTest extends BaseTestCase
     public function testInvalidColNameInDbExpr()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("SELECT: Column with name [asdasdqdasd] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("SELECT: Column with name [asdasdqdasd] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()
             ->columns(['sum' => DbExpr::create('SUM(`Admins`.`asdasdqdasd`)')])
             ->getQuery();
@@ -380,7 +380,7 @@ class OrmSelectTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
-            "SELECT: Column with name [Parent.qqq] and alias [Children] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure"
+            "SELECT: Column with name [Parent.qqq] and alias [Children] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure"
         );
         static::getNewSelect()
             ->columns(['id', 'Parent' => ['Children' => 'qqq']])
@@ -390,7 +390,7 @@ class OrmSelectTest extends BaseTestCase
     public function testInvalidColNameInRelation1()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("SELECT: Column with name [Parent.qqq] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("SELECT: Column with name [Parent.qqq] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()
             ->columns(['id', 'Parent' => ['qqq']])
             ->getQuery();
@@ -400,7 +400,7 @@ class OrmSelectTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
-            "SELECT: Column with name [Parent.qqq] and alias [key] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure"
+            "SELECT: Column with name [Parent.qqq] and alias [key] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure"
         );
         static::getNewSelect()
             ->columns(['id', 'Parent' => ['key' => 'qqq']])
@@ -410,7 +410,7 @@ class OrmSelectTest extends BaseTestCase
     public function testInvalidColNameInRelation3()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("SELECT: Column with name [Parent.qqq] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("SELECT: Column with name [Parent.qqq] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()
             ->columns(['id', 'Parent.qqq'])
             ->getQuery();
@@ -507,7 +507,7 @@ class OrmSelectTest extends BaseTestCase
     public function testInvalidWhereCondition2()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("WHERE: Column with name [invalid_____] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("WHERE: Column with name [invalid_____] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()
             ->where(['invalid_____' => '0'])
             ->getQuery();
@@ -516,7 +516,7 @@ class OrmSelectTest extends BaseTestCase
     public function testInvalidHavingCondition2()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("HAVING: Column with name [invalid_____] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("HAVING: Column with name [invalid_____] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()
             ->having(['invalid_____' => '0'])
             ->getQuery();
@@ -543,7 +543,7 @@ class OrmSelectTest extends BaseTestCase
     public function testInvalidRelationInWhere2()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("WHERE: Column with name [Parent.col] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("WHERE: Column with name [Parent.col] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()
             ->where(['Parent.col' => '0'])
             ->getQuery();
@@ -552,7 +552,7 @@ class OrmSelectTest extends BaseTestCase
     public function testInvalidRelationInHaving2()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("HAVING: Column with name [Parent.col] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("HAVING: Column with name [Parent.col] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()
             ->having(['Parent.col' => '0'])
             ->getQuery();
@@ -561,7 +561,7 @@ class OrmSelectTest extends BaseTestCase
     public function testInvalidRelationInWhere3()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("WHERE: Column with name [Parent2.col] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("WHERE: Column with name [Parent2.col] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()
             ->columns(['id', 'Parent' => ['Parent as Parent2' => '*']])
             ->where(['Parent2.col' => '0'])
@@ -571,7 +571,7 @@ class OrmSelectTest extends BaseTestCase
     public function testInvalidRelationInHaving3()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("HAVING: Column with name [Parent2.col] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("HAVING: Column with name [Parent2.col] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()
             ->columns(['id', 'Parent' => ['Parent as Parent2' => '*']])
             ->having(['Parent2.col' => '0'])
@@ -716,7 +716,7 @@ class OrmSelectTest extends BaseTestCase
     public function testInvalidValidateColumnInfo1()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Test: Column with name [qqq] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("Test: Column with name [qqq] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         $this->callObjectMethod(
             static::getNewSelect(),
             'validateColumnInfo',
@@ -733,7 +733,7 @@ class OrmSelectTest extends BaseTestCase
     public function testInvalidValidateColumnInfo2()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Test: Column with name [Parent.qqq] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("Test: Column with name [Parent.qqq] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         $this->callObjectMethod(
             static::getNewSelect(),
             'validateColumnInfo',
@@ -750,7 +750,7 @@ class OrmSelectTest extends BaseTestCase
     public function testInvalidValidateColumnInfo3()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Test: Column with name [Parent.qqq] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("Test: Column with name [Parent.qqq] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         $this->callObjectMethod(
             self::getNewSelect(),
             'validateColumnInfo',
@@ -827,7 +827,7 @@ class OrmSelectTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
-            "ORDER BY: Column with name [Parent.qweasd] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure"
+            "ORDER BY: Column with name [Parent.qweasd] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure"
         );
         static::getNewSelect()
             ->orderBy('Parent.qweasd')
@@ -837,7 +837,7 @@ class OrmSelectTest extends BaseTestCase
     public function testInvalidOrderBy3()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("ORDER BY: Column with name [Parent.qweasd ASC] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("ORDER BY: Column with name [Parent.qweasd ASC] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()
             ->orderBy('Parent.qweasd ASC')
             ->getQuery();
@@ -865,7 +865,7 @@ class OrmSelectTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
-            "GROUP BY: Column with name [Parent.qweasd] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure"
+            "GROUP BY: Column with name [Parent.qweasd] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure"
         );
         static::getNewSelect()
             ->groupBy(['Parent.qweasd'])
@@ -875,7 +875,7 @@ class OrmSelectTest extends BaseTestCase
     public function testInvalidGroupBy3()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("GROUP BY: Column with name [Parent.qweasd ASC] not found in Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("GROUP BY: Column with name [Parent.qweasd ASC] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()
             ->groupBy(['Parent.qweasd ASC'])
             ->getQuery();

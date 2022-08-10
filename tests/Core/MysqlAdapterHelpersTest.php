@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Tests\Core;
+namespace PeskyORM\Tests\Core;
 
 use InvalidArgumentException;
 use PeskyORM\Core\DbExpr;
-use Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 require_once __DIR__ . '/PostgresAdapterHelpersTest.php';
 

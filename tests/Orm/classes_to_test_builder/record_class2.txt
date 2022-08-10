@@ -2,7 +2,7 @@
 
 namespace App\Db;
 
-use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use Carbon\Carbon;
 
 /**

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Tests\Core;
+namespace PeskyORM\Tests\Core;
 
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Select;
-use Tests\PeskyORMTest\BaseTestCase;
-use Tests\PeskyORMTest\Data\TestDataForAdminsTable;
-use Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
+use PeskyORM\Tests\PeskyORMTest\Data\TestDataForAdminsTable;
+use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 class PostgresAdapterSelectDataTest extends BaseTestCase
 {

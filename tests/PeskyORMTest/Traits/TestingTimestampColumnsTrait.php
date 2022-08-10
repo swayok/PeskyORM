@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\PeskyORMTest\Traits;
+namespace PeskyORM\Tests\PeskyORMTest\Traits;
 
 use PeskyORM\Core\DbExpr;
 use PeskyORM\ORM\Column;

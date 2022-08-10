@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Tests\Core;
+namespace PeskyORM\Tests\Core;
 
 use PeskyORM\Adapter\Mysql;
 use PeskyORM\Config\Connection\MysqlConfig;
+use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
+use PeskyORM\Tests\PeskyORMTest\TestingApp;
 use ReflectionClass;
-use Tests\PeskyORMTest\BaseTestCase;
-use Tests\PeskyORMTest\TestingApp;
 
 class MysqlAdapterConnectionTest extends BaseTestCase
 {

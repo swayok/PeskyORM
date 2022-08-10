@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\PeskyORMTest\TestingFormatters;
+namespace PeskyORM\Tests\PeskyORMTest\TestingFormatters;
 
 use Carbon\CarbonImmutable;
 use PeskyORM\ORM\Record;

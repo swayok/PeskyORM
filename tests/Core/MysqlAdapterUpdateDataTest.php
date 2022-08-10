@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Tests\Core;
+namespace PeskyORM\Tests\Core;
 
 require_once __DIR__ . '/PostgresAdapterUpdateDataTest.php';
 
-use Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 class MysqlAdapterUpdateDataTest extends PostgresAdapterUpdateDataTest
 {

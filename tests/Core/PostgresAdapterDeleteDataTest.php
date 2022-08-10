@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Tests\Core;
+namespace PeskyORM\Tests\Core;
 
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
-use Tests\PeskyORMTest\BaseTestCase;
-use Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
+use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 class PostgresAdapterDeleteDataTest extends BaseTestCase
 {

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Tests\Core;
+namespace PeskyORM\Tests\Core;
 
 use PeskyORM\Config\Connection\PostgresConfig;
-use Tests\PeskyORMTest\BaseTestCase;
+use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 
 class PostgresConfigTest extends BaseTestCase
 {

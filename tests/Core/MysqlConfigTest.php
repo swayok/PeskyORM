@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Tests\Core;
+namespace PeskyORM\Tests\Core;
 
 use InvalidArgumentException;
 use PeskyORM\Config\Connection\MysqlConfig;
-use Tests\PeskyORMTest\BaseTestCase;
+use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 
 class MysqlConfigTest extends BaseTestCase
 {

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Tests\Core;
+namespace PeskyORM\Tests\Core;
 
 require_once __DIR__ . '/PostgresAdapterSelectDataTest.php';
 
 use InvalidArgumentException;
 use PeskyORM\Core\Select;
-use Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 class MysqlAdapterSelectDataTest extends PostgresAdapterSelectDataTest
 {

@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Tests\Orm;
+namespace PeskyORM\Tests\Orm;
 
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\DefaultColumnClosures;
+use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
+use PeskyORM\Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Tests\PeskyORMTest\TestingValueToObjectConverter;
 use Swayok\Utils\NormalizeValue;
-use Tests\PeskyORMTest\BaseTestCase;
-use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
-use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
-use Tests\PeskyORMTest\TestingApp;
-use Tests\PeskyORMTest\TestingValueToObjectConverter;
 
 class ColumnTest extends BaseTestCase
 {
@@ -274,7 +274,7 @@ class ColumnTest extends BaseTestCase
     public function testInvalidDefaultValueGet2()
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Default value for column Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->name is not valid. Errors: Value must be of a boolean data type.");
+        $this->expectExceptionMessage("Default value for column PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->name is not valid. Errors: Value must be of a boolean data type.");
         Column::create(Column::TYPE_BOOL, 'name')
             ->setTableStructure(TestingAdminsTableStructure::getInstance())
             ->setDefaultValue(-1)
@@ -285,7 +285,7 @@ class ColumnTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
-            "Fallback value of the default value for column Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->name is not valid. Errors: Value must be of a boolean data type."
+            "Fallback value of the default value for column PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->name is not valid. Errors: Value must be of a boolean data type."
         );
         Column::create(Column::TYPE_BOOL, 'name')
             ->setTableStructure(TestingAdminsTableStructure::getInstance())
@@ -296,7 +296,7 @@ class ColumnTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
-            "Default value received from validDefaultValueGetter Closure for column Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->name is not valid. Errors: Value must be of a boolean data type."
+            "Default value received from validDefaultValueGetter Closure for column PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->name is not valid. Errors: Value must be of a boolean data type."
         );
         Column::create(Column::TYPE_BOOL, 'name')
             ->setTableStructure(TestingAdminsTableStructure::getInstance())

@@ -1,13 +1,13 @@
 <?php
 
-namespace Tests\PeskyORMTest;
+namespace PeskyORM\Tests\PeskyORMTest;
 
 use ArrayAccess;
+use PeskyORM\Tests\PeskyORMTest\Traits\CallsProtectedPropertiesAndMethods;
 use PHPUnit\Framework\Exception;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use Tests\PeskyORMTest\Traits\CallsProtectedPropertiesAndMethods;
 
 class BaseTestCase extends TestCase
 {

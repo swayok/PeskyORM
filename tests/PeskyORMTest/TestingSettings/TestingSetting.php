@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\PeskyORMTest\TestingSettings;
+namespace PeskyORM\Tests\PeskyORMTest\TestingSettings;
 
 use PeskyORM\ORM\Record;
 

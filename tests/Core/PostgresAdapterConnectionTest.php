@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Tests\Core;
+namespace PeskyORM\Tests\Core;
 
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\Config\Connection\PostgresConfig;
+use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
+use PeskyORM\Tests\PeskyORMTest\TestingApp;
 use ReflectionClass;
-use Tests\PeskyORMTest\BaseTestCase;
-use Tests\PeskyORMTest\TestingApp;
 
 // WARNING: PostgreSQL Server shoud not have next lines in pg_hba.conf:
 //      host all all 0.0.0.0/0 trust

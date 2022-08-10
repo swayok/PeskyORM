@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Tests\Orm;
+namespace PeskyORM\Tests\Orm;
 
 use PeskyORM\ORM\ClassBuilder;
 use PeskyORM\ORM\Column;
-use Tests\PeskyORMTest\BaseTestCase;
-use Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
-use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
-use Tests\PeskyORMTest\TestingApp;
-use Tests\PeskyORMTest\TestingBaseTable;
-use Tests\PeskyORMTest\Traits\TestingCreatedAtColumnTrait;
-use Tests\PeskyORMTest\Traits\TestingIdColumnTrait;
-use Tests\PeskyORMTest\Traits\TestingTimestampColumnsTrait;
+use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
+use PeskyORM\Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Tests\PeskyORMTest\TestingBaseTable;
+use PeskyORM\Tests\PeskyORMTest\Traits\TestingCreatedAtColumnTrait;
+use PeskyORM\Tests\PeskyORMTest\Traits\TestingIdColumnTrait;
+use PeskyORM\Tests\PeskyORMTest\Traits\TestingTimestampColumnsTrait;
 
 class ClassBuilderTest extends BaseTestCase
 {

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Tests\Core;
+namespace PeskyORM\Tests\Core;
 
 use PDO;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
-use Tests\PeskyORMTest\BaseTestCase;
-use Tests\PeskyORMTest\Data\TestDataForAdminsTable;
-use Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
+use PeskyORM\Tests\PeskyORMTest\Data\TestDataForAdminsTable;
+use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 class PostgresAdapterUpdateDataTest extends BaseTestCase
 {

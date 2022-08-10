@@ -1,11 +1,11 @@
 <?php
 
-namespace Tests\PeskyORMTest\TestingInvalidClasses;
+namespace PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses;
 
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Relation;
 use PeskyORM\ORM\TableStructure;
-use Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 
 class TestingInvalidRelationsInTableStructure4 extends TableStructure
 {

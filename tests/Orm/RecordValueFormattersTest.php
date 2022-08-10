@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Tests\Orm;
+namespace PeskyORM\Tests\Orm;
 
 use Carbon\CarbonImmutable;
 use PeskyORM\Exception\InvalidDataException;
 use PeskyORM\ORM\RecordValue;
 use PeskyORM\ORM\RecordValueFormatters;
-use Tests\PeskyORMTest\BaseTestCase;
-use Tests\PeskyORMTest\TestingFormatters\TestingFormatter;
-use Tests\PeskyORMTest\TestingFormatters\TestingFormatterJsonObject;
-use Tests\PeskyORMTest\TestingFormatters\TestingFormattersTableStructure;
+use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
+use PeskyORM\Tests\PeskyORMTest\TestingFormatters\TestingFormatter;
+use PeskyORM\Tests\PeskyORMTest\TestingFormatters\TestingFormatterJsonObject;
+use PeskyORM\Tests\PeskyORMTest\TestingFormatters\TestingFormattersTableStructure;
 
 class RecordValueFormattersTest extends BaseTestCase
 {
@@ -474,7 +474,7 @@ class RecordValueFormattersTest extends BaseTestCase
         // or before Record::getColumn() or Record::hasColumn() were used
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage(
-            "There is no column 'json_data1_as_test' in Tests\PeskyORMTest\TestingFormatters\TestingFormattersTableStructure"
+            "There is no column 'json_data1_as_test' in PeskyORM\Tests\PeskyORMTest\TestingFormatters\TestingFormattersTableStructure"
         );
         $record = TestingFormatter::newEmptyRecord();
         $record::getColumn('json_data1')

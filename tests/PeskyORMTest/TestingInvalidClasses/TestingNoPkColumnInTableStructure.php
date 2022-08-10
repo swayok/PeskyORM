@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\PeskyORMTest\TestingInvalidClasses;
+namespace PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses;
 
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\TableStructure;

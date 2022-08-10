@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\PeskyORMTest\TestingFormatters;
+namespace PeskyORM\Tests\PeskyORMTest\TestingFormatters;
 
 use PeskyORM\ORM\ValueToObjectConverter;
 
