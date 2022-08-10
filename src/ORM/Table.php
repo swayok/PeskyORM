@@ -22,7 +22,7 @@ abstract class Table implements TableInterface
     /**
      * @return $this
      */
-    final static public function getInstance(): TableInterface
+    final public static function getInstance(): TableInterface
     {
         if (!isset(self::$instances[static::class])) {
             self::$instances[static::class] = new static();
@@ -43,7 +43,7 @@ abstract class Table implements TableInterface
      * Shortcut for static::getInstance()
      * @return $this
      */
-    final static public function i(): TableInterface
+    final public static function i(): TableInterface
     {
         return static::getInstance();
     }
@@ -52,7 +52,7 @@ abstract class Table implements TableInterface
      * Get table name
      * @return string
      */
-    static public function getName(): string
+    public static function getName(): string
     {
         return static::getStructure()
             ->getTableName();
@@ -62,7 +62,7 @@ abstract class Table implements TableInterface
      * @param bool $writable - true: connection must have access to write data into DB
      * @return DbAdapterInterface
      */
-    static public function getConnection($writable = false): DbAdapterInterface
+    public static function getConnection($writable = false): DbAdapterInterface
     {
         return DbConnectionsManager::getConnection(
             static::getStructure()
@@ -73,13 +73,13 @@ abstract class Table implements TableInterface
     /**
      * @return TableStructure
      */
-    static public function getStructure(): TableStructureInterface
+    public static function getStructure(): TableStructureInterface
     {
         return static::getInstance()
             ->getTableStructure();
     }
     
-    static public function getAlias(): string
+    public static function getAlias(): string
     {
         return static::getInstance()
             ->getTableAlias();
@@ -93,19 +93,19 @@ abstract class Table implements TableInterface
         return $this->alias;
     }
     
-    static public function hasPkColumn(): bool
+    public static function hasPkColumn(): bool
     {
         return static::getStructure()
             ->hasPkColumn();
     }
     
-    static public function getPkColumn(): Column
+    public static function getPkColumn(): Column
     {
         return static::getStructure()
             ->getPkColumn();
     }
     
-    static public function getPkColumnName(): string
+    public static function getPkColumnName(): string
     {
         return static::getStructure()
             ->getPkColumnName();
@@ -115,7 +115,7 @@ abstract class Table implements TableInterface
      * @param string $relationName - alias for relation defined in TableStructure
      * @return TableInterface
      */
-    static public function getRelatedTable($relationName): TableInterface
+    public static function getRelatedTable($relationName): TableInterface
     {
         return static::getStructure()
             ->getRelation($relationName)
@@ -129,7 +129,7 @@ abstract class Table implements TableInterface
      * @param string|null $joinName - string: specific join name; null: $relationName is used
      * @return OrmJoinInfo
      */
-    static public function getJoinConfigForRelation($relationName, $alterLocalTableAlias = null, $joinName = null): OrmJoinInfo
+    public static function getJoinConfigForRelation($relationName, $alterLocalTableAlias = null, $joinName = null): OrmJoinInfo
     {
         return static::getStructure()
             ->getRelation($relationName)
@@ -144,7 +144,7 @@ abstract class Table implements TableInterface
      * @param string $relationName - alias for relation defined in TableStructure
      * @return bool
      */
-    static public function hasRelation($relationName): bool
+    public static function hasRelation($relationName): bool
     {
         return static::getStructure()
             ->hasRelation($relationName);
@@ -154,7 +154,7 @@ abstract class Table implements TableInterface
      * @see DbAdapter::getExpressionToSetDefaultValueForAColumn()
      * @throws \BadMethodCallException
      */
-    static public function getExpressionToSetDefaultValueForAColumn(): DbExpr
+    public static function getExpressionToSetDefaultValueForAColumn(): DbExpr
     {
         if (static::class === __CLASS__) {
             throw new \BadMethodCallException(
@@ -171,7 +171,7 @@ abstract class Table implements TableInterface
      * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return OrmSelect
      */
-    static public function makeSelect($columns, array $conditions = [], ?\Closure $configurator = null): OrmSelect
+    public static function makeSelect($columns, array $conditions = [], ?\Closure $configurator = null): OrmSelect
     {
         $select = OrmSelect::from(static::getInstance())
             ->fromConfigsArray($conditions);
@@ -189,7 +189,7 @@ abstract class Table implements TableInterface
      * @return RecordsSet - Do not typehint returning value! it actually may be overriden to return array
      * @throws \PDOException
      */
-    static public function select($columns = '*', array $conditions = [], ?\Closure $configurator = null)
+    public static function select($columns = '*', array $conditions = [], ?\Closure $configurator = null)
     {
         return RecordsSet::createFromOrmSelect(static::makeSelect($columns, $conditions, $configurator));
     }
@@ -202,7 +202,7 @@ abstract class Table implements TableInterface
      * @return array
      * @throws \PDOException
      */
-    static public function selectColumn($column, array $conditions = [], ?\Closure $configurator = null): array
+    public static function selectColumn($column, array $conditions = [], ?\Closure $configurator = null): array
     {
         return static::makeSelect(['value' => $column], $conditions, $configurator)
             ->fetchColumn();
@@ -218,7 +218,7 @@ abstract class Table implements TableInterface
      * @return array
      * @throws \PDOException
      */
-    static public function selectAssoc($keysColumn, $valuesColumn, array $conditions = [], ?\Closure $configurator = null): array
+    public static function selectAssoc($keysColumn, $valuesColumn, array $conditions = [], ?\Closure $configurator = null): array
     {
         return static::makeSelect([], $conditions, $configurator)
             ->fetchAssoc($keysColumn, $valuesColumn);
@@ -232,7 +232,7 @@ abstract class Table implements TableInterface
      * @return array
      * @throws \PDOException
      */
-    static public function selectOne($columns, array $conditions, ?\Closure $configurator = null): array
+    public static function selectOne($columns, array $conditions, ?\Closure $configurator = null): array
     {
         return static::makeSelect($columns, $conditions, $configurator)
             ->fetchOne();
@@ -246,7 +246,7 @@ abstract class Table implements TableInterface
      * @return RecordInterface
      * @throws \PDOException
      */
-    static public function selectOneAsDbRecord($columns, array $conditions, ?\Closure $configurator = null): \PeskyORM\ORM\RecordInterface
+    public static function selectOneAsDbRecord($columns, array $conditions, ?\Closure $configurator = null): \PeskyORM\ORM\RecordInterface
     {
         return static::makeSelect($columns, $conditions, $configurator)
             ->fetchOneAsDbRecord();
@@ -260,7 +260,7 @@ abstract class Table implements TableInterface
      * @return string|int|float|null
      * @throws \PDOException
      */
-    static public function selectValue(DbExpr $expression, array $conditions = [], ?\Closure $configurator = null)
+    public static function selectValue(DbExpr $expression, array $conditions = [], ?\Closure $configurator = null)
     {
         return static::makeSelect(['value' => $expression], $conditions, $configurator)
             ->fetchValue($expression);
@@ -273,7 +273,7 @@ abstract class Table implements TableInterface
      * @return bool
      * @throws \PDOException
      */
-    static public function hasMatchingRecord(array $conditions, ?\Closure $configurator = null): bool
+    public static function hasMatchingRecord(array $conditions, ?\Closure $configurator = null): bool
     {
         $callback = function (OrmSelect $select) use ($configurator) {
             if ($configurator) {
@@ -294,7 +294,7 @@ abstract class Table implements TableInterface
      * @return int
      * @throws \PDOException
      */
-    static public function count(array $conditions = [], ?\Closure $configurator = null, bool $removeNotInnerJoins = false): int
+    public static function count(array $conditions = [], ?\Closure $configurator = null, bool $removeNotInnerJoins = false): int
     {
         return static::makeSelect(
             [
@@ -308,7 +308,7 @@ abstract class Table implements TableInterface
             ->fetchCount($removeNotInnerJoins);
     }
     
-    static public function makeConditionsFromArray(array $conditions): DbExpr
+    public static function makeConditionsFromArray(array $conditions): DbExpr
     {
         $assembled = Utils::assembleWhereConditionsFromArray(
             static::getConnection(),
@@ -339,7 +339,7 @@ abstract class Table implements TableInterface
         return DbExpr::create(trim($assembled), false);
     }
     
-    static public function analyzeColumnName($columnName): array
+    public static function analyzeColumnName($columnName): array
     {
         if ($columnName instanceof DbExpr) {
             $ret = [
@@ -373,7 +373,7 @@ abstract class Table implements TableInterface
      * @param bool $useWritableConnection
      * @return null|string
      */
-    static public function getLastQuery(bool $useWritableConnection): ?string
+    public static function getLastQuery(bool $useWritableConnection): ?string
     {
         try {
             return static::getConnection($useWritableConnection)
@@ -386,7 +386,7 @@ abstract class Table implements TableInterface
     /**
      * @see DbAdapter::begin()
      */
-    static public function beginTransaction(bool $readOnly = false, ?string $transactionType = null)
+    public static function beginTransaction(bool $readOnly = false, ?string $transactionType = null)
     {
         static::getConnection(true)
             ->begin($readOnly, $transactionType);
@@ -395,7 +395,7 @@ abstract class Table implements TableInterface
     /**
      * @see DbAdapter::inTransaction()
      */
-    static public function inTransaction(): bool
+    public static function inTransaction(): bool
     {
         return static::getConnection(true)
             ->inTransaction();
@@ -405,7 +405,7 @@ abstract class Table implements TableInterface
      * @see DbAdapter::commit()
      * @return void
      */
-    static public function commitTransaction()
+    public static function commitTransaction()
     {
         static::getConnection(true)
             ->commit();
@@ -415,7 +415,7 @@ abstract class Table implements TableInterface
      * @see DbAdapter::rollBack()
      * @return void
      */
-    static public function rollBackTransaction()
+    public static function rollBackTransaction()
     {
         static::getConnection(true)
             ->rollBack();
@@ -424,7 +424,7 @@ abstract class Table implements TableInterface
     /**
      * @return void
      */
-    static public function rollBackTransactionIfExists()
+    public static function rollBackTransactionIfExists()
     {
         if (static::inTransaction()) {
             static::rollBackTransaction();
@@ -434,7 +434,7 @@ abstract class Table implements TableInterface
     /**
      * @see DbAdapter::quoteDbEntityName()
      */
-    static public function quoteDbEntityName(string $name): string
+    public static function quoteDbEntityName(string $name): string
     {
         return static::getConnection(true)
             ->quoteDbEntityName($name);
@@ -443,7 +443,7 @@ abstract class Table implements TableInterface
     /**
      * @see DbAdapter::quoteValue()
      */
-    static public function quoteValue($value, int $fieldInfoOrType = \PDO::PARAM_STR): string
+    public static function quoteValue($value, int $fieldInfoOrType = \PDO::PARAM_STR): string
     {
         return static::getConnection(true)
             ->quoteValue($value, $fieldInfoOrType);
@@ -452,7 +452,7 @@ abstract class Table implements TableInterface
     /**
      * @see DbAdapter::quoteDbExpr()
      */
-    static public function quoteDbExpr(DbExpr $value): string
+    public static function quoteDbExpr(DbExpr $value): string
     {
         return static::getConnection(true)
             ->quoteDbExpr($value);
@@ -461,7 +461,7 @@ abstract class Table implements TableInterface
     /**
      * @see DbAdapter::query()
      */
-    static public function query($query, ?string $fetchData = null)
+    public static function query($query, ?string $fetchData = null)
     {
         return static::getConnection(true)
             ->query($query, $fetchData);
@@ -470,7 +470,7 @@ abstract class Table implements TableInterface
     /**
      * @see DbAdapter::exec()
      */
-    static public function exec($query)
+    public static function exec($query)
     {
         return static::getConnection(true)
             ->exec($query);
@@ -479,7 +479,7 @@ abstract class Table implements TableInterface
     /**
      * @see DbAdapter::insert()
      */
-    static public function insert(array $data, $returning = false)
+    public static function insert(array $data, $returning = false)
     {
         return static::getConnection(true)
             ->insert(
@@ -497,7 +497,7 @@ abstract class Table implements TableInterface
      * @return RecordInterface
      * @throws \PDOException
      */
-    static public function upsert(array $data, string $columnName): RecordInterface
+    public static function upsert(array $data, string $columnName): RecordInterface
     {
         if (!isset($data[$columnName])) {
             throw new \InvalidArgumentException("There is no value for column {$columnName} in passed \$data");
@@ -525,7 +525,7 @@ abstract class Table implements TableInterface
     /**
      * @see DbAdapter::insertMany()
      */
-    static public function insertMany(array $columns, array $rows, $returning = false)
+    public static function insertMany(array $columns, array $rows, $returning = false)
     {
         return static::insertManyAsIs(
             $columns,
@@ -537,7 +537,7 @@ abstract class Table implements TableInterface
     /**
      * @see DbAdapter::insertMany()
      */
-    static public function insertManyAsIs(array $columns, array $rows, $returning = false)
+    public static function insertManyAsIs(array $columns, array $rows, $returning = false)
     {
         return static::getConnection(true)
             ->insertMany(
@@ -552,7 +552,7 @@ abstract class Table implements TableInterface
     /**
      * @see DbAdapter::update()
      */
-    static public function update(array $data, array $conditions, $returning = false)
+    public static function update(array $data, array $conditions, $returning = false)
     {
         return static::getConnection(true)
             ->update(
@@ -567,7 +567,7 @@ abstract class Table implements TableInterface
     /**
      * @see DbAdapterInterface::delete()
      */
-    static public function delete(array $conditions = [], $returning = false)
+    public static function delete(array $conditions = [], $returning = false)
     {
         return static::getConnection(true)
             ->delete(
@@ -582,7 +582,7 @@ abstract class Table implements TableInterface
      * Example: 'public.users'
      * @return string
      */
-    static public function getNameWithSchema(): string
+    public static function getNameWithSchema(): string
     {
         $tableStructure = static::getInstance()->getTableStructure();
         return ltrim($tableStructure::getSchema() . '.' . $tableStructure::getTableName(), '.');

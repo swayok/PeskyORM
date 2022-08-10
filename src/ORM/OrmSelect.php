@@ -52,7 +52,7 @@ class OrmSelect extends AbstractSelect
      * @param string|null $tableAlias - used for relations / alias for table in case if it is not $table::getAlias()
      * @return static
      */
-    static public function from(TableInterface $table, ?string $tableAlias = null)
+    public static function from(TableInterface $table, ?string $tableAlias = null)
     {
         return new static($table);
     }

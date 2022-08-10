@@ -22,7 +22,7 @@ class Utils
      * @return array|string|int|\PDOStatement|null
      * @throws \InvalidArgumentException
      */
-    static public function getDataFromStatement(\PDOStatement $statement, string $type = self::FETCH_ALL)
+    public static function getDataFromStatement(\PDOStatement $statement, string $type = self::FETCH_ALL)
     {
         $type = strtolower($type);
         if ($type === self::FETCH_STATEMENT) {
@@ -89,7 +89,7 @@ class Utils
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    static public function assembleWhereConditionsFromArray(
+    public static function assembleWhereConditionsFromArray(
         DbAdapterInterface $connection,
         array $conditions,
         \Closure $columnQuoter = null,
@@ -199,7 +199,7 @@ class Utils
      *      'type_cast' => ?string,
      * ]
      */
-    static public function analyzeColumnName(
+    public static function analyzeColumnName(
         DbAdapterInterface $connection,
         string $columnName,
         ?string $columnAlias = null,
@@ -255,7 +255,7 @@ class Utils
         return $ret;
     }
     
-    static public function splitColumnName(string $columnName): array
+    public static function splitColumnName(string $columnName): array
     {
         $typeCast = null;
         $columnAlias = null;
@@ -294,7 +294,7 @@ class Utils
      * @param DbAdapterInterface $connection
      * @return string
      */
-    static public function analyzeAndQuoteColumnNameForCondition(string $columnName, DbAdapterInterface $connection): string
+    public static function analyzeAndQuoteColumnNameForCondition(string $columnName, DbAdapterInterface $connection): string
     {
         $columnInfo = static::analyzeColumnName($connection, $columnName, null, null);
         $quotedTableAlias = '';
@@ -313,7 +313,7 @@ class Utils
      * @param DbAdapterInterface $connection
      * @return mixed - in most cases it is string
      */
-    static public function preprocessConditionValue($rawValue, DbAdapterInterface $connection)
+    public static function preprocessConditionValue($rawValue, DbAdapterInterface $connection)
     {
         if ($rawValue instanceof DbExpr) {
             return $connection->quoteDbExpr($rawValue);

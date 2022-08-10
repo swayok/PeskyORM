@@ -67,7 +67,7 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * @return $this
      */
-    final static public function getInstance(): TableStructureInterface
+    final public static function getInstance(): TableStructureInterface
     {
         if (!isset(self::$instances[static::class])) {
             self::$instances[static::class] = new static();
@@ -88,7 +88,7 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * @return $this
      */
-    final static public function i(): TableStructureInterface
+    final public static function i(): TableStructureInterface
     {
         return static::getInstance();
     }
@@ -163,23 +163,23 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * @param bool $writable - true: connection must have access to write data into DB
      */
-    static public function getConnectionName(bool $writable): string
+    public static function getConnectionName(bool $writable): string
     {
         return 'default';
     }
     
-    static public function getSchema(): ?string
+    public static function getSchema(): ?string
     {
         return null;
     }
     
-    static public function hasColumn(string $columnName): bool
+    public static function hasColumn(string $columnName): bool
     {
         return static::getInstance()
             ->_hasColumn($columnName);
     }
     
-    static public function getColumn(string $columnName): Column
+    public static function getColumn(string $columnName): Column
     {
         return static::getInstance()
             ->_getColumn($columnName);
@@ -188,33 +188,33 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * @return Column[] - key = column name
      */
-    static public function getColumns(): array
+    public static function getColumns(): array
     {
         return static::getInstance()->columns;
     }
     
-    static public function getPkColumnName(): ?string
+    public static function getPkColumnName(): ?string
     {
         $column = static::getPkColumn();
         return $column ? $column->getName() : null;
     }
     
-    static public function getPkColumn(): ?Column
+    public static function getPkColumn(): ?Column
     {
         return static::getInstance()->pk;
     }
     
-    static public function hasPkColumn(): bool
+    public static function hasPkColumn(): bool
     {
         return static::getInstance()->pk !== null;
     }
     
-    static public function hasFileColumns(): bool
+    public static function hasFileColumns(): bool
     {
         return count(static::getInstance()->fileColumns) > 0;
     }
     
-    static public function hasFileColumn(string $columnName): bool
+    public static function hasFileColumn(string $columnName): bool
     {
         return (
             static::getInstance()->_hasColumn($columnName)
@@ -227,7 +227,7 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * @return Column[] = array('column_name' => Column)
      */
-    static public function getFileColumns(): array
+    public static function getFileColumns(): array
     {
         return static::getInstance()->fileColumns;
     }
@@ -235,7 +235,7 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * @return Column[]
      */
-    static public function getColumnsThatExistInDb(): array
+    public static function getColumnsThatExistInDb(): array
     {
         return static::getInstance()->columsThatExistInDb;
     }
@@ -243,18 +243,18 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * @return Column[]
      */
-    static public function getColumnsThatDoNotExistInDb(): array
+    public static function getColumnsThatDoNotExistInDb(): array
     {
         return static::getInstance()->columsThatDoNotExistInDb;
     }
     
-    static public function hasRelation(string $relationName): bool
+    public static function hasRelation(string $relationName): bool
     {
         return static::getInstance()
             ->_hasRelation($relationName);
     }
     
-    static public function getRelation(string $relationName): Relation
+    public static function getRelation(string $relationName): Relation
     {
         return static::getInstance()
             ->_getRelation($relationName);
@@ -263,7 +263,7 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * @return Relation[]
      */
-    static public function getRelations(): array
+    public static function getRelations(): array
     {
         return static::getInstance()->relations;
     }
@@ -271,7 +271,7 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * @return Relation[][]
      */
-    static public function getColumnsRelations(): array
+    public static function getColumnsRelations(): array
     {
         return static::getInstance()->columnsRelations;
     }
@@ -279,7 +279,7 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * @return Relation[]
      */
-    static public function getColumnRelations(string $columnName): array
+    public static function getColumnRelations(string $columnName): array
     {
         $instance = static::getInstance();
         $instance->_getColumn($columnName);

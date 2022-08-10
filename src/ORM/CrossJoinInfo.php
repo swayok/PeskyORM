@@ -16,7 +16,7 @@ class CrossJoinInfo extends AbstractJoinInfo
      * @return $this
      * @throws \InvalidArgumentException
      */
-    static public function create(string $joinName, DbExpr $joinQuery)
+    public static function create(string $joinName, DbExpr $joinQuery)
     {
         return new static($joinName, $joinQuery);
     }

@@ -13,7 +13,7 @@ interface DbAdapterInterface
      * Class name that implements DbConnectionConfigInterface
      * @return string
      */
-    static public function getConnectionConfigClass(): string;
+    public static function getConnectionConfigClass(): string;
     
     /**
      * Connect to DB once
@@ -186,7 +186,7 @@ interface DbAdapterInterface
      * @param bool $canBeAJsonSelector - test if $name contains a JSON selector like 'col_name -> json_key'
      * @return bool
      */
-    static public function isValidDbEntityName(string $name, bool $canBeAJsonSelector = true): bool;
+    public static function isValidDbEntityName(string $name, bool $canBeAJsonSelector = true): bool;
     
     /**
      * Quote passed value
@@ -332,6 +332,6 @@ interface DbAdapterInterface
      * Note: throw exception if adapter does not support this feature
      * @return DbExpr
      */
-    static public function getExpressionToSetDefaultValueForAColumn(): DbExpr;
+    public static function getExpressionToSetDefaultValueForAColumn(): DbExpr;
     
 }

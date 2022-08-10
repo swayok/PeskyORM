@@ -21,7 +21,7 @@ class KeyValuePair
      * @param mixed $value
      * @return static
      */
-    static public function create($key, $value)
+    public static function create($key, $value)
     {
         return new static($key, $value);
     }

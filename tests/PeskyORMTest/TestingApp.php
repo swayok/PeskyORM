@@ -18,15 +18,15 @@ class TestingApp
     /**
      * @var Postgres
      */
-    static public $pgsqlConnection;
+    public static $pgsqlConnection;
     /**
      * @var Mysql
      */
-    static public $mysqlConnection;
+    public static $mysqlConnection;
     static protected $dataForDb;
     static protected $dataForDbMinimal;
     
-    static public function getMysqlConnection()
+    public static function getMysqlConnection()
     {
         if (!static::$mysqlConnection) {
             static::$mysqlConnection = DbConnectionsManager::createConnection(
@@ -41,7 +41,7 @@ class TestingApp
         return static::$mysqlConnection;
     }
     
-    static public function getPgsqlConnection()
+    public static function getPgsqlConnection()
     {
         if (!static::$pgsqlConnection) {
             static::$pgsqlConnection = DbConnectionsManager::createConnection(
@@ -64,7 +64,7 @@ class TestingApp
         return include __DIR__ . '/../configs/global.php';
     }
     
-    static public function getRecordsForDb($table, $limit = 0)
+    public static function getRecordsForDb($table, $limit = 0)
     {
         if ($limit <= 10) {
             if (!static::$dataForDbMinimal) {
@@ -84,7 +84,7 @@ class TestingApp
         }
     }
     
-    static public function fillAdminsTable($limit = 0): array
+    public static function fillAdminsTable($limit = 0): array
     {
         static::$pgsqlConnection->exec('TRUNCATE TABLE admins');
         $data = static::getRecordsForDb('admins', $limit);
@@ -92,7 +92,7 @@ class TestingApp
         return $data;
     }
     
-    static public function fillSettingsTable($limit = 0): array
+    public static function fillSettingsTable($limit = 0): array
     {
         static::$pgsqlConnection->exec('TRUNCATE TABLE settings');
         $data = static::getRecordsForDb('settings', $limit);
@@ -100,7 +100,7 @@ class TestingApp
         return $data;
     }
     
-    static public function clearTables(DbAdapterInterface $adapter)
+    public static function clearTables(DbAdapterInterface $adapter)
     {
         if ($adapter->inTransaction()) {
             $adapter->rollBack();
@@ -109,7 +109,7 @@ class TestingApp
         $adapter->exec('TRUNCATE TABLE admins');
     }
     
-    static public function cleanInstancesOfDbTablesAndRecordsAndStructures()
+    public static function cleanInstancesOfDbTablesAndRecordsAndStructures()
     {
         $class = new \ReflectionClass(Table::class);
         $method = $class->getMethod('resetInstances');

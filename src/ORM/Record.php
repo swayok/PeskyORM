@@ -73,7 +73,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param bool $haltOnUnknownColumnNames
      * @return static
      */
-    static public function fromArray(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true)
+    public static function fromArray(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true)
     {
         return static::newEmptyRecord()
             ->fromData($data, $isFromDb, $haltOnUnknownColumnNames);
@@ -89,7 +89,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $readRelatedRecords
      * @return static
      */
-    static public function read($pkValue, array $columns = [], array $readRelatedRecords = [])
+    public static function read($pkValue, array $columns = [], array $readRelatedRecords = [])
     {
         return static::newEmptyRecord()
             ->fetchByPrimaryKey($pkValue, $columns, $readRelatedRecords);
@@ -105,7 +105,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $readRelatedRecords
      * @return static
      */
-    static public function find(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = [])
+    public static function find(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = [])
     {
         return static::newEmptyRecord()
             ->fetch($conditionsAndOptions, $columns, $readRelatedRecords);
@@ -115,7 +115,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Create new empty record
      * @return static
      */
-    static public function newEmptyRecord()
+    public static function newEmptyRecord()
     {
         return new static();
     }
@@ -124,7 +124,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Create new empty record with enabled TrustModeForDbData
      * @return static
      */
-    static public function newEmptyRecordForTrustedDbData()
+    public static function newEmptyRecordForTrustedDbData()
     {
         $record = static::newEmptyRecord();
         $record->enableTrustModeForDbData();
@@ -135,7 +135,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Create new empty record (shortcut)
      * @return static
      */
-    static public function _()
+    public static function _()
     {
         return static::newEmptyRecord();
     }
@@ -144,7 +144,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Create new empty record (shortcut)
      * @return static
      */
-    static public function new1()
+    public static function new1()
     {
         return static::newEmptyRecord();
     }
@@ -157,7 +157,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @return TableStructure|TableStructureInterface
      */
-    static public function getTableStructure(): TableStructureInterface
+    public static function getTableStructure(): TableStructureInterface
     {
         return static::getTable()->getStructure();
     }
@@ -175,7 +175,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param bool $includeFormats - include columns formats ({column}_as_array, etc.)
      * @return Column[] - key = column name
      */
-    static public function getColumns(bool $includeFormats = false): array
+    public static function getColumns(bool $includeFormats = false): array
     {
         return self::getCachedColumnsOrRelations($includeFormats ? 'columns_and_formats' : 'columns');
     }
@@ -183,7 +183,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @return Column[] - key = column name
      */
-    static public function getNotPrivateColumns(): array
+    public static function getNotPrivateColumns(): array
     {
         return self::getCachedColumnsOrRelations('not_private_columns');
     }
@@ -191,7 +191,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @return Column[] - key = column name
      */
-    static public function getColumnsThatExistInDb(): array
+    public static function getColumnsThatExistInDb(): array
     {
         return self::getCachedColumnsOrRelations('db_columns');
     }
@@ -199,7 +199,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @return Column[] - key = column name
      */
-    static public function getColumnsThatDoNotExistInDb(): array
+    public static function getColumnsThatDoNotExistInDb(): array
     {
         return self::getCachedColumnsOrRelations('not_db_columns');
     }
@@ -249,7 +249,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return Column
      * @throws \InvalidArgumentException
      */
-    static public function getColumn(string $name, string &$format = null): Column
+    public static function getColumn(string $name, string &$format = null): Column
     {
         $columns = static::getColumns(true);
         if (!isset($columns[$name])) {
@@ -265,7 +265,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param string $name
      * @return bool
      */
-    static public function hasColumn(string $name): bool
+    public static function hasColumn(string $name): bool
     {
         return static::_hasColumn($name, true);
     }
@@ -275,7 +275,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         return isset(static::getColumns($includeFormatters)[$name]);
     }
     
-    static public function getPrimaryKeyColumn(): Column
+    public static function getPrimaryKeyColumn(): Column
     {
         $column = static::getCachedColumnsOrRelations('pk_column');
         if (!$column) {
@@ -284,7 +284,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         return $column;
     }
     
-    static public function hasPrimaryKeyColumn(): bool
+    public static function hasPrimaryKeyColumn(): bool
     {
         return (bool)static::getCachedColumnsOrRelations('pk_column');
     }
@@ -292,7 +292,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @return string
      */
-    static public function getPrimaryKeyColumnName(): string
+    public static function getPrimaryKeyColumnName(): string
     {
         return static::getPrimaryKeyColumn()
             ->getName();
@@ -301,7 +301,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @return Relation[]
      */
-    static public function getRelations(): array
+    public static function getRelations(): array
     {
         return static::getCachedColumnsOrRelations('relations');
     }
@@ -311,7 +311,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return Relation
      * @throws \InvalidArgumentException
      */
-    static public function getRelation(string $name): Relation
+    public static function getRelation(string $name): Relation
     {
         $relations = static::getRelations();
         if (!isset($relations[$name])) {
@@ -326,7 +326,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param string $name
      * @return bool
      */
-    static public function hasRelation($name): bool
+    public static function hasRelation($name): bool
     {
         return isset(static::getRelations()[$name]);
     }
@@ -334,12 +334,12 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * @return Column[]
      */
-    static public function getFileColumns(): array
+    public static function getFileColumns(): array
     {
         return static::getCachedColumnsOrRelations('file_columns');
     }
     
-    static public function hasFileColumns(): bool
+    public static function hasFileColumns(): bool
     {
         return count(static::getFileColumns()) > 0;
     }
@@ -1646,7 +1646,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param bool $isFromDb
      * @return array - errors
      */
-    static public function validateValue($column, $value, bool $isFromDb = false)
+    public static function validateValue($column, $value, bool $isFromDb = false)
     {
         if (is_string($column)) {
             $column = static::getColumn($column);
@@ -2635,7 +2635,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $data
      * @return array
      */
-    static public function normalizeReadOnlyData(array $data): array
+    public static function normalizeReadOnlyData(array $data): array
     {
         $columns = static::getColumns();
         $relations = static::getRelations();

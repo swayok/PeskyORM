@@ -69,7 +69,7 @@ class RecordValue
     /**
      * @return static
      */
-    static public function create(Column $dbTableColumn, RecordInterface $record)
+    public static function create(Column $dbTableColumn, RecordInterface $record)
     {
         return new static($dbTableColumn, $record);
     }

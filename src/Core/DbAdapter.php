@@ -78,7 +78,7 @@ abstract class DbAdapter implements DbAdapterInterface
     /**
      * Set a wrapper to PDO connection. Wrapper called on any new DB connection
      */
-    static public function setConnectionWrapper(\Closure $wrapper)
+    public static function setConnectionWrapper(\Closure $wrapper)
     {
         static::$connectionWrapper = $wrapper;
     }
@@ -86,7 +86,7 @@ abstract class DbAdapter implements DbAdapterInterface
     /**
      * Remove PDO connection wrapper. This does not unwrap existing PDO objects
      */
-    static public function unsetConnectionWrapper()
+    public static function unsetConnectionWrapper()
     {
         static::$connectionWrapper = null;
     }
@@ -190,12 +190,12 @@ abstract class DbAdapter implements DbAdapterInterface
      * Use when you have problems related to transactions
      * @param bool $enable = true: enable; false: disable
      */
-    static public function enableTransactionTraces(bool $enable = true)
+    public static function enableTransactionTraces(bool $enable = true)
     {
         static::$isTransactionTracesEnabled = $enable;
     }
     
-    static public function getExpressionToSetDefaultValueForAColumn(): DbExpr
+    public static function getExpressionToSetDefaultValueForAColumn(): DbExpr
     {
         return DbExpr::create('DEFAULT', false);
     }
@@ -765,7 +765,7 @@ abstract class DbAdapter implements DbAdapterInterface
      */
     abstract protected function quoteJsonSelectorExpression(array $sequence): string;
     
-    static public function isValidDbEntityName(string $name, bool $canBeAJsonSelector = true): bool
+    public static function isValidDbEntityName(string $name, bool $canBeAJsonSelector = true): bool
     {
         return (
             $name === '*'
@@ -779,7 +779,7 @@ abstract class DbAdapter implements DbAdapterInterface
         return preg_match('%^[a-zA-Z_][a-zA-Z_0-9]*(\.[a-zA-Z_0-9]+|\.\*)?$%i', $name) > 0;
     }
     
-    static public function isValidJsonSelector(string $name): bool
+    public static function isValidJsonSelector(string $name): bool
     {
         $parts = preg_split('%\s*[-#]>>?\s*%', $name);
         if (count($parts) < 2) {
@@ -859,7 +859,7 @@ abstract class DbAdapter implements DbAdapterInterface
     /**
      * Convert passed $array to string compatible with sql query
      */
-    static public function serializeArray(array $array): string
+    public static function serializeArray(array $array): string
     {
         return json_encode($array);
     }

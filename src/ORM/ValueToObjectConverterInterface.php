@@ -7,12 +7,12 @@ interface ValueToObjectConverterInterface
     /**
      * @return static
      */
-    static public function createObjectFromArray(array $data);
+    public static function createObjectFromArray(array $data);
     
     /**
      * Convert other $object to object of this class
      * @param object $object
      * @return static
      */
-    static public function createObjectFromObject($object);
+    public static function createObjectFromObject($object);
 }

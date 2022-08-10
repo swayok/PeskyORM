@@ -11,7 +11,7 @@ class TestingInvalidColumnsInTableStructure extends TableStructure
     /**
      * @return string
      */
-    static public function getTableName(): string
+    public static function getTableName(): string
     {
         return 'invalid';
     }

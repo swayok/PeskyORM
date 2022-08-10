@@ -10,88 +10,88 @@ interface TableStructureInterface
     /**
      * @return $this
      */
-    static public function getInstance(): TableStructureInterface;
+    public static function getInstance(): TableStructureInterface;
     
     /**
      * @param bool $writable - true: connection must have access to write data into DB
      * @return string
      */
-    static public function getConnectionName(bool $writable): string;
+    public static function getConnectionName(bool $writable): string;
     
     /**
      * @return string|null
      */
-    static public function getSchema(): ?string;
+    public static function getSchema(): ?string;
     
     /**
      * @return string
      */
-    static public function getTableName(): string;
+    public static function getTableName(): string;
     
     /**
      * @param string $columnName
      * @return bool
      */
-    static public function hasColumn(string $columnName): bool;
+    public static function hasColumn(string $columnName): bool;
     
     /**
      * @param string $columnName
      * @return Column
      */
-    static public function getColumn(string $columnName): Column;
+    public static function getColumn(string $columnName): Column;
     
     /**
      * @return Column[]
      */
-    static public function getColumns(): array;
+    public static function getColumns(): array;
     
     /**
      * @return string|null
      */
-    static public function getPkColumnName(): ?string;
+    public static function getPkColumnName(): ?string;
     
     /**
      * @return Column|null
      */
-    static public function getPkColumn(): ?Column;
+    public static function getPkColumn(): ?Column;
     
     /**
      * @return bool
      */
-    static public function hasPkColumn(): bool;
+    public static function hasPkColumn(): bool;
     
     /**
      * @return bool
      */
-    static public function hasFileColumns(): bool;
+    public static function hasFileColumns(): bool;
     
     /**
      * @param string $columnName
      * @return bool
      */
-    static public function hasFileColumn(string $columnName): bool;
+    public static function hasFileColumn(string $columnName): bool;
     
     /**
      * @return Column[] = array('column_name' => Column)
      */
-    static public function getFileColumns(): array;
+    public static function getFileColumns(): array;
     
     /**
      * @param string $relationName
      * @return bool
      */
-    static public function hasRelation(string $relationName): bool;
+    public static function hasRelation(string $relationName): bool;
     
     /**
      * @param string $relationName
      * @return Relation
      */
-    static public function getRelation(string $relationName): Relation;
+    public static function getRelation(string $relationName): Relation;
     
     /**
      * @return Relation[]
      */
-    static public function getRelations(): array;
+    public static function getRelations(): array;
     
     
 }

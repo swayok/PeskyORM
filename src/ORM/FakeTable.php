@@ -27,7 +27,7 @@ abstract class FakeTable extends Table
      * @param string $fakeTableName
      * @return FakeTable
      */
-    static public function mimicTable(TableInterface $tableToMimic, $fakeTableName)
+    public static function mimicTable(TableInterface $tableToMimic, $fakeTableName)
     {
         $reflection = new \ReflectionClass($tableToMimic);
         return static::makeNewFakeTable(
@@ -52,7 +52,7 @@ abstract class FakeTable extends Table
      * @return FakeTable
      * @throws \InvalidArgumentException
      */
-    static public function makeNewFakeTable(
+    public static function makeNewFakeTable(
         string $tableName,
         $columnsOrTableStructure = null,
         ?DbAdapterInterface $connection = null,
@@ -107,7 +107,7 @@ VIEW;
      * @param bool $writable - true: connection must have access to write data into DB
      * @return DbAdapterInterface
      */
-    static public function getConnection($writable = false): DbAdapterInterface
+    public static function getConnection($writable = false): DbAdapterInterface
     {
         return static::getInstance()->connection ?: parent::getConnection($writable);
     }

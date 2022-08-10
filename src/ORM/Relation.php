@@ -47,7 +47,7 @@ class Relation
      * @param string $foreignColumnName
      * @return static
      */
-    static public function create(
+    public static function create(
         string $localColumnName,
         string $type,
         $foreignTableClass,

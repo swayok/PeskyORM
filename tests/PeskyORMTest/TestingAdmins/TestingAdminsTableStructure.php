@@ -12,12 +12,12 @@ use PeskyORM\ORM\TableStructure;
 class TestingAdminsTableStructure extends TableStructure
 {
     
-    static public function getTableName(): string
+    public static function getTableName(): string
     {
         return 'admins';
     }
     
-    static public function getConnectionName(bool $writable): string
+    public static function getConnectionName(bool $writable): string
     {
         return $writable ? 'writable' : parent::getConnectionName(false);
     }

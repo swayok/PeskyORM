@@ -14,12 +14,12 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
 {
     use TestDataForAdminsTable;
     
-    static public function setUpBeforeClass(): void
+    public static function setUpBeforeClass(): void
     {
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    static public function tearDownAfterClass(): void
+    public static function tearDownAfterClass(): void
     {
         TestingApp::clearTables(static::getValidAdapter());
     }

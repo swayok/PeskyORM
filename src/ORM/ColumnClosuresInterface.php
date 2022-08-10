@@ -20,7 +20,7 @@ interface ColumnClosuresInterface
      *      This usually means that normalization and validation not needed
      * @return RecordValue
      */
-    static public function valueSetter($newValue, bool $isFromDb, RecordValue $valueContainer, bool $trustDataReceivedFromDb): RecordValue;
+    public static function valueSetter($newValue, bool $isFromDb, RecordValue $valueContainer, bool $trustDataReceivedFromDb): RecordValue;
     
     /**
      * Slightly modify value before validation and value setter. Uses $column->isEmptyStringMustBeConvertedToNull(),
@@ -31,7 +31,7 @@ interface ColumnClosuresInterface
      * @param bool $isForValidation
      * @return mixed
      */
-    static public function valuePreprocessor($value, bool $isFromDb, bool $isForValidation, Column $column);
+    public static function valuePreprocessor($value, bool $isFromDb, bool $isForValidation, Column $column);
     
     /**
      * Get value
@@ -39,7 +39,7 @@ interface ColumnClosuresInterface
      * @param string|null $format
      * @return mixed
      */
-    static public function valueGetter(RecordValue $value, ?string $format = null);
+    public static function valueGetter(RecordValue $value, ?string $format = null);
     
     /**
      * Tests if value is set
@@ -47,7 +47,7 @@ interface ColumnClosuresInterface
      * @param bool $checkDefaultValue
      * @return bool
      */
-    static public function valueExistenceChecker(RecordValue $valueContainer, bool $checkDefaultValue = false): bool;
+    public static function valueExistenceChecker(RecordValue $valueContainer, bool $checkDefaultValue = false): bool;
     
     /**
      * Validates value. Uses valueValidatorExtender
@@ -57,7 +57,7 @@ interface ColumnClosuresInterface
      * @param Column $column
      * @return array
      */
-    static public function valueValidator($value, bool $isFromDb, bool $isForCondition, Column $column): array;
+    public static function valueValidator($value, bool $isFromDb, bool $isForCondition, Column $column): array;
     
     /**
      * Extends value validation in addition to valueValidator
@@ -66,7 +66,7 @@ interface ColumnClosuresInterface
      * @param Column $column
      * @return array - list of error messages (empty list = no errors)
      */
-    static public function valueValidatorExtender($value, bool $isFromDb, Column $column): array;
+    public static function valueValidatorExtender($value, bool $isFromDb, Column $column): array;
     
     /**
      * Validates if value is allowed
@@ -75,7 +75,7 @@ interface ColumnClosuresInterface
      * @param Column $column
      * @return array
      */
-    static public function valueIsAllowedValidator($value, bool $isFromDb, Column $column): array;
+    public static function valueIsAllowedValidator($value, bool $isFromDb, Column $column): array;
     
     /**
      * Normalize value to fit column's data type
@@ -84,7 +84,7 @@ interface ColumnClosuresInterface
      * @param Column $column
      * @return AbstractSelect|bool|DbExpr|float|int|string|UploadedFile|null
      */
-    static public function valueNormalizer($value, bool $isFromDb, Column $column);
+    public static function valueNormalizer($value, bool $isFromDb, Column $column);
     
     /**
      * Additional actions after value saving to DB (or instead of saving if column does not exist in DB)
@@ -93,7 +93,7 @@ interface ColumnClosuresInterface
      * @param array $savedData
      * @return void
      */
-    static public function valueSavingExtender(RecordValue $valueContainer, bool $isUpdate, array $savedData);
+    public static function valueSavingExtender(RecordValue $valueContainer, bool $isUpdate, array $savedData);
     
     /**
      * Additional actions after record deleted from DB
@@ -101,7 +101,7 @@ interface ColumnClosuresInterface
      * @param bool $deleteFiles
      * @return void
      */
-    static public function valueDeleteExtender(RecordValue $valueContainer, bool $deleteFiles);
+    public static function valueDeleteExtender(RecordValue $valueContainer, bool $deleteFiles);
     
     /**
      * Formats value according to required $format
@@ -109,6 +109,6 @@ interface ColumnClosuresInterface
      * @param string $format
      * @return mixed
      */
-    static public function valueFormatter(RecordValue $valueContainer, string $format);
+    public static function valueFormatter(RecordValue $valueContainer, string $format);
     
 }

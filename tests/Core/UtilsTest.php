@@ -17,12 +17,12 @@ class UtilsTest extends BaseTestCase
     /** @var PostgresConfig */
     static protected $dbConnectionConfig;
     
-    static public function setUpBeforeClass(): void
+    public static function setUpBeforeClass(): void
     {
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    static public function tearDownAfterClass(): void
+    public static function tearDownAfterClass(): void
     {
         TestingApp::clearTables(static::getValidAdapter());
     }
@@ -47,7 +47,7 @@ class UtilsTest extends BaseTestCase
         return $adapter;
     }
     
-    static public function getTestDataForAdminsTableInsert()
+    public static function getTestDataForAdminsTableInsert()
     {
         return [
             [

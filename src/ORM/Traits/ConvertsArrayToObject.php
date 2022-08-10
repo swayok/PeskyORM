@@ -4,7 +4,7 @@ namespace PeskyORM\ORM\Traits;
 
 trait ConvertsArrayToObject
 {
-    static public function createObjectFromArray(array $data)
+    public static function createObjectFromArray(array $data)
     {
         $obj = new static();
         $unknownProperties = [];

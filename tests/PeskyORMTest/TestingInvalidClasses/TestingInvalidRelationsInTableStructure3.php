@@ -10,7 +10,7 @@ use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 class TestingInvalidRelationsInTableStructure3 extends TableStructure
 {
     
-    static public function getTableName(): string
+    public static function getTableName(): string
     {
         return 'some_table';
     }

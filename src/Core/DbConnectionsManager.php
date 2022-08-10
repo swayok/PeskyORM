@@ -34,7 +34,7 @@ class DbConnectionsManager
      * @param $className - class must implement \PeskyORM\Core\DbAdapterInterface
      * @throws \InvalidArgumentException
      */
-    static public function addAdapter($name, $className)
+    public static function addAdapter($name, $className)
     {
         if (!in_array(DbAdapterInterface::class, class_implements($className), true)) {
             throw new \InvalidArgumentException("Class [$className] must implement " . DbAdapterInterface::class . ' interface');
@@ -50,7 +50,7 @@ class DbConnectionsManager
      * @return DbAdapter|DbAdapterInterface
      * @throws \InvalidArgumentException
      */
-    static public function createConnection(
+    public static function createConnection(
         $connectionName,
         $adapterName,
         DbConnectionConfigInterface $connectionConfig,
@@ -80,7 +80,7 @@ class DbConnectionsManager
      * @return DbAdapter|DbAdapterInterface
      * @throws \InvalidArgumentException
      */
-    static public function createConnectionFromArray($connectionName, array $connectionInfo, $ignoreDuplicate = false)
+    public static function createConnectionFromArray($connectionName, array $connectionInfo, $ignoreDuplicate = false)
     {
         if (empty($connectionInfo['driver']) && empty($connectionInfo['adapter'])) {
             throw new \InvalidArgumentException('$connectionInfo must contain a value for key \'driver\' or \'adapter\'');
@@ -104,7 +104,7 @@ class DbConnectionsManager
      * @param bool $ignoreDuplicate - true: will ignore duplicate connections
      * @throws \InvalidArgumentException
      */
-    static public function addAlternativeNameForConnection($connectionName, $alternativeName, $ignoreDuplicate = false)
+    public static function addAlternativeNameForConnection($connectionName, $alternativeName, $ignoreDuplicate = false)
     {
         if (isset(self::$connections[$alternativeName]) && !$ignoreDuplicate) {
             throw new \InvalidArgumentException("DB connection with name [$alternativeName] already exists");
@@ -118,7 +118,7 @@ class DbConnectionsManager
      * @return DbAdapter|DbAdapterInterface
      * @throws \InvalidArgumentException
      */
-    static public function getConnection($connectionName)
+    public static function getConnection($connectionName)
     {
         if (!isset(self::$connections[$connectionName])) {
             throw new \InvalidArgumentException("DB connection with name [$connectionName] not found");
@@ -130,7 +130,7 @@ class DbConnectionsManager
      * @param string $connectionName
      * @return bool
      */
-    static public function hasConnection($connectionName)
+    public static function hasConnection($connectionName)
     {
         return isset(self::$connections[$connectionName]);
     }
@@ -138,7 +138,7 @@ class DbConnectionsManager
     /**
      * Disconnect all adapters
      */
-    static public function disconnectAll()
+    public static function disconnectAll()
     {
         foreach (self::$connections as $adapter) {
             $adapter->disconnect();
@@ -148,7 +148,7 @@ class DbConnectionsManager
     /**
      * @return DbAdapter[]|DbAdapterInterface[]
      */
-    static public function getAll()
+    public static function getAll()
     {
         return self::$connections;
     }

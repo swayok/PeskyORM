@@ -16,7 +16,7 @@ abstract class ValueToObjectConverter implements ValueToObjectConverterInterface
         $this->other = $unknownProperties;
     }
     
-    static public function createObjectFromObject($object) {
+    public static function createObjectFromObject($object) {
         throw new \BadMethodCallException('Cannot convert object of class ' . get_class($object). ' to object of class ' . static::class);
     }
 }

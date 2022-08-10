@@ -18,7 +18,7 @@ class PeskyOrmPdoProfiler
     /**
      * Init PDO profiling
      */
-    static public function init()
+    public static function init()
     {
         DbAdapter::setConnectionWrapper(function (DbAdapterInterface $adapter, \PDO $pdo) {
             $name = $adapter->getConnectionConfig()
@@ -34,7 +34,7 @@ class PeskyOrmPdoProfiler
      * @param TraceablePDO $pdo
      * @param string|null $name Optional connection name
      */
-    static public function addConnection(TraceablePDO $pdo, ?string $name = null)
+    public static function addConnection(TraceablePDO $pdo, ?string $name = null)
     {
         if ($name === null) {
             $name = spl_object_hash($pdo);
@@ -47,12 +47,12 @@ class PeskyOrmPdoProfiler
      *
      * @return TraceablePDO[]
      */
-    static public function getConnections(): array
+    public static function getConnections(): array
     {
         return static::$connections;
     }
     
-    static public function collect(): array
+    public static function collect(): array
     {
         $data = [
             'statements_count' => 0,
@@ -116,7 +116,7 @@ class PeskyOrmPdoProfiler
         ];
     }
     
-    static public function formatDuration(float $seconds): string
+    public static function formatDuration(float $seconds): string
     {
         if ($seconds < 0.001) {
             return round($seconds * 1000000) . 'μs';
@@ -127,7 +127,7 @@ class PeskyOrmPdoProfiler
         return round($seconds, 2) . 's';
     }
     
-    static public function formatBytes(int $size, int $precision = 2): string
+    public static function formatBytes(int $size, int $precision = 2): string
     {
         if ($size === 0) {
             return '0B';

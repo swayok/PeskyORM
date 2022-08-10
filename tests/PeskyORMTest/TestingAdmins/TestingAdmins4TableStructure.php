@@ -12,7 +12,7 @@ class TestingAdmins4TableStructure extends TableStructure
     
     static protected $autodetectColumnsConfigs = true;
     
-    static public function getTableName(): string
+    public static function getTableName(): string
     {
         return 'admins';
     }

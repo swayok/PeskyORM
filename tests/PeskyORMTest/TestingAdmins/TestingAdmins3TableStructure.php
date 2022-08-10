@@ -11,7 +11,7 @@ use PeskyORM\ORM\TableStructure;
 class TestingAdmins3TableStructure extends TableStructure
 {
     
-    static public function getTableName(): string
+    public static function getTableName(): string
     {
         return 'admins';
     }

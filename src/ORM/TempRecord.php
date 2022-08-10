@@ -15,7 +15,7 @@ class TempRecord implements RecordInterface
      * Create new empty record
      * @return static
      */
-    static public function newEmptyRecord()
+    public static function newEmptyRecord()
     {
         return new static();
     }
@@ -23,14 +23,14 @@ class TempRecord implements RecordInterface
     /**
      * @return static
      */
-    static public function newTempRecord(array $data, bool $existsInDb = false, ?string $tableName = null)
+    public static function newTempRecord(array $data, bool $existsInDb = false, ?string $tableName = null)
     {
         return static::newEmptyRecord()
             ->fromData($data, $existsInDb)
             ->setTableName($tableName);
     }
     
-    static public function getTable()
+    public static function getTable()
     {
         throw new \BadMethodCallException('Temp Record has not Table');
     }
@@ -39,7 +39,7 @@ class TempRecord implements RecordInterface
      * @param string $name
      * @return bool
      */
-    static public function hasColumn(string $name): bool
+    public static function hasColumn(string $name): bool
     {
         return false;
     }
@@ -49,7 +49,7 @@ class TempRecord implements RecordInterface
      * @param string|null $format - filled when $name is something like 'timestamp_as_date' (returns 'date')
      * @return Column
      */
-    static public function getColumn(string $name, string &$format = null)
+    public static function getColumn(string $name, string &$format = null)
     {
         throw new \BadMethodCallException('TempRecord has no Columns');
     }

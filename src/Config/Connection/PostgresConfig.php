@@ -34,7 +34,7 @@ class PostgresConfig implements DbConnectionConfigInterface
      * @return static
      * @throws \InvalidArgumentException
      */
-    static public function fromArray(array $config, ?string $name = null)
+    public static function fromArray(array $config, ?string $name = null)
     {
         $dbName = $config['database'] ?? null;
         $user = $config['username'] ?? null;

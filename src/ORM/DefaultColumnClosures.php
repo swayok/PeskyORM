@@ -13,7 +13,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
     /**
      * @throws \BadMethodCallException
      */
-    static public function valueSetter($newValue, bool $isFromDb, RecordValue $valueContainer, bool $trustDataReceivedFromDb): RecordValue
+    public static function valueSetter($newValue, bool $isFromDb, RecordValue $valueContainer, bool $trustDataReceivedFromDb): RecordValue
     {
         $column = $valueContainer->getColumn();
         if (!$isFromDb && !$column->isValueCanBeSetOrChanged()) {
@@ -61,7 +61,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         return $valueContainer;
     }
     
-    static public function valuePreprocessor($value, bool $isFromDb, bool $isForValidation, Column $column)
+    public static function valuePreprocessor($value, bool $isFromDb, bool $isForValidation, Column $column)
     {
         if ($isFromDb && !$isForValidation) {
             return $value;
@@ -82,7 +82,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         return $value;
     }
     
-    static public function valueGetter(RecordValue $value, ?string $format = null)
+    public static function valueGetter(RecordValue $value, ?string $format = null)
     {
         if ($format !== null) {
             return call_user_func(
@@ -96,7 +96,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         }
     }
     
-    static public function valueExistenceChecker(RecordValue $valueContainer, bool $checkDefaultValue = false): bool
+    public static function valueExistenceChecker(RecordValue $valueContainer, bool $checkDefaultValue = false): bool
     {
         return $checkDefaultValue ? $valueContainer->hasValueOrDefault() : $valueContainer->hasValue();
     }
@@ -104,7 +104,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
     /**
      * @throws \UnexpectedValueException
      */
-    static public function valueValidator($value, bool $isFromDb, bool $isForCondition, Column $column): array
+    public static function valueValidator($value, bool $isFromDb, bool $isForCondition, Column $column): array
     {
         $errors = RecordValueHelpers::isValidDbColumnValue(
             $column,
@@ -133,7 +133,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         return $errors;
     }
     
-    static public function valueIsAllowedValidator($value, bool $isFromDb, Column $column): array
+    public static function valueIsAllowedValidator($value, bool $isFromDb, Column $column): array
     {
         return RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn(
             $column,
@@ -143,22 +143,22 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         );
     }
     
-    static public function valueNormalizer($value, bool $isFromDb, Column $column)
+    public static function valueNormalizer($value, bool $isFromDb, Column $column)
     {
         return $isFromDb
             ? RecordValueHelpers::normalizeValueReceivedFromDb($value, $column->getType())
             : RecordValueHelpers::normalizeValue($value, $column->getType());
     }
     
-    static public function valueSavingExtender(RecordValue $valueContainer, bool $isUpdate, array $savedData)
+    public static function valueSavingExtender(RecordValue $valueContainer, bool $isUpdate, array $savedData)
     {
     }
     
-    static public function valueDeleteExtender(RecordValue $valueContainer, bool $deleteFiles)
+    public static function valueDeleteExtender(RecordValue $valueContainer, bool $deleteFiles)
     {
     }
     
-    static public function valueValidatorExtender($value, bool $isFromDb, Column $column): array
+    public static function valueValidatorExtender($value, bool $isFromDb, Column $column): array
     {
         return [];
     }
@@ -166,7 +166,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
     /**
      * @throws \InvalidArgumentException
      */
-    static public function valueFormatter(RecordValue $valueContainer, string $format)
+    public static function valueFormatter(RecordValue $valueContainer, string $format)
     {
         $column = $valueContainer->getColumn();
         $customFormatters = $column->getCustomValueFormatters();

@@ -317,19 +317,19 @@ class Column
     protected $classNameForValueToObjectFormatter = null;
     
     // service params
-    static public $fileTypes = [
+    public static $fileTypes = [
         self::TYPE_FILE,
         self::TYPE_IMAGE,
     ];
     
-    static public $imageFileTypes = [
+    public static $imageFileTypes = [
         self::TYPE_IMAGE,
     ];
     
     /**
      * @return $this
      */
-    static public function create(string $type, ?string $name = null)
+    public static function create(string $type, ?string $name = null)
     {
         return new static($name, $type);
     }
@@ -961,7 +961,7 @@ class Column
         return $this;
     }
     
-    static public function getValidationErrorsMessages(): array
+    public static function getValidationErrorsMessages(): array
     {
         return static::$validationErrorsMessages ?: static::$defaultValidationErrorsMessages;
     }
@@ -970,7 +970,7 @@ class Column
      * Provide custom validation errors messages.
      * Default errors are listed in static::$defaultValidationErrorsLocalization
      */
-    static public function setValidationErrorsMessages(array $validationErrorsMessages)
+    public static function setValidationErrorsMessages(array $validationErrorsMessages)
     {
         if (!empty($validationErrorsMessages)) {
             static::$validationErrorsMessages = array_merge(

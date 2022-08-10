@@ -24,7 +24,7 @@ abstract class FakeTableStructure extends TableStructure
      * @return FakeTableStructure|TableStructureInterface
      * @throws \InvalidArgumentException
      */
-    static public function makeNewFakeStructure(string $tableName, ?TableStructureInterface $tableStructureToCopy = null)
+    public static function makeNewFakeStructure(string $tableName, ?TableStructureInterface $tableStructureToCopy = null)
     {
         $tableName = trim($tableName);
         if ($tableName === '' || !DbAdapter::isValidDbEntityName($tableName, false)) {
@@ -56,14 +56,14 @@ class {$className} extends {$parentClassShortName} {
     /**
      * @return string
      */
-    static public function getTableName(): string {
+    public static function getTableName(): string {
         return '{$tableName}';
     }
 
     /**
      * @return string
      */
-    static public function getSchema(): ?string {
+    public static function getSchema(): ?string {
         return {$dbSchema};
     }
 }
@@ -173,7 +173,7 @@ VIEW;
      * @param bool $writable - true: connection must have access to write data into DB
      * @return string
      */
-    static public function getConnectionName(bool $writable): string
+    public static function getConnectionName(bool $writable): string
     {
         return $writable ? static::getInstance()->connectionNameWritable : static::getInstance()->connectionName;
     }
@@ -182,7 +182,7 @@ VIEW;
      * @param string $columnName
      * @return bool
      */
-    static public function hasColumn(string $columnName): bool
+    public static function hasColumn(string $columnName): bool
     {
         return static::getInstance()->treatAnyColumnNameAsValid || parent::hasColumn($columnName);
     }
@@ -194,7 +194,7 @@ VIEW;
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    static public function getColumn(string $columnName): Column
+    public static function getColumn(string $columnName): Column
     {
         if (static::getInstance()->treatAnyColumnNameAsValid && !parent::hasColumn($columnName)) {
             static::getInstance()->columns[$columnName] = Column::create(Column::TYPE_STRING, $columnName);

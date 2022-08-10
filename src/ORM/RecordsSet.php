@@ -41,7 +41,7 @@ class RecordsSet extends RecordsArray
      * @param bool $trustDataReceivedFromDb
      * @return RecordsArray
      */
-    static public function createFromArray(TableInterface $table, array $records, ?bool $isFromDb = null, bool $trustDataReceivedFromDb = false)
+    public static function createFromArray(TableInterface $table, array $records, ?bool $isFromDb = null, bool $trustDataReceivedFromDb = false)
     {
         return new RecordsArray($table, $records, $isFromDb, $trustDataReceivedFromDb);
     }
@@ -51,7 +51,7 @@ class RecordsSet extends RecordsArray
      *      is changed outside RecordsSet + to allow optimised iteration via pagination
      * @return RecordsSet
      */
-    static public function createFromOrmSelect(OrmSelect $dbSelect)
+    public static function createFromOrmSelect(OrmSelect $dbSelect)
     {
         return new self($dbSelect);
     }

@@ -168,22 +168,22 @@ VIEW;
         return $this->tableDescription;
     }
     
-    static public function convertTableNameToClassName(string $tableName): string
+    public static function convertTableNameToClassName(string $tableName): string
     {
         return StringUtils::classify($tableName);
     }
     
-    static public function makeTableClassName(string $tableName): string
+    public static function makeTableClassName(string $tableName): string
     {
         return static::convertTableNameToClassName($tableName) . 'Table';
     }
     
-    static public function makeTableStructureClassName(string $tableName): string
+    public static function makeTableStructureClassName(string $tableName): string
     {
         return static::convertTableNameToClassName($tableName) . 'TableStructure';
     }
     
-    static public function makeRecordClassName(string $tableName): string
+    public static function makeRecordClassName(string $tableName): string
     {
         return StringUtils::singularize(static::convertTableNameToClassName($tableName));
     }

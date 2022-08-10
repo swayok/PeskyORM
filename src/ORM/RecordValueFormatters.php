@@ -18,7 +18,7 @@ abstract class RecordValueFormatters
     public const FORMAT_ARRAY = 'array';
     public const FORMAT_OBJECT = 'object';
     
-    static public function getFormattersForColumnType(string $columnType): array
+    public static function getFormattersForColumnType(string $columnType): array
     {
         static $map = null;
         if ($map === null) {
@@ -35,7 +35,7 @@ abstract class RecordValueFormatters
         return $map[$columnType] ?? [];
     }
     
-    static public function getTimestampFormatters(): array
+    public static function getTimestampFormatters(): array
     {
         return [
             static::FORMAT_DATE => static::getTimestampToDateFormatter(),
@@ -45,7 +45,7 @@ abstract class RecordValueFormatters
         ];
     }
     
-    static public function getUnixTimestampFormatters(): array
+    public static function getUnixTimestampFormatters(): array
     {
         return [
             static::FORMAT_DATE_TIME => static::getUnixTimestampToDateTimeFormatter(),
@@ -55,7 +55,7 @@ abstract class RecordValueFormatters
         ];
     }
     
-    static public function getDateFormatters(): array
+    public static function getDateFormatters(): array
     {
         return [
             static::FORMAT_UNIX_TS => static::getDateTimeToUnixTsFormatter(),
@@ -63,14 +63,14 @@ abstract class RecordValueFormatters
         ];
     }
     
-    static public function getTimeFormatters(): array
+    public static function getTimeFormatters(): array
     {
         return [
             static::FORMAT_UNIX_TS => static::getDateTimeToUnixTsFormatter(),
         ];
     }
     
-    static public function getJsonFormatters(): array
+    public static function getJsonFormatters(): array
     {
         return [
             static::FORMAT_ARRAY => static::getJsonToArrayFormatter(),
@@ -78,7 +78,7 @@ abstract class RecordValueFormatters
         ];
     }
     
-    static public function getTimestampToDateFormatter(): \Closure
+    public static function getTimestampToDateFormatter(): \Closure
     {
         static $formatter = null;
         if (!$formatter) {
@@ -94,7 +94,7 @@ abstract class RecordValueFormatters
         return $formatter;
     }
     
-    static public function getTimestampToTimeFormatter(): \Closure
+    public static function getTimestampToTimeFormatter(): \Closure
     {
         static $formatter = null;
         if (!$formatter) {
@@ -110,7 +110,7 @@ abstract class RecordValueFormatters
         return $formatter;
     }
     
-    static public function getDateTimeToUnixTsFormatter(): \Closure
+    public static function getDateTimeToUnixTsFormatter(): \Closure
     {
         static $formatter = null;
         if (!$formatter) {
@@ -126,7 +126,7 @@ abstract class RecordValueFormatters
         return $formatter;
     }
     
-    static public function getUnixTimestampToDateTimeFormatter(): \Closure
+    public static function getUnixTimestampToDateTimeFormatter(): \Closure
     {
         static $formatter = null;
         if (!$formatter) {
@@ -141,7 +141,7 @@ abstract class RecordValueFormatters
         return $formatter;
     }
     
-    static public function getTimestampToCarbonFormatter(): \Closure
+    public static function getTimestampToCarbonFormatter(): \Closure
     {
         static $formatter = null;
         if (!$formatter) {
@@ -161,7 +161,7 @@ abstract class RecordValueFormatters
         return $formatter;
     }
     
-    static public function getDateToCarbonFormatter(): \Closure
+    public static function getDateToCarbonFormatter(): \Closure
     {
         static $formatter = null;
         if (!$formatter) {
@@ -178,7 +178,7 @@ abstract class RecordValueFormatters
         return $formatter;
     }
     
-    static public function getJsonToArrayFormatter(): \Closure
+    public static function getJsonToArrayFormatter(): \Closure
     {
         static $formatter = null;
         if (!$formatter) {
@@ -195,7 +195,7 @@ abstract class RecordValueFormatters
         return $formatter;
     }
     
-    static public function getJsonToObjectFormatter(): \Closure
+    public static function getJsonToObjectFormatter(): \Closure
     {
         static $formatter = null;
         if (!$formatter) {
@@ -227,7 +227,7 @@ abstract class RecordValueFormatters
      * @return mixed
      * @throws \UnexpectedValueException
      */
-    static public function getSimpleValueFormContainer(RecordValue $valueContainer)
+    public static function getSimpleValueFormContainer(RecordValue $valueContainer)
     {
         $value = $valueContainer->getValueOrDefault();
         if ($value instanceof DbExpr) {
@@ -236,7 +236,7 @@ abstract class RecordValueFormatters
         return $value;
     }
     
-    static public function wrapGetterIntoFormatter(string $format, \Closure $getter): \Closure
+    public static function wrapGetterIntoFormatter(string $format, \Closure $getter): \Closure
     {
         return function (RecordValue $valueContainer) use ($getter, $format) {
             return $valueContainer->getCustomInfo('format:' . $format, $getter, true);

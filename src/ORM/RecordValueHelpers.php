@@ -21,7 +21,7 @@ abstract class RecordValueHelpers
      * @param array $errorMessages
      * @return array
      */
-    static public function isValidDbColumnValue(Column $column, $value, bool $isFromDb, bool $isForCondition, array $errorMessages = [])
+    public static function isValidDbColumnValue(Column $column, $value, bool $isFromDb, bool $isForCondition, array $errorMessages = [])
     {
         if (is_object($value) && ($value instanceof DbExpr || is_subclass_of($value, AbstractSelect::class))) {
             return [];
@@ -54,7 +54,7 @@ abstract class RecordValueHelpers
      * @param bool $isForValidation
      * @return mixed
      */
-    static public function preprocessColumnValue(Column $column, $value, bool $isDbValue, bool $isForValidation)
+    public static function preprocessColumnValue(Column $column, $value, bool $isDbValue, bool $isForValidation)
     {
         return call_user_func($column->getValuePreprocessor(), $value, $isDbValue, $isForValidation, $column);
     }
@@ -67,7 +67,7 @@ abstract class RecordValueHelpers
      * @param array $errorMessages
      * @return array
      */
-    static public function isValueFitsDataType($value, string $type, bool $isForCondition, array $errorMessages = [])
+    public static function isValueFitsDataType($value, string $type, bool $isForCondition, array $errorMessages = [])
     {
         switch ($type) {
             case Column::TYPE_BOOL:
@@ -186,7 +186,7 @@ abstract class RecordValueHelpers
      * @param array $errorMessages
      * @return array
      */
-    static public function isValueWithinTheAllowedValuesOfTheColumn(
+    public static function isValueWithinTheAllowedValuesOfTheColumn(
         Column $column,
         $value,
         bool $isFromDb,
@@ -226,7 +226,7 @@ abstract class RecordValueHelpers
         return [];
     }
     
-    static public function getErrorMessage(array $errorMessages, string $key): string
+    public static function getErrorMessage(array $errorMessages, string $key): string
     {
         return array_key_exists($key, $errorMessages) ? $errorMessages[$key] : $key;
     }
@@ -237,7 +237,7 @@ abstract class RecordValueHelpers
      * @param string $type - one of Column::TYPE_*
      * @return null|string|UploadedFile|DbExpr|AbstractSelect|bool|int|float
      */
-    static public function normalizeValue($value, string $type)
+    public static function normalizeValue($value, string $type)
     {
         if ($value === null) {
             return null;
@@ -285,7 +285,7 @@ abstract class RecordValueHelpers
      * @param string $type - one of Column::TYPE_*
      * @return null|string|UploadedFile|DbExpr
      */
-    static public function normalizeValueReceivedFromDb($value, string $type)
+    public static function normalizeValueReceivedFromDb($value, string $type)
     {
         if ($value === null) {
             return null;
@@ -309,7 +309,7 @@ abstract class RecordValueHelpers
      * @param array|UploadedFile $value
      * @return UploadedFile
      */
-    static public function normalizeFile($value): UploadedFile
+    public static function normalizeFile($value): UploadedFile
     {
         if ($value instanceof UploadedFile) {
             return $value;

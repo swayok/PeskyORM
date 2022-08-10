@@ -8,7 +8,7 @@ use PeskyORM\ORM\TableStructure;
 class TestingInvalidRelationsInTableStructure extends TableStructure
 {
     
-    static public function getTableName(): string
+    public static function getTableName(): string
     {
         return 'some_table';
     }

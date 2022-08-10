@@ -31,7 +31,7 @@ class DbExpr
      * @param bool|null $wrapInBrackets - true: wrap expression in round brackets; null: autodetect;
      * @return DbExpr
      */
-    static public function create($expression, $wrapInBrackets = null)
+    public static function create($expression, $wrapInBrackets = null)
     {
         return new DbExpr($expression, $wrapInBrackets);
     }

@@ -18,12 +18,12 @@ use UnexpectedValueException;
 class DbSelectTest extends BaseTestCase
 {
     
-    static public function setUpBeforeClass(): void
+    public static function setUpBeforeClass(): void
     {
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    static public function tearDownAfterClass(): void
+    public static function tearDownAfterClass(): void
     {
         TestingApp::clearTables(static::getValidAdapter());
     }
@@ -44,7 +44,7 @@ class DbSelectTest extends BaseTestCase
         return $adapter;
     }
     
-    static public function getTestDataForAdminsTableInsert()
+    public static function getTestDataForAdminsTableInsert()
     {
         return [
             [

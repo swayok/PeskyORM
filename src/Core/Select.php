@@ -33,7 +33,7 @@ class Select extends AbstractSelect
      * @return static
      * @throws \InvalidArgumentException
      */
-    static public function from(string $tableName, DbAdapterInterface $connection)
+    public static function from(string $tableName, DbAdapterInterface $connection)
     {
         return new static($tableName, $connection);
     }

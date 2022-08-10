@@ -10,7 +10,7 @@ class TestingAdmin3 extends Record
     /**
      * @return TestingAdmins3Table
      */
-    static public function getTable()
+    public static function getTable()
     {
         return TestingAdmins3Table::getInstance();
     }

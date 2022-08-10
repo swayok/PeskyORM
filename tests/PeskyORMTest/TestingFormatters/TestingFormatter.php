@@ -47,7 +47,7 @@ use PeskyORM\ORM\RecordValue;
 class TestingFormatter extends Record
 {
     
-    static public function getTable(): TestingFormattersTable
+    public static function getTable(): TestingFormattersTable
     {
         return TestingFormattersTable::getInstance();
     }

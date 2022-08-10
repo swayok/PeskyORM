@@ -10,7 +10,7 @@ class TestingSetting extends Record
     /**
      * @return TestingSettingsTable
      */
-    static public function getTable()
+    public static function getTable()
     {
         return TestingSettingsTable::getInstance();
     }

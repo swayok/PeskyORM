@@ -26,7 +26,7 @@ class Postgres extends DbAdapter
     public const TRANSACTION_TYPE_SERIALIZABLE = 'SERIALIZABLE';
     public const TRANSACTION_TYPE_DEFAULT = self::TRANSACTION_TYPE_READ_COMMITTED;
     
-    static public $transactionTypes = [
+    public static $transactionTypes = [
         self::TRANSACTION_TYPE_READ_COMMITTED,
         self::TRANSACTION_TYPE_REPEATABLE_READ,
         self::TRANSACTION_TYPE_SERIALIZABLE,
@@ -125,7 +125,7 @@ class Postgres extends DbAdapter
         'NOT REGEX' => '!~*',
     ];
     
-    static public function getConnectionConfigClass(): string
+    public static function getConnectionConfigClass(): string
     {
         return PostgresConfig::class;
     }

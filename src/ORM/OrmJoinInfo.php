@@ -23,7 +23,7 @@ class OrmJoinInfo extends AbstractJoinInfo
      * @param string $foreignColumnName
      * @return $this
      */
-    static public function create(
+    public static function create(
         string $joinName,
         TableInterface $localTable,
         string $localColumnName,

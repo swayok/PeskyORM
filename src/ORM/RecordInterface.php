@@ -14,25 +14,25 @@ interface RecordInterface
      * Create new empty record
      * @return static
      */
-    static public function newEmptyRecord();
+    public static function newEmptyRecord();
     
     /**
      * @return TableInterface
      */
-    static public function getTable();
+    public static function getTable();
     
     /**
      * @param string $name
      * @return bool
      */
-    static public function hasColumn(string $name): bool;
+    public static function hasColumn(string $name): bool;
     
     /**
      * @param string $name
      * @param string|null $format - filled when $name is something like 'timestamp_as_date' (returns 'date')
      * @return Column
      */
-    static public function getColumn(string $name, string &$format = null);
+    public static function getColumn(string $name, string &$format = null);
     
     /**
      * Resets all values and related records

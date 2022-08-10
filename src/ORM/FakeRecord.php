@@ -15,12 +15,12 @@ abstract class FakeRecord extends Record
     /**
      * @return TableInterface
      */
-    static public function getTable()
+    public static function getTable()
     {
         return static::$table;
     }
     
-    static public function setTable(FakeTable $table)
+    public static function setTable(FakeTable $table)
     {
         static::$table = $table;
     }
@@ -30,7 +30,7 @@ abstract class FakeRecord extends Record
      * @return string - class name of a fake record
      * @throws \BadMethodCallException
      */
-    static public function makeNewFakeRecordClass(FakeTable $table)
+    public static function makeNewFakeRecordClass(FakeTable $table)
     {
         static::$fakesCreated++;
         $suffixClass = StringUtils::classify(

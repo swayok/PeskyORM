@@ -27,7 +27,7 @@ use PeskyORM\ORM\RecordsSet;
 class TestingAdmin extends Record
 {
     
-    static public function getTable(): TestingAdminsTable
+    public static function getTable(): TestingAdminsTable
     {
         return TestingAdminsTable::getInstance();
     }
