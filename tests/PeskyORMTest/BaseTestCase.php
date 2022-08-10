@@ -7,10 +7,11 @@ use PHPUnit\Framework\Exception;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
+use Tests\PeskyORMTest\Traits\CallsProtectedPropertiesAndMethods;
 
 class BaseTestCase extends TestCase
 {
+    use CallsProtectedPropertiesAndMethods;
     
     /**
      * Asserts that an array has a specified subset.
@@ -45,24 +46,4 @@ class BaseTestCase extends TestCase
         static::assertThat($array, $constraint, $message);
     }
     
-    protected function getObjectPropertyValue($object, string $propertyName)
-    {
-        $reflection = new ReflectionClass($object);
-        $prop = $reflection->getProperty($propertyName);
-        $prop->setAccessible(true);
-        return $prop->getValue($object);
-    }
-    
-    protected function callObjectMethod($object, string $methodName, ...$args)
-    {
-        return $this->getMethodReflection($object, $methodName)->invokeArgs($object, $args);
-    }
-    
-    protected function getMethodReflection($object, string $methodName)
-    {
-        $reflection = new ReflectionClass($object);
-        $method = $reflection->getMethod($methodName);
-        $method->setAccessible(true);
-        return $method;
-    }
 }
