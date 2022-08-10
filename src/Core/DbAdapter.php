@@ -67,7 +67,7 @@ abstract class DbAdapter implements DbAdapterInterface
      *
      * @var null|\Closure
      */
-    static protected $connectionWrapper = null;
+    protected static $connectionWrapper = null;
     
     /**
      * Last executed query
@@ -672,7 +672,7 @@ abstract class DbAdapter implements DbAdapterInterface
      * Remember transaction trace
      * @param null|string $key - array key for this trace
      */
-    static protected function rememberTransactionTrace(?string $key = null)
+    protected static function rememberTransactionTrace(?string $key = null)
     {
         if (static::$isTransactionTracesEnabled) {
             $trace = Utils::getBackTrace(true, false, true, 2);
@@ -774,7 +774,7 @@ abstract class DbAdapter implements DbAdapterInterface
         );
     }
     
-    static protected function _isValidDbEntityName(string $name): bool
+    protected static function _isValidDbEntityName(string $name): bool
     {
         return preg_match('%^[a-zA-Z_][a-zA-Z_0-9]*(\.[a-zA-Z_0-9]+|\.\*)?$%i', $name) > 0;
     }

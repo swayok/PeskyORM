@@ -11,7 +11,7 @@ require_once __DIR__ . '/PostgresAdapterInsertDataTest.php';
 class MysqlAdapterInsertDataTest extends PostgresAdapterInsertDataTest
 {
     
-    static protected function getValidAdapter()
+    protected static function getValidAdapter()
     {
         return TestingApp::getMysqlConnection();
     }

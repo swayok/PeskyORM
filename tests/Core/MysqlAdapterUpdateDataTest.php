@@ -11,7 +11,7 @@ use PeskyORM\Tests\PeskyORMTest\TestingApp;
 class MysqlAdapterUpdateDataTest extends PostgresAdapterUpdateDataTest
 {
     
-    static protected function getValidAdapter()
+    protected static function getValidAdapter()
     {
         return TestingApp::getMysqlConnection();
     }

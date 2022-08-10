@@ -15,7 +15,7 @@ abstract class Table implements TableInterface
 {
     
     /** @var Table[] */
-    static private $instances = [];
+    private static $instances = [];
     /** @var string */
     protected $alias;
     
@@ -34,7 +34,7 @@ abstract class Table implements TableInterface
      * Resets class instances (used for testing only, that's why it is private)
      * @noinspection PhpUnusedPrivateMethodInspection
      */
-    static private function resetInstances()
+    private static function resetInstances()
     {
         self::$instances = [];
     }
@@ -593,7 +593,7 @@ abstract class Table implements TableInterface
      * @param array $columns
      * @return array
      */
-    static protected function getPdoDataTypesForColumns(array $columns = []): array
+    protected static function getPdoDataTypesForColumns(array $columns = []): array
     {
         $pdoDataTypes = [];
         if (empty($columns)) {
@@ -632,7 +632,7 @@ abstract class Table implements TableInterface
      * @param array|null $features - null: ['trim', 'lowercase', 'nullable', 'empty_string_to_null', 'auto']
      * @return array
      */
-    static protected function prepareDataForInsertMany(
+    protected static function prepareDataForInsertMany(
         array $rows,
         array $columnsToSave = [],
         ?array $features = null

@@ -17,13 +17,13 @@ abstract class TableStructure implements TableStructureInterface
      * It uses PeskyORM\Core\DbConnectionsManager::getConnection(static::$connectionName)->describeTable(static::$name)
      * @var bool
      */
-    static protected $autodetectColumnsConfigs = false;
+    protected static $autodetectColumnsConfigs = false;
     /**
      * Loads columns and relations configs from private methods of child class
      * Disable if you do not use private methods to define columns and relations
      * @var bool
      */
-    static protected $autoloadConfigsFromPrivateMethods = true;
+    protected static $autoloadConfigsFromPrivateMethods = true;
     /**
      * @var bool
      */
@@ -62,7 +62,7 @@ abstract class TableStructure implements TableStructureInterface
     protected $columnsRelations = [];
     
     /** @var TableStructureInterface[] */
-    static private $instances = [];
+    private static $instances = [];
     
     /**
      * @return $this
@@ -80,7 +80,7 @@ abstract class TableStructure implements TableStructureInterface
      * Resets class instances (used for testing only, that's why it is private)
      * @noinspection PhpUnusedPrivateMethodInspection
      */
-    static private function resetInstances()
+    private static function resetInstances()
     {
         self::$instances = [];
     }

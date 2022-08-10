@@ -73,7 +73,7 @@ class Column
     /**
      * @var array
      */
-    static protected $defaultValidationErrorsMessages = [
+    protected static $defaultValidationErrorsMessages = [
         self::VALUE_CANNOT_BE_NULL => 'Null value is not allowed.',
         self::VALUE_MUST_BE_BOOLEAN => 'Value must be of a boolean data type.',
         self::VALUE_MUST_BE_INTEGER => 'Value must be of an integer data type.',
@@ -98,11 +98,11 @@ class Column
     /**
      * @var array
      */
-    static protected $validationErrorsMessages = [];
+    protected static $validationErrorsMessages = [];
     /**
      * @var null|array
      */
-    static protected $defaultClosures;
+    protected static $defaultClosures;
     
     // params that can be set directly or calculated
     /**
@@ -346,7 +346,7 @@ class Column
     /**
      * @return \Closure[]
      */
-    static protected function getDefaultClosures(): array
+    protected static function getDefaultClosures(): array
     {
         if (self::$defaultClosures === null) {
             self::$defaultClosures = [

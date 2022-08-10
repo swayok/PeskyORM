@@ -10,7 +10,7 @@ use Swayok\Utils\StringUtils;
 abstract class FakeTableStructure extends TableStructure
 {
     
-    static private $fakesCreated = 0;
+    private static $fakesCreated = 0;
     protected $allColumnsProcessed = true;
     protected $allRelationsProcessed = true;
     protected $treatAnyColumnNameAsValid = true;

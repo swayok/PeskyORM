@@ -23,7 +23,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    static private function getValidAdapter()
+    private static function getValidAdapter()
     {
         return TestingApp::getMysqlConnection();
     }

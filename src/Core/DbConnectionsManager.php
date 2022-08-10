@@ -13,7 +13,7 @@ class DbConnectionsManager
     public const ADAPTER_MYSQL = 'mysql';
     public const ADAPTER_POSTGRES = 'pgsql';
     
-    static private $adapters = [
+    private static $adapters = [
         self::ADAPTER_MYSQL => Mysql::class,
         self::ADAPTER_POSTGRES => Postgres::class,
     ];
@@ -21,7 +21,7 @@ class DbConnectionsManager
     /**
      * @var DbAdapter[]|DbAdapterInterface[]
      */
-    static private $connections = [];
+    private static $connections = [];
     
     /**
      * @var null|string $queryString

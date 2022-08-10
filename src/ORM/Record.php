@@ -166,7 +166,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Resets cached columns instances (used for testing only, that's why it is private)
      * @noinspection PhpUnusedPrivateMethodInspection
      */
-    static private function resetColumnsCache()
+    private static function resetColumnsCache()
     {
         self::$columns = [];
     }
@@ -208,7 +208,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param string $key
      * @return mixed
      */
-    static private function getCachedColumnsOrRelations(string $key = 'columns')
+    private static function getCachedColumnsOrRelations(string $key = 'columns')
     {
         // significantly decreases execution time on heavy ORM usage (proved by profilig with xdebug)
         if (!isset(self::$columns[static::class])) {
@@ -270,7 +270,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         return static::_hasColumn($name, true);
     }
     
-    static protected function _hasColumn(string $name, bool $includeFormatters)
+    protected static function _hasColumn(string $name, bool $includeFormatters)
     {
         return isset(static::getColumns($includeFormatters)[$name]);
     }

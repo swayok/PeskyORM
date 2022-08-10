@@ -13,7 +13,7 @@ use ReflectionClass;
 class MysqlAdapterConnectionTest extends BaseTestCase
 {
     
-    static private function getValidAdapter()
+    private static function getValidAdapter()
     {
         return TestingApp::getMysqlConnection();
     }

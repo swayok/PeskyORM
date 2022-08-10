@@ -25,7 +25,7 @@ class PostgresAdapterDeleteDataTest extends BaseTestCase
     /**
      * @return \PeskyORM\Adapter\Postgres
      */
-    static protected function getValidAdapter()
+    protected static function getValidAdapter()
     {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;

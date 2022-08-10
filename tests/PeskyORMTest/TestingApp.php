@@ -23,8 +23,8 @@ class TestingApp
      * @var Mysql
      */
     public static $mysqlConnection;
-    static protected $dataForDb;
-    static protected $dataForDbMinimal;
+    protected static $dataForDb;
+    protected static $dataForDbMinimal;
     
     public static function getMysqlConnection()
     {
@@ -59,7 +59,7 @@ class TestingApp
         return static::$pgsqlConnection;
     }
     
-    static protected function getGlobalConfigs()
+    protected static function getGlobalConfigs()
     {
         return include __DIR__ . '/../configs/global.php';
     }

@@ -19,7 +19,7 @@ class Mysql extends DbAdapter
     
     public const ENTITY_NAME_QUOTES = '`';
     
-    static protected $dataTypesMap = [
+    protected static $dataTypesMap = [
         'bytea' => 'BINARY',
         'date' => 'DATE',
         'time' => 'TIME',

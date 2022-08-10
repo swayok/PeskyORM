@@ -28,7 +28,7 @@ class DbSelectTest extends BaseTestCase
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    static protected function fillAdminsTable()
+    protected static function fillAdminsTable()
     {
         TestingApp::clearTables(static::getValidAdapter());
         $data = static::getTestDataForAdminsTableInsert();
@@ -37,7 +37,7 @@ class DbSelectTest extends BaseTestCase
         return $data;
     }
     
-    static protected function getValidAdapter()
+    protected static function getValidAdapter()
     {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
@@ -86,7 +86,7 @@ class DbSelectTest extends BaseTestCase
         ];
     }
     
-    static protected function getNewSelect()
+    protected static function getNewSelect()
     {
         return Select::from('admins', static::getValidAdapter());
     }

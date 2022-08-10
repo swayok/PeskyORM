@@ -20,7 +20,7 @@ abstract class FakeTable extends Table
     /** @var DbAdapterInterface */
     protected $connection;
     
-    static private $fakesCreated = 0;
+    private static $fakesCreated = 0;
     
     /**
      * @param TableInterface $tableToMimic

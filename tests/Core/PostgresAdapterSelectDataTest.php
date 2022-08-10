@@ -24,7 +24,7 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    static protected function getValidAdapter()
+    protected static function getValidAdapter()
     {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;

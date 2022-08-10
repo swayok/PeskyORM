@@ -46,7 +46,7 @@ class RecordTest extends BaseTestCase
         TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
     }
     
-    static protected function getValidAdapter()
+    protected static function getValidAdapter()
     {
         return TestingApp::getPgsqlConnection();
     }

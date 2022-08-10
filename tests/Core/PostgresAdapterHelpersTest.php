@@ -17,7 +17,7 @@ use ReflectionMethod;
 class PostgresAdapterHelpersTest extends BaseTestCase
 {
     
-    static protected function getValidAdapter()
+    protected static function getValidAdapter()
     {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;

@@ -15,7 +15,7 @@ class UtilsTest extends BaseTestCase
 {
     
     /** @var PostgresConfig */
-    static protected $dbConnectionConfig;
+    protected static $dbConnectionConfig;
     
     public static function setUpBeforeClass(): void
     {
@@ -32,7 +32,7 @@ class UtilsTest extends BaseTestCase
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    static protected function fillTables()
+    protected static function fillTables()
     {
         $data = static::getTestDataForAdminsTableInsert();
         static::getValidAdapter()
@@ -40,7 +40,7 @@ class UtilsTest extends BaseTestCase
         return ['admins' => $data];
     }
     
-    static protected function getValidAdapter()
+    protected static function getValidAdapter()
     {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;

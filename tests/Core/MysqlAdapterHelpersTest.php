@@ -13,7 +13,7 @@ require_once __DIR__ . '/PostgresAdapterHelpersTest.php';
 class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
 {
     
-    static protected function getValidAdapter()
+    protected static function getValidAdapter()
     {
         return TestingApp::getMysqlConnection();
     }

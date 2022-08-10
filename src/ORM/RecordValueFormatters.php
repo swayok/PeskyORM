@@ -243,7 +243,7 @@ abstract class RecordValueFormatters
         };
     }
     
-    static private function throwInvalidValueException(RecordValue $valueContainer, string $expectedValueType, $value)
+    private static function throwInvalidValueException(RecordValue $valueContainer, string $expectedValueType, $value)
     {
         if (!is_scalar($value)) {
             $value = json_encode($value, JSON_UNESCAPED_UNICODE);

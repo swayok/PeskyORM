@@ -20,7 +20,7 @@ use ReflectionClass;
 class PostgresAdapterConnectionTest extends BaseTestCase
 {
     
-    static private function getValidAdapter()
+    private static function getValidAdapter()
     {
         return TestingApp::getPgsqlConnection();
     }

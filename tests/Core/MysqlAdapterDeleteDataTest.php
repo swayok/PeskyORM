@@ -14,7 +14,7 @@ class MysqlAdapterDeleteDataTest extends PostgresAdapterDeleteDataTest
     /**
      * @return \PeskyORM\Adapter\Mysql
      */
-    static protected function getValidAdapter()
+    protected static function getValidAdapter()
     {
         return TestingApp::getMysqlConnection();
     }

@@ -118,7 +118,7 @@ class Postgres extends DbAdapter
      */
     protected $inTransaction = false;
     
-    static protected $conditionOperatorsMap = [
+    protected static $conditionOperatorsMap = [
         'REGEXP' => '~*',
         'NOT REGEXP' => '!~*',
         'REGEX' => '~*',
@@ -130,7 +130,7 @@ class Postgres extends DbAdapter
         return PostgresConfig::class;
     }
     
-    static protected function _isValidDbEntityName(string $name): bool
+    protected static function _isValidDbEntityName(string $name): bool
     {
         // $name can literally be anything when quoted and it is always quoted unless developer skips quotes
         // https://www.postgresql.org/docs/10/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS

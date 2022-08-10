@@ -35,12 +35,12 @@ class OrmSelectTest extends BaseTestCase
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    static protected function getValidAdapter()
+    protected static function getValidAdapter()
     {
         return TestingApp::getPgsqlConnection();
     }
     
-    static protected function getNewSelect()
+    protected static function getNewSelect()
     {
         return OrmSelect::from(TestingAdminsTable::getInstance());
     }
