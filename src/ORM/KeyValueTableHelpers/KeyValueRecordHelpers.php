@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace PeskyORM\ORM\KeyValueTableHelpers;
 
 /**
- * @method static KeyValueTableInterface getTable()
  * @psalm-require-implements \PeskyORM\ORM\RecordInterface
  */
 trait KeyValueRecordHelpers
@@ -19,8 +18,9 @@ trait KeyValueRecordHelpers
      */
     public static function get(string $key, $foreignKeyValue = null, $default = null)
     {
-        return static::getTable()
-            ->getValue($key, $foreignKeyValue, $default);
+        /** @var KeyValueTableInterface $table */
+        $table = static::getTable();
+        return $table->getValue($key, $foreignKeyValue, $default);
     }
     
     /**

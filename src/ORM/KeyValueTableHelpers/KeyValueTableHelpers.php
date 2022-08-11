@@ -12,7 +12,6 @@ use PeskyORM\ORM\Relation;
 use Swayok\Utils\NormalizeValue;
 
 /**
- * @method static KeyValueTableInterface getInstance();
  * @psalm-require-implements \PeskyORMLaravel\Db\KeyValueTableHelpers\KeyValueTableInterface
  */
 trait KeyValueTableHelpers
@@ -70,9 +69,13 @@ trait KeyValueTableHelpers
             static::getKeysColumnName() => $key,
             static::getValuesColumnName() => static::encodeValue($value),
         ];
-        if ($foreignKeyValue !== null && ($foreignKeyColumn = static::getInstance()
-                ->getMainForeignKeyColumnName())) {
-            $record[$foreignKeyColumn] = $foreignKeyValue;
+        if ($foreignKeyValue !== null) {
+            /** @var KeyValueTableInterface $table */
+            $table = static::getInstance();
+            $foreignKeyColumn = $table->getMainForeignKeyColumnName();
+            if ($foreignKeyColumn) {
+                $record[$foreignKeyColumn] = $foreignKeyValue;
+            }
         }
         return $record;
     }
@@ -177,16 +180,16 @@ trait KeyValueTableHelpers
         $conditions = [
             static::getKeysColumnName() => $data[static::getKeysColumnName()],
         ];
-        $fkName = static::getInstance()
-            ->getMainForeignKeyColumnName();
+        /** @var KeyValueTableInterface $table */
+        $table = static::getInstance();
+        $fkName = $table->getMainForeignKeyColumnName();
         if (!empty($fkName)) {
             if (empty($data[$fkName])) {
                 throw new \InvalidArgumentException("\$record argument does not contain value for key '{$fkName}' or its value is empty");
             }
             $conditions[$fkName] = $data[$fkName];
         }
-        $object = static::getInstance()
-            ->newRecord()
+        $object = $table->newRecord()
             ->fetch($conditions);
         if ($object->existsInDb()) {
             $success = $object
@@ -204,6 +207,7 @@ trait KeyValueTableHelpers
     
     public static function updateOrCreateRecords(array $records): void
     {
+        /** @var KeyValueTableInterface $table */
         $table = static::getInstance();
         $alreadyInTransaction = $table::inTransaction();
         if (!$alreadyInTransaction) {
@@ -274,7 +278,9 @@ trait KeyValueTableHelpers
         $conditions = [
             static::getKeysColumnName() => $key,
         ];
-        $fkName = static::getInstance()->getMainForeignKeyColumnName();
+        /** @var KeyValueTableInterface $table */
+        $table = static::getInstance();
+        $fkName = $table->getMainForeignKeyColumnName();
         if ($fkName !== null) {
             if (empty($foreignKeyValue)) {
                 throw new \InvalidArgumentException('$foreignKeyValue argument is required');
@@ -303,13 +309,14 @@ trait KeyValueTableHelpers
         \Closure $defaultClosure,
         bool $ignoreEmptyValue
     ) {
+        /** @var KeyValueTableInterface $table */
         $table = static::getInstance();
         if ($table->getTableStructure()->hasColumn($key)) {
             // modify value so that it is processed by custom column defined in table structure
             // if $recordData is empty it uses default value provided by $column prior to $default
             $column = $table->getTableStructure()->getColumn($key);
             if (!$column->isItExistsInDb()) {
-                $recordObj = static::getInstance()->newRecord();
+                $recordObj = $table->newRecord();
                 if (empty($recordData)) {
                     return $recordObj->hasValue($column, true) ? $recordObj->getValue($column, $format) : $defaultClosure();
                 } else {
@@ -350,6 +357,7 @@ trait KeyValueTableHelpers
     public static function getValuesForForeignKey($foreignKeyValue = null, bool $ignoreEmptyValues = false): array
     {
         $conditions = [];
+        /** @var KeyValueTableInterface $table */
         $table = static::getInstance();
         $fkName = $table->getMainForeignKeyColumnName();
         if ($fkName !== null) {
