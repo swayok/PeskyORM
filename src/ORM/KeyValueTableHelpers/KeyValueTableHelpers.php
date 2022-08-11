@@ -13,6 +13,7 @@ use PeskyORM\ORM\Relation;
 use Swayok\Utils\NormalizeValue;
 
 /**
+ * @method static KeyValueTableInterface getInstance();
  * @psalm-require-implements \PeskyORMLaravel\Db\KeyValueTableHelpers\KeyValueTableInterface
  */
 trait KeyValueTableHelpers
@@ -259,11 +260,36 @@ trait KeyValueTableHelpers
         $default = null,
         bool $ignoreEmptyValue = false
     ) {
+        $recordData = static::findRecordForKey($key, $foreignKeyValue);
+        
+        $defaultClosure = ($default instanceof \Closure) ? $default : function () use ($default) {
+            return $default;
+        };
         $table = static::getInstance();
+        if ($table->getTableStructure()->hasColumn($key)) {
+            // modify value so that it is processed by custom column defined in table structure
+            // if $recordData is empty it uses default value provided by $column prior to $default
+            $column = $table->getTableStructure()->getColumn($key);
+            if (!$column->isItExistsInDb()) {
+                return static::modifyKeyValueByColumn($recordData, $column, $format, $defaultClosure, $ignoreEmptyValue);
+            }
+        }
+        if (empty($recordData)) {
+            return $defaultClosure();
+        }
+        $value = static::decodeValue($recordData[static::getValuesColumnName()]);
+        if ($ignoreEmptyValue && static::isEmptyValue($value)) {
+            return $defaultClosure();
+        }
+        return $value;
+    }
+    
+    protected static function findRecordForKey(string $key, $foreignKeyValue): array
+    {
         $conditions = [
             static::getKeysColumnName() => $key,
         ];
-        $fkName = $table->getMainForeignKeyColumnName();
+        $fkName = static::getInstance()->getMainForeignKeyColumnName();
         if ($fkName !== null) {
             if (empty($foreignKeyValue)) {
                 throw new \InvalidArgumentException('$foreignKeyValue argument is required');
@@ -274,30 +300,30 @@ trait KeyValueTableHelpers
                 '$foreignKeyValue must be null when model does not have main foreign key column'
             );
         }
-        /** @var array $record */
-        $record = static::selectOne('*', $conditions);
-        if ($table->getTableStructure()->hasColumn($key)) {
-            // modify value so that it is processed by custom column defined in table structure
-            // if $record is empty it uses default value provided by $column prior to $default
-            $column = $table->getTableStructure()
-                ->getColumn($key);
-            if (!$column->isItExistsInDb()) {
-                $recordObj = $table->newRecord();
-                if (empty($record)) {
-                    return $recordObj->hasValue($column, true) ? $recordObj->getValue($column, $format) : $default;
-                } else {
-                    $value = $recordObj
-                        ->updateValue($column, static::decodeValue($record[static::getValuesColumnName()]), false)
-                        ->getValue($column, $format);
-                    return ($ignoreEmptyValue && static::isEmptyValue($value)) ? $default : $value;
-                }
-            }
+        return static::selectOne('*', $conditions);
+    }
+    
+    /**
+     * Modify value so that it is processed by custom column defined in table structure
+     * if $record is empty it uses default value provided by $column prior to $default
+     * @param array $recordData
+     * @param Column $column
+     * @param string $format
+     * @param \Closure $default
+     * @param bool $ignoreEmptyValue
+     * @return mixed
+     */
+    static protected function modifyKeyValueByColumn(array $recordData, Column $column, string $format, \Closure $default, bool $ignoreEmptyValue)
+    {
+        $recordObj = static::getInstance()->newRecord();
+        if (empty($recordData)) {
+            return $recordObj->hasValue($column, true) ? $recordObj->getValue($column, $format) : $default();
+        } else {
+            $value = $recordObj
+                ->updateValue($column, static::decodeValue($recordData[static::getValuesColumnName()]), false)
+                ->getValue($column, $format);
+            return ($ignoreEmptyValue && static::isEmptyValue($value)) ? $default() : $value;
         }
-        if (empty($record)) {
-            return $default;
-        }
-        $value = static::decodeValue($record[static::getValuesColumnName()]);
-        return ($ignoreEmptyValue && static::isEmptyValue($value)) ? $default : $value;
     }
     
     private static function isEmptyValue($value): bool
@@ -339,12 +365,9 @@ trait KeyValueTableHelpers
         );
         if (!empty($data)) {
             // modify values so that they are processed by custom columns defined in table structure + set defaults
-            $columns = $table->getTableStructure()
-                ->getColumns();
+            $columns = $table->getTableStructure()->getColumns();
             $data[$table::getPkColumnName()] = 0;
-            $record = $table->newRecord()
-                ->updateValues($data, true, false);
-            /** @var Column $column */
+            $record = $table->newRecord()->updateValues($data, true, false);
             foreach ($columns as $columnName => $column) {
                 if (!$column->isItExistsInDb()) {
                     $isJson = in_array($column->getType(), [$column::TYPE_JSON, $column::TYPE_JSONB], true);
