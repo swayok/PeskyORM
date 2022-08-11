@@ -6,7 +6,6 @@ namespace PeskyORM\ORM\KeyValueTableHelpers;
 
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Exception\InvalidDataException;
-use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Record;
 use PeskyORM\ORM\RecordInterface;
 use PeskyORM\ORM\Relation;
@@ -262,26 +261,12 @@ trait KeyValueTableHelpers
     ) {
         $recordData = static::findRecordForKey($key, $foreignKeyValue);
         
-        $defaultClosure = ($default instanceof \Closure) ? $default : function () use ($default) {
-            return $default;
-        };
-        $table = static::getInstance();
-        if ($table->getTableStructure()->hasColumn($key)) {
-            // modify value so that it is processed by custom column defined in table structure
-            // if $recordData is empty it uses default value provided by $column prior to $default
-            $column = $table->getTableStructure()->getColumn($key);
-            if (!$column->isItExistsInDb()) {
-                return static::modifyKeyValueByColumn($recordData, $column, $format, $defaultClosure, $ignoreEmptyValue);
-            }
-        }
-        if (empty($recordData)) {
-            return $defaultClosure();
-        }
-        $value = static::decodeValue($recordData[static::getValuesColumnName()]);
-        if ($ignoreEmptyValue && static::isEmptyValue($value)) {
-            return $defaultClosure();
-        }
-        return $value;
+        $defaultClosure = ($default instanceof \Closure)
+            ? $default
+            : function () use ($default) {
+                return $default;
+            };
+        return static::getFormattedValueFromRecordData($recordData, $key, $format, $defaultClosure, $ignoreEmptyValue);
     }
     
     protected static function findRecordForKey(string $key, $foreignKeyValue): array
@@ -304,26 +289,45 @@ trait KeyValueTableHelpers
     }
     
     /**
-     * Modify value so that it is processed by custom column defined in table structure
-     * if $record is empty it uses default value provided by $column prior to $default
      * @param array $recordData
-     * @param Column $column
+     * @param string $key
      * @param string $format
-     * @param \Closure $default
+     * @param \Closure $defaultClosure
      * @param bool $ignoreEmptyValue
      * @return mixed
      */
-    static protected function modifyKeyValueByColumn(array $recordData, Column $column, string $format, \Closure $default, bool $ignoreEmptyValue)
-    {
-        $recordObj = static::getInstance()->newRecord();
-        if (empty($recordData)) {
-            return $recordObj->hasValue($column, true) ? $recordObj->getValue($column, $format) : $default();
-        } else {
-            $value = $recordObj
-                ->updateValue($column, static::decodeValue($recordData[static::getValuesColumnName()]), false)
-                ->getValue($column, $format);
-            return ($ignoreEmptyValue && static::isEmptyValue($value)) ? $default() : $value;
+    protected static function getFormattedValueFromRecordData(
+        array $recordData,
+        string $key,
+        string $format,
+        \Closure $defaultClosure,
+        bool $ignoreEmptyValue
+    ) {
+        $table = static::getInstance();
+        if ($table->getTableStructure()->hasColumn($key)) {
+            // modify value so that it is processed by custom column defined in table structure
+            // if $recordData is empty it uses default value provided by $column prior to $default
+            $column = $table->getTableStructure()->getColumn($key);
+            if (!$column->isItExistsInDb()) {
+                $recordObj = static::getInstance()->newRecord();
+                if (empty($recordData)) {
+                    return $recordObj->hasValue($column, true) ? $recordObj->getValue($column, $format) : $defaultClosure();
+                } else {
+                    $value = $recordObj
+                        ->updateValue($column, static::decodeValue($recordData[static::getValuesColumnName()]), false)
+                        ->getValue($column, $format);
+                    return ($ignoreEmptyValue && static::isEmptyValue($value)) ? $defaultClosure() : $value;
+                }
+            }
         }
+        if (empty($recordData)) {
+            return $defaultClosure();
+        }
+        $value = static::decodeValue($recordData[static::getValuesColumnName()]);
+        if ($ignoreEmptyValue && static::isEmptyValue($value)) {
+            return $defaultClosure();
+        }
+        return $value;
     }
     
     private static function isEmptyValue($value): bool
