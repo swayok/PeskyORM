@@ -35,11 +35,11 @@ interface ColumnClosuresInterface
     
     /**
      * Get value
-     * @param RecordValue $value
+     * @param RecordValue $valueContainer
      * @param string|null $format
      * @return mixed
      */
-    public static function valueGetter(RecordValue $value, ?string $format = null);
+    public static function valueGetter(RecordValue $valueContainer, ?string $format = null);
     
     /**
      * Tests if value is set

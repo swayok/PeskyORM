@@ -207,6 +207,13 @@ interface RecordInterface
     public function begin();
     
     /**
+     * Record is currently collecting updates to be saved by Record->commit().
+     * Returns true if Record->begin() was already called but Record->commit() or Record->rollback() was not called yet
+     * @return bool
+     */
+    public function isCollectingUpdates(): bool;
+    
+    /**
      * Restore values updated since begin()
      * Note: throws exception if used without begin()
      * @return $this|RecordInterface

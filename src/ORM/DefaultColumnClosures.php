@@ -82,17 +82,16 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         return $value;
     }
     
-    public static function valueGetter(RecordValue $value, ?string $format = null)
+    public static function valueGetter(RecordValue $valueContainer, ?string $format = null)
     {
         if ($format !== null) {
             return call_user_func(
-                $value->getColumn()
-                    ->getValueFormatter(),
-                $value,
+                $valueContainer->getColumn()->getValueFormatter(),
+                $valueContainer,
                 $format
             );
         } else {
-            return $value->getValueOrDefault();
+            return $valueContainer->getValueOrDefault();
         }
     }
     

@@ -99,10 +99,6 @@ class Column
      * @var array
      */
     protected static $validationErrorsMessages = [];
-    /**
-     * @var null|array
-     */
-    protected static $defaultClosures;
     
     // params that can be set directly or calculated
     /**
@@ -198,7 +194,7 @@ class Column
     /**
      * @var string
      */
-    protected $defaultClosuresClass = DefaultColumnClosures::class;
+    private $columnClosuresClass = DefaultColumnClosures::class;
     /**
      * Function to return default column value
      * By default returns: $this->defaultValue
@@ -340,16 +336,17 @@ class Column
             $this->setName($name);
         }
         $this->setType($type);
-        $this->setDefaultClosures();
+        $this->setColumnClosures();
     }
     
     /**
      * @return \Closure[]
      */
-    protected static function getDefaultClosures(): array
+    protected static function getColumnClosures(): array
     {
-        if (self::$defaultClosures === null) {
-            self::$defaultClosures = [
+        static $defaultClosures = null;
+        if ($defaultClosures === null) {
+            $defaultClosures = [
                 'valueGetter' => function (RecordValue $valueContainer, $format = null) {
                     $class = $valueContainer->getColumn()
                         ->getClosuresClass();
@@ -402,12 +399,12 @@ class Column
                 },
             ];
         }
-        return self::$defaultClosures;
+        return $defaultClosures;
     }
     
-    protected function setDefaultClosures()
+    protected function setColumnClosures()
     {
-        $closures = static::getDefaultClosures();
+        $closures = static::getColumnClosures();
         $this->setValueGetter($closures['valueGetter']);
         $this->setValueExistenceChecker($closures['valueExistenceChecker']);
         $this->setValueSetter($closures['valueSetter']);
@@ -418,8 +415,6 @@ class Column
         $this->setValuePreprocessor($closures['valuePreprocessor']);
         $this->setValueSavingExtender($closures['valueSavingExtender']);
         $this->setValueDeleteExtender($closures['valueDeleteExtender']);
-        /** @var DefaultColumnClosures $closuresClass */
-        $closuresClass = $this->getClosuresClass();
         $this->setValueFormatter($closures['valueFormatter']);
     }
     
@@ -455,7 +450,7 @@ class Column
                 '$className argument must be a string and contain a full name of a class that implements ColumnClosuresInterface'
             );
         }
-        $this->defaultClosuresClass = $className;
+        $this->columnClosuresClass = $className;
         return $this;
     }
     
@@ -464,7 +459,7 @@ class Column
      */
     public function getClosuresClass(): string
     {
-        return $this->defaultClosuresClass;
+        return $this->columnClosuresClass;
     }
     
     /**
