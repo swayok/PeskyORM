@@ -405,17 +405,39 @@ class Column
     protected function setDefaultColumnClosures()
     {
         $closures = static::getDefaultColumnClosures();
-        $this->setValueGetter($closures['valueGetter']);
-        $this->setValueExistenceChecker($closures['valueExistenceChecker']);
-        $this->setValueSetter($closures['valueSetter']);
-        $this->setValueValidator($closures['valueValidator']);
-        $this->setValueIsAllowedValidator($closures['valueIsAllowedValidator']);
-        $this->setValueValidatorExtender($closures['valueValidatorExtender']);
-        $this->setValueNormalizer($closures['valueNormalizer']);
-        $this->setValuePreprocessor($closures['valuePreprocessor']);
-        $this->setValueSavingExtender($closures['valueSavingExtender']);
-        $this->setValueDeleteExtender($closures['valueDeleteExtender']);
-        $this->setValueFormatter($closures['valueFormatter']);
+        if (!$this->valueGetter) {
+            $this->setValueGetter($closures['valueGetter']);
+        }
+        if (!$this->valueExistenceChecker) {
+            $this->setValueExistenceChecker($closures['valueExistenceChecker']);
+        }
+        if (!$this->valueSetter) {
+            $this->setValueSetter($closures['valueSetter']);
+        }
+        if (!$this->valueValidator) {
+            $this->setValueValidator($closures['valueValidator']);
+        }
+        if (!$this->valueIsAllowedValidator) {
+            $this->setValueIsAllowedValidator($closures['valueIsAllowedValidator']);
+        }
+        if (!$this->valueValidatorExtender) {
+            $this->setValueValidatorExtender($closures['valueValidatorExtender']);
+        }
+        if (!$this->valueNormalizer) {
+            $this->setValueNormalizer($closures['valueNormalizer']);
+        }
+        if (!$this->valuePreprocessor) {
+            $this->setValuePreprocessor($closures['valuePreprocessor']);
+        }
+        if (!$this->valueSavingExtender) {
+            $this->setValueSavingExtender($closures['valueSavingExtender']);
+        }
+        if (!$this->valueDeleteExtender) {
+            $this->setValueDeleteExtender($closures['valueDeleteExtender']);
+        }
+        if (!$this->valueFormatter) {
+            $this->setValueFormatter($closures['valueFormatter']);
+        }
     }
     
     public function getTableStructure(): TableStructure
