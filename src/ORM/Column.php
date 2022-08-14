@@ -336,13 +336,13 @@ class Column
             $this->setName($name);
         }
         $this->setType($type);
-        $this->setColumnClosures();
+        $this->setDefaultColumnClosures();
     }
     
     /**
      * @return \Closure[]
      */
-    protected static function getColumnClosures(): array
+    protected static function getDefaultColumnClosures(): array
     {
         static $defaultClosures = null;
         if ($defaultClosures === null) {
@@ -402,9 +402,9 @@ class Column
         return $defaultClosures;
     }
     
-    protected function setColumnClosures()
+    protected function setDefaultColumnClosures()
     {
-        $closures = static::getColumnClosures();
+        $closures = static::getDefaultColumnClosures();
         $this->setValueGetter($closures['valueGetter']);
         $this->setValueExistenceChecker($closures['valueExistenceChecker']);
         $this->setValueSetter($closures['valueSetter']);
