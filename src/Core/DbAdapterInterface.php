@@ -27,12 +27,12 @@ interface DbAdapterInterface
      * Run $callback when DB connection created (or right now if connection already established)
      * @param \Closure $callback
      * @param null|string $code - callback code to prevent duplicate usage
-     * @return $this
+     * @return static
      */
     public function onConnect(\Closure $callback, ?string $code = null);
     
     /**
-     * @return $this
+     * @return static
      */
     public function disconnect();
     
@@ -76,13 +76,13 @@ interface DbAdapterInterface
     /**
      * Set DB timezone for current session
      * @param string $timezone
-     * @return $this
+     * @return static
      */
     public function setTimezone(string $timezone);
     
     /**
      * @param string $newSearchPath - coma-separated list of DB schemas
-     * @return $this
+     * @return static
      */
     public function setSearchPath(string $newSearchPath);
     
@@ -97,9 +97,9 @@ interface DbAdapterInterface
      *          - false: do not return anything
      *          - array: list of columns names to return values for
      * @param string $pkName - Name of primary key for $returning in DB drivers that support only getLastInsertId()
-     * @return bool|array - array returned only if $returning is not empty
+     * @return array|null - array returned only if $returning is not empty
      */
-    public function insert(string $table, array $data, array $dataTypes = [], $returning = false, string $pkName = 'id');
+    public function insert(string $table, array $data, array $dataTypes = [], $returning = false, string $pkName = 'id'): ?array;
     
     /**
      * @param string $table
@@ -113,9 +113,9 @@ interface DbAdapterInterface
      *          - false: do not return anything
      *          - array: list of columns names to return values for
      * @param string $pkName - Name of primary key for $returning in DB drivers that support only getLastInsertId()
-     * @return bool|array - array returned only if $returning is not empty
+     * @return array|null - array returned only if $returning is not empty
      */
-    public function insertMany(string $table, array $columns, array $data, array $dataTypes = [], $returning = false, string $pkName = 'id');
+    public function insertMany(string $table, array $columns, array $data, array $dataTypes = [], $returning = false, string $pkName = 'id'): ?array;
     
     /**
      * @param string $table
@@ -141,7 +141,7 @@ interface DbAdapterInterface
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
      *          - array: list of columns names to return values for
-     * @return int|array - int: number of deleted records | array: returned only if $returning is not empty
+     * @return array|int - int: number of deleted records | array: returned only if $returning is not empty
      */
     public function delete(string $table, $conditions, $returning = false);
     
@@ -150,22 +150,22 @@ interface DbAdapterInterface
     /**
      * @param bool $readOnly - true: transaction only reads data
      * @param null|string $transactionType - type of transaction
-     * @return $this
+     * @return static
      */
     public function begin(bool $readOnly = false, ?string $transactionType = null);
     
     /**
-     * @return $this
+     * @return static
      */
     public function commit();
     
     /**
-     * @return $this
+     * @return static
      */
     public function rollBack();
     
     /**
-     * @param null|\PDOStatement|\PDO $pdoStatement $pdoStatement - if null: $this->getConnection() will be used
+     * @param null|\PDOStatement|\PDO $pdoStatement $pdoStatement - if null: static->getConnection() will be used
      * @return array
      */
     public function getPdoError($pdoStatement = null): array;

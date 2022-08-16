@@ -263,7 +263,7 @@ abstract class DbAdapter implements DbAdapterInterface
         return $this->getConnection()->prepare($query, $options);
     }
     
-    public function insert(string $table, array $data, array $dataTypes = [], $returning = false, string $pkName = 'id')
+    public function insert(string $table, array $data, array $dataTypes = [], $returning = false, string $pkName = 'id'): ?array
     {
         $this->guardTableNameArg($table);
         $this->guardDataArg($data);
@@ -282,7 +282,7 @@ abstract class DbAdapter implements DbAdapterInterface
                     DbException::CODE_INSERT_FAILED
                 );
             }
-            return true;
+            return null;
         } else {
             return $this->resolveQueryWithReturningColumns(
                 $query,
@@ -301,7 +301,7 @@ abstract class DbAdapter implements DbAdapterInterface
      * {@inheritDoc}
      * @throws \InvalidArgumentException
      */
-    public function insertMany(string $table, array $columns, array $data, array $dataTypes = [], $returning = false, string $pkName = 'id')
+    public function insertMany(string $table, array $columns, array $data, array $dataTypes = [], $returning = false, string $pkName = 'id'): ?array
     {
         $this->guardTableNameArg($table);
         $this->guardColumnsArg($columns, false);
@@ -334,7 +334,7 @@ abstract class DbAdapter implements DbAdapterInterface
                     DbException::CODE_INSERT_FAILED
                 );
             }
-            return true;
+            return null;
         } else {
             return $this->resolveQueryWithReturningColumns(
                 $query,

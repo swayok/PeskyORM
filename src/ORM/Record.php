@@ -10,7 +10,7 @@ use PeskyORM\Exception\RecordNotFoundException;
 use Swayok\Utils\StringUtils;
 
 /**
- * @method static Table getTable()
+ * @method static Table getTable():\PeskyORM\ORM\TableInterface
  */
 abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Serializable
 {
@@ -113,9 +113,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     
     /**
      * Create new empty record
-     * @return static
+     * @return RecordInterface
      */
-    public static function newEmptyRecord()
+    public static function newEmptyRecord(): RecordInterface
     {
         return new static();
     }
@@ -349,9 +349,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * will be not allowed to be saved to prevent possible issues.
      * This mode is designed to speed up DB data processing when you need to iterate over large number of records
      * where values are not intended to be modified and saved.
-     * @return $this
+     * @return void
      */
-    public function enableTrustModeForDbData()
+    public function enableTrustModeForDbData(): void
     {
         $this->trustDbDataMode = true;
         return $this;
@@ -359,9 +359,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     
     /**
      * All values marked as "received from DB" will be normalized and validated (record is allowed to be saved)
-     * @return $this
+     * @return void
      */
-    public function disableTrustModeForDbData()
+    public function disableTrustModeForDbData(): void
     {
         $this->trustDbDataMode = false;
         return $this;
@@ -2573,9 +2573,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Usage of value formatters are allowed ({column}_as_array, {column}_as_object, etc.)
      * Relations returned as similar read only Records or RecordArrays.
      * In this mode you're able to use Record's methods that do not modify Record's data.
-     * @return $this
+     * @return void
      */
-    public function enableReadOnlyMode()
+    public function enableReadOnlyMode(): void
     {
         if (!$this->isReadOnly) {
             if ($this->existsInDb()) {
@@ -2590,9 +2590,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     
     /**
      * Disable read only mode.
-     * @return $this
+     * @return void
      */
-    public function disableReadOnlyMode()
+    public function disableReadOnlyMode(): void
     {
         if ($this->isReadOnly) {
             $this->isReadOnly = false;

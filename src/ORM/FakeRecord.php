@@ -15,7 +15,7 @@ abstract class FakeRecord extends Record
     /**
      * @return TableInterface
      */
-    public static function getTable()
+    public static function getTable(): TableInterface
     {
         return static::$table;
     }

@@ -30,12 +30,12 @@ class PeskyORMIdeHelperTable extends \PeskyORM\ORM\Table implements \PeskyORM\OR
     
     use \PeskyORM\ORM\KeyValueTableHelpers\KeyValueTableHelpers;
     
-    public function newRecord(): PeskyORMIdeHelperRecord
+    public function newRecord(): \PeskyORM\ORM\RecordInterface
     {
         return PeskyORMIdeHelperRecord::newEmptyRecord();
     }
     
-    public function getTableStructure(): PeskyORMIdeHelperTableStructure
+    public function getTableStructure(): \PeskyORM\ORM\TableStructureInterface
     {
         return PeskyORMIdeHelperTableStructure::getInstance();
     }

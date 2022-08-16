@@ -2,15 +2,18 @@
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
+use PeskyORM\ORM\RecordInterface;
 use PeskyORM\ORM\Table;
+use PeskyORM\ORM\TableStructureInterface;
 
 class TestingAdminsTable extends Table
 {
-    public function getTableStructure(): TestingAdminsTableStructure {
+    public function getTableStructure(): TableStructureInterface
+    {
         return TestingAdminsTableStructure::getInstance();
     }
     
-    public function newRecord(): TestingAdmin
+    public function newRecord(): RecordInterface
     {
         return TestingAdmin::newEmptyRecord();
     }

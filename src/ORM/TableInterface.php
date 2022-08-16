@@ -36,15 +36,15 @@ interface TableInterface
     
     /**
      * Table schema description
-     * @return TableStructure
+     * @return TableStructureInterface
      */
     public static function getStructure(): TableStructureInterface;
     
     /**
      * Table schema description
-     * @return TableStructure
+     * @return TableStructureInterface
      */
-    public function getTableStructure();
+    public function getTableStructure(): TableStructureInterface;
     
     /**
      * @param string $relationName
@@ -70,9 +70,9 @@ interface TableInterface
     public static function getPkColumnName(): string;
     
     /**
-     * @return Record
+     * @return RecordInterface
      */
-    public function newRecord();
+    public function newRecord(): RecordInterface;
     
     /**
      * @param bool $useWritableConnection
@@ -167,27 +167,13 @@ interface TableInterface
      */
     public static function count(array $conditions = [], ?\Closure $configurator = null, bool $removeNotInnerJoins = false): int;
     
-    /**
-     * @param bool $readOnly
-     * @param null|string $transactionType
-     * @return void
-     */
-    public static function beginTransaction(bool $readOnly = false, ?string $transactionType = null);
+    public static function beginTransaction(bool $readOnly = false, ?string $transactionType = null): void;
     
-    /**
-     * @return bool
-     */
     public static function inTransaction(): bool;
     
-    /**
-     * @return void
-     */
-    public static function commitTransaction();
+    public static function commitTransaction(): void;
     
-    /**
-     * @return void
-     */
-    public static function rollBackTransaction();
+    public static function rollBackTransaction(): void;
     
     /**
      * @param array $data

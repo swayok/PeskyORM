@@ -14,12 +14,12 @@ interface RecordInterface
      * Create new empty record
      * @return static
      */
-    public static function newEmptyRecord();
+    public static function newEmptyRecord(): RecordInterface;
     
     /**
      * @return TableInterface
      */
-    public static function getTable();
+    public static function getTable(): TableInterface;
     
     /**
      * @param string $name
@@ -32,11 +32,11 @@ interface RecordInterface
      * @param string|null $format - filled when $name is something like 'timestamp_as_date' (returns 'date')
      * @return Column
      */
-    public static function getColumn(string $name, string &$format = null);
+    public static function getColumn(string $name, string &$format = null): Column;
     
     /**
      * Resets all values and related records
-     * @return $this|RecordInterface
+     * @return static|RecordInterface
      */
     public function reset();
     
@@ -61,7 +61,7 @@ interface RecordInterface
      * @param string|Column $column
      * @param mixed $value
      * @param boolean $isFromDb
-     * @return $this|RecordInterface
+     * @return static|RecordInterface
      */
     public function updateValue($column, $value, bool $isFromDb);
     
@@ -95,7 +95,7 @@ interface RecordInterface
     /**
      * Read related object(s). If there are already loaded object(s) - they will be overwritten
      * @param string $relationName - name of relation defined in TableStructure
-     * @return $this|RecordInterface
+     * @return static|RecordInterface
      */
     public function readRelatedRecord(string $relationName);
     
@@ -111,14 +111,14 @@ interface RecordInterface
      * @param array|Record|RecordsArray $relatedRecord
      * @param bool|null $isFromDb - true: marks values as loaded from DB | null: autodetect
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
-     * @return $this|RecordInterface
+     * @return static|RecordInterface
      */
     public function updateRelatedRecord($relationName, $relatedRecord, ?bool $isFromDb = null, bool $haltOnUnknownColumnNames = true);
     
     /**
      * Remove related record
      * @param string $relationName
-     * @return $this|RecordInterface
+     * @return static|RecordInterface
      */
     public function unsetRelatedRecord(string $relationName);
     
@@ -128,7 +128,7 @@ interface RecordInterface
      * @param array $data
      * @param bool $isFromDb - true: marks values as loaded from DB
      * @param bool $haltOnUnknownColumnNames - exception will be thrown if there are unknown column names in $data
-     * @return $this|RecordInterface
+     * @return static|RecordInterface
      * @throws \InvalidArgumentException
      */
     public function fromData(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true);
@@ -137,7 +137,7 @@ interface RecordInterface
      * Fill record values from passed $data.
      * All values are marked as loaded from DB and any unknows column names will raise exception
      * @param array $data
-     * @return $this|RecordInterface
+     * @return static|RecordInterface
      * @throws \InvalidArgumentException
      */
     public function fromDbData(array $data);
@@ -147,7 +147,7 @@ interface RecordInterface
      * @param int|float|string $pkValue
      * @param array $columns - empty: get all columns
      * @param array $readRelatedRecords - also read related records
-     * @return $this|RecordInterface
+     * @return static|RecordInterface
      */
     public function fetchByPrimaryKey($pkValue, array $columns = [], array $readRelatedRecords = []);
     
@@ -157,7 +157,7 @@ interface RecordInterface
      * @param array $conditionsAndOptions
      * @param array $columns - empty: get all columns
      * @param array $readRelatedRecords - also read related records
-     * @return $this|RecordInterface
+     * @return static|RecordInterface
      */
     public function fetch(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = []);
     
@@ -166,7 +166,7 @@ interface RecordInterface
      * Note: record must exist in DB
      * @param array $columns - columns to read
      * @param array $readRelatedRecords - also read related records
-     * @return $this|RecordInterface
+     * @return static|RecordInterface
      * @throws RecordNotFoundException
      */
     public function reload(array $columns = [], array $readRelatedRecords = []);
@@ -174,7 +174,7 @@ interface RecordInterface
     /**
      * Read values for specific columns
      * @param array $columns - columns to read
-     * @return $this|RecordInterface
+     * @return static|RecordInterface
      * @throws OrmException
      * @throws \UnexpectedValueException
      * @throws \PDOException
@@ -190,7 +190,7 @@ interface RecordInterface
      * @param array $data
      * @param bool $isFromDb - true: marks values as loaded from DB
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
-     * @return $this|RecordInterface
+     * @return static|RecordInterface
      * @throws \InvalidArgumentException
      */
     public function updateValues(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true);
@@ -201,7 +201,7 @@ interface RecordInterface
      * Notes:
      * - commit() and rollback() will throw exception if used without begin()
      * - save() will throw exception if used after begin()
-     * @return $this|RecordInterface
+     * @return static|RecordInterface
      * @throws \BadMethodCallException
      */
     public function begin();
@@ -216,7 +216,7 @@ interface RecordInterface
     /**
      * Restore values updated since begin()
      * Note: throws exception if used without begin()
-     * @return $this|RecordInterface
+     * @return static|RecordInterface
      * @throws \BadMethodCallException
      */
     public function rollback();
@@ -230,7 +230,7 @@ interface RecordInterface
      *      - false: ignore related records that exist in db but their pk value is not listed in current set of records
      *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
      *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
-     * @return $this|RecordInterface
+     * @return static|RecordInterface
      * @throws \BadMethodCallException
      */
     public function commit(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false);
@@ -244,7 +244,7 @@ interface RecordInterface
      *      - false: ignore related records that exist in db but their pk value is not listed in current set of records
      *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
      *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
-     * @return $this|RecordInterface
+     * @return static|RecordInterface
      * @throws \BadMethodCallException
      */
     public function save(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false);
@@ -266,7 +266,7 @@ interface RecordInterface
      * Note: this Record must exist in DB
      * @param bool $resetAllValuesAfterDelete - true: will reset Record (default) | false: only primary key value will be reset
      * @param bool $deleteFiles - true: delete all attached files | false: do not delete attached files
-     * @return $this|RecordInterface
+     * @return static|RecordInterface
      * @throws \BadMethodCallException
      */
     public function delete(bool $resetAllValuesAfterDelete = true, bool $deleteFiles = true);
@@ -313,15 +313,15 @@ interface RecordInterface
      */
     public function getDefaults(array $columns = [], bool $ignoreColumnsThatCannotBeSetManually = true, bool $nullifyDbExprValues = true): array;
     
-    public function enableReadOnlyMode();
+    public function enableReadOnlyMode(): void;
     
-    public function disableReadOnlyMode();
+    public function disableReadOnlyMode(): void;
     
     public function isReadOnly(): bool;
     
-    public function enableTrustModeForDbData();
+    public function enableTrustModeForDbData(): void;
     
-    public function disableTrustModeForDbData();
+    public function disableTrustModeForDbData(): void;
     
     public function isTrustDbDataMode(): bool;
     

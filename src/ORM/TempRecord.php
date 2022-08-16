@@ -13,9 +13,9 @@ class TempRecord implements RecordInterface
     
     /**
      * Create new empty record
-     * @return static
+     * @return RecordInterface
      */
-    public static function newEmptyRecord()
+    public static function newEmptyRecord(): RecordInterface
     {
         return new static();
     }
@@ -30,7 +30,7 @@ class TempRecord implements RecordInterface
             ->setTableName($tableName);
     }
     
-    public static function getTable()
+    public static function getTable(): TableInterface
     {
         throw new \BadMethodCallException('Temp Record has not Table');
     }
@@ -49,7 +49,7 @@ class TempRecord implements RecordInterface
      * @param string|null $format - filled when $name is something like 'timestamp_as_date' (returns 'date')
      * @return Column
      */
-    public static function getColumn(string $name, string &$format = null)
+    public static function getColumn(string $name, string &$format = null): Column
     {
         throw new \BadMethodCallException('TempRecord has no Columns');
     }
@@ -430,11 +430,11 @@ class TempRecord implements RecordInterface
         return [];
     }
     
-    public function enableReadOnlyMode()
+    public function enableReadOnlyMode(): void
     {
     }
     
-    public function disableReadOnlyMode()
+    public function disableReadOnlyMode(): void
     {
     }
     
@@ -443,11 +443,11 @@ class TempRecord implements RecordInterface
         return false;
     }
     
-    public function enableTrustModeForDbData()
+    public function enableTrustModeForDbData(): void
     {
     }
     
-    public function disableTrustModeForDbData()
+    public function disableTrustModeForDbData(): void
     {
     }
     

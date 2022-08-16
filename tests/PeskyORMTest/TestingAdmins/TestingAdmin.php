@@ -4,6 +4,7 @@ namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
 use PeskyORM\ORM\Record;
 use PeskyORM\ORM\RecordsSet;
+use PeskyORM\ORM\TableInterface;
 
 /**
  * @property int $id
@@ -27,7 +28,7 @@ use PeskyORM\ORM\RecordsSet;
 class TestingAdmin extends Record
 {
     
-    public static function getTable(): TestingAdminsTable
+    public static function getTable(): TableInterface
     {
         return TestingAdminsTable::getInstance();
     }

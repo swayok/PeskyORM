@@ -3,14 +3,15 @@
 namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
 use PeskyORM\ORM\Record;
+use PeskyORM\ORM\TableInterface;
 
 class TestingAdmin2 extends Record
 {
     
     /**
-     * @return TestingAdminsTable
+     * @return TableInterface
      */
-    public static function getTable()
+    public static function getTable(): TableInterface
     {
         return TestingAdminsTable::getInstance();
     }

@@ -5,6 +5,7 @@ namespace PeskyORM\Tests\PeskyORMTest\TestingFormatters;
 use Carbon\CarbonImmutable;
 use PeskyORM\ORM\Record;
 use PeskyORM\ORM\RecordValue;
+use PeskyORM\ORM\TableInterface;
 
 /**
  * @property int    $id
@@ -47,7 +48,7 @@ use PeskyORM\ORM\RecordValue;
 class TestingFormatter extends Record
 {
     
-    public static function getTable(): TestingFormattersTable
+    public static function getTable(): TableInterface
     {
         return TestingFormattersTable::getInstance();
     }

@@ -124,9 +124,9 @@ VIEW;
     
     /**
      * Table schema description
-     * @return TableStructureInterface|FakeTableStructure
+     * @return TableStructureInterface
      */
-    public function getTableStructure()
+    public function getTableStructure(): TableStructureInterface
     {
         if (!$this->tableStructure) {
             $this->tableStructure = FakeTableStructure::makeNewFakeStructure($this->tableName, $this->tableStructureToCopy);
@@ -145,9 +145,9 @@ VIEW;
     }
     
     /**
-     * @return FakeRecord
+     * @return RecordInterface
      */
-    public function newRecord()
+    public function newRecord(): RecordInterface
     {
         if (!$this->recordClass) {
             $this->recordClass = FakeRecord::makeNewFakeRecordClass($this);

@@ -386,7 +386,7 @@ abstract class Table implements TableInterface
     /**
      * @see DbAdapter::begin()
      */
-    public static function beginTransaction(bool $readOnly = false, ?string $transactionType = null)
+    public static function beginTransaction(bool $readOnly = false, ?string $transactionType = null): void
     {
         static::getConnection(true)
             ->begin($readOnly, $transactionType);
@@ -402,20 +402,20 @@ abstract class Table implements TableInterface
     }
     
     /**
-     * @see DbAdapter::commit()
      * @return void
+     *@see DbAdapter::commit()
      */
-    public static function commitTransaction()
+    public static function commitTransaction(): void
     {
         static::getConnection(true)
             ->commit();
     }
     
     /**
-     * @see DbAdapter::rollBack()
      * @return void
+     *@see DbAdapter::rollBack()
      */
-    public static function rollBackTransaction()
+    public static function rollBackTransaction(): void
     {
         static::getConnection(true)
             ->rollBack();

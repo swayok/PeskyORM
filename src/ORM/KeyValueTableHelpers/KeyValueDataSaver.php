@@ -7,6 +7,7 @@ namespace PeskyORM\ORM\KeyValueTableHelpers;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\FakeTable;
 use PeskyORM\ORM\Record;
+use PeskyORM\ORM\TableInterface;
 
 class KeyValueDataSaver extends Record
 {
@@ -22,7 +23,7 @@ class KeyValueDataSaver extends Record
     protected $_fkValue;
     protected $_constantAdditionalData = [];
     
-    public static function getTable(): FakeTable
+    public static function getTable(): TableInterface
     {
         return static::$table;
     }
