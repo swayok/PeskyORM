@@ -430,11 +430,11 @@ class TempRecord implements RecordInterface
         return [];
     }
     
-    public function enableReadOnlyMode(): void
+    public function enableReadOnlyMode()
     {
     }
     
-    public function disableReadOnlyMode(): void
+    public function disableReadOnlyMode()
     {
     }
     
@@ -443,11 +443,11 @@ class TempRecord implements RecordInterface
         return false;
     }
     
-    public function enableTrustModeForDbData(): void
+    public function enableTrustModeForDbData()
     {
     }
     
-    public function disableTrustModeForDbData(): void
+    public function disableTrustModeForDbData()
     {
     }
     

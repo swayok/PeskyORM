@@ -8,7 +8,7 @@ interface TableStructureInterface
 {
     
     /**
-     * @return $this
+     * @return static
      */
     public static function getInstance(): TableStructureInterface;
     
@@ -18,26 +18,12 @@ interface TableStructureInterface
      */
     public static function getConnectionName(bool $writable): string;
     
-    /**
-     * @return string|null
-     */
     public static function getSchema(): ?string;
     
-    /**
-     * @return string
-     */
     public static function getTableName(): string;
     
-    /**
-     * @param string $columnName
-     * @return bool
-     */
     public static function hasColumn(string $columnName): bool;
     
-    /**
-     * @param string $columnName
-     * @return Column
-     */
     public static function getColumn(string $columnName): Column;
     
     /**
@@ -45,30 +31,14 @@ interface TableStructureInterface
      */
     public static function getColumns(): array;
     
-    /**
-     * @return string|null
-     */
     public static function getPkColumnName(): ?string;
     
-    /**
-     * @return Column|null
-     */
     public static function getPkColumn(): ?Column;
     
-    /**
-     * @return bool
-     */
     public static function hasPkColumn(): bool;
     
-    /**
-     * @return bool
-     */
     public static function hasFileColumns(): bool;
     
-    /**
-     * @param string $columnName
-     * @return bool
-     */
     public static function hasFileColumn(string $columnName): bool;
     
     /**
@@ -76,16 +46,8 @@ interface TableStructureInterface
      */
     public static function getFileColumns(): array;
     
-    /**
-     * @param string $relationName
-     * @return bool
-     */
     public static function hasRelation(string $relationName): bool;
     
-    /**
-     * @param string $relationName
-     * @return Relation
-     */
     public static function getRelation(string $relationName): Relation;
     
     /**

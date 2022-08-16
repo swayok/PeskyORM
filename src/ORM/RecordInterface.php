@@ -313,15 +313,27 @@ interface RecordInterface
      */
     public function getDefaults(array $columns = [], bool $ignoreColumnsThatCannotBeSetManually = true, bool $nullifyDbExprValues = true): array;
     
-    public function enableReadOnlyMode(): void;
+    /**
+     * @return static
+     */
+    public function enableReadOnlyMode();
     
-    public function disableReadOnlyMode(): void;
+    /**
+     * @return static
+     */
+    public function disableReadOnlyMode();
     
     public function isReadOnly(): bool;
     
-    public function enableTrustModeForDbData(): void;
+    /**
+     * @return static
+     */
+    public function enableTrustModeForDbData();
     
-    public function disableTrustModeForDbData(): void;
+    /**
+     * @return static
+     */
+    public function disableTrustModeForDbData();
     
     public function isTrustDbDataMode(): bool;
     
