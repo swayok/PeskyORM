@@ -9,62 +9,45 @@ use PeskyORM\Exception\InvalidDataException;
 use PeskyORM\Exception\RecordNotFoundException;
 use Swayok\Utils\StringUtils;
 
-/**
- * @method static Table getTable():\PeskyORM\ORM\TableInterface
- */
 abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Serializable
 {
     
     /**
-     * @var array
+     * @var Column[]
      */
-    private static $columns = [];
+    private static array $columns = [];
     
     /**
      * @var RecordValue[]
      */
-    protected $values = [];
+    protected array $values = [];
+    
     /**
      * @var Record[]|RecordInterface[]|RecordsSet[]
      */
-    protected $relatedRecords = [];
-    /**
-     * @var null|bool
-     */
-    private $existsInDb;
-    /**
-     * @var null
-     */
-    private $existsInDbReally;
-    /**
-     * @var bool
-     */
-    protected $isCollectingUpdates = false;
+    protected array $relatedRecords = [];
+    
+    private ?bool $existsInDb = null;
+    
+    private ?bool $existsInDbReally = null;
+    
+    protected bool $isCollectingUpdates = false;
+    
     /**
      * Collected when value is updated during $this->isCollectingUpdates === true
      * @var RecordValue[]
      */
-    protected $valuesBackup = [];
-    /**
-     * @var int
-     */
-    protected $iteratorIdx = 0;
-    /**
-     * @var bool
-     */
-    protected $trustDbDataMode = false;
-    /**
-     * @var bool
-     */
-    protected $isReadOnly = false;
-    /**
-     * @var bool
-     */
-    protected $forbidSaving = false;
-    /**
-     * @var array
-     */
-    protected $readOnlyData = [];
+    protected array $valuesBackup = [];
+    
+    protected int $iteratorIdx = 0;
+    
+    protected bool $trustDbDataMode = false;
+    
+    protected bool $isReadOnly = false;
+    
+    protected bool $forbidSaving = false;
+    
+    protected array $readOnlyData = [];
     
     /**
      * Create new record with values from $data array
@@ -113,9 +96,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     
     /**
      * Create new empty record
-     * @return RecordInterface
      */
-    public static function newEmptyRecord(): RecordInterface
+    public static function newEmptyRecord(): Record
     {
         return new static();
     }
@@ -275,6 +257,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         return isset(static::getColumns($includeFormatters)[$name]);
     }
     
+    /**
+     * @throws \BadMethodCallException
+     */
     public static function getPrimaryKeyColumn(): Column
     {
         $column = static::getCachedColumnsOrRelations('pk_column');
@@ -349,7 +334,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * will be not allowed to be saved to prevent possible issues.
      * This mode is designed to speed up DB data processing when you need to iterate over large number of records
      * where values are not intended to be modified and saved.
-     * @return
+     * @return static
      */
     public function enableTrustModeForDbData()
     {
@@ -359,7 +344,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     
     /**
      * All values marked as "received from DB" will be normalized and validated (record is allowed to be saved)
-     * @return
+     * @return static
      */
     public function disableTrustModeForDbData()
     {
@@ -395,6 +380,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         return $this;
     }
     
+    /**
+     * @throws \BadMethodCallException
+     */
     public function resetToDefaults()
     {
         if ($this->isCollectingUpdates) {
@@ -454,6 +442,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Warning: do not use it to get/set/check value!
      * @param string $columnName
      * @return RecordValue
+     * @throws \BadMethodCallException
      */
     protected function getValueContainerByColumnName(string $columnName): RecordValue
     {
@@ -470,6 +459,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Warning: do not use it to get/set/check value!
      * @param Column $column
      * @return RecordValue
+     * @throws \BadMethodCallException
      */
     protected function getValueContainerByColumnConfig(Column $column): RecordValue
     {
@@ -507,9 +497,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     protected function _getValue(Column $column, ?string $format)
     {
         if ($this->isReadOnly()) {
-            $value = array_key_exists($column->getName(), $this->readOnlyData)
-                ? $this->readOnlyData[$column->getName()]
-                : null;
+            $value = $this->readOnlyData[$column->getName()] ?? null;
             if (empty($format) && $column->isItExistsInDb()) {
                 return $value;
             } else {
@@ -862,7 +850,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     
     /**
      * @param string|Relation $relationName
-     * @param array|Record|RecordsArray $relatedRecord
+     * @param array|Record|RecordsArray|RecordInterface $relatedRecord
      * @param bool|null $isFromDb - true: marks values as loaded from DB | null: autodetect
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
      * @return $this
@@ -931,6 +919,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param bool $loadIfNotSet - true: read relation data if it is not set
      * @return Record|RecordsSet
      * @throws \BadMethodCallException
+     * @noinspection NotOptimalIfConditionsInspection
      */
     public function getRelatedRecord(string $relationName, bool $loadIfNotSet = false)
     {
@@ -952,6 +941,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Read related object(s). If there are already loaded object(s) - they will be overwritten
      * @param string $relationName
      * @return $this
+     * @throws \BadMethodCallException
      */
     public function readRelatedRecord(string $relationName)
     {
@@ -1025,6 +1015,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     public function isRelatedRecordAttached(string $relationName): bool
     {
         static::getRelation($relationName);
+        /** @noinspection NotOptimalIfConditionsInspection */
         if ($this->isReadOnly() && isset($this->readOnlyData[$relationName])) {
             return true;
         }
@@ -1098,6 +1089,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $columns - empty: get all columns
      * @param array $readRelatedRecords - also read related records
      * @return $this
+     * @throws \InvalidArgumentException
      */
     public function fetch(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = [])
     {
@@ -1340,7 +1332,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      * @return $this
      * @throws \BadMethodCallException
-     * @throws InvalidDataException
      */
     public function commit(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false)
     {
@@ -1400,7 +1391,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      * @return $this
      * @throws \BadMethodCallException
-     * @throws InvalidDataException
      */
     public function save(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false)
     {
@@ -1481,7 +1471,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             $this->runColumnSavingExtenders($columnsToSave, $data, $updatedData, $isUpdate);
             $this->cleanCacheAfterSave(!$isUpdate);
             $this->afterSave(!$isUpdate, $columnsToSave);
-        } catch (\Exception $exc) {
+        } catch (\Throwable $exc) {
             static::getTable()::rollBackTransactionIfExists();
             throw $exc;
         }
@@ -1528,7 +1518,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             } else {
                 $this->updateValues($table::insert($data, true), true);
             }
-        } catch (\Exception $exc) {
+        } catch (\Throwable $exc) {
             $table::rollBackTransactionIfExists();
             throw $exc;
         }
@@ -1693,6 +1683,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
      *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      * @throws \InvalidArgumentException
+     * @throws \BadMethodCallException
      */
     public function saveRelations(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false)
     {
@@ -1805,7 +1796,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             if (!$alreadyInTransaction && $table::inTransaction()) {
                 $table::commitTransaction();
             }
-            foreach (static::getColumns() as $columnName => $column) {
+            foreach (static::getColumns() as $column) {
                 call_user_func(
                     $column->getValueDeleteExtender(),
                     $this->getValueContainerByColumnConfig($column),
@@ -2035,7 +2026,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     protected function hasAnyNonDefaultValues(): bool
     {
         $columnsNames = static::getColumns();
-        foreach ($columnsNames as $columnName => $column) {
+        foreach ($columnsNames as $column) {
             if ($column->isItExistsInDb() && $this->hasValue($column, false)) {
                 return true;
             }
@@ -2062,7 +2053,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param null|\Closure $valueModifier - \Closure to modify value = function ($value, Record $record) { return $value; }
      * @param bool $returnNullForFiles - false: return file information for file column | true: return null for file column
      * @param bool $isset - true: value is set | false: value is not set
-     *  @param bool $skipPrivateValueCheck - true: return real value even if column is private (Column::isValuePrivate())
+     * @param bool $skipPrivateValueCheck - true: return real value even if column is private (Column::isValuePrivate())
      * @return mixed
      */
     protected function getColumnValueForToArray(
@@ -2183,6 +2174,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param bool|null $isset - true: value is set | false: value is not set
      * @param bool $skipPrivateValueCheck - true: return real value even if column is private (Column::isValuePrivate())
      * @return mixed
+     * @throws \InvalidArgumentException
      */
     protected function getNestedValueForToArray(
         array $parts,
@@ -2341,6 +2333,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param string $key - column name or relation name
      * @return boolean - true on success or false on failure.
      * @throws \InvalidArgumentException
+     * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
     public function offsetExists($key)
     {
@@ -2364,9 +2357,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
     
     /**
-     * @param mixed $key - column name or column name with format (ex: created_at_as_date) or relation name
+     * @param string $key - column name or column name with format (ex: created_at_as_date) or relation name
      * @return mixed
      * @throws \InvalidArgumentException
+     * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
     public function offsetGet($key)
     {
@@ -2388,8 +2382,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
     
     /**
-     * @param mixed $key - column name or relation name
+     * @param string $key - column name or relation name
      * @param mixed $value
+     * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -2411,6 +2406,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return Record
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
+     * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
     public function offsetUnset($key)
     {
@@ -2426,7 +2422,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
     
     /**
-     * @param $name - column name or column name with format (ex: created_at_as_date) or relation name
+     * @param string $name - column name or column name with format (ex: created_at_as_date) or relation name
      * @return mixed
      */
     public function __get($name)
@@ -2435,8 +2431,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
     
     /**
-     * @param $name - 'setColumnName' or 'setRelationName'
-     * @param $value
+     * @param string $name - 'setColumnName' or 'setRelationName'
+     * @param mixed $value
+     * @return void
      */
     public function __set($name, $value)
     {
@@ -2445,7 +2442,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
     
     /**
-     * @param $name - column name or relation name
+     * @param string $name - column name or relation name
      * @return bool
      */
     public function __isset($name)
@@ -2542,14 +2539,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
     
     /**
-     * Constructs the object
-     * @link http://php.net/manual/en/serializable.unserialize.php
-     * @param string $serialized <p>
-     * The string representation of the object.
-     * </p>
+     * @param string $serialized
      * @return void
      * @throws \InvalidArgumentException
-     * @since 5.1.0
+     * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
     public function unserialize($serialized)
     {
@@ -2573,7 +2566,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Usage of value formatters are allowed ({column}_as_array, {column}_as_object, etc.)
      * Relations returned as similar read only Records or RecordArrays.
      * In this mode you're able to use Record's methods that do not modify Record's data.
-     * @return
+     * @return static
      */
     public function enableReadOnlyMode()
     {
@@ -2590,7 +2583,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     
     /**
      * Disable read only mode.
-     * @return
+     * @return static
      */
     public function disableReadOnlyMode()
     {
