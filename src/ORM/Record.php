@@ -307,11 +307,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         return $relations[$name];
     }
     
-    /**
-     * @param string $name
-     * @return bool
-     */
-    public static function hasRelation($name): bool
+    public static function hasRelation(string $name): bool
     {
         return isset(static::getRelations()[$name]);
     }
