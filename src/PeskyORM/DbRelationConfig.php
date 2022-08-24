@@ -59,7 +59,6 @@ class DbRelationConfig {
      * @param string $type
      * @param string $foreignTable
      * @param string $foreignColumn
-     * @return DbRelationConfig
      */
     public function __construct(DbTableConfig $dbTableConfig, $column, $type, $foreignTable, $foreignColumn) {
         $this->dbTableConfig = $dbTableConfig;
@@ -163,9 +162,13 @@ class DbRelationConfig {
      * @return array
      * @throws \BadFunctionCallException
      */
-    public function getAdditionalJoinConditions() {
+    public function getAdditionalJoinConditions(bool $forStandaloneSelect, ?DbObject $dbObject = null) {
         if ($this->additionalJoinConditions instanceof \Closure) {
-            $conditions = call_user_func($this->additionalJoinConditions, $this->getDbTableConfig());
+            $conditions = call_user_func(
+                $this->additionalJoinConditions,
+                $forStandaloneSelect,
+                $dbObject
+            );
             if (!is_array($conditions)) {
                 throw new \BadFunctionCallException('additionalJoinConditions Closure must return array');
             }
@@ -176,15 +179,16 @@ class DbRelationConfig {
     }
 
     /**
-     * @param array|\Closure $additionalJoinConditions - \Closure = function (DbTableConfig $tableConfig) { return []; }
+     * @param array|\Closure $conditionsForJoining - \Closure =
+     *      function (bool $forStandaloneSelect, ?DbObject $dbObject = null) { return []; }
      * @return $this
-     * @throws \Doctrine\Instantiator\Exception\InvalidArgumentException
+     * @throws \InvalidArgumentException
      */
-    public function setAdditionalJoinConditions($additionalJoinConditions) {
-        if (!is_array($additionalJoinConditions) && !($additionalJoinConditions instanceof \Closure)) {
-            throw new \InvalidArgumentException('$additionalJoinConditions argument bust be an array or \Closure');
+    public function setAdditionalConditions($conditionsForJoining) {
+        if (!is_array($conditionsForJoining) && !($conditionsForJoining instanceof \Closure)) {
+            throw new \InvalidArgumentException('$conditionsForJoining argument bust be an array or \Closure');
         }
-        $this->additionalJoinConditions = $additionalJoinConditions;
+        $this->additionalJoinConditions = $conditionsForJoining;
         return $this;
     }
 

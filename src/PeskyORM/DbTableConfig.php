@@ -157,7 +157,7 @@ abstract class DbTableConfig {
      * @return DbRelationConfig
      * @throws DbTableConfigException
      */
-    public function getRelation($alias) {
+    public function getRelation(string $alias) {
         if (!$this->hasRelation($alias)) {
             throw new DbTableConfigException($this, "Table has no relation [{$alias}]");
         }
