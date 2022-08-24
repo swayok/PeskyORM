@@ -119,7 +119,7 @@ class ColumnTest extends BaseTestCase
         $obj = Column::create(Column::TYPE_BOOL);
         static::assertInstanceOf(Column::class, $obj);
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('PeskyORM\ORM\Column::getTableStructure(): Return value must be of type PeskyORM\ORM\TableStructure, null returned');
+        $this->expectExceptionMessage('PeskyORM\ORM\Column::getTableStructure(): Return value must be of type PeskyORM\ORM\TableStructureInterface, null returned');
         /** @noinspection PhpExpressionResultUnusedInspection */
         $obj->getTableStructure();
     }
