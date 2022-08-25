@@ -9,8 +9,9 @@ interface RecordInterface
     
     /**
      * Create new empty record
+     * @return static
      */
-    public static function newEmptyRecord(): RecordInterface;
+    public static function newEmptyRecord();
     
     public static function getTable(): TableInterface;
     

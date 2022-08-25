@@ -96,8 +96,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     
     /**
      * Create new empty record
+     * @return static
      */
-    public static function newEmptyRecord(): Record
+    public static function newEmptyRecord()
     {
         return new static();
     }
