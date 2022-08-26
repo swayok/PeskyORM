@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Core;
 
+use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
@@ -23,7 +24,7 @@ class PostgresAdapterDeleteDataTest extends BaseTestCase
     }
     
     /**
-     * @return \PeskyORM\Adapter\Postgres
+     * @return Postgres
      */
     protected static function getValidAdapter()
     {

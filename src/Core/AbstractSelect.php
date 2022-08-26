@@ -125,7 +125,7 @@ abstract class AbstractSelect
      *      'OFFSET' - int >= 0
      *      'HAVING' - DbExpr,
      *      'JOINS' - array of JoinInfo
-     * @return $this
+     * @return static
      */
     public function fromConfigsArray(array $conditionsAndOptions)
     {
@@ -477,7 +477,7 @@ abstract class AbstractSelect
      *      ]
      *   ]
      * Note: all relations used here will be autoloaded
-     * @return $this
+     * @return static
      */
     public function columns(...$columns)
     {
@@ -491,7 +491,7 @@ abstract class AbstractSelect
      * Set distinct flag to query (SELECT DISTINCT fields ...) or ((SELECT DISTINCT ON ($columns) fields)
      * @param bool $value
      * @param null|array $columns - list of columns to be disctinct
-     * @return $this
+     * @return static
      */
     public function distinct(bool $value = true, ?array $columns = null)
     {
@@ -519,7 +519,7 @@ abstract class AbstractSelect
      * By default - 'AND' is used if you group conditions into array without a key:
      * ['col3 => 0, ['col1' => 1, 'col2' => 2]] will be assembled into ("col3" = 0 AND ("col1" = 1 AND "col2" => 2))
      * @param bool $append
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      * @see Utils::assembleWhereConditionsFromArray() for more details about operators and features
      */
@@ -537,7 +537,7 @@ abstract class AbstractSelect
      * @param bool|string|null $direction - 'ASC' or true; 'DESC' or false; Optional suffixes: 'NULLS LAST' or 'NULLS FIRST';
      *      Ignored if $columnName instance of DbExpr
      * @param bool $append - true: append to existing orders | false: replace existsing orders
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function orderBy($columnName, $direction = 'asc', bool $append = true)
@@ -591,7 +591,7 @@ abstract class AbstractSelect
     
     /**
      * Remove order by (used to speedup existence test)
-     * @return $this
+     * @return static
      */
     public function removeOrdering()
     {
@@ -604,7 +604,7 @@ abstract class AbstractSelect
      * Add GROUP BY
      * @param array $columns - can contain 'col1' and 'ModelAlias.col1', DbExpr::create('expression')
      * @param bool $append - true: append to existing groups | false: replace existsing groups
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function groupBy(array $columns, bool $append = true)
@@ -632,7 +632,7 @@ abstract class AbstractSelect
     /**
      * Set LIMIT
      * @param int $limit - 0 = no limit;
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function limit(int $limit)
@@ -646,7 +646,7 @@ abstract class AbstractSelect
     
     /**
      * Remove LIMIT
-     * @return $this
+     * @return static
      */
     public function noLimit()
     {
@@ -662,7 +662,7 @@ abstract class AbstractSelect
     /**
      * Set/Remove OFFSET
      * @param int $offset - 0 = no offset
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function offset(int $offset)
@@ -693,7 +693,7 @@ abstract class AbstractSelect
      * Set LIMIT and OFFSET at once
      * @param int $limit - 0 = no limit;
      * @param int $offset - 0 = no offset
-     * @return $this
+     * @return static
      */
     public function page(int $limit, int $offset = 0)
     {
@@ -703,7 +703,7 @@ abstract class AbstractSelect
     
     /**
      * @param array $conditions
-     * @return $this
+     * @return static
      */
     public function having(array $conditions)
     {
@@ -716,7 +716,7 @@ abstract class AbstractSelect
      * @param AbstractSelect $select - a sub select that can be used as "table" in main select
      * @param string $selectAlias - alias for passed $select (access to the select will be available using this alias)
      * @param bool $append
-     * @return $this
+     * @return static
      */
     public function with(AbstractSelect $select, string $selectAlias, bool $append = true)
     {
@@ -753,7 +753,7 @@ abstract class AbstractSelect
     /**
      * @param AbstractJoinInfo $joinConfig
      * @param bool $append - false: reset joins list so it will only contain this join
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     protected function _join(AbstractJoinInfo $joinConfig, bool $append = true)
@@ -793,7 +793,7 @@ abstract class AbstractSelect
     
     /**
      * @param string $subject - set subject as dirty
-     * @return $this
+     * @return static
      */
     protected function setDirty(string $subject)
     {
@@ -834,7 +834,7 @@ abstract class AbstractSelect
     }
     
     /**
-     * @return $this
+     * @return static
      */
     protected function processRawColumns()
     {
@@ -1031,11 +1031,7 @@ abstract class AbstractSelect
         if ($columnInfo['name'] instanceof DbExpr && !$columnInfo['alias']) {
             return null;
         }
-        if (isset($columnInfo['parent'])) {
-            $tableAlias = $columnInfo['parent'];
-        } else {
-            $tableAlias = $columnInfo['join_name'] ?: $this->getTableAlias();
-        }
+        $tableAlias = $columnInfo['parent'] ?? ($columnInfo['join_name'] ?: $this->getTableAlias());
         return $this->makeColumnAlias($columnInfo['alias'] ?: $columnInfo['name'], $tableAlias);
     }
     
@@ -1398,7 +1394,7 @@ abstract class AbstractSelect
      * so that there will be no problems building queries that depend on other WITH queries.
      * Make sure to remove current query from $withQueries so there will be no problems
      * @param array $withQueries
-     * @return $this
+     * @return static
      */
     protected function replaceWithQueries(array $withQueries)
     {
@@ -1613,24 +1609,10 @@ abstract class AbstractSelect
             ->quoteDbExpr($this->modifyTableAliasAndJoinNamesInDbExpr($expr));
     }
     
-    /**
-     * @param string $name
-     * @return string
-     */
-    protected function quoteDbEntityName($name): string
+    protected function quoteDbEntityName(string $name): string
     {
         return $this->getConnection()
             ->quoteDbEntityName($name);
-    }
-    
-    /**
-     * @param mixed $value
-     * @return string
-     */
-    protected function quoteValue($value): string
-    {
-        return $this->getConnection()
-            ->quoteValue($value);
     }
     
     /**

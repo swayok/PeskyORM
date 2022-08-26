@@ -356,7 +356,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     
     /**
      * Resets all values and related records
-     * @return $this
+     * @return static
      * @throws \BadMethodCallException
      */
     public function reset()
@@ -406,7 +406,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     
     /**
      * @param string|Column $column
-     * @return $this
+     * @return static
      */
     protected function resetValue($column)
     {
@@ -597,7 +597,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param string|Column $column
      * @param mixed $value
      * @param bool $isFromDb
-     * @return $this
+     * @return static
      * @throws \BadMethodCallException
      */
     public function updateValue($column, $value, bool $isFromDb)
@@ -615,7 +615,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param string|Column $column
      * @param mixed $value
      * @param boolean $isFromDb
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws InvalidDataException
@@ -724,7 +724,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     
     /**
      * @param string|Column $column
-     * @return $this
+     * @return static
      */
     public function unsetValue($column)
     {
@@ -743,7 +743,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     
     /**
      * @param string|Column $column
-     * @return $this
+     * @return static
      * @throws \BadMethodCallException
      */
     public function resetValueToDefault($column)
@@ -763,7 +763,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     
     /**
      * Unset primary key value
-     * @return $this
+     * @return static
      */
     public function unsetPrimaryKeyValue()
     {
@@ -776,6 +776,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Erase related records when primary key received from db was changed or removed + mark all values as
      * received not from db
      * @param string|int|float $prevPkValue
+     * @noinspection PhpUnusedParameterInspection
      */
     protected function onPrimaryKeyChangeForRecordReceivedFromDb($prevPkValue)
     {
@@ -850,7 +851,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array|Record|RecordsArray|RecordInterface $relatedRecord
      * @param bool|null $isFromDb - true: marks values as loaded from DB | null: autodetect
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function updateRelatedRecord($relationName, $relatedRecord, ?bool $isFromDb = null, bool $haltOnUnknownColumnNames = true)
@@ -902,7 +903,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     
     /**
      * Remove related record
-     * @return $this
+     * @return static
      */
     public function unsetRelatedRecord(string $relationName)
     {
@@ -937,7 +938,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * Read related object(s). If there are already loaded object(s) - they will be overwritten
      * @param string $relationName
-     * @return $this
+     * @return static
      * @throws \BadMethodCallException
      */
     public function readRelatedRecord(string $relationName)
@@ -1025,7 +1026,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $data
      * @param bool $isFromDb - true: marks values as loaded from DB
      * @param bool $haltOnUnknownColumnNames - exception will be thrown if there are unknown column names in $data
-     * @return $this
+     * @return static
      */
     public function fromData(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true)
     {
@@ -1038,7 +1039,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Fill record values from passed $data.
      * All values are marked as loaded from DB and any unknows column names will raise exception
      * @param array $data
-     * @return $this
+     * @return static
      */
     public function fromDbData(array $data)
     {
@@ -1061,7 +1062,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param int|float|string $pkValue
      * @param array $columns - empty: get all columns
      * @param array $readRelatedRecords - also read related records
-     * @return $this
+     * @return static
      */
     public function fetchByPrimaryKey($pkValue, array $columns = [], array $readRelatedRecords = [])
     {
@@ -1085,7 +1086,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $conditionsAndOptions
      * @param array $columns - empty: get all columns
      * @param array $readRelatedRecords - also read related records
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function fetch(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = [])
@@ -1156,7 +1157,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * excluding heavy ones use ['*'] as value for $columns argument
      * @param array $columns - columns to read
      * @param array $readRelatedRecords - also read related records
-     * @return $this
+     * @return static
      * @throws RecordNotFoundException
      */
     public function reload(array $columns = [], array $readRelatedRecords = [])
@@ -1170,7 +1171,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * Read values for specific columns
      * @param array $columns - columns to read
-     * @return $this
+     * @return static
      * @throws RecordNotFoundException
      */
     public function readColumns(array $columns = [])
@@ -1198,7 +1199,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $data
      * @param bool $isFromDb - true: marks values as loaded from DB
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
-     * @return $this
+     * @return static
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -1258,7 +1259,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $data
      * @param bool $isFromDb - true: marks values as loaded from DB
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
-     * @return $this
+     * @return static
      */
     public function merge(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true)
     {
@@ -1281,7 +1282,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Notes:
      * - commit() and rollback() will throw exception if used without begin()
      * - save() will throw exception if used after begin()
-     * @return $this
+     * @return static
      * @throws \BadMethodCallException
      */
     public function begin()
@@ -1301,7 +1302,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     /**
      * Restore values updated since begin()
      * Note: throws exception if used without begin()
-     * @return $this
+     * @return static
      * @throws \BadMethodCallException
      */
     public function rollback()
@@ -1327,7 +1328,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      *      - false: ignore related records that exist in db but their pk value is not listed in current set of records
      *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
      *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
-     * @return $this
+     * @return static
      * @throws \BadMethodCallException
      */
     public function commit(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false)
@@ -1386,7 +1387,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      *      - false: ignore related records that exist in db but their pk value is not listed in current set of records
      *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
      *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
-     * @return $this
+     * @return static
      * @throws \BadMethodCallException
      */
     public function save(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false)
@@ -1602,6 +1603,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $data
      * @param bool $isUpdate
      * @return array - errors
+     * @noinspection PhpUnusedParameterInspection
      */
     protected function beforeSave(array $columnsToSave, array $data, bool $isUpdate)
     {
@@ -1766,7 +1768,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Note: this Record must exist in DB
      * @param bool $resetAllValuesAfterDelete - true: will reset Record (default) | false: only primary key value will be reset
      * @param bool $deleteFiles - true: delete all attached files | false: do not delete attached files
-     * @return $this
+     * @return static
      * @throws \BadMethodCallException
      */
     public function delete(bool $resetAllValuesAfterDelete = true, bool $deleteFiles = true)
@@ -2459,7 +2461,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * Supports only methods starting with 'set' and ending with column name or relation name
      * @param string $name - something like 'setColumnName' or 'setRelationName'
      * @param array $arguments - 1 required, 2 accepted. 1st - value, 2nd - $isFromDb
-     * @return $this
+     * @return static
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -2640,6 +2642,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 if (!is_array($value)) {
                     $data[$key] = $value;
                 } else {
+                    /** @noinspection PhpPossiblePolymorphicInvocationInspection */
                     $data[$key] = $relations[$key]->getForeignTable()
                         ->newRecord()
                         ->normalizeReadOnlyData($value);

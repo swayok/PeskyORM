@@ -24,14 +24,7 @@ abstract class TableStructure implements TableStructureInterface
      * @var bool
      */
     protected static $autoloadConfigsFromPrivateMethods = true;
-    /**
-     * @var bool
-     */
-    protected $allColumnsProcessed = false;
-    /**
-     * @var bool
-     */
-    protected $allRelationsProcessed = false;
+    
     /**
      * @var null|Column
      */
@@ -65,7 +58,7 @@ abstract class TableStructure implements TableStructureInterface
     private static $instances = [];
     
     /**
-     * @return $this
+     * @return static
      */
     final public static function getInstance(): TableStructureInterface
     {
@@ -86,7 +79,7 @@ abstract class TableStructure implements TableStructureInterface
     }
     
     /**
-     * @return $this
+     * @return static
      */
     final public static function i(): TableStructureInterface
     {

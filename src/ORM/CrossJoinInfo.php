@@ -13,7 +13,7 @@ class CrossJoinInfo extends AbstractJoinInfo
     protected $joinQuery;
     
     /**
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public static function create(string $joinName, DbExpr $joinQuery)

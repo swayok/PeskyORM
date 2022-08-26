@@ -114,7 +114,7 @@ class RecordValue
     }
     
     /**
-     * @return $this
+     * @return static
      */
     public function setIsFromDb(bool $isFromDb)
     {
@@ -165,12 +165,10 @@ class RecordValue
             if (!$this->hasDefaultValue()) {
                 return false;
             }
-            if ($this->getColumn()
-                ->isItPrimaryKey()) {
-                return $this->hasValue ? false : ($this->getDefaultValue() instanceof DbExpr);
+            if ($this->getColumn()->isItPrimaryKey()) {
+                return !$this->hasValue && $this->getDefaultValue() instanceof DbExpr;
             } else {
-                return !$this->getRecord()
-                    ->existsInDb();
+                return !$this->getRecord()->existsInDb();
             }
         }
         return $this->isDefaultValueCanBeSet;
@@ -188,7 +186,7 @@ class RecordValue
      * @param mixed $rawValue
      * @param mixed $preprocessedValue
      * @param boolean $isFromDb
-     * @return $this
+     * @return static
      */
     public function setRawValue($rawValue, $preprocessedValue, bool $isFromDb)
     {
@@ -197,7 +195,7 @@ class RecordValue
         $this->value = $preprocessedValue;
         $this->hasValue = true;
         $this->isDefaultValueCanBeSet = null;
-        $this->isFromDb = (bool)$isFromDb;
+        $this->isFromDb = $isFromDb;
         $this->customInfo = [];
         $this->validationErrors = [];
         $this->isValidated = false;
@@ -241,7 +239,7 @@ class RecordValue
     /**
      * @param mixed $value
      * @param mixed $rawValue - needed to verify that valid value once was same as raw value
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setValidValue($value, $rawValue)
@@ -275,7 +273,7 @@ class RecordValue
     }
     
     /**
-     * @return $this
+     * @return static
      */
     public function setOldValue(RecordValue $oldValueObject)
     {
@@ -304,7 +302,7 @@ class RecordValue
     }
     
     /**
-     * @return $this
+     * @return static
      */
     public function setValidationErrors(array $validationErrors)
     {
@@ -362,7 +360,7 @@ class RecordValue
     }
     
     /**
-     * @return $this
+     * @return static
      */
     public function setCustomInfo(array $data)
     {
@@ -373,23 +371,17 @@ class RecordValue
     /**
      * @param string $key
      * @param mixed $value
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function addCustomInfo(string $key, $value)
     {
-        if (!is_string($key) && !is_numeric($key)) {
-            throw new \InvalidArgumentException(
-                '$key argument for custom info must be a string or number but ' . gettype($key) . ' received'
-                . " (column: '{$this->getColumnInfoForException()}')"
-            );
-        }
         $this->customInfo[$key] = $value;
         return $this;
     }
     
     /**
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function removeCustomInfo(?string $key = null)
@@ -410,7 +402,7 @@ class RecordValue
     
     /**
      * @param array|null $data
-     * @return $this
+     * @return static
      */
     public function setDataForSavingExtender(?array $data)
     {

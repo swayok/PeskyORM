@@ -83,7 +83,7 @@ class Relation
     
     /**
      * @param string $name
-     * @return $this
+     * @return static
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
@@ -115,14 +115,11 @@ class Relation
     }
     
     /**
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setType(string $type)
     {
-        if (!is_string($type)) {
-            throw new \InvalidArgumentException('$type argument must be a string');
-        }
         $types = [static::BELONGS_TO, static::HAS_MANY, static::HAS_ONE];
         if (!in_array($type, $types, true)) {
             throw new \InvalidArgumentException('$type argument must be one of: ' . implode(',', $types));
@@ -137,7 +134,7 @@ class Relation
     }
     
     /**
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setLocalColumnName(string $localColumnName)
@@ -153,7 +150,7 @@ class Relation
     
     /**
      * @param string|TableInterface $foreignTableClass
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setForeignTableClass($foreignTableClass)
@@ -219,7 +216,7 @@ class Relation
     }
     
     /**
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setForeignColumnName(string $foreignColumnName)
@@ -261,7 +258,7 @@ class Relation
     /**
      * @param array|\Closure $additionalJoinConditions
      *      - \Closure: function (Relation $relation, TableInterface $localTable, string $localTableAlias, bool $forStandaloneSelect, ?Record $localRecord = null) { return []; }
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setAdditionalJoinConditions($additionalJoinConditions)
@@ -283,7 +280,7 @@ class Relation
     
     /**
      * @param string|\Closure $displayColumnName - function(array $relationData) { return $relationData['column']; };
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setDisplayColumnName($displayColumnName)
@@ -302,7 +299,7 @@ class Relation
     
     /**
      * @param string $joinType
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setJoinType(string $joinType)

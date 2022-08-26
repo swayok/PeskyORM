@@ -31,7 +31,7 @@ abstract class RecordValueHelpers
         if ($preprocessedValue === null) {
             if ($isForCondition) {
                 return [];
-            } elseif ($column->isValueCanBeNull() || ($isFromDb && $value !== null)) {
+            } elseif (($isFromDb && $value !== null) || $column->isValueCanBeNull()) {
                 // db value is not null but was preprocessed into null - it is not an error
                 return [];
             }

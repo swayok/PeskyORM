@@ -75,7 +75,7 @@ class ColumnDescription implements \Serializable
     /**
      * @param int|null $limit
      * @param int|null $numberPrecision
-     * @return $this
+     * @return static
      */
     public function setLimitAndPrecision(?int $limit, ?int $numberPrecision = null)
     {
@@ -103,7 +103,7 @@ class ColumnDescription implements \Serializable
     
     /**
      * @param boolean $isNullable
-     * @return $this
+     * @return static
      */
     public function setIsNullable(bool $isNullable)
     {
@@ -121,7 +121,7 @@ class ColumnDescription implements \Serializable
     
     /**
      * @param string|int|float|bool|DbExpr|null $default
-     * @return $this
+     * @return static
      */
     public function setDefault($default)
     {
@@ -136,7 +136,7 @@ class ColumnDescription implements \Serializable
     
     /**
      * @param boolean $isPrimaryKey
-     * @return $this
+     * @return static
      */
     public function setIsPrimaryKey(bool $isPrimaryKey)
     {
@@ -151,7 +151,7 @@ class ColumnDescription implements \Serializable
     
     /**
      * @param boolean $isForeignKey
-     * @return $this
+     * @return static
      */
     public function setIsForeignKey(bool $isForeignKey)
     {
@@ -166,7 +166,7 @@ class ColumnDescription implements \Serializable
     
     /**
      * @param bool $isUnique
-     * @return $this
+     * @return static
      */
     public function setIsUnique(bool $isUnique)
     {
@@ -194,6 +194,7 @@ class ColumnDescription implements \Serializable
      * @return void
      * @throws \InvalidArgumentException
      * @since 5.1.0
+     * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
     public function unserialize($serialized)
     {

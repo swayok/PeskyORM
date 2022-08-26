@@ -886,7 +886,7 @@ class RecordTest extends BaseTestCase
     
         $toArray = $rec->fromData($admin, true)
             ->toArrayWithoutFiles([
-                'email' => function ($value, TestingAdmin $record) {
+                'email' => function ($value) {
                     return $value;
                 },
                 'login' => function () {
@@ -2468,7 +2468,7 @@ class RecordTest extends BaseTestCase
         sort($expected);
         static::assertEquals($expected, $cols);
         $count = 0;
-        foreach ($rec as $name => $value) {
+        foreach ($rec as $ignored) {
             // to test rewind
             $count++;
         }

@@ -6,6 +6,8 @@ namespace PeskyORM\Tests\Core;
 
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\Utils;
+use PeskyORM\Exception\DbException;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
@@ -65,7 +67,7 @@ class PostgresAdapterQueriesTest extends BaseTestCase
         static::assertEquals(1, $rowsAffected);
         $stmnt = $adapter->query($selectQuery);
         static::assertEquals(1, $stmnt->rowCount());
-        $record = \PeskyORM\Core\Utils::getDataFromStatement($stmnt, \PeskyORM\Core\Utils::FETCH_FIRST);
+        $record = Utils::getDataFromStatement($stmnt, Utils::FETCH_FIRST);
         static::assertArraySubset([
             'key' => 'test_key',
             'value' => '"test_value"',
@@ -88,7 +90,7 @@ class PostgresAdapterQueriesTest extends BaseTestCase
     
     public function testTransactionsNestingPrevention()
     {
-        $this->expectException(\PeskyORM\Exception\DbException::class);
+        $this->expectException(DbException::class);
         $this->expectExceptionMessage("Already in transaction");
         $adapter = static::getValidAdapter();
         $adapter->begin();
@@ -97,7 +99,7 @@ class PostgresAdapterQueriesTest extends BaseTestCase
     
     public function testTransactionCommitWithoutBegin()
     {
-        $this->expectException(\PeskyORM\Exception\DbException::class);
+        $this->expectException(DbException::class);
         $this->expectExceptionMessage("Attempt to commit not started transaction");
         $adapter = static::getValidAdapter();
         $adapter->commit();
@@ -106,7 +108,7 @@ class PostgresAdapterQueriesTest extends BaseTestCase
     
     public function testTransactionRollbackWithoutBegin()
     {
-        $this->expectException(\PeskyORM\Exception\DbException::class);
+        $this->expectException(DbException::class);
         $this->expectExceptionMessage("Attempt to rollback not started transaction");
         $adapter = static::getValidAdapter();
         $adapter->rollBack();

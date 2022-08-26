@@ -5,7 +5,7 @@
 
 /** @noinspection PhpUnused */
 
-class PeskyORMIdeHelperRecord extends \PeskyORM\ORM\Record
+abstract class PeskyORMIdeHelperRecord extends \PeskyORM\ORM\Record
 {
     
     use \PeskyORM\ORM\Traits\DbViewRecordProtection;

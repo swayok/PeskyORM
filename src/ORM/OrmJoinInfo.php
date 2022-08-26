@@ -21,7 +21,7 @@ class OrmJoinInfo extends AbstractJoinInfo
      * @param string $joinType
      * @param TableInterface $foreignTable
      * @param string $foreignColumnName
-     * @return $this
+     * @return static
      */
     public static function create(
         string $joinName,
@@ -67,7 +67,7 @@ class OrmJoinInfo extends AbstractJoinInfo
     /**
      * @param TableInterface $table
      * @param string $columnName
-     * @return $this
+     * @return static
      */
     public function setConfigForLocalTable(TableInterface $table, string $columnName)
     {
@@ -79,7 +79,7 @@ class OrmJoinInfo extends AbstractJoinInfo
     /**
      * @param TableInterface $foreignTable
      * @param string $foreignColumnName
-     * @return $this
+     * @return static
      */
     public function setConfigForForeignTable(TableInterface $foreignTable, string $foreignColumnName)
     {
@@ -90,7 +90,7 @@ class OrmJoinInfo extends AbstractJoinInfo
     
     /**
      * @param TableInterface $dbTable
-     * @return $this
+     * @return static
      */
     public function setDbTable(TableInterface $dbTable)
     {
@@ -112,7 +112,7 @@ class OrmJoinInfo extends AbstractJoinInfo
     
     /**
      * @param TableInterface $foreignDbTable
-     * @return $this
+     * @return static
      */
     public function setForeignDbTable(TableInterface $foreignDbTable)
     {

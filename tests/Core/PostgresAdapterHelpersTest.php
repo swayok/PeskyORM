@@ -832,6 +832,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         // Postgres::describeTable()
         $adapter = static::getValidAdapter();
         $description = $adapter->describeTable('settings');
+        /** @noinspection UnnecessaryAssertionInspection */
         static::assertInstanceOf(TableDescription::class, $adapter->describeTable('admins'));
         static::assertEquals('settings', $description->getName());
         static::assertEquals('public', $description->getDbSchema());

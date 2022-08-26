@@ -722,6 +722,7 @@ class DbSelectTest extends BaseTestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type int%");
         /** @noinspection PhpStrictTypeCheckingInspection */
+        /** @noinspection PhpParamsInspection */
         static::getNewSelect()->limit(null);
     }
     
@@ -771,6 +772,7 @@ class DbSelectTest extends BaseTestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessageMatches("%Argument #1 .*? must be of type int%");
         /** @noinspection PhpStrictTypeCheckingInspection */
+        /** @noinspection PhpParamsInspection */
         static::getNewSelect()->offset(null);
     }
     

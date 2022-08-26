@@ -80,6 +80,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertEquals('id', TestingAdminsTableStructure::getPkColumnName());
         static::assertTrue(TestingAdminsTableStructure::hasColumn('login'));
         static::assertFalse(TestingAdminsTableStructure::hasColumn('abrakadabra'));
+        /** @noinspection UnnecessaryAssertionInspection */
         static::assertInstanceOf(Column::class, TestingAdminsTableStructure::getColumn('login'));
         static::assertInstanceOf(Column::class, TestingAdminsTableStructure::getPkColumn());
         static::assertEquals(
@@ -99,6 +100,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertTrue(TestingAdminsTableStructure::hasRelation('Parent'));
         static::assertFalse(TestingAdminsTableStructure::hasRelation('Abrakadabra'));
         $relation = TestingAdminsTableStructure::getRelation('Parent');
+        /** @noinspection UnnecessaryAssertionInspection */
         static::assertInstanceOf(Relation::class, $relation);
         static::assertTrue(
             TestingAdminsTableStructure::getColumn($relation->getLocalColumnName())

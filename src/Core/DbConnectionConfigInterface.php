@@ -10,7 +10,7 @@ interface DbConnectionConfigInterface
     /**
      * @param array $config
      * @param string|null $name
-     * @return $this
+     * @return static
      */
     public static function fromArray(array $config, ?string $name = null);
     
@@ -54,7 +54,7 @@ interface DbConnectionConfigInterface
     /**
      * Set options for PDO connection (key-value)
      * @param array $options
-     * @return $this
+     * @return static
      */
     public function setOptions(array $options);
     
@@ -66,13 +66,13 @@ interface DbConnectionConfigInterface
     
     /**
      * @param string $charset
-     * @return $this
+     * @return static
      */
     public function setCharset(string $charset);
     
     /**
      * @param string|null $timezone
-     * @return $this
+     * @return static
      */
     public function setTimezone(?string $timezone);
     
@@ -83,14 +83,14 @@ interface DbConnectionConfigInterface
     
     /**
      * @param string|array $defaultSchemaName
-     * @return $this
+     * @return static
      */
     public function setDefaultSchemaName($defaultSchemaName);
     
     /**
      * Do some action on connect (set charset, default db schema, etc)
      * @param \PDO $connection
-     * @return $this
+     * @return static
      */
     public function onConnect(\PDO $connection);
     

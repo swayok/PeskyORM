@@ -104,7 +104,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * Inject data from HAS MANY relation into records
      * @param string $relationName
      * @param array $columnsToSelect - see \PeskyORM\Core\AbstractSelect::columns()
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function injectHasManyRelationData(string $relationName, array $columnsToSelect = ['*'])
@@ -180,7 +180,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     /**
      * Reset stored data
      * Note: RecordsArray instance won't be usable after this while RecordsSet can fetch data again
-     * @return $this
+     * @return static
      */
     public function resetRecords()
     {
@@ -217,7 +217,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     
     /**
      * Optimize iteration to reuse Db\Record instance and disable validation for data received from DB
-     * @return $this
+     * @return static
      */
     public function optimizeIteration()
     {
@@ -227,7 +227,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     }
     
     /**
-     * @return $this
+     * @return static
      */
     public function enableDbRecordInstanceReuseDuringIteration()
     {
@@ -236,7 +236,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     }
     
     /**
-     * @return $this
+     * @return static
      */
     public function disableDbRecordInstanceReuseDuringIteration()
     {
@@ -251,7 +251,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     }
     
     /**
-     * @return $this
+     * @return static
      */
     public function enableDbRecordDataValidation()
     {
@@ -260,7 +260,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     }
     
     /**
-     * @return $this
+     * @return static
      */
     public function disableDbRecordDataValidation()
     {
@@ -270,7 +270,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     
     /**
      * @param bool $isDisabled
-     * @return $this
+     * @return static
      */
     protected function setIsDbRecordDataValidationDisabled(bool $isDisabled)
     {
@@ -587,7 +587,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      */
     public function findOne(string $columnName, $value, bool $asObject)
     {
-        foreach ($this->getRecords() as $index => $record) {
+        foreach ($this->getRecords() as $record) {
             if ($record[$columnName] === $value) {
                 return $asObject ? $this->getStandaloneObject($record, false) : $record;
             }
@@ -599,6 +599,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * Whether a record with specified index exists
      * @param mixed $index - an offset to check for.
      * @return boolean - true on success or false on failure.
+     * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
     public function offsetExists($index)
     {
@@ -608,6 +609,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     /**
      * @param int $index - The offset to retrieve.
      * @return RecordInterface|Record
+     * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
     public function offsetGet($index)
     {
@@ -636,6 +638,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * @param int $index
      * @param mixed $value
      * @throws \BadMethodCallException
+     * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
     public function offsetSet($index, $value)
     {
@@ -646,6 +649,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * Offset to unset
      * @param int $index
      * @throws \BadMethodCallException
+     * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
     public function offsetUnset($index)
     {
@@ -671,7 +675,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     }
     
     /**
-     * @return $this
+     * @return static
      */
     public function enableReadOnlyMode()
     {
@@ -680,7 +684,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     }
     
     /**
-     * @return $this
+     * @return static
      */
     public function disableReadOnlyMode()
     {

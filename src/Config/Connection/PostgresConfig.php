@@ -33,6 +33,7 @@ class PostgresConfig implements DbConnectionConfigInterface
      * @param string|null $name
      * @return static
      * @throws \InvalidArgumentException
+     * @noinspection DuplicatedCode
      */
     public static function fromArray(array $config, ?string $name = null)
     {
@@ -74,6 +75,7 @@ class PostgresConfig implements DbConnectionConfigInterface
      * @param string $user
      * @param string $password
      * @throws \InvalidArgumentException
+     * @noinspection DuplicatedCode
      */
     public function __construct(
         $dbName,
@@ -125,7 +127,7 @@ class PostgresConfig implements DbConnectionConfigInterface
     
     /**
      * @param string $name
-     * @return $this
+     * @return static
      */
     public function setName($name)
     {
@@ -159,7 +161,7 @@ class PostgresConfig implements DbConnectionConfigInterface
     
     /**
      * @param string $dbHost
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setDbHost($dbHost)
@@ -183,7 +185,7 @@ class PostgresConfig implements DbConnectionConfigInterface
     
     /**
      * @param string|int $dbPort
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setDbPort($dbPort)
@@ -206,7 +208,7 @@ class PostgresConfig implements DbConnectionConfigInterface
     /**
      * Set options for PDO connection (key-value)
      * @param array $options
-     * @return $this
+     * @return static
      */
     public function setOptions(array $options)
     {
@@ -233,7 +235,7 @@ class PostgresConfig implements DbConnectionConfigInterface
     
     /**
      * @param string|array $defaultSchemaName
-     * @return $this
+     * @return static
      */
     public function setDefaultSchemaName($defaultSchemaName)
     {
@@ -248,7 +250,7 @@ class PostgresConfig implements DbConnectionConfigInterface
     
     /**
      * @param string $charset
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setCharset(string $charset)
@@ -262,7 +264,7 @@ class PostgresConfig implements DbConnectionConfigInterface
     
     /**
      * @param string|null $timezone
-     * @return $this
+     * @return static
      */
     public function setTimezone(?string $timezone)
     {
@@ -273,7 +275,7 @@ class PostgresConfig implements DbConnectionConfigInterface
     /**
      * Do some action on connect (set charset, default db schema, etc)
      * @param PDO $connection
-     * @return $this
+     * @return static
      */
     public function onConnect(PDO $connection)
     {

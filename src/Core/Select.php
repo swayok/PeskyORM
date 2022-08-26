@@ -55,7 +55,7 @@ class Select extends AbstractSelect
     
     /**
      * @param string $schema
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setTableSchemaName(string $schema)
@@ -98,7 +98,7 @@ class Select extends AbstractSelect
     /**
      * @param JoinInfo $joinInfo
      * @param bool $append
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function join(JoinInfo $joinInfo, bool $append = true)

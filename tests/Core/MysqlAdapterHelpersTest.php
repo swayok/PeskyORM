@@ -6,6 +6,8 @@ namespace PeskyORM\Tests\Core;
 
 use InvalidArgumentException;
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\TableDescription;
+use PeskyORM\ORM\Column;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 require_once __DIR__ . '/PostgresAdapterHelpersTest.php';
@@ -276,7 +278,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
         // Mysql::describeTable()
         $adapter = static::getValidAdapter();
         $description = $adapter->describeTable('settings');
-        static::assertInstanceOf(\PeskyORM\Core\TableDescription::class, $adapter->describeTable('admins'));
+        static::assertInstanceOf(TableDescription::class, $adapter->describeTable('admins'));
         static::assertEquals('settings', $description->getName());
         static::assertEquals(null, $description->getDbSchema());
         static::assertCount(3, $description->getColumns());
@@ -284,7 +286,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
         $idCol = $description->getColumn('id');
         static::assertEquals('id', $idCol->getName());
         static::assertEquals('int(11)', $idCol->getDbType());
-        static::assertEquals(\PeskyORM\ORM\Column::TYPE_INT, $idCol->getOrmType());
+        static::assertEquals(Column::TYPE_INT, $idCol->getOrmType());
         static::assertEquals(null, $idCol->getDefault());
         static::assertEquals(null, $idCol->getNumberPrecision());
         static::assertEquals(11, $idCol->getLimit());
@@ -296,7 +298,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
         $keyCol = $description->getColumn('key');
         static::assertEquals('key', $keyCol->getName());
         static::assertEquals('varchar(100)', $keyCol->getDbType());
-        static::assertEquals(\PeskyORM\ORM\Column::TYPE_STRING, $keyCol->getOrmType());
+        static::assertEquals(Column::TYPE_STRING, $keyCol->getOrmType());
         static::assertEquals(null, $keyCol->getDefault());
         static::assertEquals(null, $keyCol->getNumberPrecision());
         static::assertEquals(100, $keyCol->getLimit());
@@ -308,7 +310,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
         $valueCol = $description->getColumn('value');
         static::assertEquals('value', $valueCol->getName());
         static::assertEquals('text', $valueCol->getDbType());
-        static::assertEquals(\PeskyORM\ORM\Column::TYPE_TEXT, $valueCol->getOrmType());
+        static::assertEquals(Column::TYPE_TEXT, $valueCol->getOrmType());
         static::assertEquals(null, $valueCol->getDefault());
         static::assertEquals(null, $valueCol->getNumberPrecision());
         static::assertEquals(null, $valueCol->getLimit());

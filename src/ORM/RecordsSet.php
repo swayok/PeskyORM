@@ -100,7 +100,7 @@ class RecordsSet extends RecordsArray
     /**
      * For internal use only!
      * @param OrmSelect $dbSelect
-     * @return $this
+     * @return static
      */
     protected function setOrmSelect(OrmSelect $dbSelect)
     {
@@ -149,7 +149,7 @@ class RecordsSet extends RecordsArray
      * Note: deletes already selected records and selects new
      * @param array|string|DbExpr $column
      * @param bool $orderAscending
-     * @return $this
+     * @return static
      */
     public function replaceOrdering($column, bool $orderAscending = true)
     {
@@ -173,7 +173,7 @@ class RecordsSet extends RecordsArray
     
     /**
      * Reset already fetched data
-     * @return $this
+     * @return static
      */
     public function resetRecords()
     {
@@ -183,7 +183,7 @@ class RecordsSet extends RecordsArray
     }
     
     /**
-     * @return $this
+     * @return static
      */
     public function nextPage()
     {
@@ -193,7 +193,7 @@ class RecordsSet extends RecordsArray
     }
     
     /**
-     * @return $this
+     * @return static
      */
     public function prevPage()
     {
@@ -203,16 +203,15 @@ class RecordsSet extends RecordsArray
     }
     
     /**
-     * @param int $newBaseOffset
-     * @return $this
-     * @throws \InvalidArgumentException
+     * @param int $newOffset
+     * @return static
      */
-    protected function changeBaseOffset(int $newBaseOffset)
+    public function setOffset(int $newOffset)
     {
-        if ($newBaseOffset < 0) {
+        if ($newOffset < 0) {
             throw new \InvalidArgumentException('Negative offset is not allowed');
         }
-        $this->select->offset($newBaseOffset);
+        $this->select->offset($newOffset);
         $this->recordsCount = null;
         $this->records = null;
         return $this;
@@ -229,7 +228,7 @@ class RecordsSet extends RecordsArray
     }
     
     /**
-     * @return $this
+     * @return static
      */
     public function fetchRecords(bool $reload = false)
     {
@@ -246,7 +245,7 @@ class RecordsSet extends RecordsArray
     
     /**
      * @param array $records
-     * @return $this
+     * @return static
      */
     protected function setRecords(array $records)
     {
@@ -278,7 +277,7 @@ class RecordsSet extends RecordsArray
         if (!$this->offsetExists($index)) {
             throw new \InvalidArgumentException("Array does not contain index '{$index}'");
         }
-        return $this->getRecords()[(int)$index];
+        return $this->getRecords()[$index];
     }
     
     /**
@@ -309,7 +308,7 @@ class RecordsSet extends RecordsArray
     /**
      * This can speedup count query for simple cases when joins are not nested
      * @param bool $ignoreLeftJoinsForCount
-     * @return $this
+     * @return static
      */
     public function setIgnoreLeftJoinsForCount(bool $ignoreLeftJoinsForCount)
     {
@@ -337,7 +336,7 @@ class RecordsSet extends RecordsArray
     
     /**
      * Invalidate counts
-     * @return $this
+     * @return static
      */
     protected function invalidateCount()
     {

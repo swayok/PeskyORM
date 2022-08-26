@@ -47,7 +47,7 @@ abstract class AbstractJoinInfo
     }
     
     /**
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setColumnName(string $columnName)
@@ -65,7 +65,7 @@ abstract class AbstractJoinInfo
     }
     
     /**
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setForeignColumnName(string $foreignColumnName)
@@ -93,7 +93,7 @@ abstract class AbstractJoinInfo
     }
     
     /**
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setJoinName(string $joinName)
@@ -116,7 +116,7 @@ abstract class AbstractJoinInfo
     }
     
     /**
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setJoinType(string $joinType)
@@ -153,7 +153,7 @@ abstract class AbstractJoinInfo
     }
     
     /**
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setTableAlias(string $alias)
@@ -171,7 +171,7 @@ abstract class AbstractJoinInfo
     }
     
     /**
-     * @return $this
+     * @return static
      */
     public function setAdditionalJoinConditions(array $additionalJoinConditions)
     {
@@ -186,7 +186,7 @@ abstract class AbstractJoinInfo
     
     /**
      * @param array $columns - use '*' or ['*'] to select all columns and empty array to select none
-     * @return $this
+     * @return static
      */
     public function setForeignColumnsToSelect(...$columns)
     {

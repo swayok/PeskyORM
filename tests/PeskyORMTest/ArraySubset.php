@@ -13,6 +13,7 @@ use ArrayObject;
 use PHPUnit\Framework\Constraint\Constraint;
 use PHPUnit\Framework\ExpectationFailedException;
 use SebastianBergmann\Comparator\ComparisonFailure;
+use SebastianBergmann\RecursionContext\InvalidArgumentException;
 use Traversable;
 
 use function array_replace_recursive;
@@ -56,7 +57,7 @@ final class ArraySubset extends Constraint
      * a boolean value instead: true in case of success, false in case of a
      * failure.
      *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
+     * @throws InvalidArgumentException
      * @throws ExpectationFailedException
      */
     public function evaluate($other, string $description = '', bool $returnResult = false)
@@ -71,6 +72,7 @@ final class ArraySubset extends Constraint
         if ($this->strict) {
             $result = $other === $patched;
         } else {
+            /** @noinspection TypeUnsafeComparisonInspection */
             $result = $other == $patched;
         }
 
@@ -88,12 +90,13 @@ final class ArraySubset extends Constraint
 
             $this->fail($other, $description, $f);
         }
+        return null;
     }
 
     /**
      * Returns a string representation of the constraint.
      *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function toString(): string
     {
@@ -108,7 +111,7 @@ final class ArraySubset extends Constraint
      *
      * @param mixed $other evaluated value or object
      *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     protected function failureDescription($other): string
     {

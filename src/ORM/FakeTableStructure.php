@@ -10,12 +10,10 @@ use Swayok\Utils\StringUtils;
 abstract class FakeTableStructure extends TableStructure
 {
     
-    private static $fakesCreated = 0;
-    protected $allColumnsProcessed = true;
-    protected $allRelationsProcessed = true;
-    protected $treatAnyColumnNameAsValid = true;
-    protected $connectionName = 'default';
-    protected $connectionNameWritable = 'default';
+    private static int $fakesCreated = 0;
+    protected bool $treatAnyColumnNameAsValid = true;
+    protected string $connectionName = 'default';
+    protected string $connectionNameWritable = 'default';
     
     /**
      * @param string $tableName
@@ -84,7 +82,7 @@ VIEW;
     /**
      * @param array $columns - key-value array where key is column name and value is column type or
      *          key is int and value is column name or instance of Column class
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
@@ -123,7 +121,7 @@ VIEW;
     
     /**
      * @param $columnName
-     * @return $this
+     * @return static
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -138,7 +136,7 @@ VIEW;
     /**
      * @param TableStructure $structure
      * @param bool $append - true: existing structure will be appended; false - replaced
-     * @return $this
+     * @return static
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -162,11 +160,6 @@ VIEW;
         $this->connectionNameWritable = $structure::getConnectionName(true);
         $this->treatAnyColumnNameAsValid = count($this->columns) === 0;
         return $this;
-    }
-    
-    public static function getColumnsThatExistInDb(): array
-    {
-        return parent::getColumnsThatExistInDb();
     }
     
     /**

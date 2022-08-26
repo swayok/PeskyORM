@@ -80,7 +80,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
     {
         $column = Column::create(Column::TYPE_ENUM, 'test')
             ->setAllowedValues(['a', 'b'])
-            ->setValueValidatorExtender(function ($value, $isFromDb, $isForCondition, Column $column) {
+            ->setValueValidatorExtender(function ($value) {
                 return $value === 'a' ? ['extender!!!'] : [];
             });
         static::assertEquals(

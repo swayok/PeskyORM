@@ -50,6 +50,7 @@ class RecordValueTest extends BaseTestCase
         static::assertEquals([], $this->getObjectPropertyValue($valueObj, 'validationErrors'));
         static::assertEquals([], $this->getObjectPropertyValue($valueObj, 'customInfo'));
         static::assertInstanceOf(Column::class, $this->getObjectPropertyValue($valueObj, 'column'));
+        /** @noinspection UnnecessaryAssertionInspection */
         static::assertInstanceOf(Column::class, $valueObj->getColumn());
         static::assertTrue(
             $this->getObjectPropertyValue($valueObj, 'column')
@@ -68,6 +69,7 @@ class RecordValueTest extends BaseTestCase
         static::assertEquals([], $this->getObjectPropertyValue($clone, 'validationErrors'));
         static::assertEquals([], $this->getObjectPropertyValue($clone, 'customInfo'));
         static::assertInstanceOf(Column::class, $this->getObjectPropertyValue($clone, 'column'));
+        /** @noinspection UnnecessaryAssertionInspection */
         static::assertInstanceOf(Column::class, $clone->getColumn());
         static::assertTrue(
             $this->getObjectPropertyValue($clone, 'column')

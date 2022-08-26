@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Core;
 
-use PeskyORM\Config\Connection\PostgresConfig;
+use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
@@ -13,9 +13,6 @@ use Swayok\Utils\Set;
 
 class UtilsTest extends BaseTestCase
 {
-    
-    /** @var PostgresConfig */
-    protected static $dbConnectionConfig;
     
     public static function setUpBeforeClass(): void
     {
@@ -66,7 +63,7 @@ class UtilsTest extends BaseTestCase
                 'name' => 'Lionel Freeman',
                 'email' => 'diam.at.pretium@idmollisnec.co.uk',
                 'timezone' => 'Europe/Moscow',
-                'big_data' => 'biiiiiiig data'
+                'big_data' => 'biiiiiiig data',
             ],
             [
                 'id' => 2,
@@ -84,7 +81,7 @@ class UtilsTest extends BaseTestCase
                 'name' => 'Jasper Waller',
                 'email' => 'elit@eratvelpede.org',
                 'timezone' => 'Europe/Moscow',
-                'big_data' => 'biiiiiiig data'
+                'big_data' => 'biiiiiiig data',
             ],
         ];
     }
@@ -384,7 +381,7 @@ class UtilsTest extends BaseTestCase
             ['test' => 'aaa'],
             null,
             'AND',
-            function ($colName, $value, $connection) {
+            function ($colName, $value) {
                 throw new \UnexpectedValueException("Value [$value] for column name [$colName] is invalid");
             }
         );
@@ -405,7 +402,7 @@ class UtilsTest extends BaseTestCase
                 [DbExpr::create('`col` = ``value``')],
                 $columnQuoter,
                 'AND',
-                function ($colName, $value, \PeskyORM\Core\DbAdapterInterface $connection) {
+                function ($colName, $value, DbAdapterInterface $connection) {
                     return $connection->quoteDbExpr($value);
                 }
             )

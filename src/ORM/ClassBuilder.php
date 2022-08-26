@@ -390,7 +390,7 @@ VIEW;
                     $formatToPhpType[$formatName] = 'array';
                     break;
                 case 'object':
-                    $formatToPhpType[$formatName] = '\stdClass';
+                    $formatToPhpType[$formatName] = \stdClass::class;
                     break;
                 case 'carbon':
                     $formatToPhpType[$formatName] = 'Carbon';

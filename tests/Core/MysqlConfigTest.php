@@ -183,6 +183,7 @@ class MysqlConfigTest extends BaseTestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage("Argument #1 (\$options) must be of type array");
         $config = new MysqlConfig('test', 'test', 'test');
+        /** @noinspection PhpParamsInspection */
         $config->setOptions(null);
     }
     

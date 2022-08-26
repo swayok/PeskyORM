@@ -18,7 +18,7 @@ class JoinInfo extends AbstractJoinInfo
      * @param string $foreignColumnName
      * @param string|null $localTableSchema
      * @param string|null $foreignTableSchema
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public static function create(
@@ -75,7 +75,7 @@ class JoinInfo extends AbstractJoinInfo
      * @param string $tableName
      * @param string $columnName
      * @param string|null $tableSchema
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setConfigForLocalTable(string $tableName, string $columnName, ?string $tableSchema = null)
@@ -93,7 +93,7 @@ class JoinInfo extends AbstractJoinInfo
      * @param string $foreignTableName
      * @param string $foreignColumnName
      * @param string|null $foreignTableSchema
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setConfigForForeignTable(string $foreignTableName, string $foreignColumnName, ?string $foreignTableSchema = null)
@@ -109,7 +109,7 @@ class JoinInfo extends AbstractJoinInfo
     
     /**
      * @param string $foreignTableName
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setForeignTableName(string $foreignTableName)
@@ -123,7 +123,7 @@ class JoinInfo extends AbstractJoinInfo
     
     /**
      * @param null|string $schema
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setForeignTableSchema(?string $schema)
@@ -137,7 +137,7 @@ class JoinInfo extends AbstractJoinInfo
     
     /**
      * @param string $tableName
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setTableName(string $tableName)
@@ -154,7 +154,7 @@ class JoinInfo extends AbstractJoinInfo
     
     /**
      * @param null|string $schema
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setTableSchema(?string $schema)

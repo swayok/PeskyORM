@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Orm;
 
+use PeskyORM\Core\ColumnDescription;
+use PeskyORM\Core\DbExpr;
 use PeskyORM\ORM\ClassBuilder;
 use PeskyORM\ORM\Column;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
@@ -76,7 +78,7 @@ class ClassBuilderTest extends BaseTestCase
     public function testMakeColumnConfig()
     {
         $builder = $this->getBuilder();
-        $columnDescr = new \PeskyORM\Core\ColumnDescription('test', 'integer', Column::TYPE_INT);
+        $columnDescr = new ColumnDescription('test', 'integer', Column::TYPE_INT);
         $columnDescr->setIsPrimaryKey(true);
         static::assertEquals(
             'Column::create(Column::TYPE_INT)->primaryKey()',
@@ -139,13 +141,13 @@ class ClassBuilderTest extends BaseTestCase
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
-            ->setDefault(\PeskyORM\Core\DbExpr::create("string with ' quotes \" `"));
+            ->setDefault(DbExpr::create("string with ' quotes \" `"));
         static::assertEquals(
             "Column::create(Column::TYPE_INT)->setDefaultValue(DbExpr::create('string with \' quotes \\\" `'))",
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
-            ->setDefault(\PeskyORM\Core\DbExpr::create("string with ' quotes \" `"))
+            ->setDefault(DbExpr::create("string with ' quotes \" `"))
             ->setIsPrimaryKey(true);
         static::assertEquals(
             'Column::create(Column::TYPE_INT)->primaryKey()',

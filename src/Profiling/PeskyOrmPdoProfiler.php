@@ -85,7 +85,6 @@ class PeskyOrmPdoProfiler
     protected static function collectPDO(TraceablePDO $pdo): array
     {
         $stmts = [];
-        /** @var TracedStatement $stmt */
         foreach ($pdo->getExecutedStatements() as $stmt) {
             $stmts[] = [
 //                'sql' => $this->renderSqlWithParams ? $stmt->getSqlWithParams() : $stmt->getSql(),

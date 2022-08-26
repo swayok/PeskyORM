@@ -6,6 +6,7 @@ namespace PeskyORM\Tests\Orm;
 
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\DefaultColumnClosures;
+use PeskyORM\ORM\RecordValue;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
@@ -232,7 +233,7 @@ class ColumnTest extends BaseTestCase
         $rec = TestingAdmin::newEmptyRecord();
         $rec->updateValue('login', 'test', false);
         static::assertEquals('test', $rec->getValue('login'));
-        /** @var \PeskyORM\ORM\RecordValue $value */
+        /** @var RecordValue $value */
         $value = $this->getObjectPropertyValue($rec, 'values')['login'];
         static::assertEquals(
             '11:00:00',
@@ -250,7 +251,7 @@ class ColumnTest extends BaseTestCase
         static::assertEquals(Column::TYPE_TIMESTAMP, $obj->getType());
         static::assertInstanceOf(\Closure::class, $obj->getValueFormatter());
         $rec = TestingAdmin::fromArray(['created_at' => '2016-11-21 11:00:00']);
-        /** @var \PeskyORM\ORM\RecordValue $value */
+        /** @var RecordValue $value */
         $value = $this->getObjectPropertyValue($rec, 'values')['created_at'];
         static::assertEquals(
             '11:00:00',
@@ -300,7 +301,7 @@ class ColumnTest extends BaseTestCase
         );
         Column::create(Column::TYPE_BOOL, 'name')
             ->setTableStructure(TestingAdminsTableStructure::getInstance())
-            ->setValidDefaultValueGetter(function ($fallback) {
+            ->setValidDefaultValueGetter(function () {
                 return -1;
             })
             ->getValidDefaultValue(true);
@@ -335,7 +336,7 @@ class ColumnTest extends BaseTestCase
         static::assertNull($obj->getValidDefaultValue(true));
         
         // default value getter
-        $obj->setValidDefaultValueGetter(function ($fallbackValue, Column $column) {
+        $obj->setValidDefaultValueGetter(function ($fallbackValue) {
             return $fallbackValue;
         });
         $obj->setDefaultValue(true);

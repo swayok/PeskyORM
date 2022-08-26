@@ -24,11 +24,6 @@ class DbConnectionsManager
     private static $connections = [];
     
     /**
-     * @var null|string $queryString
-     */
-    protected $lastQuery = null;
-    
-    /**
      * Add custom DB adapter
      * @param $name
      * @param $className - class must implement \PeskyORM\Core\DbAdapterInterface

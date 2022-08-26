@@ -20,7 +20,7 @@ abstract class Table implements TableInterface
     protected $alias;
     
     /**
-     * @return $this
+     * @return static
      */
     final public static function getInstance(): TableInterface
     {
@@ -41,7 +41,7 @@ abstract class Table implements TableInterface
     
     /**
      * Shortcut for static::getInstance()
-     * @return $this
+     * @return static
      */
     final public static function i(): TableInterface
     {
@@ -62,7 +62,7 @@ abstract class Table implements TableInterface
      * @param bool $writable - true: connection must have access to write data into DB
      * @return DbAdapterInterface
      */
-    public static function getConnection($writable = false): DbAdapterInterface
+    public static function getConnection(bool $writable = false): DbAdapterInterface
     {
         return DbConnectionsManager::getConnection(
             static::getStructure()

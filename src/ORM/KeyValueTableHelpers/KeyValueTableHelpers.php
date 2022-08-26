@@ -122,7 +122,7 @@ trait KeyValueTableHelpers
      */
     public static function decodeValues(array $settingsAssoc): array
     {
-        foreach ($settingsAssoc as $key => &$value) {
+        foreach ($settingsAssoc as &$value) {
             $value = static::decodeValue($value);
         }
         return $settingsAssoc;
@@ -224,7 +224,6 @@ trait KeyValueTableHelpers
             if (!$alreadyInTransaction && $table::inTransaction()) {
                 $table::rollBackTransaction();
             }
-            /** @noinspection ExceptionsAnnotatingAndHandlingInspection */
             throw $exc;
         }
     }

@@ -1,4 +1,5 @@
 <?php
+/** @noinspection PhpUnusedPrivateMethodInspection */
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
@@ -161,7 +162,7 @@ class TestingAdminsTableStructure extends TableStructure
             ->allowsNullValues()
             ->setValueFormatter(function () {
                 return 'not implemented';
-            }, []);
+            });
     }
     
     private function some_file()
@@ -171,7 +172,7 @@ class TestingAdminsTableStructure extends TableStructure
             ->allowsNullValues()
             ->setValueFormatter(function () {
                 return 'not implemented';
-            }, []);
+            });
     }
     
     private function not_changeable_column()
@@ -200,10 +201,9 @@ class TestingAdminsTableStructure extends TableStructure
             ->doesNotExistInDb()
             ->valueCannotBeSetOrChanged()
             ->disallowsNullValues()
-            ->setValueGetter(function (RecordValue $value, $format = null) {
+            ->setValueGetter(function (RecordValue $value) {
                 $record = $value->getRecord();
-                return 'calculated-' . ($record->existsInDb() ? $value->getRecord()
-                        ->getPrimaryKeyValue() : '');
+                return 'calculated-' . ($record->existsInDb() ? $value->getRecord()->getPrimaryKeyValue() : '');
             })
             ->setValueExistenceChecker(function () {
                 return true;

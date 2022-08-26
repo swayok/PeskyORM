@@ -27,7 +27,7 @@ interface TableInterface
      * @param bool $writable - true: connection must have access to write data into DB
      * @return DbAdapterInterface
      */
-    public static function getConnection($writable = false): DbAdapterInterface;
+    public static function getConnection(bool $writable = false): DbAdapterInterface;
     
     /**
      * @return TableInterface
@@ -145,7 +145,7 @@ interface TableInterface
      * @param DbExpr $expression - example: DbExpr::create('COUNT(*)'), DbExpr::create('SUM(`field`)')
      * @param array $conditions
      * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return
+     * @return string|int|float|null
      * @throws \InvalidArgumentException
      */
     public static function selectValue(DbExpr $expression, array $conditions = [], ?\Closure $configurator = null);

@@ -54,7 +54,7 @@ class OrmSelect extends AbstractSelect
      */
     public static function from(TableInterface $table, ?string $tableAlias = null)
     {
-        return new static($table);
+        return new static($table, $tableAlias);
     }
     
     /**
@@ -65,11 +65,7 @@ class OrmSelect extends AbstractSelect
     {
         $this->tableStructure = $table::getStructure();
         $this->table = $table;
-        $this->setTableAlias(
-            $tableAlias
-                ?: $this->getTable()
-                ->getAlias()
-        );
+        $this->setTableAlias($tableAlias ?: $this->getTable()->getAlias());
     }
     
     public function getTableName(): string
@@ -134,7 +130,7 @@ class OrmSelect extends AbstractSelect
     /**
      * @param OrmJoinInfo $joinInfo
      * @param bool $append
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function join(OrmJoinInfo $joinInfo, bool $append = true)
@@ -345,7 +341,7 @@ class OrmSelect extends AbstractSelect
     /**
      * Load relation and all its parents
      * @param string $joinName
-     * @return $this
+     * @return static
      * @throws \UnexpectedValueException
      */
     protected function addJoinFromRelation(string $joinName)

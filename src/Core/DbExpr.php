@@ -55,7 +55,7 @@ class DbExpr
     
     /**
      * @param bool $wrapInBrackets
-     * @return $this
+     * @return static
      */
     public function setWrapInBrackets($wrapInBrackets)
     {
@@ -73,7 +73,7 @@ class DbExpr
     
     /**
      * Disable relation and column name validation when DbExpr is used by OrmSelect
-     * @return $this
+     * @return static
      */
     public function noValidate()
     {

@@ -1,4 +1,5 @@
 <?php
+/** @noinspection PhpUnusedPrivateMethodInspection */
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingFormatters;
 

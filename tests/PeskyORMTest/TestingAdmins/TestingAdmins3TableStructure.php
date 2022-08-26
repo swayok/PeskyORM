@@ -1,4 +1,5 @@
 <?php
+/** @noinspection PhpUnusedPrivateMethodInspection */
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
@@ -159,7 +160,7 @@ class TestingAdmins3TableStructure extends TableStructure
             ->allowsNullValues()
             ->setValueFormatter(function () {
                 return 'not implemented';
-            }, []);
+            });
     }
     
     private function some_file()
@@ -169,7 +170,7 @@ class TestingAdmins3TableStructure extends TableStructure
             ->allowsNullValues()
             ->setValueFormatter(function () {
                 return 'not implemented';
-            }, [])
+            })
             ->setValueSavingExtender(function () {
                 throw new \UnexpectedValueException('some_file: here');
             });

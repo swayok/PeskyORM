@@ -116,6 +116,7 @@ class TableDescription implements \Serializable
      * @return void
      * @throws \InvalidArgumentException
      * @since 5.1.0
+     * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
     public function unserialize($serialized)
     {

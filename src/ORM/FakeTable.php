@@ -84,6 +84,7 @@ VIEW;
         eval($class);
         /** @var FakeTable $fullClassName */
         $fullClassName = $namespace . '\\' . $className;
+        /** @var FakeTable $table */
         $table = $fullClassName::getInstance();
         $table->tableName = $tableName;
         if (is_array($columnsOrTableStructure)) {
@@ -107,14 +108,13 @@ VIEW;
      * @param bool $writable - true: connection must have access to write data into DB
      * @return DbAdapterInterface
      */
-    public static function getConnection($writable = false): DbAdapterInterface
+    public static function getConnection(bool $writable = false): DbAdapterInterface
     {
         return static::getInstance()->connection ?: parent::getConnection($writable);
     }
     
     /**
-     * @param DbAdapterInterface $connection
-     * @return $this
+     * @return static
      */
     public function setConnection(DbAdapterInterface $connection)
     {
@@ -122,11 +122,7 @@ VIEW;
         return $this;
     }
     
-    /**
-     * Table schema description
-     * @return TableStructureInterface
-     */
-    public function getTableStructure(): TableStructureInterface
+    public function getTableStructure(): FakeTableStructure
     {
         if (!$this->tableStructure) {
             $this->tableStructure = FakeTableStructure::makeNewFakeStructure($this->tableName, $this->tableStructureToCopy);
@@ -136,7 +132,7 @@ VIEW;
     
     /**
      * @param TableStructureInterface $tableStructure
-     * @return $this
+     * @return static
      */
     public function setTableStructureToCopy(TableStructureInterface $tableStructure)
     {
@@ -157,7 +153,7 @@ VIEW;
     
     /**
      * @param string $class
-     * @return $this
+     * @return static
      * @throws \InvalidArgumentException
      */
     public function setRecordClass($class)

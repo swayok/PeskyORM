@@ -712,7 +712,7 @@ abstract class DbAdapter implements DbAdapterInterface
     public function getPdoError($pdoStatement = null): array
     {
         $ret = [];
-        if (empty($pdoStatement)) {
+        if (!$pdoStatement) {
             $pdoStatement = $this->getConnection();
         } elseif (!($pdoStatement instanceof \PDOStatement) && !($pdoStatement instanceof \PDO)) {
             throw new \InvalidArgumentException('$pdoStatement argument should be instance of \PDOStatement or \PDO');
@@ -810,10 +810,10 @@ abstract class DbAdapter implements DbAdapterInterface
         } else {
             if ($value === null || $valueDataType === \PDO::PARAM_NULL) {
                 return 'NULL';
-            } elseif ((empty($valueDataType) && is_bool($value)) || $valueDataType === \PDO::PARAM_BOOL) {
+            } elseif (($valueDataType === null && is_bool($value)) || $valueDataType === \PDO::PARAM_BOOL) {
                 return $value ? static::BOOL_TRUE : static::BOOL_FALSE;
             }
-            if (empty($valueDataType)) {
+            if ($valueDataType === null) {
                 if (is_int($value)) {
                     $valueDataType = \PDO::PARAM_INT;
                 } else {
@@ -834,7 +834,7 @@ abstract class DbAdapter implements DbAdapterInterface
                     } elseif (is_resource($value)) { //< todo: remove after upgrade to php 8
                         $realType = 'Resource';
                     } elseif ($value instanceof \Closure) { //< todo: remove after upgrade to php 8
-                        $realType = '\Closure';
+                        $realType = \Closure::class;
                     } else {
                         $realType = 'Value of unknown type';
                     }
@@ -843,6 +843,7 @@ abstract class DbAdapter implements DbAdapterInterface
             }
             if ($valueDataType === \PDO::PARAM_STR && is_string($value)) {
                 // prevent "\" at the end of a string by duplicating slashes
+                /** @noinspection RegExpSimplifiable */
                 $value = preg_replace('%([\\\]+)$%', '$1$1', $value);
             }
             if (!in_array($valueDataType, [\PDO::PARAM_STR, \PDO::PARAM_INT, \PDO::PARAM_LOB], true)) {
