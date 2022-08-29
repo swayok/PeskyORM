@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\Core;
 
 use PDOException;
+use PeskyORM\Adapter\Mysql;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
 use PeskyORM\Exception\DbException;
@@ -19,12 +20,12 @@ class MysqlAdapterQueriesTest extends BaseTestCase
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    private static function getValidAdapter()
+    private static function getValidAdapter(): Mysql
     {
         return TestingApp::getMysqlConnection();
     }
     
-    public function testInvalidValueInQuery()
+    public function testInvalidValueInQuery(): void
     {
         $this->expectException(PDOException::class);
         $this->expectExceptionMessage("Column 'key' cannot be null");
@@ -36,7 +37,7 @@ class MysqlAdapterQueriesTest extends BaseTestCase
         $adapter->rollBack();
     }
     
-    public function testInvalidTableInQuery()
+    public function testInvalidTableInQuery(): void
     {
         $this->expectException(PDOException::class);
         $this->expectExceptionMessageMatches("%Table '.*?\.abrakadabra' doesn't exist%i");
@@ -46,7 +47,7 @@ class MysqlAdapterQueriesTest extends BaseTestCase
         );
     }
     
-    public function testQueriesAndTransactions()
+    public function testQueriesAndTransactions(): void
     {
         $adapter = static::getValidAdapter();
         $insertQuery = DbExpr::create('INSERT INTO `settings` (`key`, `value`) VALUES(``test_key``, ``"test_value"``)');
@@ -81,7 +82,7 @@ class MysqlAdapterQueriesTest extends BaseTestCase
         ], $record);
     }
     
-    public function testTransactionsNestingPrevention()
+    public function testTransactionsNestingPrevention(): void
     {
         $this->expectException(DbException::class);
         $this->expectExceptionMessage("Already in transaction");
@@ -90,7 +91,7 @@ class MysqlAdapterQueriesTest extends BaseTestCase
         $adapter->begin();
     }
     
-    public function testTransactionCommitWithoutBegin()
+    public function testTransactionCommitWithoutBegin(): void
     {
         $this->expectException(DbException::class);
         $this->expectExceptionMessage("Attempt to commit not started transaction");
@@ -99,7 +100,7 @@ class MysqlAdapterQueriesTest extends BaseTestCase
         $adapter->commit();
     }
     
-    public function testTransactionRollbackWithoutBegin()
+    public function testTransactionRollbackWithoutBegin(): void
     {
         $this->expectException(DbException::class);
         $this->expectExceptionMessage("Attempt to rollback not started transaction");
@@ -108,7 +109,7 @@ class MysqlAdapterQueriesTest extends BaseTestCase
         $adapter->rollBack();
     }
     
-    public function testPreparedSelectQuery()
+    public function testPreparedSelectQuery(): void
     {
         $adapter = static::getValidAdapter();
         $statement = $adapter->prepare(DbExpr::create('SELECT * FROM `admins` WHERE `id`=? AND `is_active`=?'));

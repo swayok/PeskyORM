@@ -8,7 +8,7 @@ use PeskyORM\ORM\Column;
 trait TestingIdColumnTrait
 {
     
-    private function id()
+    private function id(): Column
     {
         return Column::create(Column::TYPE_INT)
             ->primaryKey()

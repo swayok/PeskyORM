@@ -209,7 +209,7 @@ abstract class RecordValueFormatters
                         // value is array and can be converted to $targetClassName object or \stdClass object
                         return $targetClassName
                             ? $targetClassName::createObjectFromArray($value)
-                            : json_decode(json_encode($value, JSON_UNESCAPED_UNICODE), false);
+                            : json_decode(json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE), false, 512, JSON_THROW_ON_ERROR);
                         // encode-decode needed to be sure all nested arrays will also be encoded as \stdClass - not effective
                     } elseif ($targetClassName) {
                         throw new \UnexpectedValueException('Record value must be a json string, array, or object');
@@ -243,10 +243,10 @@ abstract class RecordValueFormatters
         };
     }
     
-    private static function throwInvalidValueException(RecordValue $valueContainer, string $expectedValueType, $value)
+    private static function throwInvalidValueException(RecordValue $valueContainer, string $expectedValueType, $value): void
     {
         if (!is_scalar($value)) {
-            $value = json_encode($value, JSON_UNESCAPED_UNICODE);
+            $value = json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
         }
         $record = $valueContainer->getRecord();
         $prevException = null;

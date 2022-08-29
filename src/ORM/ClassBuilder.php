@@ -27,9 +27,10 @@ class ClassBuilder
         $this->connection = $connection;
     }
     
-    public function setDbSchemaName(string $schema)
+    public function setDbSchemaName(string $schema): ClassBuilder
     {
         $this->dbSchemaName = $schema;
+        return $this;
     }
     
     public function buildTableClass(string $namespace, ?string $parentClass = null): string

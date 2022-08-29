@@ -16,13 +16,13 @@ class TestingInvalidRelationsInTableStructure4 extends TableStructure
         return 'some_table';
     }
     
-    private function valid()
+    private function valid(): Column
     {
         return Column::create(Column::TYPE_INT)
             ->primaryKey();
     }
     
-    private function InvalidForeignColumnName()
+    private function InvalidForeignColumnName(): Relation
     {
         return Relation::create('valid', Relation::HAS_MANY, TestingAdminsTable::class, 'foreign_invalid');
     }

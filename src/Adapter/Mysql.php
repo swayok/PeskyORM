@@ -105,12 +105,18 @@ class Mysql extends DbAdapter
         return null;
     }
     
+    /**
+     * @return static
+     */
     public function setTimezone(string $timezone)
     {
         $this->exec(DbExpr::create("SET time_zone = ``$timezone``"));
         return $this;
     }
     
+    /**
+     * @return static
+     */
     public function setSearchPath(string $newSearchPath)
     {
         // todo: find out if there is something similar in mysql
@@ -318,11 +324,7 @@ class Mysql extends DbAdapter
         return $description;
     }
     
-    /**
-     * @param $dbType
-     * @return string
-     */
-    protected function convertDbTypeToOrmType($dbType)
+    protected function convertDbTypeToOrmType(string $dbType): string
     {
         $dbType = strtolower(preg_replace(['%\s*unsigned$%i', '%\([^)]+\)$%'], ['', ''], $dbType));
         return array_key_exists($dbType, static::$dbTypeToOrmType)
@@ -331,8 +333,8 @@ class Mysql extends DbAdapter
     }
     
     /**
-     * @param string $default
-     * @return bool|DbExpr|float|int|string|null
+     * @param array|bool|DbExpr|float|int|string|string[]|null $default
+     * @return array|bool|DbExpr|float|int|string|string[]|null
      */
     protected function cleanDefaultValueForColumnDescription($default)
     {
@@ -357,7 +359,7 @@ class Mysql extends DbAdapter
      * @param string $typeDescription
      * @return array - index 0: limit; index 1: precision
      */
-    protected function extractLimitAndPrecisionForColumnDescription($typeDescription)
+    protected function extractLimitAndPrecisionForColumnDescription(string $typeDescription): array
     {
         if (preg_match('%\((\d+)(?:,(\d+))?\)( unsigned)?$%', $typeDescription, $matches)) {
             return [(int)$matches[1], !isset($matches[2]) ? null : (int)$matches[2]];
@@ -377,7 +379,7 @@ class Mysql extends DbAdapter
         // prepare keys
         for ($i = 2; $i < $max; $i += 2) {
             $value = trim($sequence[$i], '\'"` ');
-            if (ctype_digit($value)) {
+            if (is_numeric($value)) {
                 $value = '[' . $value . ']';
             }
             $sequence[$i] = $this->quoteJsonSelectorValue($value);
@@ -403,13 +405,7 @@ class Mysql extends DbAdapter
         return $result;
     }
     
-    /**
-     * @param string $key
-     * @return string
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
-     */
-    protected function quoteJsonSelectorValue($key)
+    protected function quoteJsonSelectorValue(string $key): string
     {
         if ($key[0] === '[') {
             $key = '$' . $key;
@@ -431,7 +427,7 @@ class Mysql extends DbAdapter
                 }
                 return $value;
             } else {
-                $value = is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : $value;
+                $value = is_array($value) ? json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE) : $value;
                 return $this->quoteValue($value);
             }
         } else {
@@ -488,7 +484,7 @@ class Mysql extends DbAdapter
      * @param int $sleepAfterNotificationMs - miliseconds to sleep after notification consumed
      * @return void
      */
-    public function listen(string $channel, \Closure $handler, int $sleepIfNoNotificationMs = 1000, int $sleepAfterNotificationMs = 0)
+    public function listen(string $channel, \Closure $handler, int $sleepIfNoNotificationMs = 1000, int $sleepAfterNotificationMs = 0): void
     {
         throw new DbException('MySQL does not support notifications', DbException::CODE_DB_DOES_NOT_SUPPORT_FEATURE);
     }

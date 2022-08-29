@@ -18,7 +18,7 @@ class PeskyOrmPdoProfiler
     /**
      * Init PDO profiling
      */
-    public static function init()
+    public static function init(): void
     {
         DbAdapter::setConnectionWrapper(function (DbAdapterInterface $adapter, \PDO $pdo) {
             $name = $adapter->getConnectionConfig()
@@ -34,7 +34,7 @@ class PeskyOrmPdoProfiler
      * @param TraceablePDO $pdo
      * @param string|null $name Optional connection name
      */
-    public static function addConnection(TraceablePDO $pdo, ?string $name = null)
+    public static function addConnection(TraceablePDO $pdo, ?string $name = null): void
     {
         if ($name === null) {
             $name = spl_object_hash($pdo);

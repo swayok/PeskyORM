@@ -13,12 +13,12 @@ use ReflectionClass;
 class MysqlAdapterConnectionTest extends BaseTestCase
 {
     
-    private static function getValidAdapter()
+    private static function getValidAdapter(): Mysql
     {
         return TestingApp::getMysqlConnection();
     }
     
-    public function testConnectionWithInvalidUserName()
+    public function testConnectionWithInvalidUserName(): void
     {
         $this->expectException(\PDOException::class);
         $this->expectExceptionMessage("Access denied for user");
@@ -31,7 +31,7 @@ class MysqlAdapterConnectionTest extends BaseTestCase
         $adapter->getConnection();
     }
     
-    public function testConnectionWithInvalidUserName2()
+    public function testConnectionWithInvalidUserName2(): void
     {
         $this->expectException(\PDOException::class);
         $this->expectExceptionMessage("Access denied for user");
@@ -46,7 +46,7 @@ class MysqlAdapterConnectionTest extends BaseTestCase
         $adapter->getConnection();
     }
     
-    public function testConnectionWithInvalidDbName()
+    public function testConnectionWithInvalidDbName(): void
     {
         $this->expectException(\PDOException::class);
         $this->expectExceptionMessage("Access denied for user");
@@ -63,7 +63,7 @@ class MysqlAdapterConnectionTest extends BaseTestCase
         $adapter->getConnection();
     }
     
-    public function testConnectionWithInvalidUserPassword()
+    public function testConnectionWithInvalidUserPassword(): void
     {
         $this->expectException(\PDOException::class);
         $this->expectExceptionMessage("Access denied for user");
@@ -96,7 +96,7 @@ class MysqlAdapterConnectionTest extends BaseTestCase
         $adapter->getConnection();
     }*/
     
-    public function testValidConnection()
+    public function testValidConnection(): void
     {
         $adapter = static::getValidAdapter();
         $adapter->getConnection();
@@ -104,7 +104,7 @@ class MysqlAdapterConnectionTest extends BaseTestCase
         static::assertEquals(1, $stmnt->rowCount());
     }
     
-    public function testDisconnect()
+    public function testDisconnect(): void
     {
         $adapter = static::getValidAdapter();
         $adapter->getConnection();

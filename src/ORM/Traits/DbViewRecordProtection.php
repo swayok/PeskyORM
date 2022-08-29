@@ -12,11 +12,14 @@ namespace PeskyORM\ORM\Traits;
 trait DbViewRecordProtection
 {
     
-    public function saveToDb(array $columnsToSave = [])
+    public function saveToDb(array $columnsToSave = []): void
     {
         throw new \BadMethodCallException('Saving data to a DB View is impossible');
     }
     
+    /**
+     * @return static
+     */
     public function delete(bool $resetAllValuesAfterDelete = true, bool $deleteFiles = true)
     {
         throw new \BadMethodCallException('Deleting data from a DB View is impossible');

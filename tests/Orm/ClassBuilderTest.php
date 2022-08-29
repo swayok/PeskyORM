@@ -20,16 +20,12 @@ use PeskyORM\Tests\PeskyORMTest\Traits\TestingTimestampColumnsTrait;
 class ClassBuilderTest extends BaseTestCase
 {
     
-    /**
-     * @param string $tableName
-     * @return ClassBuilder
-     */
-    protected function getBuilder($tableName = 'admins')
+    protected function getBuilder(string $tableName = 'admins'): ClassBuilder
     {
         return new ClassBuilder($tableName, TestingApp::getPgsqlConnection());
     }
     
-    public function testBuilderServiceMethods()
+    public function testBuilderServiceMethods(): void
     {
         static::assertEquals('Admins', ClassBuilder::convertTableNameToClassName('admins'));
         static::assertEquals('SomeTables', ClassBuilder::convertTableNameToClassName('some_tables'));
@@ -54,7 +50,7 @@ class ClassBuilderTest extends BaseTestCase
         );
     }
     
-    public function testTableAndRecordClassBuilding()
+    public function testTableAndRecordClassBuilding(): void
     {
         $builder = $this->getBuilder();
         static::assertEquals(
@@ -75,7 +71,7 @@ class ClassBuilderTest extends BaseTestCase
         );
     }
     
-    public function testMakeColumnConfig()
+    public function testMakeColumnConfig(): void
     {
         $builder = $this->getBuilder();
         $columnDescr = new ColumnDescription('test', 'integer', Column::TYPE_INT);
@@ -155,7 +151,7 @@ class ClassBuilderTest extends BaseTestCase
         );
     }
     
-    public function testDbStructureClassBuilder()
+    public function testDbStructureClassBuilder(): void
     {
         $builder = $this->getBuilder();
         static::assertEquals(

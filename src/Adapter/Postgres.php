@@ -136,6 +136,9 @@ class Postgres extends DbAdapter
         parent::__construct($connectionConfig);
     }
     
+    /**
+     * @return static
+     */
     public function disconnect()
     {
         try {
@@ -159,12 +162,18 @@ class Postgres extends DbAdapter
             ->getDefaultSchemaName();
     }
     
+    /**
+     * @return static
+     */
     public function setTimezone(string $timezone)
     {
         $this->exec(DbExpr::create("SET SESSION TIME ZONE ``$timezone``"));
         return $this;
     }
     
+    /**
+     * @return static
+     */
     public function setSearchPath(string $newSearchPath)
     {
         $this->exec(DbExpr::create("SET search_path TO {$newSearchPath}"));
@@ -351,11 +360,7 @@ class Postgres extends DbAdapter
         return $description;
     }
     
-    /**
-     * @param $dbType
-     * @return string
-     */
-    protected function convertDbTypeToOrmType($dbType)
+    protected function convertDbTypeToOrmType(string $dbType): string
     {
         return array_key_exists($dbType, static::$dbTypeToOrmType)
             ? static::$dbTypeToOrmType[$dbType]
@@ -363,7 +368,7 @@ class Postgres extends DbAdapter
     }
     
     /**
-     * @param string $default
+     * @param array|bool|DbExpr|float|int|string|string[]|null $default
      * @return array|bool|DbExpr|float|int|string|string[]|null
      */
     protected function cleanDefaultValueForColumnDescription($default)
@@ -395,7 +400,7 @@ class Postgres extends DbAdapter
      * @param string $typeDescription
      * @return array - index 0: limit; index 1: precision
      */
-    protected function extractLimitAndPrecisionForColumnDescription($typeDescription)
+    protected function extractLimitAndPrecisionForColumnDescription(string $typeDescription): array
     {
         if (preg_match('%\((\d+)(?:,(\d+))?\)$%', $typeDescription, $matches)) {
             return [(int)$matches[1], !isset($matches[2]) ? null : (int)$matches[2]];
@@ -408,7 +413,7 @@ class Postgres extends DbAdapter
     {
         $sequence[0] = $this->quoteDbEntityName($sequence[0]);
         for ($i = 2, $max = count($sequence); $i < $max; $i += 2) {
-            if (!ctype_digit($sequence[$i])) {
+            if (!is_numeric($sequence[$i])) {
                 // quote as string unless it is integer
                 $sequence[$i] = $this->quoteValue(trim($sequence[$i], '\'"` '), \PDO::PARAM_STR);
             }
@@ -428,7 +433,7 @@ class Postgres extends DbAdapter
                 }
                 return $value . '::jsonb';
             } else {
-                $value = is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : $value;
+                $value = is_array($value) ? json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE) : $value;
                 return $this->quoteValue($value) . '::jsonb';
             }
         } else {
@@ -496,7 +501,7 @@ class Postgres extends DbAdapter
      * @param int $sleepAfterNotificationMs - miliseconds to sleep after notification consumed
      * @return void
      */
-    public function listen(string $channel, \Closure $handler, int $sleepIfNoNotificationMs = 1000, int $sleepAfterNotificationMs = 0)
+    public function listen(string $channel, \Closure $handler, int $sleepIfNoNotificationMs = 1000, int $sleepAfterNotificationMs = 0): void
     {
         $this->exec(DbExpr::create("LISTEN `$channel`"));
         while (1) {

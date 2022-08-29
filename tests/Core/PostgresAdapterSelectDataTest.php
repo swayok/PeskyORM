@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Core;
 
+use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Select;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
@@ -24,14 +25,14 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    protected static function getValidAdapter()
+    protected static function getValidAdapter(): DbAdapterInterface
     {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
     
-    public function testSelects()
+    public function testSelects(): void
     {
         $adapter = static::getValidAdapter();
         TestingApp::clearTables($adapter);
@@ -83,7 +84,7 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
         static::assertEquals(2, $data);
     }
     
-    public function testInvalidAnalyzeColumnName1()
+    public function testInvalidAnalyzeColumnName1(): void
     {
         $this->expectException(\PDOException::class);
         $this->expectExceptionMessage('ERROR:  column "test test" does not exist');
@@ -91,7 +92,7 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
         static::getValidAdapter()->selectColumn('admins', 'test test');
     }
     
-    public function testInvalidAnalyzeColumnName2()
+    public function testInvalidAnalyzeColumnName2(): void
     {
         $this->expectException(\PDOException::class);
         $this->expectExceptionMessage('ERROR:  column "test%test" does not exist');
@@ -99,7 +100,7 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
         static::getValidAdapter()->selectColumn('admins', 'test%test');
     }
     
-    public function testInvalidWith1()
+    public function testInvalidWith1(): void
     {
         $select = new Select('admins', static::getValidAdapter());
         $withSelect = new Select('admins', static::getValidAdapter());

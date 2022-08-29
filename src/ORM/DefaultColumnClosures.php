@@ -149,11 +149,11 @@ class DefaultColumnClosures implements ColumnClosuresInterface
             : RecordValueHelpers::normalizeValue($value, $column->getType());
     }
     
-    public static function valueSavingExtender(RecordValue $valueContainer, bool $isUpdate, array $savedData)
+    public static function valueSavingExtender(RecordValue $valueContainer, bool $isUpdate, array $savedData): void
     {
     }
     
-    public static function valueDeleteExtender(RecordValue $valueContainer, bool $deleteFiles)
+    public static function valueDeleteExtender(RecordValue $valueContainer, bool $deleteFiles): void
     {
     }
     

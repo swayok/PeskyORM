@@ -926,7 +926,7 @@ class Column
      * Provide custom validation errors messages.
      * Default errors are listed in static::$defaultValidationErrorsLocalization
      */
-    public static function setValidationErrorsMessages(array $validationErrorsMessages)
+    public static function setValidationErrorsMessages(array $validationErrorsMessages): void
     {
         if (!empty($validationErrorsMessages)) {
             static::$validationErrorsMessages = array_merge(
@@ -1136,10 +1136,7 @@ class Column
         return $this;
     }
     
-    /**
-     * @return \Closure
-     */
-    public function getValueDeleteExtender()
+    public function getValueDeleteExtender(): \Closure
     {
         return $this->valueDeleteExtender;
     }

@@ -19,7 +19,7 @@ interface DbAdapterInterface
      * Connect to DB once
      * @return \PDO or PDO wrapper
      */
-    public function getConnection();
+    public function getConnection(): \PDO;
     
     public function getConnectionConfig(): DbConnectionConfigInterface;
     
@@ -71,7 +71,7 @@ interface DbAdapterInterface
      * @param int $sleepAfterNotificationMs - miliseconds to sleep after notification consumed
      * @return void
      */
-    public function listen(string $channel, \Closure $handler, int $sleepIfNoNotificationMs = 1000, int $sleepAfterNotificationMs = 0);
+    public function listen(string $channel, \Closure $handler, int $sleepIfNoNotificationMs = 1000, int $sleepAfterNotificationMs = 0): void;
     
     /**
      * Set DB timezone for current session

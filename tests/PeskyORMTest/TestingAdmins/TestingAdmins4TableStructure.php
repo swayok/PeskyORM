@@ -18,7 +18,7 @@ class TestingAdmins4TableStructure extends TableStructure
         return 'admins';
     }
     
-    private function updated_at()
+    private function updated_at(): Column
     {
         return Column::create(Column::TYPE_TIMESTAMP)
             ->disallowsNullValues()
@@ -27,7 +27,7 @@ class TestingAdmins4TableStructure extends TableStructure
             });
     }
     
-    private function Parent()
+    private function Parent(): Relation
     {
         return Relation::create('parent_id', Relation::BELONGS_TO, TestingAdminsTable::class, 'id');
     }

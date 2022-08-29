@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Orm;
 
+use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Exception\InvalidDataException;
 use PeskyORM\Exception\RecordNotFoundException;
@@ -46,12 +47,12 @@ class RecordTest extends BaseTestCase
         TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
     }
     
-    protected static function getValidAdapter()
+    protected static function getValidAdapter(): Postgres
     {
         return TestingApp::getPgsqlConnection();
     }
     
-    private function insertMinimalTestDataToAdminsTable()
+    private function insertMinimalTestDataToAdminsTable(): void
     {
         $data = [
             [
@@ -92,7 +93,7 @@ class RecordTest extends BaseTestCase
         TestingApp::$pgsqlConnection->insertMany('admins', array_keys($data[0]), $data);
     }
     
-    private function getDataForSingleAdmin($withId = false)
+    private function getDataForSingleAdmin($withId = false): array
     {
         return array_merge($withId ? ['id' => 1] : [], [
             'login' => '2AE351AF-131D-6654-9DB2-79B8F273986C',
@@ -136,7 +137,7 @@ class RecordTest extends BaseTestCase
         return $adminData;
     }
     
-    public function testConstructor()
+    public function testConstructor(): void
     {
         $rec1 = new TestingAdmin();
         static::assertFalse($rec1->existsInDb());
@@ -156,7 +157,7 @@ class RecordTest extends BaseTestCase
         static::assertFalse($rec3->hasValue('parent_id', false));
     }
     
-    public function testReset()
+    public function testReset(): void
     {
         $rec = TestingAdmin::newEmptyRecord()
             ->updateValue('id', 1, true)
@@ -192,7 +193,7 @@ class RecordTest extends BaseTestCase
         static::assertEquals(2, $valId3->getValue());
     }
     
-    public function testStaticMethods()
+    public function testStaticMethods(): void
     {
         // tables and structures
         static::assertInstanceOf(TestingSetting::class, TestingSetting::_());
@@ -302,7 +303,7 @@ class RecordTest extends BaseTestCase
         static::assertEquals(['id', 'key', 'value'], array_keys(TestingSetting::getColumnsThatExistInDb()));
     }
     
-    public function testCreateDbValueObject()
+    public function testCreateDbValueObject(): void
     {
         $rec = TestingAdmin::newEmptyRecord();
         $this->callObjectMethod($rec, 'createValueObject', $rec::getColumn('id'));
@@ -310,7 +311,7 @@ class RecordTest extends BaseTestCase
         static::assertInstanceOf(RecordValue::class, $this->callObjectMethod($rec, 'getValueContainer', $rec::getColumn('id')));
     }
     
-    public function testResetValue()
+    public function testResetValue(): void
     {
         $rec = TestingAdmin::newEmptyRecord();
         $rec->updateValue('id', 1, true);
@@ -323,7 +324,7 @@ class RecordTest extends BaseTestCase
         static::assertFalse($rec->hasValue('id', false));
     }
     
-    public function testCleanUpdates()
+    public function testCleanUpdates(): void
     {
         $rec = TestingAdmin::newEmptyRecord();
         $rec->updateValue('id', 1, true)
@@ -336,7 +337,7 @@ class RecordTest extends BaseTestCase
         static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
     }
     
-    public function testgetValueContainer()
+    public function testgetValueContainer(): void
     {
         $rec = TestingAdmin::newEmptyRecord();
         static::assertArrayNotHasKey('id', $this->getObjectPropertyValue($rec, 'values')); //< lazy load
@@ -353,7 +354,7 @@ class RecordTest extends BaseTestCase
         );
     }
     
-    public function testGetValue()
+    public function testGetValue(): void
     {
         $rec = TestingAdmin::newEmptyRecord();
         static::assertEquals(
@@ -366,7 +367,7 @@ class RecordTest extends BaseTestCase
         static::assertEquals(2, $rec->getValue(TestingAdmin::getColumn('id')));
     }
     
-    public function testHasValueOrDefaultValue()
+    public function testHasValueOrDefaultValue(): void
     {
         $rec = new TestingAdmin();
         static::assertFalse($rec->hasValue('id'));
@@ -387,7 +388,7 @@ class RecordTest extends BaseTestCase
         static::assertFalse($rec->hasValue('parent_id', true));
     }
     
-    public function testInvalidSetValue1()
+    public function testInvalidSetValue1(): void
     {
         $this->expectExceptionMessage("It is forbidden to modify or set value of a 'not_changeable_column' column");
         $this->expectException(\BadMethodCallException::class);
@@ -395,7 +396,7 @@ class RecordTest extends BaseTestCase
         $rec->updateValue('not_changeable_column', 1, false);
     }
     
-    public function testInvalidSetValue2()
+    public function testInvalidSetValue2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage(
@@ -405,7 +406,7 @@ class RecordTest extends BaseTestCase
         $rec->updateValue('parent_id', 1, true);
     }
     
-    public function testInvalidSetValue3()
+    public function testInvalidSetValue3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage(
@@ -415,7 +416,7 @@ class RecordTest extends BaseTestCase
         $rec->updateValue('parent_id', 1, true);
     }
     
-    public function testInvalidSetValue4()
+    public function testInvalidSetValue4(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("It is forbidden to set value with \$isFromDb === true after begin()");
@@ -425,7 +426,7 @@ class RecordTest extends BaseTestCase
             ->updateValue('parent_id', 2, true);
     }
     
-    public function testInvalidSetPkValue()
+    public function testInvalidSetPkValue(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("It is forbidden to change primary key value when \$isFromDb === false");
@@ -433,7 +434,7 @@ class RecordTest extends BaseTestCase
         $rec->updateValue('id', 1, false);
     }
     
-    public function testInvalidUnsetValue()
+    public function testInvalidUnsetValue(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no column 'invalidcolumn' in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
@@ -441,7 +442,7 @@ class RecordTest extends BaseTestCase
         $rec->unsetValue('invalidcolumn');
     }
     
-    public function testSetValueAndSetPkValueAndUnsetValue()
+    public function testSetValueAndSetPkValueAndUnsetValue(): void
     {
         $rec = new TestingAdmin();
         static::assertFalse($rec->hasValue('id'));
@@ -525,7 +526,7 @@ class RecordTest extends BaseTestCase
         static::assertEquals('test@test.cc', $rec->getValue('email'));
     }
     
-    public function testExistsInDb()
+    public function testExistsInDb(): void
     {
         $this->insertMinimalTestDataToAdminsTable();
         
@@ -548,7 +549,7 @@ class RecordTest extends BaseTestCase
         static::assertNotEquals($prevQuery, TestingAdminsTable::getLastQuery(false));
     }
     
-    public function testGetDefaults()
+    public function testGetDefaults(): void
     {
         $rec = TestingAdmin::newEmptyRecord();
         static::assertEquals(
@@ -602,7 +603,7 @@ class RecordTest extends BaseTestCase
         );
     }
     
-    public function testInvalidRelationRequestInToArray1()
+    public function testInvalidRelationRequestInToArray1(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Related record with name 'Parent' is not set and autoloading is disabled");
@@ -610,7 +611,7 @@ class RecordTest extends BaseTestCase
             ->toArrayWithoutFiles(['id'], ['Parent']);
     }
     
-    public function testInvalidRelationRequestInToArray1Alt()
+    public function testInvalidRelationRequestInToArray1Alt(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Related record with name 'Parent' is not set and autoloading is disabled");
@@ -618,7 +619,7 @@ class RecordTest extends BaseTestCase
             ->toArrayWithoutFiles(['id', 'Parent']);
     }
     
-    public function testInvalidRelationRequestInToArray2()
+    public function testInvalidRelationRequestInToArray2(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Related record with name 'Children' is not set and autoloading is disabled");
@@ -626,7 +627,7 @@ class RecordTest extends BaseTestCase
             ->toArrayWithoutFiles(['id'], ['Children']);
     }
     
-    public function testInvalidRelationRequestInToArray2Alt()
+    public function testInvalidRelationRequestInToArray2Alt(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Related record with name 'Children' is not set and autoloading is disabled");
@@ -634,7 +635,7 @@ class RecordTest extends BaseTestCase
             ->toArrayWithoutFiles(['id', 'Children']);
     }
     
-    public function testInvalidRelationRequestInToArray3()
+    public function testInvalidRelationRequestInToArray3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no relation 'Invalid' in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
@@ -642,7 +643,7 @@ class RecordTest extends BaseTestCase
             ->toArrayWithoutFiles(['id'], ['Invalid']);
     }
     
-    public function testInvalidRelationRequestInToArray3Alt()
+    public function testInvalidRelationRequestInToArray3Alt(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no column 'Invalid' in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
@@ -653,7 +654,7 @@ class RecordTest extends BaseTestCase
     /**
      * @covers Record::getColumnValueForToArray()
      */
-    public function testGetColumnValueForToArray()
+    public function testGetColumnValueForToArray(): void
     {
         $rec = TestingAdmin::fromArray(['parent_id' => 1], false);
         $reflection = new ReflectionClass($rec);
@@ -675,7 +676,7 @@ class RecordTest extends BaseTestCase
      * @covers Record::toArray()
      * @covers Record::toArrayWithoutFiles()
      */
-    public function testToArray1()
+    public function testToArray1(): void
     {
         // toArray, toArrayWithoutFiles
         $rec = TestingAdmin::fromArray([]);
@@ -757,7 +758,7 @@ class RecordTest extends BaseTestCase
      * @covers Record::toArray()
      * @covers Record::toArrayWithoutFiles()
      */
-    public function testToArray2()
+    public function testToArray2(): void
     {
         $rec = TestingAdmin::new1();
         $adminNoId = $this->getDataForSingleAdmin(false);
@@ -825,18 +826,12 @@ class RecordTest extends BaseTestCase
         
         // has many relations
         $expected = ['id' => $insertedRecords[0]['id'], 'Children' => [$insertedRecords[1], $insertedRecords[2]]];
-        /** @noinspection UnsupportedStringOffsetOperationsInspection */
         $expected['Children'][0]['created_at'] .= '+00';
-        /** @noinspection UnsupportedStringOffsetOperationsInspection */
         $expected['Children'][0]['updated_at'] .= '+00';
-        /** @noinspection UnsupportedStringOffsetOperationsInspection */
         $expected['Children'][0]['not_existing_column_with_calculated_value'] = 'calculated-' . $expected['Children'][0]['id'];
         unset($expected['Children'][0]['big_data']);
-        /** @noinspection UnsupportedStringOffsetOperationsInspection */
         $expected['Children'][1]['created_at'] .= '+00';
-        /** @noinspection UnsupportedStringOffsetOperationsInspection */
         $expected['Children'][1]['updated_at'] .= '+00';
-        /** @noinspection UnsupportedStringOffsetOperationsInspection */
         $expected['Children'][1]['not_existing_column_with_calculated_value'] = 'calculated-' . $expected['Children'][1]['id'];
         unset($expected['Children'][1]['big_data']);
         $toArrayRelation = $rec->fetchByPrimaryKey($insertedRecords[0]['id'])
@@ -875,7 +870,7 @@ class RecordTest extends BaseTestCase
         static::assertEquals($expected, $toArrayRelation);
     }
     
-    public function testToArray3()
+    public function testToArray3(): void
     {
         $rec = TestingAdmin::new1();
         $admin = $this->getDataForSingleAdmin(true);
@@ -928,7 +923,7 @@ class RecordTest extends BaseTestCase
      * @covers Record::serialize()
      * @covers Record::unserialize()
      */
-    public function testSerialization()
+    public function testSerialization(): void
     {
         $rec = TestingAdmin::fromArray($this->getDataForSingleAdmin(true), true);
         $recSerialized = serialize($rec);
@@ -961,7 +956,7 @@ class RecordTest extends BaseTestCase
         static::assertEquals($rec->isValueFromDb('parent_id'), $recUnserialized->isValueFromDb('parent_id'));
     }
     
-    public function testIsValueFromDb()
+    public function testIsValueFromDb(): void
     {
         $rec = TestingAdmin::newEmptyRecord();
         $rec->updateValue('parent_id', 1, false);
@@ -976,28 +971,28 @@ class RecordTest extends BaseTestCase
         static::assertTrue($rec->isValueFromDb('parent_id'));
     }
     
-    public function testInvalidFromData1()
+    public function testInvalidFromData1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$data argument contains unknown column name or relation name PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin->0 (\$isFromDb: false).");
         TestingAdmin::fromArray(['unknown_col']);
     }
     
-    public function testInvalidFromData2()
+    public function testInvalidFromData2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$data argument contains unknown column name or relation name PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin->unknown_col (\$isFromDb: false).");
         TestingAdmin::fromArray(['unknown_col' => 1]);
     }
     
-    public function testInvalidFromData3()
+    public function testInvalidFromData3(): void
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage("Validation errors: [id] Value must be of an integer data type");
         TestingAdmin::fromArray(['id' => 'qqqq'], true);
     }
     
-    public function testFromData()
+    public function testFromData(): void
     {
         $adminWithId = $this->getDataForSingleAdmin(true);
         $normalizedAdminWithId = $this->normalizeAdmin($adminWithId, false, false);
@@ -1046,7 +1041,7 @@ class RecordTest extends BaseTestCase
         static::assertTrue($rec->isValueFromDb('parent_id'));
     }
     
-    public function testFromPrimaryKey()
+    public function testFromPrimaryKey(): void
     {
         $recordsAdded = TestingApp::fillAdminsTable(10);
         $example = $recordsAdded[1];
@@ -1138,7 +1133,7 @@ class RecordTest extends BaseTestCase
         );
     }
     
-    public function testInvalidColumnInFromDb1()
+    public function testInvalidColumnInFromDb1(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("SELECT: Column with name [invalid] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
@@ -1146,7 +1141,7 @@ class RecordTest extends BaseTestCase
             ->fetch(['id' => 1], ['invalid']);
     }
     
-    public function testInvalidColumnInFromDb2()
+    public function testInvalidColumnInFromDb2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage(
@@ -1156,7 +1151,7 @@ class RecordTest extends BaseTestCase
             ->fetch(['id' => 1], [['invalid']]);
     }
     
-    public function testInvalidConditionInFromDb()
+    public function testInvalidConditionInFromDb(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("WHERE: Column with name [invalid] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
@@ -1164,7 +1159,7 @@ class RecordTest extends BaseTestCase
             ->fetch(['invalid' => 1], ['id']);
     }
     
-    public function testInvalidRelationInFromDb()
+    public function testInvalidRelationInFromDb(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no relation 'Invalid' in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
@@ -1172,7 +1167,7 @@ class RecordTest extends BaseTestCase
             ->fetch(['id' => 1], ['id'], ['Invalid']);
     }
     
-    public function testFromDb()
+    public function testFromDb(): void
     {
         $recordsAdded = TestingApp::fillAdminsTable(10);
         [$example, $exampleWithParent] = $recordsAdded;
@@ -1253,7 +1248,7 @@ class RecordTest extends BaseTestCase
         );
     }
     
-    public function testInvalidReload()
+    public function testInvalidReload(): void
     {
         $this->expectException(RecordNotFoundException::class);
         $this->expectExceptionMessage("Record must exist in DB");
@@ -1261,7 +1256,7 @@ class RecordTest extends BaseTestCase
             ->reload();
     }
     
-    public function testReload()
+    public function testReload(): void
     {
         $recordsAdded = TestingApp::fillAdminsTable(10);
         $example = $recordsAdded[0];
@@ -1313,7 +1308,7 @@ class RecordTest extends BaseTestCase
         );
     }
     
-    public function testInvalidReadColumns1()
+    public function testInvalidReadColumns1(): void
     {
         $this->expectException(RecordNotFoundException::class);
         $this->expectExceptionMessage("Record must exist in DB");
@@ -1321,7 +1316,7 @@ class RecordTest extends BaseTestCase
             ->readColumns();
     }
     
-    public function testInvalidReadColumns2()
+    public function testInvalidReadColumns2(): void
     {
         $this->expectException(RecordNotFoundException::class);
         $this->expectExceptionMessage("Record with primary key '1' was not found in DB");
@@ -1329,7 +1324,7 @@ class RecordTest extends BaseTestCase
             ->readColumns(['parent_id']);
     }
     
-    public function testInvalidReadColumns3()
+    public function testInvalidReadColumns3(): void
     {
         $this->expectException(RecordNotFoundException::class);
         $this->expectExceptionMessage("Record with primary key '1' was not found in DB");
@@ -1337,7 +1332,7 @@ class RecordTest extends BaseTestCase
             ->readColumns();
     }
     
-    public function testReadColumns()
+    public function testReadColumns(): void
     {
         $recordsAdded = TestingApp::fillAdminsTable(1);
         $example = $recordsAdded[0];
@@ -1361,7 +1356,7 @@ class RecordTest extends BaseTestCase
         static::assertFalse($rec->hasValue('language'));
     }
     
-    public function testInvalidGetRelatedRecord1()
+    public function testInvalidGetRelatedRecord1(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Related record with name 'Parent' is not set and autoloading is disabled");
@@ -1369,7 +1364,7 @@ class RecordTest extends BaseTestCase
             ->getRelatedRecord('Parent');
     }
     
-    public function testInvalidGetRelatedRecord2()
+    public function testInvalidGetRelatedRecord2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no relation 'InvalidRelation' in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
@@ -1377,7 +1372,7 @@ class RecordTest extends BaseTestCase
             ->getRelatedRecord('InvalidRelation');
     }
     
-    public function testInvalidIsRelatedRecordAttached()
+    public function testInvalidIsRelatedRecordAttached(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no relation 'InvalidRelation' in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
@@ -1385,7 +1380,7 @@ class RecordTest extends BaseTestCase
             ->isRelatedRecordAttached('InvalidRelation');
     }
     
-    public function testInvalidSetRelatedRecord1()
+    public function testInvalidSetRelatedRecord1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no relation 'InvalidRelation' in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
@@ -1393,7 +1388,7 @@ class RecordTest extends BaseTestCase
             ->updateRelatedRecord('InvalidRelation', []);
     }
     
-    public function testInvalidSetRelatedRecord2()
+    public function testInvalidSetRelatedRecord2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$relatedRecord argument for HAS MANY relation must be array or instance of PeskyORM\ORM\RecordsArray");
@@ -1402,7 +1397,7 @@ class RecordTest extends BaseTestCase
             ->updateRelatedRecord('Children', 'test');
     }
     
-    public function testInvalidSetRelatedRecord3()
+    public function testInvalidSetRelatedRecord3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$relatedRecord argument must be an instance of Record class for the 'admins' DB table");
@@ -1410,7 +1405,7 @@ class RecordTest extends BaseTestCase
             ->updateRelatedRecord('Parent', TestingSetting::newEmptyRecord());
     }
     
-    public function testInvalidSetRelatedRecord4()
+    public function testInvalidSetRelatedRecord4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$relatedRecord argument must be an array or instance of Record class for the 'admins' DB table");
@@ -1419,7 +1414,7 @@ class RecordTest extends BaseTestCase
             ->updateRelatedRecord('Parent', 'string');
     }
     
-    public function testSetGetAndHasRelatedRecord()
+    public function testSetGetAndHasRelatedRecord(): void
     {
         $records = TestingApp::getRecordsForDb('admins', 2);
         [$parentData, $recordData] = $records;
@@ -1462,7 +1457,7 @@ class RecordTest extends BaseTestCase
         );
     }
     
-    public function testRelationsUnsettingOnForeignKeyChange()
+    public function testRelationsUnsettingOnForeignKeyChange(): void
     {
         $records = TestingApp::getRecordsForDb('admins', 2);
         [$parentData, $recordData] = $records;
@@ -1484,7 +1479,7 @@ class RecordTest extends BaseTestCase
         static::assertFalse($rec->Parent->existsInDb());
     }
     
-    public function testInvalidReadRelatedRecord1()
+    public function testInvalidReadRelatedRecord1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no relation 'InvalidRelation' in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
@@ -1492,7 +1487,7 @@ class RecordTest extends BaseTestCase
             ->readRelatedRecord('InvalidRelation');
     }
     
-    public function testInvalidReadRelatedRecord2()
+    public function testInvalidReadRelatedRecord2(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage(
@@ -1502,7 +1497,7 @@ class RecordTest extends BaseTestCase
             ->readRelatedRecord('Parent');
     }
     
-    public function testReadRelatedRecord()
+    public function testReadRelatedRecord(): void
     {
         $recordsAdded = TestingApp::fillAdminsTable(10);
         $parentData = $recordsAdded[0];
@@ -1550,7 +1545,7 @@ class RecordTest extends BaseTestCase
         static::assertFalse($rec->isRelatedRecordAttached('Children'));
     }
     
-    public function testInvalidUpdateValuesData1()
+    public function testInvalidUpdateValuesData1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$data argument contains unknown column name or relation name PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin->invalid_col (\$isFromDb: true). Possibly column 'invalid_col' exists in DB but not defined in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
@@ -1558,7 +1553,7 @@ class RecordTest extends BaseTestCase
             ->updateValues(['id' => 1, 'invalid_col' => 2], true);
     }
     
-    public function testInvalidUpdateValuesData2()
+    public function testInvalidUpdateValuesData2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$relatedRecord argument must be an array or instance of Record class for the 'admins' DB table");
@@ -1566,7 +1561,7 @@ class RecordTest extends BaseTestCase
             ->updateValues(['id' => 1, 'Parent' => null, 'Parent2' => null], true);
     }
     
-    public function testInvalidUpdateValuesData3()
+    public function testInvalidUpdateValuesData3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$data argument contains unknown column name or relation name PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin->Parent2 (\$isFromDb: true). Possibly column 'Parent2' exists in DB but not defined in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
@@ -1574,7 +1569,7 @@ class RecordTest extends BaseTestCase
             ->updateValues(['id' => 1, 'Parent' => [], 'Parent2' => null], true);
     }
     
-    public function testInvalidUpdateValuesData4()
+    public function testInvalidUpdateValuesData4(): void
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage("Validation errors: [email] Value must be an email");
@@ -1582,7 +1577,7 @@ class RecordTest extends BaseTestCase
             ->updateValues(['email' => 'not email']);
     }
     
-    public function testInvalidUpdateValuesData5()
+    public function testInvalidUpdateValuesData5(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Values update failed: record PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin does not exist in DB while \$isFromDb === true. Possibly you've missed a primary key value in \$data argument.");
@@ -1590,7 +1585,7 @@ class RecordTest extends BaseTestCase
             ->updateValues(['email' => 'test@email.cc'], true);
     }
     
-    public function testInvalidUpdateValuesData6()
+    public function testInvalidUpdateValuesData6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("It is forbidden to change primary key value when \$isFromDb === false");
@@ -1598,7 +1593,7 @@ class RecordTest extends BaseTestCase
             ->updateValues(['id' => 1], false);
     }
     
-    public function testUpdateValues()
+    public function testUpdateValues(): void
     {
         $records = TestingApp::getRecordsForDb('admins', 10);
         $rec = TestingAdmin::fromArray($records[1], true);
@@ -1650,7 +1645,7 @@ class RecordTest extends BaseTestCase
         $rec->merge(['invalid_column' => 1, 'email' => 'qqqq@qqqq.qq'], false, false);
     }
     
-    public function testGetColumnsNamesWithUpdatableValues()
+    public function testGetColumnsNamesWithUpdatableValues(): void
     {
         $rec = TestingAdmin::newEmptyRecord();
         $updateable = $rec->getColumnsNamesWithUpdatableValues();
@@ -1662,14 +1657,14 @@ class RecordTest extends BaseTestCase
         static::assertEquals($expected, $updateable);
     }
     
-    public function testGetAllColumnsWithAutoUpdatingValues()
+    public function testGetAllColumnsWithAutoUpdatingValues(): void
     {
         $rec = TestingAdmin::newEmptyRecord();
         $updateable = $this->callObjectMethod($rec, 'getAllColumnsWithAutoUpdatingValues');
         static::assertEquals(['updated_at'], $updateable);
     }
     
-    public function testInvalidSave()
+    public function testInvalidSave(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Attempt to save data after begin(). You must call commit() or rollback()");
@@ -1678,7 +1673,7 @@ class RecordTest extends BaseTestCase
             ->save();
     }
     
-    public function testInvalidSaveToDb1()
+    public function testInvalidSaveToDb1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('$columnsToSave argument contains invalid list of columns. Each value can only be a string. $columns =');
@@ -1689,7 +1684,7 @@ class RecordTest extends BaseTestCase
         );
     }
     
-    public function testInvalidSaveToDb2()
+    public function testInvalidSaveToDb2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage(
@@ -1702,7 +1697,7 @@ class RecordTest extends BaseTestCase
         );
     }
     
-    public function testInvalidDataInCollectValuesForSave()
+    public function testInvalidDataInCollectValuesForSave(): void
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage("Validation errors: [email] Value must be an email");
@@ -1711,7 +1706,7 @@ class RecordTest extends BaseTestCase
             ->collectValuesForSave($columns, false);
     }
     
-    public function testCollectValuesForSaveAndValidateNewData()
+    public function testCollectValuesForSaveAndValidateNewData(): void
     {
         static::assertEquals(['Value must be an email.'], TestingAdmin::validateValue('email', 'invalid'));
         static::assertEquals([], TestingAdmin::validateValue('email', 'valid@email.cc'));
@@ -1818,7 +1813,7 @@ class RecordTest extends BaseTestCase
      *
      *
      */
-    public function testBeforeSave()
+    public function testBeforeSave(): void
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage("Validation errors: [login] error");
@@ -1832,7 +1827,7 @@ class RecordTest extends BaseTestCase
     /**
      * @covers Record::afterSave()
      */
-    public function testAfterSave()
+    public function testAfterSave(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("after: no-no-no!");
@@ -1843,7 +1838,7 @@ class RecordTest extends BaseTestCase
             ->save();
     }
     
-    public function testInvalidColumnSavingExtendersCall1()
+    public function testInvalidColumnSavingExtendersCall1(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Trying to begin collecting changes on not existing record");
@@ -1851,7 +1846,7 @@ class RecordTest extends BaseTestCase
         $rec->runColumnSavingExtenders(['id'], ['id' => 1], ['id' => 1], true);
     }
     
-    public function testColumnSavingExtenders1()
+    public function testColumnSavingExtenders1(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("login: update!");
@@ -1860,7 +1855,7 @@ class RecordTest extends BaseTestCase
         $rec->runColumnSavingExtenders(['id', 'parent_id', 'login'], $data, $data, true);
     }
     
-    public function testColumnSavingExtenders2()
+    public function testColumnSavingExtenders2(): void
     {
         $dataSaved = ['parent_id' => null, 'login' => 'test'];
         $dataReceivedAfterUpdate = ['id' => 1, 'parent_id' => null, 'login' => 'test'];
@@ -1869,7 +1864,7 @@ class RecordTest extends BaseTestCase
         static::assertTrue(true); //< no exception expected here
     }
     
-    public function testColumnSavingExtenders3()
+    public function testColumnSavingExtenders3(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("some_file: here");
@@ -1884,7 +1879,7 @@ class RecordTest extends BaseTestCase
         $rec->runColumnSavingExtenders(['parent_id', 'some_file'], ['parent_id' => null, 'some_file' => 'qqq'], ['id' => 1, 'parent_id' => null], true);
     }
     
-    public function testColumnSavingExtenders4()
+    public function testColumnSavingExtenders4(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("some_file: here");
@@ -1899,7 +1894,7 @@ class RecordTest extends BaseTestCase
         $rec->runColumnSavingExtenders(['parent_id', 'some_file'], ['parent_id' => null, 'some_file' => 'qqq'], ['id' => 1, 'parent_id' => null], true);
     }
     
-    public function testColumnSavingExtenders5()
+    public function testColumnSavingExtenders5(): void
     {
         // this one should not call any extenders that throw exceptions
         $rec = TestingAdmin3::fromArray(['id' => 1, 'parent_id' => null, 'login' => 'test'], true);
@@ -1910,7 +1905,7 @@ class RecordTest extends BaseTestCase
     /**
      * @covers Record::runColumnSavingExtenders()
      */
-    public function testColumnSavingExtendersUsageInSave1()
+    public function testColumnSavingExtendersUsageInSave1(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("login: update!");
@@ -1924,7 +1919,7 @@ class RecordTest extends BaseTestCase
     /**
      * @covers Record::runColumnSavingExtenders()
      */
-    public function testColumnSavingExtendersUsageInSave2()
+    public function testColumnSavingExtendersUsageInSave2(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("some_file: here");
@@ -1948,7 +1943,7 @@ class RecordTest extends BaseTestCase
      * @covers Record::save()
      * @covers Record::saveToDb()
      */
-    public function testSaveAndSaveToDbAndBeforeAfterSave()
+    public function testSaveAndSaveToDbAndBeforeAfterSave(): void
     {
         $recordsAdded = TestingApp::fillAdminsTable(10);
         static::assertEquals(10, TestingAdminsTable::count([]));
@@ -1990,7 +1985,7 @@ class RecordTest extends BaseTestCase
      * @covers Record::save()
      * @covers Record::saveToDb()
      */
-    public function testSaveAndSaveToDbAndBeforeAfterSaveWithRelations()
+    public function testSaveAndSaveToDbAndBeforeAfterSaveWithRelations(): void
     {
         $recordsAdded = TestingApp::fillAdminsTable(10);
         static::assertEquals(10, TestingAdminsTable::count([]));
@@ -2037,7 +2032,7 @@ class RecordTest extends BaseTestCase
         static::assertTrue(password_verify('test2', $rec->getRelatedRecord('Children')[1]->getValue('password')));
     }
     
-    public function testInvalidBegin1()
+    public function testInvalidBegin1(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Trying to begin collecting changes on not existing record");
@@ -2045,7 +2040,7 @@ class RecordTest extends BaseTestCase
             ->begin();
     }
     
-    public function testInvalidBegin2()
+    public function testInvalidBegin2(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Trying to begin collecting changes on not existing record");
@@ -2053,7 +2048,7 @@ class RecordTest extends BaseTestCase
             ->begin();
     }
     
-    public function testInvalidBegin3()
+    public function testInvalidBegin3(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Attempt to begin collecting changes when already collecting changes");
@@ -2062,7 +2057,7 @@ class RecordTest extends BaseTestCase
             ->begin();
     }
     
-    public function testInvalidBegin4()
+    public function testInvalidBegin4(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage(
@@ -2073,7 +2068,7 @@ class RecordTest extends BaseTestCase
             ->reset();
     }
     
-    public function testInvalidRollback1()
+    public function testInvalidRollback1(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("It is impossible to rollback changed values: changes collecting was not started");
@@ -2081,7 +2076,7 @@ class RecordTest extends BaseTestCase
             ->rollback();
     }
     
-    public function testBeginAndRollback()
+    public function testBeginAndRollback(): void
     {
         $rec = TestingAdmin::fromArray(['id' => 1], true);
         $rec->begin();
@@ -2208,7 +2203,7 @@ class RecordTest extends BaseTestCase
         );
     }
     
-    public function testInvalidCommit1()
+    public function testInvalidCommit1(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("It is impossible to commit changed values: changes collecting was not started");
@@ -2219,7 +2214,7 @@ class RecordTest extends BaseTestCase
     /**
      * @covers Record::commit()
      */
-    public function testCommit()
+    public function testCommit(): void
     {
         $recordsAdded = TestingApp::fillAdminsTable(10);
         static::assertEquals(10, TestingAdminsTable::count([]));
@@ -2262,7 +2257,7 @@ class RecordTest extends BaseTestCase
         );
     }
     
-    public function testInvalidSaveRelations1()
+    public function testInvalidSaveRelations1(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("It is impossible to save related objects of a record that does not exist in DB");
@@ -2270,7 +2265,7 @@ class RecordTest extends BaseTestCase
             ->saveRelations(['Parent']);
     }
     
-    public function testInvalidSaveRelations2()
+    public function testInvalidSaveRelations2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('$relationsToSave argument contains invalid list of columns. Each value can only be a string. $relationsToSave = ["NotRelation",["asd"]]');
@@ -2279,7 +2274,7 @@ class RecordTest extends BaseTestCase
             ->saveRelations(['NotRelation', ['asd']]);
     }
     
-    public function testSaveRelations()
+    public function testSaveRelations(): void
     {
         $recordsAdded = TestingApp::fillAdminsTable(10);
         $parent = array_merge($recordsAdded[2], ['parent_id' => null, 'id' => null, 'password' => 'test']);
@@ -2397,7 +2392,7 @@ class RecordTest extends BaseTestCase
         static::assertTrue(password_verify('test', $rec->getRelatedRecord('Children')[1]->getValue('password')));
     }
     
-    public function testInvalidDelete()
+    public function testInvalidDelete(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("It is impossible to delete record has no primary key value");
@@ -2410,7 +2405,7 @@ class RecordTest extends BaseTestCase
      *
      *
      */
-    public function testBeforeDelete()
+    public function testBeforeDelete(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("before delete: no-no-no!");
@@ -2423,7 +2418,7 @@ class RecordTest extends BaseTestCase
      *
      *
      */
-    public function testAfterDelete()
+    public function testAfterDelete(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("after delete: no-no-no!");
@@ -2434,7 +2429,7 @@ class RecordTest extends BaseTestCase
     /**
      * @covers Record::delete()
      */
-    public function testDelete()
+    public function testDelete(): void
     {
         $addedRecords = TestingApp::fillAdminsTable(10);
         static::assertEquals(10, TestingAdminsTable::count());
@@ -2454,7 +2449,7 @@ class RecordTest extends BaseTestCase
      * @covers Record::next()
      * @covers Record::rewind()
      */
-    public function testIterations()
+    public function testIterations(): void
     {
         $rec = TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true);
         $cols = [];
@@ -2475,7 +2470,7 @@ class RecordTest extends BaseTestCase
         static::assertCount($count, $expected);
     }
     
-    public function testInvalidArrayAccess1()
+    public function testInvalidArrayAccess1(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('PeskyORM\ORM\Record::hasColumn(): Argument #1 ($name) must be of type string');
@@ -2483,7 +2478,7 @@ class RecordTest extends BaseTestCase
         $rec[0];
     }
     
-    public function testInvalidArrayAccess2()
+    public function testInvalidArrayAccess2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
@@ -2491,7 +2486,7 @@ class RecordTest extends BaseTestCase
         $rec['invalidcolname'];
     }
     
-    public function testInvalidMagicGetter()
+    public function testInvalidMagicGetter(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
@@ -2499,54 +2494,54 @@ class RecordTest extends BaseTestCase
         TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)->invalidcolname;
     }
     
-    public function testInvalidMagicIsset()
+    public function testInvalidMagicIsset(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         isset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)->invalidcolname);
     }
     
-    public function testInvalidArrayOffsetIsset1()
+    public function testInvalidArrayOffsetIsset1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         isset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)['invalidcolname']);
     }
     
-    public function testArrayOffsetIssetWithFormatter()
+    public function testArrayOffsetIssetWithFormatter(): void
     {
         static::assertTrue(isset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)['created_at_as_date']));
     }
     
-    public function testInvalidArrayOffsetUnset1()
+    public function testInvalidArrayOffsetUnset1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         unset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)['invalidcolname']);
     }
     
-    public function testInvalidArrayOffsetUnset2()
+    public function testInvalidArrayOffsetUnset2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no column or relation with name [created_at_as_date] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         unset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)['created_at_as_date']);
     }
     
-    public function testInvalidMagicPropertyUnset1()
+    public function testInvalidMagicPropertyUnset1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         unset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)->invalidcolname);
     }
     
-    public function testInvalidMagicPropertyUnset2()
+    public function testInvalidMagicPropertyUnset2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no column or relation with name [created_at_as_date] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         unset(TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true)->created_at_as_date);
     }
     
-    public function testGetValueWothFormatterInName()
+    public function testGetValueWothFormatterInName(): void
     {
         $record = TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true);
         $expected = date('Y-m-d', strtotime($record->created_at));
@@ -2563,7 +2558,7 @@ class RecordTest extends BaseTestCase
      * @covers Record::__isset()
      * @noinspection PhpUnitAssertCanBeReplacedWithEmptyInspection
      */
-    public function testMagicGetterAndOffsetGetAndIssetAndUnset()
+    public function testMagicGetterAndOffsetGetAndIssetAndUnset(): void
     {
         /** @var TestingAdmin $rec */
         $data = TestingApp::getRecordsForDb('admins', 1)[0];
@@ -2639,7 +2634,7 @@ class RecordTest extends BaseTestCase
         static::assertTrue($rec->isRelatedRecordAttached('Children'));
     }
     
-    public function testInvalidMagicPropertySetter1()
+    public function testInvalidMagicPropertySetter1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
@@ -2647,28 +2642,28 @@ class RecordTest extends BaseTestCase
         TestingAdmin::newEmptyRecord()->invalidcolname = 1;
     }
     
-    public function testInvalidMagicPropertySetter2()
+    public function testInvalidMagicPropertySetter2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no column or relation with name [created_at_as_date] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         TestingAdmin::newEmptyRecord()->created_at_as_date = 1;
     }
     
-    public function testInvalidArrayAccessSetter1()
+    public function testInvalidArrayAccessSetter1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no column or relation with name [invalidcolname] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         TestingAdmin::newEmptyRecord()['invalidcolname'] = 1;
     }
     
-    public function testInvalidArrayAccessSetter2()
+    public function testInvalidArrayAccessSetter2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("There is no column or relation with name [created_at_as_date] in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin");
         TestingAdmin::newEmptyRecord()['created_at_as_date'] = 1;
     }
     
-    public function testInvalidMagicMethodSetter1()
+    public function testInvalidMagicMethodSetter1(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Magic method 'setInvalidcolumn(\$value, \$isFromDb = false)' is not linked with any column or relation");
@@ -2677,7 +2672,7 @@ class RecordTest extends BaseTestCase
             ->setInvalidcolumn(1);
     }
     
-    public function testInvalidMagicMethodSetter2()
+    public function testInvalidMagicMethodSetter2(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Magic method 'setCreatedAtAsDate(\$value, \$isFromDb = false)' is not linked with any column or relation");
@@ -2686,7 +2681,7 @@ class RecordTest extends BaseTestCase
             ->setCreatedAtAsDate(1);
     }
     
-    public function testInvalidMagicMethodSetter3()
+    public function testInvalidMagicMethodSetter3(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Magic method 'setParentid(\$value, \$isFromDb = false)' is not linked with any column or relation");
@@ -2695,7 +2690,7 @@ class RecordTest extends BaseTestCase
             ->setParentid(1);
     }
     
-    public function testInvalidMagicMethodSetter4()
+    public function testInvalidMagicMethodSetter4(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage(
@@ -2706,7 +2701,7 @@ class RecordTest extends BaseTestCase
             ->setparentid(1);
     }
     
-    public function testInvalidMagicMethodSetter5()
+    public function testInvalidMagicMethodSetter5(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage(
@@ -2717,7 +2712,7 @@ class RecordTest extends BaseTestCase
             ->anymethod(1);
     }
     
-    public function testInvalidMagicMethodSetter6()
+    public function testInvalidMagicMethodSetter6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Magic method 'setId(\$value, \$isFromDb = false)' accepts only 2 arguments, but 3 arguments passed");
@@ -2726,7 +2721,7 @@ class RecordTest extends BaseTestCase
             ->setId(1, 3, 2);
     }
     
-    public function testInvalidMagicMethodSetter7()
+    public function testInvalidMagicMethodSetter7(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage(
@@ -2736,7 +2731,7 @@ class RecordTest extends BaseTestCase
             ->setId(1, 2);
     }
     
-    public function testInvalidMagicMethodSetter8()
+    public function testInvalidMagicMethodSetter8(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage(
@@ -2746,7 +2741,7 @@ class RecordTest extends BaseTestCase
             ->setParent(1);
     }
     
-    public function testInvalidMagicMethodSetter9()
+    public function testInvalidMagicMethodSetter9(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage(
@@ -2756,7 +2751,7 @@ class RecordTest extends BaseTestCase
             ->setParent($this);
     }
     
-    public function testMagicSetterAndMagicSetterMethodAndOffsetSet()
+    public function testMagicSetterAndMagicSetterMethodAndOffsetSet(): void
     {
         $records = TestingApp::getRecordsForDb('admins', 3);
         unset(

@@ -4,6 +4,10 @@ namespace PeskyORM\ORM\Traits;
 
 trait ConvertsArrayToObject
 {
+    
+    /**
+     * @return static
+     */
     public static function createObjectFromArray(array $data)
     {
         $obj = new static();
@@ -26,7 +30,7 @@ trait ConvertsArrayToObject
      * @param array $unknownProperties - key: property name => value: property value
      * @return void
      */
-    public function handleUnknownArrayKeys(array $unknownProperties, array $data)
+    public function handleUnknownArrayKeys(array $unknownProperties, array $data): void
     {
         // implement your handler if needed
     }

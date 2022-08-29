@@ -21,7 +21,7 @@ abstract class RecordValueHelpers
      * @param array $errorMessages
      * @return array
      */
-    public static function isValidDbColumnValue(Column $column, $value, bool $isFromDb, bool $isForCondition, array $errorMessages = [])
+    public static function isValidDbColumnValue(Column $column, $value, bool $isFromDb, bool $isForCondition, array $errorMessages = []): array
     {
         if (is_object($value) && ($value instanceof DbExpr || is_subclass_of($value, AbstractSelect::class))) {
             return [];
@@ -67,7 +67,7 @@ abstract class RecordValueHelpers
      * @param array $errorMessages
      * @return array
      */
-    public static function isValueFitsDataType($value, string $type, bool $isForCondition, array $errorMessages = [])
+    public static function isValueFitsDataType($value, string $type, bool $isForCondition, array $errorMessages = []): array
     {
         switch ($type) {
             case Column::TYPE_BOOL:

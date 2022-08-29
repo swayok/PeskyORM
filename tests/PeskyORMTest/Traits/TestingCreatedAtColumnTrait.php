@@ -9,7 +9,7 @@ use PeskyORM\ORM\Column;
 trait TestingCreatedAtColumnTrait
 {
     
-    private function created_at()
+    private function created_at(): Column
     {
         return Column::create(Column::TYPE_TIMESTAMP_WITH_TZ)
             ->disallowsNullValues()

@@ -404,7 +404,7 @@ class RecordValue
      * Sets all properties from $data. Used by Record::unserialize()
      * @param array $data
      */
-    public function unserialize(array $data)
+    public function unserialize(array $data): void
     {
         foreach ($data as $propertyName => $value) {
             $this->$propertyName = $value;

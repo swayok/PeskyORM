@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Core;
 
-use InvalidArgumentException;
+use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\TableDescription;
 use PeskyORM\ORM\Column;
@@ -15,12 +15,12 @@ require_once __DIR__ . '/PostgresAdapterHelpersTest.php';
 class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
 {
     
-    protected static function getValidAdapter()
+    protected static function getValidAdapter(): DbAdapterInterface
     {
         return TestingApp::getMysqlConnection();
     }
     
-    public function testConvertConditionOperatorForStringComparison()
+    public function testConvertConditionOperatorForStringComparison(): void
     {
         $adapter = self::getValidAdapter();
         
@@ -50,7 +50,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
         static::assertEquals('NOT REGEXP', $operator);
     }
     
-    public function testQuoteJsonSelectorValue()
+    public function testQuoteJsonSelectorValue(): void
     {
         static::assertEquals(
             "'$.key'",
@@ -66,7 +66,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
         );
     }
     
-    public function testQuoteJsonSelectorExpression()
+    public function testQuoteJsonSelectorExpression(): void
     {
         static::assertEquals(
             'JSON_UNQUOTE(JSON_EXTRACT(JSON_EXTRACT(`table`.`col_name`->\'$.key1\'->>\'$.key 2\', \'$.key 3\'), \'$.key 4\'))',
@@ -92,7 +92,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
         );
     }
     
-    public function testAssembleConditionValueAdapterSpecific()
+    public function testAssembleConditionValueAdapterSpecific(): void
     {
         $adapter = static::getValidAdapter();
         static::assertEquals(
@@ -121,7 +121,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
         );
     }
     
-    public function testAssembleConditionAdapterSpecific()
+    public function testAssembleConditionAdapterSpecific(): void
     {
         $adapter = static::getValidAdapter();
         $column = $adapter->quoteDbEntityName('colname');
@@ -191,7 +191,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
      * @covers DbAdapter::describeTable()
      * @covers Postgres::describeTable()
      */
-    public function testDescribeTable()
+    public function testDescribeTable(): void
     {
         // Mysql::extractLimitAndPrecisionForColumnDescription()
         static::assertEquals(
@@ -339,23 +339,25 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
             $description->getColumn('remember_token')
                 ->isNullable()
         );
-        static::assertEquals(DbExpr::create('NOW()'),
+        static::assertEquals(
+            DbExpr::create('NOW()'),
             $description->getColumn('created_at')
                 ->getDefault()
         );
     }
     
-    public function testInvalidPkName4()
+    public function testInvalidPkName4(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$pkName must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)");
         $this->invokePrivateAdapterMethod('guardPkNameArg', 'teasd as das d 90as9()');
     }
     
-    public function testIsValidDbEntityNameAndJsonSelector2() {
+    public function testIsValidDbEntityNameAndJsonSelector2(): void
+    {
         static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test test->test'));
         static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test#test->test'));
-    
+        
         static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test test'));
         static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test$test'));
         static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test->test', false));

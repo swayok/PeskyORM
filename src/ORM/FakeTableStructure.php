@@ -72,7 +72,7 @@ VIEW;
         return $fullClassName::getInstance();
     }
     
-    protected function loadConfigs()
+    protected function loadConfigs(): void
     {
         $this->pk = $this->columns['id'] = Column::create(Column::TYPE_INT, 'id')
             ->primaryKey();
@@ -137,11 +137,8 @@ VIEW;
      * @param TableStructure $structure
      * @param bool $append - true: existing structure will be appended; false - replaced
      * @return static
-     * @throws \UnexpectedValueException
-     * @throws \InvalidArgumentException
-     * @throws \BadMethodCallException
      */
-    public function mimicTableStructure(TableStructure $structure, $append = false)
+    public function mimicTableStructure(TableStructure $structure, bool $append = false): FakeTableStructure
     {
         if (!$append) {
             $this->columns = [];
@@ -195,11 +192,11 @@ VIEW;
         return parent::getColumn($columnName);
     }
     
-    protected function loadColumnsConfigsFromPrivateMethods()
+    protected function loadColumnsConfigsFromPrivateMethods(): void
     {
     }
     
-    protected function createMissingColumnsConfigsFromDbTableDescription()
+    protected function createMissingColumnsConfigsFromDbTableDescription(): void
     {
     }
 }

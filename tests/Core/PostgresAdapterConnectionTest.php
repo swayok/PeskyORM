@@ -20,12 +20,12 @@ use ReflectionClass;
 class PostgresAdapterConnectionTest extends BaseTestCase
 {
     
-    private static function getValidAdapter()
+    private static function getValidAdapter(): Postgres
     {
         return TestingApp::getPgsqlConnection();
     }
     
-    public function testConnectionWithInvalidUserName()
+    public function testConnectionWithInvalidUserName(): void
     {
         $this->expectException(\PDOException::class);
         $this->expectExceptionMessageMatches("(password authentication failed for user)");
@@ -38,7 +38,7 @@ class PostgresAdapterConnectionTest extends BaseTestCase
         $adapter->getConnection();
     }
     
-    public function testConnectionWithInvalidUserName2()
+    public function testConnectionWithInvalidUserName2(): void
     {
         $this->expectException(\PDOException::class);
         $this->expectExceptionMessageMatches("(password authentication failed for user)");
@@ -53,7 +53,7 @@ class PostgresAdapterConnectionTest extends BaseTestCase
         $adapter->getConnection();
     }
     
-    public function testConnectionWithInvalidDbName()
+    public function testConnectionWithInvalidDbName(): void
     {
         $this->expectException(\PDOException::class);
         $this->expectExceptionMessage("database \"totally_not_existing_db\" does not exist");
@@ -70,7 +70,7 @@ class PostgresAdapterConnectionTest extends BaseTestCase
         $adapter->getConnection();
     }
     
-    public function testConnectionWithInvalidUserPassword()
+    public function testConnectionWithInvalidUserPassword(): void
     {
         $this->expectException(\PDOException::class);
         $this->expectExceptionMessage("password authentication failed for user");
@@ -103,7 +103,7 @@ class PostgresAdapterConnectionTest extends BaseTestCase
         $adapter->getConnection();
     }*/
     
-    public function testValidConnection()
+    public function testValidConnection(): void
     {
         $adapter = static::getValidAdapter();
         $adapter->getConnection();
@@ -111,7 +111,7 @@ class PostgresAdapterConnectionTest extends BaseTestCase
         static::assertEquals(1, $stmnt->rowCount());
     }
     
-    public function testDisconnect()
+    public function testDisconnect(): void
     {
         $adapter = static::getValidAdapter();
         $adapter->getConnection();

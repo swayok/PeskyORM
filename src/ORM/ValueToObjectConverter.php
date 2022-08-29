@@ -11,7 +11,7 @@ abstract class ValueToObjectConverter implements ValueToObjectConverterInterface
     
     public array $other = [];
     
-    public function handleUnknownArrayKeys(array $unknownProperties, array $data)
+    public function handleUnknownArrayKeys(array $unknownProperties, array $data): void
     {
         $this->other = $unknownProperties;
     }

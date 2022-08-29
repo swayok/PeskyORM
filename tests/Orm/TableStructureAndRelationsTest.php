@@ -36,7 +36,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
     }
     
-    public function testTableStructureCore()
+    public function testTableStructureCore(): void
     {
         static::assertEquals('default', TestingAdminsTableStructure::getConnectionName(false));
         static::assertEquals('writable', TestingAdminsTableStructure::getConnectionName(true));
@@ -44,7 +44,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertEquals('admins', TestingAdminsTableStructure::getTableName());
     }
     
-    public function testAbsentPkColumn()
+    public function testAbsentPkColumn(): void
     {
         $this->expectException(OrmException::class);
         $this->expectExceptionMessage(
@@ -53,7 +53,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         TestingNoPkColumnInTableStructure::getInstance();
     }
     
-    public function testDuplicateConstruct()
+    public function testDuplicateConstruct(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Attempt to create 2nd instance of class PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
@@ -63,7 +63,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         $method->invoke(TestingAdminsTableStructure::getInstance());
     }
     
-    public function testStaticMethodsInDbTableConfigs()
+    public function testStaticMethodsInDbTableConfigs(): void
     {
         static::assertInstanceOf(TestingSettingsTableStructure::class, TestingSettingsTableStructure::getInstance());
         static::assertInstanceOf(TestingAdminsTableStructure::class, TestingAdminsTableStructure::getInstance());
@@ -72,7 +72,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertInstanceOf(TestingAdminsTableStructure::class, TestingAdminsTableStructure::i());
     }
     
-    public function testTableStructureColumns()
+    public function testTableStructureColumns(): void
     {
         $columns = TestingAdminsTableStructure::getColumns();
         static::assertCount(22, $columns);
@@ -94,7 +94,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertFalse(TestingAdminsTableStructure::hasFileColumn('abrakadabra'));
     }
     
-    public function testTableStructureRelations()
+    public function testTableStructureRelations(): void
     {
         static::assertCount(4, TestingAdminsTableStructure::getRelations());
         static::assertTrue(TestingAdminsTableStructure::hasRelation('Parent'));
@@ -112,14 +112,14 @@ class TableStructureAndRelationsTest extends BaseTestCase
         );
     }
     
-    public function testInvalidColumnGet()
+    public function testInvalidColumnGet(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure does not know about column named 'abrakadabra'");
         TestingAdminsTableStructure::getColumn('abrakadabra');
     }
     
-    public function testInvalidRelationGet()
+    public function testInvalidRelationGet(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage(
@@ -128,7 +128,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         TestingAdminsTableStructure::getRelation('abrakadabra');
     }
     
-    public function testInvalidTableStructure1()
+    public function testInvalidTableStructure1(): void
     {
         $this->expectException(OrmException::class);
         $this->expectExceptionMessage(
@@ -137,7 +137,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         TestingInvalidColumnsInTableStructure::getColumn('invalid');
     }
     
-    public function testInvalidTableStructure2()
+    public function testInvalidTableStructure2(): void
     {
         $this->expectException(OrmException::class);
         $this->expectExceptionMessage("2 primary keys in one table is forbidden");
@@ -145,7 +145,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         TestingTwoPrimaryKeysColumnsTableStructure::getColumn('pk2');
     }
     
-    public function testInvalidTableStructure3()
+    public function testInvalidTableStructure3(): void
     {
         $this->expectException(OrmException::class);
         $this->expectExceptionMessage(
@@ -154,28 +154,28 @@ class TableStructureAndRelationsTest extends BaseTestCase
         TestingInvalidRelationsInTableStructure::getRelation('InvalidClass');
     }
     
-    public function testInvalidTableStructure4()
+    public function testInvalidTableStructure4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$foreignTableClass argument contains invalid value: class '___class_invalid' does not exist");
         TestingInvalidRelationsInTableStructure2::getRelation('InvalidForeignTableClass');
     }
     
-    public function testInvalidTableStructure5()
+    public function testInvalidTableStructure5(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure3 does not know about column named 'local_invalid'");
         TestingInvalidRelationsInTableStructure3::getRelation('InvalidLocalColumnName');
     }
     
-    public function testInvalidTableStructure6()
+    public function testInvalidTableStructure6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Related table PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable has no column 'foreign_invalid'");
         TestingInvalidRelationsInTableStructure4::getRelation('InvalidForeignColumnName')->getForeignColumnName();
     }
     
-    public function testCreateMissingColumnConfigsFromDbTableDescription()
+    public function testCreateMissingColumnConfigsFromDbTableDescription(): void
     {
         $structure = TestingAdmins4TableStructure::getInstance();
         static::assertCount(17, $structure::getColumns());

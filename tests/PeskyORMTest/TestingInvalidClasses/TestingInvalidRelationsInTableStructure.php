@@ -14,14 +14,14 @@ class TestingInvalidRelationsInTableStructure extends TableStructure
         return 'some_table';
     }
     
-    private function valid()
+    private function valid(): Column
     {
         return Column::create(Column::TYPE_INT)
             ->primaryKey();
     }
     
     
-    private function InvalidClass()
+    private function InvalidClass(): TestingInvalidRelationsInTableStructure
     {
         return $this;
     }

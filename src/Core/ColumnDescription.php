@@ -154,9 +154,9 @@ class ColumnDescription implements \Serializable
      * @return string the string representation of the object or null
      * @since 5.1.0
      */
-    public function serialize()
+    public function serialize(): string
     {
-        return json_encode(get_object_vars($this));
+        return json_encode(get_object_vars($this), JSON_THROW_ON_ERROR);
     }
     
     /**
@@ -170,7 +170,7 @@ class ColumnDescription implements \Serializable
      * @since 5.1.0
      * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
-    public function unserialize($serialized)
+    public function unserialize($serialized): void
     {
         $data = json_decode($serialized, true);
         if (!is_array($data)) {

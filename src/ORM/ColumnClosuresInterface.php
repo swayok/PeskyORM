@@ -88,20 +88,13 @@ interface ColumnClosuresInterface
     
     /**
      * Additional actions after value saving to DB (or instead of saving if column does not exist in DB)
-     * @param RecordValue $valueContainer
-     * @param bool $isUpdate
-     * @param array $savedData
-     * @return void
      */
-    public static function valueSavingExtender(RecordValue $valueContainer, bool $isUpdate, array $savedData);
+    public static function valueSavingExtender(RecordValue $valueContainer, bool $isUpdate, array $savedData): void;
     
     /**
      * Additional actions after record deleted from DB
-     * @param RecordValue $valueContainer
-     * @param bool $deleteFiles
-     * @return void
      */
-    public static function valueDeleteExtender(RecordValue $valueContainer, bool $deleteFiles);
+    public static function valueDeleteExtender(RecordValue $valueContainer, bool $deleteFiles): void;
     
     /**
      * Formats value according to required $format

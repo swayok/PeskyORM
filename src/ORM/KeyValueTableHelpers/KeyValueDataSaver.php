@@ -70,7 +70,7 @@ class KeyValueDataSaver extends Record
             ->saveToDb(array_keys($newData), $fkValue, $constantAdditionalData);
     }
     
-    protected function saveToDb(array $columnsToSave = [], $fkValue = null, array $constantAdditionalData = [])
+    protected function saveToDb(array $columnsToSave = [], $fkValue = null, array $constantAdditionalData = []): void
     {
         $this->_fkValue = $fkValue;
         $this->_constantAdditionalData = $constantAdditionalData;

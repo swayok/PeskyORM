@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\Core;
 
 use PDO;
+use PeskyORM\Adapter\Mysql;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
@@ -23,12 +24,12 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    private static function getValidAdapter()
+    private static function getValidAdapter(): Mysql
     {
         return TestingApp::getMysqlConnection();
     }
     
-    public function testQuotingOfInvalidDbEntity()
+    public function testQuotingOfInvalidDbEntity(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Invalid db entity name");
@@ -36,7 +37,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         $adapter->quoteDbEntityName('";DROP table1;');
     }
     
-    public function testQuotingOfInvalidDbEntity2()
+    public function testQuotingOfInvalidDbEntity2(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage("Argument #1 (\$name) must be of type string");
@@ -46,7 +47,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         $adapter->quoteDbEntityName(['arrr']);
     }
     
-    public function testQuotingOfInvalidDbEntity3()
+    public function testQuotingOfInvalidDbEntity3(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage("Argument #1 (\$name) must be of type string");
@@ -56,7 +57,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         $adapter->quoteDbEntityName($adapter);
     }
     
-    public function testQuotingOfInvalidDbEntity4()
+    public function testQuotingOfInvalidDbEntity4(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage("Argument #1 (\$name) must be of type string");
@@ -65,7 +66,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         $adapter->quoteDbEntityName(true);
     }
     
-    public function testQuotingOfInvalidDbEntity5()
+    public function testQuotingOfInvalidDbEntity5(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage("Argument #1 (\$name) must be of type string");
@@ -74,7 +75,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         $adapter->quoteDbEntityName(false);
     }
     
-    public function testQuotingOfInvalidDbEntity6()
+    public function testQuotingOfInvalidDbEntity6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Invalid db entity name: [colname->->]");
@@ -82,7 +83,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         $adapter->quoteDbEntityName('colname->->');
     }
     
-    public function testQuotingOfInvalidDbEntity7()
+    public function testQuotingOfInvalidDbEntity7(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Invalid db entity name: [colname-> ->]");
@@ -90,7 +91,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         $adapter->quoteDbEntityName('colname-> ->');
     }
     
-    public function testQuotingOfInvalidDbEntity8()
+    public function testQuotingOfInvalidDbEntity8(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Db entity name must be a not empty string");
@@ -98,7 +99,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         $adapter->quoteDbEntityName('');
     }
     
-    public function testQuotingOfInvalidDbValueType()
+    public function testQuotingOfInvalidDbValueType(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage("Argument #2 (\$valueDataType) must be of type ?int");
@@ -107,7 +108,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         $adapter->quoteValue('test', 'abrakadabra');
     }
     
-    public function testQuotingOfInvalidIntDbValue()
+    public function testQuotingOfInvalidIntDbValue(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$value expected to be integer or numeric string. String [abrakadabra] received");
@@ -115,7 +116,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         $adapter->quoteValue('abrakadabra', PDO::PARAM_INT);
     }
     
-    public function testQuotingOfInvalidIntDbValue2()
+    public function testQuotingOfInvalidIntDbValue2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$value expected to be integer or numeric string. Object fo class [\PeskyORM\Adapter\Mysql] received");
@@ -124,7 +125,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         $adapter->quoteValue($adapter, PDO::PARAM_INT);
     }
     
-    public function testQuotingOfInvalidIntDbValue3()
+    public function testQuotingOfInvalidIntDbValue3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$value expected to be integer or numeric string. Array received");
@@ -132,7 +133,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         $adapter->quoteValue(['key' => 'val'], PDO::PARAM_INT);
     }
     
-    public function testQuotingOfInvalidIntDbValue4()
+    public function testQuotingOfInvalidIntDbValue4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$value expected to be integer or numeric string.");
@@ -140,7 +141,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         $adapter->quoteValue(curl_init('http://test.url'), PDO::PARAM_INT);
     }
     
-    public function testQuotingOfInvalidIntDbValue5()
+    public function testQuotingOfInvalidIntDbValue5(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$value expected to be integer or numeric string. Boolean [true] received");
@@ -148,7 +149,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         $adapter->quoteValue(true, PDO::PARAM_INT);
     }
     
-    public function testQuotingOfInvalidIntDbValue6()
+    public function testQuotingOfInvalidIntDbValue6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$value expected to be integer or numeric string. Boolean [false] received");
@@ -156,7 +157,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         $adapter->quoteValue(false, PDO::PARAM_INT);
     }
     
-    public function testQuotingOfInvalidDbExpr()
+    public function testQuotingOfInvalidDbExpr(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage("Argument #1 (\$expression) must be of type PeskyORM\Core\DbExpr");
@@ -165,7 +166,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         $adapter->quoteDbExpr('test');
     }
     
-    public function testQuoting()
+    public function testQuoting(): void
     {
         $adapter = static::getValidAdapter();
         // names
@@ -227,7 +228,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         );
     }
     
-    public function testBuildColumnsList()
+    public function testBuildColumnsList(): void
     {
         $adapter = static::getValidAdapter();
         $method = (new ReflectionClass($adapter))->getMethod('buildColumnsList');
@@ -236,7 +237,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         static::assertEquals('(`column1`, `alias`.`column2`)', $colsList);
     }
     
-    public function testInvalidColumnsInBuildValuesList()
+    public function testInvalidColumnsInBuildValuesList(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$columns argument cannot be empty");
@@ -246,7 +247,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         $method->invoke($adapter, [], []);
     }
     
-    public function testInvalidDataInBuildValuesList()
+    public function testInvalidDataInBuildValuesList(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$valuesAssoc array does not contain key [col2]");
@@ -256,7 +257,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         $method->invoke($adapter, ['col1', 'col2'], ['col1' => '1']);
     }
     
-    public function testBuildValuesList()
+    public function testBuildValuesList(): void
     {
         $adapter = static::getValidAdapter();
         $method = (new ReflectionClass($adapter))->getMethod('buildValuesList');

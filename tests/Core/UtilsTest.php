@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Core;
 
+use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
@@ -29,7 +30,7 @@ class UtilsTest extends BaseTestCase
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    protected static function fillTables()
+    protected static function fillTables(): array
     {
         $data = static::getTestDataForAdminsTableInsert();
         static::getValidAdapter()
@@ -37,14 +38,14 @@ class UtilsTest extends BaseTestCase
         return ['admins' => $data];
     }
     
-    protected static function getValidAdapter()
+    protected static function getValidAdapter(): Postgres
     {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
     
-    public static function getTestDataForAdminsTableInsert()
+    public static function getTestDataForAdminsTableInsert(): array
     {
         return [
             [
@@ -97,7 +98,7 @@ class UtilsTest extends BaseTestCase
         return $data;
     }
     
-    public function testInvalidGetDataFromStatement1()
+    public function testInvalidGetDataFromStatement1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Unknown processing type [???]");
@@ -105,7 +106,7 @@ class UtilsTest extends BaseTestCase
         Utils::getDataFromStatement($statement, '???');
     }
     
-    public function testGetDataFromStatement()
+    public function testGetDataFromStatement(): void
     {
         $testData = $this->convertTestDataForAdminsTableAssert(static::fillTables()['admins']);
         $statement = static::getValidAdapter()
@@ -146,7 +147,7 @@ class UtilsTest extends BaseTestCase
         static::assertEquals(null, Utils::getDataFromStatement($statement, Utils::FETCH_VALUE));
     }
     
-    public function testInvalidAssembleWhereConditionsFromArray1()
+    public function testInvalidAssembleWhereConditionsFromArray1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$glue argument must be \"AND\" or \"OR\"");
@@ -154,7 +155,7 @@ class UtilsTest extends BaseTestCase
         }, 'wow');
     }
     
-    public function testInvalidAssembleWhereConditionsFromArray3()
+    public function testInvalidAssembleWhereConditionsFromArray3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage(
@@ -164,7 +165,7 @@ class UtilsTest extends BaseTestCase
         });
     }
     
-    public function testInvalidAssembleWhereConditionsFromArray4()
+    public function testInvalidAssembleWhereConditionsFromArray4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Empty column name detected in \$conditions argument");
@@ -172,7 +173,7 @@ class UtilsTest extends BaseTestCase
         });
     }
     
-    public function testInvalidAssembleWhereConditionsFromArray5()
+    public function testInvalidAssembleWhereConditionsFromArray5(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Empty column name detected in \$conditions argument");
@@ -180,7 +181,7 @@ class UtilsTest extends BaseTestCase
         });
     }
     
-    public function testInvalidAssembleWhereConditionsFromArray6()
+    public function testInvalidAssembleWhereConditionsFromArray6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Empty column name detected in \$conditions argument");
@@ -188,7 +189,7 @@ class UtilsTest extends BaseTestCase
         });
     }
     
-    public function testInvalidAssembleWhereConditionsFromArray7()
+    public function testInvalidAssembleWhereConditionsFromArray7(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Condition operator [LIKE] does not support list of values");
@@ -196,7 +197,7 @@ class UtilsTest extends BaseTestCase
         });
     }
     
-    public function testGluesInAssembleWhereConditionsFromArray()
+    public function testGluesInAssembleWhereConditionsFromArray(): void
     {
         $adapter = static::getValidAdapter();
         $columnQuoter = function ($columnName) use ($adapter) {
@@ -272,7 +273,7 @@ class UtilsTest extends BaseTestCase
         );
     }
     
-    public function testOperatorsInAssembleWhereConditionsFromArray()
+    public function testOperatorsInAssembleWhereConditionsFromArray(): void
     {
         $adapter = static::getValidAdapter();
         $columnQuoter = function ($columnName) use ($adapter) {
@@ -372,7 +373,7 @@ class UtilsTest extends BaseTestCase
         );
     }
     
-    public function testValidationViaAssembleWhereConditionsFromArray()
+    public function testValidationViaAssembleWhereConditionsFromArray(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("Value [aaa] for column name [test] is invalid");
@@ -387,7 +388,7 @@ class UtilsTest extends BaseTestCase
         );
     }
     
-    public function testDbExprUsageInAssembleWhereConditionsFromArray()
+    public function testDbExprUsageInAssembleWhereConditionsFromArray(): void
     {
         $adapter = static::getValidAdapter();
         $columnQuoter = function ($columnName) use ($adapter) {

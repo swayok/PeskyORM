@@ -39,7 +39,7 @@ class RecordsSet extends RecordsArray
         array $records,
         ?bool $isFromDb = null,
         bool $trustDataReceivedFromDb = false
-    ) {
+    ): RecordsArray {
         return new RecordsArray($table, $records, $isFromDb, $trustDataReceivedFromDb);
     }
     
@@ -48,7 +48,7 @@ class RecordsSet extends RecordsArray
      *      is changed outside RecordsSet + to allow optimised iteration via pagination
      * @return RecordsSet
      */
-    public static function createFromOrmSelect(OrmSelect $dbSelect)
+    public static function createFromOrmSelect(OrmSelect $dbSelect): RecordsSet
     {
         return new self($dbSelect);
     }
@@ -64,6 +64,9 @@ class RecordsSet extends RecordsArray
         $this->setOrmSelect($dbSelect);
     }
     
+    /**
+     * @return static
+     */
     public function setRecordClass(?string $class)
     {
         $this->getOrmSelect()
@@ -83,7 +86,7 @@ class RecordsSet extends RecordsArray
      * @param Relation $relation
      * @param array $columnsToSelect
      */
-    protected function injectHasManyRelationDataIntoRecords(Relation $relation, array $columnsToSelect = ['*'])
+    protected function injectHasManyRelationDataIntoRecords(Relation $relation, array $columnsToSelect = ['*']): void
     {
         $this->hasManyRelationsToInject[$relation->getName()] = [
             'relation' => $relation,
@@ -106,10 +109,7 @@ class RecordsSet extends RecordsArray
         return $this;
     }
     
-    /**
-     * @return OrmSelect
-     */
-    public function getOrmSelect()
+    public function getOrmSelect(): OrmSelect
     {
         return $this->select;
     }
@@ -122,7 +122,7 @@ class RecordsSet extends RecordsArray
      *      - false: append conditions to current RecordSet; this will reset current state of RecordSet (count, records)
      * @param bool $resetOriginalRecordSet - true: used only when $returnNewRecordSet is true and will reset
      *      Current RecordSet (count, records)
-     * @return RecordsSet
+     * @return static
      */
     public function appendConditions(array $conditions, bool $returnNewRecordSet, bool $resetOriginalRecordSet = false)
     {
@@ -264,7 +264,7 @@ class RecordsSet extends RecordsArray
         }
     }
     
-    public function offsetExists($index)
+    public function offsetExists($index): bool
     {
         return is_int($index) && $index >= 0 && $index < $this->count();
     }
@@ -280,9 +280,8 @@ class RecordsSet extends RecordsArray
     /**
      * Count amount of DB records to be fetched
      * Note: not same as totalCount() - that one does not take in account LIMIT and OFFSET
-     * @return int
      */
-    public function count()
+    public function count(): int
     {
         if ($this->recordsCount === null) {
             if ($this->select->getOffset() === 0 && $this->select->getLimit() === 0) {

@@ -33,7 +33,7 @@ abstract class Table implements TableInterface
      * Resets class instances (used for testing only, that's why it is private)
      * @noinspection PhpUnusedPrivateMethodInspection
      */
-    private static function resetInstances()
+    private static function resetInstances(): void
     {
         self::$instances = [];
     }
@@ -114,7 +114,7 @@ abstract class Table implements TableInterface
      * @param string $relationName - alias for relation defined in TableStructure
      * @return TableInterface
      */
-    public static function getRelatedTable($relationName): TableInterface
+    public static function getRelatedTable(string $relationName): TableInterface
     {
         return static::getStructure()
             ->getRelation($relationName)
@@ -128,8 +128,11 @@ abstract class Table implements TableInterface
      * @param string|null $joinName - string: specific join name; null: $relationName is used
      * @return OrmJoinInfo
      */
-    public static function getJoinConfigForRelation($relationName, $alterLocalTableAlias = null, $joinName = null): OrmJoinInfo
-    {
+    public static function getJoinConfigForRelation(
+        string $relationName,
+        string $alterLocalTableAlias = null,
+        string $joinName = null
+    ): OrmJoinInfo {
         return static::getStructure()
             ->getRelation($relationName)
             ->toOrmJoinConfig(
@@ -143,7 +146,7 @@ abstract class Table implements TableInterface
      * @param string $relationName - alias for relation defined in TableStructure
      * @return bool
      */
-    public static function hasRelation($relationName): bool
+    public static function hasRelation(string $relationName): bool
     {
         return static::getStructure()
             ->hasRelation($relationName);
@@ -185,10 +188,10 @@ abstract class Table implements TableInterface
      * @param string|array $columns
      * @param array $conditions
      * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return RecordsSet - Do not typehint returning value! it actually may be overriden to return array
+     * @return RecordsSet
      * @throws \PDOException
      */
-    public static function select($columns = '*', array $conditions = [], ?\Closure $configurator = null)
+    public static function select($columns = '*', array $conditions = [], ?\Closure $configurator = null): RecordsSet
     {
         return RecordsSet::createFromOrmSelect(static::makeSelect($columns, $conditions, $configurator));
     }
@@ -245,7 +248,7 @@ abstract class Table implements TableInterface
      * @return RecordInterface
      * @throws \PDOException
      */
-    public static function selectOneAsDbRecord($columns, array $conditions, ?\Closure $configurator = null): \PeskyORM\ORM\RecordInterface
+    public static function selectOneAsDbRecord($columns, array $conditions, ?\Closure $configurator = null): RecordInterface
     {
         return static::makeSelect($columns, $conditions, $configurator)
             ->fetchOneAsDbRecord();
@@ -420,10 +423,7 @@ abstract class Table implements TableInterface
             ->rollBack();
     }
     
-    /**
-     * @return void
-     */
-    public static function rollBackTransactionIfExists()
+    public static function rollBackTransactionIfExists(): void
     {
         if (static::inTransaction()) {
             static::rollBackTransaction();
@@ -524,7 +524,7 @@ abstract class Table implements TableInterface
     /**
      * @see DbAdapter::insertMany()
      */
-    public static function insertMany(array $columns, array $rows, $returning = false)
+    public static function insertMany(array $columns, array $rows, $returning = false): ?array
     {
         return static::insertManyAsIs(
             $columns,
@@ -536,7 +536,7 @@ abstract class Table implements TableInterface
     /**
      * @see DbAdapter::insertMany()
      */
-    public static function insertManyAsIs(array $columns, array $rows, $returning = false)
+    public static function insertManyAsIs(array $columns, array $rows, $returning = false): ?array
     {
         return static::getConnection(true)
             ->insertMany(

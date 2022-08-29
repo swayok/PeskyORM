@@ -34,13 +34,13 @@ class TracedStatement
         $this->preparedId = $preparedId;
     }
     
-    public function start(?float $startTime = null, ?float $startMemory = null)
+    public function start(?float $startTime = null, ?float $startMemory = null): void
     {
         $this->startTime = $startTime ?: microtime(true);
         $this->startMemory = $startMemory ?: memory_get_usage(false);
     }
     
-    public function end(?\Throwable $exception = null, int $rowCount = 0, ?float $endTime = null, ?int $endMemory = null)
+    public function end(?\Throwable $exception = null, int $rowCount = 0, ?float $endTime = null, ?int $endMemory = null): void
     {
         $this->endTime = $endTime ?: microtime(true);
         $this->duration = $this->endTime - $this->startTime;

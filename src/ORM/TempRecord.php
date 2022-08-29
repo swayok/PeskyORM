@@ -51,19 +51,15 @@ class TempRecord implements RecordInterface
     }
     
     /**
-     * @param string $name
      * @return static
      */
-    public function setTableName($name)
+    public function setTableName(string $name)
     {
         $this->tableName = $name;
         return $this;
     }
     
-    /**
-     * @return string|null
-     */
-    public function getTableName()
+    public function getTableName(): ?string
     {
         return $this->tableName;
     }
@@ -351,7 +347,7 @@ class TempRecord implements RecordInterface
      *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      * @throws \BadMethodCallException
      */
-    public function saveRelations(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false)
+    public function saveRelations(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false): void
     {
         throw new \BadMethodCallException('Method cannot be used for this class (' . get_class($this) . ')');
     }
@@ -426,11 +422,17 @@ class TempRecord implements RecordInterface
         return [];
     }
     
+    /**
+     * @return static
+     */
     public function enableReadOnlyMode()
     {
         return $this;
     }
     
+    /**
+     * @return static
+     */
     public function disableReadOnlyMode()
     {
         return $this;
@@ -441,11 +443,17 @@ class TempRecord implements RecordInterface
         return true;
     }
     
+    /**
+     * @return static
+     */
     public function enableTrustModeForDbData()
     {
         return $this;
     }
     
+    /**
+     * @return static
+     */
     public function disableTrustModeForDbData()
     {
         return $this;

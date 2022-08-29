@@ -14,7 +14,7 @@ class TestingNoPkColumnInTableStructure extends TableStructure
         return 'invalid';
     }
     
-    private function not_a_pk()
+    private function not_a_pk(): Column
     {
         return Column::create(Column::TYPE_INT);
     }

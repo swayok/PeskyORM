@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\Core;
 
 use PDO;
+use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
@@ -25,14 +26,14 @@ class PostgresAdapterUpdateDataTest extends BaseTestCase
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    protected static function getValidAdapter()
+    protected static function getValidAdapter(): DbAdapterInterface
     {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
     
-    public function testUpdate()
+    public function testUpdate(): void
     {
         $adapter = static::getValidAdapter();
         TestingApp::clearTables($adapter);

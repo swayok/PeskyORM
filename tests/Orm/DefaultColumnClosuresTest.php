@@ -20,13 +20,13 @@ class DefaultColumnClosuresTest extends BaseTestCase
         TestingApp::getPgsqlConnection();
     }
     
-    public function testValueNormalizer()
+    public function testValueNormalizer(): void
     {
         $column = Column::create(Column::TYPE_BOOL, 'test');
         static::assertTrue(DefaultColumnClosures::valueNormalizer('1', false, $column));
     }
     
-    public function testValueExistenceChecker()
+    public function testValueExistenceChecker(): void
     {
         $column = TestingAdminsTableStructure::getColumn('parent_id');
         $valueObj = RecordValue::create($column, TestingAdmin::_());
@@ -43,7 +43,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
         static::assertTrue(DefaultColumnClosures::valueExistenceChecker($valueObj, true));
     }
     
-    public function testValuePreprocessor()
+    public function testValuePreprocessor(): void
     {
         $column = Column::create(Column::TYPE_BOOL, 'test');
         static::assertEquals('', DefaultColumnClosures::valuePreprocessor('', false, false, $column));
@@ -65,7 +65,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
         static::assertEquals('b', DefaultColumnClosures::valuePreprocessor(' B ', false, false, $column));
     }
     
-    public function testIsValueAllowedValidator()
+    public function testIsValueAllowedValidator(): void
     {
         $column = Column::create(Column::TYPE_ENUM, 'test')
             ->setAllowedValues(['a', 'b']);
@@ -76,7 +76,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
         );
     }
     
-    public function testValueValidator()
+    public function testValueValidator(): void
     {
         $column = Column::create(Column::TYPE_ENUM, 'test')
             ->setAllowedValues(['a', 'b'])
@@ -98,7 +98,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
         static::assertEquals([], DefaultColumnClosures::valueValidator('b', false, false, $column));
     }
     
-    public function testInvalidFormatterInValueGetter()
+    public function testInvalidFormatterInValueGetter(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Value format 'nooooo!' is not supported for column 'parent_id'. Supported formats: none");
@@ -106,7 +106,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
         DefaultColumnClosures::valueGetter($valueObj, 'nooooo!');
     }
     
-    public function testInvalidFormatInValueGetter1()
+    public function testInvalidFormatInValueGetter1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Value format 'nooooo!' is not supported for column 'created_at'. Supported formats: date, time, unix_ts");
@@ -114,7 +114,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
         DefaultColumnClosures::valueGetter($valueObj, 'nooooo!');
     }
     
-    public function testInvalidFormatInValueGetter2()
+    public function testInvalidFormatInValueGetter2(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage("Argument #2 (\$format) must be of type ?string");
@@ -123,7 +123,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
         DefaultColumnClosures::valueGetter($valueObj, false);
     }
     
-    public function testValueGetter()
+    public function testValueGetter(): void
     {
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('created_at'), TestingAdmin::_());
         $valueObj->setRawValue('2016-09-01', '2016-09-01', true)
@@ -132,7 +132,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
         static::assertEquals(strtotime('2016-09-01'), DefaultColumnClosures::valueGetter($valueObj, 'unix_ts'));
     }
     
-    public function testValueSetIsForbidden()
+    public function testValueSetIsForbidden(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Column 'test2' restricts value modification");
@@ -149,7 +149,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
         DefaultColumnClosures::valueSetter('2', false, $valueObj, false);
     }
     
-    public function testValueSetter()
+    public function testValueSetter(): void
     {
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
         // new value

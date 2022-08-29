@@ -28,7 +28,7 @@ class ColumnTest extends BaseTestCase
         TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
     }
     
-    public function testInvalidConstructor1()
+    public function testInvalidConstructor1(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Argument #1 ($type) must be of type string');
@@ -36,7 +36,7 @@ class ColumnTest extends BaseTestCase
         Column::create(null);
     }
     
-    public function testInvalidConstructor2()
+    public function testInvalidConstructor2(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Argument #1 ($type) must be of type string');
@@ -45,7 +45,7 @@ class ColumnTest extends BaseTestCase
         Column::create([]);
     }
     
-    public function testInvalidConstructor3()
+    public function testInvalidConstructor3(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Argument #1 ($type) must be of type string');
@@ -54,7 +54,7 @@ class ColumnTest extends BaseTestCase
         Column::create($this);
     }
     
-    public function testInvalidConstructor4()
+    public function testInvalidConstructor4(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Argument #1 ($type) must be of type string');
@@ -62,7 +62,7 @@ class ColumnTest extends BaseTestCase
         Column::create(true);
     }
     
-    public function testInvalidConstructor5()
+    public function testInvalidConstructor5(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Argument #1 ($type) must be of type string');
@@ -70,7 +70,7 @@ class ColumnTest extends BaseTestCase
         Column::create(false);
     }
     
-    public function testConstructor()
+    public function testConstructor(): void
     {
         $obj = Column::create(Column::TYPE_BOOL);
         static::assertInstanceOf(Column::class, $obj);
@@ -115,7 +115,7 @@ class ColumnTest extends BaseTestCase
         static::assertTrue($obj->isItAForeignKey());
     }
     
-    public function testTableStructureNotSet1()
+    public function testTableStructureNotSet1(): void
     {
         $obj = Column::create(Column::TYPE_BOOL);
         static::assertInstanceOf(Column::class, $obj);
@@ -125,7 +125,7 @@ class ColumnTest extends BaseTestCase
         $obj->getTableStructure();
     }
     
-    public function testInvalidName1()
+    public function testInvalidName1(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("DB column name is not provided");
@@ -133,7 +133,7 @@ class ColumnTest extends BaseTestCase
             ->getName();
     }
     
-    public function testInvalidName2()
+    public function testInvalidName2(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('PeskyORM\ORM\Column::create(): Argument #2 ($name) must be of type ?string');
@@ -142,7 +142,7 @@ class ColumnTest extends BaseTestCase
             ->getName();
     }
     
-    public function testInvalidName3()
+    public function testInvalidName3(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('PeskyORM\ORM\Column::create(): Argument #2 ($name) must be of type ?string');
@@ -152,7 +152,7 @@ class ColumnTest extends BaseTestCase
             ->getName();
     }
     
-    public function testInvalidNameSet1()
+    public function testInvalidNameSet1(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('PeskyORM\ORM\Column::create(): Argument #2 ($name) must be of type ?string');
@@ -161,7 +161,7 @@ class ColumnTest extends BaseTestCase
         Column::create(Column::TYPE_INT, ['arr']);
     }
     
-    public function testInvalidNameSet2()
+    public function testInvalidNameSet2(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('PeskyORM\ORM\Column::create(): Argument #2 ($name) must be of type ?string');
@@ -170,7 +170,7 @@ class ColumnTest extends BaseTestCase
         Column::create(Column::TYPE_FLOAT, $this);
     }
     
-    public function testInvalidNameSet3()
+    public function testInvalidNameSet3(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('PeskyORM\ORM\Column::create(): Argument #2 ($name) must be of type ?string');
@@ -178,28 +178,28 @@ class ColumnTest extends BaseTestCase
         Column::create(Column::TYPE_IPV4_ADDRESS, true);
     }
     
-    public function testInvalidNameSet4()
+    public function testInvalidNameSet4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$name argument contains invalid value: 'two words'. Pattern: %^[a-z][a-z0-9_]*$%. Example: snake_case1");
         Column::create(Column::TYPE_BLOB, 'two words');
     }
     
-    public function testInvalidNameSet5()
+    public function testInvalidNameSet5(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$name argument contains invalid value: 'camelCase'. Pattern: %^[a-z][a-z0-9_]*$%. Example: snake_case1");
         Column::create(Column::TYPE_DATE, 'camelCase');
     }
     
-    public function testInvalidNameSet6()
+    public function testInvalidNameSet6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$name argument contains invalid value: 'UpperCase'. Pattern: %^[a-z][a-z0-9_]*$%. Example: snake_case1");
         Column::create(Column::TYPE_EMAIL, 'UpperCase');
     }
     
-    public function testDoubleNameSetter()
+    public function testDoubleNameSetter(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Column name alteration is forbidden");
@@ -208,7 +208,7 @@ class ColumnTest extends BaseTestCase
         $obj->setName('test');
     }
     
-    public function testFileTypes()
+    public function testFileTypes(): void
     {
         $obj = Column::create(Column::TYPE_FILE);
         static::assertEquals(Column::TYPE_FILE, $obj->getType());
@@ -219,14 +219,14 @@ class ColumnTest extends BaseTestCase
         static::assertTrue($obj->isItAnImage());
     }
     
-    public function testEnumType()
+    public function testEnumType(): void
     {
         $obj = Column::create(Column::TYPE_ENUM);
         static::assertEquals(Column::TYPE_ENUM, $obj->getType());
         static::assertTrue($obj->isEnum());
     }
     
-    public function testInvalidValueFormat()
+    public function testInvalidValueFormat(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Value format 'time' is not supported for column 'login'. Supported formats: none");
@@ -245,7 +245,7 @@ class ColumnTest extends BaseTestCase
         );
     }
     
-    public function testFormattersDetectedByType()
+    public function testFormattersDetectedByType(): void
     {
         $obj = Column::create(Column::TYPE_TIMESTAMP);
         static::assertEquals(Column::TYPE_TIMESTAMP, $obj->getType());
@@ -264,7 +264,7 @@ class ColumnTest extends BaseTestCase
         );
     }
     
-    public function testInvalidDefaultValueGet1()
+    public function testInvalidDefaultValueGet1(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Default value for column 'name' is not set");
@@ -272,7 +272,7 @@ class ColumnTest extends BaseTestCase
             ->getDefaultValueAsIs();
     }
     
-    public function testInvalidDefaultValueGet2()
+    public function testInvalidDefaultValueGet2(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("Default value for column PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->name is not valid. Errors: Value must be of a boolean data type.");
@@ -282,7 +282,7 @@ class ColumnTest extends BaseTestCase
             ->getValidDefaultValue();
     }
     
-    public function testInvalidDefaultValueGet3()
+    public function testInvalidDefaultValueGet3(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
@@ -293,7 +293,7 @@ class ColumnTest extends BaseTestCase
             ->getValidDefaultValue(-1);
     }
     
-    public function testInvalidDefaultValueGet4()
+    public function testInvalidDefaultValueGet4(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
@@ -307,7 +307,7 @@ class ColumnTest extends BaseTestCase
             ->getValidDefaultValue(true);
     }
     
-    public function testDefaultValues()
+    public function testDefaultValues(): void
     {
         $obj = Column::create(Column::TYPE_BOOL, 'name');
         static::assertFalse($obj->hasDefaultValue());
@@ -359,7 +359,7 @@ class ColumnTest extends BaseTestCase
         static::assertEquals(date(NormalizeValue::DATETIME_FORMAT, $nowTs), $defaultValue);
     }
     
-    public function testInvalidGetAllowedValues()
+    public function testInvalidGetAllowedValues(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("Allowed values closure must return a not-empty array");
@@ -370,7 +370,7 @@ class ColumnTest extends BaseTestCase
         $obj->getAllowedValues();
     }
     
-    public function testInvalidSetAllowedValues1()
+    public function testInvalidSetAllowedValues1(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("Allowed values closure must return a not-empty array");
@@ -381,7 +381,7 @@ class ColumnTest extends BaseTestCase
         $obj->getAllowedValues();
     }
     
-    public function testInvalidSetAllowedValues2()
+    public function testInvalidSetAllowedValues2(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("Allowed values closure must return a not-empty array");
@@ -392,7 +392,7 @@ class ColumnTest extends BaseTestCase
         $obj->getAllowedValues();
     }
     
-    public function testInvalidSetAllowedValues3()
+    public function testInvalidSetAllowedValues3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$allowedValues argument cannot be empty");
@@ -402,7 +402,7 @@ class ColumnTest extends BaseTestCase
         $obj->getAllowedValues();
     }
     
-    public function testInvalidSetAllowedValues4()
+    public function testInvalidSetAllowedValues4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$allowedValues argument cannot be empty");
@@ -412,7 +412,7 @@ class ColumnTest extends BaseTestCase
         $obj->getAllowedValues();
     }
     
-    public function testInvalidSetAllowedValues5()
+    public function testInvalidSetAllowedValues5(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$allowedValues argument cannot be empty");
@@ -421,7 +421,7 @@ class ColumnTest extends BaseTestCase
         $obj->getAllowedValues();
     }
     
-    public function testInvalidSetAllowedValues6()
+    public function testInvalidSetAllowedValues6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$allowedValues argument cannot be empty");
@@ -431,7 +431,7 @@ class ColumnTest extends BaseTestCase
         $obj->getAllowedValues();
     }
     
-    public function testAllwedValues()
+    public function testAllwedValues(): void
     {
         $obj = Column::create(Column::TYPE_ENUM);
         static::assertEquals([], $obj->getAllowedValues());
@@ -443,7 +443,7 @@ class ColumnTest extends BaseTestCase
         static::assertEquals(['test2'], $obj->getAllowedValues());
     }
     
-    public function testInvalidGetRelation()
+    public function testInvalidGetRelation(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Column 'id' is not linked with 'Test' relation");
@@ -453,7 +453,7 @@ class ColumnTest extends BaseTestCase
             ->getRelation('Test');
     }
     
-    public function testInvalidSetClosuresClass1()
+    public function testInvalidSetClosuresClass1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$className argument must be a string and contain a full name of a class that implements ColumnClosuresInterface");
@@ -461,7 +461,7 @@ class ColumnTest extends BaseTestCase
             ->setClosuresClass(TestingAdmin::class);
     }
     
-    public function testInvalidSetClosuresClass2()
+    public function testInvalidSetClosuresClass2(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('PeskyORM\ORM\Column::setClosuresClass(): Argument #1 ($className) must be of type string');
@@ -471,7 +471,7 @@ class ColumnTest extends BaseTestCase
             ->setClosuresClass(new DefaultColumnClosures());
     }
     
-    public function testSetClosuresClass()
+    public function testSetClosuresClass(): void
     {
         $obj = Column::create(Column::TYPE_STRING)
             ->setClosuresClass(DefaultColumnClosures::class);
@@ -489,7 +489,7 @@ class ColumnTest extends BaseTestCase
         static::assertEquals([], call_user_func($obj->getValueValidatorExtender(), '1', false, true, $obj));
     }
     
-    public function testInvalidSetClassNameForValueToObjectFormatter()
+    public function testInvalidSetClassNameForValueToObjectFormatter(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('$className argument must be a string and contain a full name of a class that implements PeskyORM\ORM\ValueToObjectConverterInterface');
@@ -497,7 +497,7 @@ class ColumnTest extends BaseTestCase
             ->setClassNameForValueToObjectFormatter(DefaultColumnClosures::class);
     }
     
-    public function testSetClassNameForValueToObjectFormatter()
+    public function testSetClassNameForValueToObjectFormatter(): void
     {
         $obj = Column::create(Column::TYPE_STRING)
             ->setClassNameForValueToObjectFormatter(TestingValueToObjectConverter::class);

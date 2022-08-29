@@ -9,21 +9,18 @@ use PeskyORM\ORM\TableStructure;
 class TestingTwoPrimaryKeysColumnsTableStructure extends TableStructure
 {
     
-    /**
-     * @return string
-     */
     public static function getTableName(): string
     {
         return 'invalid';
     }
     
-    private function pk1()
+    private function pk1(): Column
     {
         return Column::create(Column::TYPE_INT)
             ->primaryKey();
     }
     
-    private function pk2()
+    private function pk2(): Column
     {
         return Column::create(Column::TYPE_INT)
             ->primaryKey();

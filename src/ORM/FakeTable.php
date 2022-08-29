@@ -51,7 +51,7 @@ abstract class FakeTable extends Table
         array $interfaces = [],
         array $traits = [],
         string $classBody = ''
-    ) {
+    ): FakeTable {
         $tableName = trim($tableName);
         if ($tableName === '' || !DbAdapter::isValidDbEntityName($tableName, false)) {
             throw new \InvalidArgumentException(
@@ -144,11 +144,10 @@ VIEW;
     }
     
     /**
-     * @param string $class
-     * @return static
+     * @param string|RecordInterface $class
      * @throws \InvalidArgumentException
      */
-    public function setRecordClass($class)
+    public function setRecordClass($class): FakeTable
     {
         if ($class instanceof RecordInterface) {
             $this->recordClass = get_class($class);

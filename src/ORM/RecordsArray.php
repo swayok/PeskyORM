@@ -101,7 +101,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         return $this;
     }
     
-    protected function injectHasManyRelationDataIntoRecords(Relation $relation, array $columnsToSelect = ['*'])
+    protected function injectHasManyRelationDataIntoRecords(Relation $relation, array $columnsToSelect = ['*']): void
     {
         $relationName = $relation->getName();
         $localColumnName = $relation->getLocalColumnName();
@@ -135,9 +135,6 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         $this->hasManyRelationsInjected[] = $relationName;
     }
     
-    /**
-     * @return RecordInterface
-     */
     protected function getDbRecordObjectForIteration(): RecordInterface
     {
         if ($this->dbRecordForIteration === null) {
@@ -504,7 +501,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     /**
      * Move forward to next element
      */
-    public function next()
+    public function next(): void
     {
         $this->iteratorPosition++;
     }
@@ -512,7 +509,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     /**
      * Return the key of the current element
      */
-    public function key()
+    public function key(): int
     {
         return $this->iteratorPosition;
     }
@@ -521,7 +518,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * Checks if current position is valid
      * @return boolean - true on success or false on failure.
      */
-    public function valid()
+    public function valid(): bool
     {
         return $this->offsetExists($this->iteratorPosition);
     }
@@ -529,7 +526,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     /**
      * Rewind the Iterator to the first element
      */
-    public function rewind()
+    public function rewind(): void
     {
         $this->iteratorPosition = 0;
     }
@@ -587,7 +584,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * @return boolean - true on success or false on failure.
      * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
-    public function offsetExists($index)
+    public function offsetExists($index): bool
     {
         return array_key_exists($index, $this->getRecords());
     }
@@ -597,7 +594,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * @return RecordInterface
      * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
-    public function offsetGet($index)
+    public function offsetGet($index): RecordInterface
     {
         if ($this->isDbRecordInstanceReuseDuringIterationEnabled()) {
             $dbRecord = $this->getDbRecordObjectForIteration();
@@ -625,7 +622,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * @throws \BadMethodCallException
      * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
-    public function offsetSet($index, $value)
+    public function offsetSet($index, $value): void
     {
         throw new \BadMethodCallException('DbRecordSet cannot be modified');
     }
@@ -636,23 +633,21 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * @throws \BadMethodCallException
      * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
-    public function offsetUnset($index)
+    public function offsetUnset($index): void
     {
         throw new \BadMethodCallException('DbRecordSet cannot be modified');
     }
     
     /**
      * Count elements of an object
-     * @return int
      */
-    public function count()
+    public function count(): int
     {
         return count($this->getRecords());
     }
     
     /**
      * Count elements of an object
-     * @return int
      */
     public function totalCount(): int
     {

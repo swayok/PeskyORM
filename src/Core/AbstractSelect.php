@@ -82,7 +82,7 @@ abstract class AbstractSelect
     /**
      * @throws \InvalidArgumentException
      */
-    protected function parseNormalizedConfigsArray(array $conditionsAndOptions)
+    protected function parseNormalizedConfigsArray(array $conditionsAndOptions): void
     {
         // WITH
         if (!empty($conditionsAndOptions['WITH'])) {
@@ -620,6 +620,9 @@ abstract class AbstractSelect
             ->offset($offset);
     }
     
+    /**
+     * @return static
+     */
     public function having(array $conditions)
     {
         $this->having = $conditions;
@@ -687,6 +690,10 @@ abstract class AbstractSelect
         return $this;
     }
     
+    /**
+     * @return static
+     * @throws \InvalidArgumentException
+     */
     public function crossJoin(CrossJoinInfo $joinConfig, bool $append = true)
     {
         // @see CROSS JOIN docs for details
@@ -731,13 +738,16 @@ abstract class AbstractSelect
         }
     }
     
+    /**
+     * @return static
+     */
     protected function notDirty()
     {
         $this->isDirty = [];
         return $this;
     }
     
-    protected function beforeQueryBuilding()
+    protected function beforeQueryBuilding(): void
     {
         $this->shortJoinAliases = [];
         if ($this->isDirty('where') || $this->isDirty('having')) {
@@ -1154,7 +1164,7 @@ abstract class AbstractSelect
         $columns,
         ?string $parentJoinName = null,
         bool $appendColumnsToExisting = false
-    ) {
+    ): void {
         throw new \UnexpectedValueException(
             "You must use JoinInfo->setForeignColumnsToSelect() to set the columns list to select for join named '{$joinName}'"
         );
@@ -1331,7 +1341,7 @@ abstract class AbstractSelect
         return $this->makeDistinctForQuery() . implode(', ', $columns);
     }
     
-    protected function makeDistinctForQuery()
+    protected function makeDistinctForQuery(): string
     {
         if (!$this->distinct) {
             return '';
@@ -1512,7 +1522,7 @@ abstract class AbstractSelect
      * Validate if there are all joins defined for all table aliases used in query
      * @throws \UnexpectedValueException
      */
-    protected function validateIfThereAreEnoughJoins()
+    protected function validateIfThereAreEnoughJoins(): void
     {
         $missingJoins = [];
         foreach ($this->shortJoinAliases as $fullAlias => $notUsed) {
@@ -1564,7 +1574,7 @@ abstract class AbstractSelect
      * @return JoinInfo|OrmJoinInfo|CrossJoinInfo
      * @throws \UnexpectedValueException
      */
-    protected function getJoin(string $joinName)
+    protected function getJoin(string $joinName): AbstractJoinInfo
     {
         if (!$this->hasJoin($joinName, true)) {
             throw new \UnexpectedValueException("Join config with name [{$joinName}] not found");

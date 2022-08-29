@@ -16,7 +16,7 @@ class TestingAdmin2 extends Record
         return TestingAdminsTable::getInstance();
     }
     
-    protected function beforeSave(array $columnsToSave, array $data, bool $isUpdate)
+    protected function beforeSave(array $columnsToSave, array $data, bool $isUpdate): array
     {
         if ($isUpdate) {
             return ['login' => ['error']];
@@ -24,19 +24,19 @@ class TestingAdmin2 extends Record
         return [];
     }
     
-    protected function afterSave(bool $isCreated, array $updatedColumns = [])
+    protected function afterSave(bool $isCreated, array $updatedColumns = []): void
     {
         throw new \BadMethodCallException('after: no-no-no!');
     }
     
-    protected function beforeDelete()
+    protected function beforeDelete(): void
     {
         if ($this->getPrimaryKeyValue() !== 0) {
             throw new \BadMethodCallException('before delete: no-no-no!');
         }
     }
     
-    protected function afterDelete()
+    protected function afterDelete(): void
     {
         throw new \BadMethodCallException('after delete: no-no-no!');
     }

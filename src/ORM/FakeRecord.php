@@ -20,7 +20,7 @@ abstract class FakeRecord extends Record
         return static::$table;
     }
     
-    public static function setTable(FakeTable $table)
+    public static function setTable(FakeTable $table): void
     {
         static::$table = $table;
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\Core;
 
 use PDO;
+use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
@@ -25,14 +26,14 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    protected static function getValidAdapter()
+    protected static function getValidAdapter(): DbAdapterInterface
     {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
     
-    public function testInsertOne()
+    public function testInsertOne(): void
     {
         $adapter = static::getValidAdapter();
         TestingApp::clearTables($adapter);
@@ -92,7 +93,7 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
         static::assertEquals(json_encode('test_value1'), $return['value']);
     }
     
-    public function testInvalidColumnsForInsertMany()
+    public function testInvalidColumnsForInsertMany(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$columns argument must contain only strings");
@@ -100,7 +101,7 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
         $adapter->insertMany('settings', [null], [['key' => 'value']]);
     }
     
-    public function testInvalidColumnsForInsertMany2()
+    public function testInvalidColumnsForInsertMany2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$columns argument must contain only strings");
@@ -108,7 +109,7 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
         $adapter->insertMany('settings', [DbExpr::create('test')], [['key' => 'value']]);
     }
     
-    public function testInvalidColumnsForInsertMany3()
+    public function testInvalidColumnsForInsertMany3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$columns argument must contain only strings");
@@ -116,7 +117,7 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
         $adapter->insertMany('settings', [['subarray']], [['key' => 'value']]);
     }
     
-    public function testInsertMany()
+    public function testInsertMany(): void
     {
         $adapter = static::getValidAdapter();
         TestingApp::clearTables($adapter);
@@ -181,7 +182,7 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
         static::assertEquals($dataForAssert[1]['parent_id'], $data[1]['parent_id']);
     }
     
-    public function testInsertManyReturning()
+    public function testInsertManyReturning(): void
     {
         $adapter = static::getValidAdapter();
         TestingApp::clearTables($adapter);

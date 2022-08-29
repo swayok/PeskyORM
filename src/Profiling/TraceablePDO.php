@@ -36,7 +36,7 @@ class TraceablePDO extends PDO
      * @link   http://php.net/manual/en/pdo.begintransaction.php
      * @return bool TRUE on success or FALSE on failure.
      */
-    public function beginTransaction()
+    public function beginTransaction(): bool
     {
         return $this->pdo->beginTransaction();
     }
@@ -47,7 +47,7 @@ class TraceablePDO extends PDO
      * @link   http://php.net/manual/en/pdo.commit.php
      * @return bool TRUE on success or FALSE on failure.
      */
-    public function commit()
+    public function commit(): bool
     {
         return $this->pdo->commit();
     }
@@ -58,7 +58,7 @@ class TraceablePDO extends PDO
      * @link   http://php.net/manual/en/pdo.errorinfo.php
      * @return array PDO::errorInfo returns an array of error information
      */
-    public function errorCode()
+    public function errorCode(): array
     {
         return $this->pdo->errorCode();
     }
@@ -69,7 +69,7 @@ class TraceablePDO extends PDO
      * @link   http://php.net/manual/en/pdo.errorinfo.php
      * @return array PDO::errorInfo returns an array of error information
      */
-    public function errorInfo()
+    public function errorInfo(): array
     {
         return $this->pdo->errorInfo();
     }
@@ -108,7 +108,7 @@ class TraceablePDO extends PDO
      * @link   http://php.net/manual/en/pdo.intransaction.php
      * @return bool TRUE if a transaction is currently active, and FALSE if not.
      */
-    public function inTransaction()
+    public function inTransaction(): bool
     {
         return $this->pdo->inTransaction();
     }
@@ -118,7 +118,7 @@ class TraceablePDO extends PDO
      *
      * @link   http://php.net/manual/en/pdo.lastinsertid.php
      * @param string $name [optional]
-     * @return string If a sequence name was not specified for the name parameter, PDO::lastInsertId
+     * @return string|false If a sequence name was not specified for the name parameter, PDO::lastInsertId
      * returns a string representing the row ID of the last row that was inserted into the database.
      */
     public function lastInsertId($name = null)
@@ -181,7 +181,7 @@ class TraceablePDO extends PDO
      * @link   http://php.net/manual/en/pdo.rollback.php
      * @return bool TRUE on success or FALSE on failure.
      */
-    public function rollBack()
+    public function rollBack(): bool
     {
         return $this->pdo->rollBack();
     }
@@ -194,7 +194,7 @@ class TraceablePDO extends PDO
      * @param mixed $value
      * @return bool TRUE on success or FALSE on failure.
      */
-    public function setAttribute($attribute, $value)
+    public function setAttribute($attribute, $value): bool
     {
         return $this->pdo->setAttribute($attribute, $value);
     }
@@ -238,7 +238,7 @@ class TraceablePDO extends PDO
     /**
      * Adds an executed TracedStatement
      */
-    public function addExecutedStatement(TracedStatement $stmt)
+    public function addExecutedStatement(TracedStatement $stmt): void
     {
         $this->executedStatements[] = $stmt;
     }

@@ -8,15 +8,12 @@ use PeskyORM\ORM\TableInterface;
 class TestingAdmin3 extends Record
 {
     
-    /**
-     * @return TableInterface
-     */
     public static function getTable(): TableInterface
     {
         return TestingAdmins3Table::getInstance();
     }
 
-    public function runColumnSavingExtenders(array $columnsToSave, array $dataSavedToDb, array $updatesReceivedFromDb, bool $isUpdate)
+    public function runColumnSavingExtenders(array $columnsToSave, array $dataSavedToDb, array $updatesReceivedFromDb, bool $isUpdate): void
     {
         parent::runColumnSavingExtenders($columnsToSave, $dataSavedToDb, $updatesReceivedFromDb, $isUpdate);
     }

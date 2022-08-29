@@ -16,13 +16,13 @@ class TestingInvalidRelationsInTableStructure3 extends TableStructure
         return 'some_table';
     }
     
-    private function valid()
+    private function valid(): Column
     {
         return Column::create(Column::TYPE_INT)
             ->primaryKey();
     }
     
-    private function InvalidLocalColumnName()
+    private function InvalidLocalColumnName(): Relation
     {
         return Relation::create('local_invalid', Relation::HAS_MANY, TestingAdminsTable::class, 'id');
     }

@@ -14,7 +14,7 @@ class TestingSettingsTableStructure extends TableStructure
         return 'settings';
     }
     
-    private function id()
+    private function id(): Column
     {
         return Column::create(Column::TYPE_INT)
             ->primaryKey()
@@ -22,14 +22,14 @@ class TestingSettingsTableStructure extends TableStructure
             ->disallowsNullValues();
     }
     
-    private function key()
+    private function key(): Column
     {
         return Column::create(Column::TYPE_STRING)
             ->convertsEmptyStringToNull()
             ->disallowsNullValues();
     }
     
-    private function value()
+    private function value(): Column
     {
         return Column::create(Column::TYPE_JSONB)
             ->convertsEmptyStringToNull()

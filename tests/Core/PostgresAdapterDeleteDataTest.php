@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Core;
 
-use PeskyORM\Adapter\Postgres;
+use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
@@ -23,10 +23,7 @@ class PostgresAdapterDeleteDataTest extends BaseTestCase
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    /**
-     * @return Postgres
-     */
-    protected static function getValidAdapter()
+    protected static function getValidAdapter(): DbAdapterInterface
     {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
@@ -38,7 +35,7 @@ class PostgresAdapterDeleteDataTest extends BaseTestCase
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    public function testDelete()
+    public function testDelete(): void
     {
         $adapter = static::getValidAdapter();
         $testData1 = [
@@ -69,7 +66,7 @@ class PostgresAdapterDeleteDataTest extends BaseTestCase
         static::assertEquals(1, $count);
     }
     
-    public function testDeleteReturning()
+    public function testDeleteReturning(): void
     {
         $adapter = static::getValidAdapter();
         $testData1 = [

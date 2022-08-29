@@ -30,6 +30,7 @@
     "require": {
         "php": ">=7.4.0",
         "ext-pdo": "*",
+        "ext-json": "*",
         "swayok/utils": "^1.7",
         "symfony/http-foundation": ">=3.0",
         "nesbot/carbon": "^2.0.0"
@@ -38,6 +39,7 @@
         "symfony/mime": "To be able to detect mime type by file header"
     },
     "require-dev": {
+        "ext-curl": "*",
         "phpunit/phpunit": "8.*",
         "symfony/mime": ">=4.3"
     }

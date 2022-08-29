@@ -93,9 +93,9 @@ class Utils
         DbAdapterInterface $connection,
         array $conditions,
         \Closure $columnQuoter = null,
-        $glue = 'AND',
+        string $glue = 'AND',
         \Closure $conditionValuePreprocessor = null
-    ) {
+    ): string {
         $glue = strtoupper(trim($glue));
         if (!in_array($glue, ['AND', 'OR'], true)) {
             throw new \InvalidArgumentException('$glue argument must be "AND" or "OR" (only in upper case)');

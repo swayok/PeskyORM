@@ -52,7 +52,7 @@ interface RecordInterface
     
     /**
      * Check if there is a value for $columnName
-     * @param string $column
+     * @param string|Column $column
      * @param bool $trueIfThereIsDefaultValue - true: returns true if there is no value set but column has default value
      * @return bool
      */
@@ -244,7 +244,7 @@ interface RecordInterface
      *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
      *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      */
-    public function saveRelations(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false);
+    public function saveRelations(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false): void;
     
     /**
      * Delete current Record from DB

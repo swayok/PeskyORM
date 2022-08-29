@@ -17,7 +17,7 @@ class StaticPropertiesAndMethodsTest extends BaseTestCase
         TestingApp::getPgsqlConnection();
     }
     
-    public function testStaticMethodsInDbTables()
+    public function testStaticMethodsInDbTables(): void
     {
         static::assertInstanceOf(TestingSettingsTable::class, TestingSettingsTable::getInstance());
         static::assertInstanceOf(TestingAdminsTable::class, TestingAdminsTable::getInstance());

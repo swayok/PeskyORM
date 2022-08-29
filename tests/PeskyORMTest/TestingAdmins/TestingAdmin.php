@@ -43,7 +43,7 @@ class TestingAdmin extends Record
         return parent::collectValuesForSave($columnsToSave, $isUpdate);
     }
 
-    public function validateNewData(array $data, array $columnsNames = [], bool $isUpdate = false)
+    public function validateNewData(array $data, array $columnsNames = [], bool $isUpdate = false): array
     {
         return parent::validateNewData($data, $columnsNames, $isUpdate);
     }

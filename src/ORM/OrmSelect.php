@@ -52,6 +52,9 @@ class OrmSelect extends AbstractSelect
             ->getTableName();
     }
     
+    /**
+     * @return static
+     */
     public function setTableAlias(string $tableAlias)
     {
         $this->tableAlias = $tableAlias;
@@ -80,6 +83,9 @@ class OrmSelect extends AbstractSelect
         return $this->table;
     }
     
+    /**
+     * @return static
+     */
     public function setRecordClass(?string $class)
     {
         $this->recordClass = $class;
@@ -164,7 +170,7 @@ class OrmSelect extends AbstractSelect
         return $data;
     }
     
-    protected function beforeQueryBuilding()
+    protected function beforeQueryBuilding(): void
     {
         if ($this->isDirty('joins') || $this->isDirty('with')) {
             $this->setDirty('columns');
@@ -195,6 +201,9 @@ class OrmSelect extends AbstractSelect
         parent::beforeQueryBuilding();
     }
     
+    /**
+     * @return static
+     */
     protected function processRawColumns()
     {
         parent::processRawColumns();
@@ -241,7 +250,7 @@ class OrmSelect extends AbstractSelect
         $columns,
         ?string $parentJoinName = null,
         bool $appendColumnsToExisting = false
-    ) {
+    ): void {
         if (is_array($columns) && !empty($columns)) {
             $filteredColumns = [];
             foreach ($columns as $columnAlias => $columnName) {
@@ -296,9 +305,9 @@ class OrmSelect extends AbstractSelect
     
     /**
      * @param string $joinName - 'Name' or 'Name.SubName'
-     * @return OrmJoinInfo
+     * @return OrmJoinInfo|CrossJoinInfo
      */
-    protected function getJoin(string $joinName)
+    protected function getJoin(string $joinName): AbstractJoinInfo
     {
         $joins = explode('.', $joinName);
         foreach ($joins as $subJoin) {
@@ -465,7 +474,7 @@ class OrmSelect extends AbstractSelect
      * @param string $subject - used in exceptions, can be 'SELECT', 'ORDER BY', 'GROUP BY', 'WHERE' or 'HAVING'
      * @throws \UnexpectedValueException
      */
-    protected function validateColumnInfo(array $columnInfo, string $subject)
+    protected function validateColumnInfo(array $columnInfo, string $subject): void
     {
         if ($columnInfo['name'] instanceof DbExpr) {
             if (
@@ -504,7 +513,7 @@ class OrmSelect extends AbstractSelect
         }
     }
     
-    protected function validateColumnInfoForCondition(array $columnInfo, string $subject)
+    protected function validateColumnInfoForCondition(array $columnInfo, string $subject): void
     {
         $this->validateColumnInfo($columnInfo, $subject);
     }

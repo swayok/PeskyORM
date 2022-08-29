@@ -26,16 +26,12 @@ class RecordValueTest extends BaseTestCase
         TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
     }
     
-    /**
-     * @param $columnName
-     * @return Column
-     */
-    protected function getClonedColumn($columnName)
+    protected function getClonedColumn(string $columnName): Column
     {
         return clone TestingAdminsTableStructure::getColumn($columnName);
     }
     
-    public function testConstructAndClone()
+    public function testConstructAndClone(): void
     {
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
         $clone = clone $valueObj;
@@ -84,7 +80,7 @@ class RecordValueTest extends BaseTestCase
         static::assertEquals($clone->getRecord(), $valueObj->getRecord());
     }
     
-    public function testInvalidGetCustomInfo()
+    public function testInvalidGetCustomInfo(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage("Argument #1 (\$key) must be of type ?string");
@@ -94,7 +90,7 @@ class RecordValueTest extends BaseTestCase
         $valueObj->getCustomInfo($this);
     }
     
-    public function testInvalidRemoveCustomInfo()
+    public function testInvalidRemoveCustomInfo(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage("Argument #1 (\$key) must be of type ?string");
@@ -104,7 +100,7 @@ class RecordValueTest extends BaseTestCase
         $valueObj->removeCustomInfo($this);
     }
     
-    public function testCustomInfo()
+    public function testCustomInfo(): void
     {
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
         $valueObj->setCustomInfo(['test' => 'i']);
@@ -127,7 +123,7 @@ class RecordValueTest extends BaseTestCase
         static::assertEquals([], $valueObj->getCustomInfo());
     }
     
-    public function testDataForSavingExtender()
+    public function testDataForSavingExtender(): void
     {
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
         $valueObj->setDataForSavingExtender(['test' => 'i']);
@@ -135,7 +131,7 @@ class RecordValueTest extends BaseTestCase
         static::assertNull($valueObj->pullDataForSavingExtender());
     }
     
-    public function testValidationErrors()
+    public function testValidationErrors(): void
     {
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
         static::assertFalse($valueObj->isValidated());
@@ -149,7 +145,7 @@ class RecordValueTest extends BaseTestCase
         static::assertTrue($valueObj->isValidated());
     }
     
-    public function testIsFromDb()
+    public function testIsFromDb(): void
     {
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
         static::assertFalse($valueObj->isItFromDb());
@@ -157,7 +153,7 @@ class RecordValueTest extends BaseTestCase
         static::assertTrue($valueObj->isItFromDb());
     }
     
-    public function testInvalidDefaultValue()
+    public function testInvalidDefaultValue(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("Default value for column PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->language is not valid");
@@ -167,7 +163,7 @@ class RecordValueTest extends BaseTestCase
         $valueObj->getDefaultValue();
     }
     
-    public function testInvalidDefaultValue2()
+    public function testInvalidDefaultValue2(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("Fallback value of the default value for column PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->parent_id is not valid. Errors: Null value is not allowed");
@@ -179,7 +175,7 @@ class RecordValueTest extends BaseTestCase
         $valueObj->getDefaultValue();
     }
     
-    public function testInvalidDefaultValue3()
+    public function testInvalidDefaultValue3(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("Default value for column PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->parent_id is not valid. Errors: Null value is not allowed");
@@ -192,7 +188,7 @@ class RecordValueTest extends BaseTestCase
         $valueObj->getDefaultValue();
     }
     
-    public function testInvalidDefaultValue4()
+    public function testInvalidDefaultValue4(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
@@ -209,7 +205,7 @@ class RecordValueTest extends BaseTestCase
         $valueObj->getDefaultValue();
     }
     
-    public function testInvalidDefaultValue5()
+    public function testInvalidDefaultValue5(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
@@ -226,7 +222,7 @@ class RecordValueTest extends BaseTestCase
         $valueObj->getDefaultValue();
     }
     
-    public function testDefaultValue()
+    public function testDefaultValue(): void
     {
         $record = TestingAdmin::_();
         
@@ -282,7 +278,7 @@ class RecordValueTest extends BaseTestCase
         static::assertFalse($idColValueObj->isDefaultValueCanBeSet());
     }
     
-    public function testInvalidGetValue()
+    public function testInvalidGetValue(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Value for PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin(#null)->parent_id is not set");
@@ -293,7 +289,7 @@ class RecordValueTest extends BaseTestCase
         $valueObj->getValue();
     }
     
-    public function testInvalidGetOldValue()
+    public function testInvalidGetOldValue(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Old value is not set");
@@ -301,7 +297,7 @@ class RecordValueTest extends BaseTestCase
         $valueObj->getOldValue();
     }
     
-    public function testInvalidIsOldValueWasFromDb()
+    public function testInvalidIsOldValueWasFromDb(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Old value is not set");
@@ -314,7 +310,7 @@ class RecordValueTest extends BaseTestCase
      * @covers RecordValue::hasOldValue()
      * @covers RecordValue::getOldValue()
      */
-    public function testSetOldValue()
+    public function testSetOldValue(): void
     {
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
         $valueObj->setRawValue(2, 2, false)
@@ -344,7 +340,7 @@ class RecordValueTest extends BaseTestCase
         static::assertEquals(3, $valueObj->getOldValue());
     }
     
-    public function testInvalidSetValidValue1()
+    public function testInvalidSetValidValue1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$rawValue argument for PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin(#null)->parent_id must be same as current raw value: NULL");
@@ -352,7 +348,7 @@ class RecordValueTest extends BaseTestCase
         $valueObj->setValidValue(1, 1);
     }
     
-    public function testRawValueAndValidValue()
+    public function testRawValueAndValidValue(): void
     {
         $record = TestingAdmin::_();
         $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), $record);

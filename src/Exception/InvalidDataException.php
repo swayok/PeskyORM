@@ -35,7 +35,7 @@ class InvalidDataException extends OrmException
      * returned array will be: ['images.source.0' => ['error message1', 'error message 2'], 'images.source.1' => ['err']]
      * @return array
      */
-    public function getErrors($flatten = true)
+    public function getErrors(bool $flatten = true): array
     {
         if (!$flatten) {
             return $this->errors;

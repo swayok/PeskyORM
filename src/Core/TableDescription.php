@@ -31,7 +31,7 @@ class TableDescription implements \Serializable
      * @param ColumnDescription $columnDescription
      * @throws \UnexpectedValueException
      */
-    public function addColumn(ColumnDescription $columnDescription)
+    public function addColumn(ColumnDescription $columnDescription): void
     {
         if (array_key_exists($columnDescription->getName(), $this->columns)) {
             throw new \UnexpectedValueException("Table description already has description for column '{$columnDescription->getName()}'");
@@ -79,7 +79,7 @@ class TableDescription implements \Serializable
      * @return string the string representation of the object or null
      * @since 5.1.0
      */
-    public function serialize()
+    public function serialize(): string
     {
         $data = [
             'name' => $this->getName(),
@@ -89,7 +89,7 @@ class TableDescription implements \Serializable
         foreach ($this->getColumns() as $columnName => $columnDescription) {
             $data['columns'][$columnName] = serialize($columnDescription);
         }
-        return json_encode($data);
+        return json_encode($data, JSON_THROW_ON_ERROR);
     }
     
     /**
@@ -103,7 +103,7 @@ class TableDescription implements \Serializable
      * @since 5.1.0
      * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
-    public function unserialize($serialized)
+    public function unserialize($serialized): void
     {
         $data = json_decode($serialized, true);
         if (!is_array($data)) {

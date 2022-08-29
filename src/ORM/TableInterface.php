@@ -52,7 +52,11 @@ interface TableInterface
      * @param string|null $joinName - string: specific join name; null: $relationName is used
      * @return OrmJoinInfo
      */
-    public static function getJoinConfigForRelation($relationName, $alterLocalTableAlias = null, $joinName = null): OrmJoinInfo;
+    public static function getJoinConfigForRelation(
+        string $relationName,
+        string $alterLocalTableAlias = null,
+        string $joinName = null
+    ): OrmJoinInfo;
     
     /**
      * @return bool
@@ -97,14 +101,14 @@ interface TableInterface
      * @param string|array $columns
      * @param array $conditions
      * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return RecordsSet
+     * @return RecordsSet|array
      * @throws \InvalidArgumentException
      */
     public static function select($columns = '*', array $conditions = [], ?\Closure $configurator = null);
     
     /**
      * Selects only 1 column
-     * @param string $column
+     * @param string|DbExpr $column
      * @param array $conditions
      * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
@@ -114,8 +118,8 @@ interface TableInterface
     /**
      * Select associative array
      * Note: does not support columns from foreign models
-     * @param string $keysColumn
-     * @param string $valuesColumn
+     * @param string|DbExpr $keysColumn
+     * @param string|DbExpr $valuesColumn
      * @param array $conditions
      * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
@@ -194,11 +198,11 @@ interface TableInterface
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
      *          - array: list of columns to return values for
-     * @return array|bool - array returned only if $returning is not empty
+     * @return array|null - array returned only if $returning is not empty
      * @throws \InvalidArgumentException
      * @throws \PDOException
      */
-    public static function insertMany(array $columns, array $rows, $returning = false);
+    public static function insertMany(array $columns, array $rows, $returning = false): ?array;
     
     /**
      * @param array $data - key-value array where key = table column and value = value of associated column

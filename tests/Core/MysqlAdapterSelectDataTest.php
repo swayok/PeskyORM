@@ -7,32 +7,33 @@ namespace PeskyORM\Tests\Core;
 require_once __DIR__ . '/PostgresAdapterSelectDataTest.php';
 
 use InvalidArgumentException;
+use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\Select;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 class MysqlAdapterSelectDataTest extends PostgresAdapterSelectDataTest
 {
     
-    protected static function getValidAdapter()
+    protected static function getValidAdapter(): DbAdapterInterface
     {
         return TestingApp::getMysqlConnection();
     }
     
-    public function testInvalidAnalyzeColumnName1()
+    public function testInvalidAnalyzeColumnName1(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Invalid db entity name: [test test]");
         static::getValidAdapter()->selectColumn('admins', 'test test');
     }
     
-    public function testInvalidAnalyzeColumnName2()
+    public function testInvalidAnalyzeColumnName2(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Invalid db entity name: [test%test]");
         static::getValidAdapter()->selectColumn('admins', 'test%test');
     }
     
-    public function testInvalidWith1()
+    public function testInvalidWith1(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage(

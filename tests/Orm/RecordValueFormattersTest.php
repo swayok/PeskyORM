@@ -22,7 +22,7 @@ class RecordValueFormattersTest extends BaseTestCase
         $this->callObjectMethod(TestingFormatter::newEmptyRecord(), 'resetColumnsCache');
     }
     
-    public function testTimestampFormatters()
+    public function testTimestampFormatters(): void
     {
         $formatters = RecordValueFormatters::getTimestampFormatters();
         static::assertIsArray($formatters);
@@ -84,7 +84,7 @@ class RecordValueFormattersTest extends BaseTestCase
         static::assertEquals($dateTime, $valueContainer->getOldValue());
     }
     
-    public function testUnixTimestampFormatters()
+    public function testUnixTimestampFormatters(): void
     {
         $formatters = RecordValueFormatters::getUnixTimestampFormatters();
         static::assertIsArray($formatters);
@@ -144,7 +144,7 @@ class RecordValueFormattersTest extends BaseTestCase
         static::assertEquals($updatedDateTime, $record->created_at_unix_as_carbon->format('Y-m-d H:i:s'));
     }
     
-    public function testDateFormatters()
+    public function testDateFormatters(): void
     {
         $formatters = RecordValueFormatters::getDateFormatters();
         static::assertIsArray($formatters);
@@ -182,7 +182,7 @@ class RecordValueFormattersTest extends BaseTestCase
         static::assertEquals($dateTime, RecordValueFormatters::getDateToCarbonFormatter()($valueContainerAlt)->format('Y-m-d H:i:s'));
     }
     
-    public function testTimeFormatters()
+    public function testTimeFormatters(): void
     {
         $formatters = RecordValueFormatters::getTimeFormatters();
         static::assertIsArray($formatters);
@@ -212,7 +212,7 @@ class RecordValueFormattersTest extends BaseTestCase
         static::assertEquals($ts, RecordValueFormatters::getDateTimeToUnixTsFormatter()($valueContainerAlt));
     }
     
-    public function testJsonFormatters1()
+    public function testJsonFormatters1(): void
     {
         $formatters = RecordValueFormatters::getJsonFormatters();
         static::assertIsArray($formatters);
@@ -274,7 +274,7 @@ class RecordValueFormattersTest extends BaseTestCase
         static::assertEquals($json, $valueContainerAlt->getValue());
     }
     
-    public function testJsonFormatters2()
+    public function testJsonFormatters2(): void
     {
         $formatters = RecordValueFormatters::getJsonFormatters();
         static::assertIsArray($formatters);
@@ -339,7 +339,7 @@ class RecordValueFormattersTest extends BaseTestCase
         static::assertEquals($json, $valueContainerAlt->getValue());
     }
     
-    public function testDbExprValueInValueContainer()
+    public function testDbExprValueInValueContainer(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage('It is impossible to convert PeskyORM\Core\DbExpr object to anoter format');
@@ -350,7 +350,7 @@ class RecordValueFormattersTest extends BaseTestCase
         $formatter($valueContainer);
     }
     
-    public function testInvalidTimestamp1()
+    public function testInvalidTimestamp1(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
@@ -365,7 +365,7 @@ class RecordValueFormattersTest extends BaseTestCase
         $formatter($valueContainer);
     }
     
-    public function testInvalidDate1()
+    public function testInvalidDate1(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
@@ -380,7 +380,7 @@ class RecordValueFormattersTest extends BaseTestCase
         $formatter($valueContainer);
     }
     
-    public function testInvalidTime1()
+    public function testInvalidTime1(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
@@ -395,7 +395,7 @@ class RecordValueFormattersTest extends BaseTestCase
         $formatter($valueContainer);
     }
     
-    public function testInvalidUnixTs1()
+    public function testInvalidUnixTs1(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
@@ -410,7 +410,7 @@ class RecordValueFormattersTest extends BaseTestCase
         $formatter($valueContainer);
     }
     
-    public function testInvalidJson1()
+    public function testInvalidJson1(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
@@ -425,7 +425,7 @@ class RecordValueFormattersTest extends BaseTestCase
         $formatter($valueContainer);
     }
     
-    public function testInvalidJson2()
+    public function testInvalidJson2(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(
@@ -440,7 +440,7 @@ class RecordValueFormattersTest extends BaseTestCase
         $formatter($valueContainer);
     }
     
-    public function testInvalidJson3()
+    public function testInvalidJson3(): void
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage("Validation errors: [json_data1] Value must be a json-encoded string or array.");
@@ -448,7 +448,7 @@ class RecordValueFormattersTest extends BaseTestCase
             ->setJsonData1(json_decode(json_encode(['test' => 1]), false)); //< \stdObject
     }
     
-    public function testInvalidCustomFormatter1()
+    public function testInvalidCustomFormatter1(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('PeskyORM\ORM\Column::addCustomValueFormatter(): Argument #2 ($formatter) must be of type Closure');
@@ -458,7 +458,7 @@ class RecordValueFormattersTest extends BaseTestCase
             ->addCustomValueFormatter('test', $this);
     }
     
-    public function testInvalidCustomFormatter2()
+    public function testInvalidCustomFormatter2(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('PeskyORM\ORM\Column::addCustomValueFormatter(): Argument #2 ($formatter) must be of type Closure');
@@ -468,7 +468,7 @@ class RecordValueFormattersTest extends BaseTestCase
             ->addCustomValueFormatter('test', null);
     }
     
-    public function testInvalidCustomFormatter3()
+    public function testInvalidCustomFormatter3(): void
     {
         // modification of custom formatters can only be done during initial column declaration in TableStructure
         // or before Record::getColumn() or Record::hasColumn() were used
@@ -483,7 +483,7 @@ class RecordValueFormattersTest extends BaseTestCase
         $record->getValue('json_data1_as_test');
     }
     
-    public function testCustomFormatter1()
+    public function testCustomFormatter1(): void
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage('test');
@@ -495,7 +495,7 @@ class RecordValueFormattersTest extends BaseTestCase
         $record->getValue('json_data1_as_test');
     }
     
-    public function testCustomFormatter2()
+    public function testCustomFormatter2(): void
     {
         TestingFormattersTableStructure::getColumn('json_data1')
             ->addCustomValueFormatter('test', function (RecordValue $valueContainer) {

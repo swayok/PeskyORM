@@ -69,6 +69,9 @@ class Select extends AbstractSelect
         return $this->tableName;
     }
     
+    /**
+     * @return static
+     */
     public function setTableAlias(string $tableAlias)
     {
         $this->tableAlias = $tableAlias;

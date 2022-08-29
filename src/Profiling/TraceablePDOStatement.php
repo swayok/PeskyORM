@@ -39,7 +39,7 @@ class TraceablePDOStatement extends PDOStatement
      * @param mixed $driverOptions [optional] Optional parameter(s) for the driver.
      * @return bool  TRUE on success or FALSE on failure.
      */
-    public function bindColumn($column, &$var, $type = null, $maxLength = null, $driverOptions = null)
+    public function bindColumn($column, &$var, $type = null, $maxLength = null, $driverOptions = null): bool
     {
         $this->boundParameters[$column] = $var;
         $args = array_merge([$column, &$var], array_slice(func_get_args(), 2));
@@ -62,7 +62,7 @@ class TraceablePDOStatement extends PDOStatement
      * @param mixed $driverOptions [optional]
      * @return bool TRUE on success or FALSE on failure.
      */
-    public function bindParam($param, &$var, $type = PDO::PARAM_STR, $maxLength = null, $driverOptions = null)
+    public function bindParam($param, &$var, $type = PDO::PARAM_STR, $maxLength = null, $driverOptions = null): bool
     {
         $this->boundParameters[$param] = $var;
         $args = array_merge([$param, &$var], array_slice(func_get_args(), 2));
@@ -82,7 +82,7 @@ class TraceablePDOStatement extends PDOStatement
      * constants.
      * @return bool TRUE on success or FALSE on failure.
      */
-    public function bindValue($param, $value, $type = PDO::PARAM_STR)
+    public function bindValue($param, $value, $type = PDO::PARAM_STR): bool
     {
         $this->boundParameters[$param] = $value;
         
@@ -99,7 +99,7 @@ class TraceablePDOStatement extends PDOStatement
      * @return bool TRUE on success or FALSE on failure.
      * @throws \PDOException
      */
-    public function execute($params = null)
+    public function execute($params = null): bool
     {
         $preparedId = spl_object_hash($this);
         $boundParameters = $this->boundParameters;
