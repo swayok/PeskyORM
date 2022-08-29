@@ -11,8 +11,7 @@ use Swayok\Utils\StringUtils;
 abstract class TestingBaseTable extends Table
 {
     
-    /** @var null|string */
-    protected $recordClass = null;
+    protected ?string $recordClass = null;
     
     public function newRecord(): RecordInterface
     {

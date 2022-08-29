@@ -9,6 +9,9 @@ use PeskyORM\Core\DbExpr;
 class RecordValue
 {
     
+    protected Column $column;
+    protected RecordInterface $record;
+    
     /**
      * @var mixed
      */
@@ -21,50 +24,16 @@ class RecordValue
      * @var mixed
      */
     protected $oldValue = null;
-    /**
-     * @var bool
-     */
-    protected $oldValueIsFromDb = false;
-    /**
-     * @var bool
-     */
-    protected $isFromDb = false;
-    /**
-     * @var bool
-     */
-    protected $hasValue = false;
-    /**
-     * @var bool
-     */
-    protected $hasOldValue = false;
-    /**
-     * @var bool
-     */
-    protected $isValidated = false;
-    /**
-     * @var array
-     */
-    protected $validationErrors = [];
-    /**
-     * @var bool|null
-     */
-    protected $isDefaultValueCanBeSet = null;
-    /**
-     * @var array
-     */
-    protected $customInfo = [];
-    /**
-     * @var array
-     */
-    protected $dataForSavingExtender;
-    /**
-     * @var Column
-     */
-    protected $column;
-    /**
-     * @var RecordInterface
-     */
-    protected $record;
+    
+    protected bool $oldValueIsFromDb = false;
+    protected bool $isFromDb = false;
+    protected bool $hasValue = false;
+    protected bool $hasOldValue = false;
+    protected bool $isValidated = false;
+    protected array $validationErrors = [];
+    protected ?bool $isDefaultValueCanBeSet = null;
+    protected array $customInfo = [];
+    protected ?array $dataForSavingExtender = null;
     
     /**
      * @return static

@@ -13,28 +13,17 @@ abstract class AbstractJoinInfo
     
     public const NAME_VALIDATION_REGEXP = '%^[A-Z][a-zA-Z0-9]*$%';   //< CamelCase
     
-    /** @var string */
-    protected $joinName;
-    /** @var string */
-    protected $tableName;
-    /** @var string|null */
-    protected $tableSchema;
-    /** @var string|null */
-    protected $tableAlias;
-    /** @var string */
-    protected $columnName;
-    /** @var string */
-    protected $joinType;
-    /** @var string */
-    protected $foreignTableName;
-    /** @var string|null */
-    protected $foreignTableSchema;
-    /** @var string */
-    protected $foreignColumnName;
-    /** @var array */
-    protected $additionalJoinConditions = [];
-    /** @var array */
-    protected $foreignColumnsToSelect = ['*'];
+    protected string $joinName;
+    protected ?string $tableName = null;
+    protected ?string $tableSchema = null;
+    protected ?string $tableAlias = null;
+    protected ?string $columnName = null;
+    protected ?string $joinType = null;
+    protected ?string $foreignTableName = null;
+    protected ?string $foreignTableSchema = null;
+    protected ?string $foreignColumnName = null;
+    protected array $additionalJoinConditions = [];
+    protected array $foreignColumnsToSelect = ['*'];
     
     public function __construct(string $joinName)
     {

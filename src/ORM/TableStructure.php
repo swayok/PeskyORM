@@ -15,47 +15,41 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * Use table description from DB to automatically create missing column configs
      * It uses PeskyORM\Core\DbConnectionsManager::getConnection(static::$connectionName)->describeTable(static::$name)
-     * @var bool
      */
-    protected static $autodetectColumnsConfigs = false;
+    protected static bool $autodetectColumnsConfigs = false;
     /**
      * Loads columns and relations configs from private methods of child class
      * Disable if you do not use private methods to define columns and relations
-     * @var bool
      */
-    protected static $autoloadConfigsFromPrivateMethods = true;
+    protected static bool $autoloadConfigsFromPrivateMethods = true;
     
-    /**
-     * @var null|Column
-     */
-    protected $pk;
+    protected ?Column $pk = null;
     /**
      * @var Column[]
      */
-    protected $fileColumns = [];
+    protected array $fileColumns = [];
     /**
      * @var Column[]
      */
-    protected $columsThatExistInDb = [];
+    protected array $columsThatExistInDb = [];
     /**
      * @var Column[]
      */
-    protected $columsThatDoNotExistInDb = [];
+    protected array $columsThatDoNotExistInDb = [];
     
     /**
      * At first it contains only ReflectionMethod objects and lazy-loads Column objects later
      * @var Column[]
      */
-    protected $columns = [];
+    protected array $columns = [];
     
     /** @var Relation[] */
-    protected $relations = [];
+    protected array $relations = [];
     
-    /** @var array */
-    protected $columnsRelations = [];
+    protected array $columnsRelations = [];
     
     /** @var TableStructureInterface[] */
-    private static $instances = [];
+    private static array $instances = [];
     
     /**
      * @return static

@@ -13,7 +13,7 @@ class PeskyOrmPdoProfiler
     /**
      * @var TraceablePDO[]
      */
-    protected static $connections = [];
+    protected static array $connections = [];
     
     /**
      * Init PDO profiling

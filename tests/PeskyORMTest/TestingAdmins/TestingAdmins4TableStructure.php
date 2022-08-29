@@ -11,7 +11,7 @@ use PeskyORM\ORM\TableStructure;
 class TestingAdmins4TableStructure extends TableStructure
 {
     
-    protected static $autodetectColumnsConfigs = true;
+    protected static bool $autodetectColumnsConfigs = true;
     
     public static function getTableName(): string
     {

@@ -17,7 +17,7 @@ use Swayok\Utils\NormalizeValue;
 trait KeyValueTableHelpers
 {
     
-    private $_detectedMainForeignKeyColumnName;
+    private ?string $_detectedMainForeignKeyColumnName = null;
     
     public static function getKeysColumnName(): string
     {
@@ -37,7 +37,7 @@ trait KeyValueTableHelpers
     public function getMainForeignKeyColumnName(): ?string
     {
         /** @var KeyValueTableInterface $this */
-        if (empty($this->_detectedMainForeignKeyColumnName)) {
+        if (!$this->_detectedMainForeignKeyColumnName) {
             foreach (
                 $this->getTableStructure()
                     ->getRelations() as $relationConfig
@@ -47,7 +47,7 @@ trait KeyValueTableHelpers
                     break;
                 }
             }
-            if ($this->_detectedMainForeignKeyColumnName === null) {
+            if (!$this->_detectedMainForeignKeyColumnName) {
                 throw new \BadMethodCallException(
                     __METHOD__ . '() - cannot find foreign key column name'
                 );

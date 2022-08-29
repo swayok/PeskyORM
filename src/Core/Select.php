@@ -11,21 +11,11 @@ class Select extends AbstractSelect
     
     /**
      * Main table name to select data from
-     * @var string
      */
-    protected $tableName;
-    /**
-     * @var string|null
-     */
-    protected $dbSchema;
-    /**
-     * @var string
-     */
-    protected $tableAlias;
-    /**
-     * @var DbAdapterInterface
-     */
-    protected $connection;
+    protected string $tableName;
+    protected ?string $dbSchema = null;
+    protected string $tableAlias;
+    protected DbAdapterInterface $connection;
     
     /**
      * @param string $tableName

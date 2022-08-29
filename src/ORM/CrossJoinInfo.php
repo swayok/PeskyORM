@@ -10,7 +10,7 @@ use PeskyORM\Core\DbExpr;
 class CrossJoinInfo extends AbstractJoinInfo
 {
     
-    protected $joinQuery;
+    protected DbExpr $joinQuery;
     
     /**
      * @return static

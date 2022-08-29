@@ -10,38 +10,22 @@ namespace PeskyORM\Profiling;
 class TracedStatement
 {
     
-    /** @var string */
-    protected $sql;
+    protected string $sql;
     
-    /** @var int|null */
-    protected $rowCount;
+    protected ?int $rowCount = null;
+    protected array $parameters;
     
-    /** @var array */
-    protected $parameters;
+    protected ?float $startTime = null;
+    protected ?float $endTime = null;
+    protected ?float $duration = null;
     
-    /** @var float|null */
-    protected $startTime;
+    protected ?int $startMemory = null;
+    protected ?int $endMemory = null;
+    protected ?int $memoryDelta = null;
     
-    /** @var float|null */
-    protected $endTime;
+    protected ?string $preparedId = null;
     
-    /** @var float|null */
-    protected $duration;
-    
-    /** @var int|null */
-    protected $startMemory;
-    
-    /** @var int|null */
-    protected $endMemory;
-    
-    /** @var int|null */
-    protected $memoryDelta;
-    
-    /** @var string|null */
-    protected $preparedId;
-    
-    /** @var \Throwable|null */
-    protected $exception;
+    protected ?\Throwable $exception = null;
     
     public function __construct(string $sql, array $params = [], ?string $preparedId = null)
     {

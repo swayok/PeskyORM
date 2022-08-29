@@ -15,43 +15,37 @@ use PeskyORM\ORM\TableStructure;
 class TestingApp
 {
     
-    /**
-     * @var Postgres
-     */
-    public static $pgsqlConnection;
-    /**
-     * @var Mysql
-     */
-    public static $mysqlConnection;
-    protected static $dataForDb;
-    protected static $dataForDbMinimal;
+    public static ?Postgres $pgsqlConnection = null;
+    public static ?Mysql $mysqlConnection = null;
+    protected static ?array $dataForDb = null;
+    protected static ?array $dataForDbMinimal = null;
     
-    public static function getMysqlConnection()
+    public static function getMysqlConnection(): Mysql
     {
         if (!static::$mysqlConnection) {
+            /** @noinspection PhpFieldAssignmentTypeMismatchInspection */
             static::$mysqlConnection = DbConnectionsManager::createConnection(
                 'mysql',
                 DbConnectionsManager::ADAPTER_MYSQL,
                 MysqlConfig::fromArray(static::getGlobalConfigs()['mysql'])
             );
-            static::getMysqlConnection()
-                ->exec(file_get_contents(__DIR__ . '/../configs/db_schema_mysql.sql'));
+            static::$mysqlConnection->exec(file_get_contents(__DIR__ . '/../configs/db_schema_mysql.sql'));
             date_default_timezone_set('UTC');
         }
         return static::$mysqlConnection;
     }
     
-    public static function getPgsqlConnection()
+    public static function getPgsqlConnection(): Postgres
     {
         if (!static::$pgsqlConnection) {
+            /** @noinspection PhpFieldAssignmentTypeMismatchInspection */
             static::$pgsqlConnection = DbConnectionsManager::createConnection(
                 'default',
                 DbConnectionsManager::ADAPTER_POSTGRES,
                 PostgresConfig::fromArray(static::getGlobalConfigs()['pgsql'])
             );
             DbConnectionsManager::addAlternativeNameForConnection('default', 'writable');
-            static::getPgsqlConnection()
-                ->exec(file_get_contents(__DIR__ . '/../configs/db_schema_pgsql.sql'));
+            static::$pgsqlConnection->exec(file_get_contents(__DIR__ . '/../configs/db_schema_pgsql.sql'));
             static::$pgsqlConnection->query('SET LOCAL TIME ZONE "UTC"');
             date_default_timezone_set('UTC');
         }
@@ -59,12 +53,12 @@ class TestingApp
         return static::$pgsqlConnection;
     }
     
-    protected static function getGlobalConfigs()
+    protected static function getGlobalConfigs(): array
     {
         return include __DIR__ . '/../configs/global.php';
     }
     
-    public static function getRecordsForDb($table, $limit = 0)
+    public static function getRecordsForDb(string $table, int $limit = 0): array
     {
         if ($limit <= 10) {
             if (!static::$dataForDbMinimal) {
@@ -84,7 +78,7 @@ class TestingApp
         }
     }
     
-    public static function fillAdminsTable($limit = 0): array
+    public static function fillAdminsTable(int $limit = 0): array
     {
         static::$pgsqlConnection->exec('TRUNCATE TABLE admins');
         $data = static::getRecordsForDb('admins', $limit);
@@ -92,7 +86,7 @@ class TestingApp
         return $data;
     }
     
-    public static function fillSettingsTable($limit = 0): array
+    public static function fillSettingsTable(int $limit = 0): array
     {
         static::$pgsqlConnection->exec('TRUNCATE TABLE settings');
         $data = static::getRecordsForDb('settings', $limit);
@@ -100,7 +94,7 @@ class TestingApp
         return $data;
     }
     
-    public static function clearTables(DbAdapterInterface $adapter)
+    public static function clearTables(DbAdapterInterface $adapter): void
     {
         if ($adapter->inTransaction()) {
             $adapter->rollBack();
@@ -109,7 +103,7 @@ class TestingApp
         $adapter->exec('TRUNCATE TABLE admins');
     }
     
-    public static function cleanInstancesOfDbTablesAndRecordsAndStructures()
+    public static function cleanInstancesOfDbTablesAndRecordsAndStructures(): void
     {
         $class = new \ReflectionClass(Table::class);
         $method = $class->getMethod('resetInstances');

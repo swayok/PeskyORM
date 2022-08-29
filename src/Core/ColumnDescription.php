@@ -9,46 +9,20 @@ use PeskyORM\ORM\Column;
 class ColumnDescription implements \Serializable
 {
     
-    /**
-     * @var string
-     */
-    protected $name;
-    /**
-     * @var string
-     */
-    protected $dbType;
-    /**
-     * @var string
-     */
-    protected $ormType;
-    /**
-     * @var integer
-     */
-    protected $limit;
-    /**
-     * @var integer
-     */
-    protected $numberPrecision;
-    /**
-     * @var bool
-     */
-    protected $isNullable = true;
+    protected string $name;
+    protected string $dbType;
+    protected string $ormType;
+    
+    protected ?int $limit = null;
+    protected ?int $numberPrecision = null;
+    protected bool $isNullable = true;
     /**
      * @var mixed
      */
     protected $default = null;
-    /**
-     * @var bool
-     */
-    protected $isPrimaryKey = false;
-    /**
-     * @var bool
-     */
-    protected $isForeignKey = false;
-    /**
-     * @var bool
-     */
-    protected $isUnique = false;
+    protected bool $isPrimaryKey = false;
+    protected bool $isForeignKey = false;
+    protected bool $isUnique = false;
     
     public function __construct(string $name, string $dbType, string $ormType)
     {

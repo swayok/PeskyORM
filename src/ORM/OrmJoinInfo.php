@@ -9,10 +9,8 @@ use PeskyORM\Core\AbstractJoinInfo;
 class OrmJoinInfo extends AbstractJoinInfo
 {
     
-    /** @var TableInterface */
-    protected $dbTable;
-    /** @var TableInterface */
-    protected $foreignDbTable;
+    protected TableInterface $dbTable;
+    protected TableInterface $foreignDbTable;
     
     /**
      * @param string $joinName

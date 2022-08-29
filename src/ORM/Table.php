@@ -15,9 +15,8 @@ abstract class Table implements TableInterface
 {
     
     /** @var Table[] */
-    private static $instances = [];
-    /** @var string */
-    protected $alias;
+    private static array $instances = [];
+    protected ?string $alias = null;
     
     /**
      * @return static

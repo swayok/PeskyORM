@@ -12,16 +12,13 @@ use PeskyORM\ORM\TableInterface;
 class KeyValueDataSaver extends Record
 {
     
+    protected static FakeTable $table;
+    protected static KeyValueTableInterface $originalTable;
     /**
-     * @var FakeTable $table
+     * @var string|int|float
      */
-    protected static $table;
-    /**
-     * @var KeyValueTableInterface $table
-     */
-    protected static $originalTable;
     protected $_fkValue;
-    protected $_constantAdditionalData = [];
+    protected array $_constantAdditionalData = [];
     
     public static function getTable(): TableInterface
     {
@@ -32,7 +29,7 @@ class KeyValueDataSaver extends Record
      * @param KeyValueTableInterface $table
      * @param array $originalData
      * @param array $newData
-     * @param mixed $fkValue
+     * @param string|int|float $fkValue
      * @param array $constantAdditionalData
      */
     public static function saveKeyValuePairs(

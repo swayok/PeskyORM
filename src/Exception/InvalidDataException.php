@@ -9,7 +9,7 @@ use Swayok\Utils\Set;
 class InvalidDataException extends OrmException
 {
     
-    protected $errors = [];
+    protected array $errors = [];
     
     public function __construct(array $errors)
     {

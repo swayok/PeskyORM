@@ -14,105 +14,50 @@ use Swayok\Utils\ValidateValue;
 abstract class AbstractSelect
 {
     
-    /**
-     * @var array - key = full table alias or join name; value - short alias
-     */
-    protected $shortJoinAliases = [];
-    /**
-     * @var array - key = full column alias or name; value - short column alias
-     */
-    protected $shortColumnAliases = [];
-    /**
-     * @var array
-     */
-    protected $columns = [];
-    /**
-     * @var array
-     */
-    protected $columnsRaw = ['*'];
-    /**
-     * @var boolean
-     */
-    protected $distinct = false;
-    /**
-     * @var array
-     */
-    protected $distinctColumns = [];
-    /**
-     * @var array
-     */
-    protected $where = [];
-    /**
-     * @var array
-     */
-    protected $orderBy = [];
-    /**
-     * @var array
-     */
-    protected $groupBy = [];
-    /**
-     * @var array
-     */
-    protected $having = [];
+    protected array $shortJoinAliases = [];
+    protected array $shortColumnAliases = [];
+    protected array $columns = [];
+    protected array $columnsRaw = ['*'];
+    protected bool $distinct = false;
+    protected array $distinctColumns = [];
+    protected array $where = [];
+    protected array $orderBy = [];
+    protected array $groupBy = [];
+    protected array $having = [];
     /**
      * @var AbstractSelect[]
      */
-    protected $with = [];
-    /**
-     * @var int
-     */
-    protected $limit = 0;
-    /**
-     * @var int
-     */
-    protected $offset = 0;
+    protected array $with = [];
+    protected int $limit = 0;
+    protected int $offset = 0;
     /**
      * @var JoinInfo[]
      */
-    protected $joins = [];
+    protected array $joins = [];
     /**
      * @var CrossJoinInfo[]
      */
-    protected $crossJoins = [];
+    protected array $crossJoins = [];
     /**
      * List of JOINs names that are mentioned in WHERE and HAVING conditions.
      * This is used in simplified query builder so it won't drop LEFT JOINs if
      * they are required for query to be successful
-     * @var array
      */
-    protected $joinsUsedInWhereAndHavingConditions = [];
-    /**
-     * @var array
-     */
-    protected $analyzedColumns = [];
+    protected array $joinsUsedInWhereAndHavingConditions = [];
+    protected array $analyzedColumns = [];
     /**
      * Indicates that Select has changed since last getQuery or getSimplifiedQuery call
      * @var null|array - null: all dirty | array - only some items are dirty
      */
-    protected $isDirty;
-    /**
-     * @var array
-     */
-    protected $columnAliasToColumnInfo = [];
+    protected ?array $isDirty = null;
+    protected array $columnAliasToColumnInfo = [];
     
-    /**
-     * @return string
-     */
     abstract public function getTableName(): string;
     
-    /**
-     * @return string
-     */
     abstract public function getTableAlias(): string;
     
-    /**
-     * @return string|null
-     */
     abstract public function getTableSchemaName(): ?string;
     
-    /**
-     * @return DbAdapterInterface
-     */
     abstract public function getConnection(): DbAdapterInterface;
     
     /**
@@ -135,7 +80,6 @@ abstract class AbstractSelect
     }
     
     /**
-     * @param array $conditionsAndOptions
      * @throws \InvalidArgumentException
      */
     protected function parseNormalizedConfigsArray(array $conditionsAndOptions)
@@ -248,24 +192,17 @@ abstract class AbstractSelect
         return ['LIMIT', 'OFFSET', 'HAVING', 'GROUP', 'ORDER', 'JOINS', 'DISTINCT'];
     }
     
-    /**
-     * @return array
-     */
     public function fetchOne(): array
     {
         return $this->_fetch(Utils::FETCH_FIRST);
     }
     
-    /**
-     * @return array
-     */
     public function fetchMany(): array
     {
         return $this->_fetch(Utils::FETCH_ALL);
     }
     
     /**
-     * @return array
      * @throws \BadMethodCallException
      */
     public function fetchNextPage(): array
@@ -278,7 +215,6 @@ abstract class AbstractSelect
     }
     
     /**
-     * @return array
      * @throws \BadMethodCallException
      */
     public function fetchPrevPage(): array
@@ -312,9 +248,6 @@ abstract class AbstractSelect
                 ->query($this->getExistenceQuery($ignoreLeftJoins), Utils::FETCH_VALUE) === 1;
     }
     
-    /**
-     * @return array
-     */
     public function fetchColumn(): array
     {
         return $this->_fetch(Utils::FETCH_COLUMN);
@@ -332,7 +265,6 @@ abstract class AbstractSelect
     }
     
     /**
-     * @param DbExpr $expression
      * @return string|null|int
      */
     public function fetchValue(DbExpr $expression)
@@ -395,9 +327,6 @@ abstract class AbstractSelect
         return "{$with}SELECT $expression {$fromTableAndOthers}";
     }
     
-    /**
-     * @return string
-     */
     public function buildQueryToBeUsedInWith(): string
     {
         $this->beforeQueryBuilding();
@@ -408,12 +337,6 @@ abstract class AbstractSelect
         return "SELECT {$columns} {$fromTableAndOthers}";
     }
     
-    /**
-     * @param bool $ignoreLeftJoins
-     * @param bool $withOrderBy
-     * @param bool $withLimitAndOffset
-     * @return string
-     */
     protected function buildQueryPartsAfterSelectColumns(bool $ignoreLeftJoins, bool $withOrderBy, bool $withLimitAndOffset): string
     {
         $table = $this->makeTableNameWithAliasForQuery(
@@ -570,10 +493,6 @@ abstract class AbstractSelect
         return $this;
     }
     
-    /**
-     * @param array $columnInfo
-     * @return string
-     */
     protected function makeKeyForOrderBy(array $columnInfo): string
     {
         return ($columnInfo['join_name'] ?: $this->getTableAlias()) . '.' . $columnInfo['name'];
@@ -701,10 +620,6 @@ abstract class AbstractSelect
             ->offset($offset);
     }
     
-    /**
-     * @param array $conditions
-     * @return static
-     */
     public function having(array $conditions)
     {
         $this->having = $conditions;
@@ -792,7 +707,7 @@ abstract class AbstractSelect
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
     
     /**
-     * @param string $subject - set subject as dirty
+     * Set $subject as dirty
      * @return static
      */
     protected function setDirty(string $subject)
@@ -982,11 +897,6 @@ abstract class AbstractSelect
         return $ret;
     }
     
-    /**
-     * @param string $columnNameOrAlias
-     * @param null|string $tableAliasOrJoinName
-     * @return string
-     */
     protected function makeColumnAlias(string $columnNameOrAlias, ?string $tableAliasOrJoinName = null): string
     {
         $joinShortAlias = $this->getShortJoinAlias($tableAliasOrJoinName ?: $this->getTableAlias());
@@ -1036,9 +946,6 @@ abstract class AbstractSelect
     }
     
     /**
-     * @param string $tableName
-     * @param string $tableAlias
-     * @param string|null $tableSchema
      * @return string - something like "table_name" AS "ShortAlias" or "schema_name"."table_name" AS "ShortAlias"
      */
     protected function makeTableNameWithAliasForQuery(string $tableName, string $tableAlias, ?string $tableSchema = null): string
@@ -1067,8 +974,6 @@ abstract class AbstractSelect
     
     /**
      * Add columns into options and resolve contains
-     * @param array $conditionsAndOptions
-     * @return array
      */
     protected function normalizeConditionsAndOptionsArray(array $conditionsAndOptions): array
     {
@@ -1106,8 +1011,6 @@ abstract class AbstractSelect
     
     /**
      * Replace long join names and table alias by short ones inside $dbExpr
-     * @param DbExpr $dbExpr
-     * @return DbExpr
      */
     protected function modifyTableAliasAndJoinNamesInDbExpr(DbExpr $dbExpr): DbExpr
     {
@@ -1393,7 +1296,6 @@ abstract class AbstractSelect
      * Replace all WITH queries for this select. Used by main select to populate WITH queries among all WITH queries
      * so that there will be no problems building queries that depend on other WITH queries.
      * Make sure to remove current query from $withQueries so there will be no problems
-     * @param array $withQueries
      * @return static
      */
     protected function replaceWithQueries(array $withQueries)
@@ -1557,10 +1459,8 @@ abstract class AbstractSelect
     
     /**
      * Insert deeply nested joins data into record data
-     * @param array $joins
-     * @param array $data
      */
-    protected function placeDataOfDeepNestedJoinsIntoRecord(array $joins, array &$data)
+    protected function placeDataOfDeepNestedJoinsIntoRecord(array $joins, array &$data): void
     {
         /** @var JoinInfo[] $usedJoins */
         $usedJoins = [];
@@ -1590,19 +1490,12 @@ abstract class AbstractSelect
     
     /**
      * Normalize data received for related record or join
-     * @param AbstractJoinInfo $joinConfig
-     * @param array $data
-     * @return array
      */
     protected function normalizeJoinDataForRecord(AbstractJoinInfo $joinConfig, array $data): array
     {
         return $data;
     }
     
-    /**
-     * @param DbExpr $expr
-     * @return string
-     */
     protected function quoteDbExpr(DbExpr $expr): string
     {
         return $this->getConnection()
@@ -1668,7 +1561,6 @@ abstract class AbstractSelect
     }
     
     /**
-     * @param string $joinName
      * @return JoinInfo|OrmJoinInfo|CrossJoinInfo
      * @throws \UnexpectedValueException
      */

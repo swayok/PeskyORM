@@ -9,64 +9,43 @@ use Swayok\Utils\Set;
 class RecordsArray implements \ArrayAccess, \Iterator, \Countable
 {
     
+    protected TableInterface $table;
     /**
-     * @var TableInterface
+     * @var array[]|RecordInterface[]
      */
-    protected $table;
+    protected array $records = [];
+    protected ?bool $isFromDb = null;
+    
+    protected bool $isRecordsContainObjects = false;
+    protected int $iteratorPosition = 0;
     /**
-     * @var array[]|Record[]
+     * @var RecordInterface[]
      */
-    protected $records = [];
-    /**
-     * @var bool
-     */
-    protected $isRecordsContainObjects = false;
-    /**
-     * @var
-     */
-    protected $iteratorPosition = 0;
-    /**
-     * @var Record[]
-     */
-    protected $dbRecords = [];
-    /**
-     * @var bool|null
-     */
-    protected $isFromDb = null;
-    /**
-     * @var bool
-     */
-    protected $isDbRecordInstanceReuseEnabled = false;
-    /**
-     * @var bool
-     */
-    protected $isDbRecordDataValidationDisabled = false;
-    /**
-     * @var Record|null
-     */
-    protected $dbRecordForIteration = null;
-    /**
-     * @var int
-     */
-    protected $currentDbRecordIndex = -1;
-    /**
-     * @var bool
-     */
-    protected $readOnlyMode = false;
+    protected array $dbRecords = [];
+    
+    protected bool $isDbRecordInstanceReuseEnabled = false;
+    protected bool $isDbRecordDataValidationDisabled = false;
+    protected ?RecordInterface $dbRecordForIteration = null;
+    protected int $currentDbRecordIndex = -1;
+    protected bool $readOnlyMode = false;
     /**
      * @var string[] - relation names
      */
-    protected $hasManyRelationsInjected = [];
+    protected array $hasManyRelationsInjected = [];
     
     /**
      * @param TableInterface $table
-     * @param array|RecordInterface[]|Record[] $records
+     * @param array|RecordInterface[] $records
      * @param bool|null $isFromDb - true: records are from db | null - autodetect
      * @param bool $disableDbRecordDataValidation
      * @throws \InvalidArgumentException
      */
-    public function __construct(TableInterface $table, array $records, ?bool $isFromDb = null, bool $disableDbRecordDataValidation = false)
-    {
+    public function __construct(
+        TableInterface $table,
+        array $records,
+        ?bool $isFromDb = null,
+        bool $disableDbRecordDataValidation = false
+    ) {
         $this->table = $table;
         $this->setIsDbRecordDataValidationDisabled($disableDbRecordDataValidation);
         if (count($records)) {
@@ -77,7 +56,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
                 if (is_array($record)) {
                     $this->records[$index] = $record;
                 } elseif ($record instanceof $recordClass) {
-                    /** @var Record $record */
+                    /** @var RecordInterface $record */
                     if ($this->isDbRecordDataValidationDisabled()) {
                         $record->enableTrustModeForDbData();
                     } else {
@@ -157,7 +136,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     }
     
     /**
-     * @return RecordInterface|Record
+     * @return RecordInterface
      */
     protected function getDbRecordObjectForIteration(): RecordInterface
     {
@@ -347,7 +326,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * Get some specific data from each object
      * @param string|\Closure|array $closureOrColumnsListOrMethodName
      *      - string: get record data processed by ORM Record's method name. You can provide additional args via $argumentsForMethod
-     *      - array: list of columns compatible with Record->toArray($columnsNames)
+     *      - array: list of columns compatible with RecordInterface->toArray($columnsNames)
      *      - \Closure: function (RecordInterface $record) { return $record->toArray(); }
      *      - \Closure: function (RecordInterface $record) { return \PeskyORM\ORM\KeyValuePair::create($record->id, $record->toArray()); }
      * @param array $argumentsForMethod - pass this arguments to ORM Record's method.
@@ -358,7 +337,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      *      Record's data modification
      * @return array
      * @throws \InvalidArgumentException
-     * @see Record::toArray()
+     * @see RecordInterface::toArray()
      * @see \PeskyORM\ORM\KeyValuePair::create()
      */
     public function getDataFromEachObject($closureOrColumnsListOrMethodName, array $argumentsForMethod = [], bool $enableReadOnlyMode = true): array
@@ -390,7 +369,6 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
             $this->disableDbRecordDataValidation();
         }
         for ($i = 0, $count = $this->count(); $i < $count; $i++) {
-            /** @var Record|RecordInterface $record */
             $record = $this->offsetGet($i);
             $value = $closure($record);
             if ($value instanceof KeyValuePair) {
@@ -452,7 +430,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     
     /**
      * @param int $index - record's index
-     * @return RecordInterface|Record
+     * @return RecordInterface
      */
     protected function convertToObject(int $index): RecordInterface
     {
@@ -487,9 +465,17 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         return $this->dbRecords[$index];
     }
     
-    protected function getStandaloneObject(array $data, bool $withOptimizations): RecordInterface
+    /**
+     * @param array|RecordInterface $data
+     */
+    protected function getStandaloneObject($data, bool $withOptimizations): RecordInterface
     {
-        $record = $this->getNewRecord();
+        $dataIsRecord = $data instanceof RecordInterface;
+        if ($dataIsRecord) {
+            $record = clone $data;
+        } else {
+            $record = $this->getNewRecord();
+        }
         if ($withOptimizations) {
             if ($this->isReadOnlyModeEnabled()) {
                 $record->enableReadOnlyMode();
@@ -498,12 +484,14 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
                 $record->enableTrustModeForDbData();
             }
         }
-        return $record->fromData($data, $this->isRecordsFromDb());
+        return $dataIsRecord
+            ? $record
+            : $record->fromData($data, $this->isRecordsFromDb());
     }
     
     /**
      * Return the current element
-     * @return RecordInterface|Record|null
+     * @return RecordInterface|null
      */
     public function current(): ?RecordInterface
     {
@@ -549,7 +537,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     /**
      * Get first record
      * @param string|null $columnName - null: return record; string - return value for the key from record
-     * @return RecordInterface|Record|mixed
+     * @return RecordInterface|mixed
      * @throws \BadMethodCallException
      */
     public function first(?string $columnName = null)
@@ -557,7 +545,6 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         if ($this->count() === 0) {
             throw new \BadMethodCallException('There is no records');
         }
-        /** @var Record|RecordInterface $record */
         $record = $this->offsetGet(0);
         return $columnName === null ? $record : $record[$columnName];
     }
@@ -573,7 +560,6 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         if ($this->count() === 0) {
             throw new \BadMethodCallException('There is no records');
         }
-        /** @var Record|RecordInterface $record */
         $record = $this->offsetGet(count($this->getRecords()) - 1);
         return $columnName === null ? $record : $record[$columnName];
     }
@@ -583,7 +569,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * @param string $columnName
      * @param mixed $value - expected value for $columnName
      * @param bool $asObject
-     * @return array|RecordInterface|Record|null
+     * @return array|RecordInterface|null
      */
     public function findOne(string $columnName, $value, bool $asObject)
     {
@@ -608,13 +594,12 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     
     /**
      * @param int $index - The offset to retrieve.
-     * @return RecordInterface|Record
+     * @return RecordInterface
      * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
     public function offsetGet($index)
     {
         if ($this->isDbRecordInstanceReuseDuringIterationEnabled()) {
-            /** @var RecordInterface|Record $dbRecord */
             $dbRecord = $this->getDbRecordObjectForIteration();
             if ($index !== $this->currentDbRecordIndex) {
                 $data = $this->getRecordDataByIndex($index);

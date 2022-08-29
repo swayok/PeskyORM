@@ -19,29 +19,20 @@ namespace PeskyORM\Core;
 class DbExpr
 {
     
-    /**
-     * @var string
-     */
-    protected $expression = '';
-    protected $wrapInBrackets = true;
-    protected $allowValidation = true;
+    protected string $expression = '';
+    protected bool $wrapInBrackets = true;
+    protected bool $allowValidation = true;
     
-    /**
-     * @param string $expression
-     * @param bool|null $wrapInBrackets - true: wrap expression in round brackets; null: autodetect;
-     * @return DbExpr
-     */
-    public static function create($expression, $wrapInBrackets = null)
+    public static function create(string $expression, ?bool $wrapInBrackets = null): DbExpr
     {
         return new DbExpr($expression, $wrapInBrackets);
     }
     
     /**
-     * DbExpr constructor.
      * @param bool|null $wrapInBrackets - true: wrap expression in round brackets; null: autodetect;
      * @param string $expression
      */
-    public function __construct($expression, $wrapInBrackets = null)
+    public function __construct(string $expression, ?bool $wrapInBrackets = null)
     {
         $this->expression = $expression;
         if ($wrapInBrackets === null) {
@@ -53,47 +44,36 @@ class DbExpr
         $this->setWrapInBrackets($wrapInBrackets);
     }
     
-    /**
-     * @param bool $wrapInBrackets
-     * @return static
-     */
-    public function setWrapInBrackets($wrapInBrackets)
+    public function setWrapInBrackets(bool $wrapInBrackets): DbExpr
     {
-        $this->wrapInBrackets = (bool)$wrapInBrackets;
+        $this->wrapInBrackets = $wrapInBrackets;
         return $this;
     }
     
-    /**
-     * @return string
-     */
-    public function get()
+    public function get(): string
     {
         return $this->wrapInBrackets ? "({$this->expression})" : $this->expression;
     }
     
     /**
      * Disable relation and column name validation when DbExpr is used by OrmSelect
-     * @return static
      */
-    public function noValidate()
+    public function noValidate(): DbExpr
     {
         $this->allowValidation = false;
         return $this;
     }
     
-    /**
-     * @return bool
-     */
-    public function isValidationAllowed()
+    public function isValidationAllowed(): bool
     {
         return $this->allowValidation;
     }
     
     /**
      * @param array $replaces - associative array where keys are regular expressions and values are replacements
-     * @return static - new record
+     * @return DbExpr - new object
      */
-    public function applyReplaces(array $replaces)
+    public function applyReplaces(array $replaces): DbExpr
     {
         return new static(preg_replace(array_keys($replaces), array_values($replaces), $this->expression), $this->wrapInBrackets);
     }

@@ -17,22 +17,15 @@ class Relation
     public const JOIN_RIGHT = JoinInfo::JOIN_RIGHT;
     public const JOIN_INNER = JoinInfo::JOIN_INNER;
     
-    /** @var string */
-    protected $name;
-    /** @var string */
-    protected $type;
-    /** @var string */
-    protected $joinType = self::JOIN_LEFT;
+    protected ?string $name = null;
+    protected string $type;
+    protected string $joinType = self::JOIN_LEFT;
     
-    /** @var string */
-    protected $localColumnName;
+    protected string $localColumnName;
     
-    /** @var TableInterface */
-    protected $foreignTable;
-    /** @var string */
-    protected $foreignTableClass;
-    /** @var string */
-    protected $foreignColumnName;
+    protected ?TableInterface $foreignTable = null;
+    protected string $foreignTableClass;
+    protected string $foreignColumnName;
     
     /** @var string|\Closure|null */
     protected $displayColumnName;
@@ -78,11 +71,10 @@ class Relation
     
     public function hasName(): bool
     {
-        return !empty($this->name);
+        return (bool)$this->name;
     }
     
     /**
-     * @param string $name
      * @return static
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException

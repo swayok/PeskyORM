@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Core;
 
+use PDO;
 use PDOStatement;
 use PeskyORM\Core\Utils as OrmUtils;
 use PeskyORM\Exception\DbException;
@@ -14,11 +15,15 @@ abstract class DbAdapter implements DbAdapterInterface
     
     public const ENTITY_NAME_QUOTES = '';
     
-    // db-specific values for bool data type
+    /**
+     * db-specific values for bool data type
+     */
     public const BOOL_TRUE = '1';
     public const BOOL_FALSE = '0';
     
-    // db-specific value for unlimited amount of query results (ex: SELECT .. OFFSET 10 LIMIT 0)
+    /**
+     * db-specific value for unlimited amount of query results (ex: SELECT .. OFFSET 10 LIMIT 0)
+     */
     public const NO_LIMIT = '0';
     
     public const FETCH_ALL = OrmUtils::FETCH_ALL;
@@ -29,51 +34,34 @@ abstract class DbAdapter implements DbAdapterInterface
     public const FETCH_STATEMENT = OrmUtils::FETCH_STATEMENT;
     public const FETCH_ROWS_COUNT = OrmUtils::FETCH_ROWS_COUNT;
     
-    /**
-     * @var array
-     */
-    protected static $conditionOperatorsMap = [];
+    protected static array $conditionOperatorsMap = [];
     
     /**
      * Traces of all transactions (required for debug)
-     * @var array
      */
-    protected static $transactionsTraces = [];
+    protected static array $transactionsTraces = [];
     
     /**
      * Enables/disables collecting of transactions traces
-     * @var bool
      */
-    protected static $isTransactionTracesEnabled = false;
+    protected static bool $isTransactionTracesEnabled = false;
     
-    /**
-     * @var DbConnectionConfigInterface
-     */
-    protected $connectionConfig;
+    protected DbConnectionConfigInterface $connectionConfig;
     
-    /**
-     * @var \PDO $pdo
-     */
-    protected $pdo;
+    protected ?\PDO $pdo = null;
     
-    /**
-     * @var array
-     */
-    protected $onConnectCallbacks = [];
+    protected array $onConnectCallbacks = [];
     
     /**
      * Class that wraps PDO connection. Used for debugging
      * function (DbAdapter $adapter, \PDO $pdo) { return $wrappedPdo; }
-     *
-     * @var null|\Closure
      */
-    protected static $connectionWrapper = null;
+    protected static ?\Closure $connectionWrapper = null;
     
     /**
      * Last executed query
-     * @var null|string
      */
-    protected $lastQuery;
+    protected ?string $lastQuery = null;
     
     /**
      * Set a wrapper to PDO connection. Wrapper called on any new DB connection
@@ -100,7 +88,7 @@ abstract class DbAdapter implements DbAdapterInterface
      * {@inheritDoc}
      * @throws \PDOException
      */
-    public function getConnection()
+    public function getConnection(): PDO
     {
         if ($this->pdo === null) {
             $this->pdo = $this->makePdo();
@@ -422,8 +410,10 @@ abstract class DbAdapter implements DbAdapterInterface
     {
         if (empty($table)) {
             throw new \InvalidArgumentException('$table argument cannot be empty and must be a non-numeric string');
-        } else if (!static::isValidDbEntityName($table)) {
-            throw new \InvalidArgumentException('$table must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)');
+        } elseif (!static::isValidDbEntityName($table)) {
+            throw new \InvalidArgumentException(
+                '$table must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)'
+            );
         }
     }
     
@@ -462,8 +452,10 @@ abstract class DbAdapter implements DbAdapterInterface
     {
         if (empty($pkName)) {
             throw new \InvalidArgumentException('$pkName argument cannot be empty');
-        } else if (!static::isValidDbEntityName($pkName)) {
-            throw new \InvalidArgumentException('$pkName must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)');
+        } elseif (!static::isValidDbEntityName($pkName)) {
+            throw new \InvalidArgumentException(
+                '$pkName must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)'
+            );
         }
         $this->quoteDbEntityName($pkName);
     }

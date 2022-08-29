@@ -9,23 +9,19 @@ class TableDescription implements \Serializable
     
     /**
      * Name of DB schema that contains this table (PostgreSQL)
-     * @var string
      */
-    protected $dbSchema;
-    /**
-     * @var string
-     */
-    protected $name;
+    protected ?string $dbSchema = null;
+    protected string $name;
     /**
      * @var ColumnDescription[]
      */
-    protected $columns = [];
+    protected array $columns = [];
     
     /**
      * @param string $tableName
      * @param string|null $dbSchema
      */
-    public function __construct($tableName, $dbSchema = null)
+    public function __construct(string $tableName, ?string $dbSchema = null)
     {
         $this->name = $tableName;
         $this->dbSchema = $dbSchema;
@@ -43,27 +39,17 @@ class TableDescription implements \Serializable
         $this->columns[$columnDescription->getName()] = $columnDescription;
     }
     
-    /**
-     * @param $columnName
-     * @return bool
-     */
-    public function hasColumn($columnName)
+    public function hasColumn(string $columnName): bool
     {
         return !empty($this->columns[$columnName]);
     }
     
-    /**
-     * @return string
-     */
-    public function getDbSchema()
+    public function getDbSchema(): ?string
     {
         return $this->dbSchema;
     }
     
-    /**
-     * @return string
-     */
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
@@ -71,16 +57,15 @@ class TableDescription implements \Serializable
     /**
      * @return ColumnDescription[]
      */
-    public function getColumns()
+    public function getColumns(): array
     {
         return $this->columns;
     }
     
     /**
-     * @return ColumnDescription
      * @throws \InvalidArgumentException
      */
-    public function getColumn($name)
+    public function getColumn($name): ColumnDescription
     {
         if (!array_key_exists($name, $this->columns)) {
             throw new \InvalidArgumentException("Column '{$name}' does not exist");

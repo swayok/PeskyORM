@@ -9,16 +9,16 @@ use PeskyORM\Core\DbConnectionConfigInterface;
 class MysqlConfig implements DbConnectionConfigInterface
 {
     
-    protected $name;
-    protected $dbName;
-    protected $dbUser;
-    protected $dbPassword;
-    protected $dbHost = 'localhost';
-    protected $dbPort = '3306';
-    protected $charset = 'utf8';
-    protected $unixSocket;
-    protected $options = [];
-    protected $timezone;
+    protected string $dbName;
+    protected string $dbUser;
+    protected string $dbPassword;
+    protected ?string $configName = null;
+    protected string $dbHost = 'localhost';
+    protected string $dbPort = '3306';
+    protected string $charset = 'utf8';
+    protected ?string $unixSocket = null;
+    protected array $options = [];
+    protected ?string $timezone = null;
     
     /**
      * @param array $config
@@ -32,6 +32,15 @@ class MysqlConfig implements DbConnectionConfigInterface
         $dbName = $config['database'] ?? null;
         $user = $config['username'] ?? null;
         $password = $config['password'] ?? null;
+        if (empty($dbName)) {
+            throw new \InvalidArgumentException('$config argument must contain not empty \'database\' key value');
+        }
+        if (empty($user)) {
+            throw new \InvalidArgumentException('$config argument must contain not empty \'username\' key value');
+        }
+        if (empty($password)) {
+            throw new \InvalidArgumentException('$config argument must contain not empty \'password\' key value');
+        }
         $object = new static($dbName, $user, $password);
         if ($name) {
             $object->setName($name);
@@ -58,42 +67,32 @@ class MysqlConfig implements DbConnectionConfigInterface
     }
     
     /**
-     * @param string $dbName
-     * @param string $user
-     * @param string $password
      * @throws \InvalidArgumentException
      * @noinspection DuplicatedCode
      */
     public function __construct(
-        $dbName,
-        $user,
-        $password
+        string $dbName,
+        string $user,
+        string $password
     ) {
         if (empty($dbName)) {
             throw new \InvalidArgumentException('DB name argument cannot be empty');
-        } elseif (!is_string($dbName)) {
-            throw new \InvalidArgumentException('DB name argument must be a string');
         }
         $this->dbName = $dbName;
         
         if (empty($user)) {
             throw new \InvalidArgumentException('DB user argument cannot be empty');
-        } elseif (!is_string($user)) {
-            throw new \InvalidArgumentException('DB user argument must be a string');
         }
         $this->dbUser = $user;
         
         if (empty($password)) {
             throw new \InvalidArgumentException('DB password argument cannot be empty');
-        } elseif (!is_string($password)) {
-            throw new \InvalidArgumentException('DB password argument must be a string');
         }
         $this->dbPassword = $password;
     }
     
     /**
      * Get PDO connection string (ex: pgsql:host=localhost;port=5432;dbname=testdb;user=bruce;password=mypass)
-     * @return string
      */
     public function getPdoConnectionString(): string
     {
@@ -103,56 +102,42 @@ class MysqlConfig implements DbConnectionConfigInterface
             $ret = 'mysql:unix_socket=' . $this->unixSocket;
         }
         $ret .= ';dbname=' . $this->dbName;
-        if ($this->charset !== null) {
+        if ($this->charset) {
             $ret .= ';charset=' . $this->charset;
         }
         return $ret;
     }
     
-    /**
-     * @return string
-     */
     public function getName(): string
     {
-        return $this->name ?: $this->dbName;
+        return $this->configName ?: $this->dbName;
     }
     
     /**
-     * @param string $name
      * @return static
      */
-    public function setName($name)
+    public function setName(string $name)
     {
-        $this->name = $name;
+        $this->configName = $name;
         return $this;
     }
     
-    /**
-     * @return string
-     */
     public function getUserName(): string
     {
         return $this->dbUser;
     }
     
-    /**
-     * @return string
-     */
     public function getUserPassword(): string
     {
         return $this->dbPassword;
     }
     
-    /**
-     * @return string
-     */
     public function getDbName(): string
     {
         return $this->dbName;
     }
     
     /**
-     * @param string $charset
      * @return static
      * @throws \InvalidArgumentException
      */
@@ -166,24 +151,18 @@ class MysqlConfig implements DbConnectionConfigInterface
     }
     
     /**
-     * @param string $dbHost
      * @return static
      * @throws \InvalidArgumentException
      */
-    public function setDbHost($dbHost)
+    public function setDbHost(string $dbHost)
     {
         if (empty($dbHost)) {
             throw new \InvalidArgumentException('DB host argument cannot be empty');
-        } elseif (!is_string($dbHost)) {
-            throw new \InvalidArgumentException('DB host argument must be a string');
         }
         $this->dbHost = $dbHost;
         return $this;
     }
     
-    /**
-     * @return null|string
-     */
     public function getDbHost(): string
     {
         return $this->dbHost;
@@ -196,8 +175,8 @@ class MysqlConfig implements DbConnectionConfigInterface
      */
     public function setDbPort($dbPort)
     {
-        if (!is_numeric($dbPort) || !ctype_digit((string)$dbPort)) {
-            throw new \InvalidArgumentException('DB port argument must be an integer number');
+        if ((int)$dbPort <= 0 || !ctype_digit($dbPort)) {
+            throw new \InvalidArgumentException('DB port argument must be a positive integer number or numeric string');
         }
         $this->dbPort = (string)$dbPort;
         return $this;
@@ -209,26 +188,21 @@ class MysqlConfig implements DbConnectionConfigInterface
     }
     
     /**
-     * @param string $unixSocket
      * @return static
      */
-    public function setUnixSocket($unixSocket)
+    public function setUnixSocket(string $unixSocket)
     {
         $this->unixSocket = $unixSocket;
         return $this;
     }
     
-    /**
-     * @return null|string
-     */
-    public function getUnixSocket()
+    public function getUnixSocket(): ?string
     {
         return $this->unixSocket;
     }
     
     /**
      * Set options for PDO connection (key-value)
-     * @param array $options
      * @return static
      */
     public function setOptions(array $options)
@@ -239,7 +213,6 @@ class MysqlConfig implements DbConnectionConfigInterface
     
     /**
      * GET options for PDO connection
-     * @return array
      */
     public function getOptions(): array
     {
@@ -247,7 +220,6 @@ class MysqlConfig implements DbConnectionConfigInterface
     }
     
     /**
-     * @param string|null $timezone
      * @return static
      */
     public function setTimezone(?string $timezone)
@@ -258,21 +230,17 @@ class MysqlConfig implements DbConnectionConfigInterface
     
     /**
      * Do some action on connect (set charset, default db schema, etc)
-     * @param \PDO $connection
      * @return static
      */
     public function onConnect(\PDO $connection)
     {
-        if (isset($this->timezone)) {
+        if ($this->timezone) {
             $connection->prepare('set time_zone="' . $this->timezone . '"')
                 ->execute();
         }
         return $this;
     }
     
-    /**
-     * @return string|null
-     */
     public function getDefaultSchemaName(): ?string
     {
         return null;

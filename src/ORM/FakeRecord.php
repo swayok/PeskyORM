@@ -9,8 +9,8 @@ use Swayok\Utils\StringUtils;
 abstract class FakeRecord extends Record
 {
     
-    private static $fakesCreated = 0;
-    protected static $table;
+    private static int $fakesCreated = 0;
+    protected static TableInterface $table;
     
     /**
      * @return TableInterface

@@ -1,4 +1,5 @@
-<?php declare(strict_types=1);
+<?php
+declare(strict_types=1);
 /*
  * This file is part of PHPUnit.
  *
@@ -7,6 +8,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace PeskyORM\Tests\PeskyORMTest;
 
 use ArrayObject;
@@ -31,22 +33,16 @@ use function var_export;
  */
 final class ArraySubset extends Constraint
 {
-    /**
-     * @var iterable
-     */
-    private $subset;
-
-    /**
-     * @var bool
-     */
-    private $strict;
-
+    
+    private iterable $subset;
+    private bool $strict;
+    
     public function __construct(iterable $subset, bool $strict = false)
     {
         $this->strict = $strict;
         $this->subset = $subset;
     }
-
+    
     /**
      * Evaluates the constraint for parameter $other.
      *
@@ -64,22 +60,22 @@ final class ArraySubset extends Constraint
     {
         //type cast $other & $this->subset as an array to allow
         //support in standard array functions.
-        $other        = $this->toArray($other);
+        $other = $this->toArray($other);
         $this->subset = $this->toArray($this->subset);
-
+        
         $patched = array_replace_recursive($other, $this->subset);
-
+        
         if ($this->strict) {
             $result = $other === $patched;
         } else {
             /** @noinspection TypeUnsafeComparisonInspection */
             $result = $other == $patched;
         }
-
+        
         if ($returnResult) {
             return $result;
         }
-
+        
         if (!$result) {
             $f = new ComparisonFailure(
                 $patched,
@@ -87,12 +83,12 @@ final class ArraySubset extends Constraint
                 var_export($patched, true),
                 var_export($other, true)
             );
-
+            
             $this->fail($other, $description, $f);
         }
         return null;
     }
-
+    
     /**
      * Returns a string representation of the constraint.
      *
@@ -102,7 +98,7 @@ final class ArraySubset extends Constraint
     {
         return 'has the subset ' . $this->exporter()->export($this->subset);
     }
-
+    
     /**
      * Returns the description of the failure.
      *
@@ -117,22 +113,22 @@ final class ArraySubset extends Constraint
     {
         return 'an array ' . $this->toString();
     }
-
+    
     private function toArray(iterable $other): array
     {
         if (is_array($other)) {
             return $other;
         }
-
+        
         if ($other instanceof ArrayObject) {
             return $other->getArrayCopy();
         }
-
+        
         if ($other instanceof Traversable) {
             return iterator_to_array($other);
         }
-
+        
         // Keep BC even if we know that array would not be the expected one
-        return (array) $other;
+        return (array)$other;
     }
 }

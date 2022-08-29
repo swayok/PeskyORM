@@ -13,22 +13,13 @@ use Swayok\Utils\StringUtils;
 class ClassBuilder
 {
     
-    /**
-     * @var string
-     */
-    protected $tableName;
-    /**
-     * @var
-     */
-    protected $dbSchemaName;
-    /**
-     * @var DbAdapterInterface
-     */
-    protected $connection;
-    /**
-     * @var TableDescription
-     */
-    protected $tableDescription;
+    protected string $tableName;
+    protected DbAdapterInterface $connection;
+    
+    protected ?string $dbSchemaName = null;
+    protected ?TableDescription $tableDescription = null;
+    
+    private ?array $typeValueToTypeConstantName = null;
     
     public function __construct(string $tableName, DbAdapterInterface $connection)
     {
@@ -298,8 +289,6 @@ VIEW;
         }
         return $ret;
     }
-    
-    private $typeValueToTypeConstantName;
     
     /**
      * @param string $columnTypeValue - like 'string', 'integer', etc..

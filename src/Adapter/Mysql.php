@@ -19,7 +19,7 @@ class Mysql extends DbAdapter
     
     public const ENTITY_NAME_QUOTES = '`';
     
-    protected static $dataTypesMap = [
+    protected static array $dataTypesMap = [
         'bytea' => 'BINARY',
         'date' => 'DATE',
         'time' => 'TIME',
@@ -39,7 +39,7 @@ class Mysql extends DbAdapter
         'bigint' => 'SIGNED INTEGER',
     ];
     
-    protected static $conditionOperatorsMap = [
+    protected static array $conditionOperatorsMap = [
         'SIMILAR TO' => 'LIKE',
         'NOT SIMILAR TO' => 'NOT LIKE',
         '~' => 'REGEXP',
@@ -50,7 +50,7 @@ class Mysql extends DbAdapter
         'NOT REGEX' => 'NOT REGEXP',
     ];
     
-    protected static $dbTypeToOrmType = [
+    protected static array $dbTypeToOrmType = [
         'bool' => Column::TYPE_BOOL,
         'blob' => Column::TYPE_BLOB,
         'tinyblob' => Column::TYPE_BLOB,

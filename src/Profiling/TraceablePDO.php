@@ -12,11 +12,10 @@ use PDO;
 class TraceablePDO extends PDO
 {
     
-    /** @var PDO */
-    protected $pdo;
+    protected PDO $pdo;
     
     /** @var TracedStatement[] */
-    protected $executedStatements = [];
+    protected array $executedStatements = [];
     
     /**
      * @param PDO $pdo

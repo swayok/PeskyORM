@@ -13,39 +13,17 @@ use PeskyORM\Core\Utils;
 class OrmSelect extends AbstractSelect
 {
     
-    /**
-     * @var TableInterface
-     */
-    protected $table;
-    /**
-     * @var string
-     */
-    protected $tableAlias;
-    /**
-     * @var TableStructure
-     */
-    protected $tableStructure;
+    protected TableInterface $table;
+    protected string $tableAlias;
+    protected TableStructureInterface $tableStructure;
     /**
      * DB Record class (when null - $this->table->newRecord() will be used in $this->getNewRecord())
-     * @var string|null
      */
-    protected $recordClass;
-    /**
-     * @var array
-     */
-    protected $columnsToSelectFromJoinedRelations = [];
-    /**
-     * @var array
-     */
-    protected $joinNameToRelationName = [];
-    /**
-     * @var array
-     */
-    protected $joinedRelationsParents = [];
-    /**
-     * @var array
-     */
-    protected $joinsAddedByRelations = [];
+    protected ?string $recordClass = null;
+    protected array $columnsToSelectFromJoinedRelations = [];
+    protected array $joinNameToRelationName = [];
+    protected array $joinedRelationsParents = [];
+    protected array $joinsAddedByRelations = [];
     
     /**
      * @param TableInterface $table
@@ -63,8 +41,8 @@ class OrmSelect extends AbstractSelect
      */
     public function __construct(TableInterface $table, ?string $tableAlias = null)
     {
-        $this->tableStructure = $table::getStructure();
         $this->table = $table;
+        $this->tableStructure = $table::getStructure();
         $this->setTableAlias($tableAlias ?: $this->getTable()->getAlias());
     }
     
@@ -113,7 +91,7 @@ class OrmSelect extends AbstractSelect
         return $this->recordClass ? new $this->recordClass() : $this->table->newRecord();
     }
     
-    public function getTableStructure(): TableStructure
+    public function getTableStructure(): TableStructureInterface
     {
         return $this->tableStructure;
     }
@@ -142,7 +120,7 @@ class OrmSelect extends AbstractSelect
     public function getCountQuery(bool $ignoreLeftJoins = true): string
     {
         if ($this->distinct) {
-            $pkColumnName = $this->tableStructure->getPkColumnName();
+            $pkColumnName = $this->tableStructure::getPkColumnName();
             if (empty($this->distinctColumns) || in_array($pkColumnName, $this->distinctColumns, true)) {
                 $columnInfo = $this->analyzeColumnName($pkColumnName);
             } else {

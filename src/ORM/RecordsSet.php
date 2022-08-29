@@ -9,30 +9,23 @@ use PeskyORM\Core\DbExpr;
 class RecordsSet extends RecordsArray
 {
     
-    /**
-     * @var OrmSelect
-     */
-    protected $select;
+    protected OrmSelect $select;
     /**
      * Count of records affected by LIMIT and OFFSET
      * null - not counted
-     * @var null|int
      */
-    protected $recordsCount = null;
+    protected ?int $recordsCount = null;
     /**
      * Count of records not affected by LIMIT and OFFSET
      * null - not counted
-     * @var null|int
      */
-    protected $recordsCountTotal = null;
+    protected ?int $recordsCountTotal = null;
     /**
      * @var array[] - keys: relation names; values: arrays ['relation' => Relation; 'columns' => array]
      */
-    protected $hasManyRelationsToInject = [];
-    /**
-     * @var bool
-     */
-    protected $ignoreLeftJoinsForCount = false;
+    protected array $hasManyRelationsToInject = [];
+    
+    protected bool $ignoreLeftJoinsForCount = false;
     
     /**
      * @param TableInterface $table
@@ -41,8 +34,12 @@ class RecordsSet extends RecordsArray
      * @param bool $trustDataReceivedFromDb
      * @return RecordsArray
      */
-    public static function createFromArray(TableInterface $table, array $records, ?bool $isFromDb = null, bool $trustDataReceivedFromDb = false)
-    {
+    public static function createFromArray(
+        TableInterface $table,
+        array $records,
+        ?bool $isFromDb = null,
+        bool $trustDataReceivedFromDb = false
+    ) {
         return new RecordsArray($table, $records, $isFromDb, $trustDataReceivedFromDb);
     }
     
@@ -92,7 +89,7 @@ class RecordsSet extends RecordsArray
             'relation' => $relation,
             'columns' => $columnsToSelect,
         ];
-        if (is_array($this->records)) {
+        if ($this->records) {
             parent::injectHasManyRelationDataIntoRecords($relation, $columnsToSelect);
         }
     }
@@ -213,7 +210,7 @@ class RecordsSet extends RecordsArray
         }
         $this->select->offset($newOffset);
         $this->recordsCount = null;
-        $this->records = null;
+        $this->records = [];
         return $this;
     }
     

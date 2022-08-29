@@ -11,23 +11,15 @@ use Swayok\Utils\StringUtils;
 abstract class FakeTable extends Table
 {
     
-    protected $tableName;
-    /** @var FakeTableStructure */
-    protected $tableStructure;
-    /** @var TableStructureInterface */
-    protected $tableStructureToCopy;
-    protected $recordClass;
-    /** @var DbAdapterInterface */
-    protected $connection;
+    protected string $tableName;
+    protected ?FakeTableStructure $tableStructure = null;
+    protected ?TableStructureInterface $tableStructureToCopy = null;
+    protected ?string $recordClass = null;
+    protected ?DbAdapterInterface $connection = null;
     
-    private static $fakesCreated = 0;
+    private static int $fakesCreated = 0;
     
-    /**
-     * @param TableInterface $tableToMimic
-     * @param string $fakeTableName
-     * @return FakeTable
-     */
-    public static function mimicTable(TableInterface $tableToMimic, $fakeTableName)
+    public static function mimicTable(TableInterface $tableToMimic, string $fakeTableName): FakeTable
     {
         $reflection = new \ReflectionClass($tableToMimic);
         return static::makeNewFakeTable(

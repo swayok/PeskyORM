@@ -7,9 +7,9 @@ namespace PeskyORM\ORM;
 class TempRecord implements RecordInterface
 {
     
-    protected $data = [];
-    protected $existsInDb = false;
-    protected $tableName;
+    protected array $data = [];
+    protected bool $existsInDb = false;
+    protected ?string $tableName = null;
     
     public static function newEmptyRecord(): TempRecord
     {

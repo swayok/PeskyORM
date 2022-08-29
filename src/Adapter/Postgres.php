@@ -26,7 +26,7 @@ class Postgres extends DbAdapter
     public const TRANSACTION_TYPE_SERIALIZABLE = 'SERIALIZABLE';
     public const TRANSACTION_TYPE_DEFAULT = self::TRANSACTION_TYPE_READ_COMMITTED;
     
-    public static $transactionTypes = [
+    public static array $transactionTypes = [
         self::TRANSACTION_TYPE_READ_COMMITTED,
         self::TRANSACTION_TYPE_REPEATABLE_READ,
         self::TRANSACTION_TYPE_SERIALIZABLE,
@@ -39,10 +39,7 @@ class Postgres extends DbAdapter
     
     public const NO_LIMIT = 'ALL';
     
-    /**
-     * @var array
-     */
-    protected static $dbTypeToOrmType = [
+    protected static array $dbTypeToOrmType = [
         'bool' => Column::TYPE_BOOL,
         'bytea' => Column::TYPE_BLOB,
         'bit' => Column::TYPE_BLOB,
@@ -111,14 +108,11 @@ class Postgres extends DbAdapter
      * @var bool - false: transaction queries like BEGIN TRANSACTION, COMMIT and ROLLBACK will not be remembered
      * into $this->lastQuery
      */
-    public $rememberTransactionQueries = false;
+    public bool $rememberTransactionQueries = false;
     
-    /**
-     * @var bool
-     */
-    protected $inTransaction = false;
+    protected bool $inTransaction = false;
     
-    protected static $conditionOperatorsMap = [
+    protected static array $conditionOperatorsMap = [
         'REGEXP' => '~*',
         'NOT REGEXP' => '!~*',
         'REGEX' => '~*',
