@@ -21,13 +21,10 @@ class MysqlConfig implements DbConnectionConfigInterface
     protected ?string $timezone = null;
     
     /**
-     * @param array $config
-     * @param string|null $name
-     * @return static
      * @throws \InvalidArgumentException
      * @noinspection DuplicatedCode
      */
-    public static function fromArray(array $config, ?string $name = null)
+    public static function fromArray(array $config, ?string $name = null): MysqlConfig
     {
         $dbName = $config['database'] ?? null;
         $user = $config['username'] ?? null;
@@ -113,10 +110,7 @@ class MysqlConfig implements DbConnectionConfigInterface
         return $this->configName ?: $this->dbName;
     }
     
-    /**
-     * @return static
-     */
-    public function setName(string $name)
+    public function setName(string $name): MysqlConfig
     {
         $this->configName = $name;
         return $this;
@@ -138,10 +132,9 @@ class MysqlConfig implements DbConnectionConfigInterface
     }
     
     /**
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setCharset(string $charset)
+    public function setCharset(string $charset): MysqlConfig
     {
         if (empty($charset)) {
             throw new \InvalidArgumentException('DB charset argument cannot be empty');
@@ -151,10 +144,9 @@ class MysqlConfig implements DbConnectionConfigInterface
     }
     
     /**
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setDbHost(string $dbHost)
+    public function setDbHost(string $dbHost): MysqlConfig
     {
         if (empty($dbHost)) {
             throw new \InvalidArgumentException('DB host argument cannot be empty');
@@ -170,12 +162,11 @@ class MysqlConfig implements DbConnectionConfigInterface
     
     /**
      * @param string|int $dbPort
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setDbPort($dbPort)
+    public function setDbPort($dbPort): MysqlConfig
     {
-        if ((int)$dbPort <= 0 || !ctype_digit($dbPort)) {
+        if ((int)$dbPort <= 0 || !is_numeric($dbPort)) {
             throw new \InvalidArgumentException('DB port argument must be a positive integer number or numeric string');
         }
         $this->dbPort = (string)$dbPort;
@@ -187,10 +178,7 @@ class MysqlConfig implements DbConnectionConfigInterface
         return $this->dbPort;
     }
     
-    /**
-     * @return static
-     */
-    public function setUnixSocket(string $unixSocket)
+    public function setUnixSocket(string $unixSocket): MysqlConfig
     {
         $this->unixSocket = $unixSocket;
         return $this;
@@ -203,9 +191,8 @@ class MysqlConfig implements DbConnectionConfigInterface
     
     /**
      * Set options for PDO connection (key-value)
-     * @return static
      */
-    public function setOptions(array $options)
+    public function setOptions(array $options): MysqlConfig
     {
         $this->options = $options;
         return $this;
@@ -219,10 +206,7 @@ class MysqlConfig implements DbConnectionConfigInterface
         return $this->options;
     }
     
-    /**
-     * @return static
-     */
-    public function setTimezone(?string $timezone)
+    public function setTimezone(?string $timezone): MysqlConfig
     {
         $this->timezone = $timezone;
         return $this;
@@ -230,12 +214,12 @@ class MysqlConfig implements DbConnectionConfigInterface
     
     /**
      * Do some action on connect (set charset, default db schema, etc)
-     * @return static
      */
-    public function onConnect(\PDO $connection)
+    public function onConnect(\PDO $connection): MysqlConfig
     {
         if ($this->timezone) {
-            $connection->prepare('set time_zone="' . $this->timezone . '"')
+            $connection
+                ->prepare('set time_zone="' . $this->timezone . '"')
                 ->execute();
         }
         return $this;
@@ -248,9 +232,8 @@ class MysqlConfig implements DbConnectionConfigInterface
     
     /**
      * @param string|array $defaultSchemaName
-     * @return static
      */
-    public function setDefaultSchemaName($defaultSchemaName)
+    public function setDefaultSchemaName($defaultSchemaName): MysqlConfig
     {
         return $this;
     }

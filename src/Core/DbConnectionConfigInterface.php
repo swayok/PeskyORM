@@ -7,91 +7,52 @@ namespace PeskyORM\Core;
 interface DbConnectionConfigInterface
 {
     
-    /**
-     * @param array $config
-     * @param string|null $name
-     * @return static
-     */
-    public static function fromArray(array $config, ?string $name = null);
+    public static function fromArray(array $config, ?string $name = null): DbConnectionConfigInterface;
     
     /**
      * Get PDO connection string (ex: pgsql:host=localhost;port=5432;dbname=testdb;user=bruce;password=mypass)
-     * @return string
      */
     public function getPdoConnectionString(): string;
     
     /**
      * Connection name (Default: DB name)
-     * @return string
      */
     public function getName(): string;
     
-    /**
-     * @return string
-     */
     public function getDbName(): string;
     
-    /**
-     * @return string
-     */
     public function getDbHost(): string;
     
-    /**
-     * @return string
-     */
     public function getDbPort(): string;
     
-    /**
-     * @return string
-     */
     public function getUserName(): string;
     
-    /**
-     * @return string
-     */
     public function getUserPassword(): string;
     
     /**
      * Set options for PDO connection (key-value)
-     * @param array $options
-     * @return static
      */
-    public function setOptions(array $options);
+    public function setOptions(array $options): DbConnectionConfigInterface;
     
     /**
      * GET options for PDO connection
-     * @return array
      */
     public function getOptions(): array;
     
-    /**
-     * @param string $charset
-     * @return static
-     */
-    public function setCharset(string $charset);
+    public function setCharset(string $charset): DbConnectionConfigInterface;
     
-    /**
-     * @param string|null $timezone
-     * @return static
-     */
-    public function setTimezone(?string $timezone);
+    public function setTimezone(?string $timezone): DbConnectionConfigInterface;
     
-    /**
-     * @return string|null
-     */
     public function getDefaultSchemaName(): ?string;
     
     /**
      * @param string|array $defaultSchemaName
-     * @return static
      */
-    public function setDefaultSchemaName($defaultSchemaName);
+    public function setDefaultSchemaName($defaultSchemaName): DbConnectionConfigInterface;
     
     /**
      * Do some action on connect (set charset, default db schema, etc)
-     * @param \PDO $connection
-     * @return static
      */
-    public function onConnect(\PDO $connection);
+    public function onConnect(\PDO $connection): DbConnectionConfigInterface;
     
 }

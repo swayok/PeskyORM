@@ -29,6 +29,7 @@
     },
     "require": {
         "php": ">=7.4.0",
+        "ext-pdo": "*",
         "swayok/utils": "^1.7",
         "symfony/http-foundation": ">=3.0",
         "nesbot/carbon": "^2.0.0"

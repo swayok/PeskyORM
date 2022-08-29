@@ -29,11 +29,10 @@ class PostgresConfig implements DbConnectionConfigInterface
     protected array $sslConfigs = [];
     
     /**
-     * @return static
      * @throws \InvalidArgumentException
      * @noinspection DuplicatedCode
      */
-    public static function fromArray(array $config, ?string $name = null)
+    public static function fromArray(array $config, ?string $name = null): PostgresConfig
     {
         $dbName = $config['database'] ?? null;
         $user = $config['username'] ?? null;
@@ -120,10 +119,7 @@ class PostgresConfig implements DbConnectionConfigInterface
         return $this->configName ?: $this->dbName;
     }
     
-    /**
-     * @return static
-     */
-    public function setName(string $name)
+    public function setName(string $name): PostgresConfig
     {
         $this->configName = $name;
         return $this;
@@ -145,10 +141,9 @@ class PostgresConfig implements DbConnectionConfigInterface
     }
     
     /**
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setDbHost(string $dbHost)
+    public function setDbHost(string $dbHost): PostgresConfig
     {
         if (empty($dbHost)) {
             throw new \InvalidArgumentException('DB host argument cannot be empty');
@@ -164,12 +159,11 @@ class PostgresConfig implements DbConnectionConfigInterface
     
     /**
      * @param int|string $dbPort
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setDbPort($dbPort)
+    public function setDbPort($dbPort): PostgresConfig
     {
-        if ((int)$dbPort <= 0 || !ctype_digit($dbPort)) {
+        if ((int)$dbPort <= 0 || !is_numeric($dbPort)) {
             throw new \InvalidArgumentException('DB port argument must be a positive integer number or numeric string');
         }
         $this->dbPort = (string)$dbPort;
@@ -183,9 +177,8 @@ class PostgresConfig implements DbConnectionConfigInterface
     
     /**
      * Set options for PDO connection (key-value)
-     * @return static
      */
-    public function setOptions(array $options)
+    public function setOptions(array $options): PostgresConfig
     {
         $this->options = $options;
         return $this;
@@ -206,9 +199,8 @@ class PostgresConfig implements DbConnectionConfigInterface
     
     /**
      * @param string|array $defaultSchemaName
-     * @return static
      */
-    public function setDefaultSchemaName($defaultSchemaName)
+    public function setDefaultSchemaName($defaultSchemaName): PostgresConfig
     {
         if (is_array($defaultSchemaName)) {
             $this->defaultSchemaName = array_values($defaultSchemaName)[0];
@@ -220,10 +212,9 @@ class PostgresConfig implements DbConnectionConfigInterface
     }
     
     /**
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setCharset(string $charset)
+    public function setCharset(string $charset): PostgresConfig
     {
         if (empty($charset)) {
             throw new \InvalidArgumentException('DB charset argument cannot be empty');
@@ -232,10 +223,7 @@ class PostgresConfig implements DbConnectionConfigInterface
         return $this;
     }
     
-    /**
-     * @return static
-     */
-    public function setTimezone(?string $timezone)
+    public function setTimezone(?string $timezone): PostgresConfig
     {
         $this->timezone = $timezone;
         return $this;
@@ -243,9 +231,8 @@ class PostgresConfig implements DbConnectionConfigInterface
     
     /**
      * Do some action on connect (set charset, default db schema, etc)
-     * @return static
      */
-    public function onConnect(PDO $connection)
+    public function onConnect(PDO $connection): PostgresConfig
     {
         $connection->prepare("SET NAMES '{$this->charset}'")
             ->execute();
