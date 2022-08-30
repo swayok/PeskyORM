@@ -436,6 +436,20 @@ class Postgres extends DbAdapter
                 $value = is_array($value) ? json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE) : $value;
                 return $this->quoteValue($value) . '::jsonb';
             }
+        } elseif (!is_object($value) && in_array($operator, ['?|', '??|', '?&', '??&'])) {
+            // value must be converted to 'array[value]' or 'array[subvalue1, subvalue2]'
+            if (!is_array($value)) {
+                $value = [$value];
+            }
+            if ($valueAlreadyQuoted) {
+                $quoted = $value;
+            } else {
+                $quoted = [];
+                foreach ($value as $subValue) {
+                    $quoted[] = $this->quoteValue($subValue);
+                }
+            }
+            return 'array[' . implode(', ', $quoted) . ']';
         } else {
             return parent::assembleConditionValue($value, $operator, $valueAlreadyQuoted);
         }
@@ -443,31 +457,11 @@ class Postgres extends DbAdapter
     
     public function assembleCondition(string $quotedColumn, string $operator, $rawValue, bool $valueAlreadyQuoted = false): string
     {
-        // jsonb opertaors - '?', '?|' or '?&' interfere with prepared PDO statements that use '?' to insert values
-        // so it is impossible to use this operators directly. We need to use workarounds
+        // jsonb operators - '?', '?|' or '?&' interfere with prepared PDO statements that use '?' to insert values
+        // so it is impossible to use this operators without modification
         if (in_array($operator, ['?', '?|', '?&'], true)) {
-            if (PHP_MAJOR_VERSION === 7 && PHP_MINOR_VERSION >= 4) {
-                // escape operators to be ??, ??|, ??& (available since php 7.4.0)
-                return parent::assembleCondition($quotedColumn, '?' . $operator, $rawValue, $valueAlreadyQuoted);
-            } elseif ($operator === '?') {
-                $value = $this->assembleConditionValue($rawValue, $operator, $valueAlreadyQuoted);
-                return "jsonb_exists($quotedColumn, $value)";
-            } else {
-                if (!is_array($rawValue)) {
-                    $rawValue = [$valueAlreadyQuoted ? $rawValue : $this->quoteValue($rawValue)];
-                } else {
-                    foreach ($rawValue as &$localValue) {
-                        $localValue = $valueAlreadyQuoted ? $localValue : $this->quoteValue($localValue);
-                    }
-                    unset($localValue);
-                }
-                $values = implode(', ', $rawValue);
-                if ($operator === '?|') {
-                    return "jsonb_exists_any($quotedColumn, array[$values])";
-                } else {
-                    return "jsonb_exists_all($quotedColumn, array[$values])";
-                }
-            }
+            // escape operators to be ??, ??|, ??& (available since php 7.4.0)
+            return parent::assembleCondition($quotedColumn, '?' . $operator, $rawValue, $valueAlreadyQuoted);
         } else {
             return parent::assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted);
         }

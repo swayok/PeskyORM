@@ -677,43 +677,43 @@ class PostgresAdapterHelpersTest extends BaseTestCase
             $adapter->assembleCondition($column, '<@', 'test', true)
         );
         static::assertEquals(
-            "jsonb_exists({$column}, " . $adapter->assembleConditionValue('test', '?') . ')',
+            "{$column} ?? " . $adapter->assembleConditionValue('test', '?'),
             $adapter->assembleCondition($column, '?', 'test')
         );
         static::assertEquals(
-            "jsonb_exists({$column}, " . $adapter->assembleConditionValue('test', '?', true) . ')',
+            "{$column} ?? " . $adapter->assembleConditionValue('test', '?', true),
             $adapter->assembleCondition($column, '?', 'test', true)
         );
         static::assertEquals(
-            "jsonb_exists_any({$column}, array[" . $adapter->quoteValue('test') . '])',
+            "{$column} ??| array[" . $adapter->quoteValue('test') . ']',
             $adapter->assembleCondition($column, '?|', 'test')
         );
         static::assertEquals(
-            "jsonb_exists_any({$column}, array[test])",
+            "{$column} ??| array[test]",
             $adapter->assembleCondition($column, '?|', 'test', true)
         );
         static::assertEquals(
-            "jsonb_exists_any({$column}, array[" . $adapter->quoteValue('test1') . ', ' . $adapter->quoteValue('test2') . '])',
+            "{$column} ??| array[" . $adapter->quoteValue('test1') . ', ' . $adapter->quoteValue('test2') . ']',
             $adapter->assembleCondition($column, '?|', ['test1', 'test2'])
         );
         static::assertEquals(
-            "jsonb_exists_any({$column}, array[test1, test2])",
+            "{$column} ??| array[test1, test2]",
             $adapter->assembleCondition($column, '?|', ['test1', 'test2'], true)
         );
         static::assertEquals(
-            "jsonb_exists_all({$column}, array[" . $adapter->quoteValue('test') . '])',
+            "{$column} ??& array[" . $adapter->quoteValue('test') . ']',
             $adapter->assembleCondition($column, '?&', 'test')
         );
         static::assertEquals(
-            "jsonb_exists_all({$column}, array[test])",
+            "{$column} ??& array[test]",
             $adapter->assembleCondition($column, '?&', 'test', true)
         );
         static::assertEquals(
-            "jsonb_exists_all({$column}, array[" . $adapter->quoteValue('test1') . ', ' . $adapter->quoteValue('test2') . '])',
+            "{$column} ??& array[" . $adapter->quoteValue('test1') . ', ' . $adapter->quoteValue('test2') . ']',
             $adapter->assembleCondition($column, '?&', ['test1', 'test2'])
         );
         static::assertEquals(
-            "jsonb_exists_all({$column}, array[test1, test2])",
+            "{$column} ??& array[test1, test2]",
             $adapter->assembleCondition($column, '?&', ['test1', 'test2'], true)
         );
     }
