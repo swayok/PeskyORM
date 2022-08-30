@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace PeskyORM\ORM\KeyValueTableHelpers;
 
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Exception\InvalidDataException;
-use PeskyORM\ORM\Record;
 use PeskyORM\ORM\RecordInterface;
 use PeskyORM\ORM\Relation;
 use Swayok\Utils\NormalizeValue;
@@ -58,12 +56,8 @@ trait KeyValueTableHelpers
     
     /**
      * Make array that represents DB record and can be saved to DB
-     * @param string $key
-     * @param mixed $value
-     * @param mixed $foreignKeyValue
-     * @return array
      */
-    public static function makeDataForRecord(string $key, $value, $foreignKeyValue = null): array
+    public static function makeDataForRecord(string $key, mixed $value, float|int|string|null $foreignKeyValue = null): array
     {
         $record = [
             static::getKeysColumnName() => $key,
@@ -80,11 +74,7 @@ trait KeyValueTableHelpers
         return $record;
     }
     
-    /**
-     * @param mixed $value
-     * @return string|DbExpr
-     */
-    public static function encodeValue($value)
+    public static function encodeValue(mixed $value): DbExpr|string
     {
         if ($value instanceof DbExpr) {
             return $value;
@@ -96,13 +86,13 @@ trait KeyValueTableHelpers
     /**
      * Convert associative array to arrays that represent DB record and are ready for saving to DB
      * @param array $settingsAssoc - associative array of settings
-     * @param mixed $foreignKeyValue
+     * @param float|int|string|null $foreignKeyValue
      * @param array $additionalConstantValues - contains constant values for all records (for example: admin id)
      * @return array
      */
     public static function convertToDataForRecords(
         array $settingsAssoc,
-        $foreignKeyValue = null,
+        float|int|string|null $foreignKeyValue = null,
         array $additionalConstantValues = []
     ): array {
         $records = [];
@@ -117,8 +107,6 @@ trait KeyValueTableHelpers
     
     /**
      * Decode values for passed settings associative array
-     * @param array $settingsAssoc
-     * @return array
      */
     public static function decodeValues(array $settingsAssoc): array
     {
@@ -128,26 +116,17 @@ trait KeyValueTableHelpers
         return $settingsAssoc;
     }
     
-    /**
-     * @param string|array $encodedValue
-     * @return mixed
-     */
-    public static function decodeValue($encodedValue)
+    public static function decodeValue(array|string $encodedValue): mixed
     {
         return is_array($encodedValue) ? $encodedValue : json_decode($encodedValue, true);
     }
     
     /**
      * Update: added values decoding
-     * @param string|null|DbExpr $keysColumn
-     * @param string|null|DbExpr $valuesColumn
-     * @param array $conditions
-     * @param \Closure|null $configurator
-     * @return array
      */
     public static function selectAssoc(
-        $keysColumn = null,
-        $valuesColumn = null,
+        string|DbExpr|null $keysColumn = null,
+        string|DbExpr|null $valuesColumn = null,
         array $conditions = [],
         ?\Closure $configurator = null
     ): array {
@@ -163,8 +142,7 @@ trait KeyValueTableHelpers
     /**
      * Update existing value or create new one
      * @param array $data - must contain: key, foreign_key, value
-     * @return Record
-     * @throws InvalidDataException
+     * @throws \InvalidArgumentException
      */
     public static function updateOrCreateRecord(array $data): RecordInterface
     {
@@ -230,38 +208,41 @@ trait KeyValueTableHelpers
     
     /**
      * @param string $key
-     * @param mixed $foreignKeyValue - use null if there is no main foreign key column and
+     * @param float|int|string|null $foreignKeyValue - use null if there is no main foreign key column and
      *      getMainForeignKeyColumnName() method returns null
-     * @param mixed $default
+     * @param mixed|null $default
      * @param bool $ignoreEmptyValue
      *      - true: if value recorded to DB is empty - returns $default
      *      - false: returns any value from DB if it exists
      * @return mixed
      */
-    public static function getValue(string $key, $foreignKeyValue = null, $default = null, bool $ignoreEmptyValue = false)
-    {
+    public static function getValue(
+        string $key,
+        float|int|string|null $foreignKeyValue = null,
+        mixed $default = null,
+        bool $ignoreEmptyValue = false
+    ): mixed {
         return static::getFormattedValue($key, null, $foreignKeyValue, $default, $ignoreEmptyValue);
     }
     
     /**
      * @param string $key
      * @param string|null $format - get formatted version of value
-     * @param mixed $foreignKeyValue - use null if there is no main foreign key column and
+     * @param float|int|string|null $foreignKeyValue - use null if there is no main foreign key column and
      *      getMainForeignKeyColumnName() method returns null
-     * @param mixed|\Closure $default
+     * @param mixed|null $default
      * @param bool $ignoreEmptyValue
      *      - true: if value recorded to DB is empty - returns $default
      *      - false: returns any value from DB if it exists
      * @return mixed
-     * @throws \InvalidArgumentException
      */
     public static function getFormattedValue(
         string $key,
         ?string $format,
-        $foreignKeyValue = null,
-        $default = null,
+        float|int|string|null $foreignKeyValue = null,
+        mixed $default = null,
         bool $ignoreEmptyValue = false
-    ) {
+    ): mixed {
         $recordData = static::findRecordForKey($key, $foreignKeyValue);
         
         $defaultClosure = ($default instanceof \Closure)
@@ -293,21 +274,13 @@ trait KeyValueTableHelpers
         return static::selectOne('*', $conditions);
     }
     
-    /**
-     * @param array $recordData
-     * @param string $key
-     * @param string $format
-     * @param \Closure $defaultClosure
-     * @param bool $ignoreEmptyValue
-     * @return mixed
-     */
     protected static function getFormattedValueFromRecordData(
         array $recordData,
         string $key,
         string $format,
         \Closure $defaultClosure,
         bool $ignoreEmptyValue
-    ) {
+    ): mixed {
         /** @var KeyValueTableInterface $table */
         $table = static::getInstance();
         if ($table->getTableStructure()->hasColumn($key)) {
@@ -346,14 +319,14 @@ trait KeyValueTableHelpers
     }
     
     /**
-     * @param mixed $foreignKeyValue
+     * @param float|int|string|null $foreignKeyValue
      * @param bool $ignoreEmptyValues
      *      - true: return only not empty values stored in DB
      *      - false: return all values strored in db
      * @return array
      * @throws \InvalidArgumentException
      */
-    public static function getValuesForForeignKey($foreignKeyValue = null, bool $ignoreEmptyValues = false): array
+    public static function getValuesForForeignKey(float|int|string|null $foreignKeyValue = null, bool $ignoreEmptyValues = false): array
     {
         $conditions = [];
         /** @var KeyValueTableInterface $table */

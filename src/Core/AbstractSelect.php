@@ -31,7 +31,7 @@ abstract class AbstractSelect
     protected int $limit = 0;
     protected int $offset = 0;
     /**
-     * @var JoinInfo[]
+     * @var JoinInfo|OrmJoinInfo[]
      */
     protected array $joins = [];
     /**
@@ -70,9 +70,8 @@ abstract class AbstractSelect
      *      'OFFSET' - int >= 0
      *      'HAVING' - DbExpr,
      *      'JOINS' - array of JoinInfo
-     * @return static
      */
-    public function fromConfigsArray(array $conditionsAndOptions)
+    public function fromConfigsArray(array $conditionsAndOptions): static
     {
         $conditionsAndOptions = $this->normalizeConditionsAndOptionsArray($conditionsAndOptions);
         $this->parseNormalizedConfigsArray($conditionsAndOptions);
@@ -244,8 +243,7 @@ abstract class AbstractSelect
      */
     public function fetchExistence(bool $ignoreLeftJoins = true): bool
     {
-        return (int)$this->getConnection()
-                ->query($this->getExistenceQuery($ignoreLeftJoins), Utils::FETCH_VALUE) === 1;
+        return (int)$this->getConnection()->query($this->getExistenceQuery($ignoreLeftJoins), Utils::FETCH_VALUE) === 1;
     }
     
     public function fetchColumn(): array
@@ -253,21 +251,13 @@ abstract class AbstractSelect
         return $this->_fetch(Utils::FETCH_COLUMN);
     }
     
-    /**
-     * @param string|DbExpr $keysColumn
-     * @param string|DbExpr $valuesColumn
-     * @return array
-     */
-    public function fetchAssoc($keysColumn, $valuesColumn): array
+    public function fetchAssoc(DbExpr|string $keysColumn, DbExpr|string $valuesColumn): array
     {
         return $this->columns(['key' => $keysColumn, 'value' => $valuesColumn])
             ->_fetch(Utils::FETCH_KEY_PAIR);
     }
     
-    /**
-     * @return string|null|int
-     */
-    public function fetchValue(DbExpr $expression)
+    public function fetchValue(DbExpr $expression): mixed
     {
         return $this->columns([$expression])
             ->_fetch(Utils::FETCH_VALUE);
@@ -275,9 +265,8 @@ abstract class AbstractSelect
     
     /**
      * @param string $selectionType - one of PeskyORM\Core\Utils::FETCH_*
-     * @return array|string|null|int|bool
      */
-    protected function _fetch(string $selectionType)
+    protected function _fetch(string $selectionType): mixed
     {
         $data = $this->getConnection()
             ->query($this->getQuery(), $selectionType);
@@ -356,7 +345,6 @@ abstract class AbstractSelect
     
     /**
      * @param bool $ignoreLeftJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
-     * @return string
      */
     public function getCountQuery(bool $ignoreLeftJoins = true): string
     {
@@ -368,7 +356,6 @@ abstract class AbstractSelect
     
     /**
      * @param bool $ignoreLeftJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
-     * @return string
      */
     public function getExistenceQuery(bool $ignoreLeftJoins = true): string
     {
@@ -400,9 +387,8 @@ abstract class AbstractSelect
      *      ]
      *   ]
      * Note: all relations used here will be autoloaded
-     * @return static
      */
-    public function columns(...$columns)
+    public function columns(...$columns): static
     {
         $this->columnsRaw = $columns;
         $this->columns = [];
@@ -412,11 +398,8 @@ abstract class AbstractSelect
     
     /**
      * Set distinct flag to query (SELECT DISTINCT fields ...) or ((SELECT DISTINCT ON ($columns) fields)
-     * @param bool $value
-     * @param null|array $columns - list of columns to be disctinct
-     * @return static
      */
-    public function distinct(bool $value = true, ?array $columns = null)
+    public function distinct(bool $value = true, ?array $columns = null): static
     {
         $this->distinct = $value;
         $this->distinctColumns = [];
@@ -446,7 +429,7 @@ abstract class AbstractSelect
      * @throws \InvalidArgumentException
      * @see Utils::assembleWhereConditionsFromArray() for more details about operators and features
      */
-    public function where(array $conditions, bool $append = false)
+    public function where(array $conditions, bool $append = false): static
     {
         $this->where = $append ? array_merge($this->where, $conditions) : $conditions;
         $this->setDirty('where');
@@ -457,21 +440,20 @@ abstract class AbstractSelect
     /**
      * Add ORDER BY
      * @param string|DbExpr $columnName - 'field1', 'JoinName.field1', DbExpr::create('RAND()')
-     * @param bool|string|null $direction - 'ASC' or true; 'DESC' or false; Optional suffixes: 'NULLS LAST' or 'NULLS FIRST';
-     *      Ignored if $columnName instance of DbExpr
+     * @param bool|string $direction -
+     *      'ASC' or true;
+     *      'DESC' or false;
+     *      Optional suffixes: 'NULLS LAST' or 'NULLS FIRST';
+     *      Ignored if $columnName instance of DbExpr (use empty string as placeholder if requried)
      * @param bool $append - true: append to existing orders | false: replace existsing orders
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function orderBy($columnName, $direction = 'asc', bool $append = true)
+    public function orderBy(DbExpr|string $columnName, bool|string $direction = 'asc', bool $append = true): static
     {
         if (empty($columnName)) {
             throw new \InvalidArgumentException('$columnName argument cannot be empty');
         }
         $isDbExpr = $columnName instanceof DbExpr;
-        if (!is_string($columnName) && !$isDbExpr) {
-            throw new \InvalidArgumentException('$columnName argument must be a string or instance of DbExpr class');
-        }
         if (is_bool($direction)) {
             $direction = $direction ? 'asc' : 'desc';
         } elseif (!$isDbExpr && !preg_match('%^(asc|desc)(\s*(nulls)\s*(first|last))?$%i', $direction)) {
@@ -498,11 +480,7 @@ abstract class AbstractSelect
         return ($columnInfo['join_name'] ?: $this->getTableAlias()) . '.' . $columnInfo['name'];
     }
     
-    /**
-     * @param string|DbExpr $columnName
-     * @return bool
-     */
-    public function hasOrderingForColumn($columnName): bool
+    public function hasOrderingForColumn(DbExpr|string $columnName): bool
     {
         $columnInfo = $this->analyzeColumnName($columnName, null, null, 'ORDER BY');
         return isset($this->orderBy[$this->makeKeyForOrderBy($columnInfo)]);
@@ -510,9 +488,8 @@ abstract class AbstractSelect
     
     /**
      * Remove order by (used to speedup existence test)
-     * @return static
      */
-    public function removeOrdering()
+    public function removeOrdering(): static
     {
         $this->orderBy = [];
         $this->setDirty('orderBy');
@@ -523,10 +500,9 @@ abstract class AbstractSelect
      * Add GROUP BY
      * @param array $columns - can contain 'col1' and 'ModelAlias.col1', DbExpr::create('expression')
      * @param bool $append - true: append to existing groups | false: replace existsing groups
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function groupBy(array $columns, bool $append = true)
+    public function groupBy(array $columns, bool $append = true): static
     {
         if (!$append) {
             $this->groupBy = [];
@@ -549,12 +525,10 @@ abstract class AbstractSelect
     }
     
     /**
-     * Set LIMIT
-     * @param int $limit - 0 = no limit;
-     * @return static
+     * Set LIMIT (0 = no limit)
      * @throws \InvalidArgumentException
      */
-    public function limit(int $limit)
+    public function limit(int $limit): static
     {
         if ($limit < 0) {
             throw new \InvalidArgumentException('$limit argument must be an integer value >= 0');
@@ -565,9 +539,8 @@ abstract class AbstractSelect
     
     /**
      * Remove LIMIT
-     * @return static
      */
-    public function noLimit()
+    public function noLimit(): static
     {
         $this->limit(0);
         return $this;
@@ -579,12 +552,10 @@ abstract class AbstractSelect
     }
     
     /**
-     * Set/Remove OFFSET
-     * @param int $offset - 0 = no offset
-     * @return static
+     * Set/Remove OFFSET (0 = no offset)
      * @throws \InvalidArgumentException
      */
-    public function offset(int $offset)
+    public function offset(int $offset): static
     {
         if ($offset < 0) {
             throw new \InvalidArgumentException('$offset argument must be an integer value >= 0');
@@ -609,21 +580,15 @@ abstract class AbstractSelect
     }
     
     /**
-     * Set LIMIT and OFFSET at once
-     * @param int $limit - 0 = no limit;
-     * @param int $offset - 0 = no offset
-     * @return static
+     * Set LIMIT and OFFSET at once (0 = no limit / no offset)
      */
-    public function page(int $limit, int $offset = 0)
+    public function page(int $limit, int $offset = 0): static
     {
         return $this->limit($limit)
             ->offset($offset);
     }
     
-    /**
-     * @return static
-     */
-    public function having(array $conditions)
+    public function having(array $conditions): static
     {
         $this->having = $conditions;
         $this->setDirty('having');
@@ -636,7 +601,7 @@ abstract class AbstractSelect
      * @param bool $append
      * @return static
      */
-    public function with(AbstractSelect $select, string $selectAlias, bool $append = true)
+    public function with(AbstractSelect $select, string $selectAlias, bool $append = true): static
     {
         if (!$this->getConnection()
             ->isValidDbEntityName($selectAlias, false)) {
@@ -674,7 +639,7 @@ abstract class AbstractSelect
      * @return static
      * @throws \InvalidArgumentException
      */
-    protected function _join(AbstractJoinInfo $joinConfig, bool $append = true)
+    protected function _join(AbstractJoinInfo $joinConfig, bool $append = true): static
     {
         if (!$joinConfig->isValid()) {
             throw new \InvalidArgumentException("Join config with name '{$joinConfig->getJoinName()}' is not valid");
@@ -691,10 +656,9 @@ abstract class AbstractSelect
     }
     
     /**
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function crossJoin(CrossJoinInfo $joinConfig, bool $append = true)
+    public function crossJoin(CrossJoinInfo $joinConfig, bool $append = true): static
     {
         // @see CROSS JOIN docs for details
         if (!$joinConfig->isValid()) {
@@ -715,9 +679,8 @@ abstract class AbstractSelect
     
     /**
      * Set $subject as dirty
-     * @return static
      */
-    protected function setDirty(string $subject)
+    protected function setDirty(string $subject): static
     {
         if ($this->isDirty !== null) {
             $this->isDirty[] = $subject;
@@ -727,7 +690,6 @@ abstract class AbstractSelect
     
     /**
      * @param null|string $subject - null: any dirt? | string: is $subject dirty?
-     * @return bool
      */
     protected function isDirty(?string $subject = null): bool
     {
@@ -738,10 +700,7 @@ abstract class AbstractSelect
         }
     }
     
-    /**
-     * @return static
-     */
-    protected function notDirty()
+    protected function notDirty(): static
     {
         $this->isDirty = [];
         return $this;
@@ -758,10 +717,7 @@ abstract class AbstractSelect
         }
     }
     
-    /**
-     * @return static
-     */
-    protected function processRawColumns()
+    protected function processRawColumns(): static
     {
         $this->columnAliasToColumnInfo = [];
         $this->columns = $this->normalizeColumnsList($this->columnsRaw, null, true, 'SELECT');
@@ -813,7 +769,7 @@ abstract class AbstractSelect
      *    'join_name' => 'JoinName',
      *    'type_cast' => 'varchar',
      *  ]
-     * @param DbExpr|string $columnName
+     * @param string|DbExpr $columnName
      * @param string|null $columnAlias
      * @param string|null $joinName
      * @param string $errorsPrefix - prefix for error messages
@@ -821,16 +777,14 @@ abstract class AbstractSelect
      * @throws \InvalidArgumentException
      */
     protected function analyzeColumnName(
-        $columnName,
+        DbExpr|string $columnName,
         ?string $columnAlias = null,
         ?string $joinName = null,
         string $errorsPrefix = ''
     ): array {
         $errorsPrefix = trim($errorsPrefix) === '' ? '' : $errorsPrefix . ': ';
         $isDbExpr = $columnName instanceof DbExpr;
-        if (!is_string($columnName) && !$isDbExpr) {
-            throw new \InvalidArgumentException($errorsPrefix . '$columnName argument must be a string or instance of DbExpr class');
-        } elseif (!$isDbExpr && trim($columnName) === '') {
+        if (!$isDbExpr && trim($columnName) === '') {
             throw new \InvalidArgumentException($errorsPrefix . '$columnName argument is not allowed to be an empty string');
         }
         /** @var DbExpr|string $columnName */
@@ -1154,14 +1108,14 @@ abstract class AbstractSelect
     /**
      * Decide what to do if join name mentioned in columns list
      * @param string $joinName
-     * @param array|string $columns - string === '*' only
+     * @param string|array $columns - string === '*' only
      * @param string|null $parentJoinName
      * @param bool $appendColumnsToExisting - true: $columns will be appended | false: $columns will replace existing ones
      * @throws \UnexpectedValueException
      */
     protected function resolveColumnsToBeSelectedForJoin(
         string $joinName,
-        $columns,
+        string|array $columns,
         ?string $parentJoinName = null,
         bool $appendColumnsToExisting = false
     ): void {
@@ -1205,7 +1159,7 @@ abstract class AbstractSelect
      * @param string $subject - 'WHERE', 'HAVING', etc - the part of a query we are qouting the column for
      * @return string
      */
-    protected function columnQuoterForConditions($columnName, ?string $joinName, string $subject): string
+    protected function columnQuoterForConditions(DbExpr|string $columnName, ?string $joinName, string $subject): string
     {
         $columnInfo = $this->analyzeColumnName($columnName, null, $joinName, $subject);
         if (!empty($columnInfo['join_name']) && in_array($subject, ['WHERE', 'HAVING'], true)) {
@@ -1306,9 +1260,8 @@ abstract class AbstractSelect
      * Replace all WITH queries for this select. Used by main select to populate WITH queries among all WITH queries
      * so that there will be no problems building queries that depend on other WITH queries.
      * Make sure to remove current query from $withQueries so there will be no problems
-     * @return static
      */
-    protected function replaceWithQueries(array $withQueries)
+    protected function replaceWithQueries(array $withQueries): static
     {
         $this->with = $withQueries;
         $this->setDirty('with');
@@ -1571,7 +1524,6 @@ abstract class AbstractSelect
     }
     
     /**
-     * @return JoinInfo|OrmJoinInfo|CrossJoinInfo
      * @throws \UnexpectedValueException
      */
     protected function getJoin(string $joinName): AbstractJoinInfo

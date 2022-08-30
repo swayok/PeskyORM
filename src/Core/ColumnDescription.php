@@ -16,10 +16,7 @@ class ColumnDescription implements \Serializable
     protected ?int $limit = null;
     protected ?int $numberPrecision = null;
     protected bool $isNullable = true;
-    /**
-     * @var mixed
-     */
-    protected $default = null;
+    protected mixed $default = null;
     protected bool $isPrimaryKey = false;
     protected bool $isForeignKey = false;
     protected bool $isUnique = false;
@@ -46,12 +43,7 @@ class ColumnDescription implements \Serializable
         return $this->ormType;
     }
     
-    /**
-     * @param int|null $limit
-     * @param int|null $numberPrecision
-     * @return static
-     */
-    public function setLimitAndPrecision(?int $limit, ?int $numberPrecision = null)
+    public function setLimitAndPrecision(?int $limit, ?int $numberPrecision = null): static
     {
         $this->limit = $limit;
         if ($this->getOrmType() === Column::TYPE_FLOAT) {
@@ -75,29 +67,18 @@ class ColumnDescription implements \Serializable
         return $this->isNullable;
     }
     
-    /**
-     * @param boolean $isNullable
-     * @return static
-     */
-    public function setIsNullable(bool $isNullable)
+    public function setIsNullable(bool $isNullable): static
     {
         $this->isNullable = $isNullable;
         return $this;
     }
     
-    /**
-     * @return string|int|float|bool|DbExpr|null
-     */
-    public function getDefault()
+    public function getDefault(): DbExpr|float|bool|int|string|null
     {
         return $this->default;
     }
     
-    /**
-     * @param string|int|float|bool|DbExpr|null $default
-     * @return static
-     */
-    public function setDefault($default)
+    public function setDefault(DbExpr|float|bool|int|string|null $default): static
     {
         $this->default = $default;
         return $this;
@@ -108,11 +89,7 @@ class ColumnDescription implements \Serializable
         return $this->isPrimaryKey;
     }
     
-    /**
-     * @param boolean $isPrimaryKey
-     * @return static
-     */
-    public function setIsPrimaryKey(bool $isPrimaryKey)
+    public function setIsPrimaryKey(bool $isPrimaryKey): static
     {
         $this->isPrimaryKey = $isPrimaryKey;
         return $this;
@@ -123,11 +100,7 @@ class ColumnDescription implements \Serializable
         return $this->isForeignKey;
     }
     
-    /**
-     * @param boolean $isForeignKey
-     * @return static
-     */
-    public function setIsForeignKey(bool $isForeignKey)
+    public function setIsForeignKey(bool $isForeignKey): static
     {
         $this->isForeignKey = $isForeignKey;
         return $this;
@@ -138,11 +111,7 @@ class ColumnDescription implements \Serializable
         return $this->isUnique;
     }
     
-    /**
-     * @param bool $isUnique
-     * @return static
-     */
-    public function setIsUnique(bool $isUnique)
+    public function setIsUnique(bool $isUnique): static
     {
         $this->isUnique = $isUnique;
         return $this;
@@ -170,7 +139,7 @@ class ColumnDescription implements \Serializable
      * @since 5.1.0
      * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
-    public function unserialize($serialized): void
+    public function unserialize(string $serialized): void
     {
         $data = json_decode($serialized, true);
         if (!is_array($data)) {

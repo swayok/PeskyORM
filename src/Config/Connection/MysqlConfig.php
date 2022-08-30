@@ -161,10 +161,9 @@ class MysqlConfig implements DbConnectionConfigInterface
     }
     
     /**
-     * @param string|int $dbPort
      * @throws \InvalidArgumentException
      */
-    public function setDbPort($dbPort): MysqlConfig
+    public function setDbPort(int|string $dbPort): MysqlConfig
     {
         if (!is_numeric($dbPort) || !preg_match('%^\s*\d+\s*$%', (string)$dbPort)) {
             throw new \InvalidArgumentException('DB port argument must be a positive integer number or numeric string');
@@ -230,10 +229,7 @@ class MysqlConfig implements DbConnectionConfigInterface
         return null;
     }
     
-    /**
-     * @param string|array $defaultSchemaName
-     */
-    public function setDefaultSchemaName($defaultSchemaName): MysqlConfig
+    public function setDefaultSchemaName(string|array $defaultSchemaName): MysqlConfig
     {
         return $this;
     }

@@ -19,10 +19,10 @@ class Utils
      * Get data from $statement according to required $type
      * @param \PDOStatement $statement
      * @param string $type = one of \PeskyORM\Core\FETCH_*
-     * @return array|string|int|\PDOStatement|null
+     * @return mixed|\PDOStatement|null
      * @throws \InvalidArgumentException
      */
-    public static function getDataFromStatement(\PDOStatement $statement, string $type = self::FETCH_ALL)
+    public static function getDataFromStatement(\PDOStatement $statement, string $type = self::FETCH_ALL): mixed
     {
         $type = strtolower($type);
         if ($type === self::FETCH_STATEMENT) {
@@ -32,20 +32,14 @@ class Utils
         } elseif ($statement->rowCount() === 0) {
             return $type === self::FETCH_VALUE ? null : [];
         } else {
-            switch ($type) {
-                case self::FETCH_COLUMN:
-                    return $statement->fetchAll(\PDO::FETCH_COLUMN);
-                case self::FETCH_KEY_PAIR:
-                    return $statement->fetchAll(\PDO::FETCH_KEY_PAIR);
-                case self::FETCH_VALUE:
-                    return $statement->fetchColumn();
-                case self::FETCH_FIRST:
-                    return $statement->fetch(\PDO::FETCH_ASSOC);
-                case self::FETCH_ALL:
-                    return $statement->fetchAll(\PDO::FETCH_ASSOC);
-                default:
-                    throw new \InvalidArgumentException("Unknown processing type [{$type}]");
-            }
+            return match ($type) {
+                self::FETCH_COLUMN => $statement->fetchAll(\PDO::FETCH_COLUMN),
+                self::FETCH_KEY_PAIR => $statement->fetchAll(\PDO::FETCH_KEY_PAIR),
+                self::FETCH_VALUE => $statement->fetchColumn(),
+                self::FETCH_FIRST => $statement->fetch(\PDO::FETCH_ASSOC),
+                self::FETCH_ALL => $statement->fetchAll(\PDO::FETCH_ASSOC),
+                default => throw new \InvalidArgumentException("Unknown processing type [{$type}]"),
+            };
         }
     }
     
@@ -85,8 +79,6 @@ class Utils
      *      Note: $rawValue may be DbExpr or AbstractSelect instance but not any other object
      *      Note: $columnName usually is null when $rawValue is DbExpr or AbstractSelect instance
      * @return string
-     * @throws \UnexpectedValueException
-     * @throws \PDOException
      * @throws \InvalidArgumentException
      */
     public static function assembleWhereConditionsFromArray(
@@ -188,10 +180,6 @@ class Utils
     }
     
     /**
-     * @param DbAdapterInterface $connection
-     * @param string $columnName
-     * @param null|string $columnAlias
-     * @param null|string $joinName
      * @return array = [
      *      'name' => string,
      *      'alias' => ?string,
@@ -289,11 +277,6 @@ class Utils
         ];
     }
     
-    /**
-     * @param string $columnName
-     * @param DbAdapterInterface $connection
-     * @return string
-     */
     public static function analyzeAndQuoteColumnNameForCondition(string $columnName, DbAdapterInterface $connection): string
     {
         $columnInfo = static::analyzeColumnName($connection, $columnName, null, null);
@@ -308,13 +291,10 @@ class Utils
         return $columnName;
     }
     
-    /**
-     * @param mixed|DbExpr|AbstractSelect $rawValue
-     * @param DbAdapterInterface $connection
-     * @return mixed - in most cases it is string
-     */
-    public static function preprocessConditionValue($rawValue, DbAdapterInterface $connection)
-    {
+    public static function preprocessConditionValue(
+        int|float|bool|string|array|DbExpr|AbstractSelect|null $rawValue,
+        DbAdapterInterface $connection
+    ): int|float|bool|string|array|null {
         if ($rawValue instanceof DbExpr) {
             return $connection->quoteDbExpr($rawValue);
         } elseif ($rawValue instanceof AbstractSelect) {

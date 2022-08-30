@@ -158,10 +158,9 @@ class PostgresConfig implements DbConnectionConfigInterface
     }
     
     /**
-     * @param int|string $dbPort
      * @throws \InvalidArgumentException
      */
-    public function setDbPort($dbPort): PostgresConfig
+    public function setDbPort(int|string $dbPort): PostgresConfig
     {
         if (!is_numeric($dbPort) || !preg_match('%^\s*\d+\s*$%', (string)$dbPort)) {
             throw new \InvalidArgumentException('DB port argument must be a positive integer number or numeric string');
@@ -197,10 +196,7 @@ class PostgresConfig implements DbConnectionConfigInterface
         return $this->defaultSchemaName;
     }
     
-    /**
-     * @param string|array $defaultSchemaName
-     */
-    public function setDefaultSchemaName($defaultSchemaName): PostgresConfig
+    public function setDefaultSchemaName(string|array $defaultSchemaName): PostgresConfig
     {
         if (is_array($defaultSchemaName)) {
             $this->defaultSchemaName = array_values($defaultSchemaName)[0];

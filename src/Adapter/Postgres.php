@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\Adapter;
 
 use PeskyORM\Config\Connection\PostgresConfig;
+use PeskyORM\Core\AbstractSelect;
 use PeskyORM\Core\ColumnDescription;
 use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbExpr;
@@ -136,10 +137,7 @@ class Postgres extends DbAdapter
         parent::__construct($connectionConfig);
     }
     
-    /**
-     * @return static
-     */
-    public function disconnect()
+    public function disconnect(): static
     {
         try {
             $this->query('SELECT pg_terminate_backend(pg_backend_pid());');
@@ -162,19 +160,13 @@ class Postgres extends DbAdapter
             ->getDefaultSchemaName();
     }
     
-    /**
-     * @return static
-     */
-    public function setTimezone(string $timezone)
+    public function setTimezone(string $timezone): static
     {
         $this->exec(DbExpr::create("SET SESSION TIME ZONE ``$timezone``"));
         return $this;
     }
     
-    /**
-     * @return static
-     */
-    public function setSearchPath(string $newSearchPath)
+    public function setSearchPath(string $newSearchPath): static
     {
         $this->exec(DbExpr::create("SET search_path TO {$newSearchPath}"));
         return $this;
@@ -194,7 +186,7 @@ class Postgres extends DbAdapter
      * {@inheritDoc}
      * @throws \InvalidArgumentException
      */
-    public function begin(bool $readOnly = false, ?string $transactionType = null)
+    public function begin(bool $readOnly = false, ?string $transactionType = null): static
     {
         $this->guardTransaction('begin');
         if (empty($transactionType)) {
@@ -218,7 +210,7 @@ class Postgres extends DbAdapter
         return $this;
     }
     
-    public function commit()
+    public function commit(): static
     {
         $this->guardTransaction('commit');
         $lastQuery = $this->getLastQuery();
@@ -227,9 +219,10 @@ class Postgres extends DbAdapter
             $this->lastQuery = $lastQuery;
         }
         $this->inTransaction = false;
+        return $this;
     }
     
-    public function rollBack()
+    public function rollBack(): static
     {
         $this->guardTransaction('rollback');
         $lastQuery = $this->getLastQuery();
@@ -238,6 +231,7 @@ class Postgres extends DbAdapter
         if (!$this->rememberTransactionQueries) {
             $this->lastQuery = $lastQuery;
         }
+        return $this;
     }
     
     /**
@@ -250,7 +244,7 @@ class Postgres extends DbAdapter
         array $columns,
         array $data,
         array $dataTypes,
-        $returning,
+        bool|array $returning,
         ?string $pkName,
         string $operation
     ): array {
@@ -367,12 +361,9 @@ class Postgres extends DbAdapter
             : Column::TYPE_STRING;
     }
     
-    /**
-     * @param array|bool|DbExpr|float|int|string|string[]|null $default
-     * @return array|bool|DbExpr|float|int|string|string[]|null
-     */
-    protected function cleanDefaultValueForColumnDescription($default)
-    {
+    protected function cleanDefaultValueForColumnDescription(
+        DbExpr|float|array|bool|int|string|null $default
+    ): DbExpr|float|array|bool|int|string|null {
         if ($default === null || $default === '' || preg_match('%^NULL::%i', $default)) {
             return null;
         } elseif (preg_match(
@@ -421,8 +412,11 @@ class Postgres extends DbAdapter
         return implode('', $sequence);
     }
     
-    public function assembleConditionValue($value, string $operator, bool $valueAlreadyQuoted = false): string
-    {
+    public function assembleConditionValue(
+        string|int|float|bool|array|DbExpr|AbstractSelect|null $value,
+        string $operator,
+        bool $valueAlreadyQuoted = false
+    ): string {
         if (in_array($operator, ['@>', '<@'], true)) {
             if ($valueAlreadyQuoted) {
                 if (!is_string($value)) {
@@ -436,38 +430,36 @@ class Postgres extends DbAdapter
                 $value = is_array($value) ? json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE) : $value;
                 return $this->quoteValue($value) . '::jsonb';
             }
+        } elseif (!is_object($value) && in_array($operator, ['?|', '??|', '?&', '??&'])) {
+            // value must be converted to 'array[value]' or 'array[subvalue1, subvalue2]'
+            if (!is_array($value)) {
+                $value = [$value];
+            }
+            if ($valueAlreadyQuoted) {
+                $quoted = $value;
+            } else {
+                $quoted = [];
+                foreach ($value as $subValue) {
+                    $quoted[] = $this->quoteValue($subValue);
+                }
+            }
+            return 'array[' . implode(', ', $quoted) . ']';
         } else {
             return parent::assembleConditionValue($value, $operator, $valueAlreadyQuoted);
         }
     }
     
-    public function assembleCondition(string $quotedColumn, string $operator, $rawValue, bool $valueAlreadyQuoted = false): string
-    {
-        // jsonb opertaors - '?', '?|' or '?&' interfere with prepared PDO statements that use '?' to insert values
-        // so it is impossible to use this operators directly. We need to use workarounds
+    public function assembleCondition(
+        string $quotedColumn,
+        string $operator,
+        string|int|float|bool|array|DbExpr|AbstractSelect|null $rawValue,
+        bool $valueAlreadyQuoted = false
+    ): string {
+        // jsonb operators - '?', '?|' or '?&' interfere with prepared PDO statements that use '?' to insert values
+        // so it is impossible to use this operators without modification
         if (in_array($operator, ['?', '?|', '?&'], true)) {
-            if (PHP_MAJOR_VERSION === 7 && PHP_MINOR_VERSION >= 4) {
-                // escape operators to be ??, ??|, ??& (available since php 7.4.0)
-                return parent::assembleCondition($quotedColumn, '?' . $operator, $rawValue, $valueAlreadyQuoted);
-            } elseif ($operator === '?') {
-                $value = $this->assembleConditionValue($rawValue, $operator, $valueAlreadyQuoted);
-                return "jsonb_exists($quotedColumn, $value)";
-            } else {
-                if (!is_array($rawValue)) {
-                    $rawValue = [$valueAlreadyQuoted ? $rawValue : $this->quoteValue($rawValue)];
-                } else {
-                    foreach ($rawValue as &$localValue) {
-                        $localValue = $valueAlreadyQuoted ? $localValue : $this->quoteValue($localValue);
-                    }
-                    unset($localValue);
-                }
-                $values = implode(', ', $rawValue);
-                if ($operator === '?|') {
-                    return "jsonb_exists_any($quotedColumn, array[$values])";
-                } else {
-                    return "jsonb_exists_all($quotedColumn, array[$values])";
-                }
-            }
+            // escape operators to be ??, ??|, ??& (available since php 7.4.0)
+            return parent::assembleCondition($quotedColumn, '?' . $operator, $rawValue, $valueAlreadyQuoted);
         } else {
             return parent::assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted);
         }

@@ -44,4 +44,9 @@ class MysqlAdapterSelectDataTest extends PostgresAdapterSelectDataTest
         $select->with($withSelect, 'asdas as das das');
         static::assertTrue(true);
     }
+
+    public function testJsonSelects(): void
+    {
+        static::assertTrue(true);
+    }
 }

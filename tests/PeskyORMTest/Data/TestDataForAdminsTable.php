@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\Tests\PeskyORMTest\Data;
 
 use PeskyORM\Adapter\Mysql;
@@ -7,6 +9,7 @@ use PeskyORM\Adapter\Postgres;
 
 trait TestDataForAdminsTable
 {
+    
     protected function getTestDataForAdminsTableInsert(): array
     {
         return [
@@ -26,7 +29,7 @@ trait TestDataForAdminsTable
                 'name' => 'Lionel Freeman',
                 'email' => 'diam.at.pretium@idmollisnec.co.uk',
                 'timezone' => 'Europe/Moscow',
-                'big_data' => 'biiiiiiig data'
+                'big_data' => 'biiiiiiig data',
             ],
             [
                 'id' => 2,
@@ -44,7 +47,7 @@ trait TestDataForAdminsTable
                 'name' => 'Jasper Waller',
                 'email' => 'elit@eratvelpede.org',
                 'timezone' => 'Europe/Moscow',
-                'big_data' => 'biiiiiiig data'
+                'big_data' => 'biiiiiiig data',
             ],
         ];
     }
@@ -61,7 +64,7 @@ trait TestDataForAdminsTable
                 $item['created_at'] .= '+00';
                 $item['updated_at'] .= '+00';
             }
-        } else if ($adapter instanceof Mysql) {
+        } elseif ($adapter instanceof Mysql) {
             foreach ($data as &$item) {
                 $item['id'] = (string)$item['id'];
                 $item['is_superadmin'] = $item['is_superadmin'] ? '1' : '0';

@@ -33,13 +33,13 @@ class TraceablePDOStatement extends PDOStatement
      * @link   http://php.net/manual/en/pdostatement.bindcolumn.php
      * @param mixed $column Number of the column (1-indexed) or name of the column in the result set
      * @param mixed $var Name of the PHP variable to which the column will be bound.
-     * @param int $type [optional] Data type of the parameter, specified by the PDO::PARAM_*
+     * @param int|null $type [optional] Data type of the parameter, specified by the PDO::PARAM_*
      * constants.
-     * @param int $maxLength [optional] A hint for pre-allocation.
-     * @param mixed $driverOptions [optional] Optional parameter(s) for the driver.
+     * @param int|null $maxLength [optional] A hint for pre-allocation.
+     * @param mixed|null $driverOptions [optional] Optional parameter(s) for the driver.
      * @return bool  TRUE on success or FALSE on failure.
      */
-    public function bindColumn($column, &$var, $type = null, $maxLength = null, $driverOptions = null): bool
+    public function bindColumn($column, mixed &$var, int $type = null, int $maxLength = null, mixed $driverOptions = null): bool
     {
         $this->boundParameters[$column] = $var;
         $args = array_merge([$column, &$var], array_slice(func_get_args(), 2));
@@ -57,12 +57,12 @@ class TraceablePDOStatement extends PDOStatement
      * @param mixed $var Name of the PHP variable to bind to the SQL statement parameter.
      * @param int $type [optional] Explicit data type for the parameter using the PDO::PARAM_*
      * constants.
-     * @param int $maxLength [optional] Length of the data type. To indicate that a parameter is an OUT
+     * @param int|null $maxLength [optional] Length of the data type. To indicate that a parameter is an OUT
      * parameter from a stored procedure, you must explicitly set the length.
-     * @param mixed $driverOptions [optional]
+     * @param mixed|null $driverOptions [optional]
      * @return bool TRUE on success or FALSE on failure.
      */
-    public function bindParam($param, &$var, $type = PDO::PARAM_STR, $maxLength = null, $driverOptions = null): bool
+    public function bindParam($param, mixed &$var, int $type = PDO::PARAM_STR, int $maxLength = null, mixed $driverOptions = null): bool
     {
         $this->boundParameters[$param] = $var;
         $args = array_merge([$param, &$var], array_slice(func_get_args(), 2));
@@ -74,7 +74,7 @@ class TraceablePDOStatement extends PDOStatement
      * Binds a value to a parameter
      *
      * @link   http://php.net/manual/en/pdostatement.bindvalue.php
-     * @param mixed $param Parameter identifier. For a prepared statement using named
+     * @param int|string $param Parameter identifier. For a prepared statement using named
      * placeholders, this will be a parameter name of the form :name. For a prepared statement using
      * question mark placeholders, this will be the 1-indexed position of the parameter.
      * @param mixed $value The value to bind to the parameter.
@@ -82,7 +82,7 @@ class TraceablePDOStatement extends PDOStatement
      * constants.
      * @return bool TRUE on success or FALSE on failure.
      */
-    public function bindValue($param, $value, $type = PDO::PARAM_STR): bool
+    public function bindValue(int|string $param, mixed $value, int $type = PDO::PARAM_STR): bool
     {
         $this->boundParameters[$param] = $value;
         
@@ -93,13 +93,13 @@ class TraceablePDOStatement extends PDOStatement
      * Executes a prepared statement
      *
      * @link   http://php.net/manual/en/pdostatement.execute.php
-     * @param array $params [optional] An array of values with as many elements as there
+     * @param array|null $params [optional] An array of values with as many elements as there
      * are bound parameters in the SQL statement being executed. All values are treated as
      * PDO::PARAM_STR.
      * @return bool TRUE on success or FALSE on failure.
      * @throws \PDOException
      */
-    public function execute($params = null): bool
+    public function execute(?array $params = null): bool
     {
         $preparedId = spl_object_hash($this);
         $boundParameters = $this->boundParameters;

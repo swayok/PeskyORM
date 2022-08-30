@@ -188,8 +188,8 @@ class MysqlConfigTest extends BaseTestCase
     
     public function testInvalidDbPort2(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("DB port argument must be a positive integer number or numeric string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($dbPort) must be of type string|int');
         $config = new MysqlConfig('test', 'test', 'test');
         /** @noinspection PhpStrictTypeCheckingInspection */
         $config->setDbPort(null);
@@ -197,8 +197,8 @@ class MysqlConfigTest extends BaseTestCase
     
     public function testInvalidDbPort3(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("DB port argument must be a positive integer number or numeric string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($dbPort) must be of type string|int');
         $config = new MysqlConfig('test', 'test', 'test');
         /** @noinspection PhpParamsInspection */
         /** @noinspection PhpStrictTypeCheckingInspection */
@@ -227,12 +227,32 @@ class MysqlConfigTest extends BaseTestCase
     
     public function testInvalidDbPort6(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("DB port argument must be a positive integer number or numeric string");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($dbPort) must be of type string|int');
         $config = new MysqlConfig('test', 'test', 'test');
         /** @noinspection PhpParamsInspection */
         /** @noinspection PhpStrictTypeCheckingInspection */
         $config->setDbPort(123.4);
+    }
+    
+    public function testInvalidDbPort7(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('DB port argument must be a positive integer number or numeric string');
+        $config = new MysqlConfig('test', 'test', 'test');
+        /** @noinspection PhpParamsInspection */
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        $config->setDbPort(-123);
+    }
+    
+    public function testInvalidDbPort8(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('DB port argument must be a positive integer number or numeric string');
+        $config = new MysqlConfig('test', 'test', 'test');
+        /** @noinspection PhpParamsInspection */
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        $config->setDbPort('-123');
     }
     
     public function testInvalidOptions(): void

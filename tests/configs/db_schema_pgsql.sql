@@ -47,7 +47,7 @@ CREATE TABLE "public"."settings"
 (
     "id"    serial4                        NOT NULL,
     "key"   varchar(100) COLLATE "default" NOT NULL,
-    "value" json DEFAULT '{}'::json        NOT NULL
+    "value" jsonb DEFAULT '{}'::jsonb        NOT NULL
 )
     WITH (OIDS= FALSE)
 ;

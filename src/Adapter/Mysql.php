@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\Adapter;
 
 use PeskyORM\Config\Connection\MysqlConfig;
+use PeskyORM\Core\AbstractSelect;
 use PeskyORM\Core\ColumnDescription;
 use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbExpr;
@@ -105,19 +106,13 @@ class Mysql extends DbAdapter
         return null;
     }
     
-    /**
-     * @return static
-     */
-    public function setTimezone(string $timezone)
+    public function setTimezone(string $timezone): static
     {
         $this->exec(DbExpr::create("SET time_zone = ``$timezone``"));
         return $this;
     }
     
-    /**
-     * @return static
-     */
-    public function setSearchPath(string $newSearchPath)
+    public function setSearchPath(string $newSearchPath): static
     {
         // todo: find out if there is something similar in mysql
         return $this;
@@ -144,38 +139,48 @@ class Mysql extends DbAdapter
         array $columns,
         array $data,
         array $dataTypes,
-        $returning,
+        bool|array $returning,
         ?string $pkName,
         string $operation
     ): array {
-        $returning = $returning === true ? '*' : $this->buildColumnsList($returning, false);
+        if (empty($returning)) {
+            throw new \InvalidArgumentException('$returning argument must be true or array');
+        }
+        $returningStr = $returning === true ? '*' : $this->buildColumnsList($returning, false);
+        /** @noinspection PhpSwitchCanBeReplacedWithMatchExpressionInspection */
         switch ($operation) {
             case 'insert':
-                return $this->resolveInsertOneQueryWithReturningColumns($table, $data, $dataTypes, $returning, $pkName);
+                return $this->resolveInsertOneQueryWithReturningColumns(
+                    $table,
+                    $data,
+                    $dataTypes,
+                    $returningStr,
+                    $pkName
+                );
             case 'insert_many':
                 return $this->resolveInsertManyQueryWithReturningColumns(
                     $table,
                     $columns,
                     $data,
                     $dataTypes,
-                    $returning,
+                    $returningStr,
                     $pkName
                 );
             case 'delete':
-                return $this->resolveDeleteQueryWithReturningColumns($query, $table, $returning);
+                return $this->resolveDeleteQueryWithReturningColumns($query, $table, $returningStr);
             case 'update':
-                return $this->resolveUpdateQueryWithReturningColumns($query, $table, $returning);
+                return $this->resolveUpdateQueryWithReturningColumns($query, $table, $returningStr);
             default:
                 throw new \InvalidArgumentException("\$operation '$operation' is not supported by " . __CLASS__);
         }
     }
     
     protected function resolveInsertOneQueryWithReturningColumns(
-        $table,
+        string $table,
         array $data,
         array $dataTypes,
-        $returning,
-        $pkName
+        string $returning,
+        string $pkName
     ) {
         /** @noinspection MissUsingParentKeywordInspection */
         parent::insert($table, $data, $dataTypes, false);
@@ -206,12 +211,12 @@ class Mysql extends DbAdapter
     }
     
     protected function resolveInsertManyQueryWithReturningColumns(
-        $table,
+        string $table,
         array $columns,
         array $data,
         array $dataTypes,
-        $returning,
-        $pkName
+        string $returning,
+        string $pkName
     ) {
         /** @noinspection MissUsingParentKeywordInspection */
         parent::insertMany($table, $columns, $data, $dataTypes, false);
@@ -254,9 +259,9 @@ class Mysql extends DbAdapter
     }
     
     protected function resolveUpdateQueryWithReturningColumns(
-        $updateQuery,
-        $table,
-        $returning
+        string $updateQuery,
+        string $table,
+        string $returning
     ) {
         /** @noinspection MissUsingParentKeywordInspection */
         $rowsUpdated = parent::exec($updateQuery);
@@ -277,9 +282,9 @@ class Mysql extends DbAdapter
     }
     
     protected function resolveDeleteQueryWithReturningColumns(
-        $query,
-        $table,
-        $returning
+        string $query,
+        string $table,
+        string $returning
     ) {
         $conditions = preg_replace('%^.*WHERE%i', '', $query);
         $stmnt = $this->query("SELECT {$returning} FROM {$table} WHERE {$conditions}");
@@ -332,11 +337,7 @@ class Mysql extends DbAdapter
             : Column::TYPE_STRING;
     }
     
-    /**
-     * @param array|bool|DbExpr|float|int|string|string[]|null $default
-     * @return array|bool|DbExpr|float|int|string|string[]|null
-     */
-    protected function cleanDefaultValueForColumnDescription($default)
+    protected function cleanDefaultValueForColumnDescription(DbExpr|float|array|bool|int|string|null $default): DbExpr|float|array|bool|int|string|null
     {
         if ($default === null || $default === '') {
             return $default;
@@ -415,8 +416,11 @@ class Mysql extends DbAdapter
         return $this->quoteValue($key, \PDO::PARAM_STR);
     }
     
-    public function assembleConditionValue($value, string $operator, bool $valueAlreadyQuoted = false): string
-    {
+    public function assembleConditionValue(
+        string|int|float|bool|array|DbExpr|AbstractSelect|null $value,
+        string $operator,
+        bool $valueAlreadyQuoted = false
+    ): string {
         if (in_array($operator, ['@>', '<@'], true)) {
             if ($valueAlreadyQuoted) {
                 if (!is_string($value)) {
@@ -435,8 +439,12 @@ class Mysql extends DbAdapter
         }
     }
     
-    public function assembleCondition(string $quotedColumn, string $operator, $rawValue, bool $valueAlreadyQuoted = false): string
-    {
+    public function assembleCondition(
+        string $quotedColumn,
+        string $operator,
+        string|int|float|bool|array|DbExpr|AbstractSelect|null $rawValue,
+        bool $valueAlreadyQuoted = false
+    ): string {
         if (in_array($operator, ['?', '?|', '?&'], true)) {
             if (!is_array($rawValue)) {
                 $rawValue = [$valueAlreadyQuoted ? $rawValue : $this->quoteJsonSelectorValue($rawValue)];

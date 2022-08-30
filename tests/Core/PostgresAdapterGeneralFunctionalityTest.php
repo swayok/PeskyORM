@@ -111,15 +111,15 @@ class PostgresAdapterGeneralFunctionalityTest extends BaseTestCase
     public function testQuotingOfInvalidIntDbValue(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$value expected to be integer or numeric string. String [abrakadabra] received");
+        $this->expectExceptionMessage('$value expected to be integer or numeric string. String [abrakadabra] received');
         $adapter = static::getValidAdapter();
         $adapter->quoteValue('abrakadabra', PDO::PARAM_INT);
     }
     
     public function testQuotingOfInvalidIntDbValue2(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$value expected to be integer or numeric string. Object fo class [\PeskyORM\Adapter\Postgres] received");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($value) must be of type PeskyORM\Core\DbExpr|PeskyORM\Core\AbstractSelect|array|string|int|float|bool|null');
         $adapter = static::getValidAdapter();
         /** @noinspection PhpParamsInspection */
         $adapter->quoteValue($adapter, PDO::PARAM_INT);
@@ -128,15 +128,15 @@ class PostgresAdapterGeneralFunctionalityTest extends BaseTestCase
     public function testQuotingOfInvalidIntDbValue3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$value expected to be integer or numeric string. Array received");
+        $this->expectExceptionMessage('$value expected to be integer or numeric string. Array received');
         $adapter = static::getValidAdapter();
         $adapter->quoteValue(['key' => 'val'], PDO::PARAM_INT);
     }
     
     public function testQuotingOfInvalidIntDbValue4(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$value expected to be integer or numeric string. Object fo class [\CurlHandle] received");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($value) must be of type PeskyORM\Core\DbExpr|PeskyORM\Core\AbstractSelect|array|string|int|float|bool|null');
         $adapter = static::getValidAdapter();
         $adapter->quoteValue(curl_init('http://test.url'), PDO::PARAM_INT);
     }
@@ -144,7 +144,7 @@ class PostgresAdapterGeneralFunctionalityTest extends BaseTestCase
     public function testQuotingOfInvalidIntDbValue5(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$value expected to be integer or numeric string. Boolean [true] received");
+        $this->expectExceptionMessage('$value expected to be integer or numeric string. Boolean [true] received');
         $adapter = static::getValidAdapter();
         $adapter->quoteValue(true, PDO::PARAM_INT);
     }
@@ -152,7 +152,7 @@ class PostgresAdapterGeneralFunctionalityTest extends BaseTestCase
     public function testQuotingOfInvalidIntDbValue6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$value expected to be integer or numeric string. Boolean [false] received");
+        $this->expectExceptionMessage('$value expected to be integer or numeric string. Boolean [false] received');
         $adapter = static::getValidAdapter();
         $adapter->quoteValue(false, PDO::PARAM_INT);
     }
@@ -160,7 +160,7 @@ class PostgresAdapterGeneralFunctionalityTest extends BaseTestCase
     public function testQuotingOfInvalidDbExpr(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage("Argument #1 (\$expression) must be of type PeskyORM\Core\DbExpr");
+        $this->expectExceptionMessage('Argument #1 ($expression) must be of type PeskyORM\Core\DbExpr');
         $adapter = static::getValidAdapter();
         /** @noinspection PhpParamsInspection */
         $adapter->quoteDbExpr('test');

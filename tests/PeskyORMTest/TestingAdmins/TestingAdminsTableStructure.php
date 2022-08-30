@@ -1,6 +1,8 @@
 <?php
 /** @noinspection PhpUnusedPrivateMethodInspection */
 
+declare(strict_types=1);
+
 namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
 use PeskyORM\Core\DbExpr;

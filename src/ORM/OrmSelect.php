@@ -102,9 +102,6 @@ class OrmSelect extends AbstractSelect
         return $this->tableStructure;
     }
     
-    /**
-     * @return Record|RecordInterface
-     */
     public function fetchOneAsDbRecord(): RecordInterface
     {
         return $this->getNewRecord()
@@ -247,7 +244,7 @@ class OrmSelect extends AbstractSelect
     
     protected function resolveColumnsToBeSelectedForJoin(
         string $joinName,
-        $columns,
+        string|array $columns,
         ?string $parentJoinName = null,
         bool $appendColumnsToExisting = false
     ): void {
@@ -305,7 +302,6 @@ class OrmSelect extends AbstractSelect
     
     /**
      * @param string $joinName - 'Name' or 'Name.SubName'
-     * @return OrmJoinInfo|CrossJoinInfo
      */
     protected function getJoin(string $joinName): AbstractJoinInfo
     {

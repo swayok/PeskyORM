@@ -8,6 +8,7 @@ use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\TableDescription;
 use PeskyORM\ORM\Column;
+use PeskyORM\Tests\PeskyORMTest\Adapter\MysqlTesting;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 require_once __DIR__ . '/PostgresAdapterHelpersTest.php';
@@ -15,6 +16,9 @@ require_once __DIR__ . '/PostgresAdapterHelpersTest.php';
 class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
 {
     
+    /**
+     * @return MysqlTesting
+     */
     protected static function getValidAdapter(): DbAdapterInterface
     {
         return TestingApp::getMysqlConnection();
@@ -54,15 +58,15 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
     {
         static::assertEquals(
             "'$.key'",
-            $this->invokePrivateAdapterMethod('quoteJsonSelectorValue', 'key')
+            static::getValidAdapter()->quoteJsonSelectorValue('key')
         );
         static::assertEquals(
             "'$.\\\"key\\\"'",
-            $this->invokePrivateAdapterMethod('quoteJsonSelectorValue', '"key"')
+            static::getValidAdapter()->quoteJsonSelectorValue('"key"')
         );
         static::assertEquals(
             "'$[0]'",
-            $this->invokePrivateAdapterMethod('quoteJsonSelectorValue', '[0]')
+            static::getValidAdapter()->quoteJsonSelectorValue('[0]')
         );
     }
     
@@ -70,7 +74,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
     {
         static::assertEquals(
             'JSON_UNQUOTE(JSON_EXTRACT(JSON_EXTRACT(`table`.`col_name`->\'$.key1\'->>\'$.key 2\', \'$.key 3\'), \'$.key 4\'))',
-            $this->invokePrivateAdapterMethod('quoteJsonSelectorExpression', [
+            static::getValidAdapter()->quoteJsonSelectorExpression([
                 'table.col_name',
                 '->',
                 'key1',
@@ -84,7 +88,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
         );
         static::assertEquals(
             '`table`.`col_name`->\'$[2]\'',
-            $this->invokePrivateAdapterMethod('quoteJsonSelectorExpression', [
+            static::getValidAdapter()->quoteJsonSelectorExpression([
                 'table.col_name',
                 '->',
                 '2',
@@ -196,84 +200,84 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
         // Mysql::extractLimitAndPrecisionForColumnDescription()
         static::assertEquals(
             [null, null],
-            $this->invokePrivateAdapterMethod('extractLimitAndPrecisionForColumnDescription', 'timestamp')
+            static::getValidAdapter()->extractLimitAndPrecisionForColumnDescription('timestamp')
         );
         static::assertEquals(
             [11, null],
-            $this->invokePrivateAdapterMethod('extractLimitAndPrecisionForColumnDescription', 'int(11)')
+            static::getValidAdapter()->extractLimitAndPrecisionForColumnDescription('int(11)')
         );
         static::assertEquals(
             [200, null],
-            $this->invokePrivateAdapterMethod('extractLimitAndPrecisionForColumnDescription', 'varchar(200)')
+            static::getValidAdapter()->extractLimitAndPrecisionForColumnDescription('varchar(200)')
         );
         static::assertEquals(
             [8, 2],
-            $this->invokePrivateAdapterMethod('extractLimitAndPrecisionForColumnDescription', 'float(8,2)')
+            static::getValidAdapter()->extractLimitAndPrecisionForColumnDescription('float(8,2)')
         );
         // Mysql::cleanDefaultValueForColumnDescription()
         static::assertEquals(
             '',
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', '')
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription('')
         );
         static::assertEquals(
             ' ',
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', ' ')
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription(' ')
         );
         static::assertEquals(
             'a',
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', 'a')
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription('a')
         );
         static::assertEquals(
             null,
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', null)
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription(null)
         );
         static::assertEquals(
             true,
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', 'true')
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription('true')
         );
         static::assertEquals(
             false,
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', 'false')
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription('false')
         );
         static::assertEquals(
             11,
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', '11')
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription('11')
         );
         static::assertEquals(
             11.1,
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', '11.1')
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription('11.1')
         );
         static::assertEquals(
             "'11.1'",
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'11.1'")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("'11.1'")
         );
         static::assertEquals(
             DbExpr::create('NOW()'),
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', 'CURRENT_TIMESTAMP')
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription('CURRENT_TIMESTAMP')
         );
         static::assertEquals(
             "'",
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("'")
         );
         static::assertEquals(
             "test'quote",
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "test'quote")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("test'quote")
         );
         static::assertEquals(
             "test'",
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "test'")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("test'")
         );
         static::assertEquals(
             "'quote",
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'quote")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("'quote")
         );
         static::assertEquals(
             "'quote'",
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'quote'")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("'quote'")
         );
         static::assertEquals(
             "'quote'test ' asd'",
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'quote'test ' asd'")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("'quote'test ' asd'")
         );
         // Mysql::describeTable()
         $adapter = static::getValidAdapter();
@@ -350,16 +354,16 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$pkName must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)");
-        $this->invokePrivateAdapterMethod('guardPkNameArg', 'teasd as das d 90as9()');
+        static::getValidAdapter()->guardPkNameArg('teasd as das d 90as9()');
     }
     
     public function testIsValidDbEntityNameAndJsonSelector2(): void
     {
-        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test test->test'));
-        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test#test->test'));
+        static::assertFalse(static::getValidAdapter()->isValidJsonSelector('test test->test'));
+        static::assertFalse(static::getValidAdapter()->isValidJsonSelector('test#test->test'));
         
-        static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test test'));
-        static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test$test'));
-        static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test->test', false));
+        static::assertFalse(static::getValidAdapter()->isValidDbEntityName('test test'));
+        static::assertFalse(static::getValidAdapter()->isValidDbEntityName('test$test'));
+        static::assertFalse(static::getValidAdapter()->isValidDbEntityName('test->test', false));
     }
 }

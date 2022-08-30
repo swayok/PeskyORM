@@ -137,9 +137,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         //$this->reset();
     }
     
-    /**
-     * @return TableStructure|TableStructureInterface
-     */
     public static function getTableStructure(): TableStructureInterface
     {
         return static::getTable()->getStructure();
@@ -609,7 +606,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
     
     /**
-     * @param string|Column $column
+     * @param Column $column
      * @param mixed $value
      * @param boolean $isFromDb
      * @return static
@@ -1765,7 +1762,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @return static
      * @throws \BadMethodCallException
      */
-    public function delete(bool $resetAllValuesAfterDelete = true, bool $deleteFiles = true)
+    public function delete(bool $resetAllValuesAfterDelete = true, bool $deleteFiles = true): RecordInterface
     {
         if ($this->isReadOnly()) {
             throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');

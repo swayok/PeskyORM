@@ -17,10 +17,7 @@ trait DbViewRecordProtection
         throw new \BadMethodCallException('Saving data to a DB View is impossible');
     }
     
-    /**
-     * @return static
-     */
-    public function delete(bool $resetAllValuesAfterDelete = true, bool $deleteFiles = true)
+    public function delete(bool $resetAllValuesAfterDelete = true, bool $deleteFiles = true): static
     {
         throw new \BadMethodCallException('Deleting data from a DB View is impossible');
     }

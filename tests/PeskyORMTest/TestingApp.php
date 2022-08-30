@@ -1,9 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\Tests\PeskyORMTest;
 
-use PeskyORM\Adapter\Mysql;
-use PeskyORM\Adapter\Postgres;
 use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbAdapterInterface;
@@ -11,18 +11,21 @@ use PeskyORM\Core\DbConnectionsManager;
 use PeskyORM\ORM\Record;
 use PeskyORM\ORM\Table;
 use PeskyORM\ORM\TableStructure;
+use PeskyORM\Tests\PeskyORMTest\Adapter\MysqlTesting;
+use PeskyORM\Tests\PeskyORMTest\Adapter\PostgresTesting;
 
 class TestingApp
 {
     
-    public static ?Postgres $pgsqlConnection = null;
-    public static ?Mysql $mysqlConnection = null;
+    public static ?PostgresTesting $pgsqlConnection = null;
+    public static ?MysqlTesting $mysqlConnection = null;
     protected static ?array $dataForDb = null;
     protected static ?array $dataForDbMinimal = null;
     
-    public static function getMysqlConnection(): Mysql
+    public static function getMysqlConnection(): MysqlTesting
     {
         if (!static::$mysqlConnection) {
+            DbConnectionsManager::addAdapter(DbConnectionsManager::ADAPTER_MYSQL, MysqlTesting::class);
             /** @noinspection PhpFieldAssignmentTypeMismatchInspection */
             static::$mysqlConnection = DbConnectionsManager::createConnection(
                 'mysql',
@@ -35,9 +38,10 @@ class TestingApp
         return static::$mysqlConnection;
     }
     
-    public static function getPgsqlConnection(): Postgres
+    public static function getPgsqlConnection(): PostgresTesting
     {
         if (!static::$pgsqlConnection) {
+            DbConnectionsManager::addAdapter(DbConnectionsManager::ADAPTER_POSTGRES, PostgresTesting::class);
             /** @noinspection PhpFieldAssignmentTypeMismatchInspection */
             static::$pgsqlConnection = DbConnectionsManager::createConnection(
                 'default',

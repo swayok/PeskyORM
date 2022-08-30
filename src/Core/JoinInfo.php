@@ -10,15 +10,6 @@ class JoinInfo extends AbstractJoinInfo
 {
     
     /**
-     * @param string $joinName
-     * @param string $localTableName
-     * @param string $localColumnName
-     * @param string $joinType
-     * @param string $foreignTableName
-     * @param string $foreignColumnName
-     * @param string|null $localTableSchema
-     * @param string|null $foreignTableSchema
-     * @return static
      * @throws \InvalidArgumentException
      */
     public static function create(
@@ -30,7 +21,7 @@ class JoinInfo extends AbstractJoinInfo
         string $foreignColumnName,
         ?string $localTableSchema = null,
         ?string $foreignTableSchema = null
-    ) {
+    ): static {
         return new static(
             $joinName,
             $localTableName,
@@ -44,14 +35,6 @@ class JoinInfo extends AbstractJoinInfo
     }
     
     /**
-     * @param string $joinName
-     * @param string $localTableName
-     * @param string $localColumnName
-     * @param string $joinType
-     * @param string $foreignTableName
-     * @param string $foreignColumnName
-     * @param string|null $localTableSchema
-     * @param string|null $foreignTableSchema
      * @throws \InvalidArgumentException
      */
     public function __construct(
@@ -72,13 +55,9 @@ class JoinInfo extends AbstractJoinInfo
     }
     
     /**
-     * @param string $tableName
-     * @param string $columnName
-     * @param string|null $tableSchema
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setConfigForLocalTable(string $tableName, string $columnName, ?string $tableSchema = null)
+    public function setConfigForLocalTable(string $tableName, string $columnName, ?string $tableSchema = null): static
     {
         $this
             ->setTableName($tableName)
@@ -90,13 +69,9 @@ class JoinInfo extends AbstractJoinInfo
     }
     
     /**
-     * @param string $foreignTableName
-     * @param string $foreignColumnName
-     * @param string|null $foreignTableSchema
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setConfigForForeignTable(string $foreignTableName, string $foreignColumnName, ?string $foreignTableSchema = null)
+    public function setConfigForForeignTable(string $foreignTableName, string $foreignColumnName, ?string $foreignTableSchema = null): static
     {
         $this
             ->setForeignTableName($foreignTableName)
@@ -108,11 +83,9 @@ class JoinInfo extends AbstractJoinInfo
     }
     
     /**
-     * @param string $foreignTableName
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setForeignTableName(string $foreignTableName)
+    public function setForeignTableName(string $foreignTableName): static
     {
         if (empty($foreignTableName)) {
             throw new \InvalidArgumentException('$foreignTableName argument must be a not-empty string');
@@ -122,11 +95,9 @@ class JoinInfo extends AbstractJoinInfo
     }
     
     /**
-     * @param null|string $schema
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setForeignTableSchema(?string $schema)
+    public function setForeignTableSchema(?string $schema): static
     {
         if ($schema !== null && empty($schema)) {
             throw new \InvalidArgumentException('$schema argument must be a not-empty string or null');
@@ -136,11 +107,9 @@ class JoinInfo extends AbstractJoinInfo
     }
     
     /**
-     * @param string $tableName
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setTableName(string $tableName)
+    public function setTableName(string $tableName): static
     {
         if (empty($tableName)) {
             throw new \InvalidArgumentException('$tableName argument must be a not-empty string');
@@ -153,11 +122,9 @@ class JoinInfo extends AbstractJoinInfo
     }
     
     /**
-     * @param null|string $schema
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setTableSchema(?string $schema)
+    public function setTableSchema(?string $schema): static
     {
         if ($schema !== null && empty($schema)) {
             throw new \InvalidArgumentException('$schema argument must be a not-empty string or null');

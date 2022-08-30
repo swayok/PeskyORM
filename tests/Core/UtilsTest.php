@@ -310,7 +310,7 @@ class UtilsTest extends BaseTestCase
             )
         );
         static::assertEquals(
-            "jsonb_exists($col1->$value2, $value1) AND jsonb_exists_any($col1, array[$value1, $value2]) AND jsonb_exists_all($col1, array[$value1, $value2])",
+            "$col1->$value2 ?? $value1 AND $col1 ??| array[$value1, $value2] AND $col1 ??& array[$value1, $value2]",
             Utils::assembleWhereConditionsFromArray(
                 $adapter,
                 [

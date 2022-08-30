@@ -399,7 +399,7 @@ class Column
      * Class that provides all closures for a column.
      * Note: if some closure is defined via Column->setClosureName(\Closure $fn) then $fn will be used istead of
      * same closure provided by class
-     * @param string|ColumnClosuresInterface $className - class that implements ColumnClosuresInterface
+     * @param string $className - class that implements ColumnClosuresInterface
      * @return static
      * @throws \InvalidArgumentException
      */
@@ -419,6 +419,7 @@ class Column
     
     /**
      * @return string|ColumnClosuresInterface
+     * @noinspection PhpDocSignatureInspection
      */
     public function getClosuresClass(): string
     {
@@ -1259,6 +1260,7 @@ class Column
     
     /**
      * @return string|null|ValueToObjectConverterInterface
+     * @noinspection PhpDocSignatureInspection
      */
     public function getObjectClassNameForValueToObjectFormatter(): ?string
     {

@@ -360,7 +360,7 @@ class TempRecord implements RecordInterface
      * @return static
      * @throws \BadMethodCallException
      */
-    public function delete(bool $resetAllValuesAfterDelete = true, bool $deleteFiles = true)
+    public function delete(bool $resetAllValuesAfterDelete = true, bool $deleteFiles = true): RecordInterface
     {
         throw new \BadMethodCallException('Method cannot be used for this class (' . get_class($this) . ')');
     }

@@ -253,7 +253,7 @@ interface RecordInterface
      * @param bool $deleteFiles - true: delete all attached files | false: do not delete attached files
      * @return static
      */
-    public function delete(bool $resetAllValuesAfterDelete = true, bool $deleteFiles = true);
+    public function delete(bool $resetAllValuesAfterDelete = true, bool $deleteFiles = true): static;
     
     /**
      * Get required values as array

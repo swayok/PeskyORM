@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PeskyORM\Core;
 
+use PDO;
+use PDOStatement;
 use PeskyORM\Core\Utils as OrmUtils;
 use PeskyORM\Exception\DbException;
 use Swayok\Utils\Utils;
@@ -123,10 +125,7 @@ abstract class DbAdapter implements DbAdapterInterface
         }
     }
     
-    /**
-     * @return static
-     */
-    public function disconnect()
+    public function disconnect(): static
     {
         $this->pdo = null;
         return $this;
@@ -143,10 +142,7 @@ abstract class DbAdapter implements DbAdapterInterface
         }
     }
     
-    /**
-     * @return static
-     */
-    public function onConnect(\Closure $callback, ?string $code = null)
+    public function onConnect(\Closure $callback, ?string $code = null): static
     {
         $run = $this->pdo !== null;
         if (!$code) {
@@ -189,7 +185,7 @@ abstract class DbAdapter implements DbAdapterInterface
         return DbExpr::create('DEFAULT', false);
     }
     
-    public function query($query, string $fetchData = self::FETCH_STATEMENT)
+    public function query(string|DbExpr $query, string $fetchData = self::FETCH_STATEMENT): mixed
     {
         if ($query instanceof DbExpr) {
             $query = $this->quoteDbExpr($query->setWrapInBrackets(false));
@@ -212,17 +208,16 @@ abstract class DbAdapter implements DbAdapterInterface
     /**
      * @param string|DbExpr $query
      * @param bool $ignoreZeroModifiedRows - true: will not try to additionally validate if query failed
-     * @return array|int = array: returned if $returning argument is not empty
+     * @return int - affected rows count
      */
-    protected function _exec($query, bool $ignoreZeroModifiedRows = false)
+    protected function _exec(DbExpr|string $query, bool $ignoreZeroModifiedRows = false): int
     {
         if ($query instanceof DbExpr) {
             $query = $this->quoteDbExpr($query->setWrapInBrackets(false));
         }
         $this->lastQuery = $query;
         try {
-            $affectedRowsCount = $this->getConnection()
-                ->exec($query);
+            $affectedRowsCount = $this->getConnection()->exec($query);
             if (!$ignoreZeroModifiedRows && !$affectedRowsCount && !is_int($affectedRowsCount)) {
                 $exc = $this->getDetailedException($query);
                 if ($exc !== null) {
@@ -239,12 +234,12 @@ abstract class DbAdapter implements DbAdapterInterface
         }
     }
     
-    public function exec($query)
+    public function exec(string|DbExpr $query): int
     {
         return $this->_exec($query);
     }
     
-    public function prepare($query, array $options = []): \PDOStatement
+    public function prepare(string|DbExpr $query, array $options = []): \PDOStatement
     {
         if ($query instanceof DbExpr) {
             $query = $this->quoteDbExpr($query->setWrapInBrackets(false));
@@ -252,7 +247,7 @@ abstract class DbAdapter implements DbAdapterInterface
         return $this->getConnection()->prepare($query, $options);
     }
     
-    public function insert(string $table, array $data, array $dataTypes = [], $returning = false, string $pkName = 'id'): ?array
+    public function insert(string $table, array $data, array $dataTypes = [], bool|array $returning = false, string $pkName = 'id'): ?array
     {
         $this->guardTableNameArg($table);
         $this->guardDataArg($data);
@@ -290,8 +285,14 @@ abstract class DbAdapter implements DbAdapterInterface
      * {@inheritDoc}
      * @throws \InvalidArgumentException
      */
-    public function insertMany(string $table, array $columns, array $data, array $dataTypes = [], $returning = false, string $pkName = 'id'): ?array
-    {
+    public function insertMany(
+        string $table,
+        array $columns,
+        array $data,
+        array $dataTypes = [],
+        bool|array $returning = false,
+        string $pkName = 'id'
+    ): ?array {
         $this->guardTableNameArg($table);
         $this->guardColumnsArg($columns, false);
         $this->guardDataArg($data);
@@ -338,7 +339,7 @@ abstract class DbAdapter implements DbAdapterInterface
         }
     }
     
-    public function update(string $table, array $data, $conditions, array $dataTypes = [], $returning = false)
+    public function update(string $table, array $data, string|DbExpr $conditions, array $dataTypes = [], bool|array $returning = false): array|int
     {
         $this->guardTableNameArg($table);
         $this->guardDataArg($data);
@@ -367,7 +368,7 @@ abstract class DbAdapter implements DbAdapterInterface
         }
     }
     
-    public function delete(string $table, $conditions, $returning = false)
+    public function delete(string $table, string|DbExpr $conditions, bool|array $returning = false): array|int
     {
         $this->guardTableNameArg($table);
         $this->guardConditionsArg($conditions);
@@ -407,7 +408,7 @@ abstract class DbAdapter implements DbAdapterInterface
     /**
      * @throws \InvalidArgumentException
      */
-    private function guardTableNameArg(string $table): void
+    protected function guardTableNameArg(string $table): void
     {
         if (empty($table)) {
             throw new \InvalidArgumentException('$table argument cannot be empty and must be a non-numeric string');
@@ -419,15 +420,11 @@ abstract class DbAdapter implements DbAdapterInterface
     }
     
     /**
-     * @param string|DbExpr $conditions
      * @throws \InvalidArgumentException
      */
-    private function guardConditionsArg($conditions): void
+    protected function guardConditionsArg(DbExpr|string $conditions): void
     {
-        if (!is_string($conditions) && !($conditions instanceof DbExpr)) {
-            // todo: remove in v3
-            throw new \InvalidArgumentException('$conditions argument must be a string or DbExpr object');
-        } elseif (empty($conditions)) {
+        if (empty($conditions)) {
             throw new \InvalidArgumentException(
                 '$conditions argument is not allowed to be empty. Use "true" or "1 = 1" if you want to update all.'
             );
@@ -438,18 +435,14 @@ abstract class DbAdapter implements DbAdapterInterface
      * @param bool|array $returning
      * @throws \InvalidArgumentException
      */
-    private function guardReturningArg($returning): void
+    protected function guardReturningArg(bool|array $returning): void
     {
-        // todo: remove in v3
-        if (!is_array($returning) && !is_bool($returning)) {
-            throw new \InvalidArgumentException('$returning argument must be array or boolean');
-        }
     }
     
     /**
      * @throws \InvalidArgumentException
      */
-    private function guardPkNameArg(string $pkName): void
+    protected function guardPkNameArg(string $pkName): void
     {
         if (empty($pkName)) {
             throw new \InvalidArgumentException('$pkName argument cannot be empty');
@@ -464,7 +457,7 @@ abstract class DbAdapter implements DbAdapterInterface
     /**
      * @throws \InvalidArgumentException
      */
-    private function guardDataArg(array $data): void
+    protected function guardDataArg(array $data): void
     {
         if (empty($data)) {
             throw new \InvalidArgumentException('$data argument cannot be empty');
@@ -474,7 +467,7 @@ abstract class DbAdapter implements DbAdapterInterface
     /**
      * @throws \InvalidArgumentException
      */
-    private function guardColumnsArg(array $columns, bool $allowDbExpr = true): void
+    protected function guardColumnsArg(array $columns, bool $allowDbExpr = true): void
     {
         if (empty($columns)) {
             throw new \InvalidArgumentException('$columns argument cannot be empty');
@@ -558,7 +551,7 @@ abstract class DbAdapter implements DbAdapterInterface
      * @param array $columns
      * @param array $data
      * @param array $dataTypes
-     * @param array|bool|string $returning - return some data back after $data inserted to $table
+     * @param bool|array $returning - return some data back after $data inserted to $table
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
      *          - array: list of columns names to return values for
@@ -573,7 +566,7 @@ abstract class DbAdapter implements DbAdapterInterface
         array $columns,
         array $data,
         array $dataTypes,
-        $returning,
+        bool|array $returning,
         ?string $pkName,
         string $operation
     ): array {
@@ -590,7 +583,7 @@ abstract class DbAdapter implements DbAdapterInterface
      * {@inheritDoc}
      * @throws \PDOException
      */
-    public function begin(bool $readOnly = false, ?string $transactionType = null)
+    public function begin(bool $readOnly = false, ?string $transactionType = null): static
     {
         $this->guardTransaction('begin');
         try {
@@ -604,10 +597,7 @@ abstract class DbAdapter implements DbAdapterInterface
         return $this;
     }
     
-    /**
-     * @return static
-     */
-    public function commit()
+    public function commit(): static
     {
         $this->guardTransaction('commit');
         $this->getConnection()
@@ -615,10 +605,7 @@ abstract class DbAdapter implements DbAdapterInterface
         return $this;
     }
     
-    /**
-     * @return static
-     */
-    public function rollBack()
+    public function rollBack(): static
     {
         $this->guardTransaction('rollback');
         $this->getConnection()
@@ -686,29 +673,32 @@ abstract class DbAdapter implements DbAdapterInterface
     /**
      * Make detailed exception from last pdo error
      * @param string $query - failed query
-     * @param null|\PDOStatement|\PDO $pdoStatement
+     * @param \PDO|\PDOStatement|null $pdoStatement
      * @param null|\PDOException $originalException
      * @return \PDOException|null
      */
-    protected function getDetailedException(string $query, $pdoStatement = null, ?\PDOException $originalException = null): ?\PDOException
-    {
+    protected function getDetailedException(
+        string $query,
+        PDO|PDOStatement|null $pdoStatement = null,
+        ?\PDOException $originalException = null
+    ): ?\PDOException {
         $errorInfo = $this->getPdoError($pdoStatement);
         if ($errorInfo['message'] === null) {
             return $originalException;
         }
         if (preg_match('%syntax error at or near "\$\d+"%i', $errorInfo['message'])) {
-            $errorInfo['message'] .= "\n NOTE: PeskyORM do not use prepared statements. You possibly used one of Postgresql jsonb opertaors - '?', '?|' or '?&'."
-                . ' You should use alternative functions: jsonb_exists(jsonb, text), jsonb_exists_any(jsonb, text) or jsonb_exists_all(jsonb, text) respectively';
+            $errorInfo['message'] .= "\n NOTE: PeskyORM do not use prepared statements. You possibly used one of PostgreSQL jsonb opertaors - '?', '?|' or '?&'."
+                . " You should use escaped operators ('??', '??|' or '??&') or functions: jsonb_exists(jsonb, text), jsonb_exists_any(jsonb, text) or jsonb_exists_all(jsonb, text) respectively";
         }
         return new \PDOException($errorInfo['message'] . ". \nQuery: " . $query, $errorInfo['code']);
     }
     
     /**
-     * @param null|\PDOStatement|\PDO $pdoStatement
+     * @param PDOStatement|PDO|null $pdoStatement
      * @return array
      * @throws \InvalidArgumentException
      */
-    public function getPdoError($pdoStatement = null): array
+    public function getPdoError(null|PDOStatement|PDO $pdoStatement = null): array
     {
         $ret = [];
         if (!$pdoStatement) {
@@ -800,7 +790,7 @@ abstract class DbAdapter implements DbAdapterInterface
      * {@inheritDoc}
      * @throws \InvalidArgumentException
      */
-    public function quoteValue($value, ?int $valueDataType = null): string
+    public function quoteValue(string|int|float|bool|array|DbExpr|AbstractSelect|null $value, ?int $valueDataType = null): string
     {
         if ($value instanceof DbExpr) {
             return $this->quoteDbExpr($value);
@@ -830,10 +820,6 @@ abstract class DbAdapter implements DbAdapterInterface
                         $realType = 'Object fo class [\\' . get_class($value) . ']';
                     } elseif (is_bool($value)) {
                         $realType = 'Boolean [' . ($value ? 'true' : 'false') . ']';
-                    } elseif (is_resource($value)) { //< todo: remove after upgrade to php 8
-                        $realType = 'Resource';
-                    } elseif ($value instanceof \Closure) { //< todo: remove after upgrade to php 8
-                        $realType = \Closure::class;
                     } else {
                         $realType = 'Value of unknown type';
                     }
@@ -883,16 +869,18 @@ abstract class DbAdapter implements DbAdapterInterface
     }
     
     /**
-     * {@inheritDoc}
      * @throws \InvalidArgumentException
      */
-    public function convertConditionOperator(string $operator, $value): string
-    {
+    public function convertConditionOperator(
+        string $operator,
+        string|int|float|bool|array|DbExpr|AbstractSelect|null $value
+    ): string {
         if ($value === null) {
             // 2.2
             return in_array($operator, ['!=', 'NOT', 'IS NOT'], true) ? 'IS NOT' : 'IS';
         } elseif (is_array($value)) {
             // 2.4
+            /** @noinspection PhpSwitchCanBeReplacedWithMatchExpressionInspection */
             switch ($operator) {
                 case '=':
                 case 'IN':
@@ -939,8 +927,11 @@ abstract class DbAdapter implements DbAdapterInterface
      * {@inheritDoc}
      * @throws \InvalidArgumentException
      */
-    public function assembleConditionValue($value, string $operator, bool $valueAlreadyQuoted = false): string
-    {
+    public function assembleConditionValue(
+        string|int|float|bool|array|DbExpr|AbstractSelect|null $value,
+        string $operator,
+        bool $valueAlreadyQuoted = false
+    ): string {
         $operator = mb_strtoupper($operator);
         if ($value instanceof DbExpr) {
             return $this->quoteDbExpr($value);
@@ -986,8 +977,12 @@ abstract class DbAdapter implements DbAdapterInterface
         }
     }
     
-    public function assembleCondition(string $quotedColumn, string $operator, $rawValue, bool $valueAlreadyQuoted = false): string
-    {
+    public function assembleCondition(
+        string $quotedColumn,
+        string $operator,
+        string|int|float|bool|array|DbExpr|AbstractSelect|null $rawValue,
+        bool $valueAlreadyQuoted = false
+    ): string {
         return "{$quotedColumn} {$operator} " . $this->assembleConditionValue($rawValue, $operator, $valueAlreadyQuoted);
     }
     
@@ -1003,7 +998,7 @@ abstract class DbAdapter implements DbAdapterInterface
      * {@inheritDoc}
      * @throws \InvalidArgumentException
      */
-    public function selectColumn(string $table, $column, ?DbExpr $conditionsAndOptions = null): array
+    public function selectColumn(string $table, string|DbExpr $column, ?DbExpr $conditionsAndOptions = null): array
     {
         if (empty($column)) {
             throw new \InvalidArgumentException('$column argument cannot be empty');
@@ -1020,7 +1015,7 @@ abstract class DbAdapter implements DbAdapterInterface
      * {@inheritDoc}
      * @throws \InvalidArgumentException
      */
-    public function selectAssoc(string $table, $keysColumn, $valuesColumn, ?DbExpr $conditionsAndOptions = null): array
+    public function selectAssoc(string $table, string|DbExpr $keysColumn, string|DbExpr $valuesColumn, ?DbExpr $conditionsAndOptions = null): array
     {
         if (empty($keysColumn)) {
             throw new \InvalidArgumentException('$keysColumn argument cannot be empty');
@@ -1060,7 +1055,7 @@ abstract class DbAdapter implements DbAdapterInterface
         );
     }
     
-    public function selectValue(string $table, DbExpr $expression, ?DbExpr $conditionsAndOptions = null)
+    public function selectValue(string $table, DbExpr $expression, ?DbExpr $conditionsAndOptions = null): mixed
     {
         return $this->query(
             $this->makeSelectQuery($table, [$expression], $conditionsAndOptions),

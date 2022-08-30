@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\Tests\PeskyORMTest\TestingFormatters;
 
 use PeskyORM\ORM\RecordInterface;

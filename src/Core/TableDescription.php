@@ -103,7 +103,7 @@ class TableDescription implements \Serializable
      * @since 5.1.0
      * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
-    public function unserialize($serialized): void
+    public function unserialize(string $serialized): void
     {
         $data = json_decode($serialized, true);
         if (!is_array($data)) {

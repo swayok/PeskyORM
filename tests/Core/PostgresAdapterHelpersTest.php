@@ -9,12 +9,16 @@ use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\TableDescription;
 use PeskyORM\ORM\Column;
+use PeskyORM\Tests\PeskyORMTest\Adapter\PostgresTesting;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 class PostgresAdapterHelpersTest extends BaseTestCase
 {
     
+    /**
+     * @return PostgresTesting
+     */
     protected static function getValidAdapter(): DbAdapterInterface
     {
         $adapter = TestingApp::getPgsqlConnection();
@@ -22,194 +26,196 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         return $adapter;
     }
     
-    /**
-     * @param string $methodName
-     * @param mixed $arg
-     * @param mixed $arg2
-     * @return mixed
-     */
-    protected function invokePrivateAdapterMethod(string $methodName, $arg, $arg2 = '__NOT_SET__')
-    {
-        $adapter = static::getValidAdapter();
-        if ($arg2 === '__NOT_SET__') {
-            return $this->callObjectMethod($adapter, $methodName, $arg);
-        } else {
-            return $this->callObjectMethod($adapter, $methodName, $arg, $arg2);
-        }
-    }
-    
     public function testInvalidTable(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage("Argument #1 (\$table) must be of type string");
-        $this->invokePrivateAdapterMethod('guardTableNameArg', null);
+        $this->expectExceptionMessage('Argument #1 ($table) must be of type string');
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getValidAdapter()->guardTableNameArg(null);
     }
     
     public function testInvalidTable2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$table argument cannot be empty");
-        $this->invokePrivateAdapterMethod('guardTableNameArg', '');
+        $this->expectExceptionMessage('$table argument cannot be empty');
+        static::getValidAdapter()->guardTableNameArg('');
     }
     
     public function testInvalidTable3(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$table argument cannot be empty");
-        $this->invokePrivateAdapterMethod('guardTableNameArg', false);
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($table) must be of type string');
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getValidAdapter()->guardTableNameArg(false);
     }
     
     public function testInvalidTable4(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$table must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)");
-        $this->invokePrivateAdapterMethod('guardTableNameArg', true);
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($table) must be of type string');
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getValidAdapter()->guardTableNameArg(true);
     }
     
     public function testInvalidTable5(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage("Argument #1 (\$table) must be of type string");
-        $this->invokePrivateAdapterMethod('guardTableNameArg', $this);
+        $this->expectExceptionMessage('Argument #1 ($table) must be of type string');
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        /** @noinspection PhpParamsInspection */
+        static::getValidAdapter()->guardTableNameArg($this);
     }
     
     public function testInvalidTable6(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$table must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)");
-        $this->invokePrivateAdapterMethod('guardTableNameArg', 123);
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($table) must be of type string');
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getValidAdapter()->guardTableNameArg(123);
     }
     
     public function testInvalidData(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$data argument cannot be empty");
-        $this->invokePrivateAdapterMethod('guardDataArg', []);
+        $this->expectExceptionMessage('$data argument cannot be empty');
+        static::getValidAdapter()->guardDataArg([]);
     }
     
     public function testInvalidData2(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage("Argument #1 (\$data) must be of type array, string given");
-        $this->invokePrivateAdapterMethod('guardDataArg', 'test');
+        $this->expectExceptionMessage('Argument #1 ($data) must be of type array, string given');
+        /** @noinspection PhpParamsInspection */
+        static::getValidAdapter()->guardDataArg('test');
     }
     
     public function testInvalidColumns(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$columns argument cannot be empty");
-        $this->invokePrivateAdapterMethod('guardColumnsArg', []);
+        $this->expectExceptionMessage('$columns argument cannot be empty');
+        static::getValidAdapter()->guardColumnsArg([]);
     }
     
     public function testInvalidColumns2(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage("Argument #1 (\$columns) must be of type array, string given");
-        $this->invokePrivateAdapterMethod('guardColumnsArg', 'test');
+        $this->expectExceptionMessage('Argument #1 ($columns) must be of type array, string given');
+        /** @noinspection PhpParamsInspection */
+        static::getValidAdapter()->guardColumnsArg('test');
     }
     
     public function testInvalidColumns3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$columns argument must contain only strings and DbExpr objects");
-        $this->invokePrivateAdapterMethod('guardColumnsArg', [$this]);
+        $this->expectExceptionMessage('$columns argument must contain only strings and DbExpr objects');
+        static::getValidAdapter()->guardColumnsArg([$this]);
     }
     
     public function testInvalidColumns4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$columns argument must contain only strings");
-        $this->invokePrivateAdapterMethod('guardColumnsArg', [DbExpr::create('test')], false);
+        $this->expectExceptionMessage('$columns argument must contain only strings');
+        static::getValidAdapter()->guardColumnsArg([DbExpr::create('test')], false);
     }
     
     public function testInvalidConditions(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$conditions argument is not allowed to be empty");
-        $this->invokePrivateAdapterMethod('guardConditionsArg', '');
+        $this->expectExceptionMessage('$conditions argument is not allowed to be empty');
+        static::getValidAdapter()->guardConditionsArg('');
     }
     
     public function testInvalidConditions2(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$conditions argument must be a string or DbExpr object");
-        $this->invokePrivateAdapterMethod('guardConditionsArg', []);
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($conditions) must be of type PeskyORM\Core\DbExpr|string');
+        /** @noinspection PhpParamsInspection */
+        static::getValidAdapter()->guardConditionsArg([]);
     }
     
     public function testInvalidConditions3(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$conditions argument must be a string or DbExpr object");
-        $this->invokePrivateAdapterMethod('guardConditionsArg', new \Exception('test'));
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($conditions) must be of type PeskyORM\Core\DbExpr|string');
+        static::getValidAdapter()->guardConditionsArg(new \Exception('test'));
     }
     
     public function testInvalidConditions4(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$conditions argument must be a string or DbExpr object");
-        $this->invokePrivateAdapterMethod('guardConditionsArg', false);
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($conditions) must be of type PeskyORM\Core\DbExpr|string');
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getValidAdapter()->guardConditionsArg(false);
     }
     
     public function testInvalidConditions5(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$conditions argument must be a string or DbExpr object");
-        $this->invokePrivateAdapterMethod('guardConditionsArg', true);
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($conditions) must be of type PeskyORM\Core\DbExpr|string');
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getValidAdapter()->guardConditionsArg(true);
     }
     
     public function testInvalidConditions6(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$conditions argument must be a string or DbExpr object");
-        $this->invokePrivateAdapterMethod('guardConditionsArg', 123);
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($conditions) must be of type PeskyORM\Core\DbExpr|string');
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getValidAdapter()->guardConditionsArg(123);
     }
     
     public function testInvalidReturning(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$returning argument must be array or boolean");
-        $this->invokePrivateAdapterMethod('guardReturningArg', '*');
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($returning) must be of type array|bool');
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getValidAdapter()->guardReturningArg('*');
     }
     
     public function testInvalidReturning2(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$returning argument must be array or boolean");
-        $this->invokePrivateAdapterMethod('guardReturningArg', new \Exception('test'));
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($returning) must be of type array|bool');
+        /** @noinspection PhpParamsInspection */
+        static::getValidAdapter()->guardReturningArg(new \Exception('test'));
     }
     
     public function testInvalidReturning3(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$returning argument must be array or boolean");
-        $this->invokePrivateAdapterMethod('guardReturningArg', 123);
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($returning) must be of type array|bool');
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getValidAdapter()->guardReturningArg(123);
     }
     
     public function testInvalidPkName(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$pkName argument cannot be empty");
-        $this->invokePrivateAdapterMethod('guardPkNameArg', '');
+        static::getValidAdapter()->guardPkNameArg('');
     }
     
     public function testInvalidPkName2(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$pkName must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)");
-        $this->invokePrivateAdapterMethod('guardPkNameArg', true);
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($pkName) must be of type string');
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getValidAdapter()->guardPkNameArg(true);
     }
     
     public function testInvalidPkName3(): void
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage("Argument #1 (\$pkName) must be of type string, array given");
-        $this->invokePrivateAdapterMethod('guardPkNameArg', []);
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        /** @noinspection PhpParamsInspection */
+        static::getValidAdapter()->guardPkNameArg([]);
     }
     
     public function testInvalidPkName4(): void
     {
         // it is valid for PostgreSQL
-        $this->invokePrivateAdapterMethod('guardPkNameArg', 'teasd as das d 90as9()');
+        static::getValidAdapter()->guardPkNameArg('teasd as das d 90as9()');
         static::assertTrue(true);
     }
     
@@ -217,19 +223,21 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage("Argument #1 (\$pkName) must be of type string");
-        $this->invokePrivateAdapterMethod('guardPkNameArg', DbExpr::create('test'));
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        /** @noinspection PhpParamsInspection */
+        static::getValidAdapter()->guardPkNameArg(DbExpr::create('test'));
     }
     
     public function testValidArgs(): void
     {
-        $this->invokePrivateAdapterMethod('guardTableNameArg', 'table');
-        $this->invokePrivateAdapterMethod('guardDataArg', ['key' => 'value']);
-        $this->invokePrivateAdapterMethod('guardColumnsArg', ['key1', DbExpr::create('key2')]);
-        $this->invokePrivateAdapterMethod('guardConditionsArg', 'test');
-        $this->invokePrivateAdapterMethod('guardConditionsArg', DbExpr::create('test'));
-        $this->invokePrivateAdapterMethod('guardReturningArg', true);
-        $this->invokePrivateAdapterMethod('guardReturningArg', false);
-        $this->invokePrivateAdapterMethod('guardReturningArg', ['key1', 'key2']);
+        static::getValidAdapter()->guardTableNameArg('table');
+        static::getValidAdapter()->guardDataArg(['key' => 'value']);
+        static::getValidAdapter()->guardColumnsArg(['key1', DbExpr::create('key2')]);
+        static::getValidAdapter()->guardConditionsArg('test');
+        static::getValidAdapter()->guardConditionsArg(DbExpr::create('test'));
+        static::getValidAdapter()->guardReturningArg(true);
+        static::getValidAdapter()->guardReturningArg(false);
+        static::getValidAdapter()->guardReturningArg(['key1', 'key2']);
         static::assertTrue(true);
     }
     
@@ -402,7 +410,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     {
         static::assertEquals(
             '"table"."col_name"->\'key1\'->>\'key 2\'#>\'key 3\'#>>\'key 4\'',
-            $this->invokePrivateAdapterMethod('quoteJsonSelectorExpression', [
+            static::getValidAdapter()->quoteJsonSelectorExpression([
                 'table.col_name',
                 '->',
                 'key1',
@@ -416,7 +424,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         );
         static::assertEquals(
             '"table"."col_name"->2',
-            $this->invokePrivateAdapterMethod('quoteJsonSelectorExpression', [
+            static::getValidAdapter()->quoteJsonSelectorExpression([
                 'table.col_name',
                 '->',
                 '2',
@@ -426,41 +434,41 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     
     public function testIsValidDbEntityNameAndJsonSelector1(): void
     {
-        static::assertTrue($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test->test'));
-        static::assertTrue($this->invokePrivateAdapterMethod('isValidJsonSelector', '_test #> `test`'));
-        static::assertTrue($this->invokePrivateAdapterMethod('isValidJsonSelector', 't2est ->>"test"'));
-        static::assertTrue($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test->> \'test\''));
-        static::assertTrue($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test->test->>test#>test#>>test'));
+        static::assertTrue(static::getValidAdapter()->isValidJsonSelector('test->test'));
+        static::assertTrue(static::getValidAdapter()->isValidJsonSelector('_test #> `test`'));
+        static::assertTrue(static::getValidAdapter()->isValidJsonSelector('t2est ->>"test"'));
+        static::assertTrue(static::getValidAdapter()->isValidJsonSelector('test->> \'test\''));
+        static::assertTrue(static::getValidAdapter()->isValidJsonSelector('test->test->>test#>test#>>test'));
         
-        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', ''));
-        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test->'));
-        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', '->test'));
-        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test->""->test'));
-        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test->\'->test'));
-        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test->```->test'));
-        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', '0test test->test'));
-        static::assertFalse($this->invokePrivateAdapterMethod('isValidJsonSelector', '$test test->test'));
+        static::assertFalse(static::getValidAdapter()->isValidJsonSelector(''));
+        static::assertFalse(static::getValidAdapter()->isValidJsonSelector('test->'));
+        static::assertFalse(static::getValidAdapter()->isValidJsonSelector('->test'));
+        static::assertFalse(static::getValidAdapter()->isValidJsonSelector('test->""->test'));
+        static::assertFalse(static::getValidAdapter()->isValidJsonSelector('test->\'->test'));
+        static::assertFalse(static::getValidAdapter()->isValidJsonSelector('test->```->test'));
+        static::assertFalse(static::getValidAdapter()->isValidJsonSelector('0test test->test'));
+        static::assertFalse(static::getValidAdapter()->isValidJsonSelector('$test test->test'));
         
-        static::assertTrue($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test'));
-        static::assertTrue($this->invokePrivateAdapterMethod('isValidDbEntityName', '_test._test2'));
-        static::assertTrue($this->invokePrivateAdapterMethod('isValidDbEntityName', 't2est.*'));
-        static::assertTrue($this->invokePrivateAdapterMethod('isValidDbEntityName', '*'));
-        static::assertTrue($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test->test'));
+        static::assertTrue(static::getValidAdapter()->isValidDbEntityName('test'));
+        static::assertTrue(static::getValidAdapter()->isValidDbEntityName('_test._test2'));
+        static::assertTrue(static::getValidAdapter()->isValidDbEntityName('t2est.*'));
+        static::assertTrue(static::getValidAdapter()->isValidDbEntityName('*'));
+        static::assertTrue(static::getValidAdapter()->isValidDbEntityName('test->test'));
         
-        static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', '0test'));
-        static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', '$test'));
-        static::assertFalse($this->invokePrivateAdapterMethod('isValidDbEntityName', ''));
+        static::assertFalse(static::getValidAdapter()->isValidDbEntityName('0test'));
+        static::assertFalse(static::getValidAdapter()->isValidDbEntityName('$test'));
+        static::assertFalse(static::getValidAdapter()->isValidDbEntityName(''));
     }
     
     public function testIsValidDbEntityNameAndJsonSelector2(): void
     {
         // for PostgreSQL these are ok while for other RDBMS it might be not
-        static::assertTrue($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test test->test'));
-        static::assertTrue($this->invokePrivateAdapterMethod('isValidJsonSelector', 'test#test->test'));
+        static::assertTrue(static::getValidAdapter()->isValidJsonSelector('test test->test'));
+        static::assertTrue(static::getValidAdapter()->isValidJsonSelector('test#test->test'));
     
-        static::assertTrue($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test test'));
-        static::assertTrue($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test$test'));
-        static::assertTrue($this->invokePrivateAdapterMethod('isValidDbEntityName', 'test->test', false));
+        static::assertTrue(static::getValidAdapter()->isValidDbEntityName('test test'));
+        static::assertTrue(static::getValidAdapter()->isValidDbEntityName('test$test'));
+        static::assertTrue(static::getValidAdapter()->isValidDbEntityName('test->test', false));
     }
     
     public function testInvalidAssembleConditionValue11(): void
@@ -677,43 +685,43 @@ class PostgresAdapterHelpersTest extends BaseTestCase
             $adapter->assembleCondition($column, '<@', 'test', true)
         );
         static::assertEquals(
-            "jsonb_exists({$column}, " . $adapter->assembleConditionValue('test', '?') . ')',
+            "{$column} ?? " . $adapter->assembleConditionValue('test', '?'),
             $adapter->assembleCondition($column, '?', 'test')
         );
         static::assertEquals(
-            "jsonb_exists({$column}, " . $adapter->assembleConditionValue('test', '?', true) . ')',
+            "{$column} ?? " . $adapter->assembleConditionValue('test', '?', true),
             $adapter->assembleCondition($column, '?', 'test', true)
         );
         static::assertEquals(
-            "jsonb_exists_any({$column}, array[" . $adapter->quoteValue('test') . '])',
+            "{$column} ??| array[" . $adapter->quoteValue('test') . ']',
             $adapter->assembleCondition($column, '?|', 'test')
         );
         static::assertEquals(
-            "jsonb_exists_any({$column}, array[test])",
+            "{$column} ??| array[test]",
             $adapter->assembleCondition($column, '?|', 'test', true)
         );
         static::assertEquals(
-            "jsonb_exists_any({$column}, array[" . $adapter->quoteValue('test1') . ', ' . $adapter->quoteValue('test2') . '])',
+            "{$column} ??| array[" . $adapter->quoteValue('test1') . ', ' . $adapter->quoteValue('test2') . ']',
             $adapter->assembleCondition($column, '?|', ['test1', 'test2'])
         );
         static::assertEquals(
-            "jsonb_exists_any({$column}, array[test1, test2])",
+            "{$column} ??| array[test1, test2]",
             $adapter->assembleCondition($column, '?|', ['test1', 'test2'], true)
         );
         static::assertEquals(
-            "jsonb_exists_all({$column}, array[" . $adapter->quoteValue('test') . '])',
+            "{$column} ??& array[" . $adapter->quoteValue('test') . ']',
             $adapter->assembleCondition($column, '?&', 'test')
         );
         static::assertEquals(
-            "jsonb_exists_all({$column}, array[test])",
+            "{$column} ??& array[test]",
             $adapter->assembleCondition($column, '?&', 'test', true)
         );
         static::assertEquals(
-            "jsonb_exists_all({$column}, array[" . $adapter->quoteValue('test1') . ', ' . $adapter->quoteValue('test2') . '])',
+            "{$column} ??& array[" . $adapter->quoteValue('test1') . ', ' . $adapter->quoteValue('test2') . ']',
             $adapter->assembleCondition($column, '?&', ['test1', 'test2'])
         );
         static::assertEquals(
-            "jsonb_exists_all({$column}, array[test1, test2])",
+            "{$column} ??& array[test1, test2]",
             $adapter->assembleCondition($column, '?&', ['test1', 'test2'], true)
         );
     }
@@ -729,100 +737,100 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         // Postgres::extractLimitAndPrecisionForColumnDescription()
         static::assertEquals(
             [null, null],
-            $this->invokePrivateAdapterMethod('extractLimitAndPrecisionForColumnDescription', 'integer')
+            static::getValidAdapter()->extractLimitAndPrecisionForColumnDescription('integer')
         );
         static::assertEquals(
             [200, null],
-            $this->invokePrivateAdapterMethod('extractLimitAndPrecisionForColumnDescription', 'character varying(200)')
+            static::getValidAdapter()->extractLimitAndPrecisionForColumnDescription('character varying(200)')
         );
         static::assertEquals(
             [8, 2],
-            $this->invokePrivateAdapterMethod('extractLimitAndPrecisionForColumnDescription', 'numeric(8,2)')
+            static::getValidAdapter()->extractLimitAndPrecisionForColumnDescription('numeric(8,2)')
         );
         // Postgres::cleanDefaultValueForColumnDescription()
         static::assertEquals(
             '',
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "''::character varying")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("''::character varying")
         );
         static::assertEquals(
             ' ',
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "' '::text")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("' '::text")
         );
         static::assertEquals(
             'a',
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'a'::bpchar")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("'a'::bpchar")
         );
         static::assertEquals(
             '{}',
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'{}'::jsonb")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("'{}'::jsonb")
         );
         static::assertEquals(
             null,
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', '')
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription('')
         );
         static::assertEquals(
             null,
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', null)
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription(null)
         );
         static::assertEquals(
             null,
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', 'NULL::character varying')
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription('NULL::character varying')
         );
         static::assertEquals(
             true,
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', 'true')
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription('true')
         );
         static::assertEquals(
             false,
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', 'false')
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription('false')
         );
         static::assertEquals(
             11,
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', '11')
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription('11')
         );
         static::assertEquals(
             11.1,
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', '11.1')
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription('11.1')
         );
         static::assertEquals(
             11.1,
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'11.1'")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("'11.1'")
         );
         static::assertEquals(
             DbExpr::create("'somecode'::text + NOW()::text + INTERVAL '1 day'::text"),
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'somecode'::text + NOW()::text + INTERVAL '1 day'::text")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("'somecode'::text + NOW()::text + INTERVAL '1 day'::text")
         );
         static::assertEquals(
             "'",
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "''''::text")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("''''::text")
         );
         static::assertEquals(
             "test'quote",
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'test''quote'::text")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("'test''quote'::text")
         );
         static::assertEquals(
             "test'",
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'test'''::text")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("'test'''::text")
         );
         static::assertEquals(
             "'quote",
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'''quote'::text")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("'''quote'::text")
         );
         static::assertEquals(
             "'quote'",
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'''quote'''::text")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("'''quote'''::text")
         );
         static::assertEquals(
             "'quote'test ' asd'",
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'''quote''test '' asd'''::text")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("'''quote''test '' asd'''::text")
         );
         static::assertEquals(
             "'quote'test ' asd'",
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', "'''quote''test '' asd'''")
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription("'''quote''test '' asd'''")
         );
         static::assertEquals(
             DbExpr::create('NOW()'),
-            $this->invokePrivateAdapterMethod('cleanDefaultValueForColumnDescription', 'NOW()')
+            static::getValidAdapter()->cleanDefaultValueForColumnDescription('NOW()')
         );
         // Postgres::describeTable()
         $adapter = static::getValidAdapter();
@@ -859,8 +867,8 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         
         $valueCol = $description->getColumn('value');
         static::assertEquals('value', $valueCol->getName());
-        static::assertEquals('json', $valueCol->getDbType());
-        static::assertEquals(Column::TYPE_JSON, $valueCol->getOrmType());
+        static::assertEquals('jsonb', $valueCol->getDbType());
+        static::assertEquals(Column::TYPE_JSONB, $valueCol->getOrmType());
         static::assertEquals('{}', $valueCol->getDefault());
         static::assertEquals(null, $valueCol->getNumberPrecision());
         static::assertEquals(null, $valueCol->getLimit());

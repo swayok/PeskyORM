@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\Tests\PeskyORMTest\TestingFormatters;
 
 use PeskyORM\ORM\ValueToObjectConverter;
@@ -7,18 +9,9 @@ use PeskyORM\ORM\ValueToObjectConverter;
 class TestingFormatterJsonObject extends ValueToObjectConverter
 {
     
-    /**
-     * @var mixed
-     */
-    public $key1 = null;
-    /**
-     * @var mixed
-     */
-    public $key2 = null;
-    /**
-     * @var mixed
-     */
-    public $key3 = null;
+    public mixed $key1 = null;
+    public mixed $key2 = null;
+    public mixed $key3 = null;
 
     
 }

@@ -45,10 +45,7 @@ interface DbConnectionConfigInterface
     
     public function getDefaultSchemaName(): ?string;
     
-    /**
-     * @param string|array $defaultSchemaName
-     */
-    public function setDefaultSchemaName($defaultSchemaName): DbConnectionConfigInterface;
+    public function setDefaultSchemaName(string|array $defaultSchemaName): DbConnectionConfigInterface;
     
     /**
      * Do some action on connect (set charset, default db schema, etc)

@@ -370,7 +370,6 @@ class RecordValue
     }
     
     /**
-     * @param array|null $data
      * @return static
      */
     public function setDataForSavingExtender(?array $data)
@@ -379,9 +378,6 @@ class RecordValue
         return $this;
     }
     
-    /**
-     * @return array
-     */
     public function pullDataForSavingExtender(): ?array
     {
         $data = $this->dataForSavingExtender;

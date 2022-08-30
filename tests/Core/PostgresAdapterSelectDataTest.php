@@ -9,11 +9,13 @@ use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Select;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\Data\TestDataForAdminsTable;
+use PeskyORM\Tests\PeskyORMTest\Data\TestDataForSettingsTable;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 class PostgresAdapterSelectDataTest extends BaseTestCase
 {
     use TestDataForAdminsTable;
+    use TestDataForSettingsTable;
     
     public static function setUpBeforeClass(): void
     {
@@ -82,6 +84,70 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
         
         $data = $adapter->selectValue('admins', DbExpr::create('COUNT(`*`)'));
         static::assertEquals(2, $data);
+    }
+    
+    public function testJsonSelects(): void
+    {
+        $adapter = static::getValidAdapter();
+        TestingApp::clearTables($adapter);
+        $testData = $this->getTestDataForSettingsTableInsert();
+        $adapter->insertMany('settings', array_keys($testData[0]), $testData);
+    
+        $data = $adapter->selectOne(
+            'settings',
+            ['id'],
+            DbExpr::create("WHERE `value`->``test4``->>``sub1`` = ``val1``")
+        );
+        static::assertNotEmpty($data);
+        static::assertEquals(3, $data['id']);
+    
+        $data = $adapter->selectOne(
+            'settings',
+            ['id'],
+            DbExpr::create("WHERE `value`#>>``{test4,sub1}`` = ``val1``")
+        );
+        static::assertNotEmpty($data);
+        static::assertEquals(3, $data['id']);
+    
+        $data = $adapter->selectOne(
+            'settings',
+            ['id'],
+            DbExpr::create("WHERE `value`#>>``{test4,sub1}`` IS NOT NULL")
+        );
+        static::assertNotEmpty($data);
+        static::assertEquals(3, $data['id']);
+    
+        $data = $adapter->selectOne(
+            'settings',
+            ['id'],
+            DbExpr::create("WHERE `value` ?? ``test4``")
+        );
+        static::assertNotEmpty($data);
+        static::assertEquals(3, $data['id']);
+    
+        $data = $adapter->selectOne(
+            'settings',
+            ['id'],
+            DbExpr::create("WHERE `value` ?? ``test1``")
+        );
+        static::assertNotEmpty($data);
+        static::assertEquals(2, $data['id']);
+    
+        $data = $adapter->selectOne(
+            'settings',
+            ['id'],
+            DbExpr::create("WHERE `value` ??| array[``test1``, ``test2``]")
+        );
+        static::assertNotEmpty($data);
+        static::assertEquals(2, $data['id']);
+    
+        $data = $adapter->selectOne(
+            'settings',
+            ['id'],
+            DbExpr::create("WHERE `value` ??& array[``test1``, ``test2``]")
+        );
+        static::assertNotEmpty($data);
+        static::assertEquals(2, $data['id']);
     }
     
     public function testInvalidAnalyzeColumnName1(): void

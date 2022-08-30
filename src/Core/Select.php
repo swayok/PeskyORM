@@ -18,19 +18,14 @@ class Select extends AbstractSelect
     protected DbAdapterInterface $connection;
     
     /**
-     * @param string $tableName
-     * @param DbAdapterInterface $connection
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public static function from(string $tableName, DbAdapterInterface $connection)
+    public static function from(string $tableName, DbAdapterInterface $connection): static
     {
         return new static($tableName, $connection);
     }
     
     /**
-     * @param string $tableName - table name or Table object
-     * @param DbAdapterInterface $connection
      * @throws \InvalidArgumentException
      */
     public function __construct(string $tableName, DbAdapterInterface $connection)
@@ -44,11 +39,9 @@ class Select extends AbstractSelect
     }
     
     /**
-     * @param string $schema
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setTableSchemaName(string $schema)
+    public function setTableSchemaName(string $schema): static
     {
         if (empty($schema)) {
             throw new \InvalidArgumentException('$schema argument value cannot be empty');
@@ -69,10 +62,7 @@ class Select extends AbstractSelect
         return $this->tableName;
     }
     
-    /**
-     * @return static
-     */
-    public function setTableAlias(string $tableAlias)
+    public function setTableAlias(string $tableAlias): static
     {
         $this->tableAlias = $tableAlias;
         return $this;
@@ -89,12 +79,9 @@ class Select extends AbstractSelect
     }
     
     /**
-     * @param JoinInfo $joinInfo
-     * @param bool $append
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function join(JoinInfo $joinInfo, bool $append = true)
+    public function join(JoinInfo $joinInfo, bool $append = true): static
     {
         $this->_join($joinInfo, $append);
         return $this;

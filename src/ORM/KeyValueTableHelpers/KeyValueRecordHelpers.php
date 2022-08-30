@@ -10,26 +10,14 @@ namespace PeskyORM\ORM\KeyValueTableHelpers;
 trait KeyValueRecordHelpers
 {
     
-    /**
-     * @param string $key
-     * @param mixed $foreignKeyValue
-     * @param mixed $default
-     * @return mixed
-     */
-    public static function get(string $key, $foreignKeyValue = null, $default = null)
+    public static function get(string $key, float|int|string|null $foreignKeyValue = null, mixed $default = null): mixed
     {
         /** @var KeyValueTableInterface $table */
         $table = static::getTable();
         return $table->getValue($key, $foreignKeyValue, $default);
     }
     
-    /**
-     * @param string $key
-     * @param array $arguments
-     * @return mixed
-     * @throws \InvalidArgumentException
-     */
-    public static function __callStatic(string $key, array $arguments)
+    public static function __callStatic(string $key, array $arguments): mixed
     {
         $fkValue = $arguments[0] ?? null;
         $default = $arguments[1] ?? null;

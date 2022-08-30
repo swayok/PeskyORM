@@ -14,10 +14,7 @@ class KeyValueDataSaver extends Record
     
     protected static FakeTable $table;
     protected static KeyValueTableInterface $originalTable;
-    /**
-     * @var string|int|float
-     */
-    protected $_fkValue;
+    protected string|int|float|null $_fkValue = null;
     protected array $_constantAdditionalData = [];
     
     public static function getTable(): TableInterface
@@ -25,18 +22,11 @@ class KeyValueDataSaver extends Record
         return static::$table;
     }
     
-    /**
-     * @param KeyValueTableInterface $table
-     * @param array $originalData
-     * @param array $newData
-     * @param string|int|float $fkValue
-     * @param array $constantAdditionalData
-     */
     public static function saveKeyValuePairs(
         KeyValueTableInterface $table,
         array $originalData,
         array $newData,
-        $fkValue = null,
+        float|int|string|null $fkValue = null,
         array $constantAdditionalData = []
     ): void {
         /** @var array|Column[] $columns */
@@ -70,8 +60,11 @@ class KeyValueDataSaver extends Record
             ->saveToDb(array_keys($newData), $fkValue, $constantAdditionalData);
     }
     
-    protected function saveToDb(array $columnsToSave = [], $fkValue = null, array $constantAdditionalData = []): void
-    {
+    protected function saveToDb(
+        array $columnsToSave = [],
+        float|int|string|null $fkValue = null,
+        array $constantAdditionalData = []
+    ): void {
         $this->_fkValue = $fkValue;
         $this->_constantAdditionalData = $constantAdditionalData;
         parent::saveToDb($columnsToSave);

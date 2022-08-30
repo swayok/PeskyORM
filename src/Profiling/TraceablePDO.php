@@ -84,7 +84,7 @@ class TraceablePDO extends PDO
      * return Boolean FALSE, but may also return a non-Boolean value which evaluates to FALSE.
      * Please read the section on Booleans for more information
      */
-    public function exec($statement)
+    public function exec(string $statement): int|false
     {
         return $this->profileCall('exec', $statement, func_get_args());
     }
@@ -97,7 +97,7 @@ class TraceablePDO extends PDO
      * @return mixed A successful call returns the value of the requested PDO attribute.
      * An unsuccessful call returns null.
      */
-    public function getAttribute($attribute)
+    public function getAttribute(int $attribute): mixed
     {
         return $this->pdo->getAttribute($attribute);
     }
@@ -121,7 +121,7 @@ class TraceablePDO extends PDO
      * @return string|false If a sequence name was not specified for the name parameter, PDO::lastInsertId
      * returns a string representing the row ID of the last row that was inserted into the database.
      */
-    public function lastInsertId($name = null)
+    public function lastInsertId($name = null): false|string
     {
         return $this->pdo->lastInsertId($name);
     }
@@ -137,7 +137,7 @@ class TraceablePDO extends PDO
      * PDO::prepare returns a PDOStatement object. If the database server cannot successfully prepare
      * the statement, PDO::prepare returns FALSE or emits PDOException (depending on error handling).
      */
-    public function prepare($query, array $options = null)
+    public function prepare(string $query, array $options = null): false|TraceablePDOStatement
     {
         /** @var TraceablePDOStatement|false $statement */
         $statement = $this->pdo->prepare($query, $options);
@@ -150,12 +150,10 @@ class TraceablePDO extends PDO
      * @link http://php.net/manual/en/pdo.query.php
      * @param string $statement
      * @param int $mode
-     * @param null $arg3
-     * @param array $ctorargs
-     * @return TraceablePDOStatement|bool PDO::query returns a PDOStatement object, or FALSE on
-     * failure.
+     * @param array $fetch_mode_args
+     * @return TraceablePDOStatement|bool PDO::query returns a PDOStatement object, or FALSE on failure.
      */
-    public function query($statement, $mode = PDO::ATTR_DEFAULT_FETCH_MODE, $arg3 = null, array $ctorargs = [])
+    public function query($statement, $mode = PDO::ATTR_DEFAULT_FETCH_MODE, ...$fetch_mode_args): mixed
     {
         return $this->profileCall('query', $statement, func_get_args());
     }
@@ -170,7 +168,7 @@ class TraceablePDO extends PDO
      * @return string|bool A quoted string that is theoretically safe to pass into an SQL statement.
      * Returns FALSE if the driver does not support quoting in this way.
      */
-    public function quote($string, $type = PDO::PARAM_STR)
+    public function quote(string $string, int $type = PDO::PARAM_STR): false|string
     {
         return $this->pdo->quote($string, $type);
     }
@@ -194,7 +192,7 @@ class TraceablePDO extends PDO
      * @param mixed $value
      * @return bool TRUE on success or FALSE on failure.
      */
-    public function setAttribute($attribute, $value): bool
+    public function setAttribute(int $attribute, mixed $value): bool
     {
         return $this->pdo->setAttribute($attribute, $value);
     }
@@ -208,7 +206,7 @@ class TraceablePDO extends PDO
      * @return mixed  The result of the call
      * @throws \PDOException
      */
-    protected function profileCall(string $method, string $sql, array $args)
+    protected function profileCall(string $method, string $sql, array $args): mixed
     {
         $trace = new TracedStatement($sql);
         $trace->start();
@@ -295,28 +293,18 @@ class TraceablePDO extends PDO
         });
     }
     
-    /**
-     * @return mixed
-     */
-    public function __get(string $name)
+    public function __get(string $name): mixed
     {
         return $this->pdo->$name;
     }
     
     /** @noinspection MagicMethodsValidityInspection */
-    /**
-     * @param string $name
-     * @param mixed $value
-     */
-    public function __set(string $name, $value)
+    public function __set(string $name, mixed $value): void
     {
         $this->pdo->$name = $value;
     }
     
-    /**
-     * @return mixed
-     */
-    public function __call(string $name, array $args)
+    public function __call(string $name, array $args): mixed
     {
         return call_user_func_array([$this->pdo, $name], $args);
     }

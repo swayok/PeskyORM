@@ -118,13 +118,18 @@ interface TableInterface
     /**
      * Select associative array
      * Note: does not support columns from foreign models
-     * @param string|DbExpr $keysColumn
-     * @param string|DbExpr $valuesColumn
+     * @param string|DbExpr|null $keysColumn
+     * @param string|DbExpr|null $valuesColumn
      * @param array $conditions
      * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
      * @return array
      */
-    public static function selectAssoc($keysColumn, $valuesColumn, array $conditions = [], ?\Closure $configurator = null): array;
+    public static function selectAssoc(
+        string|DbExpr|null $keysColumn,
+        string|DbExpr|null $valuesColumn,
+        array $conditions = [],
+        ?\Closure $configurator = null
+    ): array;
     
     /**
      * Get 1 record from DB as array

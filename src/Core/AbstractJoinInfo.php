@@ -36,10 +36,9 @@ abstract class AbstractJoinInfo
     }
     
     /**
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setColumnName(string $columnName)
+    public function setColumnName(string $columnName): static
     {
         if (empty($columnName)) {
             throw new \InvalidArgumentException('$columnName argument must be a not-empty string');
@@ -54,10 +53,9 @@ abstract class AbstractJoinInfo
     }
     
     /**
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setForeignColumnName(string $foreignColumnName)
+    public function setForeignColumnName(string $foreignColumnName): static
     {
         if (empty($foreignColumnName)) {
             throw new \InvalidArgumentException('$foreignColumnName argument must be a not-empty string');
@@ -82,10 +80,9 @@ abstract class AbstractJoinInfo
     }
     
     /**
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setJoinName(string $joinName)
+    public function setJoinName(string $joinName): static
     {
         if (empty($joinName)) {
             throw new \InvalidArgumentException('$joinName argument must be a not-empty string');
@@ -105,10 +102,9 @@ abstract class AbstractJoinInfo
     }
     
     /**
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setJoinType(string $joinType)
+    public function setJoinType(string $joinType): static
     {
         if (empty($joinType)) {
             throw new \InvalidArgumentException('$joinType argument must be a not-empty string');
@@ -142,10 +138,9 @@ abstract class AbstractJoinInfo
     }
     
     /**
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setTableAlias(string $alias)
+    public function setTableAlias(string $alias): static
     {
         if (empty($alias)) {
             throw new \InvalidArgumentException('$alias argument must be a not-empty string');
@@ -159,10 +154,7 @@ abstract class AbstractJoinInfo
         return $this->additionalJoinConditions;
     }
     
-    /**
-     * @return static
-     */
-    public function setAdditionalJoinConditions(array $additionalJoinConditions)
+    public function setAdditionalJoinConditions(array $additionalJoinConditions): static
     {
         $this->additionalJoinConditions = $additionalJoinConditions;
         return $this;
@@ -175,9 +167,8 @@ abstract class AbstractJoinInfo
     
     /**
      * @param array $columns - use '*' or ['*'] to select all columns and empty array to select none
-     * @return static
      */
-    public function setForeignColumnsToSelect(...$columns)
+    public function setForeignColumnsToSelect(...$columns): static
     {
         if (count($columns) === 1 && is_array($columns[0])) {
             $columns = $columns[0];
