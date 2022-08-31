@@ -13,7 +13,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
     /**
      * @throws \BadMethodCallException
      */
-    public static function valueSetter($newValue, bool $isFromDb, RecordValue $valueContainer, bool $trustDataReceivedFromDb): RecordValue
+    public static function valueSetter(mixed $newValue, bool $isFromDb, RecordValue $valueContainer, bool $trustDataReceivedFromDb): RecordValue
     {
         $column = $valueContainer->getColumn();
         if (!$isFromDb && !$column->isValueCanBeSetOrChanged()) {
@@ -61,7 +61,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         return $valueContainer;
     }
     
-    public static function valuePreprocessor($value, bool $isFromDb, bool $isForValidation, Column $column)
+    public static function valuePreprocessor(mixed $value, bool $isFromDb, bool $isForValidation, Column $column): mixed
     {
         if ($isFromDb && !$isForValidation) {
             return $value;
@@ -82,7 +82,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         return $value;
     }
     
-    public static function valueGetter(RecordValue $valueContainer, ?string $format = null)
+    public static function valueGetter(RecordValue $valueContainer, ?string $format = null): mixed
     {
         if ($format !== null) {
             return call_user_func(
@@ -103,7 +103,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
     /**
      * @throws \UnexpectedValueException
      */
-    public static function valueValidator($value, bool $isFromDb, bool $isForCondition, Column $column): array
+    public static function valueValidator(mixed $value, bool $isFromDb, bool $isForCondition, Column $column): array
     {
         $errors = RecordValueHelpers::isValidDbColumnValue(
             $column,
@@ -132,7 +132,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         return $errors;
     }
     
-    public static function valueIsAllowedValidator($value, bool $isFromDb, Column $column): array
+    public static function valueIsAllowedValidator(mixed $value, bool $isFromDb, Column $column): array
     {
         return RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn(
             $column,
@@ -142,7 +142,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         );
     }
     
-    public static function valueNormalizer($value, bool $isFromDb, Column $column)
+    public static function valueNormalizer(mixed $value, bool $isFromDb, Column $column): mixed
     {
         return $isFromDb
             ? RecordValueHelpers::normalizeValueReceivedFromDb($value, $column->getType())
@@ -157,7 +157,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
     {
     }
     
-    public static function valueValidatorExtender($value, bool $isFromDb, Column $column): array
+    public static function valueValidatorExtender(mixed $value, bool $isFromDb, Column $column): array
     {
         return [];
     }
@@ -165,7 +165,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
     /**
      * @throws \InvalidArgumentException
      */
-    public static function valueFormatter(RecordValue $valueContainer, string $format)
+    public static function valueFormatter(RecordValue $valueContainer, string $format): mixed
     {
         $column = $valueContainer->getColumn();
         $customFormatters = $column->getCustomValueFormatters();

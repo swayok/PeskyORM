@@ -26,18 +26,15 @@ class OrmSelect extends AbstractSelect
     protected array $joinsAddedByRelations = [];
     
     /**
-     * @param TableInterface $table
-     * @param string|null $tableAlias - used for relations / alias for table in case if it is not $table::getAlias()
-     * @return static
+     * $tableAlias used in conditions and joins. Default: $table::getAlias()
      */
-    public static function from(TableInterface $table, ?string $tableAlias = null)
+    public static function from(TableInterface $table, ?string $tableAlias = null): static
     {
         return new static($table, $tableAlias);
     }
     
     /**
-     * @param TableInterface $table - table name or Table object
-     * @param string|null $tableAlias - used for relations / alias for table in case if it is not $table::getAlias()
+     * $tableAlias used in conditions and joins. Default: $table::getAlias()
      */
     public function __construct(TableInterface $table, ?string $tableAlias = null)
     {
@@ -52,10 +49,7 @@ class OrmSelect extends AbstractSelect
             ->getTableName();
     }
     
-    /**
-     * @return static
-     */
-    public function setTableAlias(string $tableAlias)
+    public function setTableAlias(string $tableAlias): static
     {
         $this->tableAlias = $tableAlias;
         return $this;
@@ -83,10 +77,7 @@ class OrmSelect extends AbstractSelect
         return $this->table;
     }
     
-    /**
-     * @return static
-     */
-    public function setRecordClass(?string $class)
+    public function setRecordClass(?string $class): static
     {
         $this->recordClass = $class;
         return $this;
@@ -104,17 +95,13 @@ class OrmSelect extends AbstractSelect
     
     public function fetchOneAsDbRecord(): RecordInterface
     {
-        return $this->getNewRecord()
-            ->fromDbData($this->fetchOne());
+        return $this->getNewRecord()->fromDbData($this->fetchOne());
     }
     
     /**
-     * @param OrmJoinInfo $joinInfo
-     * @param bool $append
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function join(OrmJoinInfo $joinInfo, bool $append = true)
+    public function join(OrmJoinInfo $joinInfo, bool $append = true): static
     {
         $this->_join($joinInfo, $append);
         return $this;
@@ -199,15 +186,14 @@ class OrmSelect extends AbstractSelect
     }
     
     /**
-     * @return static
+     * @throws \UnexpectedValueException
      */
-    protected function processRawColumns()
+    protected function processRawColumns(): static
     {
         parent::processRawColumns();
         foreach ($this->columnsToSelectFromJoinedRelations as $joinName => $columns) {
             try {
-                $this->getJoin($joinName)
-                    ->setForeignColumnsToSelect(empty($columns) ? [] : $columns);
+                $this->getJoin($joinName)->setForeignColumnsToSelect(empty($columns) ? [] : $columns);
             } catch (\InvalidArgumentException $exc) {
                 throw new \UnexpectedValueException('SELECT: ' . $exc->getMessage(), 0);
             }
@@ -215,14 +201,16 @@ class OrmSelect extends AbstractSelect
         return $this;
     }
     
+    /**
+     * @throws \UnexpectedValueException
+     */
     protected function normalizeWildcardColumn(?string $joinName = null, ?array $excludeColumns = null, bool $includeHeavyColumns = false): array
     {
         if ($joinName === null) {
             $tableStructure = $this->getTableStructure();
         } else {
-            $tableStructure = $this->getJoin($joinName)
-                ->getForeignDbTable()
-                ->getTableStructure();
+            $join = $this->getOrmJoin($joinName);
+            $tableStructure = $join->getForeignDbTable()->getTableStructure();
         }
         $normalizedColumns = [];
         if ($excludeColumns === null) {
@@ -258,15 +246,14 @@ class OrmSelect extends AbstractSelect
                 }
                 if ($columnAlias === '*') {
                     // all columns except those listed in $columnName
+                    $joinColumns = $this->getOrmJoin($joinName)
+                        ->getForeignDbTable()
+                        ->getTableStructure()
+                        ->getColumnsThatExistInDb();
                     $filteredColumns = array_merge(
                         $filteredColumns,
                         array_diff(
-                            array_keys(
-                                $this->getJoin($joinName)
-                                    ->getForeignDbTable()
-                                    ->getTableStructure()
-                                    ->getColumnsThatExistInDb()
-                            ),
+                            array_keys($joinColumns),
                             (array)$columnName
                         )
                     );
@@ -311,8 +298,7 @@ class OrmSelect extends AbstractSelect
                 !$this->hasJoin($subJoin, true)
                 && (
                     array_key_exists($subJoin, $this->joinedRelationsParents) //< array_key_exists is correct
-                    || $this->getTableStructure()
-                        ->hasRelation($subJoin)
+                    || $this->getTableStructure()->hasRelation($subJoin)
                 )
             ) {
                 $this->addJoinFromRelation($subJoin);
@@ -321,19 +307,25 @@ class OrmSelect extends AbstractSelect
         return parent::getJoin($joins[count($joins) - 1]);
     }
     
+    protected function getOrmJoin(string $joinName): OrmJoinInfo
+    {
+        $join = $this->getJoin($joinName);
+        $this->guardJoinClass($joinName, $join);
+        /** @var OrmJoinInfo $join - validated by guardJoinClass */
+        return $join;
+    }
+    
     /**
-     * Load relation and all its parents
-     * @param string $joinName
-     * @return static
+     * Create join from relation.
+     * Relation name detected by $this->getRelationNameByJoinName($joinName).
      * @throws \UnexpectedValueException
      */
-    protected function addJoinFromRelation(string $joinName)
+    protected function addJoinFromRelation(string $joinName): static
     {
         if (!$this->hasJoin($joinName, false)) {
             if (
                 !array_key_exists($joinName, $this->joinedRelationsParents) //< array_key_exists is correct
-                && $this->getTableStructure()
-                    ->hasRelation($joinName)
+                && $this->getTableStructure()->hasRelation($joinName)
             ) {
                 // this may happen only when relation is used in WHERE or HAVING
                 $this->joinedRelationsParents[$joinName] = null;
@@ -344,9 +336,7 @@ class OrmSelect extends AbstractSelect
             $parentJoinName = $this->joinedRelationsParents[$joinName];
             if ($parentJoinName === null) {
                 // join on base table
-                if ($this->getTableStructure()
-                        ->getRelation($relationName)
-                        ->getType() === Relation::HAS_MANY) {
+                if ($this->getTableStructure()->getRelation($relationName)->getType() === Relation::HAS_MANY) {
                     throw new \UnexpectedValueException(
                         "Relation '{$relationName}' has type 'HAS MANY' and should not be used as JOIN (not optimal). "
                         . 'Select that records outside of OrmSelect.'
@@ -357,11 +347,9 @@ class OrmSelect extends AbstractSelect
             } else {
                 // join on other join
                 $this->addJoinFromRelation($parentJoinName);
-                $parentJoin = $this->getJoin($parentJoinName);
+                $parentJoin = $this->getOrmJoin($parentJoinName);
                 $foreignTable = $parentJoin->getForeignDbTable();
-                if ($foreignTable->getTableStructure()
-                        ->getRelation($relationName)
-                        ->getType() === Relation::HAS_MANY) {
+                if ($foreignTable->getTableStructure()->getRelation($relationName)->getType() === Relation::HAS_MANY) {
                     throw new \UnexpectedValueException(
                         "Relation '{$relationName}' has type 'HAS MANY' and should not be used as JOIN (not optimal). "
                         . 'Select that records outside of OrmSelect.'
@@ -407,9 +395,8 @@ class OrmSelect extends AbstractSelect
                         $column = $this->getTableStructure()
                             ->getColumn($columnInfo['name']);
                     } else {
-                        $column = $this
-                            ->getJoin($columnInfo['join_name'])
-                            ->getForeignDbTable()
+                        $join = $this->getOrmJoin($columnInfo['join_name']);
+                        $column = $join->getForeignDbTable()
                             ->getStructure()
                             ->getColumn($columnInfo['name']);
                     }
@@ -453,8 +440,6 @@ class OrmSelect extends AbstractSelect
     }
     
     /**
-     * @param string $joinName
-     * @return string
      * @throws \InvalidArgumentException
      */
     protected function getRelationNameByJoinName(string $joinName): string
@@ -485,8 +470,7 @@ class OrmSelect extends AbstractSelect
                 }
             }
         } elseif ($columnInfo['join_name'] === null) {
-            $isValid = $this->getTableStructure()
-                ->hasColumn($columnInfo['name']);
+            $isValid = $this->getTableStructure()->hasColumn($columnInfo['name']);
             if (!$isValid) {
                 throw new \UnexpectedValueException(
                     "{$subject}: Column with name [{$columnInfo['name']}] not found in "
@@ -495,9 +479,8 @@ class OrmSelect extends AbstractSelect
             }
         } else {
             $join = $this->getJoin($columnInfo['join_name']);
-            if (!($join instanceof CrossJoinInfo)) {
-                $foreignTableStructure = $join->getForeignDbTable()
-                    ->getTableStructure();
+            if ($join instanceof OrmJoinInfo) {
+                $foreignTableStructure = $join->getForeignDbTable()->getTableStructure();
                 $isValid = $columnInfo['name'] === '*' || $foreignTableStructure::hasColumn($columnInfo['name']);
                 if (!$isValid) {
                     throw new \UnexpectedValueException(
@@ -512,6 +495,16 @@ class OrmSelect extends AbstractSelect
     protected function validateColumnInfoForCondition(array $columnInfo, string $subject): void
     {
         $this->validateColumnInfo($columnInfo, $subject);
+    }
+    
+    protected function guardJoinClass(string $joinName, AbstractJoinInfo $joinInfo): void
+    {
+        if (!($joinInfo instanceof OrmJoinInfo)) {
+            throw new \UnexpectedValueException(
+                'Join ' . $joinName . ' must be an instance of class ' . OrmJoinInfo::class
+                . ' but it is an instance of ' . get_class($joinInfo) . ' class'
+            );
+        }
     }
     
 }

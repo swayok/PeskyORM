@@ -12,7 +12,7 @@ abstract class FakeTable extends Table
 {
     
     protected string $tableName;
-    protected ?FakeTableStructure $tableStructure = null;
+    protected ?TableStructureInterface $tableStructure = null;
     protected ?TableStructureInterface $tableStructureToCopy = null;
     protected ?string $recordClass = null;
     protected ?DbAdapterInterface $connection = null;
@@ -34,7 +34,7 @@ abstract class FakeTable extends Table
     
     /**
      * @param string $tableName
-     * @param array|TableStructureInterface $columnsOrTableStructure
+     * @param array|TableStructureInterface|null $columnsOrTableStructure
      *      - array: key-value array where key is column name and value is column type or key is int and value is column name
      *      - TableStructureInterface: table structure to use instead of FakeTableStructure
      * @param DbAdapterInterface|null $connection
@@ -46,7 +46,7 @@ abstract class FakeTable extends Table
      */
     public static function makeNewFakeTable(
         string $tableName,
-        $columnsOrTableStructure = null,
+        TableStructureInterface|array|null $columnsOrTableStructure = null,
         ?DbAdapterInterface $connection = null,
         array $interfaces = [],
         array $traits = [],
@@ -98,23 +98,19 @@ VIEW;
     
     /**
      * @param bool $writable - true: connection must have access to write data into DB
-     * @return DbAdapterInterface
      */
     public static function getConnection(bool $writable = false): DbAdapterInterface
     {
         return static::getInstance()->connection ?: parent::getConnection($writable);
     }
     
-    /**
-     * @return static
-     */
-    public function setConnection(DbAdapterInterface $connection)
+    public function setConnection(DbAdapterInterface $connection): static
     {
         $this->connection = $connection;
         return $this;
     }
     
-    public function getTableStructure(): FakeTableStructure
+    public function getTableStructure(): TableStructureInterface
     {
         if (!$this->tableStructure) {
             $this->tableStructure = FakeTableStructure::makeNewFakeStructure($this->tableName, $this->tableStructureToCopy);
@@ -122,19 +118,12 @@ VIEW;
         return $this->tableStructure;
     }
     
-    /**
-     * @param TableStructureInterface $tableStructure
-     * @return static
-     */
-    public function setTableStructureToCopy(TableStructureInterface $tableStructure)
+    public function setTableStructureToCopy(TableStructureInterface $tableStructure): static
     {
         $this->tableStructureToCopy = $tableStructure;
         return $this;
     }
     
-    /**
-     * @return RecordInterface
-     */
     public function newRecord(): RecordInterface
     {
         if (!$this->recordClass) {
@@ -144,10 +133,9 @@ VIEW;
     }
     
     /**
-     * @param string|RecordInterface $class
      * @throws \InvalidArgumentException
      */
-    public function setRecordClass($class): FakeTable
+    public function setRecordClass(RecordInterface|string $class): FakeTable
     {
         if ($class instanceof RecordInterface) {
             $this->recordClass = get_class($class);

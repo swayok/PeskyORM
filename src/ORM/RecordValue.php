@@ -12,18 +12,9 @@ class RecordValue
     protected Column $column;
     protected RecordInterface $record;
     
-    /**
-     * @var mixed
-     */
-    protected $value = null;
-    /**
-     * @var mixed
-     */
-    protected $rawValue = null;
-    /**
-     * @var mixed
-     */
-    protected $oldValue = null;
+    protected mixed $value = null;
+    protected mixed $rawValue = null;
+    protected mixed $oldValue = null;
     
     protected bool $oldValueIsFromDb = false;
     protected bool $isFromDb = false;
@@ -35,10 +26,7 @@ class RecordValue
     protected array $customInfo = [];
     protected ?array $dataForSavingExtender = null;
     
-    /**
-     * @return static
-     */
-    public static function create(Column $dbTableColumn, RecordInterface $record)
+    public static function create(Column $dbTableColumn, RecordInterface $record): static
     {
         return new static($dbTableColumn, $record);
     }
@@ -82,10 +70,7 @@ class RecordValue
         return $this->isFromDb;
     }
     
-    /**
-     * @return static
-     */
-    public function setIsFromDb(bool $isFromDb)
+    public function setIsFromDb(bool $isFromDb): static
     {
         $this->isFromDb = $isFromDb;
         return $this;
@@ -103,29 +88,22 @@ class RecordValue
     
     public function hasDefaultValue(): bool
     {
-        return $this->getColumn()
-            ->hasDefaultValue();
+        return $this->getColumn()->hasDefaultValue();
     }
     
-    /**
-     * @return mixed
-     */
-    public function getDefaultValue()
+    public function getDefaultValue(): mixed
     {
-        return $this->getColumn()
-            ->getValidDefaultValue();
+        return $this->getColumn()->getValidDefaultValue();
     }
     
     /**
      * Return null if there is no default value.
      * When there is no default value this method will avoid validation of a NULL value so that there will be no
      * exception 'default value is not valid' if column is not nullable
-     * @return mixed
      */
-    public function getDefaultValueOrNull()
+    public function getDefaultValueOrNull(): mixed
     {
-        return $this->hasDefaultValue() ? $this->getColumn()
-            ->getValidDefaultValue() : null;
+        return $this->hasDefaultValue() ? $this->getColumn()->getValidDefaultValue() : null;
     }
     
     public function isDefaultValueCanBeSet(): bool
@@ -143,21 +121,12 @@ class RecordValue
         return $this->isDefaultValueCanBeSet;
     }
     
-    /**
-     * @return mixed
-     */
-    public function getRawValue()
+    public function getRawValue(): mixed
     {
         return $this->rawValue;
     }
     
-    /**
-     * @param mixed $rawValue
-     * @param mixed $preprocessedValue
-     * @param boolean $isFromDb
-     * @return static
-     */
-    public function setRawValue($rawValue, $preprocessedValue, bool $isFromDb)
+    public function setRawValue(mixed $rawValue, mixed $preprocessedValue, bool $isFromDb): static
     {
         $this->setOldValue($this);
         $this->rawValue = $rawValue;
@@ -172,10 +141,9 @@ class RecordValue
     }
     
     /**
-     * @return mixed
      * @throws \BadMethodCallException
      */
-    public function getValue()
+    public function getValue(): mixed
     {
         if (!$this->hasValue) {
             throw new \BadMethodCallException("Value for {$this->getColumnInfoForException()} is not set");
@@ -184,10 +152,9 @@ class RecordValue
     }
     
     /**
-     * @return mixed
      * @throws \BadMethodCallException
      */
-    public function getValueOrDefault()
+    public function getValueOrDefault(): mixed
     {
         if ($this->hasValue()) {
             return $this->value;
@@ -206,12 +173,10 @@ class RecordValue
     }
     
     /**
-     * @param mixed $value
-     * @param mixed $rawValue - needed to verify that valid value once was same as raw value
-     * @return static
+     * $rawValue needed to verify that valid value once was same as raw value
      * @throws \InvalidArgumentException
      */
-    public function setValidValue($value, $rawValue)
+    public function setValidValue(mixed $value, mixed $rawValue): static
     {
         if ($rawValue !== $this->rawValue) {
             throw new \InvalidArgumentException(
@@ -230,10 +195,9 @@ class RecordValue
     }
     
     /**
-     * @return mixed
      * @throws \BadMethodCallException
      */
-    public function getOldValue()
+    public function getOldValue(): mixed
     {
         if (!$this->hasOldValue()) {
             throw new \BadMethodCallException("Old value is not set for {$this->getColumnInfoForException()}");
@@ -241,10 +205,7 @@ class RecordValue
         return $this->oldValue;
     }
     
-    /**
-     * @return static
-     */
-    public function setOldValue(RecordValue $oldValueObject)
+    public function setOldValue(RecordValue $oldValueObject): static
     {
         if ($oldValueObject->hasValue()) {
             $this->oldValue = $oldValueObject->getValue();
@@ -270,10 +231,7 @@ class RecordValue
         return $this->validationErrors;
     }
     
-    /**
-     * @return static
-     */
-    public function setValidationErrors(array $validationErrors)
+    public function setValidationErrors(array $validationErrors): static
     {
         $this->validationErrors = $validationErrors;
         $this->isValidated = true;
@@ -297,82 +255,48 @@ class RecordValue
     }
     
     /**
-     * @param null|string $key
-     * @param mixed|\Closure $default
-     * @param bool $storeDefaultValueIfUsed - if default value is used - save it to custom info as new value
-     * @return mixed
-     * @throws \InvalidArgumentException
+     * $storeDefaultValueIfUsed = true tells method to save $default value when there were no value for $key before.
      */
-    public function getCustomInfo(?string $key = null, $default = null, bool $storeDefaultValueIfUsed = false)
+    public function getCustomInfo(?string $key = null, mixed $default = null, bool $storeDefaultValueIfUsed = false): mixed
     {
         if ($key === null) {
             return $this->customInfo;
+        } elseif (array_key_exists($key, $this->customInfo)) {
+            return $this->customInfo[$key];
         } else {
-            if (!is_string($key) && !is_numeric($key)) {
-                throw new \InvalidArgumentException(
-                    '$key argument for custom info must be a string or number but ' . gettype($key) . ' received'
-                    . " (column: '{$this->getColumnInfoForException()}')"
-                );
+            if ($default instanceof \Closure) {
+                $default = $default($this);
             }
-            if (array_key_exists($key, $this->customInfo)) {
-                return $this->customInfo[$key];
-            } else {
-                if ($default instanceof \Closure) {
-                    $default = $default($this);
-                }
-                if ($storeDefaultValueIfUsed) {
-                    $this->customInfo[$key] = $default;
-                }
-                return $default;
+            if ($storeDefaultValueIfUsed) {
+                $this->customInfo[$key] = $default;
             }
+            return $default;
         }
     }
     
-    /**
-     * @return static
-     */
-    public function setCustomInfo(array $data)
+    public function setCustomInfo(array $data): static
     {
         $this->customInfo = $data;
         return $this;
     }
     
-    /**
-     * @param string $key
-     * @param mixed $value
-     * @return static
-     * @throws \InvalidArgumentException
-     */
-    public function addCustomInfo(string $key, $value)
+    public function addCustomInfo(string $key, mixed $value): static
     {
         $this->customInfo[$key] = $value;
         return $this;
     }
     
-    /**
-     * @return static
-     * @throws \InvalidArgumentException
-     */
-    public function removeCustomInfo(?string $key = null)
+    public function removeCustomInfo(?string $key = null): static
     {
         if ($key === null) {
             $this->customInfo = [];
         } else {
-            if (!is_string($key) && !is_numeric($key)) {
-                throw new \InvalidArgumentException(
-                    '$key argument for custom info must be a string or number but ' . gettype($key) . ' received'
-                    . " (column: '{$this->getColumnInfoForException()}')"
-                );
-            }
             unset($this->customInfo[$key]);
         }
         return $this;
     }
     
-    /**
-     * @return static
-     */
-    public function setDataForSavingExtender(?array $data)
+    public function setDataForSavingExtender(?array $data): static
     {
         $this->dataForSavingExtender = $data;
         return $this;
@@ -387,7 +311,6 @@ class RecordValue
     
     /**
      * Collects all properties. Used by Record::serialize()
-     * @return array
      */
     public function serialize(): array
     {
@@ -398,7 +321,6 @@ class RecordValue
     
     /**
      * Sets all properties from $data. Used by Record::unserialize()
-     * @param array $data
      */
     public function unserialize(array $data): void
     {
@@ -411,16 +333,14 @@ class RecordValue
     {
         $recordClass = get_class($this->getRecord());
         $pk = 'undefined';
-        if (!$this->getColumn()
-            ->isItPrimaryKey()) {
+        if (!$this->getColumn()->isItPrimaryKey()) {
             try {
-                $pk = $this->getRecord()
-                    ->existsInDb() ? $this->getRecord()
-                    ->getPrimaryKeyValue() : 'null';
-            } catch (\Throwable $ignore) {
+                $pk = $this->getRecord()->existsInDb()
+                    ? $this->getRecord()->getPrimaryKeyValue()
+                    : 'null';
+            } catch (\Throwable) {
             }
         }
-        return $recordClass . '(#' . $pk . ')->' . $this->getColumn()
-                ->getName();
+        return $recordClass . '(#' . $pk . ')->' . $this->getColumn()->getName();
     }
 }

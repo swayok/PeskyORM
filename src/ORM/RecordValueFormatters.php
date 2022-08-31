@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\ORM;
 
 use Carbon\CarbonImmutable;
@@ -182,15 +184,17 @@ abstract class RecordValueFormatters
     {
         static $formatter = null;
         if (!$formatter) {
-            // todo: add return type in php8+: array|string|bool|null|int|float
-            $formatter = static::wrapGetterIntoFormatter(static::FORMAT_ARRAY, function (RecordValue $valueContainer) {
-                $value = static::getSimpleValueFormContainer($valueContainer);
-                if (ValidateValue::isJson($value, true)) {
-                    return $value;
+            $formatter = static::wrapGetterIntoFormatter(
+                static::FORMAT_ARRAY,
+                function (RecordValue $valueContainer): array|string|bool|null|int|float {
+                    $value = static::getSimpleValueFormContainer($valueContainer);
+                    if (ValidateValue::isJson($value, true)) {
+                        return $value;
+                    }
+                    // value conditionally decoded in ValidateValue::isJson()
+                    static::throwInvalidValueException($valueContainer, 'json', $value);
                 }
-                // value conditionally decoded in ValidateValue::isJson()
-                static::throwInvalidValueException($valueContainer, 'json', $value);
-            });
+            );
         }
         return $formatter;
     }
@@ -224,10 +228,9 @@ abstract class RecordValueFormatters
     }
     
     /**
-     * @return mixed
      * @throws \UnexpectedValueException
      */
-    public static function getSimpleValueFormContainer(RecordValue $valueContainer)
+    public static function getSimpleValueFormContainer(RecordValue $valueContainer): mixed
     {
         $value = $valueContainer->getValueOrDefault();
         if ($value instanceof DbExpr) {

@@ -19,11 +19,13 @@ abstract class FakeTableStructure extends TableStructure
      * @param string $tableName
      * @param TableStructureInterface|null $tableStructureToCopy - use this table structure as parent class for a fake one
      *      but replace its table name
-     * @return FakeTableStructure|TableStructureInterface
+     * @return TableStructureInterface
      * @throws \InvalidArgumentException
      */
-    public static function makeNewFakeStructure(string $tableName, ?TableStructureInterface $tableStructureToCopy = null)
-    {
+    public static function makeNewFakeStructure(
+        string $tableName,
+        ?TableStructureInterface $tableStructureToCopy = null
+    ): TableStructureInterface {
         $tableName = trim($tableName);
         if ($tableName === '' || !DbAdapter::isValidDbEntityName($tableName, false)) {
             throw new \InvalidArgumentException(
@@ -86,7 +88,7 @@ VIEW;
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    public function setTableColumns(array $columns)
+    public function setTableColumns(array $columns): static
     {
         $this->columns = [];
         foreach ($columns as $name => $typeOrColumnInstance) {

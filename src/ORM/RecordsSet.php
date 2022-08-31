@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
+use Closure;
 use PeskyORM\Core\DbExpr;
 
 class RecordsSet extends RecordsArray
@@ -64,10 +65,7 @@ class RecordsSet extends RecordsArray
         $this->setOrmSelect($dbSelect);
     }
     
-    /**
-     * @return static
-     */
-    public function setRecordClass(?string $class)
+    public function setRecordClass(?string $class): static
     {
         $this->getOrmSelect()
             ->setRecordClass($class);
@@ -99,10 +97,8 @@ class RecordsSet extends RecordsArray
     
     /**
      * For internal use only!
-     * @param OrmSelect $dbSelect
-     * @return static
      */
-    protected function setOrmSelect(OrmSelect $dbSelect)
+    protected function setOrmSelect(OrmSelect $dbSelect): static
     {
         $this->resetRecords();
         $this->select = $dbSelect;
@@ -124,7 +120,7 @@ class RecordsSet extends RecordsArray
      *      Current RecordSet (count, records)
      * @return static
      */
-    public function appendConditions(array $conditions, bool $returnNewRecordSet, bool $resetOriginalRecordSet = false)
+    public function appendConditions(array $conditions, bool $returnNewRecordSet, bool $resetOriginalRecordSet = false): static
     {
         if ($returnNewRecordSet) {
             $newSelect = clone $this->select;
@@ -144,11 +140,8 @@ class RecordsSet extends RecordsArray
     /**
      * Replace records ordering
      * Note: deletes already selected records and selects new
-     * @param array|string|DbExpr $column
-     * @param bool $orderAscending
-     * @return static
      */
-    public function replaceOrdering($column, bool $orderAscending = true)
+    public function replaceOrdering(DbExpr|array|string $column, bool $orderAscending = true): static
     {
         if (is_array($column)) {
             $this->select->removeOrdering();
@@ -170,40 +163,29 @@ class RecordsSet extends RecordsArray
     
     /**
      * Reset already fetched data
-     * @return static
      */
-    public function resetRecords()
+    public function resetRecords(): static
     {
         parent::resetRecords();
         $this->invalidateCount();
         return $this;
     }
     
-    /**
-     * @return static
-     */
-    public function nextPage()
+    public function nextPage(): static
     {
         $this->rewind();
         $this->setRecords($this->select->fetchNextPage());
         return $this;
     }
     
-    /**
-     * @return static
-     */
-    public function prevPage()
+    public function prevPage(): static
     {
         $this->rewind();
         $this->setRecords($this->select->fetchPrevPage());
         return $this;
     }
     
-    /**
-     * @param int $newOffset
-     * @return static
-     */
-    public function setOffset(int $newOffset)
+    public function setOffset(int $newOffset): static
     {
         if ($newOffset < 0) {
             throw new \InvalidArgumentException('Negative offset is not allowed');
@@ -214,20 +196,13 @@ class RecordsSet extends RecordsArray
         return $this;
     }
     
-    /**
-     * @param bool $reload
-     * @return array
-     */
     protected function getRecords(bool $reload = false): array
     {
         $this->fetchRecords($reload);
         return $this->records;
     }
     
-    /**
-     * @return static
-     */
-    public function fetchRecords(bool $reload = false)
+    public function fetchRecords(bool $reload = false): static
     {
         if ($reload || $this->recordsCount === null) {
             $this->setRecords($this->select->fetchMany());
@@ -240,11 +215,7 @@ class RecordsSet extends RecordsArray
         return $this->recordsCount !== null;
     }
     
-    /**
-     * @param array $records
-     * @return static
-     */
-    protected function setRecords(array $records)
+    protected function setRecords(array $records): static
     {
         $this->records = $records;
         $this->recordsCount = count($this->records);
@@ -255,8 +226,11 @@ class RecordsSet extends RecordsArray
         return $this;
     }
     
-    public function toArrays($closureOrColumnsListOrMethodName = null, array $argumentsForMethod = [], bool $enableReadOnlyMode = true): array
-    {
+    public function toArrays(
+        string|array|Closure|null $closureOrColumnsListOrMethodName = null,
+        array $argumentsForMethod = [],
+        bool $enableReadOnlyMode = true
+    ): array {
         if ($closureOrColumnsListOrMethodName) {
             return $this->getDataFromEachObject($closureOrColumnsListOrMethodName, $argumentsForMethod, $enableReadOnlyMode);
         } else {
@@ -264,7 +238,7 @@ class RecordsSet extends RecordsArray
         }
     }
     
-    public function offsetExists($index): bool
+    public function offsetExists(mixed $index): bool
     {
         return is_int($index) && $index >= 0 && $index < $this->count();
     }
@@ -303,10 +277,8 @@ class RecordsSet extends RecordsArray
     
     /**
      * This can speedup count query for simple cases when joins are not nested
-     * @param bool $ignoreLeftJoinsForCount
-     * @return static
      */
-    public function setIgnoreLeftJoinsForCount(bool $ignoreLeftJoinsForCount)
+    public function setIgnoreLeftJoinsForCount(bool $ignoreLeftJoinsForCount): static
     {
         $this->ignoreLeftJoinsForCount = $ignoreLeftJoinsForCount;
         return $this;
@@ -315,7 +287,6 @@ class RecordsSet extends RecordsArray
     /**
      * Count DB records ignoring LIMIT and OFFSET options
      * @param bool|null $ignoreLeftJoins - null: use $this->ignoreLeftJoinsForCount | bool: change $this->ignoreLeftJoinsForCount
-     * @return int
      */
     public function totalCount(?bool $ignoreLeftJoins = null): int
     {
@@ -332,9 +303,8 @@ class RecordsSet extends RecordsArray
     
     /**
      * Invalidate counts
-     * @return static
      */
-    protected function invalidateCount()
+    protected function invalidateCount(): static
     {
         $this->recordsCount = null;
         $this->recordsCountTotal = null;

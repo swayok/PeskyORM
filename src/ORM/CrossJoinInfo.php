@@ -28,10 +28,7 @@ class CrossJoinInfo extends AbstractJoinInfo
         $this->joinQuery = $joinQuery;
     }
     
-    /**
-     * @return static
-     */
-    public function setForeignColumnsToSelect(...$columns)
+    public function setForeignColumnsToSelect(...$columns): static
     {
         return $this;
     }

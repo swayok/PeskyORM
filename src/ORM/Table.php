@@ -148,8 +148,7 @@ abstract class Table implements TableInterface
      */
     public static function hasRelation(string $relationName): bool
     {
-        return static::getStructure()
-            ->hasRelation($relationName);
+        return static::getStructure()->hasRelation($relationName);
     }
     
     /**
@@ -163,17 +162,16 @@ abstract class Table implements TableInterface
                 'Trying to call abstract method ' . __CLASS__ . '::getConnection(). Use child classes to do that'
             );
         }
-        return static::getConnection(true)
-            ->getExpressionToSetDefaultValueForAColumn();
+        return static::getConnection(true)->getExpressionToSetDefaultValueForAColumn();
     }
     
     /**
-     * @param string|array $columns
+     * @param array|string $columns
      * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
      * @return OrmSelect
      */
-    public static function makeSelect($columns, array $conditions = [], ?\Closure $configurator = null): OrmSelect
+    public static function makeSelect(array|string $columns, array $conditions = [], ?\Closure $configurator = null): OrmSelect
     {
         $select = OrmSelect::from(static::getInstance())
             ->fromConfigsArray($conditions);
@@ -184,97 +182,46 @@ abstract class Table implements TableInterface
         return $select;
     }
     
-    /**
-     * @param string|array $columns
-     * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return RecordsSet
-     * @throws \PDOException
-     */
-    public static function select($columns = '*', array $conditions = [], ?\Closure $configurator = null): RecordsSet
+    public static function select(string|array $columns = '*', array $conditions = [], ?\Closure $configurator = null): RecordsSet
     {
         return RecordsSet::createFromOrmSelect(static::makeSelect($columns, $conditions, $configurator));
     }
     
-    /**
-     * Selects only 1 column
-     * @param string|DbExpr $column
-     * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return array
-     * @throws \PDOException
-     */
-    public static function selectColumn($column, array $conditions = [], ?\Closure $configurator = null): array
+    public static function selectColumn(string|DbExpr $column, array $conditions = [], ?\Closure $configurator = null): array
     {
         return static::makeSelect(['value' => $column], $conditions, $configurator)
             ->fetchColumn();
     }
     
-    /**
-     * Select associative array
-     * Note: does not support columns from foreign models
-     * @param string|DbExpr|null $keysColumn
-     * @param string|DbExpr|null $valuesColumn
-     * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return array
-     * @throws \PDOException
-     */
-    public static function selectAssoc(string|DbExpr|null $keysColumn, string|DbExpr|null $valuesColumn, array $conditions = [], ?\Closure $configurator = null): array
+    public static function selectAssoc(
+        string|DbExpr|null $keysColumn,
+        string|DbExpr|null $valuesColumn,
+        array $conditions = [],
+        ?\Closure $configurator = null
+    ): array
     {
         return static::makeSelect([], $conditions, $configurator)
             ->fetchAssoc($keysColumn, $valuesColumn);
     }
     
-    /**
-     * Get 1 record from DB as array
-     * @param string|array $columns
-     * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return array
-     * @throws \PDOException
-     */
-    public static function selectOne($columns, array $conditions, ?\Closure $configurator = null): array
+    public static function selectOne(string|array $columns, array $conditions, ?\Closure $configurator = null): array
     {
         return static::makeSelect($columns, $conditions, $configurator)
             ->fetchOne();
     }
     
-    /**
-     * Get 1 record from DB as Record
-     * @param string|array $columns
-     * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return RecordInterface
-     * @throws \PDOException
-     */
-    public static function selectOneAsDbRecord($columns, array $conditions, ?\Closure $configurator = null): RecordInterface
+    public static function selectOneAsDbRecord(string|array $columns, array $conditions, ?\Closure $configurator = null): RecordInterface
     {
         return static::makeSelect($columns, $conditions, $configurator)
             ->fetchOneAsDbRecord();
     }
     
-    /**
-     * Make a query that returns only 1 value defined by $expression
-     * @param DbExpr $expression - example: DbExpr::create('COUNT(*)'), DbExpr::create('SUM(`field`)')
-     * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return string|int|float|null
-     * @throws \PDOException
-     */
-    public static function selectValue(DbExpr $expression, array $conditions = [], ?\Closure $configurator = null)
+    public static function selectValue(DbExpr $expression, array $conditions = [], ?\Closure $configurator = null): mixed
     {
         return static::makeSelect(['value' => $expression], $conditions, $configurator)
             ->fetchValue($expression);
     }
     
-    /**
-     * Does table contain any record matching provided condition
-     * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return bool
-     * @throws \PDOException
-     */
     public static function hasMatchingRecord(array $conditions, ?\Closure $configurator = null): bool
     {
         $callback = function (OrmSelect $select) use ($configurator) {
@@ -288,14 +235,6 @@ abstract class Table implements TableInterface
         return (int)static::selectValue(DbExpr::create('1'), $conditions, $callback) === 1;
     }
     
-    /**
-     * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     *      Note: columns list, LIMIT, OFFSET and ORDER BY are not applied to count query
-     * @param bool $removeNotInnerJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
-     * @return int
-     * @throws \PDOException
-     */
     public static function count(array $conditions = [], ?\Closure $configurator = null, bool $removeNotInnerJoins = false): int
     {
         return static::makeSelect(
@@ -371,15 +310,10 @@ abstract class Table implements TableInterface
         return $ret;
     }
     
-    /**
-     * @param bool $useWritableConnection
-     * @return null|string
-     */
     public static function getLastQuery(bool $useWritableConnection): ?string
     {
         try {
-            return static::getConnection($useWritableConnection)
-                ->getLastQuery();
+            return static::getConnection($useWritableConnection)->getLastQuery();
         } catch (\Exception $exception) {
             return $exception->getMessage() . '. ' . $exception->getTraceAsString();
         }
@@ -390,8 +324,7 @@ abstract class Table implements TableInterface
      */
     public static function beginTransaction(bool $readOnly = false, ?string $transactionType = null): void
     {
-        static::getConnection(true)
-            ->begin($readOnly, $transactionType);
+        static::getConnection(true)->begin($readOnly, $transactionType);
     }
     
     /**
@@ -399,28 +332,23 @@ abstract class Table implements TableInterface
      */
     public static function inTransaction(): bool
     {
-        return static::getConnection(true)
-            ->inTransaction();
+        return static::getConnection(true)->inTransaction();
     }
     
     /**
-     * @return void
-     *@see DbAdapter::commit()
+     * @see DbAdapter::commit()
      */
     public static function commitTransaction(): void
     {
-        static::getConnection(true)
-            ->commit();
+        static::getConnection(true)->commit();
     }
     
     /**
-     * @return void
-     *@see DbAdapter::rollBack()
+     * @see DbAdapter::rollBack()
      */
     public static function rollBackTransaction(): void
     {
-        static::getConnection(true)
-            ->rollBack();
+        static::getConnection(true)->rollBack();
     }
     
     public static function rollBackTransactionIfExists(): void
@@ -435,8 +363,7 @@ abstract class Table implements TableInterface
      */
     public static function quoteDbEntityName(string $name): string
     {
-        return static::getConnection(true)
-            ->quoteDbEntityName($name);
+        return static::getConnection(true)->quoteDbEntityName($name);
     }
     
     /**
@@ -444,8 +371,7 @@ abstract class Table implements TableInterface
      */
     public static function quoteValue($value, int $fieldInfoOrType = \PDO::PARAM_STR): string
     {
-        return static::getConnection(true)
-            ->quoteValue($value, $fieldInfoOrType);
+        return static::getConnection(true)->quoteValue($value, $fieldInfoOrType);
     }
     
     /**
@@ -453,32 +379,29 @@ abstract class Table implements TableInterface
      */
     public static function quoteDbExpr(DbExpr $value): string
     {
-        return static::getConnection(true)
-            ->quoteDbExpr($value);
+        return static::getConnection(true)->quoteDbExpr($value);
     }
     
     /**
      * @see DbAdapter::query()
      */
-    public static function query($query, ?string $fetchData = null)
+    public static function query(string|DbExpr $query, ?string $fetchData = null): mixed
     {
-        return static::getConnection(true)
-            ->query($query, $fetchData);
+        return static::getConnection(true)->query($query, $fetchData);
     }
     
     /**
      * @see DbAdapter::exec()
      */
-    public static function exec($query)
+    public static function exec(string|DbExpr $query): int
     {
-        return static::getConnection(true)
-            ->exec($query);
+        return static::getConnection(true)->exec($query);
     }
     
     /**
      * @see DbAdapter::insert()
      */
-    public static function insert(array $data, $returning = false)
+    public static function insert(array $data, array|bool $returning = false): ?array
     {
         return static::getConnection(true)
             ->insert(
@@ -494,23 +417,20 @@ abstract class Table implements TableInterface
      * @param array $data
      * @param string $columnName - column to detect duplicates (only 1 column allowed!)
      * @return RecordInterface
-     * @throws \PDOException
      */
     public static function upsert(array $data, string $columnName): RecordInterface
     {
         if (!isset($data[$columnName])) {
             throw new \InvalidArgumentException("There is no value for column {$columnName} in passed \$data");
         }
-        $record = static::getInstance()
-            ->newRecord();
+        $record = static::getInstance()->newRecord();
         $record->updateValue($columnName, $data[$columnName], false); //< to validate and normalize value
         $record->fetch([
             $columnName => $record->getValue($columnName),
         ]);
         if ($record->existsInDb()) {
             unset($data[$columnName]);
-            $record
-                ->begin()
+            $record->begin()
                 ->updateValues($data, false)
                 ->commit();
         } else {
@@ -524,7 +444,7 @@ abstract class Table implements TableInterface
     /**
      * @see DbAdapter::insertMany()
      */
-    public static function insertMany(array $columns, array $rows, $returning = false): ?array
+    public static function insertMany(array $columns, array $rows, array|bool $returning = false): ?array
     {
         return static::insertManyAsIs(
             $columns,
@@ -551,7 +471,7 @@ abstract class Table implements TableInterface
     /**
      * @see DbAdapter::update()
      */
-    public static function update(array $data, array $conditions, $returning = false)
+    public static function update(array $data, array $conditions, array|bool $returning = false): array|int
     {
         return static::getConnection(true)
             ->update(
@@ -566,7 +486,7 @@ abstract class Table implements TableInterface
     /**
      * @see DbAdapterInterface::delete()
      */
-    public static function delete(array $conditions = [], $returning = false)
+    public static function delete(array $conditions = [], array|bool $returning = false): array|int
     {
         return static::getConnection(true)
             ->delete(
@@ -596,27 +516,16 @@ abstract class Table implements TableInterface
     {
         $pdoDataTypes = [];
         if (empty($columns)) {
-            $columns = array_keys(
-                static::getStructure()
-                    ->getColumns()
-            );
+            $columns = array_keys(static::getStructure()->getColumns());
         }
         foreach ($columns as $columnName) {
-            $columnInfo = static::getStructure()
-                ->getColumn($columnName);
-            switch ($columnInfo->getType()) {
-                case $columnInfo::TYPE_BOOL:
-                    $pdoDataTypes[$columnInfo->getName()] = \PDO::PARAM_BOOL;
-                    break;
-                case $columnInfo::TYPE_INT:
-                    $pdoDataTypes[$columnInfo->getName()] = \PDO::PARAM_INT;
-                    break;
-                case $columnInfo::TYPE_BLOB:
-                    $pdoDataTypes[$columnInfo->getName()] = \PDO::PARAM_LOB;
-                    break;
-                default:
-                    $pdoDataTypes[$columnInfo->getName()] = \PDO::PARAM_STR;
-            }
+            $columnInfo = static::getStructure()->getColumn($columnName);
+            $pdoDataTypes[$columnInfo->getName()] = match ($columnInfo->getType()) {
+                $columnInfo::TYPE_BOOL => \PDO::PARAM_BOOL,
+                $columnInfo::TYPE_INT => \PDO::PARAM_INT,
+                $columnInfo::TYPE_BLOB => \PDO::PARAM_LOB,
+                default => \PDO::PARAM_STR,
+            };
         }
         return $pdoDataTypes;
     }

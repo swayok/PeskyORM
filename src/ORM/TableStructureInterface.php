@@ -42,7 +42,7 @@ interface TableStructureInterface
     public static function hasFileColumn(string $columnName): bool;
     
     /**
-     * @return Column[] = array('column_name' => Column)
+     * @return Column[] - ['column_name' => Column]
      */
     public static function getFileColumns(): array;
     

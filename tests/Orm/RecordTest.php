@@ -22,7 +22,6 @@ use PeskyORM\Tests\PeskyORMTest\TestingApp;
 use PeskyORM\Tests\PeskyORMTest\TestingSettings\TestingSetting;
 use PeskyORM\Tests\PeskyORMTest\TestingSettings\TestingSettingsTable;
 use PeskyORM\Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
-use ReflectionClass;
 use Swayok\Utils\NormalizeValue;
 use Swayok\Utils\Set;
 use Swayok\Utils\StringUtils;
@@ -657,19 +656,15 @@ class RecordTest extends BaseTestCase
     public function testGetColumnValueForToArray(): void
     {
         $rec = TestingAdmin::fromArray(['parent_id' => 1], false);
-        $reflection = new ReflectionClass($rec);
-        $method = $reflection->getMethod('getColumnValueForToArray');
-        $method->setAccessible(true);
-        static::assertEquals(null, $method->invoke($rec, 'id'));
-        static::assertEquals(1, $method->invoke($rec, 'parent_id'));
-        static::assertEquals('en', $method->invoke($rec, 'language'));
-        static::assertEquals(null, $method->invoke($rec, 'avatar'));
+        static::assertEquals(null, $rec->getColumnValueForToArray('id'));
+        static::assertEquals(1, $rec->getColumnValueForToArray('parent_id'));
+        static::assertEquals('en', $rec->getColumnValueForToArray('language'));
+        static::assertEquals(null, $rec->getColumnValueForToArray('avatar'));
         $rec->updateValue('id', 2, true);
-        static::assertEquals(2, $method->invoke($rec, 'id'));
-        static::assertEquals(1, $method->invoke($rec, 'parent_id'));
-        static::assertEquals(null, $method->invoke($rec, 'language'));
-        static::assertEquals(null, $method->invoke($rec, 'avatar'));
-        $method->setAccessible(false);
+        static::assertEquals(2, $rec->getColumnValueForToArray('id'));
+        static::assertEquals(1, $rec->getColumnValueForToArray('parent_id'));
+        static::assertEquals(null, $rec->getColumnValueForToArray('language'));
+        static::assertEquals(null, $rec->getColumnValueForToArray('avatar'));
     }
     
     /**
@@ -1390,8 +1385,8 @@ class RecordTest extends BaseTestCase
     
     public function testInvalidSetRelatedRecord2(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$relatedRecord argument for HAS MANY relation must be array or instance of PeskyORM\ORM\RecordsArray");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #2 ($relatedRecord) must be of type PeskyORM\ORM\RecordInterface|PeskyORM\ORM\RecordsArray|PeskyORM\ORM\RecordsSet|array');
         /** @noinspection PhpParamsInspection */
         TestingAdmin::newEmptyRecord()
             ->updateRelatedRecord('Children', 'test');
@@ -1407,8 +1402,8 @@ class RecordTest extends BaseTestCase
     
     public function testInvalidSetRelatedRecord4(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$relatedRecord argument must be an array or instance of Record class for the 'admins' DB table");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #2 ($relatedRecord) must be of type PeskyORM\ORM\RecordInterface|PeskyORM\ORM\RecordsArray|PeskyORM\ORM\RecordsSet|array');
         /** @noinspection PhpParamsInspection */
         TestingAdmin::newEmptyRecord()
             ->updateRelatedRecord('Parent', 'string');
@@ -1555,8 +1550,8 @@ class RecordTest extends BaseTestCase
     
     public function testInvalidUpdateValuesData2(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$relatedRecord argument must be an array or instance of Record class for the 'admins' DB table");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #2 ($relatedRecord) must be of type PeskyORM\ORM\RecordInterface|PeskyORM\ORM\RecordsArray|PeskyORM\ORM\RecordsSet|array');
         TestingAdmin::newEmptyRecord()
             ->updateValues(['id' => 1, 'Parent' => null, 'Parent2' => null], true);
     }

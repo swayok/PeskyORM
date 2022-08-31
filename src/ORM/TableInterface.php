@@ -12,37 +12,29 @@ interface TableInterface
     
     /**
      * Table Name
-     * @return string
      */
     public static function getName(): string;
     
     /**
      * Table alias.
      * For example: if table name is 'user_actions' the alias might be 'UserActions'
-     * @return string
      */
     public static function getAlias(): string;
     
     /**
      * @param bool $writable - true: connection must have access to write data into DB
-     * @return DbAdapterInterface
      */
     public static function getConnection(bool $writable = false): DbAdapterInterface;
     
-    /**
-     * @return TableInterface
-     */
     public static function getInstance(): TableInterface;
     
     /**
      * Table schema description
-     * @return TableStructureInterface
      */
     public static function getStructure(): TableStructureInterface;
     
     /**
      * Table schema description
-     * @return TableStructureInterface
      */
     public function getTableStructure(): TableStructureInterface;
     
@@ -58,62 +50,41 @@ interface TableInterface
         string $joinName = null
     ): OrmJoinInfo;
     
-    /**
-     * @return bool
-     */
     public static function hasPkColumn(): bool;
     
-    /**
-     * @return Column
-     */
     public static function getPkColumn(): Column;
     
-    /**
-     * @return mixed
-     */
     public static function getPkColumnName(): string;
     
-    /**
-     * @return RecordInterface
-     */
     public function newRecord(): RecordInterface;
     
-    /**
-     * @param bool $useWritableConnection
-     * @return null|string
-     */
     public static function getLastQuery(bool $useWritableConnection): ?string;
     
-    /**
-     * @param string|DbExpr $query
-     * @return int|array = array: returned if $returning argument is not empty
-     */
-    public static function exec($query);
+    public static function exec(string|DbExpr $query): int;
     
     /**
      * @param string|DbExpr $query
      * @param string|null $fetchData - null: return PDOStatement; string: one of \PeskyORM\Core\Utils::FETCH_*
-     * @return \PDOStatement|array
      */
-    public static function query($query, ?string $fetchData = null);
+    public static function query(string|DbExpr $query, ?string $fetchData = null): mixed;
     
     /**
      * @param string|array $columns
      * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return RecordsSet|array
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
+     * @return array|RecordsSet
      * @throws \InvalidArgumentException
      */
-    public static function select($columns = '*', array $conditions = [], ?\Closure $configurator = null);
+    public static function select(string|array $columns = '*', array $conditions = [], ?\Closure $configurator = null): RecordsSet|array;
     
     /**
      * Selects only 1 column
      * @param string|DbExpr $column
      * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
      * @return array
      */
-    public static function selectColumn($column, array $conditions = [], ?\Closure $configurator = null): array;
+    public static function selectColumn(string|DbExpr $column, array $conditions = [], ?\Closure $configurator = null): array;
     
     /**
      * Select associative array
@@ -121,8 +92,7 @@ interface TableInterface
      * @param string|DbExpr|null $keysColumn
      * @param string|DbExpr|null $valuesColumn
      * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return array
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
      */
     public static function selectAssoc(
         string|DbExpr|null $keysColumn,
@@ -135,34 +105,32 @@ interface TableInterface
      * Get 1 record from DB as array
      * @param string|array $columns
      * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return array
+     * @param \Closure|null $configurator - \Closure to configure OrmSelect. function (OrmSelect $select): void {}
      */
-    public static function selectOne($columns, array $conditions, ?\Closure $configurator = null): array;
+    public static function selectOne(string|array $columns, array $conditions, ?\Closure $configurator = null): array;
     
     /**
      * Get 1 record from DB as Record
      * @param string|array $columns
      * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
      * @return RecordInterface
      */
-    public static function selectOneAsDbRecord($columns, array $conditions, ?\Closure $configurator = null): RecordInterface;
+    public static function selectOneAsDbRecord(string|array $columns, array $conditions, ?\Closure $configurator = null): RecordInterface;
     
     /**
      * Make a query that returns only 1 value defined by $expression
      * @param DbExpr $expression - example: DbExpr::create('COUNT(*)'), DbExpr::create('SUM(`field`)')
      * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
-     * @return string|int|float|null
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
      * @throws \InvalidArgumentException
      */
-    public static function selectValue(DbExpr $expression, array $conditions = [], ?\Closure $configurator = null);
+    public static function selectValue(DbExpr $expression, array $conditions = [], ?\Closure $configurator = null): mixed;
     
     /**
      * Does table contain any record matching provided condition
      * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
      * @return bool
      * @throws \InvalidArgumentException
      */
@@ -170,7 +138,7 @@ interface TableInterface
     
     /**
      * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select) {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
      * @param bool $removeNotInnerJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
      * @return int
      */
@@ -186,20 +154,20 @@ interface TableInterface
     
     /**
      * @param array $data
-     * @param bool|array $returning - return some data back after $data inserted to $table
+     * @param array|bool $returning - return some data back after $data inserted to $table
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
      *          - array: list of columns to return values for
-     * @return array|bool - array returned only if $returning is not empty
+     * @return array|null - array returned only if $returning is not empty
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public static function insert(array $data, $returning = false);
+    public static function insert(array $data, array|bool $returning = false): ?array;
     
     /**
      * @param array $columns - list of column names to insert data for
      * @param array $rows - data to insert
-     * @param bool|array $returning - return some data back after $data inserted to $table
+     * @param array|bool $returning - return some data back after $data inserted to $table
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
      *          - array: list of columns to return values for
@@ -207,12 +175,12 @@ interface TableInterface
      * @throws \InvalidArgumentException
      * @throws \PDOException
      */
-    public static function insertMany(array $columns, array $rows, $returning = false): ?array;
+    public static function insertMany(array $columns, array $rows, array|bool $returning = false): ?array;
     
     /**
      * @param array $data - key-value array where key = table column and value = value of associated column
      * @param array $conditions - WHERE conditions
-     * @param bool|array $returning - return some data back after $data inserted to $table
+     * @param array|bool $returning - return some data back after $data inserted to $table
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
      *          - array: list of columns to return values for
@@ -222,24 +190,23 @@ interface TableInterface
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public static function update(array $data, array $conditions, $returning = false);
+    public static function update(array $data, array $conditions, array|bool $returning = false): array|int;
     
     /**
      * @param array $conditions - WHERE conditions
-     * @param bool|array $returning - return some data back after $data inserted to $table
+     * @param array|bool $returning - return some data back after $data inserted to $table
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
      *          - array: list of columns to return values for
-     * @return int|array - int: number of deleted records | array: returned only if $returning is not empty
+     * @return array|int - int: number of deleted records | array: returned only if $returning is not empty
      * @throws \PDOException
      * @throws \InvalidArgumentException
      */
-    public static function delete(array $conditions = [], $returning = false);
+    public static function delete(array $conditions = [], array|bool $returning = false): array|int;
     
     /**
      * Return DbExpr to set default value for a column.
      * Example for MySQL and PostgreSQL: DbExpr::create('DEFAULT')
-     * @return DbExpr
      */
     public static function getExpressionToSetDefaultValueForAColumn(): DbExpr;
     

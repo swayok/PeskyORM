@@ -182,8 +182,7 @@ abstract class TableStructure implements TableStructureInterface
     
     public static function getPkColumnName(): ?string
     {
-        $column = static::getPkColumn();
-        return $column ? $column->getName() : null;
+        return static::getPkColumn()?->getName();
     }
     
     public static function getPkColumn(): ?Column
@@ -448,11 +447,7 @@ abstract class TableStructure implements TableStructureInterface
         $this->relations[$relation->getName()] = $relation;
     }
     
-    /**
-     * @param string $name
-     * @return Column|Relation
-     */
-    public function __get(string $name)
+    public function __get(string $name): Column|Relation
     {
         if ($this->_hasRelation($name)) {
             return static::getRelation($name);
@@ -462,11 +457,9 @@ abstract class TableStructure implements TableStructureInterface
     }
     
     /**
-     * @param string $name
-     * @param Column|Relation $value
      * @throws \BadMethodCallException
      */
-    public function __set(string $name, $value)
+    public function __set(string $name, mixed $value)
     {
         throw new \BadMethodCallException('You need to use private methods to setup columns');
     }

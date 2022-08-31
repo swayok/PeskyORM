@@ -394,8 +394,8 @@ class ColumnTest extends BaseTestCase
     
     public function testInvalidSetAllowedValues3(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$allowedValues argument cannot be empty");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($allowedValues) must be of type Closure|array');
         /** @noinspection PhpParamsInspection */
         $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(-1);
@@ -404,8 +404,8 @@ class ColumnTest extends BaseTestCase
     
     public function testInvalidSetAllowedValues4(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$allowedValues argument cannot be empty");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($allowedValues) must be of type Closure|array');
         /** @noinspection PhpParamsInspection */
         $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(false);
@@ -423,8 +423,8 @@ class ColumnTest extends BaseTestCase
     
     public function testInvalidSetAllowedValues6(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$allowedValues argument cannot be empty");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($allowedValues) must be of type Closure|array');
         /** @noinspection PhpParamsInspection */
         $obj = Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(null);

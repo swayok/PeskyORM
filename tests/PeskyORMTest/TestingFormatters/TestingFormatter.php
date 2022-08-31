@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\PeskyORMTest\TestingFormatters;
 
 use Carbon\CarbonImmutable;
+use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Record;
 use PeskyORM\ORM\RecordValue;
 use PeskyORM\ORM\TableInterface;
@@ -55,7 +56,7 @@ class TestingFormatter extends Record
         return TestingFormattersTable::getInstance();
     }
 
-    public function getValueContainer($colNameOrConfig): RecordValue
+    public function getValueContainer(Column|string $colNameOrConfig): RecordValue
     {
         return parent::getValueContainer($colNameOrConfig);
     }

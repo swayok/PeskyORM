@@ -12,15 +12,6 @@ class OrmJoinInfo extends AbstractJoinInfo
     protected TableInterface $dbTable;
     protected TableInterface $foreignDbTable;
     
-    /**
-     * @param string $joinName
-     * @param TableInterface $localTable
-     * @param string $localColumnName
-     * @param string $joinType
-     * @param TableInterface $foreignTable
-     * @param string $foreignColumnName
-     * @return static
-     */
     public static function create(
         string $joinName,
         TableInterface $localTable,
@@ -28,7 +19,7 @@ class OrmJoinInfo extends AbstractJoinInfo
         string $joinType,
         TableInterface $foreignTable,
         string $foreignColumnName
-    ) {
+    ): static {
         return new static(
             $joinName,
             $localTable,
@@ -39,14 +30,6 @@ class OrmJoinInfo extends AbstractJoinInfo
         );
     }
     
-    /**
-     * @param string $joinName
-     * @param TableInterface $localTable
-     * @param string $localColumnName
-     * @param string $joinType
-     * @param TableInterface $foreignTable
-     * @param string $foreignColumnName
-     */
     public function __construct(
         string $joinName,
         TableInterface $localTable,
@@ -62,43 +45,28 @@ class OrmJoinInfo extends AbstractJoinInfo
             ->setConfigForForeignTable($foreignTable, $foreignColumnName);
     }
     
-    /**
-     * @param TableInterface $table
-     * @param string $columnName
-     * @return static
-     */
-    public function setConfigForLocalTable(TableInterface $table, string $columnName)
+    public function setConfigForLocalTable(TableInterface $table, string $columnName): static
     {
         return $this
             ->setDbTable($table)
             ->setColumnName($columnName);
     }
     
-    /**
-     * @param TableInterface $foreignTable
-     * @param string $foreignColumnName
-     * @return static
-     */
-    public function setConfigForForeignTable(TableInterface $foreignTable, string $foreignColumnName)
+    public function setConfigForForeignTable(TableInterface $foreignTable, string $foreignColumnName): static
     {
         return $this
             ->setForeignDbTable($foreignTable)
             ->setForeignColumnName($foreignColumnName);
     }
     
-    /**
-     * @param TableInterface $dbTable
-     * @return static
-     */
-    public function setDbTable(TableInterface $dbTable)
+    public function setDbTable(TableInterface $dbTable): static
     {
         $this->dbTable = $dbTable;
         $this->tableName = $dbTable->getName();
         $this->tableSchema = $dbTable->getTableStructure()
             ->getSchema();
         if ($this->tableAlias === null) {
-            /** @noinspection StaticInvocationViaThisInspection */
-            $this->setTableAlias($this->dbTable->getAlias());
+            $this->setTableAlias($this->dbTable::getAlias());
         }
         return $this;
     }
@@ -108,16 +76,11 @@ class OrmJoinInfo extends AbstractJoinInfo
         return $this->dbTable;
     }
     
-    /**
-     * @param TableInterface $foreignDbTable
-     * @return static
-     */
-    public function setForeignDbTable(TableInterface $foreignDbTable)
+    public function setForeignDbTable(TableInterface $foreignDbTable): static
     {
         $this->foreignDbTable = $foreignDbTable;
         $this->foreignTableName = $foreignDbTable->getName();
-        $this->foreignTableSchema = $foreignDbTable->getTableStructure()
-            ->getSchema();
+        $this->foreignTableSchema = $foreignDbTable->getTableStructure()->getSchema();
         return $this;
     }
     
@@ -130,7 +93,7 @@ class OrmJoinInfo extends AbstractJoinInfo
      * {@inheritDoc}
      * @throws \InvalidArgumentException
      */
-    public function setForeignColumnsToSelect(...$columns)
+    public function setForeignColumnsToSelect(...$columns): static
     {
         if (count($columns) === 1 && is_array($columns[0])) {
             /** @var array $columns */

@@ -952,10 +952,8 @@ class RecordValueHelpersTest extends BaseTestCase
     
     public function testInvalidValueForAllowedValues(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage(
-            "\$value argument must be a string, integer, float or array to be able to validate if it is within allowed values"
-        );
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #2 ($value) must be of type array|string|int|float|bool|null');
         $column = Column::create(Column::TYPE_ENUM, 'test')
             ->setAllowedValues(['test']);
         /** @noinspection PhpParamsInspection */
@@ -964,10 +962,8 @@ class RecordValueHelpersTest extends BaseTestCase
     
     public function testInvalidValueForAllowedValues2(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage(
-            "\$value argument must be a string, integer, float or array to be able to validate if it is within allowed values"
-        );
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #2 ($value) must be of type array|string|int|float|bool|null');
         $column = Column::create(Column::TYPE_STRING, 'test')
             ->setAllowedValues(['test']);
         /** @noinspection PhpParamsInspection */

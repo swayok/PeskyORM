@@ -49,6 +49,17 @@ class TestingAdmin extends Record
     {
         return parent::validateNewData($data, $columnsNames, $isUpdate);
     }
+
+    public function getColumnValueForToArray(
+        string $columnName,
+        ?string &$columnAlias = null,
+        ?\Closure $valueModifier = null,
+        bool $returnNullForFiles = false,
+        ?bool &$isset = null,
+        bool $skipPrivateValueCheck = false
+    ): mixed {
+        return parent::getColumnValueForToArray($columnName, $columnAlias, $valueModifier, $returnNullForFiles, $isset, $skipPrivateValueCheck);
+    }
     
     
 }

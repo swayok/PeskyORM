@@ -27,38 +27,23 @@ class Relation
     protected string $foreignTableClass;
     protected string $foreignColumnName;
     
-    /** @var string|\Closure|null */
-    protected $displayColumnName;
+    protected string|\Closure|null $displayColumnName = null;
     
-    /** @var array|\Closure */
-    protected $additionalJoinConditions = [];
+    protected \Closure|array $additionalJoinConditions = [];
     
-    /**
-     * @param string $localColumnName
-     * @param string $type
-     * @param string|TableInterface $foreignTableClass
-     * @param string $foreignColumnName
-     * @return static
-     */
     public static function create(
         string $localColumnName,
         string $type,
-        $foreignTableClass,
+        TableInterface|string $foreignTableClass,
         string $foreignColumnName
-    ) {
+    ): static {
         return new static($localColumnName, $type, $foreignTableClass, $foreignColumnName);
     }
     
-    /**
-     * @param string $localColumnName
-     * @param string $type
-     * @param string|TableInterface $foreignTableClass
-     * @param string $foreignColumnName
-     */
     public function __construct(
         string $localColumnName,
         string $type,
-        $foreignTableClass,
+        TableInterface|string $foreignTableClass,
         string $foreignColumnName
     ) {
         $this
@@ -75,11 +60,10 @@ class Relation
     }
     
     /**
-     * @return static
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    public function setName(string $name)
+    public function setName(string $name): static
     {
         if ($this->hasName()) {
             throw new \BadMethodCallException('Relation name alteration is forbidden');
@@ -107,10 +91,9 @@ class Relation
     }
     
     /**
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setType(string $type)
+    public function setType(string $type): static
     {
         $types = [static::BELONGS_TO, static::HAS_MANY, static::HAS_ONE];
         if (!in_array($type, $types, true)) {
@@ -126,10 +109,9 @@ class Relation
     }
     
     /**
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setLocalColumnName(string $localColumnName)
+    public function setLocalColumnName(string $localColumnName): static
     {
         $this->localColumnName = $localColumnName;
         return $this;
@@ -141,19 +123,14 @@ class Relation
     }
     
     /**
-     * @param string|TableInterface $foreignTableClass
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setForeignTableClass($foreignTableClass)
+    public function setForeignTableClass(TableInterface|string $foreignTableClass): static
     {
         if ($foreignTableClass instanceof TableInterface) {
             $this->foreignTable = $foreignTableClass;
             $this->foreignTableClass = get_class($foreignTableClass);
         } else {
-            if (!is_string($foreignTableClass)) {
-                throw new \InvalidArgumentException('$foreignTableClass argument must be a string');
-            }
             if (!class_exists($foreignTableClass)) {
                 throw new \InvalidArgumentException(
                     "\$foreignTableClass argument contains invalid value: class '$foreignTableClass' does not exist"
@@ -208,10 +185,9 @@ class Relation
     }
     
     /**
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setForeignColumnName(string $foreignColumnName)
+    public function setForeignColumnName(string $foreignColumnName): static
     {
         $this->foreignColumnName = $foreignColumnName;
         return $this;
@@ -248,38 +224,24 @@ class Relation
     }
     
     /**
-     * @param array|\Closure $additionalJoinConditions
-     *      - \Closure: function (Relation $relation, TableInterface $localTable, string $localTableAlias, bool $forStandaloneSelect, ?Record $localRecord = null) { return []; }
-     * @return static
-     * @throws \InvalidArgumentException
+     * \Closure => function (Relation $relation, TableInterface $localTable, string $localTableAlias, bool $forStandaloneSelect, ?Record $localRecord = null): array { return []; }
      */
-    public function setAdditionalJoinConditions($additionalJoinConditions)
+    public function setAdditionalJoinConditions(array|\Closure $additionalJoinConditions): static
     {
-        if (!is_array($additionalJoinConditions) && !($additionalJoinConditions instanceof \Closure)) {
-            throw new \InvalidArgumentException('$additionalJoinConditions argument must be an array or \Closure');
-        }
         $this->additionalJoinConditions = $additionalJoinConditions;
         return $this;
     }
     
-    /**
-     * @return \Closure|string|null
-     */
-    public function getDisplayColumnName()
+    public function getDisplayColumnName(): string|\Closure|null
     {
         return $this->displayColumnName;
     }
     
     /**
-     * @param string|\Closure $displayColumnName - function(array $relationData) { return $relationData['column']; };
-     * @return static
-     * @throws \InvalidArgumentException
+     * \Closure => function(array $relationData): string { return $relationData['column']; };
      */
-    public function setDisplayColumnName($displayColumnName)
+    public function setDisplayColumnName(\Closure|string $displayColumnName): static
     {
-        if (!is_string($displayColumnName) && !($displayColumnName instanceof \Closure)) {
-            throw new \InvalidArgumentException('$displayColumnName argument must be a string or closure');
-        }
         $this->displayColumnName = $displayColumnName;
         return $this;
     }
@@ -290,11 +252,9 @@ class Relation
     }
     
     /**
-     * @param string $joinType
-     * @return static
      * @throws \InvalidArgumentException
      */
-    public function setJoinType(string $joinType)
+    public function setJoinType(string $joinType): static
     {
         $types = [static::JOIN_INNER, static::JOIN_LEFT, static::JOIN_RIGHT];
         if (!in_array($joinType, $types, true)) {
@@ -310,16 +270,18 @@ class Relation
         ?string $joinName = null,
         ?string $joinType = null
     ): OrmJoinInfo {
-        return OrmJoinInfo::create(
+        $ormJoin = OrmJoinInfo::create(
             $joinName ?: $this->getName(),
             $localTable,
             $this->getLocalColumnName(),
             $joinType ?: $this->getJoinType(),
             $this->getForeignTable(),
             $this->getForeignColumnName()
-        )
+        );
+        $ormJoin
             ->setAdditionalJoinConditions($this->getAdditionalJoinConditions($localTable, $localTableAlias, false))
             ->setTableAlias($localTableAlias ?: $localTable::getAlias());
+        return $ormJoin;
     }
     
 }

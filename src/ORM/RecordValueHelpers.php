@@ -13,16 +13,13 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 abstract class RecordValueHelpers
 {
     
-    /**
-     * @param Column $column
-     * @param mixed $value
-     * @param bool $isFromDb
-     * @param bool $isForCondition
-     * @param array $errorMessages
-     * @return array
-     */
-    public static function isValidDbColumnValue(Column $column, $value, bool $isFromDb, bool $isForCondition, array $errorMessages = []): array
-    {
+    public static function isValidDbColumnValue(
+        Column $column,
+        mixed $value,
+        bool $isFromDb,
+        bool $isForCondition,
+        array $errorMessages = []
+    ): array {
         if (is_object($value) && ($value instanceof DbExpr || is_subclass_of($value, AbstractSelect::class))) {
             return [];
         }
@@ -48,13 +45,8 @@ abstract class RecordValueHelpers
     /**
      * Preprocess value using $column->getValuePreprocessor(). This will perform basic processing like
      * converting empty string to null, trimming and lowercasing if any required
-     * @param Column $column
-     * @param mixed $value
-     * @param bool $isDbValue
-     * @param bool $isForValidation
-     * @return mixed
      */
-    public static function preprocessColumnValue(Column $column, $value, bool $isDbValue, bool $isForValidation)
+    public static function preprocessColumnValue(Column $column, mixed $value, bool $isDbValue, bool $isForValidation): mixed
     {
         return call_user_func($column->getValuePreprocessor(), $value, $isDbValue, $isForValidation, $column);
     }
@@ -67,7 +59,7 @@ abstract class RecordValueHelpers
      * @param array $errorMessages
      * @return array
      */
-    public static function isValueFitsDataType($value, string $type, bool $isForCondition, array $errorMessages = []): array
+    public static function isValueFitsDataType(mixed $value, string $type, bool $isForCondition, array $errorMessages = []): array
     {
         switch ($type) {
             case Column::TYPE_BOOL:
@@ -179,16 +171,10 @@ abstract class RecordValueHelpers
      *   - validation will be ignored when $column->getAllowedValues() is empty
      *   - validation will be ignored when $column->isValueCanBeNull() === true and value is null or
      *     empty string with option $column->isEmptyStringMustBeConvertedToNull() === true;
-     *
-     * @param Column $column
-     * @param string|int|float|array $value
-     * @param bool $isFromDb
-     * @param array $errorMessages
-     * @return array
      */
     public static function isValueWithinTheAllowedValuesOfTheColumn(
         Column $column,
-        $value,
+        int|float|bool|string|array|null $value,
         bool $isFromDb,
         array $errorMessages = []
     ): array {
@@ -235,15 +221,16 @@ abstract class RecordValueHelpers
      * Normalize $value according to expected data type ($type)
      * @param mixed $value
      * @param string $type - one of Column::TYPE_*
-     * @return null|string|UploadedFile|DbExpr|AbstractSelect|bool|int|float
+     * @return mixed
      */
-    public static function normalizeValue($value, string $type)
+    public static function normalizeValue(mixed $value, string $type): mixed
     {
         if ($value === null) {
             return null;
         } elseif (is_object($value) && ($value instanceof DbExpr || is_subclass_of($value, AbstractSelect::class))) {
             return $value;
         }
+        /** @noinspection PhpSwitchCanBeReplacedWithMatchExpressionInspection */
         switch ($type) {
             case Column::TYPE_BOOL:
                 return NormalizeValue::normalizeBoolean($value);
@@ -283,33 +270,24 @@ abstract class RecordValueHelpers
      * Note: lighter version of normalizeValue() to optimize processing of large amount of records
      * @param mixed $value
      * @param string $type - one of Column::TYPE_*
-     * @return null|string|UploadedFile|DbExpr
+     * @return mixed|null
      */
-    public static function normalizeValueReceivedFromDb($value, string $type)
+    public static function normalizeValueReceivedFromDb(mixed $value, string $type): mixed
     {
         if ($value === null) {
             return null;
         } elseif ($value instanceof DbExpr) {
             return $value;
         }
-        switch ($type) {
-            case Column::TYPE_BOOL:
-                return NormalizeValue::normalizeBoolean($value);
-            case Column::TYPE_INT:
-            case Column::TYPE_UNIX_TIMESTAMP:
-                return NormalizeValue::normalizeInteger($value);
-            case Column::TYPE_FLOAT:
-                return NormalizeValue::normalizeFloat($value);
-            default:
-                return $value;
-        }
+        return match ($type) {
+            Column::TYPE_BOOL => NormalizeValue::normalizeBoolean($value),
+            Column::TYPE_INT, Column::TYPE_UNIX_TIMESTAMP => NormalizeValue::normalizeInteger($value),
+            Column::TYPE_FLOAT => NormalizeValue::normalizeFloat($value),
+            default => $value,
+        };
     }
     
-    /**
-     * @param array|UploadedFile $value
-     * @return UploadedFile
-     */
-    public static function normalizeFile($value): UploadedFile
+    public static function normalizeFile(array|UploadedFile $value): UploadedFile
     {
         if ($value instanceof UploadedFile) {
             return $value;

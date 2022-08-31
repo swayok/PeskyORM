@@ -7,53 +7,26 @@ namespace PeskyORM\ORM;
 class KeyValuePair
 {
     
-    /**
-     * @var bool|float|int|string
-     */
-    protected $key;
-    /**
-     * @return mixed
-     */
-    protected $value;
+    protected string|int|bool|float $key;
+    protected mixed $value;
     
-    /**
-     * @param int|float|string|bool $key
-     * @param mixed $value
-     * @return static
-     */
-    public static function create($key, $value)
+    public static function create(float|bool|int|string $key, mixed $value): static
     {
         return new static($key, $value);
     }
     
-    /**
-     * @param int|float|string|bool $key
-     * @param mixed $value
-     */
-    public function __construct($key, $value)
+    public function __construct(float|bool|int|string $key, mixed $value)
     {
-        if (!is_scalar($key)) {
-            throw new \InvalidArgumentException(
-                '$key argument must contain a scalar value (int, float, string, bool). '
-                . var_export($key, true) . ' received'
-            );
-        }
         $this->key = $key;
         $this->value = $value;
     }
     
-    /**
-     * @return bool|float|int|string
-     */
-    public function getKey()
+    public function getKey(): float|bool|int|string
     {
         return $this->key;
     }
     
-    /**
-     * @return mixed
-     */
-    public function getValue()
+    public function getValue(): mixed
     {
         return $this->value;
     }
