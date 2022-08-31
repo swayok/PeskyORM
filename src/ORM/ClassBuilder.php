@@ -302,7 +302,7 @@ VIEW;
                 array_filter(
                     (new \ReflectionClass(Column::class))->getConstants(),
                     function ($key) {
-                        return strpos($key, 'TYPE_') === 0;
+                        return str_starts_with($key, 'TYPE_');
                     },
                     ARRAY_FILTER_USE_KEY
                 )
@@ -348,19 +348,12 @@ VIEW;
     
     protected function getPhpTypeByColumnDescription(ColumnDescription $columnDescription): string
     {
-        switch ($columnDescription->getOrmType()) {
-            case Column::TYPE_INT:
-                $type = 'int';
-                break;
-            case Column::TYPE_FLOAT:
-                $type = 'float';
-                break;
-            case Column::TYPE_BOOL:
-                $type = 'bool';
-                break;
-            default:
-                $type = 'string';
-        }
+        $type = match ($columnDescription->getOrmType()) {
+            Column::TYPE_INT => 'int',
+            Column::TYPE_FLOAT => 'float',
+            Column::TYPE_BOOL => 'bool',
+            default => 'string',
+        };
         return ($columnDescription->isNullable() ? 'null|' : '') . $type;
     }
     
@@ -372,22 +365,13 @@ VIEW;
         $formats = RecordValueFormatters::getFormattersForColumnType($ormType);
         $formatToPhpType = [];
         foreach ($formats as $formatName => $formatterClosure) {
-            switch ($formatName) {
-                case 'unix_ts':
-                    $formatToPhpType[$formatName] = 'int';
-                    break;
-                case 'array':
-                    $formatToPhpType[$formatName] = 'array';
-                    break;
-                case 'object':
-                    $formatToPhpType[$formatName] = \stdClass::class;
-                    break;
-                case 'carbon':
-                    $formatToPhpType[$formatName] = 'Carbon';
-                    break;
-                default:
-                    $formatToPhpType[$formatName] = 'string';
-            }
+            $formatToPhpType[$formatName] = match ($formatName) {
+                'unix_ts' => 'int',
+                'array' => 'array',
+                'object' => \stdClass::class,
+                'carbon' => 'Carbon',
+                default => 'string',
+            };
         }
         return $formatToPhpType;
     }

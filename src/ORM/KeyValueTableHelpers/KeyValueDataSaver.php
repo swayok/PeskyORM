@@ -52,8 +52,7 @@ class KeyValueDataSaver extends Record
             [KeyValueTableHelpers::class],
             "public function getMainForeignKeyColumnName() {return {$fkName};}"
         );
-        static::$table->getTableStructure()
-            ->markColumnAsPrimaryKey('fakeid');
+        static::$table->getTableStructure()->markColumnAsPrimaryKey('fakeid');
         static::fromArray($originalData, true, false)
             ->updateValue(static::getPrimaryKeyColumn(), 0, true)
             ->updateValues($newData, false)

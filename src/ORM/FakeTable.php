@@ -6,6 +6,7 @@ namespace PeskyORM\ORM;
 
 use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbAdapterInterface;
+use PeskyORM\ORM\Traits\FakeTableStructureHelpers;
 use Swayok\Utils\StringUtils;
 
 abstract class FakeTable extends Table
@@ -80,8 +81,7 @@ VIEW;
         $table = $fullClassName::getInstance();
         $table->tableName = $tableName;
         if (is_array($columnsOrTableStructure)) {
-            $table->getTableStructure()
-                ->setTableColumns($columnsOrTableStructure);
+            $table = $table->getTableStructure()->setTableColumns($columnsOrTableStructure);
         } elseif ($columnsOrTableStructure instanceof TableStructureInterface) {
             $table->setTableStructureToCopy($columnsOrTableStructure);
         } elseif ($columnsOrTableStructure !== null) {
@@ -110,6 +110,10 @@ VIEW;
         return $this;
     }
     
+    /**
+     * @return TableStructureInterface|FakeTableStructureHelpers
+     * @noinspection PhpDocSignatureInspection
+     */
     public function getTableStructure(): TableStructureInterface
     {
         if (!$this->tableStructure) {

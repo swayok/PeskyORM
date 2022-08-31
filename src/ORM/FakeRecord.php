@@ -30,7 +30,7 @@ abstract class FakeRecord extends Record
      * @return string - class name of a fake record
      * @throws \BadMethodCallException
      */
-    public static function makeNewFakeRecordClass(FakeTable $table)
+    public static function makeNewFakeRecordClass(FakeTable $table): string
     {
         static::$fakesCreated++;
         $suffixClass = StringUtils::classify(

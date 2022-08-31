@@ -942,8 +942,7 @@ class OrmSelectTest extends BaseTestCase
             $dbSelect->getQuery()
         );
         $fakeTable = FakeTable::makeNewFakeTable('subselect2');
-        $fakeTable->getTableStructure()
-            ->mimicTableStructure(TestingSettingsTableStructure::getInstance());
+        $fakeTable->getTableStructure()->mimicTableStructure(TestingSettingsTableStructure::getInstance());
         $dbSelect = OrmSelect::from($fakeTable)
             ->columns(['id', 'key', 'value'])
             ->with(Select::from('settings', static::getValidAdapter()), 'subselect2')
@@ -954,8 +953,7 @@ class OrmSelectTest extends BaseTestCase
         );
         
         $fakeTable2 = FakeTable::makeNewFakeTable('subselect3');
-        $fakeTable2->getTableStructure()
-            ->mimicTableStructure(TestingSettingsTableStructure::getInstance());
+        $fakeTable2->getTableStructure()->mimicTableStructure(TestingSettingsTableStructure::getInstance());
         $subselect2 = Select::from('settings', static::getValidAdapter())->columns(['*']);
         static::assertEquals(
             'SELECT "Settings".* FROM "settings" AS "Settings"',

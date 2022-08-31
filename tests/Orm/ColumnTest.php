@@ -118,6 +118,7 @@ class ColumnTest extends BaseTestCase
     public function testTableStructureNotSet1(): void
     {
         $obj = Column::create(Column::TYPE_BOOL);
+        /** @noinspection UnnecessaryAssertionInspection */
         static::assertInstanceOf(Column::class, $obj);
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('PeskyORM\ORM\Column::getTableStructure(): Return value must be of type PeskyORM\ORM\TableStructureInterface, null returned');
