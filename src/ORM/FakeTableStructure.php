@@ -54,6 +54,7 @@ abstract class FakeTableStructure extends TableStructure
 namespace {$namespace};
 
 use {$parentClassFullName};
+use PeskyORM\ORM\Traits\FakeTableStructureHelpers;
 
 class {$className} extends {$parentClassShortName}
 {
