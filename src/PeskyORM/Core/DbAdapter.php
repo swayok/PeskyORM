@@ -199,6 +199,10 @@ abstract class DbAdapter implements DbAdapterInterface
         static::$isTransactionTracesEnabled = $enable;
     }
     
+    static public function getTransactionTraces(): array {
+        return static::$transactionsTraces;
+    }
+    
     /**
      * @return DbExpr
      */
