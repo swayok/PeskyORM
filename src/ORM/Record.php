@@ -1487,6 +1487,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         if (!$alreadyInTransaction) {
             $table::beginTransaction();
         }
+        $success = true;
         try {
             if ($isUpdate) {
                 unset($data[static::getPrimaryKeyColumnName()]);
@@ -1510,7 +1511,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 } else {
                     // this means that record does not exist anymore
                     $this->reset();
-                    return false;
+                    $success = false;
+                    // DO NOT RETURN FROM HERE! Transaction will hang
                 }
             } else {
                 $this->updateValues($table::insert($data, true), true);
@@ -1522,7 +1524,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         if (!$alreadyInTransaction) {
             $table::commitTransaction();
         }
-        return true;
+        return $success;
     }
     
     /**
