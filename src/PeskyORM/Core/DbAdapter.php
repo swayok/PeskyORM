@@ -772,7 +772,7 @@ abstract class DbAdapter implements DbAdapterInterface
     static protected function rememberTransactionTrace($key = null)
     {
         if (static::$isTransactionTracesEnabled) {
-            $trace = Utils::getBackTrace(true, false, true, 2);
+            $trace = Utils::getBackTrace(true, false, false, 2);
             if ($key) {
                 static::$transactionsTraces[$key] = $trace;
             } else {
