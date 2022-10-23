@@ -13,7 +13,7 @@ use PeskyORM\ORM\TableStructure;
 class TestingAdmins4TableStructure extends TableStructure
 {
     
-    protected static bool $autodetectColumnsConfigs = true;
+    protected static bool $autodetectColumns = true;
     
     public static function getTableName(): string
     {

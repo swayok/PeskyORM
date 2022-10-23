@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\Core;
+namespace PeskyORM\TableDescription;
 
 class TableDescription implements \Serializable
 {
@@ -11,7 +11,7 @@ class TableDescription implements \Serializable
      * Name of DB schema that contains this table (PostgreSQL)
      */
     protected ?string $dbSchema = null;
-    protected string $name;
+    protected string $tableName;
     /**
      * @var ColumnDescription[]
      */
@@ -23,7 +23,7 @@ class TableDescription implements \Serializable
      */
     public function __construct(string $tableName, ?string $dbSchema = null)
     {
-        $this->name = $tableName;
+        $this->tableName = $tableName;
         $this->dbSchema = $dbSchema;
     }
     
@@ -49,9 +49,9 @@ class TableDescription implements \Serializable
         return $this->dbSchema;
     }
     
-    public function getName(): string
+    public function getTableName(): string
     {
-        return $this->name;
+        return $this->tableName;
     }
     
     /**
@@ -73,16 +73,10 @@ class TableDescription implements \Serializable
         return $this->columns[$name];
     }
     
-    /**
-     * String representation of object
-     * @link http://php.net/manual/en/serializable.serialize.php
-     * @return string the string representation of the object or null
-     * @since 5.1.0
-     */
     public function serialize(): string
     {
         $data = [
-            'name' => $this->getName(),
+            'name' => $this->getTableName(),
             'dbSchema' => $this->getDbSchema(),
             'columns' => [],
         ];
@@ -92,19 +86,9 @@ class TableDescription implements \Serializable
         return json_encode($data, JSON_THROW_ON_ERROR);
     }
     
-    /**
-     * Constructs the object
-     * @link http://php.net/manual/en/serializable.unserialize.php
-     * @param string $serialized <p>
-     * The string representation of the object.
-     * </p>
-     * @return void
-     * @throws \InvalidArgumentException
-     * @since 5.1.0
-     * @noinspection PhpParameterNameChangedDuringInheritanceInspection
-     */
     public function unserialize(string $serialized): void
     {
+        /** @noinspection JsonEncodingApiUsageInspection */
         $data = json_decode($serialized, true);
         if (!is_array($data)) {
             throw new \InvalidArgumentException('$serialized argument must be a json-encoded array');

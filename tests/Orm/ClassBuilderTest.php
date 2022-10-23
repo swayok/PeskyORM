@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Orm;
 
-use PeskyORM\Core\ColumnDescription;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\ORM\ClassBuilder;
 use PeskyORM\ORM\Column;
+use PeskyORM\TableDescription\ColumnDescription;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;

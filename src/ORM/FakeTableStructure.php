@@ -122,7 +122,7 @@ VIEW;
         return parent::getColumn($columnName);
     }
     
-    protected function loadColumnsConfigsFromPrivateMethods(): void
+    protected function loadColumnsAndRelationsFromPrivateMethods(): void
     {
     }
     

@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\Core;
+namespace PeskyORM\TableDescription;
 
+use PeskyORM\Core\DbExpr;
 use PeskyORM\ORM\Column;
 
 class ColumnDescription implements \Serializable

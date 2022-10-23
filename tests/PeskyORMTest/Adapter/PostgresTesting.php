@@ -49,15 +49,4 @@ class PostgresTesting extends Postgres
     {
         return parent::quoteJsonSelectorExpression($sequence);
     }
-    
-    public function cleanDefaultValueForColumnDescription(DbExpr|float|int|bool|array|string|null $default): DbExpr|float|array|bool|int|string|null
-    {
-        return parent::cleanDefaultValueForColumnDescription($default);
-    }
-    
-    public function extractLimitAndPrecisionForColumnDescription(string $typeDescription): array
-    {
-        return parent::extractLimitAndPrecisionForColumnDescription($typeDescription);
-    }
-    
 }

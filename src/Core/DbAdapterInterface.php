@@ -6,6 +6,7 @@ namespace PeskyORM\Core;
 
 use PDO;
 use PDOStatement;
+use PeskyORM\TableDescription\TableDescription;
 
 interface DbAdapterInterface
 {
@@ -313,13 +314,6 @@ interface DbAdapterInterface
      * @return string - something like: "SELECT $columns FROM $table $conditionsAndOptions"
      */
     public function makeSelectQuery(string $table, array $columns = [], ?DbExpr $conditionsAndOptions = null): string;
-    
-    /**
-     * Get table description from DB
-     * @param string $table
-     * @param null|string $schema - name of DB schema that contains $table (for PostgreSQL)
-     */
-    public function describeTable(string $table, ?string $schema = null): TableDescription;
     
     /**
      * Search for $table in $schema

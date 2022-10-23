@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\ColumnDescription;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\TableDescription;
+use PeskyORM\TableDescription\ColumnDescription;
+use PeskyORM\TableDescription\DescribeTable;
+use PeskyORM\TableDescription\TableDescription;
 use Swayok\Utils\StringUtils;
 
 class ClassBuilder
@@ -155,7 +156,7 @@ VIEW;
     protected function getTableDescription(): TableDescription
     {
         if (!$this->tableDescription) {
-            $this->tableDescription = $this->connection->describeTable($this->tableName, $this->dbSchemaName);
+            $this->tableDescription = DescribeTable::getTableDescription($this->connection, $this->tableName, $this->dbSchemaName);
         }
         return $this->tableDescription;
     }

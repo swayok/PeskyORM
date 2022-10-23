@@ -6,14 +6,10 @@ namespace PeskyORM\Adapter;
 
 use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Core\AbstractSelect;
-use PeskyORM\Core\ColumnDescription;
 use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\TableDescription;
 use PeskyORM\Core\Utils;
 use PeskyORM\Exception\DbException;
-use PeskyORM\ORM\Column;
-use Swayok\Utils\ValidateValue;
 
 class Mysql extends DbAdapter
 {
@@ -49,41 +45,6 @@ class Mysql extends DbAdapter
         '!~*' => 'NOT REGEXP',
         'REGEX' => 'REGEXP',
         'NOT REGEX' => 'NOT REGEXP',
-    ];
-    
-    protected static array $dbTypeToOrmType = [
-        'bool' => Column::TYPE_BOOL,
-        'blob' => Column::TYPE_BLOB,
-        'tinyblob' => Column::TYPE_BLOB,
-        'mediumblob' => Column::TYPE_BLOB,
-        'longblob' => Column::TYPE_BLOB,
-        'tinyint' => Column::TYPE_INT,
-        'smallint' => Column::TYPE_INT,
-        'mediumint' => Column::TYPE_INT,
-        'bigint' => Column::TYPE_INT,
-        'int' => Column::TYPE_INT,
-        'integer' => Column::TYPE_INT,
-        'decimal' => Column::TYPE_FLOAT,
-        'dec' => Column::TYPE_FLOAT,
-        'float' => Column::TYPE_FLOAT,
-        'double' => Column::TYPE_FLOAT,
-        'double precision' => Column::TYPE_FLOAT,
-        'char' => Column::TYPE_STRING,
-        'binary' => Column::TYPE_STRING,
-        'varchar' => Column::TYPE_STRING,
-        'varbinary' => Column::TYPE_STRING,
-        'enum' => Column::TYPE_STRING,
-        'set' => Column::TYPE_STRING,
-        'text' => Column::TYPE_TEXT,
-        'tinytext' => Column::TYPE_TEXT,
-        'mediumtext' => Column::TYPE_TEXT,
-        'longtext' => Column::TYPE_TEXT,
-        'json' => Column::TYPE_JSON,
-        'date' => Column::TYPE_DATE,
-        'time' => Column::TYPE_TIME,
-        'datetime' => Column::TYPE_TIMESTAMP,
-        'timestamp' => Column::TYPE_TIMESTAMP,
-        'year' => Column::TYPE_INT,
     ];
     
     public static function getConnectionConfigClass(): string
@@ -128,9 +89,9 @@ class Mysql extends DbAdapter
         $dataType = strtolower($dataType);
         if (array_key_exists($dataType, static::$dataTypesMap)) {
             return static::$dataTypesMap[$dataType];
-        } else {
-            return 'CHAR';
         }
+
+        return 'CHAR';
     }
     
     protected function resolveQueryWithReturningColumns(
@@ -194,19 +155,23 @@ class Mysql extends DbAdapter
         $pkName = $this->quoteDbEntityName($pkName);
         $query = DbExpr::create("SELECT {$returning} FROM {$table} WHERE $pkName=$id");
         $stmnt = $this->query($query);
+
         if (!$stmnt->rowCount()) {
             throw new DbException(
                 'No data received for $returning request after insert. Insert: ' . $insertQuery
                 . '. Select: ' . $this->getLastQuery(),
                 DbException::CODE_RETURNING_FAILED
             );
-        } elseif ($stmnt->rowCount() > 1) {
+        }
+
+        if ($stmnt->rowCount() > 1) {
             throw new DbException(
                 'Received more then 1 record for $returning request after insert. Insert: ' . $insertQuery
                 . '. Select: ' . $this->getLastQuery(),
                 DbException::CODE_RETURNING_FAILED
             );
         }
+
         return Utils::getDataFromStatement($stmnt, Utils::FETCH_FIRST);
     }
     
@@ -242,19 +207,23 @@ class Mysql extends DbAdapter
             "SELECT {$returning} FROM {$table} WHERE {$pkName} BETWEEN {$id1} AND {$id2} ORDER BY {$pkName}"
         );
         $stmnt = $this->query($query);
+
         if (!$stmnt->rowCount()) {
             throw new DbException(
                 'No data received for $returning request after insert. '
                 . "Insert: {$insertQuery}. Select: {$this->getLastQuery()}",
                 DbException::CODE_RETURNING_FAILED
             );
-        } elseif ($stmnt->rowCount() !== count($data)) {
+        }
+
+        if ($stmnt->rowCount() !== count($data)) {
             throw new DbException(
                 "Received amount of records ({$stmnt->rowCount()}) differs from expected (" . count($data) . ')'
                 . '. Insert: ' . $insertQuery . '. Select: ' . $this->getLastQuery(),
                 DbException::CODE_RETURNING_FAILED
             );
         }
+
         return Utils::getDataFromStatement($stmnt, Utils::FETCH_ALL);
     }
     
@@ -293,80 +262,6 @@ class Mysql extends DbAdapter
         }
         $this->exec($query);
         return Utils::getDataFromStatement($stmnt, Utils::FETCH_ALL);
-    }
-    
-    
-    /**
-     * Get table description from DB
-     * @param string $table
-     * @param string|null $schema - not used for MySQL
-     * @return TableDescription
-     * @throws \UnexpectedValueException
-     * @throws DbException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
-     */
-    public function describeTable(string $table, ?string $schema = null): TableDescription
-    {
-        $description = new TableDescription($table, $schema);
-        /** @var array $columns */
-        $columns = $this->query(DbExpr::create("SHOW COLUMNS IN `$table`"), Utils::FETCH_ALL);
-        foreach ($columns as $columnInfo) {
-            $columnDescription = new ColumnDescription(
-                $columnInfo['Field'],
-                $columnInfo['Type'],
-                $this->convertDbTypeToOrmType($columnInfo['Type'])
-            );
-            [$limit, $precision] = $this->extractLimitAndPrecisionForColumnDescription($columnInfo['Type']);
-            $columnDescription
-                ->setLimitAndPrecision($limit, $precision)
-                ->setIsNullable(strtolower($columnInfo['Null']) === 'yes')
-                ->setIsPrimaryKey(strtolower($columnInfo['Key']) === 'pri')
-                ->setIsUnique(strtolower($columnInfo['Key']) === 'uni')
-                ->setDefault($this->cleanDefaultValueForColumnDescription($columnInfo['Default']));
-            $description->addColumn($columnDescription);
-        }
-        return $description;
-    }
-    
-    protected function convertDbTypeToOrmType(string $dbType): string
-    {
-        $dbType = strtolower(preg_replace(['%\s*unsigned$%i', '%\([^)]+\)$%'], ['', ''], $dbType));
-        return array_key_exists($dbType, static::$dbTypeToOrmType)
-            ? static::$dbTypeToOrmType[$dbType]
-            : Column::TYPE_STRING;
-    }
-    
-    protected function cleanDefaultValueForColumnDescription(DbExpr|float|array|bool|int|string|null $default): DbExpr|float|array|bool|int|string|null
-    {
-        if ($default === null || $default === '') {
-            return $default;
-        } elseif ($default === 'CURRENT_TIMESTAMP') {
-            return DbExpr::create('NOW()');
-        } elseif ($default === 'true') {
-            return true;
-        } elseif ($default === 'false') {
-            return false;
-        } elseif (ValidateValue::isInteger($default)) {
-            return (int)$default;
-        } elseif (ValidateValue::isFloat($default)) {
-            return (float)$default;
-        } else {
-            return $default; //< it seems like there is still no possibility to use functions as default value
-        }
-    }
-    
-    /**
-     * @param string $typeDescription
-     * @return array - index 0: limit; index 1: precision
-     */
-    protected function extractLimitAndPrecisionForColumnDescription(string $typeDescription): array
-    {
-        if (preg_match('%\((\d+)(?:,(\d+))?\)( unsigned)?$%', $typeDescription, $matches)) {
-            return [(int)$matches[1], !isset($matches[2]) ? null : (int)$matches[2]];
-        } else {
-            return [null, null];
-        }
     }
     
     /**
@@ -430,13 +325,13 @@ class Mysql extends DbAdapter
                     );
                 }
                 return $value;
-            } else {
-                $value = is_array($value) ? json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE) : $value;
-                return $this->quoteValue($value);
             }
-        } else {
-            return parent::assembleConditionValue($value, $operator, $valueAlreadyQuoted);
+
+            $value = is_array($value) ? json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE) : $value;
+            return $this->quoteValue($value);
         }
+
+        return parent::assembleConditionValue($value, $operator, $valueAlreadyQuoted);
     }
     
     public function assembleCondition(
@@ -457,12 +352,14 @@ class Mysql extends DbAdapter
             $values = implode(', ', $rawValue);
             $howMany = $this->quoteValue($operator === '?|' ? 'one' : 'many', \PDO::PARAM_STR);
             return "JSON_CONTAINS_PATH($quotedColumn, $howMany, $values)";
-        } elseif (in_array($operator, ['@>', '<@'], true)) {
+        }
+
+        if (in_array($operator, ['@>', '<@'], true)) {
             $value = $this->assembleConditionValue($rawValue, $operator, $valueAlreadyQuoted);
             return "JSON_CONTAINS($quotedColumn, $value)";
-        } else {
-            return parent::assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted);
         }
+
+        return parent::assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted);
     }
     
     /**
