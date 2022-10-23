@@ -47,11 +47,6 @@ class Mysql extends DbAdapter
         'NOT REGEX' => 'NOT REGEXP',
     ];
     
-    public static function getConnectionConfigClass(): string
-    {
-        return MysqlConfig::class;
-    }
-    
     public function __construct(MysqlConfig $connectionConfig)
     {
         parent::__construct($connectionConfig);

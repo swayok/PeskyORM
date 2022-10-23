@@ -84,11 +84,6 @@ class Postgres extends DbAdapter
         'NOT REGEX' => '!~*',
     ];
 
-    public static function getConnectionConfigClass(): string
-    {
-        return PostgresConfig::class;
-    }
-
     protected static function _isValidDbEntityName(string $name): bool
     {
         // $name can literally be anything when quoted, and it is always quoted unless developer skips quotes

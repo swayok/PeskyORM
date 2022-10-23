@@ -16,16 +16,20 @@ use PeskyORM\Tests\PeskyORMTest\Adapter\PostgresTesting;
 
 class TestingApp
 {
-    
+
     public static ?PostgresTesting $pgsqlConnection = null;
     public static ?MysqlTesting $mysqlConnection = null;
     protected static ?array $dataForDb = null;
     protected static ?array $dataForDbMinimal = null;
-    
+
     public static function getMysqlConnection(): MysqlTesting
     {
         if (!static::$mysqlConnection) {
-            DbConnectionsManager::addAdapter(DbConnectionsManager::ADAPTER_MYSQL, MysqlTesting::class);
+            DbConnectionsManager::addAdapter(
+                DbConnectionsManager::ADAPTER_MYSQL,
+                MysqlTesting::class,
+                MysqlConfig::class
+            );
             /** @noinspection PhpFieldAssignmentTypeMismatchInspection */
             static::$mysqlConnection = DbConnectionsManager::createConnection(
                 'mysql',
@@ -37,11 +41,15 @@ class TestingApp
         }
         return static::$mysqlConnection;
     }
-    
+
     public static function getPgsqlConnection(): PostgresTesting
     {
         if (!static::$pgsqlConnection) {
-            DbConnectionsManager::addAdapter(DbConnectionsManager::ADAPTER_POSTGRES, PostgresTesting::class);
+            DbConnectionsManager::addAdapter(
+                DbConnectionsManager::ADAPTER_POSTGRES,
+                PostgresTesting::class,
+                PostgresConfig::class
+            );
             /** @noinspection PhpFieldAssignmentTypeMismatchInspection */
             static::$pgsqlConnection = DbConnectionsManager::createConnection(
                 'default',
@@ -56,12 +64,12 @@ class TestingApp
         static::$pgsqlConnection->rememberTransactionQueries = true;
         return static::$pgsqlConnection;
     }
-    
+
     protected static function getGlobalConfigs(): array
     {
         return include __DIR__ . '/../configs/global.php';
     }
-    
+
     public static function getRecordsForDb(string $table, int $limit = 0): array
     {
         if ($limit <= 10) {
@@ -77,11 +85,11 @@ class TestingApp
         }
         if ($limit > 0) {
             return array_slice($records[$table], 0, $limit);
-        } else {
-            return $records[$table];
         }
+
+        return $records[$table];
     }
-    
+
     public static function fillAdminsTable(int $limit = 0): array
     {
         static::$pgsqlConnection->exec('TRUNCATE TABLE admins');
@@ -89,7 +97,7 @@ class TestingApp
         static::$pgsqlConnection->insertMany('admins', array_keys($data[0]), $data);
         return $data;
     }
-    
+
     public static function fillSettingsTable(int $limit = 0): array
     {
         static::$pgsqlConnection->exec('TRUNCATE TABLE settings');
@@ -97,7 +105,7 @@ class TestingApp
         static::$pgsqlConnection->insertMany('settings', array_keys($data[0]), $data);
         return $data;
     }
-    
+
     public static function clearTables(DbAdapterInterface $adapter): void
     {
         if ($adapter->inTransaction()) {
@@ -106,7 +114,7 @@ class TestingApp
         $adapter->exec('TRUNCATE TABLE settings');
         $adapter->exec('TRUNCATE TABLE admins');
     }
-    
+
     public static function cleanInstancesOfDbTablesAndRecordsAndStructures(): void
     {
         $class = new \ReflectionClass(Table::class);
@@ -114,13 +122,13 @@ class TestingApp
         $method->setAccessible(true);
         $method->invoke(null);
         $method->setAccessible(false);
-        
+
         $class = new \ReflectionClass(TableStructure::class);
         $method = $class->getMethod('resetInstances');
         $method->setAccessible(true);
         $method->invoke(null);
         $method->setAccessible(false);
-    
+
         $class = new \ReflectionClass(Record::class);
         $method = $class->getMethod('resetColumnsCache');
         $method->setAccessible(true);

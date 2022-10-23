@@ -12,12 +12,6 @@ interface DbAdapterInterface
 {
     
     /**
-     * Class name that implements DbConnectionConfigInterface
-     * @return string
-     */
-    public static function getConnectionConfigClass(): string;
-    
-    /**
      * Connect to DB once
      * @return \PDO or PDO wrapper
      */

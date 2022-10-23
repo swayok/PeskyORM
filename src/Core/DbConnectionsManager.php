@@ -6,37 +6,50 @@ namespace PeskyORM\Core;
 
 use PeskyORM\Adapter\Mysql;
 use PeskyORM\Adapter\Postgres;
+use PeskyORM\Config\Connection\MysqlConfig;
+use PeskyORM\Config\Connection\PostgresConfig;
 
 class DbConnectionsManager
 {
-    
+
     public const ADAPTER_MYSQL = 'mysql';
     public const ADAPTER_POSTGRES = 'pgsql';
-    
+
     private static array $adapters = [
         self::ADAPTER_MYSQL => Mysql::class,
         self::ADAPTER_POSTGRES => Postgres::class,
     ];
-    
+
+    private static array $configClasses = [
+        self::ADAPTER_MYSQL => MysqlConfig::class,
+        Mysql::class => MysqlConfig::class,
+
+        self::ADAPTER_POSTGRES => PostgresConfig::class,
+        Postgres::class => PostgresConfig::class,
+    ];
+
     /**
      * @var DbAdapterInterface[]
      */
     private static array $connections = [];
-    
+
     /**
      * Add custom DB adapter
      * @param string $name
      * @param string $className - class must implement \PeskyORM\Core\DbAdapterInterface
+     * @param string $connectionConfigClassName - class must implement \PeskyORM\Core\DbConnectionConfigInterface
      * @throws \InvalidArgumentException
      */
-    public static function addAdapter(string $name, string $className): void
+    public static function addAdapter(string $name, string $className, string $connectionConfigClassName): void
     {
         if (!in_array(DbAdapterInterface::class, class_implements($className), true)) {
             throw new \InvalidArgumentException("Class [$className] must implement " . DbAdapterInterface::class . ' interface');
         }
         self::$adapters[$name] = $className;
+        self::$configClasses[$name] = $connectionConfigClassName;
+        self::$configClasses[$className] = $connectionConfigClassName;
     }
-    
+
     /**
      * @param string $connectionName
      * @param string $adapterName
@@ -64,7 +77,7 @@ class DbConnectionsManager
         }
         return self::$connections[$connectionName];
     }
-    
+
     /**
      * @param string $connectionName
      * @param array $connectionInfo
@@ -75,8 +88,11 @@ class DbConnectionsManager
      * @return DbAdapterInterface
      * @throws \InvalidArgumentException
      */
-    public static function createConnectionFromArray(string $connectionName, array $connectionInfo, bool $ignoreDuplicate = false): DbAdapterInterface
-    {
+    public static function createConnectionFromArray(
+        string $connectionName,
+        array $connectionInfo,
+        bool $ignoreDuplicate = false
+    ): DbAdapterInterface {
         if (empty($connectionInfo['driver']) && empty($connectionInfo['adapter'])) {
             throw new \InvalidArgumentException('$connectionInfo must contain a value for key \'driver\' or \'adapter\'');
         }
@@ -87,11 +103,11 @@ class DbConnectionsManager
         /** @var DbAdapterInterface $adapterClass */
         $adapterClass = static::$adapters[$adapterName];
         /** @var DbConnectionConfigInterface $configClass */
-        $configClass = $adapterClass::getConnectionConfigClass();
+        $configClass = static::$configClasses[$adapterName];
         $connectionConfig = $configClass::fromArray($connectionInfo, $connectionName);
         return static::createConnection($connectionName, $adapterName, $connectionConfig, $ignoreDuplicate);
     }
-    
+
     /**
      * Add alternative name for existing connection
      * @param string $connectionName
@@ -99,14 +115,17 @@ class DbConnectionsManager
      * @param bool $ignoreDuplicate - true: will ignore duplicate connections
      * @throws \InvalidArgumentException
      */
-    public static function addAlternativeNameForConnection(string $connectionName, string $alternativeName, bool $ignoreDuplicate = false): void
-    {
+    public static function addAlternativeNameForConnection(
+        string $connectionName,
+        string $alternativeName,
+        bool $ignoreDuplicate = false
+    ): void {
         if (isset(self::$connections[$alternativeName]) && !$ignoreDuplicate) {
             throw new \InvalidArgumentException("DB connection with name [$alternativeName] already exists");
         }
         self::$connections[$alternativeName] = static::getConnection($connectionName);
     }
-    
+
     /**
      * @throws \InvalidArgumentException
      */
@@ -117,12 +136,12 @@ class DbConnectionsManager
         }
         return self::$connections[$connectionName];
     }
-    
+
     public static function hasConnection(string $connectionName): bool
     {
         return isset(self::$connections[$connectionName]);
     }
-    
+
     /**
      * Disconnect all adapters
      */
@@ -132,7 +151,7 @@ class DbConnectionsManager
             $adapter->disconnect();
         }
     }
-    
+
     /**
      * @return DbAdapterInterface[]
      */
@@ -140,5 +159,5 @@ class DbConnectionsManager
     {
         return self::$connections;
     }
-    
+
 }
