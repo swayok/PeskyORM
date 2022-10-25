@@ -95,7 +95,9 @@ abstract class AbstractSelect
                     throw new \InvalidArgumentException(
                         "WITH key in \$conditionsAndOptions argument contains invalid value for key {$selectAlias}. Value must be an instance of AbstractSelect class"
                     );
-                } elseif (!$this->getConnection()
+                }
+
+                if (!$this->getConnection()
                     ->isValidDbEntityName($selectAlias, false)) {
                     throw new \InvalidArgumentException(
                         "WITH key in \$conditionsAndOptions argument contains invalid key {$selectAlias}. Key must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)"
@@ -268,23 +270,25 @@ abstract class AbstractSelect
      */
     protected function _fetch(string $selectionType): mixed
     {
-        $data = $this->getConnection()
-            ->query($this->getQuery(), $selectionType);
+        $data = $this->getConnection()->query($this->getQuery(), $selectionType);
+
         if (in_array($selectionType, [Utils::FETCH_COLUMN, Utils::FETCH_VALUE, Utils::FETCH_KEY_PAIR], true)) {
             return $data;
-        } elseif ($selectionType === Utils::FETCH_FIRST) {
+        }
+
+        if ($selectionType === Utils::FETCH_FIRST) {
             $shortColumnAliasToAlias = array_flip($this->shortColumnAliases);
             $shortJoinAliasToAlias = array_flip($this->shortJoinAliases);
             return $this->normalizeRecord($data, $shortColumnAliasToAlias, $shortJoinAliasToAlias);
-        } else {
-            $records = [];
-            $shortColumnAliasToAlias = array_flip($this->shortColumnAliases);
-            $shortJoinAliasToAlias = array_flip($this->shortJoinAliases);
-            foreach ($data as $record) {
-                $records[] = $this->normalizeRecord($record, $shortColumnAliasToAlias, $shortJoinAliasToAlias);
-            }
-            return $records;
         }
+
+        $records = [];
+        $shortColumnAliasToAlias = array_flip($this->shortColumnAliases);
+        $shortJoinAliasToAlias = array_flip($this->shortJoinAliases);
+        foreach ($data as $record) {
+            $records[] = $this->normalizeRecord($record, $shortColumnAliasToAlias, $shortJoinAliasToAlias);
+        }
+        return $records;
     }
     
     public function getQuery(): string
@@ -695,9 +699,9 @@ abstract class AbstractSelect
     {
         if ($subject === null) {
             return $this->isDirty === null || !empty($this->isDirty);
-        } else {
-            return $this->isDirty === null || in_array($subject, $this->isDirty, true);
         }
+
+        return $this->isDirty === null || in_array($subject, $this->isDirty, true);
     }
     
     protected function notDirty(): static
@@ -796,7 +800,9 @@ abstract class AbstractSelect
             $columnAlias = trim($columnAlias);
             if ($columnAlias === '') {
                 throw new \InvalidArgumentException($errorsPrefix . '$columnAlias argument is not allowed to be an empty string');
-            } elseif (!$this->getConnection()->isValidDbEntityName($columnAlias)) {
+            }
+
+            if (!$this->getConnection()->isValidDbEntityName($columnAlias)) {
                 throw new \InvalidArgumentException($errorsPrefix . "\$columnAlias argument contains invalid db entity name: [$columnAlias]");
             }
         }
@@ -804,7 +810,9 @@ abstract class AbstractSelect
             $joinName = trim($joinName);
             if ($joinName === '') {
                 throw new \InvalidArgumentException($errorsPrefix . '$joinName argument is not allowed to be an empty string');
-            } elseif (!$this->getConnection()->isValidDbEntityName($joinName)) {
+            }
+
+            if (!$this->getConnection()->isValidDbEntityName($joinName)) {
                 throw new \InvalidArgumentException($errorsPrefix . "\$joinName argument contains invalid db entity name: [$joinName]");
             }
         }
@@ -841,9 +849,9 @@ abstract class AbstractSelect
             } elseif (!$this->getConnection()->isValidDbEntityName($ret['json_selector'] ?: $ret['name'], true)) {
                 if ($ret['json_selector']) {
                     throw new \InvalidArgumentException("{$errorsPrefix}Invalid json selector: [{$ret['json_selector']}]");
-                } else {
-                    throw new \InvalidArgumentException("{$errorsPrefix}Invalid column name: [{$ret['name']}]");
                 }
+
+                throw new \InvalidArgumentException("{$errorsPrefix}Invalid column name: [{$ret['name']}]");
             }
         }
         
@@ -888,16 +896,18 @@ abstract class AbstractSelect
         }
         if ($columnInfo['name'] === '*' || ($isDbExpr && empty($columnInfo['alias']))) {
             return $columnName;
-        } elseif ($itIsWithQuery) {
+        }
+
+        if ($itIsWithQuery) {
             if ($columnInfo['alias']) {
                 return $columnName . ' AS ' . $this->quoteDbEntityName($columnInfo['alias']);
-            } else {
-                return $columnName;
             }
-        } else {
-            $columnAlias = $this->quoteDbEntityName($this->makeColumnAliasFromColumnInfo($columnInfo));
-            return $columnName . ' AS ' . $columnAlias;
+
+            return $columnName;
         }
+
+        $columnAlias = $this->quoteDbEntityName($this->makeColumnAliasFromColumnInfo($columnInfo));
+        return $columnName . ' AS ' . $columnAlias;
     }
     
     protected function makeColumnAliasFromColumnInfo(array $columnInfo): ?string
@@ -1142,11 +1152,13 @@ abstract class AbstractSelect
             function ($columnName, $rawValue) {
                 if ($rawValue instanceof DbExpr) {
                     return $this->quoteDbExpr($rawValue);
-                } elseif ($rawValue instanceof AbstractSelect) {
-                    return '(' . $rawValue->getQuery() . ')';
-                } else {
-                    return $rawValue;
                 }
+
+                if ($rawValue instanceof AbstractSelect) {
+                    return '(' . $rawValue->getQuery() . ')';
+                }
+
+                return $rawValue;
             }
         );
         $assembled = trim($assembled);
@@ -1438,7 +1450,7 @@ abstract class AbstractSelect
         }
         if (count($usedJoins) > 0) {
             foreach ($usedJoins as $config) {
-                if (count($joins) > 0) {
+                if (count($joins) > 0 && isset($data[$config->getTableAlias()])) {
                     $this->placeDataOfDeepNestedJoinsIntoRecord($joins, $data[$config->getTableAlias()]);
                 }
                 if (empty($data[$config->getTableAlias()][$config->getJoinName()])) {
@@ -1531,14 +1543,17 @@ abstract class AbstractSelect
         if (!$this->hasJoin($joinName, true)) {
             throw new \UnexpectedValueException("Join config with name [{$joinName}] not found");
         }
+
         if (isset($this->joins[$joinName])) {
             return $this->joins[$joinName];
-        } elseif (isset($this->crossJoins[$joinName])) {
-            return $this->crossJoins[$joinName];
-        } else {
-            $alias = array_flip($this->shortJoinAliases)[$joinName];
-            return $this->joins[$alias] ?: $this->crossJoins[$alias];
         }
+
+        if (isset($this->crossJoins[$joinName])) {
+            return $this->crossJoins[$joinName];
+        }
+
+        $alias = array_flip($this->shortJoinAliases)[$joinName];
+        return $this->joins[$alias] ?: $this->crossJoins[$alias];
     }
     
     public function __clone()
