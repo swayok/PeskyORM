@@ -40,7 +40,7 @@ abstract class AbstractSelect
     protected array $crossJoins = [];
     /**
      * List of JOINs names that are mentioned in WHERE and HAVING conditions.
-     * This is used in simplified query builder so it won't drop LEFT JOINs if
+     * This is used in simplified query builder, so it won't drop LEFT JOINs if
      * they are required for query to be successful
      */
     protected array $joinsUsedInWhereAndHavingConditions = [];
@@ -422,7 +422,7 @@ abstract class AbstractSelect
      * - DbExpr instances
      * - key-value pairs where key is column name with optional operator (ex: 'col_name !='), value may be
      * any of DbExpr, int, float, string, array. Arrays used for operators like 'IN', 'BETWEEN', '=' and other that
-     * accept or require multiple values. Some operator are smart-converted to the ones that fit the value. For
+     * accept or require multiple values. Some operators are smart-converted to the ones that fit the value. For
      * example '=' with array value will be converted to 'IN', '!=' with NULL value will be converted to 'IS NOT'
      * You can group conditions inside 'AND' and 'OR' keys. ex: ['col3 => 0, 'OR' => ['col1' => 1, 'col2' => 2]]
      * will be assembled into ("col3" = 0 AND ("col1" = 1 OR "col2" => 2)).
@@ -639,7 +639,7 @@ abstract class AbstractSelect
     
     /**
      * @param AbstractJoinInfo $joinConfig
-     * @param bool $append - false: reset joins list so it will only contain this join
+     * @param bool $append - false: reset joins list, so it will only contain this join
      * @return static
      * @throws \InvalidArgumentException
      */
@@ -1168,7 +1168,7 @@ abstract class AbstractSelect
     /**
      * @param string|DbExpr $columnName
      * @param string|null $joinName
-     * @param string $subject - 'WHERE', 'HAVING', etc - the part of a query we are qouting the column for
+     * @param string $subject - 'WHERE', 'HAVING', etc. - the part of a query we are qouting the column for
      * @return string
      */
     protected function columnQuoterForConditions(DbExpr|string $columnName, ?string $joinName, string $subject): string
