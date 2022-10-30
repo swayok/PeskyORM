@@ -243,117 +243,153 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         static::assertTrue(true);
     }
     
-    public function testInvalidConvertConditionOperator(): void
+    public function testInvalidNormalizeConditionOperator(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Condition operator [>=] does not support list of values");
         $adapter = self::getValidAdapter();
-        $adapter->convertConditionOperator('>=', [1, 2, 3]);
+        $adapter->normalizeConditionOperator('>=', [1, 2, 3]);
     }
     
-    public function testConvertConditionOperatorForNullValue(): void
+    public function testNormalizeConditionOperatorForNullValue(): void
     {
         $adapter = self::getValidAdapter();
         
-        $operator = $adapter->convertConditionOperator('=', null);
+        $operator = $adapter->normalizeConditionOperator('=', null);
         static::assertEquals('IS', $operator);
-        $operator = $adapter->convertConditionOperator('IS', null);
+        $operator = $adapter->normalizeConditionOperator('IS', null);
         static::assertEquals('IS', $operator);
-        $operator = $adapter->convertConditionOperator('>=', null);
+        $operator = $adapter->normalizeConditionOperator('>=', null);
         static::assertEquals('IS', $operator);
-        $operator = $adapter->convertConditionOperator('OPER', null);
+        $operator = $adapter->normalizeConditionOperator('OPER', null);
         static::assertEquals('IS', $operator);
         
-        $operator = $adapter->convertConditionOperator('IS', '1');
+        $operator = $adapter->normalizeConditionOperator('IS', '1');
         static::assertEquals('=', $operator);
         
-        $operator = $adapter->convertConditionOperator('!=', null);
+        $operator = $adapter->normalizeConditionOperator('!=', null);
         static::assertEquals('IS NOT', $operator);
-        $operator = $adapter->convertConditionOperator('NOT', null);
+        $operator = $adapter->normalizeConditionOperator('NOT', null);
         static::assertEquals('IS NOT', $operator);
-        $operator = $adapter->convertConditionOperator('IS NOT', null);
+        $operator = $adapter->normalizeConditionOperator('IS NOT', null);
         static::assertEquals('IS NOT', $operator);
         
-        $operator = $adapter->convertConditionOperator('NOT', '1');
+        $operator = $adapter->normalizeConditionOperator('NOT', '1');
         static::assertEquals('!=', $operator);
-        $operator = $adapter->convertConditionOperator('IS NOT', '1');
+        $operator = $adapter->normalizeConditionOperator('IS NOT', '1');
         static::assertEquals('!=', $operator);
     }
     
-    public function testConvertConditionOperatorForArrayValue(): void
+    public function testNormalizeConditionOperatorForArrayValue(): void
     {
         $adapter = self::getValidAdapter();
         
-        $operator = $adapter->convertConditionOperator('=', [1, 2, 3]);
+        $operator = $adapter->normalizeConditionOperator('=', [1, 2, 3]);
         static::assertEquals('IN', $operator);
-        $operator = $adapter->convertConditionOperator('!=', [1, 2, 3]);
+        $operator = $adapter->normalizeConditionOperator('!=', [1, 2, 3]);
         static::assertEquals('NOT IN', $operator);
         
-        $operator = $adapter->convertConditionOperator('IN', 1);
+        $operator = $adapter->normalizeConditionOperator('IN', 1);
         static::assertEquals('=', $operator);
-        $operator = $adapter->convertConditionOperator('NOT IN', 1);
+        $operator = $adapter->normalizeConditionOperator('NOT IN', 1);
         static::assertEquals('!=', $operator);
         
-        $operator = $adapter->convertConditionOperator('IN', [1, 2, 3]);
+        $operator = $adapter->normalizeConditionOperator('IN', [1, 2, 3]);
         static::assertEquals('IN', $operator);
-        $operator = $adapter->convertConditionOperator('NOT IN', [1, 2, 3]);
+        $operator = $adapter->normalizeConditionOperator('NOT IN', [1, 2, 3]);
         static::assertEquals('NOT IN', $operator);
         
-        $operator = $adapter->convertConditionOperator('IN', DbExpr::create('SELECT'));
+        $operator = $adapter->normalizeConditionOperator('IN', DbExpr::create('SELECT'));
         static::assertEquals('IN', $operator);
-        $operator = $adapter->convertConditionOperator('NOT IN', DbExpr::create('SELECT'));
+        $operator = $adapter->normalizeConditionOperator('NOT IN', DbExpr::create('SELECT'));
         static::assertEquals('NOT IN', $operator);
     }
     
-    public function testConvertConditionOperator(): void
+    public function testNormalizeConditionOperator(): void
     {
         $adapter = self::getValidAdapter();
         
-        $operator = $adapter->convertConditionOperator('BETWEEN', [1, 2, 3]);
+        $operator = $adapter->normalizeConditionOperator('BETWEEN', [1, 2, 3]);
         static::assertEquals('BETWEEN', $operator);
-        $operator = $adapter->convertConditionOperator('NOT BETWEEN', 'oo');
+        $operator = $adapter->normalizeConditionOperator('NOT BETWEEN', 'oo');
         static::assertEquals('NOT BETWEEN', $operator);
         
-        $operator = $adapter->convertConditionOperator('>', 1);
+        $operator = $adapter->normalizeConditionOperator('>', 1);
         static::assertEquals('>', $operator);
-        $operator = $adapter->convertConditionOperator('<', 'a');
+        $operator = $adapter->normalizeConditionOperator('<', 'a');
         static::assertEquals('<', $operator);
-        $operator = $adapter->convertConditionOperator('CUSTOM', 'qwe');
+        $operator = $adapter->normalizeConditionOperator('CUSTOM', 'qwe');
         static::assertEquals('CUSTOM', $operator);
-        $operator = $adapter->convertConditionOperator('LIKE', 'weqwe');
+        $operator = $adapter->normalizeConditionOperator('LIKE', 'weqwe');
         static::assertEquals('LIKE', $operator);
-        $operator = $adapter->convertConditionOperator('NOT LIKE', 'ewqewqe');
+        $operator = $adapter->normalizeConditionOperator('NOT LIKE', 'ewqewqe');
         static::assertEquals('NOT LIKE', $operator);
     }
     
-    public function testConvertConditionOperatorForStringComparison(): void
+    public function testNormalizeConditionOperatorForStringComparison(): void
     {
         $adapter = self::getValidAdapter();
         
-        $operator = $adapter->convertConditionOperator('SIMILAR TO', 'qwe');
+        $operator = $adapter->normalizeConditionOperator('SIMILAR TO', 'qwe');
         static::assertEquals('SIMILAR TO', $operator);
-        $operator = $adapter->convertConditionOperator('NOT SIMILAR TO', 'qwe');
+        $operator = $adapter->normalizeConditionOperator('NOT SIMILAR TO', 'qwe');
         static::assertEquals('NOT SIMILAR TO', $operator);
         
-        $operator = $adapter->convertConditionOperator('REGEXP', 'wqe');
+        $operator = $adapter->normalizeConditionOperator('REGEXP', 'wqe');
         static::assertEquals('~*', $operator);
-        $operator = $adapter->convertConditionOperator('NOT REGEXP', 'ewqe');
+        $operator = $adapter->normalizeConditionOperator('NOT REGEXP', 'ewqe');
         static::assertEquals('!~*', $operator);
         
-        $operator = $adapter->convertConditionOperator('REGEX', 'weq');
+        $operator = $adapter->normalizeConditionOperator('REGEX', 'weq');
         static::assertEquals('~*', $operator);
-        $operator = $adapter->convertConditionOperator('NOT REGEX', 'qwe');
+        $operator = $adapter->normalizeConditionOperator('NOT REGEX', 'qwe');
         static::assertEquals('!~*', $operator);
         
-        $operator = $adapter->convertConditionOperator('~', 'ewq');
+        $operator = $adapter->normalizeConditionOperator('~', 'ewq');
         static::assertEquals('~', $operator);
-        $operator = $adapter->convertConditionOperator('!~', 'ewqe');
+        $operator = $adapter->normalizeConditionOperator('!~', 'ewqe');
         static::assertEquals('!~', $operator);
         
-        $operator = $adapter->convertConditionOperator('~*', 'ewqe');
+        $operator = $adapter->normalizeConditionOperator('~*', 'ewqe');
         static::assertEquals('~*', $operator);
-        $operator = $adapter->convertConditionOperator('!~*', 'ewqe');
+        $operator = $adapter->normalizeConditionOperator('!~*', 'ewqe');
         static::assertEquals('!~*', $operator);
+    }
+
+    public function testConvertConditionOperator(): void
+    {
+        $adapter = self::getValidAdapter();
+        // really normalized operators
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('SIMILAR TO');
+        static::assertEquals('SIMILAR TO', $operator);
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('NOT SIMILAR TO');
+        static::assertEquals('NOT SIMILAR TO', $operator);
+
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('~');
+        static::assertEquals('~', $operator);
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('!~');
+        static::assertEquals('!~', $operator);
+
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('?');
+        static::assertEquals('??', $operator);
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('?|');
+        static::assertEquals('??|', $operator);
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('?&');
+        static::assertEquals('??&', $operator);
+
+        // not normalized operators - returns anything passed inside
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('not an operator');
+        static::assertEquals('not an operator', $operator);
+
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('REGEXP');
+        static::assertEquals('REGEXP', $operator);
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('NOT REGEXP');
+        static::assertEquals('NOT REGEXP', $operator);
+
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('REGEX');
+        static::assertEquals('REGEX', $operator);
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('NOT REGEX');
+        static::assertEquals('NOT REGEX', $operator);
     }
     
     public function testInvalidArgsInMakeSelectQuery(): void
@@ -476,7 +512,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidAssembleConditionValue11(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Condition value for BETWEEN and NOT BETWEEN operator must be an array with 2 values: [min, max]");
+        $this->expectExceptionMessage("Condition value for BETWEEN and NOT BETWEEN operators must be an array with 2 values: [min, max]");
         static::getValidAdapter()
             ->assembleConditionValue(null, 'BETWEEN');
     }
@@ -484,7 +520,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidAssembleConditionValue12(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Condition value for BETWEEN and NOT BETWEEN operator must be an array with 2 values: [min, max]");
+        $this->expectExceptionMessage("Condition value for BETWEEN and NOT BETWEEN operators must be an array with 2 values: [min, max]");
         static::getValidAdapter()
             ->assembleConditionValue(1, 'NOT BETWEEN');
     }
@@ -492,7 +528,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidAssembleConditionValue13(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Condition value for BETWEEN and NOT BETWEEN operator must be an array with 2 values: [min, max]");
+        $this->expectExceptionMessage("Condition value for BETWEEN and NOT BETWEEN operators must be an array with 2 values: [min, max]");
         static::getValidAdapter()
             ->assembleConditionValue(false, 'BETWEEN');
     }
@@ -500,7 +536,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidAssembleConditionValue14(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Condition value for BETWEEN and NOT BETWEEN operator must be an array with 2 values: [min, max]");
+        $this->expectExceptionMessage("Condition value for BETWEEN and NOT BETWEEN operators must be an array with 2 values: [min, max]");
         static::getValidAdapter()
             ->assembleConditionValue(true, 'BETWEEN');
     }
@@ -508,7 +544,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidAssembleConditionValue15(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("BETWEEN and NOT BETWEEN conditions require value to an array with 2 values: [min, max]");
+        $this->expectExceptionMessage("BETWEEN and NOT BETWEEN conditions require value to be an array with 2 values: [min, max]");
         static::getValidAdapter()
             ->assembleConditionValue([], 'BETWEEN');
     }
@@ -516,7 +552,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidAssembleConditionValue16(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("BETWEEN and NOT BETWEEN conditions require value to an array with 2 values: [min, max]");
+        $this->expectExceptionMessage("BETWEEN and NOT BETWEEN conditions require value to be an array with 2 values: [min, max]");
         static::getValidAdapter()
             ->assembleConditionValue([true], 'BETWEEN');
     }
@@ -524,7 +560,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidAssembleConditionValue17(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("BETWEEN and NOT BETWEEN conditions require value to an array with 2 values: [min, max]");
+        $this->expectExceptionMessage("BETWEEN and NOT BETWEEN conditions require value to be an array with 2 values: [min, max]");
         static::getValidAdapter()
             ->assembleConditionValue([1, 2, 3], 'BETWEEN');
     }
@@ -602,38 +638,9 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidConditionValueWithQuotedFlag(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Condition value with \$valueAlreadyQuoted === true must be a string. array received");
+        $this->expectExceptionMessage("Condition value with \$valueAlreadyQuoted === true must be a string but it is array");
         static::getValidAdapter()
-            ->assembleConditionValue(['key' => 'value'], '@>', true);
-    }
-    
-    public function testAssembleConditionValueAdapterSpecific(): void
-    {
-        $adapter = static::getValidAdapter();
-        static::assertEquals(
-            $adapter->quoteValue('string') . '::jsonb',
-            $adapter->assembleConditionValue('string', '@>')
-        );
-        static::assertEquals(
-            'string::jsonb',
-            $adapter->assembleConditionValue('string', '@>', true)
-        );
-        static::assertEquals(
-            $adapter->quoteValue(json_encode(['key' => 'value'])) . '::jsonb',
-            $adapter->assembleConditionValue(['key' => 'value'], '@>')
-        );
-        static::assertEquals(
-            json_encode(['key' => 'value']) . '::jsonb',
-            $adapter->assembleConditionValue(json_encode(['key' => 'value']), '@>', true)
-        );
-        static::assertEquals(
-            $adapter->quoteValue(json_encode([1, 2, 3])) . '::jsonb',
-            $adapter->assembleConditionValue([1, 2, 3], '<@')
-        );
-        static::assertEquals(
-            json_encode([1, 2, 3]) . '::jsonb',
-            $adapter->assembleConditionValue(json_encode([1, 2, 3]), '<@', true)
-        );
+            ->assembleCondition('"column"', '@>', ['key' => 'value'], true);
     }
     
     public function testAssembleCondition(): void
@@ -641,27 +648,27 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $adapter = static::getValidAdapter();
         $column = $adapter->quoteDbEntityName('colname');
         static::assertEquals(
-            $column . ' = ' . $adapter->assembleConditionValue('test', '='),
+            $column . ' = ' . $adapter->quoteValue('test'),
             $adapter->assembleCondition($column, '=', 'test')
         );
         static::assertEquals(
-            $column . ' = ' . $adapter->assembleConditionValue('test', '=', true),
+            $column . ' = test',
             $adapter->assembleCondition($column, '=', 'test', true)
         );
         static::assertEquals(
-            $column . ' IN ' . $adapter->assembleConditionValue([1, 2], 'IN'),
+            $column . " IN ('1', '2')",
             $adapter->assembleCondition($column, 'IN', [1, 2])
         );
         static::assertEquals(
-            $column . ' IN ' . $adapter->assembleConditionValue([1, 2], 'IN', true),
+            $column . ' IN (1, 2)',
             $adapter->assembleCondition($column, 'IN', [1, 2], true)
         );
         static::assertEquals(
-            $column . ' BETWEEN ' . $adapter->assembleConditionValue([1, 2], 'BETWEEN'),
+            $column . " BETWEEN '1' AND '2'",
             $adapter->assembleCondition($column, 'BETWEEN', [1, 2])
         );
         static::assertEquals(
-            $column . ' BETWEEN ' . $adapter->assembleConditionValue([1, 2], 'BETWEEN', true),
+            $column . ' BETWEEN 1 AND 2',
             $adapter->assembleCondition($column, 'BETWEEN', [1, 2], true)
         );
     }
@@ -671,27 +678,27 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $adapter = static::getValidAdapter();
         $column = $adapter->quoteDbEntityName('colname');
         static::assertEquals(
-            $column . ' @> ' . $adapter->assembleConditionValue('test', '@>'),
+            $column . ' @> ' . $adapter->quoteValue('test') . '::jsonb',
             $adapter->assembleCondition($column, '@>', 'test')
         );
         static::assertEquals(
-            $column . ' @> ' . $adapter->assembleConditionValue('test', '@>', true),
+            $column . ' @> test::jsonb',
             $adapter->assembleCondition($column, '@>', 'test', true)
         );
         static::assertEquals(
-            $column . ' <@ ' . $adapter->assembleConditionValue('test', '<@'),
+            $column . ' <@ ' . $adapter->quoteValue('test') . '::jsonb',
             $adapter->assembleCondition($column, '<@', 'test')
         );
         static::assertEquals(
-            $column . ' <@ ' . $adapter->assembleConditionValue('test', '<@', true),
+            $column . ' <@ test::jsonb',
             $adapter->assembleCondition($column, '<@', 'test', true)
         );
         static::assertEquals(
-            "{$column} ?? " . $adapter->assembleConditionValue('test', '?'),
+            "{$column} ?? " . $adapter->quoteValue('test'),
             $adapter->assembleCondition($column, '?', 'test')
         );
         static::assertEquals(
-            "{$column} ?? " . $adapter->assembleConditionValue('test', '?', true),
+            "{$column} ?? test",
             $adapter->assembleCondition($column, '?', 'test', true)
         );
         static::assertEquals(

@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\Core;
 
 use PeskyORM\Core\DbAdapterInterface;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\ORM\Column;
 use PeskyORM\Tests\PeskyORMTest\Adapter\MysqlTesting;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
@@ -23,34 +21,41 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
         return TestingApp::getMysqlConnection();
     }
     
-    public function testConvertConditionOperatorForStringComparison(): void
+    public function testConvertConditionOperator(): void
     {
         $adapter = self::getValidAdapter();
-        
-        $operator = $adapter->convertConditionOperator('SIMILAR TO', 'qweq');
-        static::assertEquals('LIKE', $operator);
-        $operator = $adapter->convertConditionOperator('NOT SIMILAR TO', 'qwe');
-        static::assertEquals('NOT LIKE', $operator);
-        
-        $operator = $adapter->convertConditionOperator('REGEXP', 'qwe');
+        // really normalized operators
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('=');
+        static::assertEquals('=', $operator);
+
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('SIMILAR TO');
         static::assertEquals('REGEXP', $operator);
-        $operator = $adapter->convertConditionOperator('NOT REGEXP', 'qwe');
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('NOT SIMILAR TO');
         static::assertEquals('NOT REGEXP', $operator);
-        
-        $operator = $adapter->convertConditionOperator('REGEX', 'eqe');
+
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('~');
         static::assertEquals('REGEXP', $operator);
-        $operator = $adapter->convertConditionOperator('NOT REGEX', 'qwe');
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('!~');
         static::assertEquals('NOT REGEXP', $operator);
-        
-        $operator = $adapter->convertConditionOperator('~', 'qwe');
+
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('~*');
         static::assertEquals('REGEXP', $operator);
-        $operator = $adapter->convertConditionOperator('!~', 'qew');
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('!~*');
         static::assertEquals('NOT REGEXP', $operator);
-        
-        $operator = $adapter->convertConditionOperator('~*', 'ewqe');
+
+        // not normalized operators - returns anything passed inside
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('not an operator');
+        static::assertEquals('not an operator', $operator);
+
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('REGEXP');
         static::assertEquals('REGEXP', $operator);
-        $operator = $adapter->convertConditionOperator('!~*', 'qwe');
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('NOT REGEXP');
         static::assertEquals('NOT REGEXP', $operator);
+
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('REGEX');
+        static::assertEquals('REGEX', $operator);
+        $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('NOT REGEX');
+        static::assertEquals('NOT REGEX', $operator);
     }
     
     public function testQuoteJsonSelectorValue(): void
@@ -95,35 +100,6 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
         );
     }
     
-    public function testAssembleConditionValueAdapterSpecific(): void
-    {
-        $adapter = static::getValidAdapter();
-        static::assertEquals(
-            $adapter->quoteValue('string'),
-            $adapter->assembleConditionValue('string', '@>')
-        );
-        static::assertEquals(
-            'string',
-            $adapter->assembleConditionValue('string', '@>', true)
-        );
-        static::assertEquals(
-            $adapter->quoteValue(json_encode(['key' => 'value'])),
-            $adapter->assembleConditionValue(['key' => 'value'], '@>')
-        );
-        static::assertEquals(
-            json_encode(['key' => 'value']),
-            $adapter->assembleConditionValue(json_encode(['key' => 'value']), '@>', true)
-        );
-        static::assertEquals(
-            $adapter->quoteValue(json_encode([1, 2, 3])),
-            $adapter->assembleConditionValue([1, 2, 3], '<@')
-        );
-        static::assertEquals(
-            json_encode([1, 2, 3]),
-            $adapter->assembleConditionValue(json_encode([1, 2, 3]), '<@', true)
-        );
-    }
-    
     public function testAssembleConditionAdapterSpecific(): void
     {
         $adapter = static::getValidAdapter();
@@ -131,19 +107,19 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
         $one = $adapter->quoteValue('one');
         $many = $adapter->quoteValue('many');
         static::assertEquals(
-            "JSON_CONTAINS({$column}, " . $adapter->assembleConditionValue(['test' => '1'], '@>') . ')',
+            "JSON_CONTAINS({$column}, " . json_encode(['test' => '1']) . ')',
             $adapter->assembleCondition($column, '@>', ['test' => '1'])
         );
         static::assertEquals(
-            "JSON_CONTAINS({$column}, " . $adapter->assembleConditionValue(json_encode(['test' => '1']), '@>', true) . ')',
+            "JSON_CONTAINS({$column}, " . json_encode(['test' => '1']) . ')',
             $adapter->assembleCondition($column, '@>', json_encode(['test' => '1']), true)
         );
         static::assertEquals(
-            "JSON_CONTAINS({$column}, " . $adapter->assembleConditionValue(['test' => '2'], '<@') . ')',
+            "JSON_CONTAINS({$column}, " . json_encode(['test' => '2']) . ')',
             $adapter->assembleCondition($column, '<@', ['test' => '2'])
         );
         static::assertEquals(
-            "JSON_CONTAINS({$column}, " . $adapter->assembleConditionValue(json_encode(['test' => '2']), '<@', true) . ')',
+            "JSON_CONTAINS({$column}, " . json_encode(['test' => '2']) . ')',
             $adapter->assembleCondition($column, '<@', json_encode(['test' => '2']), true)
         );
         static::assertEquals(

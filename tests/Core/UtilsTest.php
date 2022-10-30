@@ -185,7 +185,8 @@ class UtilsTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Empty column name detected in \$conditions argument");
-        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['=' => ['value']], function () {
+        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['=' => ['value']], function ($quotedColumn) {
+            return $quotedColumn;
         });
     }
     
@@ -193,7 +194,8 @@ class UtilsTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Condition operator [LIKE] does not support list of values");
-        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['col1 LIKE' => ['value']], function () {
+        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['col1 LIKE' => ['value']], function ($quotedColumn) {
+            return $quotedColumn;
         });
     }
     

@@ -20,7 +20,7 @@ abstract class RecordValueHelpers
         bool $isForCondition,
         array $errorMessages = []
     ): array {
-        if (is_object($value) && ($value instanceof DbExpr || is_subclass_of($value, AbstractSelect::class))) {
+        if ($value instanceof DbExpr || $value instanceof AbstractSelect) {
             return [];
         }
         $preprocessedValue = static::preprocessColumnValue($column, $value, $isFromDb, true);
@@ -28,10 +28,13 @@ abstract class RecordValueHelpers
         if ($preprocessedValue === null) {
             if ($isForCondition) {
                 return [];
-            } elseif (($isFromDb && $value !== null) || $column->isValueCanBeNull()) {
+            }
+
+            if (($isFromDb && $value !== null) || $column->isValueCanBeNull()) {
                 // db value is not null but was preprocessed into null - it is not an error
                 return [];
             }
+
             return [static::getErrorMessage($errorMessages, $column::VALUE_CANNOT_BE_NULL)];
         }
         // data type validation
@@ -117,7 +120,9 @@ abstract class RecordValueHelpers
             case Column::TYPE_JSONB:
                 if ($isForCondition && !is_string($value)) {
                     return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_STRING)];
-                } elseif (!$isForCondition && !ValidateValue::isJson($value)) {
+                }
+
+                if (!$isForCondition && !ValidateValue::isJson($value)) {
                     return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_JSON)];
                 }
                 break;
@@ -134,7 +139,9 @@ abstract class RecordValueHelpers
             case Column::TYPE_EMAIL:
                 if ($isForCondition && !is_string($value)) {
                     return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_STRING)];
-                } elseif (!$isForCondition && !ValidateValue::isEmail($value)) {
+                }
+
+                if (!$isForCondition && !ValidateValue::isEmail($value)) {
                     return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_EMAIL)];
                 }
                 break;
@@ -185,9 +192,9 @@ abstract class RecordValueHelpers
                 throw new \UnexpectedValueException(
                     "Enum column [{$column->getName()}] is required to have a list of allowed values"
                 );
-            } else {
-                return [];
             }
+
+            return [];
         }
         $preprocessedValue = static::preprocessColumnValue($column, $value, $isFromDb, true);
         // column is nullable and value is null or should be converted to null
@@ -227,9 +234,12 @@ abstract class RecordValueHelpers
     {
         if ($value === null) {
             return null;
-        } elseif (is_object($value) && ($value instanceof DbExpr || is_subclass_of($value, AbstractSelect::class))) {
+        }
+
+        if ($value instanceof DbExpr || $value instanceof AbstractSelect) {
             return $value;
         }
+
         /** @noinspection PhpSwitchCanBeReplacedWithMatchExpressionInspection */
         switch ($type) {
             case Column::TYPE_BOOL:
@@ -276,9 +286,12 @@ abstract class RecordValueHelpers
     {
         if ($value === null) {
             return null;
-        } elseif ($value instanceof DbExpr) {
+        }
+
+        if ($value instanceof DbExpr) {
             return $value;
         }
+
         return match ($type) {
             Column::TYPE_BOOL => NormalizeValue::normalizeBoolean($value),
             Column::TYPE_INT, Column::TYPE_UNIX_TIMESTAMP => NormalizeValue::normalizeInteger($value),
@@ -291,14 +304,14 @@ abstract class RecordValueHelpers
     {
         if ($value instanceof UploadedFile) {
             return $value;
-        } else {
-            return new UploadedFile(
-                $value['tmp_name'],
-                $value['name'],
-                $value['type'],
-                $value['error'],
-                !is_uploaded_file($value['tmp_name'])
-            );
         }
+
+        return new UploadedFile(
+            $value['tmp_name'],
+            $value['name'],
+            $value['type'],
+            $value['error'],
+            !is_uploaded_file($value['tmp_name'])
+        );
     }
 }

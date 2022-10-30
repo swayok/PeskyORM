@@ -119,7 +119,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
     public function testQuotingOfInvalidIntDbValue2(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($value) must be of type PeskyORM\Core\DbExpr|PeskyORM\Core\AbstractSelect|array|string|int|float|bool|null');
+        $this->expectExceptionMessage('Argument #1 ($value) must be of type');
         $adapter = static::getValidAdapter();
         /** @noinspection PhpParamsInspection */
         $adapter->quoteValue($adapter, PDO::PARAM_INT);
@@ -136,7 +136,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
     public function testQuotingOfInvalidIntDbValue4(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($value) must be of type PeskyORM\Core\DbExpr|PeskyORM\Core\AbstractSelect|array|string|int|float|bool|null');
+        $this->expectExceptionMessage('Argument #1 ($value) must be of type');
         $adapter = static::getValidAdapter();
         $adapter->quoteValue(curl_init('http://test.url'), PDO::PARAM_INT);
     }

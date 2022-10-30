@@ -1154,10 +1154,6 @@ abstract class AbstractSelect
                     return $this->quoteDbExpr($rawValue);
                 }
 
-                if ($rawValue instanceof AbstractSelect) {
-                    return '(' . $rawValue->getQuery() . ')';
-                }
-
                 return $rawValue;
             }
         );

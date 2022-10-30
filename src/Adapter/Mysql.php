@@ -10,12 +10,13 @@ use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
 use PeskyORM\Exception\DbException;
+use PeskyORM\ORM\RecordInterface;
 
 class Mysql extends DbAdapter
 {
-    
-    public const ENTITY_NAME_QUOTES = '`';
-    
+
+    protected string $quoteForDbEntityName = '`';
+
     protected static array $dataTypesMap = [
         'bytea' => 'BINARY',
         'date' => 'DATE',
@@ -35,50 +36,47 @@ class Mysql extends DbAdapter
         'int8' => 'SIGNED INTEGER',
         'bigint' => 'SIGNED INTEGER',
     ];
-    
-    protected static array $conditionOperatorsMap = [
-        'SIMILAR TO' => 'LIKE',
-        'NOT SIMILAR TO' => 'NOT LIKE',
-        '~' => 'REGEXP',
-        '!~' => 'NOT REGEXP',
-        '~*' => 'REGEXP',
-        '!~*' => 'NOT REGEXP',
-        'REGEX' => 'REGEXP',
-        'NOT REGEX' => 'NOT REGEXP',
+
+    protected array $conditionAssemblerForOperator = [
+        '?' => 'assembleConditionValuesExistsInJson',
+        '?|' => 'assembleConditionValuesExistsInJson',
+        '?&' => 'assembleConditionValuesExistsInJson',
+        '@>' => 'assembleConditionJsonContainsJson',
+        '<@' => 'assembleConditionJsonContainsJson',
     ];
-    
+
     public function __construct(MysqlConfig $connectionConfig)
     {
         parent::__construct($connectionConfig);
     }
-    
+
     public function isDbSupportsTableSchemas(): bool
     {
         return false;
     }
-    
+
     public function getDefaultTableSchema(): ?string
     {
         return null;
     }
-    
+
     public function setTimezone(string $timezone): static
     {
         $this->exec(DbExpr::create("SET time_zone = ``$timezone``"));
         return $this;
     }
-    
+
     public function setSearchPath(string $newSearchPath): static
     {
         // todo: find out if there is something similar in mysql
         return $this;
     }
-    
+
     public function addDataTypeCastToExpression(string $dataType, string $expression): string
     {
         return 'CAST(' . $expression . ' AS ' . $this->getRealDataType($dataType) . ')';
     }
-    
+
     protected function getRealDataType(string $dataType): string
     {
         $dataType = strtolower($dataType);
@@ -88,7 +86,7 @@ class Mysql extends DbAdapter
 
         return 'CHAR';
     }
-    
+
     protected function resolveQueryWithReturningColumns(
         string $query,
         string $table,
@@ -130,7 +128,7 @@ class Mysql extends DbAdapter
                 throw new \InvalidArgumentException("\$operation '$operation' is not supported by " . __CLASS__);
         }
     }
-    
+
     protected function resolveInsertOneQueryWithReturningColumns(
         string $table,
         array $data,
@@ -169,7 +167,7 @@ class Mysql extends DbAdapter
 
         return Utils::getDataFromStatement($stmnt, Utils::FETCH_FIRST);
     }
-    
+
     protected function resolveInsertManyQueryWithReturningColumns(
         string $table,
         array $columns,
@@ -221,7 +219,7 @@ class Mysql extends DbAdapter
 
         return Utils::getDataFromStatement($stmnt, Utils::FETCH_ALL);
     }
-    
+
     protected function resolveUpdateQueryWithReturningColumns(
         string $updateQuery,
         string $table,
@@ -244,7 +242,7 @@ class Mysql extends DbAdapter
         }
         return Utils::getDataFromStatement($stmnt, Utils::FETCH_ALL);
     }
-    
+
     protected function resolveDeleteQueryWithReturningColumns(
         string $query,
         string $table,
@@ -258,12 +256,12 @@ class Mysql extends DbAdapter
         $this->exec($query);
         return Utils::getDataFromStatement($stmnt, Utils::FETCH_ALL);
     }
-    
+
     /**
      * {@inheritDoc}
      * @throws DbException
      */
-    protected function quoteJsonSelectorExpression(array $sequence): string
+    public function quoteJsonSelectorExpression(array $sequence): string
     {
         $sequence[0] = $this->quoteDbEntityName($sequence[0]);
         $max = count($sequence);
@@ -295,7 +293,43 @@ class Mysql extends DbAdapter
         }
         return $result;
     }
-    
+
+    protected function convertNormalizedConditionOperatorForDbQuery(string $normalizedOperator): string
+    {
+        // convert PostgreSQL operators to MySQL operators
+        return match ($normalizedOperator) {
+            '~', '~*', 'SIMILAR TO' => 'REGEXP',
+            '!~', '!~*', 'NOT SIMILAR TO' => 'NOT REGEXP',
+            default => parent::convertNormalizedConditionOperatorForDbQuery($normalizedOperator)
+        };
+    }
+
+    protected function assembleConditionValuesExistsInJson(
+        string $quotedColumn,
+        string $operator,
+        string|int|float|bool|array|DbExpr|AbstractSelect|null $rawValue,
+        bool $valueAlreadyQuoted = false
+    ): string {
+        // operators: '?', '?|', '?&'
+        if (is_object($rawValue)) {
+            // DbExpr, AbstractSelect - use default value assembler
+            $value = $this->assembleConditionValue($rawValue, $operator, $valueAlreadyQuoted);
+        } else {
+            if (!is_array($rawValue)) {
+                $rawValue = [$valueAlreadyQuoted ? $rawValue : $this->quoteJsonSelectorValue($rawValue)];
+            } else {
+                foreach ($rawValue as &$localValue) {
+                    $localValue = $valueAlreadyQuoted ? $localValue : $this->quoteJsonSelectorValue($localValue);
+                }
+                unset($localValue);
+            }
+            $value = implode(', ', $rawValue);
+        }
+
+        $howMany = $this->quoteValue($operator === '?|' ? 'one' : 'many', \PDO::PARAM_STR);
+        return "JSON_CONTAINS_PATH($quotedColumn, $howMany, $value)";
+    }
+
     protected function quoteJsonSelectorValue(string $key): string
     {
         if ($key[0] === '[') {
@@ -305,58 +339,33 @@ class Mysql extends DbAdapter
         }
         return $this->quoteValue($key, \PDO::PARAM_STR);
     }
-    
-    public function assembleConditionValue(
-        string|int|float|bool|array|DbExpr|AbstractSelect|null $value,
-        string $operator,
-        bool $valueAlreadyQuoted = false
-    ): string {
-        if (in_array($operator, ['@>', '<@'], true)) {
-            if ($valueAlreadyQuoted) {
-                if (!is_string($value)) {
-                    throw new \InvalidArgumentException(
-                        'Condition value with $valueAlreadyQuoted === true must be a string. '
-                        . gettype($value) . ' received'
-                    );
-                }
-                return $value;
-            }
 
-            $value = is_array($value) ? json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE) : $value;
-            return $this->quoteValue($value);
-        }
-
-        return parent::assembleConditionValue($value, $operator, $valueAlreadyQuoted);
-    }
-    
-    public function assembleCondition(
+    protected function assembleConditionJsonContainsJson(
         string $quotedColumn,
         string $operator,
         string|int|float|bool|array|DbExpr|AbstractSelect|null $rawValue,
         bool $valueAlreadyQuoted = false
     ): string {
-        if (in_array($operator, ['?', '?|', '?&'], true)) {
-            if (!is_array($rawValue)) {
-                $rawValue = [$valueAlreadyQuoted ? $rawValue : $this->quoteJsonSelectorValue($rawValue)];
-            } else {
-                foreach ($rawValue as &$localValue) {
-                    $localValue = $valueAlreadyQuoted ? $localValue : $this->quoteJsonSelectorValue($localValue);
-                }
-                unset($localValue);
-            }
-            $values = implode(', ', $rawValue);
-            $howMany = $this->quoteValue($operator === '?|' ? 'one' : 'many', \PDO::PARAM_STR);
-            return "JSON_CONTAINS_PATH($quotedColumn, $howMany, $values)";
-        }
-
-        if (in_array($operator, ['@>', '<@'], true)) {
+        // operators: '@>', '<@'
+        if (is_object($rawValue)) {
+            // DbExpr, AbstractSelect - use default value assembler
             $value = $this->assembleConditionValue($rawValue, $operator, $valueAlreadyQuoted);
-            return "JSON_CONTAINS($quotedColumn, $value)";
+        } elseif ($valueAlreadyQuoted) {
+            if (!is_string($rawValue)) {
+                throw new \InvalidArgumentException(
+                    'Condition value with $valueAlreadyQuoted === true must be a string but it is ' . gettype($rawValue)
+                );
+            }
+            $value = $rawValue;
+        } else {
+            $value = is_array($rawValue)
+                ? json_encode($rawValue, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE)
+                : $rawValue;
         }
 
-        return parent::assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted);
+        return "JSON_CONTAINS($quotedColumn, $value)";
     }
-    
+
     /**
      * Search for $table in $schema
      * @param string $table
@@ -374,7 +383,7 @@ class Mysql extends DbAdapter
         );
         return !empty($exists);
     }
-    
+
     /**
      * Listen for DB notifications (mostly for PostgreSQL LISTEN...NOTIFY)
      * @param string $channel
@@ -384,9 +393,13 @@ class Mysql extends DbAdapter
      * @param int $sleepAfterNotificationMs - miliseconds to sleep after notification consumed
      * @return void
      */
-    public function listen(string $channel, \Closure $handler, int $sleepIfNoNotificationMs = 1000, int $sleepAfterNotificationMs = 0): void
-    {
+    public function listen(
+        string $channel,
+        \Closure $handler,
+        int $sleepIfNoNotificationMs = 1000,
+        int $sleepAfterNotificationMs = 0
+    ): void {
         throw new DbException('MySQL does not support notifications', DbException::CODE_DB_DOES_NOT_SUPPORT_FEATURE);
     }
-    
+
 }

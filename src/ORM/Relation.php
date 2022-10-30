@@ -67,12 +67,15 @@ class Relation
     {
         if ($this->hasName()) {
             throw new \BadMethodCallException('Relation name alteration is forbidden');
-        } elseif (!preg_match(JoinInfo::NAME_VALIDATION_REGEXP, $name)) {
+        }
+
+        if (!preg_match(JoinInfo::NAME_VALIDATION_REGEXP, $name)) {
             throw new \InvalidArgumentException(
                 "\$name argument contains invalid value: '$name'. Pattern: "
                 . JoinInfo::NAME_VALIDATION_REGEXP . '. Example: CamelCase1'
             );
         }
+
         $this->name = $name;
         return $this;
     }
@@ -131,12 +134,13 @@ class Relation
             $this->foreignTable = $foreignTableClass;
             $this->foreignTableClass = get_class($foreignTableClass);
         } else {
+            /** @var string $foreignTableClass */
             if (!class_exists($foreignTableClass)) {
                 throw new \InvalidArgumentException(
                     "\$foreignTableClass argument contains invalid value: class '$foreignTableClass' does not exist"
                 );
             }
-            if (!is_subclass_of($foreignTableClass, TableInterface::class)) {
+            if (!($foreignTableClass instanceof TableInterface::class)) {
                 throw new \InvalidArgumentException(
                     "\$foreignTableClass $foreignTableClass must implement " . TableInterface::class . ' interface'
                 );
@@ -154,12 +158,12 @@ class Relation
         if (!$this->foreignTable) {
             if (!$this->foreignTableClass) {
                 throw new \BadMethodCallException('You need to provide foreign table class via setForeignTableClass()');
-            } else {
-                /** @var TableInterface $foreignTableClass */
-                $foreignTableClass = $this->foreignTableClass;
-                $this->foreignTable = $foreignTableClass::getInstance();
-                // note: it is already validated to implement TableInterface in setForeignTableClass()
             }
+
+            /** @var TableInterface $foreignTableClass */
+            $foreignTableClass = $this->foreignTableClass;
+            $this->foreignTable = $foreignTableClass::getInstance();
+            // note: it is already validated to implement TableInterface in setForeignTableClass()
         }
         return $this->foreignTable;
     }
@@ -176,11 +180,14 @@ class Relation
             throw new \InvalidArgumentException(
                 'Foreign column is a primary key column. It makes no sense for HAS MANY relation'
             );
-        } else if (!$this->getForeignTable()->getTableStructure()->hasColumn($this->foreignColumnName)) {
+        }
+
+        if (!$this->getForeignTable()->getTableStructure()->hasColumn($this->foreignColumnName)) {
             throw new \InvalidArgumentException(
                 "Related table {$this->getForeignTableClass()} has no column '{$this->foreignColumnName}'. Relation: " . $this->getName()
             );
         }
+
         return $this->foreignColumnName;
     }
     
@@ -218,9 +225,9 @@ class Relation
                 );
             }
             return $conditions;
-        } else {
-            return $this->additionalJoinConditions;
         }
+
+        return $this->additionalJoinConditions;
     }
     
     /**

@@ -6,7 +6,7 @@ namespace PeskyORM\Core;
 
 class Utils
 {
-    
+
     public const FETCH_ALL = 'all';
     public const FETCH_FIRST = 'first';
     public const FETCH_VALUE = 'value';
@@ -14,7 +14,7 @@ class Utils
     public const FETCH_KEY_PAIR = 'key_pair';
     public const FETCH_STATEMENT = 'statement';
     public const FETCH_ROWS_COUNT = 'rows_cunt';
-    
+
     /**
      * Get data from $statement according to required $type
      * @param \PDOStatement $statement
@@ -27,22 +27,26 @@ class Utils
         $type = strtolower($type);
         if ($type === self::FETCH_STATEMENT) {
             return $statement;
-        } elseif ($type === self::FETCH_ROWS_COUNT) {
-            return $statement->rowCount();
-        } elseif ($statement->rowCount() === 0) {
-            return $type === self::FETCH_VALUE ? null : [];
-        } else {
-            return match ($type) {
-                self::FETCH_COLUMN => $statement->fetchAll(\PDO::FETCH_COLUMN),
-                self::FETCH_KEY_PAIR => $statement->fetchAll(\PDO::FETCH_KEY_PAIR),
-                self::FETCH_VALUE => $statement->fetchColumn(),
-                self::FETCH_FIRST => $statement->fetch(\PDO::FETCH_ASSOC),
-                self::FETCH_ALL => $statement->fetchAll(\PDO::FETCH_ASSOC),
-                default => throw new \InvalidArgumentException("Unknown processing type [{$type}]"),
-            };
         }
+
+        if ($type === self::FETCH_ROWS_COUNT) {
+            return $statement->rowCount();
+        }
+
+        if ($statement->rowCount() === 0) {
+            return $type === self::FETCH_VALUE ? null : [];
+        }
+
+        return match ($type) {
+            self::FETCH_COLUMN => $statement->fetchAll(\PDO::FETCH_COLUMN),
+            self::FETCH_KEY_PAIR => $statement->fetchAll(\PDO::FETCH_KEY_PAIR),
+            self::FETCH_VALUE => $statement->fetchColumn(),
+            self::FETCH_FIRST => $statement->fetch(\PDO::FETCH_ASSOC),
+            self::FETCH_ALL => $statement->fetchAll(\PDO::FETCH_ASSOC),
+            default => throw new \InvalidArgumentException("Unknown processing type [{$type}]"),
+        };
     }
-    
+
     /**
      * we have next cases:
      * 1. $value is instance of DbExpr (converted to quoted string), $column - index
@@ -92,93 +96,107 @@ class Utils
         if (!in_array($glue, ['AND', 'OR'], true)) {
             throw new \InvalidArgumentException('$glue argument must be "AND" or "OR" (only in upper case)');
         }
+
         if (empty($conditions)) {
             return '';
-        } else {
-            if (!$columnQuoter) {
-                $columnQuoter = function (string $columnName, DbAdapterInterface $connection) {
-                    return static::analyzeAndQuoteColumnNameForCondition($columnName, $connection);
-                };
-            }
-            if (!$conditionValuePreprocessor) {
-                $conditionValuePreprocessor = function (?string $columnName, $rawValue, DbAdapterInterface $connection) {
-                    return static::preprocessConditionValue($rawValue, $connection);
-                };
-            }
-            $assembled = [];
-            foreach ($conditions as $column => $rawValue) {
-                $valueIsDbExpr = $valueIsSubSelect = false;
-                if (is_object($rawValue)) {
-                    $valueIsDbExpr = $rawValue instanceof DbExpr;
-                    $valueIsSubSelect = $rawValue instanceof AbstractSelect;
-                    if (!$valueIsDbExpr && !$valueIsSubSelect) {
-                        throw new \InvalidArgumentException(
-                            '$conditions argument may contain only objects of class DbExpr or AbstractSelect. Other objects are forbidden. Key: ' . $column
-                        );
-                    } elseif ($valueIsSubSelect && is_numeric($column)) {
-                        throw new \InvalidArgumentException(
-                            '$conditions argument may contain objects of class AbstractSelect only with non-numeric keys. Key: ' . $column
-                        );
-                    }
-                }
-                if (!is_numeric($column) && empty($column)) {
-                    throw new \InvalidArgumentException('Empty column name detected in $conditions argument');
-                }
-                if (is_numeric($column) && $valueIsDbExpr) {
-                    // 1 - custom expressions
-                    $assembled[] = $conditionValuePreprocessor(null, $rawValue, $connection);
-                    /** @noinspection PhpUnnecessaryStopStatementInspection */
-                    continue;
-                } elseif (
-                    (
-                        is_numeric($column)
-                        && is_array($rawValue)
-                    )
-                    || in_array(strtolower(trim($column)), ['and', 'or'], true)
-                ) {
-                    // 3: 3.1 and 3.2 - recursion
-                    $subGlue = is_numeric($column) ? 'AND' : $column;
-                    $subConditons = static::assembleWhereConditionsFromArray(
-                        $connection,
-                        $rawValue,
-                        $columnQuoter,
-                        $subGlue,
-                        $conditionValuePreprocessor
-                    );
-                    if (!empty($subConditons)) {
-                        $assembled[] = '(' . $subConditons . ')';
-                    }
-                } else {
-                    $operator = '=';
-                    // find and prepare operator
-                    $operators = [
-                        '\s*(?:>|<|=|\!=|>=|<=|@>|<@|\?|\?\||\?\&|~|~\*|!~|!~*)',   //< basic operators
-                        '\s+(?:.+?)$',           //< other operators
-                    ];
-                    $operatorsRegexp = '%^(.*?)(' . implode('|', $operators) . ')\s*$%i';
-                    if (preg_match($operatorsRegexp, $column, $matches)) {
-                        // 2.1
-                        if (trim($matches[1]) === '') {
-                            throw new \InvalidArgumentException(
-                                "Empty column name detected in \$conditions argument: $column"
-                            );
-                        }
-                        $column = trim($matches[1]);
-                        $operator = strtoupper(preg_replace('%\s+%', ' ', trim($matches[2])));
-                    }
-                    $operator = $connection->convertConditionOperator($operator, $rawValue);
-                    $assembled[] = $connection->assembleCondition(
-                        $columnQuoter($column, $connection),
-                        $operator,
-                        $conditionValuePreprocessor($column, $rawValue, $connection),
-                        $valueIsDbExpr || $valueIsSubSelect
-                    );
-                }
-            }
-            return implode(" $glue ", $assembled);
         }
+
+        if (!$columnQuoter) {
+            $columnQuoter = static function (string $columnName, DbAdapterInterface $connection) {
+                return static::analyzeAndQuoteColumnNameForCondition($columnName, $connection);
+            };
+        }
+
+        if (!$conditionValuePreprocessor) {
+            $conditionValuePreprocessor = static function (
+                ?string $columnName,
+                $rawValue,
+                DbAdapterInterface $connection
+            ) {
+                if ($rawValue instanceof DbExpr) {
+                    return $connection->quoteDbExpr($rawValue);
+                }
+                return $rawValue;
+            };
+        }
+
+        $assembled = [];
+        foreach ($conditions as $column => $rawValue) {
+            $valueIsDbExpr = $valueIsSubSelect = false;
+            if (is_object($rawValue)) {
+                $valueIsDbExpr = $rawValue instanceof DbExpr;
+                $valueIsSubSelect = $rawValue instanceof AbstractSelect;
+                if (!$valueIsDbExpr && !$valueIsSubSelect) {
+                    throw new \InvalidArgumentException(
+                        '$conditions argument may contain only objects of class DbExpr or AbstractSelect. Other objects are forbidden. Key: ' . $column
+                    );
+                }
+
+                if ($valueIsSubSelect && is_numeric($column)) {
+                    throw new \InvalidArgumentException(
+                        '$conditions argument may contain objects of class AbstractSelect only with non-numeric keys. Key: ' . $column
+                    );
+                }
+            }
+
+            if (!is_numeric($column) && empty($column)) {
+                throw new \InvalidArgumentException('Empty column name detected in $conditions argument');
+            }
+
+            if (is_numeric($column) && $valueIsDbExpr) {
+                // 1 - custom expressions
+                $assembled[] = $conditionValuePreprocessor(null, $rawValue, $connection);
+                continue;
+            }
+
+            if (
+                (
+                    is_numeric($column)
+                    && is_array($rawValue)
+                )
+                || in_array(strtolower(trim($column)), ['and', 'or'], true)
+            ) {
+                // 3: 3.1 and 3.2 - recursion
+                $subGlue = is_numeric($column) ? 'AND' : $column;
+                $subConditons = static::assembleWhereConditionsFromArray(
+                    $connection,
+                    $rawValue,
+                    $columnQuoter,
+                    $subGlue,
+                    $conditionValuePreprocessor
+                );
+                if (!empty($subConditons)) {
+                    $assembled[] = '(' . $subConditons . ')';
+                }
+            } else {
+                $operator = '=';
+                // find and prepare operator
+                $operators = [
+                    '\s*(?:>|<|=|\!=|>=|<=|@>|<@|\?|\?\||\?\&|~|~\*|!~|!~*)',   //< basic operators
+                    '\s+(?:.+?)$',           //< other operators
+                ];
+                $operatorsRegexp = '%^(.*?)(' . implode('|', $operators) . ')\s*$%i';
+                if (preg_match($operatorsRegexp, $column, $matches)) {
+                    // 2.1
+                    if (trim($matches[1]) === '') {
+                        throw new \InvalidArgumentException(
+                            "Empty column name detected in \$conditions argument: $column"
+                        );
+                    }
+                    $column = trim($matches[1]);
+                    $operator = strtoupper(preg_replace('%\s+%', ' ', trim($matches[2])));
+                }
+                $assembled[] = $connection->assembleCondition(
+                    $columnQuoter($column, $connection),
+                    $operator,
+                    $conditionValuePreprocessor($column, $rawValue, $connection),
+                    $valueIsDbExpr
+                );
+            }
+        }
+        return implode(" $glue ", $assembled);
     }
-    
+
     /**
      * @return array = [
      *      'name' => string,
@@ -219,7 +237,7 @@ class Utils
         }
         /** @noinspection UselessUnsetInspection */
         unset($columnName, $joinName, $columnAlias); //< to prevent faulty usage
-        
+
         if ($ret['name'] === '*') {
             $ret['type_cast'] = null;
             $ret['alias'] = null;
@@ -227,9 +245,9 @@ class Utils
         } elseif (!$connection->isValidDbEntityName($ret['json_selector'] ?: $ret['name'], true)) {
             if ($ret['json_selector']) {
                 throw new \InvalidArgumentException('Invalid json selector: [' . $ret['json_selector'] . ']');
-            } else {
-                throw new \InvalidArgumentException('Invalid column name: [' . $ret['name'] . ']');
             }
+
+            throw new \InvalidArgumentException('Invalid column name: [' . $ret['name'] . ']');
         }
         /*
         [
@@ -242,7 +260,7 @@ class Utils
          */
         return $ret;
     }
-    
+
     public static function splitColumnName(string $columnName): array
     {
         $typeCast = null;
@@ -267,7 +285,7 @@ class Utils
             // 'JoinName.column' or 'JoinName.*' or  'JoinName.SubjoinName.column' or 'JoinName.SubjoinName.*'
             [, $joinName, $columnName] = $columnParts;
         }
-        
+
         return [
             'name' => $columnName,
             'alias' => $columnAlias,
@@ -276,9 +294,11 @@ class Utils
             'json_selector' => $jsonSelector //< full selector including column name
         ];
     }
-    
-    public static function analyzeAndQuoteColumnNameForCondition(string $columnName, DbAdapterInterface $connection): string
-    {
+
+    public static function analyzeAndQuoteColumnNameForCondition(
+        string $columnName,
+        DbAdapterInterface $connection
+    ): string {
         $columnInfo = static::analyzeColumnName($connection, $columnName, null, null);
         $quotedTableAlias = '';
         if ($columnInfo['join_name']) {
@@ -290,17 +310,9 @@ class Utils
         }
         return $columnName;
     }
-    
-    public static function preprocessConditionValue(
-        int|float|bool|string|array|DbExpr|AbstractSelect|null $rawValue,
-        DbAdapterInterface $connection
-    ): int|float|bool|string|array|null {
-        if ($rawValue instanceof DbExpr) {
-            return $connection->quoteDbExpr($rawValue);
-        } elseif ($rawValue instanceof AbstractSelect) {
-            return '(' . $rawValue->getQuery() . ')';
-        } else {
-            return $rawValue;
-        }
+
+    public static function isValidDbEntityName(string $name): bool
+    {
+        return preg_match('%^[a-zA-Z_][a-zA-Z_0-9]*(\.[a-zA-Z_0-9]+|\.\*)?$%i', $name) > 0;
     }
 }

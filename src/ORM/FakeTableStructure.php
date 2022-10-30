@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\ORM;
 
 use PeskyORM\Core\DbAdapter;
+use PeskyORM\Core\Utils;
 use PeskyORM\ORM\Traits\FakeTableStructureHelpers;
 use Swayok\Utils\StringUtils;
 
@@ -30,7 +31,7 @@ abstract class FakeTableStructure extends TableStructure
         ?TableStructureInterface $tableStructureToCopy = null
     ): TableStructureInterface {
         $tableName = trim($tableName);
-        if ($tableName === '' || !DbAdapter::isValidDbEntityName($tableName, false)) {
+        if ($tableName === '' || !Utils::isValidDbEntityName($tableName)) {
             throw new \InvalidArgumentException(
                 '$tableName argument must be a not empty string that matches DB entity naming rules (usually alphanumeric with underscores)'
             );

@@ -6,19 +6,19 @@ namespace PeskyORM\Core;
 
 use PDO;
 use PDOStatement;
-use PeskyORM\TableDescription\TableDescription;
+use PeskyORM\ORM\RecordInterface;
 
 interface DbAdapterInterface
 {
-    
+
     /**
      * Connect to DB once
-     * @return \PDO or PDO wrapper
+     * @return PDO or PDO wrapper
      */
-    public function getConnection(): \PDO;
-    
+    public function getConnection(): PDO;
+
     public function getConnectionConfig(): DbConnectionConfigInterface;
-    
+
     /**
      * Run $callback when DB connection created (or right now if connection already established)
      * @param \Closure $callback
@@ -26,26 +26,26 @@ interface DbAdapterInterface
      * @return static
      */
     public function onConnect(\Closure $callback, ?string $code = null): static;
-    
+
     public function disconnect(): static;
-    
+
     /**
      * Get last executed query
      */
     public function getLastQuery(): ?string;
-    
+
     /**
      * @return int - affected rows count
      */
     public function exec(string|DbExpr $query): int;
-    
+
     /**
      * @param string|DbExpr $query
      * @param array $options - see PDO::prepare()
-     * @return \PDOStatement
+     * @return PDOStatement
      */
-    public function prepare(string|DbExpr $query, array $options = []): \PDOStatement;
-    
+    public function prepare(string|DbExpr $query, array $options = []): PDOStatement;
+
     /**
      * @param string|DbExpr $query
      * @param string $fetchData - how to fetch data (one of DbAdapter::FETCH_*)
@@ -55,7 +55,7 @@ interface DbAdapterInterface
         string|DbExpr $query,
         string $fetchData = DbAdapter::FETCH_STATEMENT
     ): mixed;
-    
+
     /**
      * Listen for DB notifications (mostly for PostgreSQL LISTEN...NOTIFY)
      * @param string $channel
@@ -70,17 +70,17 @@ interface DbAdapterInterface
         int $sleepIfNoNotificationMs = 1000,
         int $sleepAfterNotificationMs = 0
     ): void;
-    
+
     /**
      * Set DB timezone for current session
      */
     public function setTimezone(string $timezone): static;
-    
+
     /**
      * @param string $newSearchPath - coma-separated list of DB schemas
      */
     public function setSearchPath(string $newSearchPath): static;
-    
+
     /**
      * @param string $table
      * @param array $data - key-value array where key = table column and value = value of associated column
@@ -101,7 +101,7 @@ interface DbAdapterInterface
         bool|array $returning = false,
         string $pkName = 'id'
     ): ?array;
-    
+
     /**
      * @param string $table
      * @param array $columns - list of columns to insert data to
@@ -124,7 +124,7 @@ interface DbAdapterInterface
         bool|array $returning = false,
         string $pkName = 'id'
     ): ?array;
-    
+
     /**
      * @param string $table
      * @param array $data - key-value array where key = table column and value = value of associated column
@@ -147,7 +147,7 @@ interface DbAdapterInterface
         array $dataTypes = [],
         bool|array $returning = false
     ): array|int;
-    
+
     /**
      * @param string $table
      * @param string|DbExpr $conditions - WHERE conditions
@@ -158,24 +158,24 @@ interface DbAdapterInterface
      * @return array|int - int: number of deleted records | array: returned only if $returning is not empty
      */
     public function delete(string $table, string|DbExpr $conditions, bool|array $returning = false): array|int;
-    
+
     public function inTransaction(): bool;
-    
+
     /**
      * @param bool $readOnly - true: transaction only reads data
      * @param null|string $transactionType - type of transaction
      */
     public function begin(bool $readOnly = false, ?string $transactionType = null): static;
-    
+
     public function commit(): static;
-    
+
     public function rollBack(): static;
-    
+
     /**
      * @param PDOStatement|PDO|null $pdoStatement $pdoStatement - if null: static->getConnection() will be used
      */
     public function getPdoError(null|PDOStatement|PDO $pdoStatement = null): array;
-    
+
     /**
      * Quote DB entity name (column, table, alias, schema)
      * Names format:
@@ -183,59 +183,60 @@ interface DbAdapterInterface
      *  2. 'TableAlias.column' - quoted like '`TableAlias`.`column`'
      */
     public function quoteDbEntityName(string $name): string;
-    
+
     /**
-     * Test if $name matches a DB entity naming rules or it is a JSON selector
+     * Quote a db entity name like 'table.col_name -> json_key1 ->> json_key2'
+     * or 'table.col_name -> json_key1 ->> integer_as_index'
+     * or 'table.col_name -> json_key1 ->> `integer_as_key`'
+     * @param array $sequence -
+     *      index 0: base entity name ('table.col_name' or 'col_name');
+     *      indexes 1, 3, 5, ...: selection operator (->, ->>, #>, #>>);
+     *      indexes 2, 4, 6, ...: json key name or other selector ('json_key1', 'json_key2')
+     * @return string - quoted entity name and json selecor
+     */
+    public function quoteJsonSelectorExpression(array $sequence): string;
+
+    /**
+     * Test if $name matches a DB entity naming rules, or it is a JSON selector
      * @param string $name
      * @param bool $canBeAJsonSelector - test if $name contains a JSON selector like 'col_name -> json_key'
      */
-    public static function isValidDbEntityName(string $name, bool $canBeAJsonSelector = true): bool;
-    
+    public function isValidDbEntityName(string $name, bool $canBeAJsonSelector = true): bool;
+
     /**
      * Quote passed value
-     * @param string|int|float|bool|array|AbstractSelect|DbExpr|null $value
+     * @param string|int|float|bool|array|AbstractSelect|DbExpr|RecordInterface|null $value
      * @param int|null $valueDataType - one of \PDO::PARAM_* or null for autodetection (detects bool, null, string only)
      */
-    public function quoteValue(string|int|float|bool|array|DbExpr|AbstractSelect|null $value, ?int $valueDataType = null): string;
-    
+    public function quoteValue(
+        string|int|float|bool|array|DbExpr|RecordInterface|AbstractSelect|null $value,
+        ?int $valueDataType = null
+    ): string;
+
     public function quoteDbExpr(DbExpr $expression): string;
-    
+
     /**
-     * Does DB supports table schemas?
+     * Does DB support table schemas?
      * Postgres - yes: "public"."table_name"; Mysql - no
      */
     public function isDbSupportsTableSchemas(): bool;
-    
+
     /**
      * Get default DB table schema
      * @return string|null - null: for DB Adapters that does not support table schemas
      */
     public function getDefaultTableSchema(): ?string;
-    
-    public function convertConditionOperator(
-        string $operator,
-        string|int|float|bool|array|DbExpr|AbstractSelect|null $value
-    ): string;
-    
-    /**
-     * Assemble value for condition
-     */
-    public function assembleConditionValue(
-        string|int|float|bool|array|DbExpr|AbstractSelect|null $value,
-        string $operator,
-        bool $valueAlreadyQuoted = false
-    ): string;
-    
+
     /**
      * Assemble condition from prepared parts
      */
     public function assembleCondition(
         string $quotedColumn,
         string $operator,
-        string|int|float|bool|array|DbExpr|AbstractSelect|null $rawValue,
+        string|int|float|bool|array|DbExpr|RecordInterface|AbstractSelect|null $rawValue,
         bool $valueAlreadyQuoted = false
     ): string;
-    
+
     /**
      * Converts general representation of data type conversion to adapter's specific one
      * General representation is: '::datatype'. Example: '::date', '::timestamp'.
@@ -247,7 +248,7 @@ interface DbAdapterInterface
      * @return string - something like 'expression::datatype' or 'CAST(expression AS datatype)'
      */
     public function addDataTypeCastToExpression(string $dataType, string $expression): string;
-    
+
     /**
      * Select many records form DB by compiling simple query from passed parameters.
      * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
@@ -256,7 +257,7 @@ interface DbAdapterInterface
      * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
      */
     public function select(string $table, array $columns = [], ?DbExpr $conditionsAndOptions = null): array;
-    
+
     /**
      * Select many records form DB by compiling simple query from passed parameters returning an array with values for
      * specified $column.
@@ -266,7 +267,7 @@ interface DbAdapterInterface
      * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
      */
     public function selectColumn(string $table, string|DbExpr $column, ?DbExpr $conditionsAndOptions = null): array;
-    
+
     /**
      * Select many records form DB by compiling simple query from passed parameters returning an associative array.
      * The query is something like: "SELECT $keysColumn, $valuesColumn FROM $table $conditionsAndOptions"
@@ -281,7 +282,7 @@ interface DbAdapterInterface
         string|DbExpr $valuesColumn,
         ?DbExpr $conditionsAndOptions = null
     ): array;
-    
+
     /**
      * Select first matching record form DB by compiling simple query from passed parameters.
      * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
@@ -290,7 +291,7 @@ interface DbAdapterInterface
      * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
      */
     public function selectOne(string $table, array $columns = [], ?DbExpr $conditionsAndOptions = null): array;
-    
+
     /**
      * Select a value form DB by compiling simple query from passed parameters.
      * The query is something like: "SELECT $expression FROM $table $conditionsAndOptions"
@@ -299,7 +300,7 @@ interface DbAdapterInterface
      * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
      */
     public function selectValue(string $table, DbExpr $expression, ?DbExpr $conditionsAndOptions = null): mixed;
-    
+
     /**
      * Make a simple SELECT query from passed parameters
      * @param string $table
@@ -308,19 +309,19 @@ interface DbAdapterInterface
      * @return string - something like: "SELECT $columns FROM $table $conditionsAndOptions"
      */
     public function makeSelectQuery(string $table, array $columns = [], ?DbExpr $conditionsAndOptions = null): string;
-    
+
     /**
      * Search for $table in $schema
      * @param string $table
      * @param null|string $schema - name of DB schema that contains $table (for PostgreSQL)
      */
     public function hasTable(string $table, ?string $schema = null): bool;
-    
+
     /**
      * Return DbExpr to set default value for a column.
      * Example for MySQL and PostgreSQL: DbExpr::create('DEFAULT') and used for updates and inserts
      * Note: throw exception if adapter does not support this feature
      */
     public static function getExpressionToSetDefaultValueForAColumn(): DbExpr;
-    
+
 }

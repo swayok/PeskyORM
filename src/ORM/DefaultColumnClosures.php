@@ -90,9 +90,9 @@ class DefaultColumnClosures implements ColumnClosuresInterface
                 $valueContainer,
                 $format
             );
-        } else {
-            return $valueContainer->getValueOrDefault();
         }
+
+        return $valueContainer->getValueOrDefault();
     }
     
     public static function valueExistenceChecker(RecordValue $valueContainer, bool $checkDefaultValue = false): bool
@@ -115,20 +115,24 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         if (count($errors) > 0) {
             return $errors;
         }
-        if (is_object($value) && ($value instanceof DbExpr || is_subclass_of($value, AbstractSelect::class))) {
+        if ($value instanceof DbExpr || $value instanceof AbstractSelect) {
             // can't be validated in any other way
             return [];
         }
         $errors = call_user_func($column->getValueIsAllowedValidator(), $value, $isFromDb, $isForCondition, $column);
         if (!is_array($errors)) {
             throw new \UnexpectedValueException('Allowed value validator closure must return an array');
-        } elseif (count($errors) > 0) {
+        }
+
+        if (count($errors) > 0) {
             return $errors;
         }
+
         $errors = call_user_func($column->getValueValidatorExtender(), $value, $isFromDb, $isForCondition, $column);
         if (!is_array($errors)) {
             throw new \UnexpectedValueException('Value validator extender closure must return an array');
         }
+
         return $errors;
     }
     

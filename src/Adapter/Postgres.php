@@ -17,6 +17,9 @@ use PeskyORM\Exception\DbException;
  */
 class Postgres extends DbAdapter
 {
+    protected string $quoteForDbEntityName = '"';
+    protected string $trueValue = 'TRUE';
+    protected string $falseValue = 'FALSE';
 
     public const TRANSACTION_TYPE_READ_COMMITTED = 'READ COMMITTED';
     public const TRANSACTION_TYPE_REPEATABLE_READ = 'REPEATABLE READ';
@@ -29,46 +32,6 @@ class Postgres extends DbAdapter
         self::TRANSACTION_TYPE_SERIALIZABLE,
     ];
 
-    public const ENTITY_NAME_QUOTES = '"';
-
-    public const BOOL_TRUE = 'TRUE';
-    public const BOOL_FALSE = 'FALSE';
-
-    public const NO_LIMIT = 'ALL';
-
-    // types
-    /*
-        bool
-        bytea
-        char
-        name
-        int8
-        int2
-        int4
-        text
-        json
-        xml
-        float4
-        float8
-        money
-        macaddr
-        inet
-        cidr
-        bpchar
-        varchar
-        date
-        time
-        timestamp
-        timestamptz
-        interval
-        timetz
-        bit
-        varbit
-        numeric
-        uuid
-        jsonb
-     */
-
     /**
      * @var bool - false: transaction queries like BEGIN TRANSACTION, COMMIT and ROLLBACK will not be remembered
      * into $this->lastQuery
@@ -77,14 +40,14 @@ class Postgres extends DbAdapter
 
     protected bool $inTransaction = false;
 
-    protected static array $conditionOperatorsMap = [
-        'REGEXP' => '~*',
-        'NOT REGEXP' => '!~*',
-        'REGEX' => '~*',
-        'NOT REGEX' => '!~*',
+    protected array $conditionAssemblerForOperator = [
+        '?|' => 'assembleConditionValuesExistsInJson',
+        '?&' => 'assembleConditionValuesExistsInJson',
+        '@>' => 'assembleConditionJsonContainsJson',
+        '<@' => 'assembleConditionJsonContainsJson',
     ];
 
-    protected static function _isValidDbEntityName(string $name): bool
+    protected function _isValidDbEntityName(string $name): bool
     {
         // $name can literally be anything when quoted, and it is always quoted unless developer skips quotes
         // https://www.postgresql.org/docs/10/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
@@ -116,7 +79,7 @@ class Postgres extends DbAdapter
     public function getDefaultTableSchema(): ?string
     {
         return $this->getConnectionConfig()
-                    ->getDefaultSchemaName();
+            ->getDefaultSchemaName();
     }
 
     public function setTimezone(string $timezone): static
@@ -216,7 +179,8 @@ class Postgres extends DbAdapter
         if (in_array($operation, ['insert', 'insert_many'], true)) {
             if (!$statement->rowCount()) {
                 throw new DbException(
-                    "Inserting data into table {$table} resulted in modification of 0 rows. Query: " . $this->getLastQuery(),
+                    "Inserting data into table {$table} resulted in modification of 0 rows. Query: "
+                    . $this->getLastQuery(),
                     DbException::CODE_INSERT_FAILED
                 );
             }
@@ -237,7 +201,7 @@ class Postgres extends DbAdapter
         return Utils::getDataFromStatement($statement, Utils::FETCH_ALL);
     }
 
-    protected function quoteJsonSelectorExpression(array $sequence): string
+    public function quoteJsonSelectorExpression(array $sequence): string
     {
         $sequence[0] = $this->quoteDbEntityName($sequence[0]);
         for ($i = 2, $max = count($sequence); $i < $max; $i += 2) {
@@ -249,59 +213,74 @@ class Postgres extends DbAdapter
         return implode('', $sequence);
     }
 
-    public function assembleConditionValue(
-        string|int|float|bool|array|DbExpr|AbstractSelect|null $value,
-        string $operator,
+    protected function assembleConditionValuesExistsInJson(
+        string $quotedColumn,
+        string $normalizedOperator,
+        string|int|float|bool|array|DbExpr|AbstractSelect|null $rawValue,
         bool $valueAlreadyQuoted = false
     ): string {
-        if (in_array($operator, ['@>', '<@'], true)) {
-            if ($valueAlreadyQuoted) {
-                if (!is_string($value)) {
-                    throw new \InvalidArgumentException(
-                        'Condition value with $valueAlreadyQuoted === true must be a string. '
-                        . gettype($value) . ' received'
-                    );
-                }
-                return $value . '::jsonb';
-            }
-
-            $value = is_array($value) ? json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE) : $value;
-            return $this->quoteValue($value) . '::jsonb';
-        }
-
-        if (!is_object($value) && in_array($operator, ['?|', '??|', '?&', '??&'])) {
+        if (is_object($rawValue)) {
+            // DbExpr, AbstractSelect - use default value assembler
+            $value = $this->assembleConditionValue($rawValue, $normalizedOperator, $valueAlreadyQuoted);
+        } else {
+            // operators: '?|', '?&'
             // value must be converted to 'array[value]' or 'array[subvalue1, subvalue2]'
-            if (!is_array($value)) {
-                $value = [$value];
-            }
+            $array = is_array($rawValue) ? $rawValue : [$rawValue];
             if ($valueAlreadyQuoted) {
-                $quoted = $value;
+                $quoted = $array;
             } else {
                 $quoted = [];
-                foreach ($value as $subValue) {
+                foreach ($array as $subValue) {
                     $quoted[] = $this->quoteValue($subValue);
                 }
             }
-            return 'array[' . implode(', ', $quoted) . ']';
+            $value = 'array[' . implode(', ', $quoted) . ']';
         }
-
-        return parent::assembleConditionValue($value, $operator, $valueAlreadyQuoted);
+        return $this->assembleConditionFromPreparedParts($quotedColumn, $normalizedOperator, $value);
     }
 
-    public function assembleCondition(
+    protected function assembleConditionJsonContainsJson(
         string $quotedColumn,
         string $operator,
         string|int|float|bool|array|DbExpr|AbstractSelect|null $rawValue,
         bool $valueAlreadyQuoted = false
     ): string {
-        // jsonb operators - '?', '?|' or '?&' interfere with prepared PDO statements that use '?' to insert values,
-        // so it is impossible to use these operators without modification
-        if (in_array($operator, ['?', '?|', '?&'], true)) {
-            // escape operators to be ??, ??|, ??& (available since php 7.4.0)
-            return parent::assembleCondition($quotedColumn, '?' . $operator, $rawValue, $valueAlreadyQuoted);
+        if (is_object($rawValue)) {
+            // DbExpr, AbstractSelect - use default value assembler
+            $value = $this->assembleConditionValue($rawValue, $operator, $valueAlreadyQuoted);
+        } else {
+            if ($valueAlreadyQuoted) {
+                if (!is_string($rawValue)) {
+                    throw new \InvalidArgumentException(
+                        'Condition value with $valueAlreadyQuoted === true must be a string but it is ' . gettype($rawValue)
+                    );
+                }
+                $value = $rawValue;
+            } else {
+                $value = $rawValue;
+                if (is_array($rawValue)) {
+                    $value = json_encode($rawValue, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+                }
+                $value = $this->quoteValue($value, \PDO::PARAM_STR);
+            }
+            $value .= '::jsonb';
         }
 
-        return parent::assembleCondition($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted);
+        return $this->assembleConditionFromPreparedParts($quotedColumn, $operator, $value);
+    }
+
+    protected function convertNormalizedConditionOperatorForDbQuery(string $normalizedOperator): string
+    {
+        return match ($normalizedOperator) {
+            // In PDO all statements use '?' to insert values even when you do not use prepared statements.
+            // That's why jsonb operators - '?', '?|' and '?&' are in conflict with any PDO statements.
+            // We need to escape them to work correctly.
+            // Since php 7.4.0 we can escape these operators to look like this: ??, ??|, ??&
+            '?' => '??',
+            '?|' => '??|',
+            '?&' => '??&',
+            default => parent::convertNormalizedConditionOperatorForDbQuery($normalizedOperator)
+        };
     }
 
     /**
@@ -339,7 +318,7 @@ class Postgres extends DbAdapter
         $this->exec(DbExpr::create("LISTEN `$channel`"));
         while (1) {
             $result = $this->getConnection()
-                           ->pgsqlGetNotify(\PDO::FETCH_ASSOC, $sleepIfNoNotificationMs);
+                ->pgsqlGetNotify(\PDO::FETCH_ASSOC, $sleepIfNoNotificationMs);
             if ($result) {
                 $continue = $handler($result['payload'] ?: null, $result['pid'] ?: null);
                 if ($continue === false) {
