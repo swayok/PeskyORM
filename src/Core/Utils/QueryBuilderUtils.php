@@ -2,49 +2,100 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\Core;
+namespace PeskyORM\Core\Utils;
 
-class Utils
+use JetBrains\PhpStorm\ArrayShape;
+use PeskyORM\Core\AbstractSelect;
+use PeskyORM\Core\DbAdapterInterface;
+use PeskyORM\Core\DbExpr;
+
+abstract class QueryBuilderUtils
 {
-
-    public const FETCH_ALL = 'all';
-    public const FETCH_FIRST = 'first';
-    public const FETCH_VALUE = 'value';
-    public const FETCH_COLUMN = 'column';
-    public const FETCH_KEY_PAIR = 'key_pair';
-    public const FETCH_STATEMENT = 'statement';
-    public const FETCH_ROWS_COUNT = 'rows_cunt';
+    // 'col1 as alias1' or 'JoinName.col2 AS alias2' or 'JoinName.col3::datatype As alias3'
+    public const REGEXP_COLUMN_AS_ALIAS = '%^\s*(.*?)\s+AS\s+(.+)$%is';
+    // 'col1::datatype' or 'JoinName.col2::datatype' or 'col3::data_type'
+    // or 'col4::data type' or 'col4::data_type()'
+    public const REGEXP_COLUMN_TYPE_CONVERSION = '%^\s*(.*?)\s*::\s*([a-zA-Z0-9 _]+(?:\s*\([^)]+\))?)\s*$%is';
+    // json_column->key or json_column->>key or json_column->key->>key
+    // or json_column#>key or json_column#>>key and so on
+    public const REGEXP_COLUMN_JSON_SELECTOR = '%^\s*(.*?)\s*([-#]>.*)$%';
+    // 'JoinName.column' or 'JoinName.*' or  'JoinName.SubjoinName.column' or 'JoinName.SubjoinName.*'
+    public const REGEXP_COLUMN_PARTS = '%^([\w.]+)\.(\w+|\*)$%';
 
     /**
-     * Get data from $statement according to required $type
-     * @param \PDOStatement $statement
-     * @param string $type = one of \PeskyORM\Core\FETCH_*
-     * @return mixed|\PDOStatement|null
+     * @param array $columns - should contain only strings and DbExpr objects
+     * @param bool $withBraces - add "()" around columns list
+     * @return string - "(`column1','column2',...)"
+     */
+    public static function buildColumnsList(
+        DbAdapterInterface $adapter,
+        array $columns,
+        bool $withBraces = true
+    ): string {
+        $quoted = implode(
+            ', ',
+            array_map(static function ($column) use ($adapter) {
+                return ($column instanceof DbExpr)
+                    ? $adapter->quoteDbExpr($column)
+                    : $adapter->quoteDbEntityName($column);
+            }, $columns)
+        );
+        return $withBraces ? '(' . $quoted . ')' : $quoted;
+    }
+
+    /**
+     * @param array $columns - expected set of columns
+     * @param array $valuesAssoc - key-value array where keys = columns
+     * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
+     * @param int $recordIdx - index of record (needed to make exception message more useful)
+     * @return string - "('value1','value2',...)"
      * @throws \InvalidArgumentException
      */
-    public static function getDataFromStatement(\PDOStatement $statement, string $type = self::FETCH_ALL): mixed
-    {
-        $type = strtolower($type);
-        if ($type === self::FETCH_STATEMENT) {
-            return $statement;
+    public static function buildValuesList(
+        DbAdapterInterface $adapter,
+        array $columns,
+        array $valuesAssoc,
+        array $dataTypes = [],
+        int $recordIdx = 0
+    ): string {
+        $ret = [];
+        if (empty($columns)) {
+            throw new \InvalidArgumentException('$columns argument cannot be empty');
         }
-
-        if ($type === self::FETCH_ROWS_COUNT) {
-            return $statement->rowCount();
+        foreach ($columns as $column) {
+            if (!array_key_exists($column, $valuesAssoc)) {
+                throw new \InvalidArgumentException(
+                    "\$valuesAssoc array does not contain key [$column]. Record index: $recordIdx. "
+                    . 'Data: ' . print_r($valuesAssoc, true)
+                );
+            }
+            $ret[] = $adapter->quoteValue(
+                $valuesAssoc[$column],
+                empty($dataTypes[$column]) ? null : $dataTypes[$column]
+            );
         }
+        return '(' . implode(', ', $ret) . ')';
+    }
 
-        if ($statement->rowCount() === 0) {
-            return $type === self::FETCH_VALUE ? null : [];
+    /**
+     * @param array $valuesAssoc - key-value array where keys are columns names
+     * @param array $dataTypes - key-value array where keys are columns names and values are data type for associated column (\PDO::PARAM_*)
+     * @return string - "col1" = 'val1', "col2" = 'val2'
+     */
+    public static function buildValuesListForUpdate(
+        DbAdapterInterface $adapter,
+        array $valuesAssoc,
+        array $dataTypes = []
+    ): string {
+        $ret = [];
+        foreach ($valuesAssoc as $column => $value) {
+            $quotedValue = $adapter->quoteValue(
+                $value,
+                empty($dataTypes[$column]) ? null : $dataTypes[$column]
+            );
+            $ret[] = $adapter->quoteDbEntityName($column) . '=' . $quotedValue;
         }
-
-        return match ($type) {
-            self::FETCH_COLUMN => $statement->fetchAll(\PDO::FETCH_COLUMN),
-            self::FETCH_KEY_PAIR => $statement->fetchAll(\PDO::FETCH_KEY_PAIR),
-            self::FETCH_VALUE => $statement->fetchColumn(),
-            self::FETCH_FIRST => $statement->fetch(\PDO::FETCH_ASSOC),
-            self::FETCH_ALL => $statement->fetchAll(\PDO::FETCH_ASSOC),
-            default => throw new \InvalidArgumentException("Unknown processing type [{$type}]"),
-        };
+        return implode(', ', $ret);
     }
 
     /**
@@ -71,13 +122,13 @@ class Utils
      * @param array $conditions
      * @param string $glue - 'AND' or 'OR'
      * @param \Closure|null $columnQuoter - used to quote column name. Default:
-     *      function (string $columnName, DbAdapterInterface $connection) {
+     *      function (string $columnName, DbAdapterInterface $connection): string {
      *          return static::analyzeAndQuoteColumnName($columnName, $connection);
      *      }
      *      Note: $columnName here is expected to be string, DbExpr is not allowed here (and actually is not possible
      *          because object cannot be used as keys in associative arrays)
      * @param \Closure|null $conditionValuePreprocessor - used to modify or validate condition's value. Default:
-     *      function (?string $columnName, $rawValue, DbAdapterInterface $connection) {
+     *      function (?string $columnName, $rawValue, DbAdapterInterface $connection): string {
      *          return static::preprocessConditionValue($rawValue, $connection);
      *      }
      *      Note: $rawValue may be DbExpr or AbstractSelect instance but not any other object
@@ -122,9 +173,9 @@ class Utils
 
         $assembled = [];
         foreach ($conditions as $column => $rawValue) {
-            $valueIsDbExpr = $valueIsSubSelect = false;
+            $valueIsDbExpr = $rawValue instanceof DbExpr;
+
             if (is_object($rawValue)) {
-                $valueIsDbExpr = $rawValue instanceof DbExpr;
                 $valueIsSubSelect = $rawValue instanceof AbstractSelect;
                 if (!$valueIsDbExpr && !$valueIsSubSelect) {
                     throw new \InvalidArgumentException(
@@ -197,14 +248,13 @@ class Utils
         return implode(" $glue ", $assembled);
     }
 
-    /**
-     * @return array = [
-     *      'name' => string,
-     *      'alias' => ?string,
-     *      'join_name' => ?string,
-     *      'type_cast' => ?string,
-     * ]
-     */
+    #[ArrayShape([
+        'name' => "string",
+        'alias' => "string|null",
+        'join_name' => "string|null",
+        'type_cast' => "string|null",
+        'json_selector' => "string|null"
+    ])]
     public static function analyzeColumnName(
         DbAdapterInterface $connection,
         string $columnName,
@@ -249,39 +299,38 @@ class Utils
 
             throw new \InvalidArgumentException('Invalid column name: [' . $ret['name'] . ']');
         }
-        /*
-        [
-            'name' => string,
-            'alias' => ?string,
-            'join_name' => ?string,
-            'type_cast' => ?string,
-            'json_selector' => ?string,
-        ]
-         */
         return $ret;
     }
 
+    #[ArrayShape([
+        'name' => "string",
+        'alias' => "string|null",
+        'join_name' => "string|null",
+        'type_cast' => "string|null",
+        'json_selector' => "string|null"
+    ])]
     public static function splitColumnName(string $columnName): array
     {
         $typeCast = null;
         $columnAlias = null;
         $joinName = null;
         $jsonSelector = null;
-        if (preg_match('%^\s*(.*?)\s+AS\s+(.+)$%is', $columnName, $aliasMatches)) {
+        if (preg_match(static::REGEXP_COLUMN_AS_ALIAS, $columnName, $aliasMatches)) {
             // 'col1 as alias1' or 'JoinName.col2 AS alias2' or 'JoinName.col3::datatype As alias3'
             [, $columnName, $columnAlias] = $aliasMatches;
         }
-        if (preg_match('%^\s*(.*?)\s*::\s*([a-zA-Z0-9 _]+(?:\s*\([^)]+\))?)\s*$%is', $columnName, $dataTypeMatches)) {
-            // 'col1::datatype' or 'JoinName.col2::datatype' or 'col3::data_type' or 'col4::data type' or 'col4::data_type()'
+        if (preg_match(static::REGEXP_COLUMN_TYPE_CONVERSION, $columnName, $dataTypeMatches)) {
+            // 'col1::datatype' or 'JoinName.col2::datatype' or 'col3::data_type'
+            // or 'col4::data type' or 'col4::data_type()'
             [, $columnName, $typeCast] = $dataTypeMatches;
         }
         $columnName = trim($columnName);
-        if (preg_match('%^\s*(.*?)\s*([-#]>.*)$%', $columnName, $jsonSelectorMatches)) {
+        if (preg_match(static::REGEXP_COLUMN_JSON_SELECTOR, $columnName, $jsonSelectorMatches)) {
             // json_column->key or json_column->>key or json_column->key->>key
             // or json_column#>key or json_column#>>key and so on
             [$jsonSelector, $columnName] = $jsonSelectorMatches;
         }
-        if (preg_match('%^([\w.]+)\.(\w+|\*)$%', $columnName, $columnParts)) {
+        if (preg_match(static::REGEXP_COLUMN_PARTS, $columnName, $columnParts)) {
             // 'JoinName.column' or 'JoinName.*' or  'JoinName.SubjoinName.column' or 'JoinName.SubjoinName.*'
             [, $joinName, $columnName] = $columnParts;
         }
@@ -304,15 +353,15 @@ class Utils
         if ($columnInfo['join_name']) {
             $quotedTableAlias = $connection->quoteDbEntityName($columnInfo['join_name']) . '.';
         }
-        $columnName = $quotedTableAlias . $connection->quoteDbEntityName($columnInfo['json_selector'] ?: $columnInfo['name']);
+        $columnName = $quotedTableAlias . $connection->quoteDbEntityName(
+            $columnInfo['json_selector'] ?: $columnInfo['name']
+        );
         if ($columnInfo['type_cast']) {
-            $columnName = $connection->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
+            $columnName = $connection->addDataTypeCastToExpression(
+                $columnInfo['type_cast'],
+                $columnName
+            );
         }
         return $columnName;
-    }
-
-    public static function isValidDbEntityName(string $name): bool
-    {
-        return preg_match('%^[a-zA-Z_][a-zA-Z_0-9]*(\.[a-zA-Z_0-9]+|\.\*)?$%i', $name) > 0;
     }
 }

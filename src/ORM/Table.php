@@ -9,6 +9,7 @@ use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbConnectionsManager;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
+use PeskyORM\Core\Utils\QueryBuilderUtils;
 use Swayok\Utils\StringUtils;
 
 abstract class Table implements TableInterface
@@ -251,7 +252,7 @@ abstract class Table implements TableInterface
     
     public static function makeConditionsFromArray(array $conditions): DbExpr
     {
-        $assembled = Utils::assembleWhereConditionsFromArray(
+        $assembled = QueryBuilderUtils::assembleWhereConditionsFromArray(
             static::getConnection(),
             $conditions,
             function ($columnName) {
@@ -291,14 +292,14 @@ abstract class Table implements TableInterface
             ];
         } else {
             $columnName = trim($columnName);
-            $ret = Utils::splitColumnName($columnName);
+            $ret = QueryBuilderUtils::splitColumnName($columnName);
             if (!static::getConnection()
                 ->isValidDbEntityName($ret['json_selector'] ?: $ret['name'], true)) {
                 if ($ret['json_selector']) {
                     throw new \InvalidArgumentException("Invalid json selector: [{$ret['json_selector']}]");
-                } else {
-                    throw new \InvalidArgumentException("Invalid column name: [{$ret['name']}]");
                 }
+
+                throw new \InvalidArgumentException("Invalid column name: [{$ret['name']}]");
             }
         }
         
@@ -477,7 +478,7 @@ abstract class Table implements TableInterface
             ->update(
                 static::getNameWithSchema() . ' AS ' . static::getInstance()->getTableAlias(),
                 $data,
-                Utils::assembleWhereConditionsFromArray(static::getConnection(true), $conditions),
+                QueryBuilderUtils::assembleWhereConditionsFromArray(static::getConnection(true), $conditions),
                 static::getPdoDataTypesForColumns(),
                 $returning
             );
@@ -491,7 +492,7 @@ abstract class Table implements TableInterface
         return static::getConnection(true)
             ->delete(
                 static::getNameWithSchema() . ' AS ' . static::getInstance()->getTableAlias(),
-                Utils::assembleWhereConditionsFromArray(static::getConnection(), $conditions),
+                QueryBuilderUtils::assembleWhereConditionsFromArray(static::getConnection(), $conditions),
                 $returning
             );
     }

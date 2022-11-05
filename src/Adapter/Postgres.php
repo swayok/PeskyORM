@@ -10,6 +10,8 @@ use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
 use PeskyORM\Exception\DbException;
+use PeskyORM\Exception\DbInsertQueryException;
+use PeskyORM\ORM\RecordInterface;
 
 /**
  * @property PostgresConfig $connectionConfig
@@ -40,12 +42,30 @@ class Postgres extends DbAdapter
 
     protected bool $inTransaction = false;
 
-    protected array $conditionAssemblerForOperator = [
+    static private array $conditionAssemblerForOperator = [
         '?|' => 'assembleConditionValuesExistsInJson',
         '?&' => 'assembleConditionValuesExistsInJson',
         '@>' => 'assembleConditionJsonContainsJson',
         '<@' => 'assembleConditionJsonContainsJson',
     ];
+
+    /**
+     * $assembler = function(
+     *     string $quotedColumn,
+     *     string $operator,
+     *     string|int|float|bool|array|DbExpr|RecordInterface|AbstractSelect|null $rawValue,
+     *     bool $valueAlreadyQuoted = false
+     * ): string
+     * @param string $operator
+     * @param \Closure $assembler
+     * @return void
+     */
+    public static function addConditionAssemblerForOperator(
+        string $operator,
+        \Closure $assembler
+    ): void {
+        static::$conditionAssemblerForOperator[$operator] = $assembler;
+    }
 
     protected function _isValidDbEntityName(string $name): bool
     {
@@ -110,7 +130,7 @@ class Postgres extends DbAdapter
      */
     public function begin(bool $readOnly = false, ?string $transactionType = null): static
     {
-        $this->guardTransaction('begin');
+        $this->guardBeginTransaction();
         if (empty($transactionType)) {
             $transactionType = static::TRANSACTION_TYPE_DEFAULT;
         }
@@ -134,7 +154,7 @@ class Postgres extends DbAdapter
 
     public function commit(): static
     {
-        $this->guardTransaction('commit');
+        $this->guardCommitTransaction();
         $lastQuery = $this->getLastQuery();
         $this->exec('COMMIT');
         if (!$this->rememberTransactionQueries) {
@@ -146,10 +166,10 @@ class Postgres extends DbAdapter
 
     public function rollBack(): static
     {
-        $this->guardTransaction('rollback');
+        $this->guardRollbackTransaction();
         $lastQuery = $this->getLastQuery();
         $this->inTransaction = false;
-        $this->_exec('ROLLBACK', true);
+        $this->exec('ROLLBACK');
         if (!$this->rememberTransactionQueries) {
             $this->lastQuery = $lastQuery;
         }
@@ -178,27 +198,25 @@ class Postgres extends DbAdapter
         $statement = $this->query($query);
         if (in_array($operation, ['insert', 'insert_many'], true)) {
             if (!$statement->rowCount()) {
-                throw new DbException(
+                throw new DbInsertQueryException(
                     "Inserting data into table {$table} resulted in modification of 0 rows. Query: "
                     . $this->getLastQuery(),
-                    DbException::CODE_INSERT_FAILED
                 );
             }
 
             if ($operation === 'insert_many' && count($data) !== $statement->rowCount()) {
-                throw new DbException(
+                throw new DbInsertQueryException(
                     "Inserting data into table {$table} resulted in modification of {$statement->rowCount()} rows while "
                     . count($data) . ' rows should be inserted. Query: ' . $this->getLastQuery(),
-                    DbException::CODE_INSERT_FAILED
                 );
             }
         }
 
         if ($operation === 'insert') {
-            return Utils::getDataFromStatement($statement, Utils::FETCH_FIRST);
+            return $this->getDataFromStatement($statement, static::FETCH_FIRST);
         }
 
-        return Utils::getDataFromStatement($statement, Utils::FETCH_ALL);
+        return $this->getDataFromStatement($statement, static::FETCH_ALL);
     }
 
     public function quoteJsonSelectorExpression(array $sequence): string
@@ -211,6 +229,19 @@ class Postgres extends DbAdapter
             }
         }
         return implode('', $sequence);
+    }
+
+    protected function getConditionAssembler(string $operator): ?\Closure
+    {
+        if (isset(static::$conditionAssemblerForOperator[$operator])) {
+            if (is_string(static::$conditionAssemblerForOperator[$operator])) {
+                return \Closure::fromCallable([$this, static::$conditionAssemblerForOperator[$operator]]);
+            }
+
+            return static::$conditionAssemblerForOperator[$operator];
+        }
+
+        return null;
     }
 
     protected function assembleConditionValuesExistsInJson(

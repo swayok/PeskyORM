@@ -140,7 +140,7 @@ class Relation
                     "\$foreignTableClass argument contains invalid value: class '$foreignTableClass' does not exist"
                 );
             }
-            if (!($foreignTableClass instanceof TableInterface::class)) {
+            if (!is_subclass_of($foreignTableClass, TableInterface::class)) {
                 throw new \InvalidArgumentException(
                     "\$foreignTableClass $foreignTableClass must implement " . TableInterface::class . ' interface'
                 );

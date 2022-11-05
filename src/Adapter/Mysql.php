@@ -8,9 +8,8 @@ use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Core\AbstractSelect;
 use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\Utils;
 use PeskyORM\Exception\DbException;
-use PeskyORM\ORM\RecordInterface;
+use PeskyORM\Exception\DbQueryReturningValuesException;
 
 class Mysql extends DbAdapter
 {
@@ -37,13 +36,31 @@ class Mysql extends DbAdapter
         'bigint' => 'SIGNED INTEGER',
     ];
 
-    protected array $conditionAssemblerForOperator = [
+    static private array $conditionAssemblerForOperator = [
         '?' => 'assembleConditionValuesExistsInJson',
         '?|' => 'assembleConditionValuesExistsInJson',
         '?&' => 'assembleConditionValuesExistsInJson',
         '@>' => 'assembleConditionJsonContainsJson',
         '<@' => 'assembleConditionJsonContainsJson',
     ];
+
+    /**
+     * $assembler = function(
+     *     string $quotedColumn,
+     *     string $operator,
+     *     string|int|float|bool|array|DbExpr|RecordInterface|AbstractSelect|null $rawValue,
+     *     bool $valueAlreadyQuoted = false
+     * ): string
+     * @param string $operator
+     * @param \Closure $assembler
+     * @return void
+     */
+    public static function addConditionAssemblerForOperator(
+        string $operator,
+        \Closure $assembler
+    ): void {
+        static::$conditionAssemblerForOperator[$operator] = $assembler;
+    }
 
     public function __construct(MysqlConfig $connectionConfig)
     {
@@ -140,9 +157,9 @@ class Mysql extends DbAdapter
         parent::insert($table, $data, $dataTypes, false);
         $insertQuery = $this->getLastQuery();
         $id = $this->quoteValue(
-            Utils::getDataFromStatement(
+            $this->getDataFromStatement(
                 $this->query('SELECT LAST_INSERT_ID()'),
-                Utils::FETCH_VALUE
+                static::FETCH_VALUE
             )
         );
         $pkName = $this->quoteDbEntityName($pkName);
@@ -150,22 +167,20 @@ class Mysql extends DbAdapter
         $stmnt = $this->query($query);
 
         if (!$stmnt->rowCount()) {
-            throw new DbException(
+            throw new DbQueryReturningValuesException(
                 'No data received for $returning request after insert. Insert: ' . $insertQuery
                 . '. Select: ' . $this->getLastQuery(),
-                DbException::CODE_RETURNING_FAILED
             );
         }
 
         if ($stmnt->rowCount() > 1) {
-            throw new DbException(
+            throw new DbQueryReturningValuesException(
                 'Received more then 1 record for $returning request after insert. Insert: ' . $insertQuery
                 . '. Select: ' . $this->getLastQuery(),
-                DbException::CODE_RETURNING_FAILED
             );
         }
 
-        return Utils::getDataFromStatement($stmnt, Utils::FETCH_FIRST);
+        return $this->getDataFromStatement($stmnt, static::FETCH_FIRST);
     }
 
     protected function resolveInsertManyQueryWithReturningColumns(
@@ -181,17 +196,16 @@ class Mysql extends DbAdapter
         $insertQuery = $this->getLastQuery();
         $id1 = (int)trim(
             $this->quoteValue(
-                Utils::getDataFromStatement(
+                $this->getDataFromStatement(
                     $this->query('SELECT LAST_INSERT_ID()'),
-                    Utils::FETCH_VALUE
+                    static::FETCH_VALUE
                 )
             ),
             "'"
         );
         if ($id1 === 0) {
-            throw new DbException(
+            throw new DbQueryReturningValuesException(
                 'Failed to get IDs of inserted records. LAST_INSERT_ID() returned 0',
-                DbException::CODE_RETURNING_FAILED
             );
         }
         $id2 = $id1 + count($data) - 1;
@@ -202,22 +216,20 @@ class Mysql extends DbAdapter
         $stmnt = $this->query($query);
 
         if (!$stmnt->rowCount()) {
-            throw new DbException(
+            throw new DbQueryReturningValuesException(
                 'No data received for $returning request after insert. '
                 . "Insert: {$insertQuery}. Select: {$this->getLastQuery()}",
-                DbException::CODE_RETURNING_FAILED
             );
         }
 
         if ($stmnt->rowCount() !== count($data)) {
-            throw new DbException(
+            throw new DbQueryReturningValuesException(
                 "Received amount of records ({$stmnt->rowCount()}) differs from expected (" . count($data) . ')'
                 . '. Insert: ' . $insertQuery . '. Select: ' . $this->getLastQuery(),
-                DbException::CODE_RETURNING_FAILED
             );
         }
 
-        return Utils::getDataFromStatement($stmnt, Utils::FETCH_ALL);
+        return $this->getDataFromStatement($stmnt, static::FETCH_ALL);
     }
 
     protected function resolveUpdateQueryWithReturningColumns(
@@ -234,13 +246,12 @@ class Mysql extends DbAdapter
         $selectQuery = DbExpr::create("SELECT {$returning} FROM {$table} WHERE {$conditionsAndOptions}");
         $stmnt = $this->query($selectQuery);
         if ($stmnt->rowCount() !== $rowsUpdated) {
-            throw new DbException(
+            throw new DbQueryReturningValuesException(
                 "Received amount of records ({$stmnt->rowCount()}) differs from expected ({$rowsUpdated})"
-                . '. Update: ' . $updateQuery . '. Select: ' . $this->getLastQuery(),
-                DbException::CODE_RETURNING_FAILED
+                . '. Update: ' . $updateQuery . '. Select: ' . $this->getLastQuery()
             );
         }
-        return Utils::getDataFromStatement($stmnt, Utils::FETCH_ALL);
+        return $this->getDataFromStatement($stmnt, static::FETCH_ALL);
     }
 
     protected function resolveDeleteQueryWithReturningColumns(
@@ -254,7 +265,7 @@ class Mysql extends DbAdapter
             return [];
         }
         $this->exec($query);
-        return Utils::getDataFromStatement($stmnt, Utils::FETCH_ALL);
+        return $this->getDataFromStatement($stmnt, static::FETCH_ALL);
     }
 
     /**
@@ -302,6 +313,19 @@ class Mysql extends DbAdapter
             '!~', '!~*', 'NOT SIMILAR TO' => 'NOT REGEXP',
             default => parent::convertNormalizedConditionOperatorForDbQuery($normalizedOperator)
         };
+    }
+
+    protected function getConditionAssembler(string $operator): ?\Closure
+    {
+        if (isset(static::$conditionAssemblerForOperator[$operator])) {
+            if (is_string(static::$conditionAssemblerForOperator[$operator])) {
+                return \Closure::fromCallable([$this, static::$conditionAssemblerForOperator[$operator]]);
+            }
+
+            return static::$conditionAssemblerForOperator[$operator];
+        }
+
+        return null;
     }
 
     protected function assembleConditionValuesExistsInJson(

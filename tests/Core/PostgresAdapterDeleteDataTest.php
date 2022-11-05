@@ -7,6 +7,7 @@ namespace PeskyORM\Tests\Core;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
+use PeskyORM\Core\Utils\PdoUtils;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
@@ -54,14 +55,14 @@ class PostgresAdapterDeleteDataTest extends BaseTestCase
             $adapter->getLastQuery()
         );
         static::assertEquals(1, $rowsDeleted);
-        $count = Utils::getDataFromStatement(
+        $count = PdoUtils::getDataFromStatement(
             $adapter->query(
                 DbExpr::create(
                     "SELECT COUNT(*) FROM `settings` WHERE `key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``) GROUP BY `key`",
                     false
                 )
             ),
-            Utils::FETCH_VALUE
+            PdoUtils::FETCH_VALUE
         );
         static::assertEquals(1, $count);
     }

@@ -9,6 +9,7 @@ use PeskyORM\Core\AbstractSelect;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
+use PeskyORM\Core\Utils\QueryBuilderUtils;
 
 class OrmSelect extends AbstractSelect
 {
@@ -380,7 +381,7 @@ class OrmSelect extends AbstractSelect
      */
     protected function makeConditions(array $conditions, string $subject = 'WHERE', ?string $joinName = null): string
     {
-        $assembled = Utils::assembleWhereConditionsFromArray(
+        $assembled = QueryBuilderUtils::assembleWhereConditionsFromArray(
             $this->getConnection(),
             $conditions,
             function ($columnName) use ($joinName, $subject) {

@@ -8,6 +8,7 @@ use PDO;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
+use PeskyORM\Core\Utils\PdoUtils;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\Data\TestDataForAdminsTable;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
@@ -53,14 +54,14 @@ class PostgresAdapterUpdateDataTest extends BaseTestCase
             ),
             $adapter->getLastQuery()
         );
-        $data = Utils::getDataFromStatement(
+        $data = PdoUtils::getDataFromStatement(
             $adapter->query(
                 DbExpr::create(
                     "SELECT * FROM `settings` WHERE (`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)) ORDER BY `key`",
                     false
                 )
             ),
-            Utils::FETCH_ALL
+            PdoUtils::FETCH_ALL
         );
         static::assertArraySubset(array_replace($testData1[0], $update1), $data[0]);
         static::assertArraySubset($testData1[1], $data[1]);
@@ -82,13 +83,13 @@ class PostgresAdapterUpdateDataTest extends BaseTestCase
                 'is_active' => PDO::PARAM_BOOL,
             ]
         );
-        $data = Utils::getDataFromStatement(
+        $data = PdoUtils::getDataFromStatement(
             $adapter->query(
                 DbExpr::create(
                     "SELECT * FROM `admins` WHERE `id` IN (``{$testData2[0]['id']}``,``{$testData2[1]['id']}``) ORDER BY `id`"
                 )
             ),
-            Utils::FETCH_ALL
+            PdoUtils::FETCH_ALL
         );
         $testData2[0] = array_replace($testData2[0], $update2);
         $testData2[1] = array_replace($testData2[1], $update2);

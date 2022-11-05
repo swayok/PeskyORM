@@ -8,6 +8,8 @@ use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
+use PeskyORM\Core\Utils\PdoUtils;
+use PeskyORM\Core\Utils\QueryBuilderUtils;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 use Swayok\Utils\Set;
@@ -103,7 +105,7 @@ class UtilsTest extends BaseTestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Unknown processing type [???]");
         $statement = static::getValidAdapter()->query(DbExpr::create('SELECT 1'));
-        Utils::getDataFromStatement($statement, '???');
+        PdoUtils::getDataFromStatement($statement, '???');
     }
     
     public function testGetDataFromStatement(): void
@@ -113,45 +115,45 @@ class UtilsTest extends BaseTestCase
             ->query(DbExpr::create('SELECT * FROM `admins`'));
         static::assertEquals(
             $testData,
-            Utils::getDataFromStatement($statement, Utils::FETCH_ALL)
+            PdoUtils::getDataFromStatement($statement, PdoUtils::FETCH_ALL)
         );
         $statement->closeCursor();
         $statement->execute();
         static::assertEquals(
             $testData[0],
-            Utils::getDataFromStatement($statement, Utils::FETCH_FIRST)
+            PdoUtils::getDataFromStatement($statement, PdoUtils::FETCH_FIRST)
         );
         $statement->closeCursor();
         $statement->execute();
         static::assertEquals(
             Set::extract('/id', $testData),
-            Utils::getDataFromStatement($statement, Utils::FETCH_COLUMN)
+            PdoUtils::getDataFromStatement($statement, PdoUtils::FETCH_COLUMN)
         );
         $statement->closeCursor();
         $statement->execute();
         static::assertEquals(
             $testData[0]['id'],
-            Utils::getDataFromStatement($statement, Utils::FETCH_VALUE)
+            PdoUtils::getDataFromStatement($statement, PdoUtils::FETCH_VALUE)
         );
         $statement = static::getValidAdapter()
             ->query(DbExpr::create('SELECT * FROM `admins` WHERE `id` < ``0``'));
-        static::assertEquals([], Utils::getDataFromStatement($statement, Utils::FETCH_ALL));
+        static::assertEquals([], PdoUtils::getDataFromStatement($statement, PdoUtils::FETCH_ALL));
         $statement->closeCursor();
         $statement->execute();
-        static::assertEquals([], Utils::getDataFromStatement($statement, Utils::FETCH_FIRST));
+        static::assertEquals([], PdoUtils::getDataFromStatement($statement, PdoUtils::FETCH_FIRST));
         $statement->closeCursor();
         $statement->execute();
-        static::assertEquals([], Utils::getDataFromStatement($statement, Utils::FETCH_COLUMN));
+        static::assertEquals([], PdoUtils::getDataFromStatement($statement, PdoUtils::FETCH_COLUMN));
         $statement->closeCursor();
         $statement->execute();
-        static::assertEquals(null, Utils::getDataFromStatement($statement, Utils::FETCH_VALUE));
+        static::assertEquals(null, PdoUtils::getDataFromStatement($statement, PdoUtils::FETCH_VALUE));
     }
     
     public function testInvalidAssembleWhereConditionsFromArray1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$glue argument must be \"AND\" or \"OR\"");
-        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), [], function () {
+        QueryBuilderUtils::assembleWhereConditionsFromArray(static::getValidAdapter(), [], function () {
         }, 'wow');
     }
     
@@ -161,7 +163,7 @@ class UtilsTest extends BaseTestCase
         $this->expectExceptionMessage(
             "\$conditions argument may contain only objects of class DbExpr or AbstractSelect. Other objects are forbidden. Key: 0"
         );
-        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), [$this], function () {
+        QueryBuilderUtils::assembleWhereConditionsFromArray(static::getValidAdapter(), [$this], function () {
         });
     }
     
@@ -169,7 +171,7 @@ class UtilsTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Empty column name detected in \$conditions argument");
-        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['' => 'value'], function () {
+        QueryBuilderUtils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['' => 'value'], function () {
         });
     }
     
@@ -177,7 +179,7 @@ class UtilsTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Empty column name detected in \$conditions argument");
-        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), [' =' => ['value']], function () {
+        QueryBuilderUtils::assembleWhereConditionsFromArray(static::getValidAdapter(), [' =' => ['value']], function () {
         });
     }
     
@@ -185,7 +187,7 @@ class UtilsTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Empty column name detected in \$conditions argument");
-        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['=' => ['value']], function ($quotedColumn) {
+        QueryBuilderUtils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['=' => ['value']], function ($quotedColumn) {
             return $quotedColumn;
         });
     }
@@ -194,7 +196,7 @@ class UtilsTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Condition operator [LIKE] does not support list of values");
-        Utils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['col1 LIKE' => ['value']], function ($quotedColumn) {
+        QueryBuilderUtils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['col1 LIKE' => ['value']], function ($quotedColumn) {
             return $quotedColumn;
         });
     }
@@ -211,23 +213,23 @@ class UtilsTest extends BaseTestCase
         $value2 = $adapter->quoteValue('value2');
         static::assertEquals(
             '',
-            Utils::assembleWhereConditionsFromArray($adapter, [], $columnQuoter)
+            QueryBuilderUtils::assembleWhereConditionsFromArray($adapter, [], $columnQuoter)
         );
         static::assertEquals(
             "$col1 = $value1",
-            Utils::assembleWhereConditionsFromArray($adapter, ['col' => 'value'], $columnQuoter)
+            QueryBuilderUtils::assembleWhereConditionsFromArray($adapter, ['col' => 'value'], $columnQuoter)
         );
         static::assertEquals(
             "$col1 = $value1 AND $col2 = $value2",
-            Utils::assembleWhereConditionsFromArray($adapter, ['col' => 'value', 'col2' => 'value2'], $columnQuoter)
+            QueryBuilderUtils::assembleWhereConditionsFromArray($adapter, ['col' => 'value', 'col2' => 'value2'], $columnQuoter)
         );
         static::assertEquals(
             "$col1 = $value1 OR $col2 = $value2",
-            Utils::assembleWhereConditionsFromArray($adapter, ['col' => 'value', 'col2' => 'value2'], $columnQuoter, 'OR')
+            QueryBuilderUtils::assembleWhereConditionsFromArray($adapter, ['col' => 'value', 'col2' => 'value2'], $columnQuoter, 'OR')
         );
         static::assertEquals(
             "$col1 = $value1 AND ($col1 = $value1 OR $col2 = $value2)",
-            Utils::assembleWhereConditionsFromArray(
+            QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
                 ['col' => 'value', 'OR' => ['col' => 'value', 'col2' => 'value2']],
                 $columnQuoter
@@ -235,7 +237,7 @@ class UtilsTest extends BaseTestCase
         );
         static::assertEquals(
             "$col1 = $value1 AND ($col1 = $value1 AND $col2 = $value2)",
-            Utils::assembleWhereConditionsFromArray(
+            QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
                 ['col' => 'value', ['col' => 'value', 'col2' => 'value2']],
                 $columnQuoter
@@ -243,7 +245,7 @@ class UtilsTest extends BaseTestCase
         );
         static::assertEquals(
             "$col1 = $value1 AND ($col1 = $value1 AND $col2 = $value2)",
-            Utils::assembleWhereConditionsFromArray(
+            QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
                 ['col' => 'value', 'AND' => ['col' => 'value', 'col2' => 'value2']],
                 $columnQuoter
@@ -251,7 +253,7 @@ class UtilsTest extends BaseTestCase
         );
         static::assertEquals(
             "$col1 = $value1 AND ($col1 = $value1 AND $col2 = $value2)",
-            Utils::assembleWhereConditionsFromArray(
+            QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
                 ['col' => 'value', ['col' => 'value', 'col2' => 'value2']],
                 $columnQuoter
@@ -259,7 +261,7 @@ class UtilsTest extends BaseTestCase
         );
         static::assertEquals(
             "$col1 = $value1 AND ($col1 = $value1 OR $col2 = $value2) AND $col2 = $value2",
-            Utils::assembleWhereConditionsFromArray(
+            QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
                 ['col' => 'value', 'OR' => ['col' => 'value', 'col2' => 'value2'], 'col2' => 'value2'],
                 $columnQuoter
@@ -267,7 +269,7 @@ class UtilsTest extends BaseTestCase
         );
         static::assertEquals(
             "$col1 = $value1 AND ($col1 = $value1 OR ($col1 = $value1 AND $col2 = $value2)) AND $col2 = $value2",
-            Utils::assembleWhereConditionsFromArray(
+            QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
                 ['col' => 'value', 'OR' => ['col' => 'value', ['col' => 'value', 'col2' => 'value2']], 'col2' => 'value2'],
                 $columnQuoter
@@ -286,7 +288,7 @@ class UtilsTest extends BaseTestCase
         $value2 = $adapter->quoteValue('value2');
         static::assertEquals(
             "$col1 = $value1 AND $col1 != $value1 AND $col1 = $value1 AND $col1 != $value1 AND $col1 != $value1",
-            Utils::assembleWhereConditionsFromArray(
+            QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
                 [
                     'col =' => 'value',
@@ -300,7 +302,7 @@ class UtilsTest extends BaseTestCase
         );
         static::assertEquals(
             "$col1 < $value1 AND $col1 <= $value1 AND $col1 > $value1 AND $col1 >= $value1",
-            Utils::assembleWhereConditionsFromArray(
+            QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
                 [
                     'col <' => 'value',
@@ -313,7 +315,7 @@ class UtilsTest extends BaseTestCase
         );
         static::assertEquals(
             "$col1->$value2 ?? $value1 AND $col1 ??| array[$value1, $value2] AND $col1 ??& array[$value1, $value2]",
-            Utils::assembleWhereConditionsFromArray(
+            QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
                 [
                     'col->value2 ?' => 'value',
@@ -326,7 +328,7 @@ class UtilsTest extends BaseTestCase
         $jsonQuoted = $adapter->quoteValue(json_encode(['value' => 'value2']));
         static::assertEquals(
             "$col1 @> $jsonQuoted::jsonb AND $col1 <@ $jsonQuoted::jsonb",
-            Utils::assembleWhereConditionsFromArray(
+            QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
                 [
                     'col @>' => ['value' => 'value2'],
@@ -337,7 +339,7 @@ class UtilsTest extends BaseTestCase
         );
         static::assertEquals(
             "$col1 ~ $value1 AND $col1 !~ $value1 AND $col1 ~* $value1 AND $col1 !~* $value1",
-            Utils::assembleWhereConditionsFromArray(
+            QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
                 [
                     'col ~' => 'value',
@@ -350,7 +352,7 @@ class UtilsTest extends BaseTestCase
         );
         static::assertEquals(
             "$col1 LIKE $value1 AND $col1 NOT LIKE $value1",
-            Utils::assembleWhereConditionsFromArray(
+            QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
                 [
                     'col LIKE' => 'value',
@@ -361,7 +363,7 @@ class UtilsTest extends BaseTestCase
         );
         static::assertEquals(
             "$col1 IS NULL AND $col1 IS NOT NULL AND $col1 IS NULL AND $col1 IS NOT NULL AND $col1 IS NOT NULL",
-            Utils::assembleWhereConditionsFromArray(
+            QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
                 [
                     'col =' => null,
@@ -379,7 +381,7 @@ class UtilsTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("Value [aaa] for column name [test] is invalid");
-        Utils::assembleWhereConditionsFromArray(
+        QueryBuilderUtils::assembleWhereConditionsFromArray(
             static::getValidAdapter(),
             ['test' => 'aaa'],
             null,
@@ -400,7 +402,7 @@ class UtilsTest extends BaseTestCase
         $value1 = $adapter->quoteValue('value');
         static::assertEquals(
             "($col1 = $value1)",
-            Utils::assembleWhereConditionsFromArray(
+            QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
                 [DbExpr::create('`col` = ``value``')],
                 $columnQuoter,
@@ -412,7 +414,7 @@ class UtilsTest extends BaseTestCase
         );
         static::assertEquals(
             "$col1 = ($value1)",
-            Utils::assembleWhereConditionsFromArray(
+            QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
                 ['col' => DbExpr::create('``value``')],
                 $columnQuoter

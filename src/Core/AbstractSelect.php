@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PeskyORM\Core;
 
+use PeskyORM\Core\Utils\PdoUtils;
+use PeskyORM\Core\Utils\QueryBuilderUtils;
 use PeskyORM\ORM\CrossJoinInfo;
 use PeskyORM\ORM\OrmJoinInfo;
 use Swayok\Utils\ValidateValue;
@@ -195,12 +197,12 @@ abstract class AbstractSelect
     
     public function fetchOne(): array
     {
-        return $this->_fetch(Utils::FETCH_FIRST);
+        return $this->_fetch(PdoUtils::FETCH_FIRST);
     }
     
     public function fetchMany(): array
     {
-        return $this->_fetch(Utils::FETCH_ALL);
+        return $this->_fetch(PdoUtils::FETCH_ALL);
     }
     
     /**
@@ -212,7 +214,7 @@ abstract class AbstractSelect
             throw new \BadMethodCallException('It is impossible to use pagination when there is no limit');
         }
         $this->offset($this->offset + $this->limit);
-        return $this->_fetch(Utils::FETCH_ALL);
+        return $this->_fetch(PdoUtils::FETCH_ALL);
     }
     
     /**
@@ -224,7 +226,7 @@ abstract class AbstractSelect
             throw new \BadMethodCallException('It is impossible to use pagination when there is no limit');
         }
         $this->offset($this->offset - $this->limit);
-        return $this->_fetch(Utils::FETCH_ALL);
+        return $this->_fetch(PdoUtils::FETCH_ALL);
     }
     
     /**
@@ -235,7 +237,7 @@ abstract class AbstractSelect
     public function fetchCount(bool $ignoreLeftJoins = true): int
     {
         return (int)$this->getConnection()
-            ->query($this->getCountQuery($ignoreLeftJoins), Utils::FETCH_VALUE);
+            ->query($this->getCountQuery($ignoreLeftJoins), PdoUtils::FETCH_VALUE);
     }
     
     /**
@@ -245,38 +247,38 @@ abstract class AbstractSelect
      */
     public function fetchExistence(bool $ignoreLeftJoins = true): bool
     {
-        return (int)$this->getConnection()->query($this->getExistenceQuery($ignoreLeftJoins), Utils::FETCH_VALUE) === 1;
+        return (int)$this->getConnection()->query($this->getExistenceQuery($ignoreLeftJoins), PdoUtils::FETCH_VALUE) === 1;
     }
     
     public function fetchColumn(): array
     {
-        return $this->_fetch(Utils::FETCH_COLUMN);
+        return $this->_fetch(PdoUtils::FETCH_COLUMN);
     }
     
     public function fetchAssoc(DbExpr|string $keysColumn, DbExpr|string $valuesColumn): array
     {
         return $this->columns(['key' => $keysColumn, 'value' => $valuesColumn])
-            ->_fetch(Utils::FETCH_KEY_PAIR);
+            ->_fetch(PdoUtils::FETCH_KEY_PAIR);
     }
     
     public function fetchValue(DbExpr $expression): mixed
     {
         return $this->columns([$expression])
-            ->_fetch(Utils::FETCH_VALUE);
+            ->_fetch(PdoUtils::FETCH_VALUE);
     }
     
     /**
-     * @param string $selectionType - one of PeskyORM\Core\Utils::FETCH_*
+     * @param string $selectionType - one of PeskyORM\Core\Utils\PdoUtils::FETCH_*
      */
     protected function _fetch(string $selectionType): mixed
     {
         $data = $this->getConnection()->query($this->getQuery(), $selectionType);
 
-        if (in_array($selectionType, [Utils::FETCH_COLUMN, Utils::FETCH_VALUE, Utils::FETCH_KEY_PAIR], true)) {
+        if (in_array($selectionType, [PdoUtils::FETCH_COLUMN, PdoUtils::FETCH_VALUE, PdoUtils::FETCH_KEY_PAIR], true)) {
             return $data;
         }
 
-        if ($selectionType === Utils::FETCH_FIRST) {
+        if ($selectionType === PdoUtils::FETCH_FIRST) {
             $shortColumnAliasToAlias = array_flip($this->shortColumnAliases);
             $shortJoinAliasToAlias = array_flip($this->shortJoinAliases);
             return $this->normalizeRecord($data, $shortColumnAliasToAlias, $shortJoinAliasToAlias);
@@ -418,7 +420,7 @@ abstract class AbstractSelect
     
     /**
      * Set Conditions
-     * @param array $conditions - may contain:
+     * May contain:
      * - DbExpr instances
      * - key-value pairs where key is column name with optional operator (ex: 'col_name !='), value may be
      * any of DbExpr, int, float, string, array. Arrays used for operators like 'IN', 'BETWEEN', '=' and other that
@@ -428,10 +430,11 @@ abstract class AbstractSelect
      * will be assembled into ("col3" = 0 AND ("col1" = 1 OR "col2" => 2)).
      * By default - 'AND' is used if you group conditions into array without a key:
      * ['col3 => 0, ['col1' => 1, 'col2' => 2]] will be assembled into ("col3" = 0 AND ("col1" = 1 AND "col2" => 2))
+     * @param array $conditions
      * @param bool $append
      * @return static
      * @throws \InvalidArgumentException
-     * @see Utils::assembleWhereConditionsFromArray() for more details about operators and features
+     * @see QueryBuilderUtils::assembleWhereConditionsFromArray() for more details about operators and features
      */
     public function where(array $conditions, bool $append = false): static
     {
@@ -827,7 +830,7 @@ abstract class AbstractSelect
             unset($columnName, $joinName, $columnAlias); //< to prevent faulty usage
         } else {
             $columnName = trim($columnName);
-            $ret = Utils::splitColumnName($columnName);
+            $ret = QueryBuilderUtils::splitColumnName($columnName);
             if ($ret['join_name'] && $columnAlias && $ret['join_name'] !== $joinName) {
                 $ret['parent'] = $joinName ?: $this->getTableAlias();
             }
@@ -1142,7 +1145,7 @@ abstract class AbstractSelect
      */
     protected function makeConditions(array $conditions, string $subject = 'WHERE', ?string $joinName = null): string
     {
-        $assembled = Utils::assembleWhereConditionsFromArray(
+        $assembled = QueryBuilderUtils::assembleWhereConditionsFromArray(
             $this->getConnection(),
             $conditions,
             function ($columnName) use ($joinName, $subject) {

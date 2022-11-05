@@ -8,6 +8,7 @@ use PDO;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
+use PeskyORM\Core\Utils\PdoUtils;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\Data\TestDataForAdminsTable;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
@@ -39,9 +40,9 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
         TestingApp::clearTables($adapter);
         $testData1 = ['key' => 'test_key1', 'value' => json_encode('test_value1')];
         $adapter->insert('settings', $testData1);
-        $data = Utils::getDataFromStatement(
+        $data = PdoUtils::getDataFromStatement(
             $adapter->query(DbExpr::create("SELECT * FROM `settings` WHERE `key` = ``{$testData1['key']}``")),
-            Utils::FETCH_FIRST
+            PdoUtils::FETCH_FIRST
         );
         static::assertArraySubset($testData1, $data);
         
@@ -52,9 +53,9 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
             'is_superadmin' => PDO::PARAM_BOOL,
             'is_active' => PDO::PARAM_BOOL,
         ]);
-        $data = Utils::getDataFromStatement(
+        $data = PdoUtils::getDataFromStatement(
             $adapter->query(DbExpr::create("SELECT * FROM `admins` WHERE `id` = ``{$testData2['id']}``")),
-            Utils::FETCH_FIRST
+            PdoUtils::FETCH_FIRST
         );
         $dataForAssert = $this->convertTestDataForAdminsTableAssert([$testData2])[0];
         static::assertEquals($dataForAssert, $data);
@@ -137,14 +138,14 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
             ),
             $adapter->getLastQuery()
         );
-        $data = Utils::getDataFromStatement(
+        $data = PdoUtils::getDataFromStatement(
             $adapter->query(
                 DbExpr::create(
                     "SELECT * FROM `settings` WHERE (`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)) ORDER BY `key`",
                     false
                 )
             ),
-            Utils::FETCH_ALL
+            PdoUtils::FETCH_ALL
         );
         static::assertArraySubset($testData1[0], $data[0]);
         static::assertArraySubset($testData1[1], $data[1]);
@@ -153,7 +154,7 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
                 "SELECT * FROM `settings` WHERE (`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)) ORDER BY `key`",
                 false
             ),
-            Utils::FETCH_ALL
+            PdoUtils::FETCH_ALL
         );
         static::assertArraySubset($testData1[0], $data[0]);
         static::assertArraySubset($testData1[1], $data[1]);
@@ -165,13 +166,13 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
             'is_superadmin' => PDO::PARAM_BOOL,
             'is_active' => PDO::PARAM_BOOL,
         ]);
-        $data = Utils::getDataFromStatement(
+        $data = PdoUtils::getDataFromStatement(
             $adapter->query(
                 DbExpr::create(
                     "SELECT * FROM `admins` WHERE `id` IN (``{$testData2[0]['id']}``,``{$testData2[1]['id']}``) ORDER BY `id`"
                 )
             ),
-            Utils::FETCH_ALL
+            PdoUtils::FETCH_ALL
         );
         $dataForAssert = $this->convertTestDataForAdminsTableAssert($testData2);
         static::assertEquals($dataForAssert[0], $data[0]);

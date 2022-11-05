@@ -8,6 +8,7 @@ use PDOException;
 use PeskyORM\Adapter\Mysql;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
+use PeskyORM\Core\Utils\PdoUtils;
 use PeskyORM\Exception\DbException;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
@@ -61,7 +62,7 @@ class MysqlAdapterQueriesTest extends BaseTestCase
         static::assertEquals(1, $rowsAffected);
         $stmnt = $adapter->query($selectQuery);
         static::assertEquals(1, $stmnt->rowCount());
-        $record = Utils::getDataFromStatement($stmnt, Utils::FETCH_FIRST);
+        $record = PdoUtils::getDataFromStatement($stmnt, PdoUtils::FETCH_FIRST);
         static::assertArraySubset([
             'key' => 'test_key',
             'value' => '"test_value"',

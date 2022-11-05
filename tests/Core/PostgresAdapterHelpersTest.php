@@ -189,11 +189,35 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         /** @noinspection PhpStrictTypeCheckingInspection */
         static::getValidAdapter()->guardReturningArg(123);
     }
+
+    public function testInvalidReturning4(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('$returning argument must contain only strings');
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getValidAdapter()->guardReturningArg([123]);
+    }
+
+    public function testInvalidReturning5(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('$returning argument must contain only strings');
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getValidAdapter()->guardReturningArg([[]]);
+    }
+
+    public function testInvalidReturning6(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('$returning argument must contain only strings');
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        static::getValidAdapter()->guardReturningArg([true]);
+    }
     
     public function testInvalidPkName(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$pkName argument cannot be empty");
+        $this->expectExceptionMessage('$pkName argument cannot be empty');
         static::getValidAdapter()->guardPkNameArg('');
     }
     
@@ -208,7 +232,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidPkName3(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage("Argument #1 (\$pkName) must be of type string, array given");
+        $this->expectExceptionMessage('Argument #1 ($pkName) must be of type string, array given');
         /** @noinspection PhpStrictTypeCheckingInspection */
         /** @noinspection PhpParamsInspection */
         static::getValidAdapter()->guardPkNameArg([]);
@@ -224,7 +248,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidPkName5(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage("Argument #1 (\$pkName) must be of type string");
+        $this->expectExceptionMessage('Argument #1 ($pkName) must be of type string');
         /** @noinspection PhpStrictTypeCheckingInspection */
         /** @noinspection PhpParamsInspection */
         static::getValidAdapter()->guardPkNameArg(DbExpr::create('test'));
@@ -733,5 +757,38 @@ class PostgresAdapterHelpersTest extends BaseTestCase
             "{$column} ??& array[test1, test2]",
             $adapter->assembleCondition($column, '?&', ['test1', 'test2'], true)
         );
+    }
+
+    public function testCustomOperatorAssembler(): void
+    {
+        $adapter = static::getValidAdapter();
+
+        // new operator
+        $adapter::addConditionAssemblerForOperator(
+            '>=<',
+            static function (
+                string $quotedColumn,
+                string $operator,
+                mixed $rawValue,
+                bool $valueAlreadyQuoted = false
+            ) {
+                return 'test1';
+            }
+        );
+        static::assertEquals('test1', $adapter->assembleCondition('column', '>=<', 'value'));
+
+        // override existing
+        $adapter::addConditionAssemblerForOperator(
+            '>=<',
+            static function (
+                string $quotedColumn,
+                string $operator,
+                mixed $rawValue,
+                bool $valueAlreadyQuoted = false
+            ) {
+                return 'test2';
+            }
+        );
+        static::assertEquals('test2', $adapter->assembleCondition('column', '>=<', 'value'));
     }
 }

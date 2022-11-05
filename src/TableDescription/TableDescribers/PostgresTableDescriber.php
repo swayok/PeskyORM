@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\TableDescription\TableDescribers;
 
 use JetBrains\PhpStorm\ArrayShape;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\Utils;
+use PeskyORM\Core\Utils\PdoUtils;
 use PeskyORM\ORM\Column;
 use PeskyORM\TableDescription\ColumnDescription;
 use PeskyORM\TableDescription\TableDescription;
@@ -55,7 +58,7 @@ class PostgresTableDescriber implements TableDescriberInterface
         $description = new TableDescription($tableName, $schema ?? $this->adapter->getDefaultTableSchema());
         $query = $this->getSqlQuery($description);
         /** @var array $columns */
-        $columns = $this->adapter->query(DbExpr::create($query), Utils::FETCH_ALL);
+        $columns = $this->adapter->query(DbExpr::create($query), PdoUtils::FETCH_ALL);
         foreach ($columns as $columnInfo) {
             $columnDescription = new ColumnDescription(
                 $columnInfo['name'],

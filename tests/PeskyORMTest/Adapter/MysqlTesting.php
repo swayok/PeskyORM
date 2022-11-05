@@ -42,11 +42,6 @@ class MysqlTesting extends Mysql
         parent::guardColumnsArg($columns, $allowDbExpr);
     }
     
-    public function guardTransaction(string $action): void
-    {
-        parent::guardTransaction($action);
-    }
-    
     public function quoteJsonSelectorValue(string $key): string
     {
         return parent::quoteJsonSelectorValue($key);

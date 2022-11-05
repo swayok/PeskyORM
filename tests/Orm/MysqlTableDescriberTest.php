@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Orm;
 
+use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\ORM\Column;
 use PeskyORM\TableDescription\DescribeTable;
 use PeskyORM\TableDescription\TableDescribers\MysqlTableDescriber;
+use PeskyORM\TableDescription\TableDescribers\PostgresTableDescriber;
 use PeskyORM\TableDescription\TableDescription;
 use PeskyORM\Tests\PeskyORMTest\Adapter\MysqlTesting;
+use PeskyORM\Tests\PeskyORMTest\Adapter\OtherAdapterTesting;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 require_once __DIR__ . '/PostgresTableDescriberTest.php';
@@ -29,10 +32,13 @@ class MysqlTableDescriberTest extends PostgresTableDescriberTest
     public function testDescribeTable(): void
     {
         $adapter = self::getValidAdapter();
-        DescribeTable::registerDescriber($adapter::class, MysqlTableDescriber::class);
         static::assertInstanceOf(MysqlTableDescriber::class, DescribeTable::getDescriber($adapter));
         /** @noinspection UnnecessaryAssertionInspection */
         static::assertInstanceOf(TableDescription::class, DescribeTable::getTableDescription($adapter, 'settings'));
+        // set custom describer
+        $otherAdapter = new OtherAdapterTesting(new PostgresConfig('test', 'test', 'test'));
+        DescribeTable::registerDescriber($otherAdapter::class, PostgresTableDescriber::class);
+        static::assertInstanceOf(PostgresTableDescriber::class, DescribeTable::getDescriber($otherAdapter));
     }
 
     /**

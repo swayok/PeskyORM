@@ -6,8 +6,12 @@ namespace PeskyORM\Core;
 
 use PDO;
 use PDOStatement;
-use PeskyORM\Core\Utils as OrmUtils;
+use PeskyORM\Core\Utils\DbAdapterMethodArgumentUtils;
+use PeskyORM\Core\Utils\PdoUtils;
+use PeskyORM\Core\Utils\QueryBuilderUtils;
 use PeskyORM\Exception\DbException;
+use PeskyORM\Exception\DbInsertQueryException;
+use PeskyORM\Exception\DetailedPDOException;
 use PeskyORM\ORM\RecordInterface;
 use Swayok\Utils\Utils;
 
@@ -18,13 +22,13 @@ abstract class DbAdapter implements DbAdapterInterface
     protected string $trueValue = '1';
     protected string $falseValue = '0';
 
-    public const FETCH_ALL = OrmUtils::FETCH_ALL;
-    public const FETCH_FIRST = OrmUtils::FETCH_FIRST;
-    public const FETCH_VALUE = OrmUtils::FETCH_VALUE;
-    public const FETCH_COLUMN = OrmUtils::FETCH_COLUMN;
-    public const FETCH_KEY_PAIR = OrmUtils::FETCH_KEY_PAIR;
-    public const FETCH_STATEMENT = OrmUtils::FETCH_STATEMENT;
-    public const FETCH_ROWS_COUNT = OrmUtils::FETCH_ROWS_COUNT;
+    public const FETCH_ALL = PdoUtils::FETCH_ALL;
+    public const FETCH_FIRST = PdoUtils::FETCH_FIRST;
+    public const FETCH_VALUE = PdoUtils::FETCH_VALUE;
+    public const FETCH_COLUMN = PdoUtils::FETCH_COLUMN;
+    public const FETCH_KEY_PAIR = PdoUtils::FETCH_KEY_PAIR;
+    public const FETCH_STATEMENT = PdoUtils::FETCH_STATEMENT;
+    public const FETCH_ROWS_COUNT = PdoUtils::FETCH_ROWS_COUNT;
 
     /**
      * Traces of all transactions (required for debug)
@@ -53,8 +57,6 @@ abstract class DbAdapter implements DbAdapterInterface
      */
     protected ?string $lastQuery = null;
 
-    protected array $conditionAssemblerForOperator = [];
-
     /**
      * Set a wrapper to PDO connection. Wrapper called on any new DB connection
      */
@@ -70,6 +72,8 @@ abstract class DbAdapter implements DbAdapterInterface
     {
         static::$connectionWrapper = null;
     }
+
+    abstract protected function getConditionAssembler(string $operator): ?\Closure;
 
     public function __construct(DbConnectionConfigInterface $connectionConfig)
     {
@@ -177,32 +181,34 @@ abstract class DbAdapter implements DbAdapterInterface
         return DbExpr::create('DEFAULT', false);
     }
 
-    public function query(string|DbExpr $query, string $fetchData = self::FETCH_STATEMENT): mixed
-    {
+    public function query(
+        string|DbExpr $query,
+        string $fetchData = self::FETCH_STATEMENT
+    ): mixed {
         if ($query instanceof DbExpr) {
             $query = $this->quoteDbExpr($query->setWrapInBrackets(false));
         }
         $this->lastQuery = $query;
         try {
-            $stmnt = $this->getConnection()
-                ->query($query);
-
-            return OrmUtils::getDataFromStatement($stmnt, $fetchData);
+            $stmnt = $this->getConnection()->query($query);
+            return $this->getDataFromStatement($stmnt, $fetchData);
         } catch (\PDOException $exc) {
-            $exc = $this->getDetailedException($query, null, $exc);
-            if ($this->inTransaction()) {
-                $this->rollBack(); //< error within transactions makes it broken in postgresql
-            }
-            throw $exc;
+            $this->handlePdoException($exc, $query);
         }
+    }
+
+    protected function getDataFromStatement(
+        PDOStatement $statement,
+        string $type = self::FETCH_ALL
+    ): mixed {
+        return PdoUtils::getDataFromStatement($statement, $type);
     }
 
     /**
      * @param string|DbExpr $query
-     * @param bool $ignoreZeroModifiedRows - true: will not try to additionally validate if query failed
      * @return int - affected rows count
      */
-    protected function _exec(DbExpr|string $query, bool $ignoreZeroModifiedRows = false): int
+    public function exec(DbExpr|string $query): int
     {
         if ($query instanceof DbExpr) {
             $query = $this->quoteDbExpr($query->setWrapInBrackets(false));
@@ -210,25 +216,28 @@ abstract class DbAdapter implements DbAdapterInterface
         $this->lastQuery = $query;
         try {
             $affectedRowsCount = $this->getConnection()->exec($query);
-            if (!$ignoreZeroModifiedRows && !$affectedRowsCount && !is_int($affectedRowsCount)) {
-                $exc = $this->getDetailedException($query);
-                if ($exc !== null) {
-                    throw $exc;
-                }
+            if (
+                empty($affectedRowsCount)
+                && $this->getConnection()->errorCode() !== PDO::ERR_NONE
+            ) {
+                // error happened when performing query
+                throw new DetailedPDOException($this->getConnection(), $query);
             }
             return $affectedRowsCount;
         } catch (\PDOException $exc) {
-            $exc = $this->getDetailedException($query, null, $exc);
-            if ($this->inTransaction() && stripos($query, 'ROLLBACK') !== 0) {
-                $this->rollBack(); //< error within transactions makes it broken in postgresql
-            }
-            throw $exc;
+            $this->handlePdoException($exc, $query);
         }
     }
 
-    public function exec(string|DbExpr $query): int
+    protected function handlePdoException(\PDOException $exc, string $query): void
     {
-        return $this->_exec($query);
+        $exc = new DetailedPDOException($this->getConnection(), $query, $exc);
+        if ($this->inTransaction() && stripos($query, 'ROLLBACK') !== 0) {
+            // Error within transactions makes it broken in postgresql.
+            // To prevent problems in later code we need to rollback transaction.
+            $this->rollBack();
+        }
+        throw $exc;
     }
 
     public function prepare(string|DbExpr $query, array $options = []): PDOStatement
@@ -258,9 +267,8 @@ abstract class DbAdapter implements DbAdapterInterface
         if (empty($returning)) {
             $rowsAffected = $this->exec($query);
             if (!$rowsAffected) {
-                throw new DbException(
+                throw new DbInsertQueryException(
                     "Inserting data into table {$table} resulted in modification of 0 rows. Query: " . $this->getLastQuery(),
-                    DbException::CODE_INSERT_FAILED
                 );
             }
             return null;
@@ -310,17 +318,15 @@ abstract class DbAdapter implements DbAdapterInterface
         if (empty($returning)) {
             $rowsAffected = $this->exec($query);
             if (!$rowsAffected) {
-                throw new DbException(
+                throw new DbInsertQueryException(
                     "Inserting data into table {$table} resulted in modification of 0 rows. Query: " . $this->getLastQuery(),
-                    DbException::CODE_INSERT_FAILED
                 );
             }
 
             if (count($data) !== $rowsAffected) {
-                throw new DbException(
+                throw new DbInsertQueryException(
                     "Inserting data into table {$table} resulted in modification of $rowsAffected rows while "
                     . count($data) . ' rows should be inserted. Query: ' . $this->getLastQuery(),
-                    DbException::CODE_INSERT_FAILED
                 );
             }
             return null;
@@ -414,15 +420,7 @@ abstract class DbAdapter implements DbAdapterInterface
      */
     protected function guardTableNameArg(string $table): void
     {
-        if (empty($table)) {
-            throw new \InvalidArgumentException('$table argument cannot be empty and must be a non-numeric string');
-        }
-
-        if (!$this->isValidDbEntityName($table)) {
-            throw new \InvalidArgumentException(
-                '$table must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)'
-            );
-        }
+        DbAdapterMethodArgumentUtils::guardTableNameArg($this, $table);
     }
 
     /**
@@ -430,19 +428,15 @@ abstract class DbAdapter implements DbAdapterInterface
      */
     protected function guardConditionsArg(DbExpr|string $conditions): void
     {
-        if (empty($conditions)) {
-            throw new \InvalidArgumentException(
-                '$conditions argument is not allowed to be empty. Use "true" or "1 = 1" if you want to update all.'
-            );
-        }
+        DbAdapterMethodArgumentUtils::guardConditionsArg($conditions);
     }
 
     /**
-     * @param bool|array $returning
      * @throws \InvalidArgumentException
      */
     protected function guardReturningArg(bool|array $returning): void
     {
+        DbAdapterMethodArgumentUtils::guardReturningArg($returning);
     }
 
     /**
@@ -450,15 +444,7 @@ abstract class DbAdapter implements DbAdapterInterface
      */
     protected function guardPkNameArg(string $pkName): void
     {
-        if (empty($pkName)) {
-            throw new \InvalidArgumentException('$pkName argument cannot be empty');
-        }
-
-        if (!$this->isValidDbEntityName($pkName)) {
-            throw new \InvalidArgumentException(
-                '$pkName must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)'
-            );
-        }
+        DbAdapterMethodArgumentUtils::guardPkNameArg($this, $pkName);
     }
 
     /**
@@ -466,9 +452,7 @@ abstract class DbAdapter implements DbAdapterInterface
      */
     protected function guardDataArg(array $data): void
     {
-        if (empty($data)) {
-            throw new \InvalidArgumentException('$data argument cannot be empty');
-        }
+        DbAdapterMethodArgumentUtils::guardDataArg($data);
     }
 
     /**
@@ -476,16 +460,7 @@ abstract class DbAdapter implements DbAdapterInterface
      */
     protected function guardColumnsArg(array $columns, bool $allowDbExpr = true): void
     {
-        if (empty($columns)) {
-            throw new \InvalidArgumentException('$columns argument cannot be empty');
-        }
-        foreach ($columns as $column) {
-            if (!is_string($column) && (!$allowDbExpr || !($column instanceof DbExpr))) {
-                throw new \InvalidArgumentException(
-                    '$columns argument must contain only strings' . ($allowDbExpr ? ' and DbExpr objects' : '')
-                );
-            }
-        }
+        DbAdapterMethodArgumentUtils::guardColumnsArg($columns, $allowDbExpr);
     }
 
     /**
@@ -495,13 +470,7 @@ abstract class DbAdapter implements DbAdapterInterface
      */
     protected function buildColumnsList(array $columns, bool $withBraces = true): string
     {
-        $quoted = implode(
-            ', ',
-            array_map(function ($column) {
-                return ($column instanceof DbExpr) ? $this->quoteDbExpr($column) : $this->quoteDbEntityName($column);
-            }, $columns)
-        );
-        return $withBraces ? '(' . $quoted . ')' : $quoted;
+        return QueryBuilderUtils::buildColumnsList($this, $columns, $withBraces);
     }
 
     /**
@@ -518,23 +487,7 @@ abstract class DbAdapter implements DbAdapterInterface
         array $dataTypes = [],
         int $recordIdx = 0
     ): string {
-        $ret = [];
-        if (empty($columns)) {
-            throw new \InvalidArgumentException('$columns argument cannot be empty');
-        }
-        foreach ($columns as $column) {
-            if (!array_key_exists($column, $valuesAssoc)) {
-                throw new \InvalidArgumentException(
-                    "\$valuesAssoc array does not contain key [$column]. Record index: $recordIdx. "
-                    . 'Data: ' . print_r($valuesAssoc, true)
-                );
-            }
-            $ret[] = $this->quoteValue(
-                $valuesAssoc[$column],
-                empty($dataTypes[$column]) ? null : $dataTypes[$column]
-            );
-        }
-        return '(' . implode(', ', $ret) . ')';
+        return QueryBuilderUtils::buildValuesList($this, $columns, $valuesAssoc, $dataTypes, $recordIdx);
     }
 
     /**
@@ -544,15 +497,7 @@ abstract class DbAdapter implements DbAdapterInterface
      */
     protected function buildValuesListForUpdate(array $valuesAssoc, array $dataTypes = []): string
     {
-        $ret = [];
-        foreach ($valuesAssoc as $column => $value) {
-            $quotedValue = $this->quoteValue(
-                $value,
-                empty($dataTypes[$column]) ? null : $dataTypes[$column]
-            );
-            $ret[] = $this->quoteDbEntityName($column) . '=' . $quotedValue;
-        }
-        return implode(', ', $ret);
+        return QueryBuilderUtils::buildValuesListForUpdate($this, $valuesAssoc, $dataTypes);
     }
 
     /**
@@ -586,8 +531,7 @@ abstract class DbAdapter implements DbAdapterInterface
 
     public function inTransaction(): bool
     {
-        return $this->getConnection()
-            ->inTransaction();
+        return $this->getConnection()->inTransaction();
     }
 
     /**
@@ -596,10 +540,9 @@ abstract class DbAdapter implements DbAdapterInterface
      */
     public function begin(bool $readOnly = false, ?string $transactionType = null): static
     {
-        $this->guardTransaction('begin');
+        $this->guardBeginTransaction();
         try {
-            $this->getConnection()
-                ->beginTransaction();
+            $this->getConnection()->beginTransaction();
             static::rememberTransactionTrace();
         } catch (\PDOException $exc) {
             static::rememberTransactionTrace('failed');
@@ -610,58 +553,48 @@ abstract class DbAdapter implements DbAdapterInterface
 
     public function commit(): static
     {
-        $this->guardTransaction('commit');
-        $this->getConnection()
-            ->commit();
+        $this->guardCommitTransaction();
+        $this->getConnection()->commit();
         return $this;
     }
 
     public function rollBack(): static
     {
-        $this->guardTransaction('rollback');
-        $this->getConnection()
-            ->rollBack();
+        $this->guardRollbackTransaction();
+        $this->getConnection()->rollBack();
         return $this;
     }
 
-    /**
-     * @param string $action = begin|commit|rollback
-     * @return void
-     * @throws \InvalidArgumentException
-     * @throws DbException
-     */
-    protected function guardTransaction(string $action): void
+    protected function guardBeginTransaction(): void
     {
-        switch ($action) {
-            case 'begin':
-                if ($this->inTransaction()) {
-                    static::rememberTransactionTrace('failed');
-                    throw new DbException(
-                        'Already in transaction: ' . Utils::printToStr(static::$transactionsTraces),
-                        DbException::CODE_TRANSACTION_BEGIN_FAIL
-                    );
-                }
-                break;
-            case 'commit':
-                if (!$this->inTransaction()) {
-                    static::rememberTransactionTrace('failed');
-                    throw new DbException(
-                        'Attempt to commit not started transaction: ' . Utils::printToStr(static::$transactionsTraces),
-                        DbException::CODE_TRANSACTION_COMMIT_FAIL
-                    );
-                }
-                break;
-            case 'rollback':
-                if (!$this->inTransaction()) {
-                    static::rememberTransactionTrace('failed');
-                    throw new DbException(
-                        'Attempt to rollback not started transaction: ' . Utils::printToStr(static::$transactionsTraces),
-                        DbException::CODE_TRANSACTION_ROLLBACK_FAIL
-                    );
-                }
-                break;
-            default:
-                throw new \InvalidArgumentException('$action argument must be one of: "begin", "commit", "rollback"');
+        if ($this->inTransaction()) {
+            static::rememberTransactionTrace('failed');
+            throw new DbException(
+                'Already in transaction: ' . Utils::printToStr(static::$transactionsTraces),
+                DbException::CODE_TRANSACTION_BEGIN_FAIL
+            );
+        }
+    }
+
+    protected function guardCommitTransaction(): void
+    {
+        if (!$this->inTransaction()) {
+            static::rememberTransactionTrace('failed');
+            throw new DbException(
+                'Attempt to commit not started transaction: ' . Utils::printToStr(static::$transactionsTraces),
+                DbException::CODE_TRANSACTION_COMMIT_FAIL
+            );
+        }
+    }
+
+    protected function guardRollbackTransaction(): void
+    {
+        if (!$this->inTransaction()) {
+            static::rememberTransactionTrace('failed');
+            throw new DbException(
+                'Attempt to rollback not started transaction: ' . Utils::printToStr(static::$transactionsTraces),
+                DbException::CODE_TRANSACTION_ROLLBACK_FAIL
+            );
         }
     }
 
@@ -679,46 +612,6 @@ abstract class DbAdapter implements DbAdapterInterface
                 static::$transactionsTraces[] = $trace;
             }
         }
-    }
-
-    /**
-     * Make detailed exception from last pdo error
-     * @param string $query - failed query
-     * @param PDO|PDOStatement|null $pdoStatement
-     * @param null|\PDOException $originalException
-     * @return \PDOException|null
-     */
-    protected function getDetailedException(
-        string $query,
-        PDO|PDOStatement|null $pdoStatement = null,
-        ?\PDOException $originalException = null
-    ): ?\PDOException {
-        $errorInfo = $this->getPdoError($pdoStatement);
-        if ($errorInfo['message'] === null) {
-            return $originalException;
-        }
-        if (preg_match('%syntax error at or near "\$\d+"%i', $errorInfo['message'])) {
-            $errorInfo['message'] .= "\n NOTE: PeskyORM do not use prepared statements. You possibly used one of PostgreSQL jsonb opertaors - '?', '?|' or '?&'."
-                . " You should use escaped operators ('??', '??|' or '??&') or functions: jsonb_exists(jsonb, text), jsonb_exists_any(jsonb, text) or jsonb_exists_all(jsonb, text) respectively";
-        }
-        return new \PDOException($errorInfo['message'] . ". \nQuery: " . $query, $errorInfo['code']);
-    }
-
-    /**
-     * @param PDOStatement|PDO|null $pdoStatement
-     * @return array
-     * @throws \InvalidArgumentException
-     */
-    public function getPdoError(null|PDOStatement|PDO $pdoStatement = null): array
-    {
-        $ret = [];
-        if (!$pdoStatement) {
-            $pdoStatement = $this->getConnection();
-        } elseif (!($pdoStatement instanceof PDOStatement) && !($pdoStatement instanceof PDO)) {
-            throw new \InvalidArgumentException('$pdoStatement argument should be instance of \PDOStatement or \PDO');
-        }
-        [$ret['sql_code'], $ret['code'], $ret['message']] = $pdoStatement->errorInfo();
-        return $ret;
     }
 
     /**
@@ -741,7 +634,7 @@ abstract class DbAdapter implements DbAdapterInterface
 
     protected function _isValidDbEntityName(string $name): bool
     {
-        return OrmUtils::isValidDbEntityName($name);
+        return PdoUtils::isValidDbEntityName($name);
     }
 
     protected function isValidJsonSelector(string $name): bool
@@ -931,9 +824,9 @@ abstract class DbAdapter implements DbAdapterInterface
             $rawValue = $rawValue->getPrimaryKeyValue();
         }
         $operator = $this->normalizeConditionOperator($operator, $rawValue);
-        if (isset($this->conditionAssemblerForOperator[$operator])) {
-            $methodName = $this->conditionAssemblerForOperator[$operator];
-            return $this->$methodName($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted);
+        $closure = $this->getConditionAssembler($operator);
+        if ($closure) {
+            return $closure($quotedColumn, $operator, $rawValue, $valueAlreadyQuoted);
         }
         return $this->assembleConditionFromPreparedParts(
             $quotedColumn,
@@ -953,9 +846,10 @@ abstract class DbAdapter implements DbAdapterInterface
 
     public function select(string $table, array $columns = [], ?DbExpr $conditionsAndOptions = null): array
     {
+        // todo: accept array as $conditionsAndOptions (use QueryBuilderUtils to assemble)
         return $this->query(
             $this->makeSelectQuery($table, $columns, $conditionsAndOptions),
-            OrmUtils::FETCH_ALL
+            static::FETCH_ALL
         );
     }
 
@@ -963,8 +857,12 @@ abstract class DbAdapter implements DbAdapterInterface
      * {@inheritDoc}
      * @throws \InvalidArgumentException
      */
-    public function selectColumn(string $table, string|DbExpr $column, ?DbExpr $conditionsAndOptions = null): array
-    {
+    public function selectColumn(
+        string $table,
+        string|DbExpr $column,
+        ?DbExpr $conditionsAndOptions = null
+    ): array {
+        // todo: accept array as $conditionsAndOptions (use QueryBuilderUtils to assemble)
         if (empty($column)) {
             throw new \InvalidArgumentException('$column argument cannot be empty');
         }
@@ -975,7 +873,7 @@ abstract class DbAdapter implements DbAdapterInterface
 
         return $this->query(
             $this->makeSelectQuery($table, [$column], $conditionsAndOptions),
-            OrmUtils::FETCH_COLUMN
+            static::FETCH_COLUMN
         );
     }
 
@@ -989,6 +887,7 @@ abstract class DbAdapter implements DbAdapterInterface
         string|DbExpr $valuesColumn,
         ?DbExpr $conditionsAndOptions = null
     ): array {
+        // todo: accept array as $conditionsAndOptions (use QueryBuilderUtils to assemble)
         if (empty($keysColumn)) {
             throw new \InvalidArgumentException('$keysColumn argument cannot be empty');
         }
@@ -1007,7 +906,7 @@ abstract class DbAdapter implements DbAdapterInterface
 
         $records = $this->query(
             $this->makeSelectQuery($table, [$keysColumn, $valuesColumn], $conditionsAndOptions),
-            OrmUtils::FETCH_ALL
+            static::FETCH_ALL
         );
         $assoc = [];
         foreach ($records as $record) {
@@ -1025,24 +924,36 @@ abstract class DbAdapter implements DbAdapterInterface
      * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
      * @return array
      */
-    public function selectOne(string $table, array $columns = [], ?DbExpr $conditionsAndOptions = null): array
-    {
+    public function selectOne(
+        string $table,
+        array $columns = [],
+        ?DbExpr $conditionsAndOptions = null
+    ): array {
+        // todo: accept array as $conditionsAndOptions (use QueryBuilderUtils to assemble)
         return $this->query(
             $this->makeSelectQuery($table, $columns, $conditionsAndOptions),
-            OrmUtils::FETCH_FIRST
+            static::FETCH_FIRST
         );
     }
 
-    public function selectValue(string $table, DbExpr $expression, ?DbExpr $conditionsAndOptions = null): mixed
-    {
+    public function selectValue(
+        string $table,
+        DbExpr $expression,
+        ?DbExpr $conditionsAndOptions = null
+    ): mixed {
+        // todo: accept array as $conditionsAndOptions (use QueryBuilderUtils to assemble)
         return $this->query(
             $this->makeSelectQuery($table, [$expression], $conditionsAndOptions),
-            OrmUtils::FETCH_VALUE
+            static::FETCH_VALUE
         );
     }
 
-    public function makeSelectQuery(string $table, array $columns = [], ?DbExpr $conditionsAndOptions = null): string
-    {
+    public function makeSelectQuery(
+        string $table,
+        array $columns = [],
+        ?DbExpr $conditionsAndOptions = null
+    ): string {
+        // todo: accept array as $conditionsAndOptions (use QueryBuilderUtils to assemble)
         $this->guardTableNameArg($table);
         if (empty($columns)) {
             $columns = ['*'];

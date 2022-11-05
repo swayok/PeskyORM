@@ -6,6 +6,7 @@ namespace PeskyORM\Core;
 
 use PDO;
 use PDOStatement;
+use PeskyORM\Core\Utils\PdoUtils;
 use PeskyORM\ORM\RecordInterface;
 
 interface DbAdapterInterface
@@ -47,13 +48,14 @@ interface DbAdapterInterface
     public function prepare(string|DbExpr $query, array $options = []): PDOStatement;
 
     /**
+     * @see PdoUtils::getDataFromStatement()
      * @param string|DbExpr $query
-     * @param string $fetchData - how to fetch data (one of DbAdapter::FETCH_*)
+     * @param string $fetchData - how to fetch data
      * @return mixed
      */
     public function query(
         string|DbExpr $query,
-        string $fetchData = DbAdapter::FETCH_STATEMENT
+        string $fetchData
     ): mixed;
 
     /**
@@ -170,11 +172,6 @@ interface DbAdapterInterface
     public function commit(): static;
 
     public function rollBack(): static;
-
-    /**
-     * @param PDOStatement|PDO|null $pdoStatement $pdoStatement - if null: static->getConnection() will be used
-     */
-    public function getPdoError(null|PDOStatement|PDO $pdoStatement = null): array;
 
     /**
      * Quote DB entity name (column, table, alias, schema)

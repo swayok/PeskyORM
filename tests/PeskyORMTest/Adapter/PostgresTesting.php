@@ -42,11 +42,6 @@ class PostgresTesting extends Postgres
         parent::guardColumnsArg($columns, $allowDbExpr);
     }
     
-    public function guardTransaction(string $action): void
-    {
-        parent::guardTransaction($action);
-    }
-    
     public function quoteJsonSelectorExpression(array $sequence): string
     {
         return parent::quoteJsonSelectorExpression($sequence);

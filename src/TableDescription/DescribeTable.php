@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\TableDescription;
 
 use PeskyORM\Adapter\Mysql;
@@ -24,12 +26,18 @@ abstract class DescribeTable
 
     public static function getDescriber(DbAdapterInterface $dbAdapter): TableDescriberInterface
     {
-        if (!isset(static::$describers[$dbAdapter::class])) {
-            throw new \InvalidArgumentException('There are no table describer for ' . $dbAdapter::class . ' adapter');
+        if (isset(static::$describers[$dbAdapter::class])) {
+            $describerClass = static::$describers[$dbAdapter::class];
+            return new $describerClass($dbAdapter);
         }
-        /** @var TableDescriberInterface $describerClass */
-        $describerClass = static::$describers[$dbAdapter::class];
-        return new $describerClass($dbAdapter);
+        // test if subclass of known adapters
+        foreach (static::$describers as $adapterClass => $describerClass) {
+            if (is_subclass_of($dbAdapter, $adapterClass)) {
+                return new $describerClass($dbAdapter);
+            }
+        }
+        throw new \InvalidArgumentException('There are no table describer for ' . $dbAdapter::class . ' adapter');
+
     }
 
     public static function getTableDescription(
