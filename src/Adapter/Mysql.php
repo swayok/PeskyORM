@@ -106,41 +106,38 @@ class Mysql extends DbAdapter
 
     protected function resolveQueryWithReturningColumns(
         string $query,
-        string $table,
+        string $tableNameWithPossibleAlias,
         array $columns,
         array $data,
         array $dataTypes,
-        bool|array $returning,
+        array $returning,
         ?string $pkName,
         string $operation
     ): array {
-        if (empty($returning)) {
-            throw new \InvalidArgumentException('$returning argument must be true or array');
-        }
-        $returningStr = $returning === true ? '*' : $this->buildColumnsList($returning, false);
+        $returningStr = empty($returning) ? '*' : $this->buildColumnsList($returning, false);
         /** @noinspection PhpSwitchCanBeReplacedWithMatchExpressionInspection */
         switch ($operation) {
-            case 'insert':
+            case static::OPERATION_INSERT_ONE:
                 return $this->resolveInsertOneQueryWithReturningColumns(
-                    $table,
+                    $tableNameWithPossibleAlias,
                     $data,
                     $dataTypes,
                     $returningStr,
                     $pkName
                 );
-            case 'insert_many':
+            case static::OPERATION_INSERT_MANY:
                 return $this->resolveInsertManyQueryWithReturningColumns(
-                    $table,
+                    $tableNameWithPossibleAlias,
                     $columns,
                     $data,
                     $dataTypes,
                     $returningStr,
                     $pkName
                 );
-            case 'delete':
-                return $this->resolveDeleteQueryWithReturningColumns($query, $table, $returningStr);
-            case 'update':
-                return $this->resolveUpdateQueryWithReturningColumns($query, $table, $returningStr);
+            case static::OPERATION_UPDATE:
+                return $this->resolveUpdateQueryWithReturningColumns($query, $tableNameWithPossibleAlias, $returningStr);
+            case static::OPERATION_DELETE:
+                return $this->resolveDeleteQueryWithReturningColumns($query, $tableNameWithPossibleAlias, $returningStr);
             default:
                 throw new \InvalidArgumentException("\$operation '$operation' is not supported by " . __CLASS__);
         }

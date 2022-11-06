@@ -130,7 +130,7 @@ interface DbAdapterInterface
     /**
      * @param string $table
      * @param array $data - key-value array where key = table column and value = value of associated column
-     * @param string|DbExpr $conditions - WHERE conditions
+     * @param array|DbExpr $conditions - WHERE conditions
      * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
      *          Data type is one of \PDO::PARAM_* contants or null.
      *          If value is null or column not present - value quoter will autodetect column type (see quoteValue())
@@ -145,21 +145,21 @@ interface DbAdapterInterface
     public function update(
         string $table,
         array $data,
-        string|DbExpr $conditions,
+        array|DbExpr $conditions,
         array $dataTypes = [],
         bool|array $returning = false
     ): array|int;
 
     /**
      * @param string $table
-     * @param string|DbExpr $conditions - WHERE conditions
+     * @param array|DbExpr $conditions - WHERE conditions
      * @param bool|array $returning - return some data back after $data inserted to $table
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
      *          - array: list of columns names to return values for
      * @return array|int - int: number of deleted records | array: returned only if $returning is not empty
      */
-    public function delete(string $table, string|DbExpr $conditions, bool|array $returning = false): array|int;
+    public function delete(string $table, array|DbExpr $conditions, bool|array $returning = false): array|int;
 
     public function inTransaction(): bool;
 

@@ -17,7 +17,7 @@ class MysqlTesting extends Mysql
         parent::guardTableNameArg($table);
     }
     
-    public function guardConditionsArg(DbExpr|string $conditions): void
+    public function guardConditionsArg(DbExpr|array $conditions): void
     {
         parent::guardConditionsArg($conditions);
     }
@@ -37,9 +37,9 @@ class MysqlTesting extends Mysql
         parent::guardDataArg($data);
     }
     
-    public function guardColumnsArg(array $columns, bool $allowDbExpr = true): void
+    public function guardColumnsListArg(array $columns, bool $allowDbExpr = true): void
     {
-        parent::guardColumnsArg($columns, $allowDbExpr);
+        parent::guardColumnsListArg($columns, $allowDbExpr);
     }
     
     public function quoteJsonSelectorValue(string $key): string

@@ -15,12 +15,12 @@ abstract class DbAdapterMethodArgumentUtils
     public static function guardTableNameArg(DbAdapterInterface $adapter, string $table): void
     {
         if (empty($table)) {
-            throw new \InvalidArgumentException('$table argument cannot be empty and must be a non-numeric string');
+            throw new \InvalidArgumentException('$table argument cannot be empty and must be a non-numeric string.');
         }
 
         if (!$adapter->isValidDbEntityName($table)) {
             throw new \InvalidArgumentException(
-                '$table must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)'
+                '$table name must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)'
             );
         }
     }
@@ -28,11 +28,13 @@ abstract class DbAdapterMethodArgumentUtils
     /**
      * @throws \InvalidArgumentException
      */
-    public static function guardConditionsArg(DbExpr|string $conditions): void
+    public static function guardConditionsArg(DbExpr|array $conditions): void
     {
         if (empty($conditions)) {
             throw new \InvalidArgumentException(
-                '$conditions argument is not allowed to be empty. Use "true" or "1 = 1" if you want to update all.'
+                '$conditions argument is not allowed to be empty.'
+                . " Use DbExpr('true') or DbExpr('1 = 1')"
+                . ' if you want to perform action all records in table.'
             );
         }
     }
@@ -43,7 +45,7 @@ abstract class DbAdapterMethodArgumentUtils
     public static function guardPkNameArg(DbAdapterInterface $adapter, string $pkName): void
     {
         if (empty($pkName)) {
-            throw new \InvalidArgumentException('$pkName argument cannot be empty');
+            throw new \InvalidArgumentException('$pkName argument cannot be empty.');
         }
 
         if (!$adapter->isValidDbEntityName($pkName)) {
@@ -59,24 +61,36 @@ abstract class DbAdapterMethodArgumentUtils
     public static function guardDataArg(array $data): void
     {
         if (empty($data)) {
-            throw new \InvalidArgumentException('$data argument cannot be empty');
+            throw new \InvalidArgumentException('$data argument cannot be empty.');
         }
     }
 
     /**
      * @throws \InvalidArgumentException
      */
-    public static function guardColumnsArg(array $columns, bool $allowDbExpr = true): void
+    public static function guardColumnsListArg(array $columns, bool $allowDbExpr = true): void
     {
         if (empty($columns)) {
-            throw new \InvalidArgumentException('$columns argument cannot be empty');
+            throw new \InvalidArgumentException('$columns argument cannot be empty.');
         }
-        foreach ($columns as $column) {
-            if (!is_string($column) && (!$allowDbExpr || !($column instanceof DbExpr))) {
+        $expectation = '. String' . ($allowDbExpr ? ' or instance of ' . DbExpr::class : '') . ' expected.';
+        foreach ($columns as $index => $column) {
+            if (empty($column)) {
                 throw new \InvalidArgumentException(
-                    '$columns argument must contain only strings' . ($allowDbExpr ? ' and DbExpr objects' : '')
+                    "\$columns[{$index}]: value cannot be empty."
                 );
             }
+            if (is_string($column) || ($allowDbExpr && $column instanceof DbExpr)) {
+                continue;
+            }
+            if (is_object($column)) {
+                throw new \InvalidArgumentException(
+                    "\$columns[{$index}]: value cannot be instance of " . get_class($column) . $expectation
+                );
+            }
+            throw new \InvalidArgumentException(
+                "\$columns[{$index}]: value cannot be of type " . gettype($column) . $expectation
+            );
         }
     }
 
@@ -86,12 +100,24 @@ abstract class DbAdapterMethodArgumentUtils
     public static function guardReturningArg(bool|array $returning): void
     {
         if (is_array($returning)) {
-            foreach ($returning as $column) {
-                if (!is_string($column)) {
+            $expectation = '. String expected.';
+            foreach ($returning as $index => $column) {
+                if (empty($column)) {
                     throw new \InvalidArgumentException(
-                        '$returning argument must contain only strings'
+                        "\$returning[{$index}]: value cannot be empty."
                     );
                 }
+                if (is_string($column)) {
+                    continue;
+                }
+                if (is_object($column)) {
+                    throw new \InvalidArgumentException(
+                        "\$returning[{$index}]: value cannot be instance of " . get_class($column) . $expectation
+                    );
+                }
+                throw new \InvalidArgumentException(
+                    "\$returning[{$index}]: value cannot be of type " . gettype($column) . $expectation
+                );
             }
         }
     }

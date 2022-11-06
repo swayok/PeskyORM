@@ -8,10 +8,8 @@ use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\AbstractSelect;
 use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\Utils;
 use PeskyORM\Exception\DbException;
 use PeskyORM\Exception\DbInsertQueryException;
-use PeskyORM\ORM\RecordInterface;
 
 /**
  * @property PostgresConfig $connectionConfig
@@ -182,37 +180,40 @@ class Postgres extends DbAdapter
      */
     protected function resolveQueryWithReturningColumns(
         string $query,
-        string $table,
+        string $tableNameWithPossibleAlias,
         array $columns,
         array $data,
         array $dataTypes,
-        bool|array $returning,
+        array $returning,
         ?string $pkName,
         string $operation
     ): array {
-        if ($returning === true) {
-            $query .= ' RETURNING *';
-        } else {
-            $query .= ' RETURNING ' . $this->buildColumnsList($returning, false);
-        }
+
+        $query .= ' RETURNING ' . (empty($returning) ? '*' : $this->buildColumnsList($returning, false));
+
         $statement = $this->query($query);
-        if (in_array($operation, ['insert', 'insert_many'], true)) {
+
+        if (in_array($operation, [static::OPERATION_INSERT_ONE, static::OPERATION_INSERT_MANY], true)) {
             if (!$statement->rowCount()) {
                 throw new DbInsertQueryException(
-                    "Inserting data into table {$table} resulted in modification of 0 rows. Query: "
-                    . $this->getLastQuery(),
+                    "Inserting data into table {$tableNameWithPossibleAlias} resulted in modification of 0 rows."
+                    . ' Query: ' . $this->getLastQuery(),
                 );
             }
 
-            if ($operation === 'insert_many' && count($data) !== $statement->rowCount()) {
+            if (
+                $operation === static::OPERATION_INSERT_MANY
+                && count($data) !== $statement->rowCount()
+            ) {
                 throw new DbInsertQueryException(
-                    "Inserting data into table {$table} resulted in modification of {$statement->rowCount()} rows while "
+                    "Inserting data into table {$tableNameWithPossibleAlias} resulted in"
+                    . " modification of {$statement->rowCount()} rows while "
                     . count($data) . ' rows should be inserted. Query: ' . $this->getLastQuery(),
                 );
             }
         }
 
-        if ($operation === 'insert') {
+        if ($operation === static::OPERATION_INSERT_ONE) {
             return $this->getDataFromStatement($statement, static::FETCH_FIRST);
         }
 

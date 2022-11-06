@@ -7,7 +7,6 @@ namespace PeskyORM\Tests\Core;
 use PDO;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\Utils;
 use PeskyORM\Core\Utils\PdoUtils;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\Data\TestDataForAdminsTable;
@@ -97,7 +96,7 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
     public function testInvalidColumnsForInsertMany(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$columns argument must contain only strings");
+        $this->expectExceptionMessage('$columns[0]: value cannot be empty.');
         $adapter = static::getValidAdapter();
         $adapter->insertMany('settings', [null], [['key' => 'value']]);
     }
@@ -105,7 +104,7 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
     public function testInvalidColumnsForInsertMany2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$columns argument must contain only strings");
+        $this->expectExceptionMessage('$columns[0]: value cannot be');
         $adapter = static::getValidAdapter();
         $adapter->insertMany('settings', [DbExpr::create('test')], [['key' => 'value']]);
     }
@@ -113,7 +112,7 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
     public function testInvalidColumnsForInsertMany3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$columns argument must contain only strings");
+        $this->expectExceptionMessage('$columns[0]: value cannot be');
         $adapter = static::getValidAdapter();
         $adapter->insertMany('settings', [['subarray']], [['key' => 'value']]);
     }

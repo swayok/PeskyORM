@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Core;
 
-use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\ORM\Column;
-use PeskyORM\TableDescription\DescribeTable;
-use PeskyORM\TableDescription\TableDescribers\PostgresTableDescriber;
-use PeskyORM\TableDescription\TableDescription;
+use PeskyORM\Core\Utils\DbAdapterMethodArgumentUtils;
+use PeskyORM\Core\Utils\QueryBuilderUtils;
 use PeskyORM\Tests\PeskyORMTest\Adapter\PostgresTesting;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
@@ -31,56 +28,56 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidTable(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($table) must be of type string');
+        $this->expectExceptionMessage('Argument #2 ($table) must be of type string');
         /** @noinspection PhpStrictTypeCheckingInspection */
-        static::getValidAdapter()->guardTableNameArg(null);
+        DbAdapterMethodArgumentUtils::guardTableNameArg(static::getValidAdapter(), null);
     }
     
     public function testInvalidTable2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('$table argument cannot be empty');
-        static::getValidAdapter()->guardTableNameArg('');
+        DbAdapterMethodArgumentUtils::guardTableNameArg(static::getValidAdapter(), '');
     }
     
     public function testInvalidTable3(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($table) must be of type string');
+        $this->expectExceptionMessage('Argument #2 ($table) must be of type string');
         /** @noinspection PhpStrictTypeCheckingInspection */
-        static::getValidAdapter()->guardTableNameArg(false);
+        DbAdapterMethodArgumentUtils::guardTableNameArg(static::getValidAdapter(), false);
     }
     
     public function testInvalidTable4(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($table) must be of type string');
+        $this->expectExceptionMessage('Argument #2 ($table) must be of type string');
         /** @noinspection PhpStrictTypeCheckingInspection */
-        static::getValidAdapter()->guardTableNameArg(true);
+        DbAdapterMethodArgumentUtils::guardTableNameArg(static::getValidAdapter(), true);
     }
     
     public function testInvalidTable5(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($table) must be of type string');
+        $this->expectExceptionMessage('Argument #2 ($table) must be of type string');
         /** @noinspection PhpStrictTypeCheckingInspection */
         /** @noinspection PhpParamsInspection */
-        static::getValidAdapter()->guardTableNameArg($this);
+        DbAdapterMethodArgumentUtils::guardTableNameArg(static::getValidAdapter(), $this);
     }
     
     public function testInvalidTable6(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($table) must be of type string');
+        $this->expectExceptionMessage('Argument #2 ($table) must be of type string');
         /** @noinspection PhpStrictTypeCheckingInspection */
-        static::getValidAdapter()->guardTableNameArg(123);
+        DbAdapterMethodArgumentUtils::guardTableNameArg(static::getValidAdapter(), 123);
     }
     
     public function testInvalidData(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('$data argument cannot be empty');
-        static::getValidAdapter()->guardDataArg([]);
+        DbAdapterMethodArgumentUtils::guardDataArg([]);
     }
     
     public function testInvalidData2(): void
@@ -88,14 +85,14 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Argument #1 ($data) must be of type array, string given');
         /** @noinspection PhpParamsInspection */
-        static::getValidAdapter()->guardDataArg('test');
+        DbAdapterMethodArgumentUtils::guardDataArg('test');
     }
     
     public function testInvalidColumns(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('$columns argument cannot be empty');
-        static::getValidAdapter()->guardColumnsArg([]);
+        DbAdapterMethodArgumentUtils::guardColumnsListArg([]);
     }
     
     public function testInvalidColumns2(): void
@@ -103,67 +100,69 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Argument #1 ($columns) must be of type array, string given');
         /** @noinspection PhpParamsInspection */
-        static::getValidAdapter()->guardColumnsArg('test');
+        DbAdapterMethodArgumentUtils::guardColumnsListArg('test');
     }
     
     public function testInvalidColumns3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$columns argument must contain only strings and DbExpr objects');
-        static::getValidAdapter()->guardColumnsArg([$this]);
+        $this->expectExceptionMessage('$columns[0]: value cannot be instance of');
+        DbAdapterMethodArgumentUtils::guardColumnsListArg([$this]);
     }
     
     public function testInvalidColumns4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$columns argument must contain only strings');
-        static::getValidAdapter()->guardColumnsArg([DbExpr::create('test')], false);
+        $this->expectExceptionMessage('$columns[0]: value cannot be instance of ' . DbExpr::class);
+        DbAdapterMethodArgumentUtils::guardColumnsListArg([DbExpr::create('test')], false);
     }
     
-    public function testInvalidConditions(): void
+    public function testInvalidConditions1(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$conditions argument is not allowed to be empty');
-        static::getValidAdapter()->guardConditionsArg('');
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($conditions) must be of type');
+        /** @noinspection PhpParamsInspection */
+        DbAdapterMethodArgumentUtils::guardConditionsArg('');
     }
     
     public function testInvalidConditions2(): void
     {
-        $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($conditions) must be of type PeskyORM\Core\DbExpr|string');
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('$conditions argument is not allowed to be empty');
         /** @noinspection PhpParamsInspection */
-        static::getValidAdapter()->guardConditionsArg([]);
+        DbAdapterMethodArgumentUtils::guardConditionsArg([]);
     }
     
     public function testInvalidConditions3(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($conditions) must be of type PeskyORM\Core\DbExpr|string');
-        static::getValidAdapter()->guardConditionsArg(new \Exception('test'));
+        $this->expectExceptionMessage('Argument #1 ($conditions) must be of type');
+        /** @noinspection PhpParamsInspection */
+        DbAdapterMethodArgumentUtils::guardConditionsArg(new \Exception('test'));
     }
     
     public function testInvalidConditions4(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($conditions) must be of type PeskyORM\Core\DbExpr|string');
-        /** @noinspection PhpStrictTypeCheckingInspection */
-        static::getValidAdapter()->guardConditionsArg(false);
+        $this->expectExceptionMessage('Argument #1 ($conditions) must be of type');
+        /** @noinspection PhpParamsInspection */
+        DbAdapterMethodArgumentUtils::guardConditionsArg(false);
     }
     
     public function testInvalidConditions5(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($conditions) must be of type PeskyORM\Core\DbExpr|string');
-        /** @noinspection PhpStrictTypeCheckingInspection */
-        static::getValidAdapter()->guardConditionsArg(true);
+        $this->expectExceptionMessage('Argument #1 ($conditions) must be of type');
+        /** @noinspection PhpParamsInspection */
+        DbAdapterMethodArgumentUtils::guardConditionsArg(true);
     }
     
     public function testInvalidConditions6(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($conditions) must be of type PeskyORM\Core\DbExpr|string');
-        /** @noinspection PhpStrictTypeCheckingInspection */
-        static::getValidAdapter()->guardConditionsArg(123);
+        $this->expectExceptionMessage('Argument #1 ($conditions) must be of type');
+        /** @noinspection PhpParamsInspection */
+        DbAdapterMethodArgumentUtils::guardConditionsArg(123);
     }
     
     public function testInvalidReturning(): void
@@ -171,7 +170,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Argument #1 ($returning) must be of type array|bool');
         /** @noinspection PhpStrictTypeCheckingInspection */
-        static::getValidAdapter()->guardReturningArg('*');
+        DbAdapterMethodArgumentUtils::guardReturningArg('*');
     }
     
     public function testInvalidReturning2(): void
@@ -179,7 +178,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Argument #1 ($returning) must be of type array|bool');
         /** @noinspection PhpParamsInspection */
-        static::getValidAdapter()->guardReturningArg(new \Exception('test'));
+        DbAdapterMethodArgumentUtils::guardReturningArg(new \Exception('test'));
     }
     
     public function testInvalidReturning3(): void
@@ -187,83 +186,83 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Argument #1 ($returning) must be of type array|bool');
         /** @noinspection PhpStrictTypeCheckingInspection */
-        static::getValidAdapter()->guardReturningArg(123);
+        DbAdapterMethodArgumentUtils::guardReturningArg(123);
     }
 
     public function testInvalidReturning4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$returning argument must contain only strings');
+        $this->expectExceptionMessage('$returning[0]: value cannot be of type');
         /** @noinspection PhpStrictTypeCheckingInspection */
-        static::getValidAdapter()->guardReturningArg([123]);
+        DbAdapterMethodArgumentUtils::guardReturningArg([123]);
     }
 
     public function testInvalidReturning5(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$returning argument must contain only strings');
+        $this->expectExceptionMessage('$returning[0]: value cannot be empty');
         /** @noinspection PhpStrictTypeCheckingInspection */
-        static::getValidAdapter()->guardReturningArg([[]]);
+        DbAdapterMethodArgumentUtils::guardReturningArg([[]]);
     }
 
     public function testInvalidReturning6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$returning argument must contain only strings');
+        $this->expectExceptionMessage('$returning[0]: value cannot be of type');
         /** @noinspection PhpStrictTypeCheckingInspection */
-        static::getValidAdapter()->guardReturningArg([true]);
+        DbAdapterMethodArgumentUtils::guardReturningArg([true]);
     }
     
     public function testInvalidPkName(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('$pkName argument cannot be empty');
-        static::getValidAdapter()->guardPkNameArg('');
+        DbAdapterMethodArgumentUtils::guardPkNameArg(static::getValidAdapter(), '');
     }
     
     public function testInvalidPkName2(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($pkName) must be of type string');
+        $this->expectExceptionMessage('Argument #2 ($pkName) must be of type string');
         /** @noinspection PhpStrictTypeCheckingInspection */
-        static::getValidAdapter()->guardPkNameArg(true);
+        DbAdapterMethodArgumentUtils::guardPkNameArg(static::getValidAdapter(), true);
     }
     
     public function testInvalidPkName3(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($pkName) must be of type string, array given');
+        $this->expectExceptionMessage('Argument #2 ($pkName) must be of type string, array given');
         /** @noinspection PhpStrictTypeCheckingInspection */
         /** @noinspection PhpParamsInspection */
-        static::getValidAdapter()->guardPkNameArg([]);
+        DbAdapterMethodArgumentUtils::guardPkNameArg(static::getValidAdapter(), []);
     }
     
     public function testInvalidPkName4(): void
     {
         // it is valid for PostgreSQL
-        static::getValidAdapter()->guardPkNameArg('teasd as das d 90as9()');
+        DbAdapterMethodArgumentUtils::guardPkNameArg(static::getValidAdapter(), 'teasd as das d 90as9()');
         static::assertTrue(true);
     }
     
     public function testInvalidPkName5(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($pkName) must be of type string');
+        $this->expectExceptionMessage('Argument #2 ($pkName) must be of type string');
         /** @noinspection PhpStrictTypeCheckingInspection */
         /** @noinspection PhpParamsInspection */
-        static::getValidAdapter()->guardPkNameArg(DbExpr::create('test'));
+        DbAdapterMethodArgumentUtils::guardPkNameArg(static::getValidAdapter(), DbExpr::create('test'));
     }
     
     public function testValidArgs(): void
     {
-        static::getValidAdapter()->guardTableNameArg('table');
-        static::getValidAdapter()->guardDataArg(['key' => 'value']);
-        static::getValidAdapter()->guardColumnsArg(['key1', DbExpr::create('key2')]);
-        static::getValidAdapter()->guardConditionsArg('test');
-        static::getValidAdapter()->guardConditionsArg(DbExpr::create('test'));
-        static::getValidAdapter()->guardReturningArg(true);
-        static::getValidAdapter()->guardReturningArg(false);
-        static::getValidAdapter()->guardReturningArg(['key1', 'key2']);
+        DbAdapterMethodArgumentUtils::guardTableNameArg(static::getValidAdapter(), 'table');
+        DbAdapterMethodArgumentUtils::guardDataArg(['key' => 'value']);
+        DbAdapterMethodArgumentUtils::guardColumnsListArg(['key1', DbExpr::create('key2')]);
+        DbAdapterMethodArgumentUtils::guardConditionsArg(['column !=' => 'value']);
+        DbAdapterMethodArgumentUtils::guardConditionsArg(DbExpr::create('test'));
+        DbAdapterMethodArgumentUtils::guardReturningArg(true);
+        DbAdapterMethodArgumentUtils::guardReturningArg(false);
+        DbAdapterMethodArgumentUtils::guardReturningArg(['key1', 'key2']);
         static::assertTrue(true);
     }
     
@@ -271,13 +270,13 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Condition operator [>=] does not support list of values");
-        $adapter = self::getValidAdapter();
+        $adapter = static::getValidAdapter();
         $adapter->normalizeConditionOperator('>=', [1, 2, 3]);
     }
     
     public function testNormalizeConditionOperatorForNullValue(): void
     {
-        $adapter = self::getValidAdapter();
+        $adapter = static::getValidAdapter();
         
         $operator = $adapter->normalizeConditionOperator('=', null);
         static::assertEquals('IS', $operator);
@@ -419,7 +418,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidArgsInMakeSelectQuery(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$table argument cannot be empty and must be a non-numeric string");
+        $this->expectExceptionMessage('$table argument cannot be empty and must be a non-numeric string');
         $adapter = self::getValidAdapter();
         $adapter->makeSelectQuery('');
     }
@@ -427,7 +426,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidArgsInMakeSelectQuery2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$columns argument must contain only strings and DbExpr objects");
+        $this->expectExceptionMessage('$columns[0]: value cannot be');
         $adapter = self::getValidAdapter();
         $adapter->makeSelectQuery('table', [$this]);
     }
@@ -435,10 +434,37 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidArgsInMakeSelectQuery3(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage("Argument #3 (\$conditionsAndOptions) must be of type ?PeskyORM\Core\DbExpr");
+        $this->expectExceptionMessage('Argument #3 ($conditionsAndOptions) must be of type');
         $adapter = self::getValidAdapter();
         /** @noinspection PhpParamsInspection */
         $adapter->makeSelectQuery('table', [], 'string');
+    }
+
+    public function testInvalidArgsInMakeSelectQuery4(): void
+    {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage('$conditionsAndOptions[GROUP]: value must be instance of ' . DbExpr::class);
+        $adapter = self::getValidAdapter();
+        /** @noinspection PhpParamsInspection */
+        $adapter->makeSelectQuery('table', [], [QueryBuilderUtils::QUERY_PART_GROUP => '']);
+    }
+
+    public function testInvalidArgsInMakeSelectQuery5(): void
+    {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage('$conditionsAndOptions array cannot contain options: ' . QueryBuilderUtils::QUERY_PART_CONTAINS);
+        $adapter = self::getValidAdapter();
+        /** @noinspection PhpParamsInspection */
+        $adapter->makeSelectQuery('table', [], [QueryBuilderUtils::QUERY_PART_CONTAINS => '']);
+    }
+
+    public function testInvalidArgsInMakeSelectQuery6(): void
+    {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage('$conditionsAndOptions array cannot contain options: ' . QueryBuilderUtils::QUERY_PART_DISTINCT);
+        $adapter = self::getValidAdapter();
+        /** @noinspection PhpParamsInspection */
+        $adapter->makeSelectQuery('table', [], [QueryBuilderUtils::QUERY_PART_DISTINCT => '']);
     }
     
     public function testMakeSelectQuery(): void
@@ -449,7 +475,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         static::assertEquals(
             $adapter->quoteDbExpr(
                 DbExpr::create(
-                    'SELECT `col1`, ' . '(`col2` as `col22`) FROM `test_table`', //< concatenation needed to avoid annoying PHPStorm inspections
+                    'SELECT `col1`, (`col2` as `col22`) FROM `test_table`',
                     false
                 )
             ),
@@ -460,7 +486,67 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         static::assertEquals(
             $adapter->quoteDbExpr(
                 DbExpr::create(
-                    'SELECT `*`' . ' FROM `test_table` WHERE `col1` > ``0``', //< concatenation needed to avoid annoying PHPStorm inspections
+                    'SELECT `*` FROM `test_table` WHERE `col1` > ``0``',
+                    false
+                )
+            ),
+            $query
+        );
+
+        $query = $adapter->makeSelectQuery('test_table', [], ['col1 >' => 0]);
+        static::assertEquals(
+            $adapter->quoteDbExpr(
+                DbExpr::create(
+                    'SELECT `*` FROM `test_table` WHERE `col1` > ``0``',
+                    false
+                )
+            ),
+            $query
+        );
+
+        $query = $adapter->makeSelectQuery('test_table', [], [
+            'col1 >' => 0,
+            'col2 <' => 1,
+            'OR' => ['col3' => 3, 'col4' => 4]
+        ]);
+        static::assertEquals(
+            $adapter->quoteDbExpr(
+                DbExpr::create(
+                    'SELECT `*` FROM `test_table` WHERE `col1` > ``0`` AND `col2` < ``1`` AND (`col3` = ``3`` OR `col4` = ``4``)',
+                    false
+                )
+            ),
+            $query
+        );
+
+        $options = [
+            QueryBuilderUtils::QUERY_PART_WITH => DbExpr::create('(with query)'),
+            QueryBuilderUtils::QUERY_PART_JOINS => DbExpr::create('(joins list)'),
+            QueryBuilderUtils::QUERY_PART_GROUP => DbExpr::create('(grouping)'),
+            QueryBuilderUtils::QUERY_PART_HAVING => DbExpr::create('(having filters)'),
+            QueryBuilderUtils::QUERY_PART_ORDER => DbExpr::create('(ordering)'),
+            QueryBuilderUtils::QUERY_PART_LIMIT => DbExpr::create('(limit value)'),
+            QueryBuilderUtils::QUERY_PART_OFFSET => DbExpr::create('(offset value)'),
+        ];
+        $query = $adapter->makeSelectQuery('test_table', [], array_merge(
+            ['col1 >' => 0],
+            $options
+        ));
+        static::assertEquals(
+            $adapter->quoteDbExpr(
+                DbExpr::create(
+                    'WITH ((with query)) SELECT * FROM `test_table` (joins list) WHERE `col1` > ``0`` GROUP BY (grouping) HAVING (having filters) ORDER BY (ordering) LIMIT (limit value) OFFSET (offset value)',
+                    false
+                )
+            ),
+            $query
+        );
+
+        $query = $adapter->makeSelectQuery('test_table', [], $options);
+        static::assertEquals(
+            $adapter->quoteDbExpr(
+                DbExpr::create(
+                    'WITH ((with query)) SELECT * FROM `test_table` (joins list) GROUP BY (grouping) HAVING (having filters) ORDER BY (ordering) LIMIT (limit value) OFFSET (offset value)',
                     false
                 )
             ),

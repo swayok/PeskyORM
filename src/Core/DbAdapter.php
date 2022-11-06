@@ -30,6 +30,11 @@ abstract class DbAdapter implements DbAdapterInterface
     public const FETCH_STATEMENT = PdoUtils::FETCH_STATEMENT;
     public const FETCH_ROWS_COUNT = PdoUtils::FETCH_ROWS_COUNT;
 
+    protected const OPERATION_INSERT_ONE = 'insert';
+    protected const OPERATION_INSERT_MANY = 'insert_many';
+    protected const OPERATION_UPDATE = 'update';
+    protected const OPERATION_DELETE = 'delete';
+
     /**
      * Traces of all transactions (required for debug)
      */
@@ -261,9 +266,13 @@ abstract class DbAdapter implements DbAdapterInterface
         if ($returning) {
             $this->guardPkNameArg($pkName);
         }
+
         $columns = array_keys($data);
-        $query = 'INSERT INTO ' . $this->quoteDbEntityName($table) . ' ' . $this->buildColumnsList($columns)
+
+        $query = 'INSERT INTO ' . $this->assembleTableNameAndAlias($table)
+            . ' ' . $this->buildColumnsList($columns)
             . ' VALUES ' . $this->buildValuesList($columns, $data, $dataTypes);
+
         if (empty($returning)) {
             $rowsAffected = $this->exec($query);
             if (!$rowsAffected) {
@@ -280,9 +289,9 @@ abstract class DbAdapter implements DbAdapterInterface
             $columns,
             $data,
             $dataTypes,
-            $returning,
+            $returning === true ? [] : $returning,
             $pkName,
-            'insert'
+            static::OPERATION_INSERT_ONE
         );
     }
 
@@ -299,13 +308,16 @@ abstract class DbAdapter implements DbAdapterInterface
         string $pkName = 'id'
     ): ?array {
         $this->guardTableNameArg($table);
-        $this->guardColumnsArg($columns, false);
+        $this->guardColumnsListArg($columns, false);
         $this->guardDataArg($data);
         $this->guardReturningArg($returning);
         if ($returning) {
             $this->guardPkNameArg($pkName);
         }
-        $query = 'INSERT INTO ' . $this->quoteDbEntityName($table) . ' ' . $this->buildColumnsList($columns) . ' VALUES ';
+
+        $query = 'INSERT INTO ' . $this->assembleTableNameAndAlias($table)
+            . ' ' . $this->buildColumnsList($columns) . ' VALUES ';
+
         foreach ($data as $key => $record) {
             if (!is_array($record)) {
                 throw new \InvalidArgumentException(
@@ -314,9 +326,12 @@ abstract class DbAdapter implements DbAdapterInterface
             }
             $query .= $this->buildValuesList($columns, $record, $dataTypes, $key) . ',';
         }
+
         $query = rtrim($query, ', ');
+
         if (empty($returning)) {
             $rowsAffected = $this->exec($query);
+
             if (!$rowsAffected) {
                 throw new DbInsertQueryException(
                     "Inserting data into table {$table} resulted in modification of 0 rows. Query: " . $this->getLastQuery(),
@@ -329,6 +344,7 @@ abstract class DbAdapter implements DbAdapterInterface
                     . count($data) . ' rows should be inserted. Query: ' . $this->getLastQuery(),
                 );
             }
+
             return null;
         }
 
@@ -338,81 +354,79 @@ abstract class DbAdapter implements DbAdapterInterface
             $columns,
             $data,
             $dataTypes,
-            $returning,
+            $returning === true ? [] : $returning,
             $pkName,
-            'insert_many'
+            static::OPERATION_INSERT_MANY
         );
     }
 
     public function update(
         string $table,
         array $data,
-        string|DbExpr $conditions,
+        array|DbExpr $conditions,
         array $dataTypes = [],
         bool|array $returning = false
     ): array|int {
         $this->guardTableNameArg($table);
         $this->guardDataArg($data);
         $this->guardConditionsArg($conditions);
-        [$tableName, $tableAlias] = $this->extractTableNameAndAlias($table);
-        if (empty($tableAlias) || trim($tableAlias) === '') {
-            $tableAlias = '';
-        } else {
-            $tableAlias = ' AS ' . $this->quoteDbEntityName($tableAlias);
-        }
-        $query = 'UPDATE ' . $this->quoteDbEntityName($tableName) . $tableAlias . ' SET ' . $this->buildValuesListForUpdate($data, $dataTypes)
-            . ' WHERE ' . ($conditions instanceof DbExpr ? $this->quoteDbExpr($conditions) : $conditions);
+
+        $query = 'UPDATE ' . $this->assembleTableNameAndAlias($table)
+            . ' SET ' . $this->buildValuesListForUpdate($data, $dataTypes)
+            . ' WHERE ' . $this->assembleConditions($conditions);
+
         if (empty($returning)) {
             return $this->exec($query);
         }
 
         return $this->resolveQueryWithReturningColumns(
             $query,
-            $tableName,
+            $table,
             array_keys($data),
             $data,
             $dataTypes,
-            $returning,
+            $returning === true ? [] : $returning,
             null,
-            'update'
+            static::OPERATION_UPDATE
         );
     }
 
-    public function delete(string $table, string|DbExpr $conditions, bool|array $returning = false): array|int
-    {
+    public function delete(
+        string $table,
+        array|DbExpr $conditions,
+        bool|array $returning = false
+    ): array|int {
         $this->guardTableNameArg($table);
         $this->guardConditionsArg($conditions);
         $this->guardReturningArg($returning);
-        [$tableName, $tableAlias] = $this->extractTableNameAndAlias($table);
-        if (empty($tableAlias) || trim($tableAlias) === '') {
-            $tableAlias = '';
-        } else {
-            $tableAlias = ' AS ' . $this->quoteDbEntityName($tableAlias);
-        }
-        $query = 'DELETE FROM ' . $this->quoteDbEntityName($tableName) . $tableAlias
-            . ' WHERE ' . ($conditions instanceof DbExpr ? $this->quoteDbExpr($conditions) : $conditions);
+
+        $query = 'DELETE FROM ' . $this->assembleTableNameAndAlias($table)
+            . ' WHERE ' . $this->assembleConditions($conditions);
+
         if (empty($returning)) {
             return $this->exec($query);
         }
 
         return $this->resolveQueryWithReturningColumns(
             $query,
-            $tableName,
+            $table,
             [],
             [],
             [],
-            $returning,
+            $returning === true ? [] : $returning,
             null,
-            'delete'
+            static::OPERATION_DELETE
         );
     }
 
-    protected function extractTableNameAndAlias(string $tableNameWithAlias): array
+    protected function assembleTableNameAndAlias(string $tableNameWithAlias): string
     {
         $parts = preg_split('%\s+AS\s+%i', $tableNameWithAlias, 2);
-        $tableName = $parts[0];
-        $tableAlias = $parts[1] ?? null;
-        return [$tableName, $tableAlias];
+        $tableName = $this->quoteDbEntityName(trim($parts[0]));
+        if (isset($parts[1]) && !empty(trim($parts[1]))) {
+            $tableName .= ' AS ' . $this->quoteDbEntityName(trim($parts[1]));
+        }
+        return $tableName;
     }
 
     /**
@@ -426,7 +440,7 @@ abstract class DbAdapter implements DbAdapterInterface
     /**
      * @throws \InvalidArgumentException
      */
-    protected function guardConditionsArg(DbExpr|string $conditions): void
+    protected function guardConditionsArg(DbExpr|array $conditions): void
     {
         DbAdapterMethodArgumentUtils::guardConditionsArg($conditions);
     }
@@ -458,9 +472,9 @@ abstract class DbAdapter implements DbAdapterInterface
     /**
      * @throws \InvalidArgumentException
      */
-    protected function guardColumnsArg(array $columns, bool $allowDbExpr = true): void
+    protected function guardColumnsListArg(array $columns, bool $allowDbExpr = true): void
     {
-        DbAdapterMethodArgumentUtils::guardColumnsArg($columns, $allowDbExpr);
+        DbAdapterMethodArgumentUtils::guardColumnsListArg($columns, $allowDbExpr);
     }
 
     /**
@@ -503,26 +517,25 @@ abstract class DbAdapter implements DbAdapterInterface
     /**
      * This method should resolve RETURNING functionality and return requested data
      * @param string $query - DB query to execute
-     * @param string $table
+     * @param string $tableNameWithPossibleAlias
      * @param array $columns
      * @param array $data
      * @param array $dataTypes
-     * @param bool|array $returning - return some data back after $data inserted to $table
-     *          - true: return values for all columns of inserted table row
-     *          - false: do not return anything
+     * @param array $returning - return some data back after $data inserted to $table
+     *          - empty array: return values for all columns of inserted/update/delete table record
      *          - array: list of columns names to return values for
      * @param string|null $pkName - Name of primary key for $returning in DB drivers that support only getLastInsertId()
-     * @param string $operation - Name of operation to perform: 'insert', 'insert_many', 'update', 'delete'
+     * @param string $operation - Name of operation to perform: static::OPERATION_
      * @return array
      * @throws \InvalidArgumentException
      */
     protected function resolveQueryWithReturningColumns(
         string $query,
-        string $table,
+        string $tableNameWithPossibleAlias,
         array $columns,
         array $data,
         array $dataTypes,
-        bool|array $returning,
+        array $returning,
         ?string $pkName,
         string $operation
     ): array {
@@ -844,9 +857,19 @@ abstract class DbAdapter implements DbAdapterInterface
         return "{$quotedColumn} {$convertedOperator} {$quotedValue}";
     }
 
-    public function select(string $table, array $columns = [], ?DbExpr $conditionsAndOptions = null): array
+    protected function assembleConditions(DbExpr|array $conditions): string
     {
-        // todo: accept array as $conditionsAndOptions (use QueryBuilderUtils to assemble)
+        if ($conditions instanceof DbExpr) {
+            return $this->quoteDbExpr($conditions);
+        }
+        return QueryBuilderUtils::assembleWhereConditionsFromArray($this, $conditions);
+    }
+
+    public function select(
+        string $table,
+        array $columns = [],
+        DbExpr|array|null $conditionsAndOptions = null
+    ): array {
         return $this->query(
             $this->makeSelectQuery($table, $columns, $conditionsAndOptions),
             static::FETCH_ALL
@@ -860,9 +883,8 @@ abstract class DbAdapter implements DbAdapterInterface
     public function selectColumn(
         string $table,
         string|DbExpr $column,
-        ?DbExpr $conditionsAndOptions = null
+        DbExpr|array|null $conditionsAndOptions = null
     ): array {
-        // todo: accept array as $conditionsAndOptions (use QueryBuilderUtils to assemble)
         if (empty($column)) {
             throw new \InvalidArgumentException('$column argument cannot be empty');
         }
@@ -885,9 +907,8 @@ abstract class DbAdapter implements DbAdapterInterface
         string $table,
         string|DbExpr $keysColumn,
         string|DbExpr $valuesColumn,
-        ?DbExpr $conditionsAndOptions = null
+        DbExpr|array|null $conditionsAndOptions = null
     ): array {
-        // todo: accept array as $conditionsAndOptions (use QueryBuilderUtils to assemble)
         if (empty($keysColumn)) {
             throw new \InvalidArgumentException('$keysColumn argument cannot be empty');
         }
@@ -927,9 +948,8 @@ abstract class DbAdapter implements DbAdapterInterface
     public function selectOne(
         string $table,
         array $columns = [],
-        ?DbExpr $conditionsAndOptions = null
+        DbExpr|array|null $conditionsAndOptions = null
     ): array {
-        // todo: accept array as $conditionsAndOptions (use QueryBuilderUtils to assemble)
         return $this->query(
             $this->makeSelectQuery($table, $columns, $conditionsAndOptions),
             static::FETCH_FIRST
@@ -939,9 +959,8 @@ abstract class DbAdapter implements DbAdapterInterface
     public function selectValue(
         string $table,
         DbExpr $expression,
-        ?DbExpr $conditionsAndOptions = null
+        DbExpr|array|null $conditionsAndOptions = null
     ): mixed {
-        // todo: accept array as $conditionsAndOptions (use QueryBuilderUtils to assemble)
         return $this->query(
             $this->makeSelectQuery($table, [$expression], $conditionsAndOptions),
             static::FETCH_VALUE
@@ -950,18 +969,70 @@ abstract class DbAdapter implements DbAdapterInterface
 
     public function makeSelectQuery(
         string $table,
-        array $columns = [],
-        ?DbExpr $conditionsAndOptions = null
+        array $columns = ['*'],
+        DbExpr|array|null $conditionsAndOptions = null
     ): string {
-        // todo: accept array as $conditionsAndOptions (use QueryBuilderUtils to assemble)
+        // todo: refactor to use Select object + add tests
         $this->guardTableNameArg($table);
         if (empty($columns)) {
             $columns = ['*'];
         } else {
-            $this->guardColumnsArg($columns);
+            $this->guardColumnsListArg($columns);
         }
-        $suffix = $conditionsAndOptions ? ' ' . $this->quoteDbExpr($conditionsAndOptions) : '';
-        return 'SELECT ' . $this->buildColumnsList($columns, false) . ' FROM ' . $this->quoteDbEntityName($table) . $suffix;
+
+        $prefix = '';
+        $suffix = '';
+        if (is_array($conditionsAndOptions)) {
+            [$conditions, $options] = QueryBuilderUtils::separateConditionsAndOptions(
+                $conditionsAndOptions,
+                [QueryBuilderUtils::QUERY_PART_CONTAINS, QueryBuilderUtils::QUERY_PART_DISTINCT]
+            );
+            if (!empty($options)) {
+                foreach ($options as $option => $value) {
+                    if (!($value instanceof DbExpr)) {
+                        throw new \UnexpectedValueException(
+                            "\$conditionsAndOptions[{$option}]: value must be instance of " . DbExpr::class . '.'
+                        );
+                    }
+                }
+                if (isset($options[QueryBuilderUtils::QUERY_PART_WITH])) {
+                    $prefix .= 'WITH ' . $this->quoteDbExpr($options[QueryBuilderUtils::QUERY_PART_WITH]) . ' ';
+                }
+
+                if (isset($options[QueryBuilderUtils::QUERY_PART_JOINS])) {
+                    /** @var DbExpr $value */
+                    $value = $options[QueryBuilderUtils::QUERY_PART_JOINS];
+                    $suffix .= ' ' . $this->quoteDbExpr($value->setWrapInBrackets(false));
+                }
+
+                if (!empty($conditions)) {
+                    $suffix .= ' WHERE ' . $this->assembleConditions($conditions);
+                }
+
+                $partsOrder = [
+                    QueryBuilderUtils::QUERY_PART_GROUP => 'GROUP BY',
+                    QueryBuilderUtils::QUERY_PART_HAVING => 'HAVING',
+                    QueryBuilderUtils::QUERY_PART_ORDER => 'ORDER BY',
+                    QueryBuilderUtils::QUERY_PART_LIMIT => 'LIMIT',
+                    QueryBuilderUtils::QUERY_PART_OFFSET => 'OFFSET',
+                ];
+                foreach ($partsOrder as $part => $partNameForQuery) {
+                    if (isset($options[$part])) {
+                        /** @var DbExpr $value */
+                        $value = $options[$part];
+                        $suffix .= " {$partNameForQuery} " . $this->quoteDbExpr($value->setWrapInBrackets(false));
+                    }
+                }
+            } elseif (!empty($conditions)) {
+                $suffix .= ' WHERE ' . $this->assembleConditions($conditions);
+            }
+        } elseif ($conditionsAndOptions instanceof DbExpr) {
+            $suffix = ' ' . $this->quoteDbExpr($conditionsAndOptions);
+        }
+
+        return $prefix . 'SELECT ' . $this->buildColumnsList($columns, false)
+            . ' FROM ' . $this->quoteDbEntityName($table)
+            . $suffix;
     }
 
 }

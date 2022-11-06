@@ -22,6 +22,16 @@ abstract class QueryBuilderUtils
     // 'JoinName.column' or 'JoinName.*' or  'JoinName.SubjoinName.column' or 'JoinName.SubjoinName.*'
     public const REGEXP_COLUMN_PARTS = '%^([\w.]+)\.(\w+|\*)$%';
 
+    public const QUERY_PART_WITH = 'WITH';
+    public const QUERY_PART_CONTAINS = 'CONTAINS';
+    public const QUERY_PART_JOINS = 'JOINS';
+    public const QUERY_PART_DISTINCT = 'DISTINCT';
+    public const QUERY_PART_ORDER = 'ORDER';
+    public const QUERY_PART_LIMIT = 'LIMIT';
+    public const QUERY_PART_OFFSET = 'OFFSET';
+    public const QUERY_PART_GROUP = 'GROUP';
+    public const QUERY_PART_HAVING = 'HAVING';
+
     /**
      * @param array $columns - should contain only strings and DbExpr objects
      * @param bool $withBraces - add "()" around columns list
@@ -253,7 +263,7 @@ abstract class QueryBuilderUtils
         'alias' => "string|null",
         'join_name' => "string|null",
         'type_cast' => "string|null",
-        'json_selector' => "string|null"
+        'json_selector' => "string|null",
     ])]
     public static function analyzeColumnName(
         DbAdapterInterface $connection,
@@ -307,7 +317,7 @@ abstract class QueryBuilderUtils
         'alias' => "string|null",
         'join_name' => "string|null",
         'type_cast' => "string|null",
-        'json_selector' => "string|null"
+        'json_selector' => "string|null",
     ])]
     public static function splitColumnName(string $columnName): array
     {
@@ -354,8 +364,8 @@ abstract class QueryBuilderUtils
             $quotedTableAlias = $connection->quoteDbEntityName($columnInfo['join_name']) . '.';
         }
         $columnName = $quotedTableAlias . $connection->quoteDbEntityName(
-            $columnInfo['json_selector'] ?: $columnInfo['name']
-        );
+                $columnInfo['json_selector'] ?: $columnInfo['name']
+            );
         if ($columnInfo['type_cast']) {
             $columnName = $connection->addDataTypeCastToExpression(
                 $columnInfo['type_cast'],
@@ -363,5 +373,52 @@ abstract class QueryBuilderUtils
             );
         }
         return $columnName;
+    }
+
+    public static function separateConditionsAndOptions(
+        array $conditionsAndOptions,
+        ?array $forbiddenOptions = null
+    ): array {
+        $options = [];
+
+        $parts = [
+            static::QUERY_PART_WITH,
+            static::QUERY_PART_JOINS,
+            static::QUERY_PART_DISTINCT,
+            static::QUERY_PART_ORDER,
+            static::QUERY_PART_LIMIT,
+            static::QUERY_PART_OFFSET,
+            static::QUERY_PART_GROUP,
+            static::QUERY_PART_HAVING,
+            static::QUERY_PART_CONTAINS,
+        ];
+
+        if (array_key_exists('JOIN', $conditionsAndOptions)) {
+            $conditionsAndOptions[static::QUERY_PART_JOINS] = $conditionsAndOptions['JOIN'];
+            unset($conditionsAndOptions['JOIN']);
+        }
+
+        if (array_key_exists('CONTAIN', $conditionsAndOptions)) {
+            $conditionsAndOptions[static::QUERY_PART_CONTAINS] = $conditionsAndOptions['CONTAIN'];
+            unset($conditionsAndOptions['CONTAIN']);
+        }
+
+        if ($forbiddenOptions) {
+            $forbidden = array_intersect($forbiddenOptions, array_keys($conditionsAndOptions));
+            if (!empty($forbidden)) {
+                throw new \UnexpectedValueException(
+                    '$conditionsAndOptions array cannot contain options: ' . implode(', ', $forbidden)
+                );
+            }
+        }
+
+        foreach ($parts as $part) {
+            if (array_key_exists($part, $conditionsAndOptions)) {
+                $options[$part] = $conditionsAndOptions[$part];
+                unset($conditionsAndOptions[$part]);
+            }
+        }
+
+        return [$conditionsAndOptions, $options];
     }
 }
