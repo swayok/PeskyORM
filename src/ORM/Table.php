@@ -8,7 +8,6 @@ use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbConnectionsManager;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\Utils;
 use PeskyORM\Core\Utils\QueryBuilderUtils;
 use Swayok\Utils\StringUtils;
 
@@ -478,7 +477,7 @@ abstract class Table implements TableInterface
             ->update(
                 static::getNameWithSchema() . ' AS ' . static::getInstance()->getTableAlias(),
                 $data,
-                QueryBuilderUtils::assembleWhereConditionsFromArray(static::getConnection(true), $conditions),
+                $conditions,
                 static::getPdoDataTypesForColumns(),
                 $returning
             );
@@ -492,7 +491,7 @@ abstract class Table implements TableInterface
         return static::getConnection(true)
             ->delete(
                 static::getNameWithSchema() . ' AS ' . static::getInstance()->getTableAlias(),
-                QueryBuilderUtils::assembleWhereConditionsFromArray(static::getConnection(), $conditions),
+                $conditions,
                 $returning
             );
     }
