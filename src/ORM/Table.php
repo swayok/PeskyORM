@@ -545,8 +545,7 @@ abstract class Table implements TableInterface
         array $columnsToSave = [],
         ?array $features = null
     ): array {
-        $allColumns = static::getStructure()
-            ->getColumns();
+        $allColumns = static::getStructure()->getColumns();
         if (empty($columnsToSave)) {
             $columnsToSave = array_keys($allColumns);
         }
@@ -586,6 +585,9 @@ abstract class Table implements TableInterface
             }
         }
         foreach ($rows as &$row) {
+            if ($row instanceof RecordInterface) {
+                $row = $row->toArray($columnsToSave);
+            }
             // trim before $emptyToNull
             foreach ($trims as $columnName) {
                 if (isset($row[$columnName])) {
