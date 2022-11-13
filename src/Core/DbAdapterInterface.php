@@ -201,6 +201,13 @@ interface DbAdapterInterface
     public function isValidDbEntityName(string $name, bool $canBeAJsonSelector = true): bool;
 
     /**
+     * Maximum length for DB entity name.
+     * Usually 63 characters works (MySQL: 64, PostgreSQL: 63).
+     * This limitation will be used to detect if table alias or join alias should be shortened.
+     */
+    public function getMaxLengthForDbEntityName(): int;
+
+    /**
      * Quote passed value
      * @param string|int|float|bool|array|SelectQueryBuilderAbstract|DbExpr|RecordInterface|null $value
      * @param int|null $valueDataType - one of \PDO::PARAM_* or null for autodetection (detects bool, null, string only)

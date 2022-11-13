@@ -10,8 +10,9 @@ use PeskyORM\Core\Utils\QueryBuilderUtils;
 
 abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
 {
-    protected array $shortJoinAliases = [];
-    protected array $shortColumnAliases = [];
+    protected const TABLE_ALIAS_PREFIX = 'tbl_';
+    protected const COLUMN_ALIAS_PREFIX = 'col_';
+
     protected array $columns = [];
     protected array $columnsRaw = ['*'];
     protected bool $distinct = false;
@@ -46,72 +47,82 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
      * @var null|array - null: all dirty | array - only some items are dirty
      */
     protected ?array $isDirty = null;
+
+    protected array $shortTableAliases = [];
+    protected int $shortTableAliasIndex = 0;
+
     protected array $columnAliasToColumnInfo = [];
-
-    abstract public function getTableName(): string;
-
-    abstract public function getTableAlias(): string;
-
-    abstract public function getTableSchemaName(): ?string;
-
-    abstract public function getConnection(): DbAdapterInterface;
+    protected array $shortColumnAliases = [];
+    protected int $shortColumnAliasIndex = 0;
 
     public function fromConfigsArray(array $conditionsAndOptions): static
     {
-        $conditionsAndOptions = $this->normalizeConditionsAndOptionsArray($conditionsAndOptions);
-        $this->parseNormalizedConfigsArray($conditionsAndOptions);
+        [$conditions, $options] = QueryBuilderUtils::separateConditionsAndOptions(
+            $conditionsAndOptions,
+            $this->getListOfFrobiddenOptionsInConditionsAndOptionsArray()
+        );
+        $this->processOptionsFromConfigsArray($options);
+        if (!empty($conditions)) {
+            $this->where($conditions);
+        }
         return $this;
+    }
+
+    protected function getListOfFrobiddenOptionsInConditionsAndOptionsArray(): array
+    {
+        return [QueryBuilderUtils::QUERY_PART_CONTAINS];
     }
 
     /**
      * @throws \InvalidArgumentException
      */
-    protected function parseNormalizedConfigsArray(array $conditionsAndOptions): void
+    protected function processOptionsFromConfigsArray(array $options): void
     {
         // WITH
-        if (!empty($conditionsAndOptions['WITH'])) {
+        if (!empty($options['WITH'])) {
             ArgumentValidators::assertArrayKeyValueIsArray(
                 "\$conditionsAndOptions['WITH']",
-                $conditionsAndOptions['WITH']
+                $options['WITH']
             );
-            foreach ($conditionsAndOptions['WITH'] as $selectAlias => $select) {
+            foreach ($options['WITH'] as $selectAlias => $select) {
                 $this->with($select, $selectAlias);
             }
         }
         // JOINS - must be 1st to allow columns validation in OrmSelect or other child class
-        if (!empty($conditionsAndOptions['JOINS'])) {
+        if (!empty($options['JOINS'])) {
             ArgumentValidators::assertArrayKeyValueIsArray(
                 "\$conditionsAndOptions['JOINS']",
-                $conditionsAndOptions['JOINS']
+                $options['JOINS']
             );
-            foreach ($conditionsAndOptions['JOINS'] as $key => $join) {
+            foreach ($options['JOINS'] as $key => $join) {
                 if ($join instanceof CrossJoinConfigInterface) {
                     $this->crossJoin($join);
-                } else if ($join instanceof NormalJoinConfigInterface) {
-                    $this->join($join);
                 } else {
-                    throw new \InvalidArgumentException(
-                        "\$conditionsAndOptions['JOINS'][$key]: value must be instance of "
-                        . NormalJoinConfigInterface::class . ' or ' . CrossJoinConfigInterface::class . " class"
-                    );
+                    if ($join instanceof NormalJoinConfigInterface) {
+                        $this->join($join);
+                    } else {
+                        throw new \InvalidArgumentException(
+                            "\$conditionsAndOptions['JOINS'][$key]: value must be instance of "
+                            . NormalJoinConfigInterface::class . ' or ' . CrossJoinConfigInterface::class . " class"
+                        );
+                    }
                 }
-
             }
         }
         // DISTINCT
-        if (!empty($conditionsAndOptions['DISTINCT'])) {
+        if (!empty($options['DISTINCT'])) {
             $this->distinct(
                 true,
-                is_array($conditionsAndOptions['DISTINCT']) ? $conditionsAndOptions['DISTINCT'] : null
+                is_array($options['DISTINCT']) ? $options['DISTINCT'] : null
             );
         }
         // ORDER BY
-        if (!empty($conditionsAndOptions['ORDER'])) {
+        if (!empty($options['ORDER'])) {
             ArgumentValidators::assertArrayKeyValueIsArray(
                 "\$conditionsAndOptions['ORDER']",
-                $conditionsAndOptions['ORDER']
+                $options['ORDER']
             );
-            foreach ($conditionsAndOptions['ORDER'] as $columnName => $direction) {
+            foreach ($options['ORDER'] as $columnName => $direction) {
                 if ($direction instanceof DbExpr || is_int($columnName)) {
                     // DbExpr or column name without direction (use default direction)
                     $this->orderBy($direction);
@@ -121,39 +132,29 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
             }
         }
         // LIMIT
-        if (!empty($conditionsAndOptions['LIMIT'])) {
-            $this->limit($conditionsAndOptions['LIMIT']);
+        if (!empty($options['LIMIT'])) {
+            $this->limit($options['LIMIT']);
         }
         // OFFSET
-        if (!empty($conditionsAndOptions['OFFSET'])) {
-            $this->offset($conditionsAndOptions['OFFSET']);
+        if (!empty($options['OFFSET'])) {
+            $this->offset($options['OFFSET']);
         }
         // GROUP BY
-        if (!empty($conditionsAndOptions['GROUP'])) {
+        if (!empty($options['GROUP'])) {
             ArgumentValidators::assertArrayKeyValueIsArray(
                 "\$conditionsAndOptions['GROUP']",
-                $conditionsAndOptions['GROUP']
+                $options['GROUP']
             );
-            $this->groupBy($conditionsAndOptions['GROUP']);
+            $this->groupBy($options['GROUP']);
         }
         // HAVING
-        if (!empty($conditionsAndOptions['HAVING'])) {
+        if (!empty($options['HAVING'])) {
             ArgumentValidators::assertArrayKeyValueIsArray(
                 "\$conditionsAndOptions['HAVING']",
-                $conditionsAndOptions['HAVING']
+                $options['HAVING']
             );
-            $this->having($conditionsAndOptions['HAVING']);
+            $this->having($options['HAVING']);
         }
-        // CONDITIONS
-        $conditions = array_diff_key($conditionsAndOptions, array_flip($this->getListOfSpecialKeysInConditionsAndOptions()));
-        if (!empty($conditions)) {
-            $this->where($conditions);
-        }
-    }
-
-    protected function getListOfSpecialKeysInConditionsAndOptions(): array
-    {
-        return ['LIMIT', 'OFFSET', 'HAVING', 'GROUP', 'ORDER', 'JOINS', 'DISTINCT'];
     }
 
     public function fetchOne(): array
@@ -232,13 +233,13 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
 
         if ($selectionType === PdoUtils::FETCH_FIRST) {
             $shortColumnAliasToAlias = array_flip($this->shortColumnAliases);
-            $shortJoinAliasToAlias = array_flip($this->shortJoinAliases);
+            $shortJoinAliasToAlias = array_flip($this->shortTableAliases);
             return $this->normalizeRecord($data, $shortColumnAliasToAlias, $shortJoinAliasToAlias);
         }
 
         $records = [];
         $shortColumnAliasToAlias = array_flip($this->shortColumnAliases);
-        $shortJoinAliasToAlias = array_flip($this->shortJoinAliases);
+        $shortJoinAliasToAlias = array_flip($this->shortTableAliases);
         foreach ($data as $record) {
             $records[] = $this->normalizeRecord($record, $shortColumnAliasToAlias, $shortJoinAliasToAlias);
         }
@@ -486,20 +487,25 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
         return $this;
     }
 
-    public function with(SelectQueryBuilderAbstract $select, string $selectAlias, bool $append = true): static
+    public function with(SelectQueryBuilderAbstract $select, string $selectName, bool $append = true): static
     {
-        if (!$this->getConnection()->isValidDbEntityName($selectAlias, false)) {
+        if (!$this->getConnection()->isValidDbEntityName($selectName, false)) {
             throw new \InvalidArgumentException(
-                '$selectAlias argument does not fit DB entity naming rules (usually alphanumeric string with underscores)'
+                '$selectName argument value does not fit DB entity naming rules (usually alphanumeric string with underscores)'
+            );
+        }
+        if (mb_strlen($selectName) > $this->getConnection()->getMaxLengthForDbEntityName()) {
+            throw new \InvalidArgumentException(
+                '$selectName argument value length must be <= ' . $this->getConnection()->getMaxLengthForDbEntityName()
             );
         }
         if (!$append) {
             $this->with = [];
         }
-        if (isset($this->with[$selectAlias])) {
-            throw new \InvalidArgumentException("WITH query with name '{$selectAlias}' already defined");
+        if (isset($this->with[$selectName])) {
+            throw new \InvalidArgumentException("WITH query with name '{$selectName}' already defined");
         }
-        $this->with[$selectAlias] = $select;
+        $this->with[$selectName] = $select;
         foreach ($select->getWithQueries() as $subAlias => $subselect) {
             if (!isset($this->with[$subAlias])) {
                 $this->with($subselect, $subAlias);
@@ -595,7 +601,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
 
     protected function beforeQueryBuilding(): void
     {
-        $this->shortJoinAliases = [];
+        $this->shortTableAliases = [];
         if ($this->isDirty('where') || $this->isDirty('having')) {
             $this->joinsUsedInWhereAndHavingConditions = [];
         }
@@ -742,8 +748,8 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
         if (
             $ret['join_name'] === $this->getTableAlias()
             || (
-                in_array($ret['join_name'], $this->shortJoinAliases, true)
-                && array_flip($this->shortJoinAliases)[$ret['join_name']] === $this->getTableAlias()
+                in_array($ret['join_name'], $this->shortTableAliases, true)
+                && array_flip($this->shortTableAliases)[$ret['join_name']] === $this->getTableAlias()
             )
         ) {
             $ret['join_name'] = null;
@@ -754,8 +760,10 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
 
     protected function makeColumnAlias(string $columnNameOrAlias, ?string $tableAliasOrJoinName = null): string
     {
-        $joinShortAlias = $this->getShortJoinAlias($tableAliasOrJoinName ?: $this->getTableAlias());
-        return '_' . $joinShortAlias . '__' . $this->getShortColumnAlias($columnNameOrAlias);
+        return $this->getShortColumnAlias(
+            $columnNameOrAlias,
+            $tableAliasOrJoinName ?: $this->getTableAlias()
+        );
     }
 
     /**
@@ -771,7 +779,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
         if ($isDbExpr) {
             $columnName = $this->quoteDbExpr($columnInfo['name']);
         } else {
-            $columnName = $this->quoteDbEntityName($this->getShortJoinAlias($tableAlias)) . '.' . $this->quoteDbEntityName($columnInfo['name']);
+            $columnName = $this->quoteDbEntityName($this->getShortTableAlias($tableAlias)) . '.' . $this->quoteDbEntityName($columnInfo['name']);
         }
         if ($columnInfo['type_cast']) {
             $columnName = $this->getConnection()
@@ -813,7 +821,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
         $schema = !empty($tableSchema) && $this->getConnection()->isDbSupportsTableSchemas()
             ? $this->quoteDbEntityName($tableSchema) . '.'
             : '';
-        return $schema . $this->quoteDbEntityName($tableName) . ' AS ' . $this->quoteDbEntityName($this->getShortJoinAlias($tableAlias));
+        return $schema . $this->quoteDbEntityName($tableName) . ' AS ' . $this->quoteDbEntityName($this->getShortTableAlias($tableAlias));
     }
 
     /**
@@ -824,7 +832,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
     protected function makeColumnNameForCondition(array $columnInfo, string $subject = 'WHERE'): string
     {
         $tableAlias = $columnInfo['join_name'] ?: $this->getTableAlias();
-        $columnName = $this->quoteDbEntityName($this->getShortJoinAlias($tableAlias)) . '.'
+        $columnName = $this->quoteDbEntityName($this->getShortTableAlias($tableAlias)) . '.'
             . $this->quoteDbEntityName($columnInfo['json_selector'] ?? $columnInfo['name']);
         if ($columnInfo['type_cast']) {
             $columnName = $this->getConnection()->addDataTypeCastToExpression($columnInfo['type_cast'], $columnName);
@@ -832,41 +840,63 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
         return $columnName;
     }
 
-    /**
-     * Add columns into options and resolve contains
-     */
-    protected function normalizeConditionsAndOptionsArray(array $conditionsAndOptions): array
+    protected function getShortTableAlias(string $alias): string
     {
-        if (isset($conditionsAndOptions['JOIN'])) {
-            $conditionsAndOptions['JOINS'] = $conditionsAndOptions['JOIN'];
-            unset($conditionsAndOptions['JOIN']);
+        if (!isset($this->shortTableAliases[$alias])) {
+            $shortAlias = $this->makeShortAlias(
+                $alias,
+                static::TABLE_ALIAS_PREFIX,
+                '_' . $this->shortTableAliasIndex,
+                9
+            );
+            $this->shortTableAliases[$shortAlias] = $shortAlias;
+            //^ must be before $this->shortTableAliases[$alias] = $shortAlias to allow correct array_flip()
+            $this->shortTableAliases[$alias] = $shortAlias;
+            $this->shortTableAliasIndex++;
         }
-        return $conditionsAndOptions;
+        return $this->shortTableAliases[$alias];
     }
 
-    protected function getShortJoinAlias(string $alias): string
+    protected function getShortColumnAlias(string $columnAlias, string $tableAlias): string
     {
-        if (!isset($this->shortJoinAliases[$alias])) {
-            // maybe it is already an alias?
-            if (preg_match('%^[a-z][a-zA-Z0-9]{8}\d$%', $alias) && in_array($alias, $this->shortJoinAliases, true)) {
-                return $alias;
-                // todo: should it throw an exception instead?
+        $fullName = $tableAlias . '__' . $columnAlias;
+        if (!isset($this->shortColumnAliases[$fullName])) {
+            $shortColumnAlias = $this->makeShortAlias(
+                $fullName,
+                static::COLUMN_ALIAS_PREFIX,
+                '_' . $this->shortColumnAliasIndex,
+                9
+            );
+            $this->shortColumnAliases[$shortColumnAlias] = $shortColumnAlias;
+            //^ must be before $this->shortColumnAliases[$fullName] = $shortColumnAlias to allow correct array_flip()
+            $this->shortColumnAliases[$fullName] = $shortColumnAlias;
+            $this->shortColumnAliasIndex++;
+        }
+        return $this->shortColumnAliases[$fullName];
+    }
+
+    protected function makeShortAlias(
+        string $alias,
+        string $prefix,
+        string $suffix,
+        ?int $extraLength = null
+    ): string {
+        if (!$extraLength) {
+            $extraLength = mb_strlen($prefix . $suffix);
+        }
+        $maxChars = $this->getConnection()->getMaxLengthForDbEntityName() - $extraLength;
+        $length = mb_strlen($alias);
+        if ($length > $maxChars) {
+            // remove vowel letters - name will still be readable (good to have for debug)
+            $body = preg_replace('%[aeyuio]%', '', $alias, $length - $maxChars + 1, $removedCount);
+            if ($length - $removedCount > $maxChars) {
+                // still too long - cut it
+                $body = mb_substr($body, 0, $maxChars);
             }
-            $this->shortJoinAliases[$alias] = mb_strlen($alias) > 16
-                ? chr(random_int(97, 122)) . hash('crc32b', $alias) . random_int(0, 9)
-                : $alias;
+        } else {
+            $body = $alias;
         }
-        return $this->shortJoinAliases[$alias];
-    }
-
-    protected function getShortColumnAlias(string $alias): string
-    {
-        if (!isset($this->shortColumnAliases[$alias])) {
-            $this->shortColumnAliases[$alias] = mb_strlen($alias) > 16
-                ? chr(random_int(97, 122)) . hash('crc32b', $alias) . random_int(0, 9)
-                : $alias;
-        }
-        return $this->shortColumnAliases[$alias];
+        return $prefix . $body . $suffix;
     }
 
     /**
@@ -875,14 +905,14 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
     protected function modifyTableAliasAndJoinNamesInDbExpr(DbExpr $dbExpr): DbExpr
     {
         $tableAlias = $this->getTableAlias();
-        $replaces = ["%`{$tableAlias}`\.%" => '`' . $this->getShortJoinAlias($tableAlias) . '`.'];
+        $replaces = ["%`{$tableAlias}`\.%" => '`' . $this->getShortTableAlias($tableAlias) . '`.'];
         foreach ($this->joins as $joinConfig) {
             $joinName = $joinConfig->getJoinName();
-            $replaces["%`{$joinName}`\.%"] = '`' . $this->getShortJoinAlias($joinName) . '`.';
+            $replaces["%`{$joinName}`\.%"] = '`' . $this->getShortTableAlias($joinName) . '`.';
         }
         foreach ($this->crossJoins as $joinConfig) {
             $joinName = $joinConfig->getJoinName();
-            $replaces["%`{$joinName}`\.%"] = '`' . $this->getShortJoinAlias($joinName) . '`.';
+            $replaces["%`{$joinName}`\.%"] = '`' . $this->getShortTableAlias($joinName) . '`.';
         }
         return $dbExpr->applyReplaces($replaces);
     }
@@ -1117,7 +1147,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
         }
         foreach ($this->crossJoins as $joinConfig) {
             $joinQuery = $this->quoteDbExpr($joinConfig->getJoinQuery());
-            $joins[] = "CROSS JOIN {$joinQuery} AS " . $this->quoteDbEntityName($this->getShortJoinAlias($joinConfig->getJoinName()));
+            $joins[] = "CROSS JOIN {$joinQuery} AS " . $this->quoteDbEntityName($this->getShortTableAlias($joinConfig->getJoinName()));
         }
         return count($joins) ? ' ' . implode(' ', $joins) : '';
     }
@@ -1125,17 +1155,17 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
     protected function isJoinUsedInWhereOrHavingConditions(NormalJoinConfigInterface $joinConfig): bool
     {
         return (
-            in_array($this->getShortJoinAlias($joinConfig->getJoinName()), $this->joinsUsedInWhereAndHavingConditions, true)
+            in_array($this->getShortTableAlias($joinConfig->getJoinName()), $this->joinsUsedInWhereAndHavingConditions, true)
             || in_array($joinConfig->getJoinName(), $this->joinsUsedInWhereAndHavingConditions, true)
         );
     }
 
     protected function makeJoinConditions(NormalJoinConfigInterface $joinConfig): string
     {
-        $shortJoinName = $this->getShortJoinAlias($joinConfig->getJoinName());
+        $shortJoinName = $this->getShortTableAlias($joinConfig->getJoinName());
         $conditions = array_merge(
             [
-                $this->getShortJoinAlias($joinConfig->getTableAlias()) . '.' . $joinConfig->getColumnName()
+                $this->getShortTableAlias($joinConfig->getTableAlias()) . '.' . $joinConfig->getColumnName()
                 => DbExpr::create("`{$shortJoinName}`.`{$joinConfig->getForeignColumnName()}`", false),
             ],
             $joinConfig->getAdditionalJoinConditions()
@@ -1146,9 +1176,10 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
     protected function makeWithQueries(): string
     {
         $queries = [];
-        foreach ($this->with as $alias => $select) {
-            $select->replaceWithQueries(array_diff_key($this->with, [$alias => '']));
-            $queries[] = $this->quoteDbEntityName($this->getShortJoinAlias($alias)) . ' AS (' . $select->buildQueryToBeUsedInWith() . ')';
+        foreach ($this->with as $name => $select) {
+            $select->replaceWithQueries(array_diff_key($this->with, [$name => '']));
+            // Note: $name should not be shortened to be able to use it in main query
+            $queries[] = $this->quoteDbEntityName($name) . ' AS (' . $select->buildQueryToBeUsedInWith() . ')';
         }
         return count($queries) ? 'WITH ' . implode(', ', $queries) . ' ' : '';
     }
@@ -1375,9 +1406,10 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
     protected function validateIfThereAreEnoughJoins(): void
     {
         $missingJoins = [];
-        foreach ($this->shortJoinAliases as $fullAlias => $notUsed) {
+        foreach ($this->shortTableAliases as $fullAlias => $shortAlias) {
             if (
-                $fullAlias !== $this->getTableAlias()
+                $fullAlias !== $shortAlias
+                && $fullAlias !== $this->getTableAlias()
                 && !$this->hasJoin($fullAlias, false)
                 && !$this->hasWithQuery($fullAlias, false)
             ) {
@@ -1400,7 +1432,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
      */
     protected function hasWithQuery(string $alias, bool $mayBeShort = false): bool
     {
-        return isset($this->with[$alias]) || ($mayBeShort && in_array($alias, $this->shortJoinAliases, true));
+        return isset($this->with[$alias]) || ($mayBeShort && in_array($alias, $this->shortTableAliases, true));
     }
 
     /**
@@ -1415,7 +1447,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
             || isset($this->crossJoins[$joinName])
             || (
                 $mayBeShort
-                && in_array($joinName, $this->shortJoinAliases, true)
+                && in_array($joinName, $this->shortTableAliases, true)
             )
         );
     }
@@ -1437,7 +1469,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
             return $this->crossJoins[$joinName];
         }
 
-        $alias = array_flip($this->shortJoinAliases)[$joinName];
+        $alias = array_flip($this->shortTableAliases)[$joinName];
         return $this->joins[$alias] ?: $this->crossJoins[$alias];
     }
 

@@ -13,7 +13,7 @@ class TestingAdminsTableLongAlias extends TestingBaseTable
     
     public function getTableAlias(): string
     {
-        return 'TestingAdminsTableLongAliasReallyLooooooong';
+        return 'TestingAdminsTableLongAliasReallyLongButWeNeedAtLeast60Characters';
     }
     
     public function getTableStructure(): TableStructureInterface

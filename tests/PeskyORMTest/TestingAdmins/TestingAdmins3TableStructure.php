@@ -208,7 +208,7 @@ class TestingAdmins3TableStructure extends TableStructure
         return Relation::create('id', Relation::HAS_MANY, TestingAdminsTable::class, 'parent_id');
     }
     
-    private function VeryLongRelationNameSoItMustBeShortened(): Relation
+    private function VeryLongRelationNameSoItMustBeShortenedButWeNeedAtLeast60Characters(): Relation
     {
         return Relation::create('login', Relation::BELONGS_TO, TestingAdminsTable::class, 'id');
     }

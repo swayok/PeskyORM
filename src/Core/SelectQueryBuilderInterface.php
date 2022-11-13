@@ -14,6 +14,14 @@ interface SelectQueryBuilderInterface
     public const ORDER_DIRECTION_DESC_NULLS_FIRST = 'desc nulls first';
     public const ORDER_DIRECTION_DESC_NULLS_LAST = 'desc nulls last';
 
+    public function getTableName(): string;
+
+    public function getTableAlias(): string;
+
+    public function getTableSchemaName(): ?string;
+
+    public function getConnection(): DbAdapterInterface;
+
     /**
      * Build query from passed array
      * @param array $conditionsAndOptions - list of conditions and special keys:
@@ -181,12 +189,12 @@ interface SelectQueryBuilderInterface
 
     /**
      * @param SelectQueryBuilderAbstract $select - a sub select that can be used as "table" in main select
-     * @param string $selectAlias - alias for passed $select (access to the select will be available using this alias)
+     * @param string $selectName - alias for passed $select (access to the select will be available using this alias)
      * @param bool $append
      * @return static
      * @see https://www.postgresql.org/docs/current/queries-with.html
      */
-    public function with(SelectQueryBuilderAbstract $select, string $selectAlias, bool $append = true): static;
+    public function with(SelectQueryBuilderAbstract $select, string $selectName, bool $append = true): static;
 
     /**
      * Add INNER/LEFT/RIGHT/FULL JOIN

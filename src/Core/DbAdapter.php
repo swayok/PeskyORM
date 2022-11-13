@@ -646,6 +646,11 @@ abstract class DbAdapter implements DbAdapterInterface
         );
     }
 
+    public function getMaxLengthForDbEntityName(): int
+    {
+        return 63;
+    }
+
     protected function _isValidDbEntityName(string $name): bool
     {
         return PdoUtils::isValidDbEntityName($name);

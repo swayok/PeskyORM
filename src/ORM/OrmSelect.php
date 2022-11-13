@@ -44,10 +44,20 @@ class OrmSelect extends SelectQueryBuilderAbstract
         $this->setTableAlias($tableAlias ?: $this->getTable()->getAlias());
     }
 
+    protected function getListOfFrobiddenOptionsInConditionsAndOptionsArray(): array
+    {
+        return [];
+    }
+
+    protected function processOptionsFromConfigsArray(array $options): void
+    {
+        // todo: handle CONTAINS option in processOptionsFromConfigsArray()
+        parent::processOptionsFromConfigsArray($options);
+    }
+
     public function getTableName(): string
     {
-        return $this->getTableStructure()
-            ->getTableName();
+        return $this->getTableStructure()->getTableName();
     }
 
     public function setTableAlias(string $tableAlias): static

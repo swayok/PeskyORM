@@ -36,9 +36,7 @@ class MysqlAdapterSelectDataTest extends PostgresAdapterSelectDataTest
     public function testInvalidWith1(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(
-            "\$selectAlias argument does not fit DB entity naming rules (usually alphanumeric string with underscores)"
-        );
+        $this->expectExceptionMessage('$selectName argument value does not fit DB entity naming rules');
         $select = new Select('admins', static::getValidAdapter());
         $withSelect = new Select('admins', static::getValidAdapter());
         $select->with($withSelect, 'asdas as das das');

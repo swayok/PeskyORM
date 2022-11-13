@@ -134,9 +134,9 @@ class DbSelectTest extends BaseTestCase
         static::assertEquals('admins', $dbSelect->getTableName());
         static::assertEquals('Admins', $dbSelect->getTableAlias());
         static::assertEquals([], $this->getObjectPropertyValue($dbSelect, 'columns')); //< not initialized before query builder launched
-        static::assertEquals('SELECT "Admins".* FROM "admins" AS "Admins"', rtrim($dbSelect->getQuery()));
-        static::assertEquals('SELECT COUNT(*) FROM "admins" AS "Admins"', rtrim($dbSelect->getCountQuery()));
-        static::assertEquals('SELECT 1 FROM "admins" AS "Admins" LIMIT 1', rtrim($dbSelect->getExistenceQuery()));
+        static::assertEquals('SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0"', rtrim($dbSelect->getQuery()));
+        static::assertEquals('SELECT COUNT(*) FROM "admins" AS "tbl_Admins_1"', rtrim($dbSelect->getCountQuery()));
+        static::assertEquals('SELECT 1 FROM "admins" AS "tbl_Admins_2" LIMIT 1', rtrim($dbSelect->getExistenceQuery()));
         
         $insertedData = static::fillAdminsTable();
         $testData = $this->convertTestDataForAdminsTableAssert($insertedData);
@@ -473,87 +473,77 @@ class DbSelectTest extends BaseTestCase
     {
         $dbSelect = static::getNewSelect();
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins"',
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0"',
             rtrim(
-                $dbSelect->columns([])
-                    ->getQuery()
+                $dbSelect->columns([])->getQuery()
             )
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins"',
+            'SELECT "tbl_Admins_1".* FROM "admins" AS "tbl_Admins_1"',
             rtrim(
-                $dbSelect->columns(['*'])
-                    ->getQuery()
+                $dbSelect->columns(['*'])->getQuery()
             )
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins"',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0"',
             rtrim(
-                $dbSelect->columns(['id'])
-                    ->getQuery()
+                static::getNewSelect()->columns(['id'])->getQuery()
             )
         );
         static::assertEquals(
-            'SELECT ("Admins"."id")::integer AS "_Admins__id" FROM "admins" AS "Admins"',
+            'SELECT ("tbl_Admins_0"."id")::integer AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0"',
             rtrim(
-                $dbSelect->columns(['id::integer'])
-                    ->getQuery()
+                static::getNewSelect()->columns(['id::integer'])->getQuery()
             )
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins"',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0"',
             rtrim(
-                $dbSelect->columns(['Admins.id'])
-                    ->getQuery()
+                static::getNewSelect()->columns(['Admins.id'])->getQuery()
             )
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id", "Admins"."login" AS "_Admins__login" FROM "admins" AS "Admins"',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", "tbl_Admins_0"."login" AS "col_Admins__login_1" FROM "admins" AS "tbl_Admins_0"',
             rtrim(
-                $dbSelect->columns(['id', 'login'])
-                    ->getQuery()
+                static::getNewSelect()->columns(['id', 'login'])->getQuery()
             )
         );
         static::assertEquals(
-            'SELECT ("Admins"."id")::int AS "_Admins__id", "Admins"."login" AS "_Admins__login" FROM "admins" AS "Admins"',
+            'SELECT ("tbl_Admins_0"."id")::int AS "col_Admins__id_0", "tbl_Admins_0"."login" AS "col_Admins__login_1" FROM "admins" AS "tbl_Admins_0"',
             rtrim(
-                $dbSelect->columns('id::int', 'login')
-                    ->getQuery()
+                static::getNewSelect()->columns('id::int', 'login')->getQuery()
             )
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__id", (SUM("id")) FROM "admins" AS "Admins"',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", (SUM("id")) FROM "admins" AS "tbl_Admins_0"',
             rtrim(
-                $dbSelect->columns(['id', DbExpr::create('SUM(`id`)')])
-                    ->getQuery()
+                static::getNewSelect()->columns(['id', DbExpr::create('SUM(`id`)')])->getQuery()
             )
         );
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__not_id", (SUM("id")) AS "_Admins__sum" FROM "admins" AS "Admins"',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__not_id_0", (SUM("id")) AS "col_Admins__sum_1" FROM "admins" AS "tbl_Admins_0"',
             rtrim(
-                $dbSelect->columns(['not_id' => 'id', 'sum' => DbExpr::create('SUM(`id`)')])
-                    ->getQuery()
+                static::getNewSelect()->columns(['not_id' => 'id', 'sum' => DbExpr::create('SUM(`id`)')])->getQuery()
             )
         );
         static::assertEquals(
-            'SELECT "Admins".*, (SUM("id")) AS "_Admins__sum" FROM "admins" AS "Admins"',
+            'SELECT "tbl_Admins_0".*, (SUM("id")) AS "col_Admins__sum_1" FROM "admins" AS "tbl_Admins_0"',
             rtrim(
-                $dbSelect->columns(['*', 'sum' => DbExpr::create('SUM(`id`)')])
-                    ->getQuery()
+                static::getNewSelect()->columns(['*', 'sum' => DbExpr::create('SUM(`id`)')])->getQuery()
             )
         );
         // test column alias shortening
-        $query = $dbSelect->columns(['VeryLongColumnAliasSoItMustBeShortened' => 'id'])
-            ->getQuery();
-        $shortAlias = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', 'VeryLongColumnAliasSoItMustBeShortened');
+        $dbSelect = static::getNewSelect()
+            ->columns(['VeryLongColumnAliasSoItMustBeShortenedButWeNeedMoreThen60Caracters' => 'id']);
+
         static::assertEquals(
-            'SELECT "Admins"."id" AS "_Admins__' . $shortAlias . '" FROM "admins" AS "Admins"',
-            $query
+            'SELECT "tbl_Admins_0"."id" AS "col_Admns__VrLngClmnAlsSItMstBShrtndBtWNdMrThn60Caracters_0" FROM "admins" AS "tbl_Admins_0"',
+            $dbSelect->getQuery()
         );
         $insertedData = static::fillAdminsTable();
         $expectedData = [];
         foreach ($insertedData as $data) {
-            $expectedData[] = ['VeryLongColumnAliasSoItMustBeShortened' => $data['id']];
+            $expectedData[] = ['VeryLongColumnAliasSoItMustBeShortenedButWeNeedMoreThen60Caracters' => $data['id']];
         }
         static::assertEquals($expectedData, $dbSelect->fetchMany());
     }
@@ -618,34 +608,55 @@ class DbSelectTest extends BaseTestCase
     {
         $dbSelect = static::getNewSelect();
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY "Admins"."id" asc',
-            $dbSelect->orderBy('id')
-                ->getQuery()
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" ORDER BY "tbl_Admins_0"."id" asc',
+            $dbSelect->orderBy('id')->getQuery()
+        );
+        // using boolean as direction
+        static::assertEquals(
+            'SELECT "tbl_Admins_1".* FROM "admins" AS "tbl_Admins_1" ORDER BY "tbl_Admins_1"."id" desc',
+            $dbSelect->orderBy('Admins.id', false, true)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY "Admins"."id" desc',
-            $dbSelect->orderBy('Admins.id', false, true)
-                ->getQuery()
+            'SELECT "tbl_Admins_2".* FROM "admins" AS "tbl_Admins_2" ORDER BY ("tbl_Admins_2"."id")::integer asc',
+            $dbSelect->orderBy('Admins.id::integer', true, true)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY ("Admins"."id")::integer asc',
-            $dbSelect->orderBy('Admins.id::integer', true, true)
-                ->getQuery()
+            'SELECT "tbl_Admins_3".* FROM "admins" AS "tbl_Admins_3" ORDER BY "tbl_Admins_3"."id" desc',
+            $dbSelect->orderBy('Admins.id', false, true)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY "Admins"."id" desc',
-            $dbSelect->orderBy('Admins.id', false, true)
-                ->getQuery()
+            'SELECT "tbl_Admins_4".* FROM "admins" AS "tbl_Admins_4" ORDER BY "tbl_Admins_4"."id" desc, "tbl_Admins_4"."email" asc',
+            $dbSelect->orderBy('email')->getQuery()
+        );
+        // using constants as direction
+        static::assertEquals(
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" ORDER BY "tbl_Admins_0"."id" asc',
+            static::getNewSelect()->orderBy('Admins.id', Select::ORDER_DIRECTION_ASC, true)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY "Admins"."id" desc, "Admins"."email" desc',
-            $dbSelect->orderBy('email', false)
-                ->getQuery()
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" ORDER BY "tbl_Admins_0"."id" asc nulls first',
+            static::getNewSelect()->orderBy('Admins.id', Select::ORDER_DIRECTION_ASC_NULLS_FIRST, true)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" ORDER BY RANDOM()',
-            $dbSelect->orderBy(DbExpr::create('RANDOM()'), '', false)
-                ->getQuery()
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" ORDER BY "tbl_Admins_0"."id" asc nulls last',
+            static::getNewSelect()->orderBy('Admins.id', Select::ORDER_DIRECTION_ASC_NULLS_LAST, true)->getQuery()
+        );
+        static::assertEquals(
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" ORDER BY "tbl_Admins_0"."id" desc',
+            static::getNewSelect()->orderBy('Admins.id', Select::ORDER_DIRECTION_DESC, true)->getQuery()
+        );
+        static::assertEquals(
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" ORDER BY "tbl_Admins_0"."id" desc nulls first',
+            static::getNewSelect()->orderBy('Admins.id', Select::ORDER_DIRECTION_DESC_NULLS_FIRST, true)->getQuery()
+        );
+        static::assertEquals(
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" ORDER BY "tbl_Admins_0"."id" desc nulls last',
+            static::getNewSelect()->orderBy('Admins.id', Select::ORDER_DIRECTION_DESC_NULLS_LAST, true)->getQuery()
+        );
+        // DbExpr
+        static::assertEquals(
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" ORDER BY RANDOM()',
+            static::getNewSelect()->orderBy(DbExpr::create('RANDOM()'), '')->getQuery()
         );
     }
     
@@ -702,24 +713,20 @@ class DbSelectTest extends BaseTestCase
     {
         $dbSelect = static::getNewSelect();
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" GROUP BY "Admins"."id"',
-            $dbSelect->groupBy(['id'])
-                ->getQuery()
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" GROUP BY "tbl_Admins_0"."id"',
+            $dbSelect->groupBy(['id'])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" GROUP BY "Admins"."id"',
-            $dbSelect->groupBy(['Admins.id'])
-                ->getQuery()
+            'SELECT "tbl_Admins_1".* FROM "admins" AS "tbl_Admins_1" GROUP BY "tbl_Admins_1"."id"',
+            $dbSelect->groupBy(['Admins.id'])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" GROUP BY "Admins"."id", "Admins"."email"',
-            $dbSelect->groupBy(['email'])
-                ->getQuery()
+            'SELECT "tbl_Admins_2".* FROM "admins" AS "tbl_Admins_2" GROUP BY "tbl_Admins_2"."id", "tbl_Admins_2"."email"',
+            $dbSelect->groupBy(['email'])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" GROUP BY (RANDOM())',
-            $dbSelect->groupBy([DbExpr::create('RANDOM()')], false)
-                ->getQuery()
+            'SELECT "tbl_Admins_3".* FROM "admins" AS "tbl_Admins_3" GROUP BY (RANDOM())',
+            $dbSelect->groupBy([DbExpr::create('RANDOM()')], false)->getQuery()
         );
     }
     
@@ -828,48 +835,36 @@ class DbSelectTest extends BaseTestCase
     {
         $dbSelect = static::getNewSelect();
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins"',
-            $dbSelect->limit(0)
-                ->getQuery()
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0"',
+            $dbSelect->limit(0)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" LIMIT 1',
-            $dbSelect->limit(1)
-                ->getQuery()
+            'SELECT "tbl_Admins_1".* FROM "admins" AS "tbl_Admins_1" LIMIT 1',
+            $dbSelect->limit(1)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins"',
-            $dbSelect->limit(0)
-                ->getQuery()
+            'SELECT "tbl_Admins_2".* FROM "admins" AS "tbl_Admins_2"',
+            $dbSelect->limit(0)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" LIMIT 1',
-            $dbSelect->limit(1)
-                ->offset(0)
-                ->getQuery()
+            'SELECT "tbl_Admins_3".* FROM "admins" AS "tbl_Admins_3" LIMIT 1',
+            $dbSelect->limit(1)->offset(0)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" LIMIT 1 OFFSET 2',
-            $dbSelect->limit(1)
-                ->offset(2)
-                ->getQuery()
+            'SELECT "tbl_Admins_4".* FROM "admins" AS "tbl_Admins_4" LIMIT 1 OFFSET 2',
+            $dbSelect->limit(1)->offset(2)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" LIMIT 1',
-            $dbSelect->limit(1)
-                ->offset(0)
-                ->getQuery()
+            'SELECT "tbl_Admins_5".* FROM "admins" AS "tbl_Admins_5" LIMIT 1',
+            $dbSelect->limit(1)->offset(0)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" OFFSET 1',
-            $dbSelect->limit(0)
-                ->offset(1)
-                ->getQuery()
+            'SELECT "tbl_Admins_6".* FROM "admins" AS "tbl_Admins_6" OFFSET 1',
+            $dbSelect->limit(0)->offset(1)->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" LIMIT 10 OFFSET 9',
-            $dbSelect->page(10, 9)
-                ->getQuery()
+            'SELECT "tbl_Admins_7".* FROM "admins" AS "tbl_Admins_7" LIMIT 10 OFFSET 9',
+            $dbSelect->page(10, 9)->getQuery()
         );
     }
     
@@ -896,25 +891,23 @@ class DbSelectTest extends BaseTestCase
     {
         $dbSelect = static::getNewSelect();
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins"',
-            $dbSelect->where([])
-                ->having([])
-                ->getQuery()
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0"',
+            $dbSelect->where([])->having([])->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" WHERE ("Admins"."id")::int = \'1\' HAVING ("Admins"."login")::varchar = \'2\'',
+            'SELECT "tbl_Admins_1".* FROM "admins" AS "tbl_Admins_1" WHERE ("tbl_Admins_1"."id")::int = \'1\' HAVING ("tbl_Admins_1"."login")::varchar = \'2\'',
             $dbSelect->where(['id::int' => '1'])
                 ->having(['login::varchar' => '2'])
                 ->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" WHERE ("Admins"."id")::int = \'1\' AND "Admins"."login" = \'3\' HAVING ("Admins"."login")::varchar = \'2\' AND "Admins"."email" = \'3\'',
+            'SELECT "tbl_Admins_2".* FROM "admins" AS "tbl_Admins_2" WHERE ("tbl_Admins_2"."id")::int = \'1\' AND "tbl_Admins_2"."login" = \'3\' HAVING ("tbl_Admins_2"."login")::varchar = \'2\' AND "tbl_Admins_2"."email" = \'3\'',
             $dbSelect->where(['id::int' => '1', 'login' => '3'])
                 ->having(['login::varchar' => '2', 'email' => '3'])
                 ->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" WHERE (SUM("id") > \'1\') HAVING (SUM("id") > \'2\')',
+            'SELECT "tbl_Admins_3".* FROM "admins" AS "tbl_Admins_3" WHERE (SUM("id") > \'1\') HAVING (SUM("id") > \'2\')',
             $dbSelect->where([DbExpr::create('SUM(`id`) > ``1``')])
                 ->having([DbExpr::create('SUM(`id`) > ``2``')])
                 ->getQuery()
@@ -945,12 +938,11 @@ class DbSelectTest extends BaseTestCase
     
     public function testJoins(): void
     {
-        $dbSelect = static::getNewSelect();
         $joinConfig = JoinConfig::create('Test', 'admins', 'id', JoinConfig::JOIN_INNER, 'settings', 'id')
             ->setForeignColumnsToSelect('key', 'value');
         static::assertEquals(
-            'SELECT "Admins".*, "Test"."key" AS "_Test__key", "Test"."value" AS "_Test__value" FROM "admins" AS "Admins" INNER JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."id")',
-            $dbSelect->join($joinConfig)->getQuery()
+            'SELECT "tbl_Admins_0".*, "tbl_Test_1"."key" AS "col_Test__key_1", "tbl_Test_1"."value" AS "col_Test__value_2" FROM "admins" AS "tbl_Admins_0" INNER JOIN "settings" AS "tbl_Test_1" ON ("tbl_Admins_0"."id" = "tbl_Test_1"."id")',
+            static::getNewSelect()->join($joinConfig)->getQuery()
         );
         $joinConfig
             ->setJoinType(JoinConfig::JOIN_LEFT)
@@ -959,43 +951,46 @@ class DbSelectTest extends BaseTestCase
                 'key' => 'name',
             ]);
         static::assertEquals(
-            'SELECT "Admins".*, "Test".* FROM "admins" AS "Admins" LEFT JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."id" AND "Test"."key" = \'name\')',
-            $dbSelect->join($joinConfig, false)->getQuery()
+            'SELECT "tbl_Admins_0".*, "tbl_Test_1".* FROM "admins" AS "tbl_Admins_0" LEFT JOIN "settings" AS "tbl_Test_1" ON ("tbl_Admins_0"."id" = "tbl_Test_1"."id" AND "tbl_Test_1"."key" = \'name\')',
+            static::getNewSelect()->join($joinConfig)->getQuery()
         );
         $joinConfig
             ->setJoinType(JoinConfig::JOIN_RIGHT)
             ->setForeignColumnsToSelect(['value']);
         static::assertEquals(
-            'SELECT "Admins".*, "Test"."value" AS "_Test__value" FROM "admins" AS "Admins" RIGHT JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."id" AND "Test"."key" = \'name\')',
-            $dbSelect->join($joinConfig, false)->getQuery()
+            'SELECT "tbl_Admins_0".*, "tbl_Test_1"."value" AS "col_Test__value_1" FROM "admins" AS "tbl_Admins_0" RIGHT JOIN "settings" AS "tbl_Test_1" ON ("tbl_Admins_0"."id" = "tbl_Test_1"."id" AND "tbl_Test_1"."key" = \'name\')',
+            static::getNewSelect()->join($joinConfig)->getQuery()
         );
         $joinConfig
             ->setJoinType(JoinConfig::JOIN_RIGHT)
             ->setAdditionalJoinConditions([])
             ->setForeignColumnsToSelect([]);
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" RIGHT JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."id")',
-            $dbSelect->join($joinConfig, false)->getQuery()
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" RIGHT JOIN "settings" AS "tbl_Test_1" ON ("tbl_Admins_0"."id" = "tbl_Test_1"."id")',
+            static::getNewSelect()->join($joinConfig)->getQuery()
         );
         $joinConfig
             ->setJoinType(JoinConfig::JOIN_FULL)
             ->setAdditionalJoinConditions([])
             ->setForeignColumnsToSelect([]);
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" FULL JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."id")',
-            $dbSelect->join($joinConfig, false)->getQuery()
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" FULL JOIN "settings" AS "tbl_Test_1" ON ("tbl_Admins_0"."id" = "tbl_Test_1"."id")',
+            static::getNewSelect()->join($joinConfig)->getQuery()
         );
         // test join name shortening
         $joinConfig
             ->setJoinType(JoinConfig::JOIN_RIGHT)
-            ->setJoinName('VeryLongJoinNameSoItMustBeShortened')
-            ->setAdditionalJoinConditions(['VeryLongJoinNameSoItMustBeShortened.parentId' => null])
+            ->setJoinName('VeryLongJoinNameSoItMustBeShortenedButWeNeedMoreThen60Characters')
+            ->setAdditionalJoinConditions([
+                'VeryLongJoinNameSoItMustBeShortenedButWeNeedMoreThen60Characters.parentId' => null
+            ])
             ->setForeignColumnsToSelect([]);
-        $query = $dbSelect->join($joinConfig, false)->getQuery();
-        $shortJoinName = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', $joinConfig->getJoinName());
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" RIGHT JOIN "settings" AS "' . $shortJoinName . '" ON ("Admins"."id" = "' . $shortJoinName . '"."id" AND "' . $shortJoinName . '"."parentId" IS NULL)',
-            $query
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0"'
+            . ' RIGHT JOIN "settings" AS "tbl_VrLngJnNmSItMstBShrtenedButWeNeedMoreThen60Characters_1"'
+            . ' ON ("tbl_Admins_0"."id" = "tbl_VrLngJnNmSItMstBShrtenedButWeNeedMoreThen60Characters_1"."id"'
+            . ' AND "tbl_VrLngJnNmSItMstBShrtenedButWeNeedMoreThen60Characters_1"."parentId" IS NULL)',
+            static::getNewSelect()->join($joinConfig)->getQuery()
         );
     }
     
@@ -1031,147 +1026,26 @@ class DbSelectTest extends BaseTestCase
         $dbSelect = static::getNewSelect();
         $dbSelect->with(static::getNewSelect(), 'subselect');
         static::assertEquals(
-            'WITH "subselect" AS (SELECT "Admins".* FROM "admins" AS "Admins") SELECT "Admins".* FROM "admins" AS "Admins"',
+            'WITH "subselect" AS (SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0")'
+            . ' SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0"',
             $dbSelect->getQuery()
         );
         $dbSelect->where([
             'id IN' => Select::from('subselect', static::getValidAdapter()),
         ]);
         static::assertEquals(
-            'WITH "subselect" AS (SELECT "Admins".* FROM "admins" AS "Admins") SELECT "Admins".* FROM "admins" AS "Admins" WHERE "Admins"."id" IN (SELECT "Subselect".* FROM "subselect" AS "Subselect")',
+            'WITH "subselect" AS (SELECT "tbl_Admins_1".* FROM "admins" AS "tbl_Admins_1")'
+            . ' SELECT "tbl_Admins_1".* FROM "admins" AS "tbl_Admins_1"'
+            . ' WHERE "tbl_Admins_1"."id" IN (SELECT "tbl_Subselect_0".* FROM "subselect" AS "tbl_Subselect_0")',
             $dbSelect->getQuery()
         );
         $dbSelect = Select::from('subselect', static::getValidAdapter())
             ->with(Select::from('admins', static::getValidAdapter()), 'subselect');
         static::assertEquals(
-            'WITH "subselect" AS (SELECT "Admins".* FROM "admins" AS "Admins") SELECT "Subselect".* FROM "subselect" AS "Subselect"',
+            'WITH "subselect" AS (SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0")'
+            . ' SELECT "tbl_Subselect_0".* FROM "subselect" AS "tbl_Subselect_0"',
             $dbSelect->getQuery()
         );
-    }
-    
-    public function testMakeColumnAlias(): void
-    {
-        $dbSelect = static::getNewSelect();
-        static::assertEquals(
-            '_Admins__colname',
-            $this->callObjectMethod($dbSelect, 'makeColumnAlias', 'colname')
-        );
-        static::assertEquals(
-            '_JoinAlias__colname',
-            $this->callObjectMethod($dbSelect, 'makeColumnAlias', 'colname', 'JoinAlias')
-        );
-    }
-    
-    public function testMakeColumnNameWithAliasForQuery(): void
-    {
-        $dbSelect = static::getNewSelect();
-        static::assertEquals(
-            '"Admins"."colname" AS "_Admins__colname"',
-            $this->callObjectMethod($dbSelect, 'makeColumnNameWithAliasForQuery', [
-                'name' => 'colname',
-                'alias' => null,
-                'join_name' => null,
-                'type_cast' => null,
-            ])
-        );
-        static::assertEquals(
-            '("JoinAlias"."colname")::int AS "_JoinAlias__colname"',
-            $this->callObjectMethod($dbSelect, 'makeColumnNameWithAliasForQuery', [
-                'name' => 'colname',
-                'alias' => null,
-                'join_name' => 'JoinAlias',
-                'type_cast' => 'int',
-            ])
-        );
-        static::assertEquals(
-            '("JoinAlias"."colname")::int AS "_JoinAlias__colalias"',
-            $this->callObjectMethod($dbSelect, 'makeColumnNameWithAliasForQuery', [
-                'name' => 'colname',
-                'alias' => 'colalias',
-                'join_name' => 'JoinAlias',
-                'type_cast' => 'int',
-            ])
-        );
-    }
-    
-    public function testMakeTableNameWithAliasForQuery(): void
-    {
-        $dbSelect = static::getNewSelect();
-        static::assertEquals(
-            '"admins" AS "Admins"',
-            $this->callObjectMethod($dbSelect, 'makeTableNameWithAliasForQuery', 'admins', 'Admins')
-        );
-        $expr = $this->callObjectMethod(
-            $dbSelect,
-            'makeTableNameWithAliasForQuery',
-            'admins',
-            'SomeTooLongTableAliasToMakeSystemShortenIt',
-            'other'
-        );
-        static::assertNotEquals('"other"."admins" AS "SomeTooLongTableAliasToMakeSystemShortenIt"', $expr);
-        static::assertRegExp('%"other"\."admins" AS "[a-z][a-z0-9]+[0-9]"%', $expr);
-    }
-    
-    public function testMakeColumnNameForCondition(): void
-    {
-        $dbSelect = static::getNewSelect();
-        static::assertEquals(
-            '"Admins"."colname"',
-            $this->callObjectMethod($dbSelect, 'makeColumnNameForCondition', [
-                'name' => 'colname',
-                'alias' => null,
-                'join_name' => null,
-                'type_cast' => null,
-            ])
-        );
-        static::assertEquals(
-            '("Admins"."colname")::int',
-            $this->callObjectMethod($dbSelect, 'makeColumnNameForCondition', [
-                'name' => 'colname',
-                'alias' => 'colalias',
-                'join_name' => null,
-                'type_cast' => 'int',
-            ])
-        );
-        static::assertEquals(
-            '("JoinAlias"."colname")::int',
-            $this->callObjectMethod($dbSelect, 'makeColumnNameForCondition', [
-                'name' => 'colname',
-                'alias' => 'colalias',
-                'join_name' => 'JoinAlias',
-                'type_cast' => 'int',
-            ])
-        );
-    }
-    
-    public function testGetShortJoinAlias(): void
-    {
-        $dbSelect = static::getNewSelect();
-        static::assertEquals(
-            'Admins',
-            $this->callObjectMethod($dbSelect, 'getShortJoinAlias', 'Admins')
-        );
-        for ($i = 0; $i < 30; $i++) {
-            // it uses rand so it will be better to test it many times
-            $alias = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', 'SomeTooLongTableAliasToMakeSystemShortenIt');
-            static::assertNotEquals('SomeTooLongTableAliasToMakeSystemShortenIt', $alias);
-            static::assertRegExp('%^[a-z][a-z0-9]+$%', $alias);
-        }
-    }
-    
-    public function testGetShortColumnAlias(): void
-    {
-        $dbSelect = static::getNewSelect();
-        static::assertEquals(
-            'parent_id',
-            $this->callObjectMethod($dbSelect, 'getShortColumnAlias', 'parent_id')
-        );
-        for ($i = 0; $i < 30; $i++) {
-            // it uses rand so it will be better to test it many times
-            $alias = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', 'SomeTooLongColumnAliasToMakeSystemShortenIt');
-            static::assertNotEquals('SomeTooLongColumnAliasToMakeSystemShortenIt', $alias);
-            static::assertRegExp('%^[a-z][a-z0-9]+$%', $alias);
-        }
     }
     
     public function testInvalidSetDbSchemaName1(): void
@@ -1231,7 +1105,7 @@ class DbSelectTest extends BaseTestCase
             $dbSelect->setTableSchemaName('test_schema')
                 ->getTableSchemaName()
         );
-        static::assertEquals('SELECT "Admins".* FROM "test_schema"."admins" AS "Admins"', $dbSelect->getQuery());
+        static::assertEquals('SELECT "tbl_Admins_0".* FROM "test_schema"."admins" AS "tbl_Admins_0"', $dbSelect->getQuery());
     }
     
     public function testInvalidFromConfigsArrayOrder1(): void
@@ -1417,13 +1291,13 @@ class DbSelectTest extends BaseTestCase
     public function testFromConfigsArray(): void
     {
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins"',
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0"',
             static::getNewSelect()
                 ->fromConfigsArray([])
                 ->getQuery()
         );
         static::assertEquals(
-            'SELECT "Admins".* FROM "admins" AS "Admins" WHERE "Admins"."colname" = \'value\'',
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" WHERE "tbl_Admins_0"."colname" = \'value\'',
             static::getNewSelect()
                 ->fromConfigsArray(['colname' => 'value'])
                 ->getQuery()
@@ -1449,13 +1323,36 @@ class DbSelectTest extends BaseTestCase
         ];
         /** @noinspection SqlAggregates */
         static::assertEquals(
-            'SELECT "Admins"."colname" AS "_Admins__colname", "Admins"."colname2" AS "_Admins__colname2", "Admins"."colname3" AS "_Admins__colname3", "Admins".*, "Test"."admin_id" AS "_Test__admin_id", "Test"."value" AS "_Test__setting_value" FROM "admins" AS "Admins" LEFT JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."admin_id") WHERE "Admins"."colname" = \'value\' AND ("Admins"."colname2" = \'value2\' OR "Admins"."colname3" = \'value3\') GROUP BY "Admins"."colname", "Test"."admin_id" HAVING "Admins"."colname3" = \'value\' AND "Test"."admin_id" > \'1\' ORDER BY "Admins"."colname" asc, "Test"."admin_id" desc LIMIT 10 OFFSET 20',
+            'SELECT "tbl_Admins_0"."colname" AS "col_Admins__colname_0",'
+            . ' "tbl_Admins_0"."colname2" AS "col_Admins__colname2_1",'
+            . ' "tbl_Admins_0"."colname3" AS "col_Admins__colname3_2",'
+            . ' "tbl_Admins_0".*,'
+            . ' "tbl_Test_1"."admin_id" AS "col_Test__admin_id_4",'
+            . ' "tbl_Test_1"."value" AS "col_Test__setting_value_5"'
+            . ' FROM "admins" AS "tbl_Admins_0"'
+            . ' LEFT JOIN "settings" AS "tbl_Test_1" ON ("tbl_Admins_0"."id" = "tbl_Test_1"."admin_id")'
+            . ' WHERE "tbl_Admins_0"."colname" = \'value\''
+            . ' AND ("tbl_Admins_0"."colname2" = \'value2\' OR "tbl_Admins_0"."colname3" = \'value3\')'
+            . ' GROUP BY "tbl_Admins_0"."colname", "tbl_Test_1"."admin_id"'
+            . ' HAVING "tbl_Admins_0"."colname3" = \'value\' AND "tbl_Test_1"."admin_id" > \'1\''
+            . ' ORDER BY "tbl_Admins_0"."colname" asc, "tbl_Test_1"."admin_id" desc'
+            . ' LIMIT 10 OFFSET 20',
             static::getNewSelect()
                 ->columns('colname', 'colname2', 'colname3', '*')
                 ->fromConfigsArray($configs)
                 ->getQuery()
         );
-        // todo: add tests for WITH
+
+        static::assertEquals(
+            'WITH "Subselect" AS (SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0")'
+            . ' SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0"',
+            static::getNewSelect()
+                ->columns('*')
+                ->fromConfigsArray([
+                    'WITH' => ['Subselect' => static::getNewSelect()->columns('*')]
+                ])
+                ->getQuery()
+        );
     }
     
     public function testNormalizeRecord(): void
