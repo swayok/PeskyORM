@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace PeskyORM\Adapter;
 
 use PeskyORM\Config\Connection\MysqlConfig;
-use PeskyORM\Core\AbstractSelect;
 use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\SelectQueryBuilderAbstract;
 use PeskyORM\Exception\DbException;
 use PeskyORM\Exception\DbQueryReturningValuesException;
 
@@ -328,7 +328,7 @@ class Mysql extends DbAdapter
     protected function assembleConditionValuesExistsInJson(
         string $quotedColumn,
         string $operator,
-        string|int|float|bool|array|DbExpr|AbstractSelect|null $rawValue,
+        string|int|float|bool|array|DbExpr|SelectQueryBuilderAbstract|null $rawValue,
         bool $valueAlreadyQuoted = false
     ): string {
         // operators: '?', '?|', '?&'
@@ -364,7 +364,7 @@ class Mysql extends DbAdapter
     protected function assembleConditionJsonContainsJson(
         string $quotedColumn,
         string $operator,
-        string|int|float|bool|array|DbExpr|AbstractSelect|null $rawValue,
+        string|int|float|bool|array|DbExpr|SelectQueryBuilderAbstract|null $rawValue,
         bool $valueAlreadyQuoted = false
     ): string {
         // operators: '@>', '<@'

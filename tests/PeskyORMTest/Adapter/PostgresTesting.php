@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\PeskyORMTest\Adapter;
 
 use PeskyORM\Adapter\Postgres;
-use PeskyORM\Core\AbstractSelect;
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\SelectQueryBuilderAbstract;
 use PeskyORM\ORM\RecordInterface;
 
 class PostgresTesting extends Postgres
@@ -54,13 +54,13 @@ class PostgresTesting extends Postgres
 
     public function normalizeConditionOperator(
         string $operator,
-        DbExpr|float|RecordInterface|int|bool|array|string|AbstractSelect|null $value
+        DbExpr|float|RecordInterface|int|bool|array|string|SelectQueryBuilderAbstract|null $value
     ): string {
         return parent::normalizeConditionOperator($operator, $value);
     }
 
     public function assembleConditionValue(
-        DbExpr|float|RecordInterface|int|bool|array|string|AbstractSelect|null $value,
+        DbExpr|float|RecordInterface|int|bool|array|string|SelectQueryBuilderAbstract|null $value,
         string $normalizedOperator,
         bool $valueAlreadyQuoted = false
     ): string {

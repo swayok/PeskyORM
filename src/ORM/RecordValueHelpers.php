@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\AbstractSelect;
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\SelectQueryBuilderAbstract;
 use Swayok\Utils\NormalizeValue;
 use Swayok\Utils\ValidateValue;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -20,7 +20,7 @@ abstract class RecordValueHelpers
         bool $isForCondition,
         array $errorMessages = []
     ): array {
-        if ($value instanceof DbExpr || $value instanceof AbstractSelect) {
+        if ($value instanceof DbExpr || $value instanceof SelectQueryBuilderAbstract) {
             return [];
         }
         $preprocessedValue = static::preprocessColumnValue($column, $value, $isFromDb, true);
@@ -236,7 +236,7 @@ abstract class RecordValueHelpers
             return null;
         }
 
-        if ($value instanceof DbExpr || $value instanceof AbstractSelect) {
+        if ($value instanceof DbExpr || $value instanceof SelectQueryBuilderAbstract) {
             return $value;
         }
 

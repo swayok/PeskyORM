@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace PeskyORM\Core;
 
+use PeskyORM\Core\Utils\ArgumentValidators;
 use Swayok\Utils\StringUtils;
 
-class JoinInfo extends AbstractJoinInfo
+class JoinConfig extends NormalJoinConfigAbstract
 {
-    
+
     /**
-     * @throws \InvalidArgumentException
+     * @deprecated
      */
     public static function create(
         string $joinName,
@@ -33,7 +34,7 @@ class JoinInfo extends AbstractJoinInfo
             $foreignTableSchema
         );
     }
-    
+
     /**
      * @throws \InvalidArgumentException
      */
@@ -53,7 +54,7 @@ class JoinInfo extends AbstractJoinInfo
             ->setJoinType($joinType)
             ->setConfigForForeignTable($foreignTableName, $foreignColumnName, $foreignTableSchema);
     }
-    
+
     /**
      * @throws \InvalidArgumentException
      */
@@ -67,12 +68,15 @@ class JoinInfo extends AbstractJoinInfo
         }
         return $this;
     }
-    
+
     /**
      * @throws \InvalidArgumentException
      */
-    public function setConfigForForeignTable(string $foreignTableName, string $foreignColumnName, ?string $foreignTableSchema = null): static
-    {
+    public function setConfigForForeignTable(
+        string $foreignTableName,
+        string $foreignColumnName,
+        ?string $foreignTableSchema = null
+    ): static {
         $this
             ->setForeignTableName($foreignTableName)
             ->setForeignColumnName($foreignColumnName);
@@ -81,7 +85,7 @@ class JoinInfo extends AbstractJoinInfo
         }
         return $this;
     }
-    
+
     /**
      * @throws \InvalidArgumentException
      */
@@ -93,7 +97,7 @@ class JoinInfo extends AbstractJoinInfo
         $this->foreignTableName = $foreignTableName;
         return $this;
     }
-    
+
     /**
      * @throws \InvalidArgumentException
      */
@@ -105,32 +109,31 @@ class JoinInfo extends AbstractJoinInfo
         $this->foreignTableSchema = $schema;
         return $this;
     }
-    
+
     /**
+     * Set source table name and schema
      * @throws \InvalidArgumentException
      */
-    public function setTableName(string $tableName): static
+    public function setTableName(string $tableName, ?string $tableSchema = null): static
     {
-        if (empty($tableName)) {
-            throw new \InvalidArgumentException('$tableName argument must be a not-empty string');
-        }
+        ArgumentValidators::assertNullOrNotEmptyString('$tableName', $tableName);
         $this->tableName = $tableName;
         if ($this->tableAlias === null) {
             $this->setTableAlias(StringUtils::classify($this->tableName));
         }
-        return $this;
-    }
-    
-    /**
-     * @throws \InvalidArgumentException
-     */
-    public function setTableSchema(?string $schema): static
-    {
-        if ($schema !== null && empty($schema)) {
-            throw new \InvalidArgumentException('$schema argument must be a not-empty string or null');
+        if ($tableSchema) {
+            $this->setTableSchema($tableSchema);
         }
-        $this->tableSchema = $schema;
         return $this;
     }
-    
+
+    /**
+     * Set source table schema
+     */
+    public function setTableSchema(?string $tableSchema): static
+    {
+        ArgumentValidators::assertNullOrNotEmptyString('$tableSchema', $tableSchema);
+        $this->tableSchema = $tableSchema;
+        return $this;
+    }
 }

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace PeskyORM\Core;
 
+use PeskyORM\Core\Utils\ArgumentValidators;
 use Swayok\Utils\StringUtils;
 
-class Select extends AbstractSelect
+class Select extends SelectQueryBuilderAbstract
 {
-    
     /**
      * Main table name to select data from
      */
@@ -30,9 +30,7 @@ class Select extends AbstractSelect
      */
     public function __construct(string $tableName, DbAdapterInterface $connection)
     {
-        if (empty($tableName)) {
-            throw new \InvalidArgumentException('$tableName argument must be a not-empty string');
-        }
+        ArgumentValidators::assertNotEmpty('$tableName', $tableName);
         $this->tableName = $tableName;
         $this->connection = $connection;
         $this->setTableAlias(StringUtils::classify($tableName));
@@ -41,14 +39,15 @@ class Select extends AbstractSelect
     /**
      * @throws \InvalidArgumentException
      */
-    public function setTableSchemaName(string $schema): static
+    public function setTableSchemaName(string $tableSchema): static
     {
-        if (empty($schema)) {
-            throw new \InvalidArgumentException('$schema argument value cannot be empty');
-        } elseif (!$this->getConnection()->isValidDbEntityName($schema)) {
-            throw new \InvalidArgumentException("\$schema argument value is invalid: [$schema]");
+        ArgumentValidators::assertNotEmpty('$tableSchema', $tableSchema);
+        if (!$this->getConnection()->isValidDbEntityName($tableSchema)) {
+            throw new \InvalidArgumentException(
+                "\$tableSchema argument value is not a valid DB entity name: [$tableSchema]"
+            );
         }
-        $this->dbSchema = $schema;
+        $this->dbSchema = $tableSchema;
         return $this;
     }
     
@@ -77,14 +76,4 @@ class Select extends AbstractSelect
     {
         return $this->connection;
     }
-    
-    /**
-     * @throws \InvalidArgumentException
-     */
-    public function join(JoinInfo $joinInfo, bool $append = true): static
-    {
-        $this->_join($joinInfo, $append);
-        return $this;
-    }
-    
 }

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\AbstractJoinInfo;
-use PeskyORM\Core\AbstractSelect;
+use PeskyORM\Core\CrossJoinConfigInterface;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\Utils;
+use PeskyORM\Core\NormalJoinConfigInterface;
+use PeskyORM\Core\SelectQueryBuilderAbstract;
 use PeskyORM\Core\Utils\QueryBuilderUtils;
 
-class OrmSelect extends AbstractSelect
+class OrmSelect extends SelectQueryBuilderAbstract
 {
 
     protected TableInterface $table;
@@ -99,15 +99,6 @@ class OrmSelect extends AbstractSelect
         return $this->getNewRecord()->fromDbData($this->fetchOne());
     }
 
-    /**
-     * @throws \InvalidArgumentException
-     */
-    public function join(OrmJoinInfo $joinInfo, bool $append = true): static
-    {
-        $this->_join($joinInfo, $append);
-        return $this;
-    }
-
     public function getCountQuery(bool $ignoreLeftJoins = true): string
     {
         if ($this->distinct) {
@@ -141,12 +132,11 @@ class OrmSelect extends AbstractSelect
 
     /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
 
-    protected function normalizeJoinDataForRecord(AbstractJoinInfo $joinConfig, array $data): array
+    protected function normalizeJoinDataForRecord(NormalJoinConfigInterface $joinConfig, array $data): array
     {
         $data = parent::normalizeJoinDataForRecord($joinConfig, $data);
         if ($joinConfig instanceof OrmJoinInfo) {
-            $pkName = $joinConfig->getForeignDbTable()
-                ->getPkColumnName();
+            $pkName = $joinConfig->getForeignDbTable()->getPkColumnName();
             if (array_key_exists($pkName, $data) && $data[$pkName] === null) {
                 // not existing related record
                 return [];
@@ -294,7 +284,7 @@ class OrmSelect extends AbstractSelect
     /**
      * @param string $joinName - 'Name' or 'Name.SubName'
      */
-    protected function getJoin(string $joinName): AbstractJoinInfo
+    protected function getJoin(string $joinName): NormalJoinConfigInterface|CrossJoinConfigInterface
     {
         $joins = explode('.', $joinName);
         foreach ($joins as $subJoin) {
@@ -314,7 +304,7 @@ class OrmSelect extends AbstractSelect
     protected function getOrmJoin(string $joinName): OrmJoinInfo
     {
         $join = $this->getJoin($joinName);
-        $this->guardJoinClass($joinName, $join);
+        $this->validateJoin($join);
         /** @var OrmJoinInfo $join - validated by guardJoinClass */
         return $join;
     }
@@ -393,7 +383,7 @@ class OrmSelect extends AbstractSelect
                     return $this->quoteDbExpr($rawValue);
                 }
 
-                if ($rawValue instanceof AbstractSelect) {
+                if ($rawValue instanceof SelectQueryBuilderAbstract) {
                     return $rawValue;
                 }
 
@@ -505,14 +495,15 @@ class OrmSelect extends AbstractSelect
         $this->validateColumnInfo($columnInfo, $subject);
     }
 
-    protected function guardJoinClass(string $joinName, AbstractJoinInfo $joinInfo): void
+    protected function validateJoin(NormalJoinConfigInterface $joinConfig): void
     {
-        if (!($joinInfo instanceof OrmJoinInfo)) {
+        if (!($joinConfig instanceof OrmJoinInfo)) {
             throw new \UnexpectedValueException(
-                'Join ' . $joinName . ' must be an instance of class ' . OrmJoinInfo::class
-                . ' but it is an instance of ' . get_class($joinInfo) . ' class'
+                'Join ' . $joinConfig->getJoinName() . ' must be an instance of class ' . OrmJoinInfo::class
+                . ' but it is an instance of ' . get_class($joinConfig) . ' class'
             );
         }
+        parent::validateJoin($joinConfig);
     }
 
 }

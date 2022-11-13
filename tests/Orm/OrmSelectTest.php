@@ -652,8 +652,8 @@ class OrmSelectTest extends BaseTestCase
     
     public function testJoins(): void
     {
-        $dbSelect = static::getNewSelect()
-            ->columns(['id']);
+        $dbSelect = static::getNewSelect()->columns(['id']);
+
         $joinConfig = OrmJoinInfo::create(
             'Test',
             TestingAdminsTable::getInstance(),
@@ -661,20 +661,16 @@ class OrmSelectTest extends BaseTestCase
             OrmJoinInfo::JOIN_INNER,
             TestingAdminsTable::getInstance(),
             'id'
-        )
-            ->setForeignColumnsToSelect('login', 'email');
+        );
+        $joinConfig->setForeignColumnsToSelect('login', 'email');
+
         static::assertEquals(
             'SELECT "Admins"."id" AS "_Admins__id", "Test"."login" AS "_Test__login", "Test"."email" AS "_Test__email" FROM "admins" AS "Admins" INNER JOIN "admins" AS "Test" ON ("Admins"."parent_id" = "Test"."id")',
-            $dbSelect->join($joinConfig)
-                ->getQuery()
+            $dbSelect->join($joinConfig)->getQuery()
         );
         
         $colsInSelectForTest = [];
-        foreach (
-            $dbSelect->getTable()
-                ->getTableStructure()
-                ->getColumns() as $column
-        ) {
+        foreach ($dbSelect->getTable()->getTableStructure()->getColumns() as $column) {
             if ($column->isItExistsInDb()) {
                 $shortName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', $column->getName());
                 $colsInSelectForTest[] = '"Test"."' . $column->getName() . '" AS "_Test__' . $shortName . '"';
@@ -691,16 +687,14 @@ class OrmSelectTest extends BaseTestCase
         
         static::assertEquals(
             'SELECT "Admins"."id" AS "_Admins__id", ' . $colsInSelectForTest . ' FROM "admins" AS "Admins" LEFT JOIN "admins" AS "Test" ON ("Admins"."parent_id" = "Test"."id" AND "Test"."email" = \'test@test.ru\')',
-            $dbSelect->join($joinConfig, false)
-                ->getQuery()
+            $dbSelect->join($joinConfig, false)->getQuery()
         );
         $joinConfig
             ->setJoinType(OrmJoinInfo::JOIN_RIGHT)
             ->setForeignColumnsToSelect(['email']);
         static::assertEquals(
             'SELECT "Admins"."id" AS "_Admins__id", "Test"."email" AS "_Test__email" FROM "admins" AS "Admins" RIGHT JOIN "admins" AS "Test" ON ("Admins"."parent_id" = "Test"."id" AND "Test"."email" = \'test@test.ru\')',
-            $dbSelect->join($joinConfig, false)
-                ->getQuery()
+            $dbSelect->join($joinConfig, false)->getQuery()
         );
         $joinConfig
             ->setJoinType(OrmJoinInfo::JOIN_RIGHT)
@@ -708,8 +702,15 @@ class OrmSelectTest extends BaseTestCase
             ->setForeignColumnsToSelect([]);
         static::assertEquals(
             'SELECT "Admins"."id" AS "_Admins__id" FROM "admins" AS "Admins" RIGHT JOIN "admins" AS "Test" ON ("Admins"."parent_id" = "Test"."id")',
-            $dbSelect->join($joinConfig, false)
-                ->getQuery()
+            $dbSelect->join($joinConfig, false)->getQuery()
+        );
+
+        $joinConfig
+            ->setJoinType(OrmJoinInfo::JOIN_FULL)
+            ->setForeignColumnsToSelect(['email']);
+        static::assertEquals(
+            'SELECT "Admins"."id" AS "_Admins__id", "Test"."email" AS "_Test__email" FROM "admins" AS "Admins" FULL JOIN "admins" AS "Test" ON ("Admins"."parent_id" = "Test"."id")',
+            $dbSelect->join($joinConfig, false)->getQuery()
         );
     }
     

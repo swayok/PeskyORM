@@ -7,6 +7,7 @@ namespace PeskyORM\Core;
 use PDO;
 use PDOStatement;
 use PeskyORM\Core\Utils\DbAdapterMethodArgumentUtils;
+use PeskyORM\Core\Utils\DbQuoter;
 use PeskyORM\Core\Utils\PdoUtils;
 use PeskyORM\Core\Utils\QueryBuilderUtils;
 use PeskyORM\Exception\DbException;
@@ -673,7 +674,7 @@ abstract class DbAdapter implements DbAdapterInterface
      * @throws \InvalidArgumentException
      */
     public function quoteValue(
-        string|int|float|bool|array|DbExpr|RecordInterface|AbstractSelect|null $value,
+        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderAbstract|null $value,
         ?int $valueDataType = null
     ): string {
         return DbQuoter::quoteValue(
@@ -702,7 +703,7 @@ abstract class DbAdapter implements DbAdapterInterface
      */
     protected function normalizeConditionOperator(
         string $operator,
-        string|int|float|bool|array|DbExpr|RecordInterface|AbstractSelect|null $value
+        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderAbstract|null $value
     ): string {
         /** @var string $operator */
         $operator = mb_strtoupper($operator);
@@ -775,7 +776,7 @@ abstract class DbAdapter implements DbAdapterInterface
      * @throws \InvalidArgumentException
      */
     protected function assembleConditionValue(
-        string|int|float|bool|array|DbExpr|RecordInterface|AbstractSelect|null $value,
+        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderAbstract|null $value,
         string $normalizedOperator,
         bool $valueAlreadyQuoted = false
     ): string {
@@ -830,7 +831,7 @@ abstract class DbAdapter implements DbAdapterInterface
     public function assembleCondition(
         string $quotedColumn,
         string $operator,
-        string|int|float|bool|array|DbExpr|RecordInterface|AbstractSelect|null $rawValue,
+        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderAbstract|null $rawValue,
         bool $valueAlreadyQuoted = false
     ): string {
         if ($rawValue instanceof RecordInterface) {
@@ -851,7 +852,7 @@ abstract class DbAdapter implements DbAdapterInterface
     protected function assembleConditionFromPreparedParts(
         string $quotedColumn,
         string $normalizedOperator,
-        string|int|float|bool|array|DbExpr|RecordInterface|AbstractSelect|null $quotedValue,
+        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderAbstract|null $quotedValue,
     ): string {
         $convertedOperator = $this->convertNormalizedConditionOperatorForDbQuery($normalizedOperator);
         return "{$quotedColumn} {$convertedOperator} {$quotedValue}";

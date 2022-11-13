@@ -202,11 +202,11 @@ interface DbAdapterInterface
 
     /**
      * Quote passed value
-     * @param string|int|float|bool|array|AbstractSelect|DbExpr|RecordInterface|null $value
+     * @param string|int|float|bool|array|SelectQueryBuilderAbstract|DbExpr|RecordInterface|null $value
      * @param int|null $valueDataType - one of \PDO::PARAM_* or null for autodetection (detects bool, null, string only)
      */
     public function quoteValue(
-        string|int|float|bool|array|DbExpr|RecordInterface|AbstractSelect|null $value,
+        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderAbstract|null $value,
         ?int $valueDataType = null
     ): string;
 
@@ -230,7 +230,7 @@ interface DbAdapterInterface
     public function assembleCondition(
         string $quotedColumn,
         string $operator,
-        string|int|float|bool|array|DbExpr|RecordInterface|AbstractSelect|null $rawValue,
+        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderAbstract|null $rawValue,
         bool $valueAlreadyQuoted = false
     ): string;
 

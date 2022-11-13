@@ -4,33 +4,34 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\JoinInfo;
+use PeskyORM\Core\JoinConfigInterface;
 
 class Relation
 {
-    
+
     public const HAS_ONE = 'has_one';
     public const HAS_MANY = 'has_many';
     public const BELONGS_TO = 'belongs_to';
-    
-    public const JOIN_LEFT = JoinInfo::JOIN_LEFT;
-    public const JOIN_RIGHT = JoinInfo::JOIN_RIGHT;
-    public const JOIN_INNER = JoinInfo::JOIN_INNER;
-    
+
+    public const JOIN_LEFT = JoinConfigInterface::JOIN_LEFT;
+    public const JOIN_RIGHT = JoinConfigInterface::JOIN_RIGHT;
+    public const JOIN_INNER = JoinConfigInterface::JOIN_INNER;
+    public const JOIN_FULL = JoinConfigInterface::JOIN_FULL;
+
     protected ?string $name = null;
     protected string $type;
     protected string $joinType = self::JOIN_LEFT;
-    
+
     protected string $localColumnName;
-    
+
     protected ?TableInterface $foreignTable = null;
     protected string $foreignTableClass;
     protected string $foreignColumnName;
-    
+
     protected string|\Closure|null $displayColumnName = null;
-    
+
     protected \Closure|array $additionalJoinConditions = [];
-    
+
     public static function create(
         string $localColumnName,
         string $type,
@@ -39,7 +40,7 @@ class Relation
     ): static {
         return new static($localColumnName, $type, $foreignTableClass, $foreignColumnName);
     }
-    
+
     public function __construct(
         string $localColumnName,
         string $type,
@@ -53,12 +54,12 @@ class Relation
             ->setForeignTableClass($foreignTableClass)
             ->setForeignColumnName($foreignColumnName);
     }
-    
+
     public function hasName(): bool
     {
         return (bool)$this->name;
     }
-    
+
     /**
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -69,17 +70,17 @@ class Relation
             throw new \BadMethodCallException('Relation name alteration is forbidden');
         }
 
-        if (!preg_match(JoinInfo::NAME_VALIDATION_REGEXP, $name)) {
+        if (!preg_match(JoinConfigInterface::NAME_VALIDATION_REGEXP, $name)) {
             throw new \InvalidArgumentException(
                 "\$name argument contains invalid value: '$name'. Pattern: "
-                . JoinInfo::NAME_VALIDATION_REGEXP . '. Example: CamelCase1'
+                . JoinConfigInterface::NAME_VALIDATION_REGEXP . '. Example: CamelCase1'
             );
         }
 
         $this->name = $name;
         return $this;
     }
-    
+
     public function getName(): string
     {
         if (empty($this->name)) {
@@ -87,12 +88,12 @@ class Relation
         }
         return $this->name;
     }
-    
+
     public function getType(): string
     {
         return $this->type;
     }
-    
+
     /**
      * @throws \InvalidArgumentException
      */
@@ -105,12 +106,12 @@ class Relation
         $this->type = $type;
         return $this;
     }
-    
+
     public function getLocalColumnName(): string
     {
         return $this->localColumnName;
     }
-    
+
     /**
      * @throws \InvalidArgumentException
      */
@@ -119,12 +120,12 @@ class Relation
         $this->localColumnName = $localColumnName;
         return $this;
     }
-    
+
     public function getForeignTableClass(): string
     {
         return $this->foreignTableClass;
     }
-    
+
     /**
      * @throws \InvalidArgumentException
      */
@@ -149,7 +150,7 @@ class Relation
         }
         return $this;
     }
-    
+
     /**
      * @throws \BadMethodCallException
      */
@@ -167,7 +168,7 @@ class Relation
         }
         return $this->foreignTable;
     }
-    
+
     /**
      * @throws \InvalidArgumentException
      */
@@ -190,7 +191,7 @@ class Relation
 
         return $this->foreignColumnName;
     }
-    
+
     /**
      * @throws \InvalidArgumentException
      */
@@ -199,7 +200,7 @@ class Relation
         $this->foreignColumnName = $foreignColumnName;
         return $this;
     }
-    
+
     /**
      * @throws \UnexpectedValueException
      */
@@ -229,7 +230,7 @@ class Relation
 
         return $this->additionalJoinConditions;
     }
-    
+
     /**
      * \Closure => function (Relation $relation, TableInterface $localTable, string $localTableAlias, bool $forStandaloneSelect, ?Record $localRecord = null): array { return []; }
      */
@@ -238,12 +239,12 @@ class Relation
         $this->additionalJoinConditions = $additionalJoinConditions;
         return $this;
     }
-    
+
     public function getDisplayColumnName(): string|\Closure|null
     {
         return $this->displayColumnName;
     }
-    
+
     /**
      * \Closure => function(array $relationData): string { return $relationData['column']; };
      */
@@ -252,25 +253,30 @@ class Relation
         $this->displayColumnName = $displayColumnName;
         return $this;
     }
-    
+
     public function getJoinType(): string
     {
         return $this->joinType;
     }
-    
+
     /**
      * @throws \InvalidArgumentException
      */
     public function setJoinType(string $joinType): static
     {
-        $types = [static::JOIN_INNER, static::JOIN_LEFT, static::JOIN_RIGHT];
+        $types = $this->getJoinTypes();
         if (!in_array($joinType, $types, true)) {
             throw new \InvalidArgumentException('$joinType argument must be one of: ' . implode(',', $types));
         }
         $this->joinType = $joinType;
         return $this;
     }
-    
+
+    protected function getJoinTypes(): array
+    {
+        return [static::JOIN_INNER, static::JOIN_LEFT, static::JOIN_RIGHT, static::JOIN_FULL];
+    }
+
     public function toOrmJoinConfig(
         TableInterface $localTable,
         ?string $localTableAlias = null,
@@ -290,5 +296,5 @@ class Relation
             ->setTableAlias($localTableAlias ?: $localTable::getAlias());
         return $ormJoin;
     }
-    
+
 }

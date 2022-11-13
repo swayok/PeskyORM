@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace PeskyORM\Core\Utils;
 
 use JetBrains\PhpStorm\ArrayShape;
-use PeskyORM\Core\AbstractSelect;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\SelectQueryBuilderAbstract;
 
 abstract class QueryBuilderUtils
 {
@@ -186,7 +186,7 @@ abstract class QueryBuilderUtils
             $valueIsDbExpr = $rawValue instanceof DbExpr;
 
             if (is_object($rawValue)) {
-                $valueIsSubSelect = $rawValue instanceof AbstractSelect;
+                $valueIsSubSelect = $rawValue instanceof SelectQueryBuilderAbstract;
                 if (!$valueIsDbExpr && !$valueIsSubSelect) {
                     throw new \InvalidArgumentException(
                         '$conditions argument may contain only objects of class DbExpr or AbstractSelect. Other objects are forbidden. Key: ' . $column

@@ -68,9 +68,15 @@ abstract class DbAdapterMethodArgumentUtils
     /**
      * @throws \InvalidArgumentException
      */
-    public static function guardColumnsListArg(array $columns, bool $allowDbExpr = true): void
-    {
+    public static function guardColumnsListArg(
+        array $columns,
+        bool $allowDbExpr = true,
+        bool $canBeEmpty = false
+    ): void {
         if (empty($columns)) {
+            if ($canBeEmpty) {
+                return;
+            }
             throw new \InvalidArgumentException('$columns argument cannot be empty.');
         }
         $expectation = '. String' . ($allowDbExpr ? ' or instance of ' . DbExpr::class : '') . ' expected.';

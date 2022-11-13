@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\ORM;
 
 use PeskyORM\Core\DbConnectionsManager;
-use PeskyORM\Core\JoinInfo;
+use PeskyORM\Core\JoinConfig;
 use PeskyORM\Exception\OrmException;
 use PeskyORM\TableDescription\DescribeTable;
 use PeskyORM\TableDescription\TableDescription;
@@ -302,7 +302,7 @@ abstract class TableStructure implements TableStructureInterface
             }
             if (preg_match(Column::NAME_VALIDATION_REGEXP, $method->getName())) {
                 $this->loadColumnConfigFromMethodReflection($method);
-            } elseif (preg_match(JoinInfo::NAME_VALIDATION_REGEXP, $method->getName())) {
+            } elseif (preg_match(JoinConfig::NAME_VALIDATION_REGEXP, $method->getName())) {
                 $relationsMethods[] = $method;
             }
         }

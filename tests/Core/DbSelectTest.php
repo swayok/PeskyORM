@@ -7,7 +7,7 @@ namespace PeskyORM\Tests\Core;
 
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\JoinInfo;
+use PeskyORM\Core\JoinConfig;
 use PeskyORM\Core\Select;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
@@ -104,7 +104,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidTableNameInConstructor1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$tableName argument must be a not-empty string");
+        $this->expectExceptionMessage('$tableName argument value cannot be empty');
         Select::from('', static::getValidAdapter());
     }
     
@@ -425,7 +425,7 @@ class DbSelectTest extends BaseTestCase
     {
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage(
-            "You must use JoinInfo->setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'"
+            "You must use JoinConfig->setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'"
         );
         static::assertEquals(
             'SELECT "OtherTable"."id" AS "_OtherTable__id" FROM "admins" AS "Admins"',
@@ -441,7 +441,7 @@ class DbSelectTest extends BaseTestCase
     {
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage(
-            "You must use JoinInfo->setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'"
+            "You must use JoinConfig->setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'"
         );
         static::assertEquals(
             'SELECT "OtherTable"."id" AS "_OtherTable__id" FROM "admins" AS "Admins"',
@@ -457,7 +457,7 @@ class DbSelectTest extends BaseTestCase
     {
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage(
-            "You must use JoinInfo->setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'"
+            "You must use JoinConfig->setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'"
         );
         static::assertEquals(
             'SELECT "OtherTable"."id" AS "_OtherTable__id" FROM "admins" AS "Admins"',
@@ -769,7 +769,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidLimit6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$limit argument must be an integer value >= 0");
+        $this->expectExceptionMessage('$limit argument value must be a positive integer or 0');
         static::getNewSelect()->limit(-1);
     }
     
@@ -819,7 +819,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidOffset6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$offset argument must be an integer value >= 0");
+        $this->expectExceptionMessage('$offset argument value must be a positive integer or 0');
         static::getNewSelect()
             ->offset(-1);
     }
@@ -839,7 +839,7 @@ class DbSelectTest extends BaseTestCase
         );
         static::assertEquals(
             'SELECT "Admins".* FROM "admins" AS "Admins"',
-            $dbSelect->noLimit()
+            $dbSelect->limit(0)
                 ->getQuery()
         );
         static::assertEquals(
@@ -926,7 +926,7 @@ class DbSelectTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Join with name 'Test' already defined");
-        $joinConfig = JoinInfo::create('Test', 'admins', 'id', JoinInfo::JOIN_INNER, 'settings', 'id');
+        $joinConfig = JoinConfig::create('Test', 'admins', 'id', JoinConfig::JOIN_INNER, 'settings', 'id');
         static::getNewSelect()
             ->join($joinConfig)
             ->join($joinConfig);
@@ -936,7 +936,7 @@ class DbSelectTest extends BaseTestCase
     {
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage("Invalid join name 'NotTest' used in columns list for join named 'Test'");
-        $joinConfig = JoinInfo::create('Test', 'admins', 'id', JoinInfo::JOIN_INNER, 'settings', 'id')
+        $joinConfig = JoinConfig::create('Test', 'admins', 'id', JoinConfig::JOIN_INNER, 'settings', 'id')
             ->setForeignColumnsToSelect('Test.key', 'NotTest.value');
         static::getNewSelect()
             ->join($joinConfig)
@@ -946,47 +946,52 @@ class DbSelectTest extends BaseTestCase
     public function testJoins(): void
     {
         $dbSelect = static::getNewSelect();
-        $joinConfig = JoinInfo::create('Test', 'admins', 'id', JoinInfo::JOIN_INNER, 'settings', 'id')
+        $joinConfig = JoinConfig::create('Test', 'admins', 'id', JoinConfig::JOIN_INNER, 'settings', 'id')
             ->setForeignColumnsToSelect('key', 'value');
         static::assertEquals(
             'SELECT "Admins".*, "Test"."key" AS "_Test__key", "Test"."value" AS "_Test__value" FROM "admins" AS "Admins" INNER JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."id")',
-            $dbSelect->join($joinConfig)
-                ->getQuery()
+            $dbSelect->join($joinConfig)->getQuery()
         );
         $joinConfig
-            ->setJoinType(JoinInfo::JOIN_LEFT)
+            ->setJoinType(JoinConfig::JOIN_LEFT)
             ->setForeignColumnsToSelect('*')
             ->setAdditionalJoinConditions([
                 'key' => 'name',
             ]);
         static::assertEquals(
             'SELECT "Admins".*, "Test".* FROM "admins" AS "Admins" LEFT JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."id" AND "Test"."key" = \'name\')',
-            $dbSelect->join($joinConfig, false)
-                ->getQuery()
+            $dbSelect->join($joinConfig, false)->getQuery()
         );
         $joinConfig
-            ->setJoinType(JoinInfo::JOIN_RIGHT)
+            ->setJoinType(JoinConfig::JOIN_RIGHT)
             ->setForeignColumnsToSelect(['value']);
         static::assertEquals(
             'SELECT "Admins".*, "Test"."value" AS "_Test__value" FROM "admins" AS "Admins" RIGHT JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."id" AND "Test"."key" = \'name\')',
-            $dbSelect->join($joinConfig, false)
-                ->getQuery()
+            $dbSelect->join($joinConfig, false)->getQuery()
         );
         $joinConfig
-            ->setJoinType(JoinInfo::JOIN_RIGHT)
+            ->setJoinType(JoinConfig::JOIN_RIGHT)
             ->setAdditionalJoinConditions([])
             ->setForeignColumnsToSelect([]);
         static::assertEquals(
             'SELECT "Admins".* FROM "admins" AS "Admins" RIGHT JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."id")',
-            $dbSelect->join($joinConfig, false)
-                ->getQuery()
+            $dbSelect->join($joinConfig, false)->getQuery()
+        );
+        $joinConfig
+            ->setJoinType(JoinConfig::JOIN_FULL)
+            ->setAdditionalJoinConditions([])
+            ->setForeignColumnsToSelect([]);
+        static::assertEquals(
+            'SELECT "Admins".* FROM "admins" AS "Admins" FULL JOIN "settings" AS "Test" ON ("Admins"."id" = "Test"."id")',
+            $dbSelect->join($joinConfig, false)->getQuery()
         );
         // test join name shortening
         $joinConfig
+            ->setJoinType(JoinConfig::JOIN_RIGHT)
             ->setJoinName('VeryLongJoinNameSoItMustBeShortened')
-            ->setAdditionalJoinConditions(['VeryLongJoinNameSoItMustBeShortened.parentId' => null]);
-        $query = $dbSelect->join($joinConfig, false)
-            ->getQuery();
+            ->setAdditionalJoinConditions(['VeryLongJoinNameSoItMustBeShortened.parentId' => null])
+            ->setForeignColumnsToSelect([]);
+        $query = $dbSelect->join($joinConfig, false)->getQuery();
         $shortJoinName = $this->callObjectMethod($dbSelect, 'getShortJoinAlias', $joinConfig->getJoinName());
         static::assertEquals(
             'SELECT "Admins".* FROM "admins" AS "Admins" RIGHT JOIN "settings" AS "' . $shortJoinName . '" ON ("Admins"."id" = "' . $shortJoinName . '"."id" AND "' . $shortJoinName . '"."parentId" IS NULL)',
@@ -1180,14 +1185,14 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidSetDbSchemaName2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$schema argument value cannot be empty");
+        $this->expectExceptionMessage('$tableSchema argument value cannot be empty');
         static::getNewSelect()->setTableSchemaName('');
     }
     
     public function testInvalidSetDbSchemaName3(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage("Argument #1 (\$schema) must be of type string");
+        $this->expectExceptionMessage('Argument #1 ($tableSchema) must be of type string');
         /** @noinspection PhpStrictTypeCheckingInspection */
         static::getNewSelect()->setTableSchemaName(true);
     }
@@ -1195,7 +1200,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidSetDbSchemaName4(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage("Argument #1 (\$schema) must be of type string");
+        $this->expectExceptionMessage('Argument #1 ($tableSchema) must be of type string');
         /** @noinspection PhpStrictTypeCheckingInspection */
         static::getNewSelect()->setTableSchemaName(false);
     }
@@ -1232,7 +1237,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidFromConfigsArrayOrder1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("ORDER key in \$conditionsAndOptions argument must be an array");
+        $this->expectExceptionMessage('$conditionsAndOptions[\'ORDER\']: value must be an array');
         static::getNewSelect()
             ->fromConfigsArray([
                 'ORDER' => $this,
@@ -1242,7 +1247,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidFromConfigsArrayOrder2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("ORDER key in \$conditionsAndOptions argument must be an array");
+        $this->expectExceptionMessage('$conditionsAndOptions[\'ORDER\']: value must be an array');
         static::getNewSelect()
             ->fromConfigsArray([
                 'ORDER' => true,
@@ -1252,7 +1257,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidFromConfigsArrayOrder3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("ORDER key in \$conditionsAndOptions argument must be an array");
+        $this->expectExceptionMessage('$conditionsAndOptions[\'ORDER\']: value must be an array');
         static::getNewSelect()
             ->fromConfigsArray([
                 'ORDER' => 'colname ASC',
@@ -1262,7 +1267,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidFromConfigsArrayOrder4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("ORDER key contains invalid direction 'NONE' for a column 'colname'");
+        $this->expectExceptionMessage('$direction argument must be a boolean or string');
         static::getNewSelect()
             ->fromConfigsArray([
                 'ORDER' => ['colname' => 'NONE'],
@@ -1272,7 +1277,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidFromConfigsArrayGroup1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("GROUP key in \$conditionsAndOptions argument must be an array");
+        $this->expectExceptionMessage('$conditionsAndOptions[\'GROUP\']: value must be an array');
         static::getNewSelect()
             ->fromConfigsArray([
                 'GROUP' => $this,
@@ -1282,7 +1287,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidFromConfigsArrayGroup2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("GROUP key in \$conditionsAndOptions argument must be an array");
+        $this->expectExceptionMessage('$conditionsAndOptions[\'GROUP\']: value must be an array');
         static::getNewSelect()
             ->fromConfigsArray([
                 'GROUP' => true,
@@ -1292,7 +1297,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidFromConfigsArrayHaving1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("HAVING key in \$conditionsAndOptions argument must be an array like conditions");
+        $this->expectExceptionMessage('$conditionsAndOptions[\'HAVING\']: value must be an array');
         static::getNewSelect()
             ->fromConfigsArray([
                 'HAVING' => $this,
@@ -1302,7 +1307,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidFromConfigsArrayHaving2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("HAVING key in \$conditionsAndOptions argument must be an array like conditions");
+        $this->expectExceptionMessage('$conditionsAndOptions[\'HAVING\']: value must be an array');
         static::getNewSelect()
             ->fromConfigsArray([
                 'HAVING' => true,
@@ -1312,7 +1317,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidFromConfigsArrayJoins1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("JOINS key in \$conditionsAndOptions argument must be an array");
+        $this->expectExceptionMessage('$conditionsAndOptions[\'JOINS\']: value must be an array');
         static::getNewSelect()
             ->fromConfigsArray([
                 'JOINS' => $this,
@@ -1322,7 +1327,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidFromConfigsArrayJoins2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("JOINS key in \$conditionsAndOptions argument must be an array");
+        $this->expectExceptionMessage('$conditionsAndOptions[\'JOINS\']: value must be an array');
         static::getNewSelect()
             ->fromConfigsArray([
                 'JOINS' => true,
@@ -1332,7 +1337,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidFromConfigsArrayJoins3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("JOINS key in \$conditionsAndOptions argument must contain only instances of JoinInfo class");
+        $this->expectExceptionMessage('$conditionsAndOptions[\'JOINS\'][0]: value must be instance of');
         static::getNewSelect()
             ->fromConfigsArray([
                 'JOINS' => ['string'],
@@ -1342,7 +1347,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidFromConfigsArrayJoins4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("JOINS key in \$conditionsAndOptions argument must contain only instances of JoinInfo class");
+        $this->expectExceptionMessage('$conditionsAndOptions[\'JOINS\'][0]: value must be instance of');
         static::getNewSelect()
             ->fromConfigsArray([
                 'JOINS' => [$this],
@@ -1351,8 +1356,8 @@ class DbSelectTest extends BaseTestCase
     
     public function testInvalidFromConfigsArrayLimit1(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("LIMIT key in \$conditionsAndOptions argument must be an integer >= 0");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($limit) must be of type int');
         static::getNewSelect()
             ->fromConfigsArray([
                 'LIMIT' => $this,
@@ -1361,8 +1366,8 @@ class DbSelectTest extends BaseTestCase
     
     public function testInvalidFromConfigsArrayLimit2(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("LIMIT key in \$conditionsAndOptions argument must be an integer >= 0");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($limit) must be of type int');
         static::getNewSelect()
             ->fromConfigsArray([
                 'LIMIT' => true,
@@ -1372,7 +1377,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidFromConfigsArrayLimit3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("LIMIT key in \$conditionsAndOptions argument must be an integer >= 0");
+        $this->expectExceptionMessage('$limit argument value must be a positive integer or 0');
         static::getNewSelect()
             ->fromConfigsArray([
                 'LIMIT' => -1,
@@ -1381,8 +1386,8 @@ class DbSelectTest extends BaseTestCase
     
     public function testInvalidFromConfigsArrayOffset1(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("OFFSET key in \$conditionsAndOptions argument must be an integer >= 0");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($offset) must be of type int');
         static::getNewSelect()
             ->fromConfigsArray([
                 'OFFSET' => $this,
@@ -1391,8 +1396,8 @@ class DbSelectTest extends BaseTestCase
     
     public function testInvalidFromConfigsArrayOffset2(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("OFFSET key in \$conditionsAndOptions argument must be an integer >= 0");
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #1 ($offset) must be of type int');
         static::getNewSelect()
             ->fromConfigsArray([
                 'OFFSET' => true,
@@ -1402,7 +1407,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidFromConfigsArrayOffset3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("OFFSET key in \$conditionsAndOptions argument must be an integer >= 0");
+        $this->expectExceptionMessage('$offset argument value must be a positive integer or 0');
         static::getNewSelect()
             ->fromConfigsArray([
                 'OFFSET' => -1,
@@ -1438,7 +1443,7 @@ class DbSelectTest extends BaseTestCase
                 'Test.admin_id >' => '1',
             ],
             'JOIN' => [
-                JoinInfo::create('Test', 'admins', 'id', JoinInfo::JOIN_LEFT, 'settings', 'admin_id')
+                JoinConfig::create('Test', 'admins', 'id', JoinConfig::JOIN_LEFT, 'settings', 'admin_id')
                     ->setForeignColumnsToSelect(['admin_id', 'setting_value' => 'Test.value']),
             ],
         ];

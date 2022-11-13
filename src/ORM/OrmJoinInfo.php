@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\AbstractJoinInfo;
+use PeskyORM\Core\NormalJoinConfigAbstract;
 
-class OrmJoinInfo extends AbstractJoinInfo
+class OrmJoinInfo extends NormalJoinConfigAbstract
 {
     
     protected TableInterface $dbTable;
     protected TableInterface $foreignDbTable;
-    
+
+    /**
+     * @deprecated
+     */
     public static function create(
         string $joinName,
         TableInterface $localTable,
@@ -29,7 +32,10 @@ class OrmJoinInfo extends AbstractJoinInfo
             $foreignColumnName
         );
     }
-    
+
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function __construct(
         string $joinName,
         TableInterface $localTable,
@@ -44,27 +50,35 @@ class OrmJoinInfo extends AbstractJoinInfo
             ->setJoinType($joinType)
             ->setConfigForForeignTable($foreignTable, $foreignColumnName);
     }
-    
+
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function setConfigForLocalTable(TableInterface $table, string $columnName): static
     {
         return $this
             ->setDbTable($table)
             ->setColumnName($columnName);
     }
-    
+
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function setConfigForForeignTable(TableInterface $foreignTable, string $foreignColumnName): static
     {
         return $this
             ->setForeignDbTable($foreignTable)
             ->setForeignColumnName($foreignColumnName);
     }
-    
+
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function setDbTable(TableInterface $dbTable): static
     {
         $this->dbTable = $dbTable;
         $this->tableName = $dbTable->getName();
-        $this->tableSchema = $dbTable->getTableStructure()
-            ->getSchema();
+        $this->tableSchema = $dbTable->getTableStructure()->getSchema();
         if ($this->tableAlias === null) {
             $this->setTableAlias($this->dbTable::getAlias());
         }
@@ -100,28 +114,28 @@ class OrmJoinInfo extends AbstractJoinInfo
             $columns = $columns[0];
         }
         $this->foreignColumnsToSelect = [];
-        $tableStruct = $this->getForeignDbTable()
-            ->getTableStructure();
+        $tableStructure = $this->getForeignDbTable()->getTableStructure();
         foreach ($columns as $columnAlias => $columnName) {
             if ($columnName !== '*') {
                 if (!is_string($columnName)) {
                     throw new \InvalidArgumentException(
                         "\$columns argument contains non-string column name on key '{$columnAlias}' for join named '{$this->getJoinName()}'"
                     );
-                } elseif (!$tableStruct::hasColumn($columnName)) {
+                }
+
+                if (!$tableStructure::hasColumn($columnName)) {
                     throw new \InvalidArgumentException(
                         "Column with name [{$this->getJoinName()}.{$columnName}]"
                         . (is_int($columnAlias) ? '' : " and alias [{$columnAlias}]")
-                        . ' not found in ' . get_class($tableStruct)
+                        . ' not found in ' . get_class($tableStructure)
                     );
                 }
                 $this->foreignColumnsToSelect[$columnAlias] = $columnName;
             } else {
-                foreach (
-                    $this->getForeignDbTable()
-                        ->getTableStructure()
-                        ->getColumns() as $knownColumnName => $columnInfo
-                ) {
+                $knownColumns = $this->getForeignDbTable()
+                    ->getTableStructure()
+                    ->getColumns();
+                foreach ($knownColumns as $knownColumnName => $columnInfo) {
                     if ($columnInfo->isItExistsInDb() && !in_array($knownColumnName, $columns, true)) {
                         // add only columns still not listed here
                         $this->foreignColumnsToSelect[] = $knownColumnName;
