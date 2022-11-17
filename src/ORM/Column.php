@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace PeskyORM\ORM;
 
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\Utils\ArgumentValidators;
 
 /**
  * Value setter workflow:
- * $this->valueSetter closure is called and it calls
+ * $this->valueSetter closure is called, and it calls
  * 1. $this->valuePreprocessor closure (result and original value saved to RecordValue object)
  * 2. $this->valueValidator closure (validation errors saved to RecordValue->setRawValue(...))
  * 2.1. $this->valueValidatorExtender closure (if DefaultColumnClosures::valueValidator() is used and value is still valid)
@@ -16,7 +17,7 @@ use PeskyORM\Core\DbExpr;
  * Valid value saved to RecordValue->setValidValue(....)
  *
  * Value getter workflow:
- * $this->valueGetter closure is called and it will possibly call $this->valueFormatter closure
+ * $this->valueGetter closure is called, and it will possibly call $this->valueFormatter closure
  */
 class Column
 {
@@ -41,8 +42,6 @@ class Column
     public const TYPE_FILE = 'file';
     public const TYPE_IMAGE = 'image';
     public const TYPE_BLOB = 'blob';
-    
-    public const NAME_VALIDATION_REGEXP = '%^[a-z][a-z0-9_]*$%';    //< snake_case
     
     public const DEFAULT_VALUE_NOT_SET = '___NOT_SET___';
     public const VALID_DEFAULT_VALUE_UNDEFINED = '___UNDEFINED___';
@@ -129,7 +128,7 @@ class Column
     protected bool $isPrimaryKey = false;
     protected bool $isValueMustBeUnique = false;
     /**
-     * Should value uniqueness be case sensitive or not?
+     * Should value uniqueness be case-sensitive or not?
      */
     protected bool $isUniqueContraintCaseSensitive = true;
     /**
@@ -438,13 +437,11 @@ class Column
     public function setName(string $name): static
     {
         if ($this->hasName()) {
-            throw new \BadMethodCallException('Column name alteration is forbidden');
+            throw new \BadMethodCallException('Column name changing is forbidden');
         }
-        if (!preg_match(static::NAME_VALIDATION_REGEXP, $name)) {
-            throw new \InvalidArgumentException(
-                "\$name argument contains invalid value: '$name'. Pattern: " . static::NAME_VALIDATION_REGEXP . '. Example: snake_case1'
-            );
-        }
+        ArgumentValidators::assertNotEmpty('$name', $name);
+        ArgumentValidators::assertSnakeCase('$name', $name);
+
         $this->name = $name;
         return $this;
     }
@@ -547,7 +544,7 @@ class Column
     
     /**
      * Get validated default value
-     * @param mixed|null|\Closure $fallbackValue - value to be returned when default value was not configured (may be a \Closure)
+     * @param mixed|null|\Closure $fallbackValue - value to be returned when default value was not configured
      * @return mixed - validated default value or $fallbackValue or return from $this->validDefaultValueGetter
      * @throws \UnexpectedValueException
      */
@@ -576,9 +573,9 @@ class Column
                     throw new \UnexpectedValueException(
                         "{$excPrefix} for column {$tableStructureClass}->{$this->getName()} is not valid. Errors: " . implode(', ', $errors)
                     );
-                } else {
-                    $defaultValue = call_user_func($this->getValueNormalizer(), $defaultValue, false, $this);
                 }
+
+                $defaultValue = call_user_func($this->getValueNormalizer(), $defaultValue, false, $this);
             }
             if ($rememberValidDefaultValue) {
                 $this->validDefaultValue = $defaultValue;
@@ -690,7 +687,7 @@ class Column
     /**
      * Note: there is no automatic uniqueness validation in DefaultColumnClosures class!
      * @param bool $caseSensitive - true: compare values as is; false: compare lowercased values (emails for example);
-     *      Note that case insensitive mode uses more resources than case sensitive!
+     *      Note that case-insensitive mode uses more resources than case-sensitive!
      * @param array $withinColumns - used to provide list of columns for cases when uniqueness constraint in DB
      *      uses 2 or more columns.
      *      For example: when 'title' column must be unique within 'category' (category_id column)

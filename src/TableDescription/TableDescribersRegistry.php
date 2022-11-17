@@ -11,9 +11,8 @@ use PeskyORM\TableDescription\TableDescribers\MysqlTableDescriber;
 use PeskyORM\TableDescription\TableDescribers\PostgresTableDescriber;
 use PeskyORM\TableDescription\TableDescribers\TableDescriberInterface;
 
-abstract class DescribeTable
+abstract class TableDescribersRegistry
 {
-
     static protected array $describers = [
         Mysql::class => MysqlTableDescriber::class,
         Postgres::class => PostgresTableDescriber::class,
@@ -37,10 +36,9 @@ abstract class DescribeTable
             }
         }
         throw new \InvalidArgumentException('There are no table describer for ' . $dbAdapter::class . ' adapter');
-
     }
 
-    public static function getTableDescription(
+    public static function describeTable(
         DbAdapterInterface $dbAdapter,
         string $tableName,
         ?string $schemaName = null

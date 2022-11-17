@@ -6,10 +6,10 @@ namespace PeskyORM\ORM;
 
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\Utils\StringUtils;
 use PeskyORM\TableDescription\ColumnDescription;
-use PeskyORM\TableDescription\DescribeTable;
+use PeskyORM\TableDescription\TableDescribersRegistry;
 use PeskyORM\TableDescription\TableDescription;
-use Swayok\Utils\StringUtils;
 
 class ClassBuilder
 {
@@ -39,7 +39,7 @@ class ClassBuilder
         if ($parentClass === null) {
             $parentClass = Table::class;
         }
-        $alias = StringUtils::classify($this->tableName);
+        $alias = StringUtils::toPascalCase($this->tableName);
         return <<<VIEW
 <?php
 
@@ -156,14 +156,14 @@ VIEW;
     protected function getTableDescription(): TableDescription
     {
         if (!$this->tableDescription) {
-            $this->tableDescription = DescribeTable::getTableDescription($this->connection, $this->tableName, $this->dbSchemaName);
+            $this->tableDescription = TableDescribersRegistry::describeTable($this->connection, $this->tableName, $this->dbSchemaName);
         }
         return $this->tableDescription;
     }
     
     public static function convertTableNameToClassName(string $tableName): string
     {
-        return StringUtils::classify($tableName);
+        return StringUtils::toPascalCase($tableName);
     }
     
     public static function makeTableClassName(string $tableName): string
@@ -178,7 +178,7 @@ VIEW;
     
     public static function makeRecordClassName(string $tableName): string
     {
-        return StringUtils::singularize(static::convertTableNameToClassName($tableName));
+        return StringUtils::toSingularPascalCase($tableName);
     }
     
     protected function getShortClassName(string $fullClassName): string
@@ -210,7 +210,7 @@ VIEW;
             }
             $traitColumns = [];
             foreach ($traitMethods as $reflectionMethod) {
-                if (preg_match(Column::NAME_VALIDATION_REGEXP, $reflectionMethod->getName())) {
+                if (StringUtils::isSnakeCase($reflectionMethod->getName())) {
                     $traitColumns[] = $reflectionMethod->getName();
                 }
             }
@@ -302,7 +302,7 @@ VIEW;
             $this->typeValueToTypeConstantName = array_flip(
                 array_filter(
                     (new \ReflectionClass(Column::class))->getConstants(),
-                    function ($key) {
+                    static function ($key) {
                         return str_starts_with($key, 'TYPE_');
                     },
                     ARRAY_FILTER_USE_KEY
@@ -324,7 +324,7 @@ VIEW;
                 $phpType = str_pad($phpType, 11, ' ', STR_PAD_RIGHT);
                 $getters[] = " * @property-read {$phpType} \${$columnDescription->getName()}_as_{$formaterName}";
             }
-            $setter = 'set' . StringUtils::classify($columnDescription->getName());
+            $setter = 'set' . StringUtils::toPascalCase($columnDescription->getName());
             $setters[] = " * @method \$this    {$setter}(\$value, \$isFromDb = false)";
         }
         return implode("\n", $getters) . "\n *\n" . implode("\n", $setters);

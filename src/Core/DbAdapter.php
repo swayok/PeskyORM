@@ -6,15 +6,16 @@ namespace PeskyORM\Core;
 
 use PDO;
 use PDOStatement;
+use PeskyORM\Core\Utils\BacktraceUtils;
 use PeskyORM\Core\Utils\DbAdapterMethodArgumentUtils;
 use PeskyORM\Core\Utils\DbQuoter;
 use PeskyORM\Core\Utils\PdoUtils;
 use PeskyORM\Core\Utils\QueryBuilderUtils;
 use PeskyORM\Exception\DbException;
 use PeskyORM\Exception\DbInsertQueryException;
+use PeskyORM\Exception\DbTransactionException;
 use PeskyORM\Exception\DetailedPDOException;
 use PeskyORM\ORM\RecordInterface;
-use Swayok\Utils\Utils;
 
 abstract class DbAdapter implements DbAdapterInterface
 {
@@ -583,9 +584,10 @@ abstract class DbAdapter implements DbAdapterInterface
     {
         if ($this->inTransaction()) {
             static::rememberTransactionTrace('failed');
-            throw new DbException(
-                'Already in transaction: ' . Utils::printToStr(static::$transactionsTraces),
-                DbException::CODE_TRANSACTION_BEGIN_FAIL
+            throw new DbTransactionException(
+                'Already in transaction',
+                DbException::CODE_TRANSACTION_BEGIN_FAIL,
+                static::$transactionsTraces
             );
         }
     }
@@ -594,9 +596,10 @@ abstract class DbAdapter implements DbAdapterInterface
     {
         if (!$this->inTransaction()) {
             static::rememberTransactionTrace('failed');
-            throw new DbException(
-                'Attempt to commit not started transaction: ' . Utils::printToStr(static::$transactionsTraces),
-                DbException::CODE_TRANSACTION_COMMIT_FAIL
+            throw new DbTransactionException(
+                'Attempt to commit not started transaction',
+                DbException::CODE_TRANSACTION_COMMIT_FAIL,
+                static::$transactionsTraces
             );
         }
     }
@@ -605,9 +608,10 @@ abstract class DbAdapter implements DbAdapterInterface
     {
         if (!$this->inTransaction()) {
             static::rememberTransactionTrace('failed');
-            throw new DbException(
-                'Attempt to rollback not started transaction: ' . Utils::printToStr(static::$transactionsTraces),
-                DbException::CODE_TRANSACTION_ROLLBACK_FAIL
+            throw new DbTransactionException(
+                'Attempt to rollback not started transaction',
+                DbException::CODE_TRANSACTION_ROLLBACK_FAIL,
+                static::$transactionsTraces
             );
         }
     }
@@ -619,7 +623,7 @@ abstract class DbAdapter implements DbAdapterInterface
     protected static function rememberTransactionTrace(?string $key = null): void
     {
         if (static::$isTransactionTracesEnabled) {
-            $trace = Utils::getBackTrace(true, false, true, 2);
+            $trace = BacktraceUtils::getBackTrace(false, 2);
             if ($key) {
                 static::$transactionsTraces[$key] = $trace;
             } else {

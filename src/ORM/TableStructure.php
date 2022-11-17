@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace PeskyORM\ORM;
 
 use PeskyORM\Core\DbConnectionsManager;
-use PeskyORM\Core\JoinConfig;
+use PeskyORM\Core\Utils\StringUtils;
 use PeskyORM\Exception\OrmException;
-use PeskyORM\TableDescription\DescribeTable;
+use PeskyORM\TableDescription\TableDescribersRegistry;
 use PeskyORM\TableDescription\TableDescription;
 
 abstract class TableStructure implements TableStructureInterface
@@ -15,7 +15,7 @@ abstract class TableStructure implements TableStructureInterface
 
     /**
      * Use table description from DB to automatically create missing column configs
-     * @see DescribeTable::getTableDescription()
+     * @see TableDescribersRegistry::describeTable()
      */
     protected static bool $autodetectColumns = false;
     /**
@@ -300,9 +300,10 @@ abstract class TableStructure implements TableStructureInterface
             if ($method->isStatic()) {
                 continue;
             }
-            if (preg_match(Column::NAME_VALIDATION_REGEXP, $method->getName())) {
+            $methodName = $method->getName();
+            if (StringUtils::isSnakeCase($methodName)) {
                 $this->loadColumnConfigFromMethodReflection($method);
-            } elseif (preg_match(JoinConfig::NAME_VALIDATION_REGEXP, $method->getName())) {
+            } elseif (StringUtils::isPascalCase($methodName)) {
                 $relationsMethods[] = $method;
             }
         }
@@ -343,7 +344,7 @@ abstract class TableStructure implements TableStructureInterface
      */
     protected function getTableDescription(): TableDescription
     {
-        return DescribeTable::getTableDescription(
+        return TableDescribersRegistry::describeTable(
             DbConnectionsManager::getConnection(static::getConnectionName(false)),
             static::getTableName(),
             static::getSchema()

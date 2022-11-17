@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace PeskyORM\Core;
 
+use PeskyORM\Core\Utils\ArgumentValidators;
 use PeskyORM\Core\Utils\DbAdapterMethodArgumentUtils;
+use PeskyORM\Core\Utils\StringUtils;
 
 abstract class NormalJoinConfigAbstract implements NormalJoinConfigInterface
 {
@@ -92,16 +94,8 @@ abstract class NormalJoinConfigAbstract implements NormalJoinConfigInterface
      */
     public function setJoinName(string $joinName): static
     {
-        if (empty($joinName)) {
-            throw new \InvalidArgumentException('$joinName argument must be a not-empty string');
-        }
-
-        if (!preg_match(static::NAME_VALIDATION_REGEXP, $joinName)) {
-            throw new \InvalidArgumentException(
-                "\$joinName argument contains invalid value: '$joinName'. Pattern: "
-                . static::NAME_VALIDATION_REGEXP . '. Example: CamelCase1'
-            );
-        }
+        ArgumentValidators::assertNotEmpty('$joinName', $joinName);
+        ArgumentValidators::assertPascalCase('$joinName', $joinName);
         $this->joinName = $joinName;
         return $this;
     }
@@ -165,6 +159,9 @@ abstract class NormalJoinConfigAbstract implements NormalJoinConfigInterface
      */
     public function getTableAlias(): ?string
     {
+        if (!$this->tableAlias) {
+            $this->setTableAlias(StringUtils::toPascalCase($this->tableName));
+        }
         return $this->tableAlias;
     }
 

@@ -12,8 +12,6 @@ interface JoinConfigInterface
     public const JOIN_FULL = 'full';
     public const JOIN_CROSS = 'cross';
 
-    public const NAME_VALIDATION_REGEXP = '%^[A-Z][a-zA-Z0-9]*$%';   //< CamelCase
-
     /**
      * Get JOIN name (alias)
      * Example: INNER JOIN foreign_table_schema.foreign_table_name as ForeignTableAlias ON ($conditions) AS $joinName

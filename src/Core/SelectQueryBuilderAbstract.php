@@ -7,6 +7,7 @@ namespace PeskyORM\Core;
 use PeskyORM\Core\Utils\ArgumentValidators;
 use PeskyORM\Core\Utils\PdoUtils;
 use PeskyORM\Core\Utils\QueryBuilderUtils;
+use PeskyORM\Core\Utils\StringUtils;
 
 abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
 {
@@ -54,6 +55,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
     protected array $columnAliasToColumnInfo = [];
     protected array $shortColumnAliases = [];
     protected int $shortColumnAliasIndex = 0;
+    protected ?string $tableAlias = null;
 
     public function fromConfigsArray(array $conditionsAndOptions): static
     {
@@ -97,15 +99,13 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
             foreach ($options['JOINS'] as $key => $join) {
                 if ($join instanceof CrossJoinConfigInterface) {
                     $this->crossJoin($join);
+                } elseif ($join instanceof NormalJoinConfigInterface) {
+                    $this->join($join);
                 } else {
-                    if ($join instanceof NormalJoinConfigInterface) {
-                        $this->join($join);
-                    } else {
-                        throw new \InvalidArgumentException(
-                            "\$conditionsAndOptions['JOINS'][$key]: value must be instance of "
-                            . NormalJoinConfigInterface::class . ' or ' . CrossJoinConfigInterface::class . " class"
-                        );
-                    }
+                    throw new \InvalidArgumentException(
+                        "\$conditionsAndOptions['JOINS'][$key]: value must be instance of "
+                        . NormalJoinConfigInterface::class . ' or ' . CrossJoinConfigInterface::class . " class"
+                    );
                 }
             }
         }
@@ -155,6 +155,20 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
             );
             $this->having($options['HAVING']);
         }
+    }
+
+    public function setTableAlias(string $tableAlias): static
+    {
+        $this->tableAlias = $tableAlias;
+        return $this;
+    }
+
+    public function getTableAlias(): string
+    {
+        if (!$this->tableAlias) {
+            $this->setTableAlias(StringUtils::toPascalCase($this->getTableName()));
+        }
+        return $this->tableAlias;
     }
 
     public function fetchOne(): array

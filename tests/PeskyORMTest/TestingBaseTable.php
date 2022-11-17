@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest;
 
+use PeskyORM\Core\Utils\StringUtils;
 use PeskyORM\ORM\RecordInterface;
 use PeskyORM\ORM\Table;
 use PeskyORM\ORM\TableStructure;
 use PeskyORM\ORM\TableStructureInterface;
-use Swayok\Utils\StringUtils;
 
 abstract class TestingBaseTable extends Table
 {
@@ -20,7 +20,7 @@ abstract class TestingBaseTable extends Table
         if (!$this->recordClass) {
             $class = new \ReflectionClass(static::class);
             $this->recordClass = $class->getNamespaceName() . '\\'
-                . StringUtils::singularize(str_replace('Table', '', $class->getShortName()));
+                . StringUtils::toSingular(str_replace('Table', '', $class->getShortName()));
         }
         return new $this->recordClass();
     }

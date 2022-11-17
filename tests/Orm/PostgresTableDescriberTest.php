@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Orm;
 
-use PeskyORM\Adapter\Postgres;
 use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\ORM\Column;
-use PeskyORM\TableDescription\DescribeTable;
 use PeskyORM\TableDescription\TableDescribers\MysqlTableDescriber;
 use PeskyORM\TableDescription\TableDescribers\PostgresTableDescriber;
+use PeskyORM\TableDescription\TableDescribersRegistry;
 use PeskyORM\TableDescription\TableDescription;
 use PeskyORM\Tests\PeskyORMTest\Adapter\OtherAdapterTesting;
 use PeskyORM\Tests\PeskyORMTest\Adapter\OtherAdapterTesting2;
@@ -36,20 +35,20 @@ class PostgresTableDescriberTest extends BaseTestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('There are no table describer for');
         $adapter = new OtherAdapterTesting2(new MysqlConfig('test', 'test', 'test'));
-        DescribeTable::getDescriber($adapter);
+        TableDescribersRegistry::getDescriber($adapter);
     }
 
     public function testDescribeTable(): void
     {
         $adapter = self::getValidAdapter();
-        static::assertInstanceOf(PostgresTableDescriber::class, DescribeTable::getDescriber($adapter));
+        static::assertInstanceOf(PostgresTableDescriber::class, TableDescribersRegistry::getDescriber($adapter));
         /** @noinspection UnnecessaryAssertionInspection */
-        static::assertInstanceOf(TableDescription::class, DescribeTable::getTableDescription($adapter, 'settings'));
+        static::assertInstanceOf(TableDescription::class, TableDescribersRegistry::describeTable($adapter, 'settings'));
 
         // set custom describer
         $otherAdapter = new OtherAdapterTesting(new PostgresConfig('test', 'test', 'test'));
-        DescribeTable::registerDescriber($otherAdapter::class, MysqlTableDescriber::class);
-        static::assertInstanceOf(MysqlTableDescriber::class, DescribeTable::getDescriber($otherAdapter));
+        TableDescribersRegistry::registerDescriber($otherAdapter::class, MysqlTableDescriber::class);
+        static::assertInstanceOf(MysqlTableDescriber::class, TableDescribersRegistry::getDescriber($otherAdapter));
     }
 
     /**

@@ -9,8 +9,8 @@ use PHPUnit\Framework\Exception;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use ReflectionMethod;
-use Swayok\Utils\ReflectionUtils;
 
 class BaseTestCase extends TestCase
 {
@@ -49,17 +49,23 @@ class BaseTestCase extends TestCase
     
     protected function getObjectPropertyValue($object, string $propertyName)
     {
-        return ReflectionUtils::getObjectPropertyValue($object, $propertyName);
+        $reflection = new ReflectionClass($object);
+        $prop = $reflection->getProperty($propertyName);
+        $prop->setAccessible(true);
+        return $prop->getValue($object);
     }
     
     protected function callObjectMethod($object, string $methodName, ...$args)
     {
-        return ReflectionUtils::callObjectMethod($object, $methodName, ...$args);
+        return $this->getMethodReflection($object, $methodName)
+            ->invokeArgs($object, $args);
     }
     
     protected function getMethodReflection($object, string $methodName): ReflectionMethod
     {
-        return ReflectionUtils::getMethodReflection($object, $methodName);
+        $reflection = new ReflectionClass($object);
+        $method = $reflection->getMethod($methodName);
+        $method->setAccessible(true);
+        return $method;
     }
-    
 }

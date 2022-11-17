@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace PeskyORM\Core;
 
 use PeskyORM\Core\Utils\ArgumentValidators;
-use Swayok\Utils\StringUtils;
 
 class Select extends SelectQueryBuilderAbstract
 {
@@ -14,7 +13,6 @@ class Select extends SelectQueryBuilderAbstract
      */
     protected string $tableName;
     protected ?string $dbSchema = null;
-    protected string $tableAlias;
     protected DbAdapterInterface $connection;
     
     /**
@@ -33,7 +31,6 @@ class Select extends SelectQueryBuilderAbstract
         ArgumentValidators::assertNotEmpty('$tableName', $tableName);
         $this->tableName = $tableName;
         $this->connection = $connection;
-        $this->setTableAlias(StringUtils::classify($tableName));
     }
     
     /**
@@ -44,7 +41,7 @@ class Select extends SelectQueryBuilderAbstract
         ArgumentValidators::assertNotEmpty('$tableSchema', $tableSchema);
         if (!$this->getConnection()->isValidDbEntityName($tableSchema)) {
             throw new \InvalidArgumentException(
-                "\$tableSchema argument value is not a valid DB entity name: [$tableSchema]"
+                "\$tableSchema argument value '$tableSchema' is not a valid DB entity name"
             );
         }
         $this->dbSchema = $tableSchema;
@@ -59,17 +56,6 @@ class Select extends SelectQueryBuilderAbstract
     public function getTableName(): string
     {
         return $this->tableName;
-    }
-    
-    public function setTableAlias(string $tableAlias): static
-    {
-        $this->tableAlias = $tableAlias;
-        return $this;
-    }
-    
-    public function getTableAlias(): string
-    {
-        return $this->tableAlias;
     }
     
     public function getConnection(): DbAdapterInterface

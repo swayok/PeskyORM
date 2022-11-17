@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbAdapterInterface;
-use PeskyORM\Core\Utils;
 use PeskyORM\Core\Utils\PdoUtils;
+use PeskyORM\Core\Utils\StringUtils;
 use PeskyORM\ORM\Traits\FakeTableStructureHelpers;
-use Swayok\Utils\StringUtils;
 
 abstract class FakeTable extends Table
 {
@@ -63,7 +61,7 @@ abstract class FakeTable extends Table
         }
         static::$fakesCreated++;
         $namespace = 'PeskyORM\ORM\Fakes';
-        $className = 'FakeTable' . static::$fakesCreated . 'For' . StringUtils::classify($tableName);
+        $className = 'FakeTable' . static::$fakesCreated . 'For' . StringUtils::toPascalCase($tableName);
         $implemets = !empty($interfaces) ? ' implements \\' . implode(', \\', $interfaces) : '';
         $use = !empty($traits) ? '    use \\' . implode(', \\', $traits) . ';' : '';
         $class = <<<VIEW

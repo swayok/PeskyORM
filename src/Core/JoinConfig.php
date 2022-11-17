@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace PeskyORM\Core;
 
 use PeskyORM\Core\Utils\ArgumentValidators;
-use Swayok\Utils\StringUtils;
 
 class JoinConfig extends NormalJoinConfigAbstract
 {
@@ -118,9 +117,6 @@ class JoinConfig extends NormalJoinConfigAbstract
     {
         ArgumentValidators::assertNullOrNotEmptyString('$tableName', $tableName);
         $this->tableName = $tableName;
-        if ($this->tableAlias === null) {
-            $this->setTableAlias(StringUtils::classify($this->tableName));
-        }
         if ($tableSchema) {
             $this->setTableSchema($tableSchema);
         }

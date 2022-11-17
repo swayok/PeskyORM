@@ -15,7 +15,6 @@ class OrmSelect extends SelectQueryBuilderAbstract
 {
 
     protected TableInterface $table;
-    protected string $tableAlias;
     protected TableStructureInterface $tableStructure;
     /**
      * DB Record class (when null - $this->table->newRecord() will be used in $this->getNewRecord())
@@ -60,27 +59,14 @@ class OrmSelect extends SelectQueryBuilderAbstract
         return $this->getTableStructure()->getTableName();
     }
 
-    public function setTableAlias(string $tableAlias): static
-    {
-        $this->tableAlias = $tableAlias;
-        return $this;
-    }
-
-    public function getTableAlias(): string
-    {
-        return $this->tableAlias;
-    }
-
     public function getTableSchemaName(): ?string
     {
-        return $this->getTableStructure()
-            ->getSchema();
+        return $this->getTableStructure()->getSchema();
     }
 
     public function getConnection(): DbAdapterInterface
     {
-        return $this->getTable()
-            ->getConnection(false);
+        return $this->getTable()->getConnection(false);
     }
 
     public function getTable(): TableInterface

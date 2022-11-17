@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\ORM;
 
 use PeskyORM\Core\JoinConfigInterface;
+use PeskyORM\Core\Utils\ArgumentValidators;
 
 class Relation
 {
@@ -70,12 +71,8 @@ class Relation
             throw new \BadMethodCallException('Relation name alteration is forbidden');
         }
 
-        if (!preg_match(JoinConfigInterface::NAME_VALIDATION_REGEXP, $name)) {
-            throw new \InvalidArgumentException(
-                "\$name argument contains invalid value: '$name'. Pattern: "
-                . JoinConfigInterface::NAME_VALIDATION_REGEXP . '. Example: CamelCase1'
-            );
-        }
+        ArgumentValidators::assertNotEmpty('$name', $name);
+        ArgumentValidators::assertPascalCase('$name', $name);
 
         $this->name = $name;
         return $this;
@@ -283,7 +280,7 @@ class Relation
         ?string $joinName = null,
         ?string $joinType = null
     ): OrmJoinInfo {
-        $ormJoin = OrmJoinInfo::create(
+        $ormJoin = new OrmJoinInfo(
             $joinName ?: $this->getName(),
             $localTable,
             $this->getLocalColumnName(),

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PeskyORM\Core;
 
+use PeskyORM\Core\Utils\ArgumentValidators;
+
 class CrossJoinConfig implements CrossJoinConfigInterface
 {
     protected string $joinName;
@@ -33,16 +35,8 @@ class CrossJoinConfig implements CrossJoinConfigInterface
      */
     public function setJoinName(string $joinName): static
     {
-        if (empty($joinName)) {
-            throw new \InvalidArgumentException('$joinName argument must be a not-empty string');
-        }
-
-        if (!preg_match(static::NAME_VALIDATION_REGEXP, $joinName)) {
-            throw new \InvalidArgumentException(
-                "\$joinName argument contains invalid value: '$joinName'. Pattern: "
-                . static::NAME_VALIDATION_REGEXP . '. Example: CamelCase1'
-            );
-        }
+        ArgumentValidators::assertNotEmpty('$joinName', $joinName);
+        ArgumentValidators::assertPascalCase('$joinName', $joinName);
         $this->joinName = $joinName;
         return $this;
     }

@@ -182,30 +182,29 @@ class ColumnTest extends BaseTestCase
     public function testInvalidNameSet4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$name argument contains invalid value: 'two words'. Pattern: %^[a-z][a-z0-9_]*$%. Example: snake_case1");
+        $this->expectExceptionMessage('$name argument contains invalid value: \'two words\'');
         Column::create(Column::TYPE_BLOB, 'two words');
     }
     
     public function testInvalidNameSet5(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$name argument contains invalid value: 'camelCase'. Pattern: %^[a-z][a-z0-9_]*$%. Example: snake_case1");
+        $this->expectExceptionMessage('$name argument contains invalid value: \'camelCase\'');
         Column::create(Column::TYPE_DATE, 'camelCase');
     }
     
     public function testInvalidNameSet6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$name argument contains invalid value: 'UpperCase'. Pattern: %^[a-z][a-z0-9_]*$%. Example: snake_case1");
+        $this->expectExceptionMessage('$name argument contains invalid value: \'UpperCase\'');
         Column::create(Column::TYPE_EMAIL, 'UpperCase');
     }
     
     public function testDoubleNameSetter(): void
     {
         $this->expectException(\BadMethodCallException::class);
-        $this->expectExceptionMessage("Column name alteration is forbidden");
-        $obj = Column::create(Column::TYPE_ENUM)
-            ->setName('test');
+        $this->expectExceptionMessage("Column name changing is forbidden");
+        $obj = Column::create(Column::TYPE_ENUM)->setName('test');
         $obj->setName('test');
     }
     

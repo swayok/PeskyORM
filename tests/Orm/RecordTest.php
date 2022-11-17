@@ -6,6 +6,7 @@ namespace PeskyORM\Tests\Orm;
 
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\Utils\StringUtils;
 use PeskyORM\Exception\InvalidDataException;
 use PeskyORM\Exception\RecordNotFoundException;
 use PeskyORM\ORM\Record;
@@ -24,7 +25,6 @@ use PeskyORM\Tests\PeskyORMTest\TestingSettings\TestingSettingsTable;
 use PeskyORM\Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 use Swayok\Utils\NormalizeValue;
 use Swayok\Utils\Set;
-use Swayok\Utils\StringUtils;
 
 class RecordTest extends BaseTestCase
 {
@@ -2778,7 +2778,7 @@ class RecordTest extends BaseTestCase
                 static::assertFalse($recForMagickSetterProperty->isValueFromDb($name));
             }
             
-            $setterMethodName = 'set' . StringUtils::classify($name);
+            $setterMethodName = 'set' . StringUtils::toPascalCase($name);
             $recForMagickSetterMethodFromDb->$setterMethodName($value, true);
             static::assertTrue($recForMagickSetterMethodFromDb->hasValue($name));
             static::assertEquals($value, $recForMagickSetterMethodFromDb->getValue($name));

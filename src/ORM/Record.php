@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace PeskyORM\ORM;
 
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\Utils\StringUtils;
 use PeskyORM\Exception\InvalidDataException;
 use PeskyORM\Exception\RecordNotFoundException;
-use Swayok\Utils\StringUtils;
 
 abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Serializable
 {
@@ -2234,20 +2234,25 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     public function __call(string $name, array $arguments): static
     {
-        $isValidName = preg_match('%^set([A-Z][a-zA-Z0-9]*)$%', $name, $nameParts) > 0;
+        $isValidName = (bool)preg_match('%^set([A-Z][a-zA-Z0-9]*)$%', $name, $nameParts);
         if (!$isValidName) {
             throw new \BadMethodCallException(
                 "Magic method '{$name}(\$value, \$isFromDb = false)' is forbidden. You can magically call only methods starting with 'set', for example: setId(1)"
             );
-        } elseif (count($arguments) > 2) {
+        }
+
+        if (count($arguments) > 2) {
             throw new \InvalidArgumentException(
                 "Magic method '{$name}(\$value, \$isFromDb = false)' accepts only 2 arguments, but " . count($arguments) . ' arguments passed'
             );
-        } elseif (array_key_exists(1, $arguments) && !is_bool($arguments[1])) {
+        }
+
+        if (array_key_exists(1, $arguments) && !is_bool($arguments[1])) {
             throw new \InvalidArgumentException(
                 "2nd argument for magic method '{$name}(\$value, \$isFromDb = false)' must be a boolean and reflects if value received from DB"
             );
         }
+
         $value = $arguments[0];
         if (static::hasRelation($nameParts[1])) {
             if (
@@ -2268,7 +2273,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             $isFromDb = $arguments[1] ?? null;
             $this->updateRelatedRecord($nameParts[1], $value, $isFromDb);
         } else {
-            $columnName = StringUtils::underscore($nameParts[1]);
+            $columnName = StringUtils::toSnakeCase($nameParts[1]);
             if (!static::_hasColumn($columnName, false)) {
                 throw new \BadMethodCallException(
                     "Magic method '{$name}(\$value, \$isFromDb = false)' is not linked with any column or relation"

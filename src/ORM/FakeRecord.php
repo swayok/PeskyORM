@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
-use Swayok\Utils\StringUtils;
+use PeskyORM\Core\Utils\StringUtils;
 
 abstract class FakeRecord extends Record
 {
@@ -33,10 +33,7 @@ abstract class FakeRecord extends Record
     public static function makeNewFakeRecordClass(FakeTable $table): string
     {
         static::$fakesCreated++;
-        $suffixClass = StringUtils::classify(
-            $table->getTableStructure()
-                ->getTableName()
-        );
+        $suffixClass = StringUtils::toPascalCase($table->getTableStructure()->getTableName());
         $className = 'FakeRecord' . static::$fakesCreated . 'For' . $suffixClass;
         $namespace = 'PeskyORM\ORM\Fakes';
         $class = <<<VIEW

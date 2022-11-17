@@ -36,4 +36,26 @@ abstract class ArgumentValidators
             );
         }
     }
+
+    public static function assertPascalCase(string $argName, string $value): void
+    {
+        if (!StringUtils::isPascalCase($value)) {
+            throw new \InvalidArgumentException(
+                "$argName argument contains invalid value: '$value'."
+                . ' Expected naming pattern: ' . StringUtils::PASCAL_CASE_VALIDATION_REGEXP . '.'
+                . ' Example: PascalCase1.'
+            );
+        }
+    }
+
+    public static function assertSnakeCase(string $argName, string $value): void
+    {
+        if (!StringUtils::isSnakeCase($value)) {
+            throw new \InvalidArgumentException(
+                "$argName argument contains invalid value: '$value'."
+                . ' Expected naming pattern: ' . StringUtils::SNAKE_CASE_VALIDATION_REGEXP . '.'
+                . ' Example: snake_case1.'
+            );
+        }
+    }
 }

@@ -34,7 +34,12 @@ class ClassBuilderTest extends BaseTestCase
         static::assertEquals('AdminsTableStructure', ClassBuilder::makeTableStructureClassName('admins'));
         static::assertEquals('SomeTablesTableStructure', ClassBuilder::makeTableStructureClassName('some_tables'));
         static::assertEquals('Admin', ClassBuilder::makeRecordClassName('admins'));
+        static::assertEquals('Company', ClassBuilder::makeRecordClassName('companies'));
+        static::assertEquals('Cookie', ClassBuilder::makeRecordClassName('cookies'));
         static::assertEquals('SomeTable', ClassBuilder::makeRecordClassName('some_tables'));
+        static::assertEquals('Log', ClassBuilder::makeRecordClassName('logs'));
+        static::assertEquals('Shoe', ClassBuilder::makeRecordClassName('shoes'));
+        static::assertEquals('Bush', ClassBuilder::makeRecordClassName('bushes'));
         $builder = $this->getBuilder();
         static::assertEquals(
             'TestingAdmin',

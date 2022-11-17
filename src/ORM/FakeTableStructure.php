@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\DbAdapter;
-use PeskyORM\Core\Utils;
 use PeskyORM\Core\Utils\PdoUtils;
+use PeskyORM\Core\Utils\StringUtils;
 use PeskyORM\ORM\Traits\FakeTableStructureHelpers;
-use Swayok\Utils\StringUtils;
 
 abstract class FakeTableStructure extends TableStructure
 {
@@ -50,7 +48,7 @@ abstract class FakeTableStructure extends TableStructure
             $parentClassShortName = 'FakeTableStructure';
             $dbSchema = 'parent::getSchema()';
         }
-        $className = 'FakeTableStructure' . static::$fakesCreated . 'For' . StringUtils::classify($tableName);
+        $className = 'FakeTableStructure' . static::$fakesCreated . 'For' . StringUtils::toPascalCase($tableName);
         
         $class = <<<VIEW
 namespace {$namespace};
