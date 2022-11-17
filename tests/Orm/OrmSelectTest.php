@@ -83,8 +83,7 @@ class OrmSelectTest extends BaseTestCase
         static::assertEquals($testData, $data);
         $data = $dbSelect->fetchOne();
         static::assertEquals($testData[0], $data);
-        $data = $dbSelect->columns(['id'])
-            ->fetchColumn();
+        $data = $dbSelect->columns(['login'])->fetchColumn('id');
         static::assertEquals(Set::extract('/id', $testData), $data);
         $data = $dbSelect->fetchAssoc('id', 'login');
         static::assertEquals(Set::combine($testData, '/id', '/login'), $data);

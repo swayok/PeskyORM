@@ -6,7 +6,7 @@ namespace PeskyORM\Core\Utils;
 
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\SelectQueryBuilderAbstract;
+use PeskyORM\Core\SelectQueryBuilderInterface;
 use PeskyORM\ORM\RecordInterface;
 
 abstract class DbQuoter
@@ -71,7 +71,7 @@ abstract class DbQuoter
     public static function quoteValue(
         DbAdapterInterface $adapter,
         string $dbEntityQuote,
-        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderAbstract|null $value,
+        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderInterface|null $value,
         ?int $valueDataType = null,
         string $trueValue = '1',
         string $falseValue = '0',
@@ -81,7 +81,7 @@ abstract class DbQuoter
                 return static::quoteDbExpr($adapter, $dbEntityQuote, $value);
             }
 
-            if (is_subclass_of($value, SelectQueryBuilderAbstract::class)) {
+            if ($value instanceof SelectQueryBuilderInterface) {
                 return '(' . $value->getQuery() . ')';
             }
 

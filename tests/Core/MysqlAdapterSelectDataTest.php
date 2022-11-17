@@ -22,17 +22,17 @@ class MysqlAdapterSelectDataTest extends PostgresAdapterSelectDataTest
     public function testInvalidAnalyzeColumnName1(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid db entity name: [test test]");
+        $this->expectExceptionMessage("SELECT: Invalid column name: [test test]");
         static::getValidAdapter()->selectColumn('admins', 'test test');
     }
     
     public function testInvalidAnalyzeColumnName2(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid db entity name: [test%test]");
+        $this->expectExceptionMessage("SELECT: Invalid column name: [test%test]");
         static::getValidAdapter()->selectColumn('admins', 'test%test');
     }
-    
+
     public function testInvalidWith1(): void
     {
         $this->expectException(InvalidArgumentException::class);

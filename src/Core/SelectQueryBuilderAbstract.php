@@ -56,6 +56,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
     protected array $shortColumnAliases = [];
     protected int $shortColumnAliasIndex = 0;
     protected ?string $tableAlias = null;
+    protected bool $ignoreColumnsFromJoins = false;
 
     public function fromConfigsArray(array $conditionsAndOptions): static
     {
@@ -111,6 +112,12 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
         }
         // DISTINCT
         if (!empty($options['DISTINCT'])) {
+            if ($options['DISTINCT'] !== true) {
+                ArgumentValidators::assertArrayKeyValueIsArray(
+                    "\$conditionsAndOptions['DISTINCT']",
+                    $options['DISTINCT']
+                );
+            }
             $this->distinct(
                 true,
                 is_array($options['DISTINCT']) ? $options['DISTINCT'] : null
@@ -217,15 +224,22 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
                 ->query($this->getExistenceQuery($ignoreLeftJoins), PdoUtils::FETCH_VALUE) === 1;
     }
 
-    public function fetchColumn(): array
+    public function fetchColumn(string|DbExpr $column): array
     {
-        return $this->_fetch(PdoUtils::FETCH_COLUMN);
+        $this->ignoreColumnsFromJoins = true;
+        $values = $this->columns(['value' => $column])
+            ->_fetch(PdoUtils::FETCH_COLUMN);
+        $this->ignoreColumnsFromJoins = false;
+        return $values;
     }
 
     public function fetchAssoc(DbExpr|string $keysColumn, DbExpr|string $valuesColumn): array
     {
-        return $this->columns(['key' => $keysColumn, 'value' => $valuesColumn])
+        $this->ignoreColumnsFromJoins = true;
+        $assocValues = $this->columns(['key' => $keysColumn, 'value' => $valuesColumn])
             ->_fetch(PdoUtils::FETCH_KEY_PAIR);
+        $this->ignoreColumnsFromJoins = false;
+        return $assocValues;
     }
 
     public function fetchValue(DbExpr $expression): mixed
@@ -343,12 +357,13 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
         return $this;
     }
 
-    public function distinct(bool $value = true, ?array $columns = null): static
+    public function distinct(bool $value = true, ?array $distinctColumns = null): static
     {
         $this->distinct = $value;
         $this->distinctColumns = [];
-        if (!empty($columns)) {
-            foreach ($columns as $columnName) {
+        if (!empty($distinctColumns)) {
+            foreach ($distinctColumns as $key => $columnName) {
+                ArgumentValidators::assertNotEmptyString("\$distinctColumns[$key]", $columnName, true);
                 $this->distinctColumns[] = $this->analyzeColumnName($columnName, null, null, 'DISTINCT');
             }
         }
@@ -431,7 +446,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
         }
         foreach ($columns as $index => $columnName) {
             if ($columnName instanceof DbExpr) {
-                $this->groupBy[] = $columnName;
+                $this->groupBy[] = $columnName->setWrapInBrackets(false);
             } elseif (is_string($columnName)) {
                 $columnInfo = $this->analyzeColumnName($columnName, null, null, 'GROUP BY');
                 $key = ($columnInfo['join_name'] ?: $this->getTableAlias()) . '.' . $columnInfo['name'];
@@ -501,7 +516,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
         return $this;
     }
 
-    public function with(SelectQueryBuilderAbstract $select, string $selectName, bool $append = true): static
+    public function with(SelectQueryBuilderInterface $select, string $selectName, bool $append = true): static
     {
         if (!$this->getConnection()->isValidDbEntityName($selectName, false)) {
             throw new \InvalidArgumentException(
@@ -530,7 +545,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
     }
 
     /**
-     * @return SelectQueryBuilderAbstract[]
+     * @return SelectQueryBuilderInterface[]
      */
     protected function getWithQueries(): array
     {
@@ -963,38 +978,33 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
          * @var string|array $columnName
          */
         foreach ($columns as $columnAlias => $columnName) {
-            if ($columnAlias === '*') {
-                if (!is_string($columnName) && !is_array($columnName)) {
-                    throw new \InvalidArgumentException(
-                        "Invalid excluded columns list for a key '$columnAlias'. "
-                        . 'Value must be a string or array.'
-                    );
-                }
-                // we're good to go - no more validation needed
+            ArgumentValidators::assertNotEmpty("\$columns[$columnAlias]", $columnName);
+            if (!is_int($columnAlias) && empty($columnAlias)) {
+                throw new \InvalidArgumentException(
+                    "\$columns argument contains empty string as key for value: "
+                    . json_encode($columnName, JSON_UNESCAPED_UNICODE)
+                );
+            }
+
+            if ($columnAlias === '*' || $columnAlias === '**') {
+                // ['*' => 'excluded_column'] or ['*' => ['excluded_column1', ...]]
+                ArgumentValidators::assertArrayKeyValueIsStringOrArray("\$columns[$columnAlias]", $columnName);
             } elseif (
                 !is_numeric($columnAlias)
                 && (
                     is_array($columnName)
                     || $columnName === '*'
+                    || $columnName === '**'
                 )
             ) {
+                // ['JoinName' => '*'] or ['JoinName' => ['joined_column1', ...]]
                 $this->resolveColumnsToBeSelectedForJoin($columnAlias, $columnName, $joinName, false);
                 continue;
-            } elseif (!is_string($columnName) && !($columnName instanceof DbExpr)) {
-                throw new \InvalidArgumentException(
-                    "Invalid column name for a key '$columnAlias'. "
-                    . '$columns argument must contain only strings and instances of DbExpr class.'
-                );
-            } elseif (empty($columnName)) {
-                throw new \InvalidArgumentException(
-                    "\$columns argument contains an empty column name for a key '$columnAlias'"
-                );
+            } else {
+                // ['column_name'] or ['alias' => 'column_name'] or [new DbExpr()] or ['alias' => new DbExpr()]
+                ArgumentValidators::assertArrayKeyValueIsStringOrDbExpr("\$columns[$columnAlias]", $columnName);
             }
-            if (empty($columnAlias) && $columnAlias !== 0) {
-                throw new \InvalidArgumentException(
-                    '$columns argument contains an empty column alias'
-                );
-            }
+
             $columnAlias = is_int($columnAlias) ? null : $columnAlias;
             if ($columnName === '*' || $columnName === '**') {
                 /** @noinspection SlowArrayOperationsInLoopInspection */
@@ -1258,6 +1268,9 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
      */
     protected function collectJoinedColumnsForQuery(bool $itIsWithQuery = false): array
     {
+        if ($this->ignoreColumnsFromJoins) {
+            return [];
+        }
         $columns = [];
         foreach ($this->joins as $joinConfig) {
             $columnsToJoin = $joinConfig->getForeignColumnsToSelect();

@@ -14,7 +14,8 @@ class Select extends SelectQueryBuilderAbstract
     protected string $tableName;
     protected ?string $dbSchema = null;
     protected DbAdapterInterface $connection;
-    
+    protected ?DbExpr $appendedDbExpr = null;
+
     /**
      * @throws \InvalidArgumentException
      */
@@ -62,4 +63,23 @@ class Select extends SelectQueryBuilderAbstract
     {
         return $this->connection;
     }
+
+    public function appendDbExpr(?DbExpr $dbExpr): static
+    {
+        $this->appendedDbExpr = $dbExpr?->setWrapInBrackets(false);
+        return $this;
+    }
+
+    protected function buildQueryPartsAfterSelectColumns(
+        bool $ignoreLeftJoins,
+        bool $withOrderBy,
+        bool $withLimitAndOffset
+    ): string {
+        $queryParts = parent::buildQueryPartsAfterSelectColumns($ignoreLeftJoins, $withOrderBy, $withLimitAndOffset);
+        if ($this->appendedDbExpr) {
+            $queryParts.= ' ' . $this->quoteDbExpr($this->appendedDbExpr);
+        }
+        return $queryParts;
+    }
+
 }

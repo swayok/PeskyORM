@@ -209,11 +209,11 @@ interface DbAdapterInterface
 
     /**
      * Quote passed value
-     * @param string|int|float|bool|array|SelectQueryBuilderAbstract|DbExpr|RecordInterface|null $value
+     * @param string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderInterface|null $value
      * @param int|null $valueDataType - one of \PDO::PARAM_* or null for autodetection (detects bool, null, string only)
      */
     public function quoteValue(
-        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderAbstract|null $value,
+        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderInterface|null $value,
         ?int $valueDataType = null
     ): string;
 
@@ -237,7 +237,7 @@ interface DbAdapterInterface
     public function assembleCondition(
         string $quotedColumn,
         string $operator,
-        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderAbstract|null $rawValue,
+        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderInterface|null $rawValue,
         bool $valueAlreadyQuoted = false
     ): string;
 
@@ -257,10 +257,31 @@ interface DbAdapterInterface
      * Select many records form DB by compiling simple query from passed parameters.
      * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
      * @param string $table
-     * @param array $columns - empty array means "all columns" (SELECT *), must contain only strings and DbExpr objects
-     * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @param array $columns
+     * @param DbExpr|array|null $conditionsAndOptions - see makeSelectQuery() for details
+     * @see SelectQueryBuilderInterface::columns() for $columns arg value possibilities
+     * @see DbAdapterInterface::makeSelectQuery() for $conditionsAndOptions arg value explanation
      */
-    public function select(string $table, array $columns = [], ?DbExpr $conditionsAndOptions = null): array;
+    public function select(
+        string $table,
+        array $columns = [],
+        DbExpr|array|null $conditionsAndOptions = null
+    ): array;
+
+    /**
+     * Select first matching record form DB by compiling simple query from passed parameters.
+     * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
+     * @param string $table
+     * @param array $columns
+     * @param DbExpr|array|null $conditionsAndOptions - see makeSelectQuery() for details
+     * @see SelectQueryBuilderInterface::columns() for $columns arg value possibilities
+     * @see DbAdapterInterface::makeSelectQuery() for $conditionsAndOptions arg value explanation
+     */
+    public function selectOne(
+        string $table,
+        array $columns = [],
+        DbExpr|array|null $conditionsAndOptions = null
+    ): array;
 
     /**
      * Select many records form DB by compiling simple query from passed parameters returning an array with values for
@@ -268,9 +289,14 @@ interface DbAdapterInterface
      * The query is something like: "SELECT $column FROM $table $conditionsAndOptions"
      * @param string $table
      * @param string|DbExpr $column
-     * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @param DbExpr|array|null $conditionsAndOptions
+     * @see DbAdapterInterface::makeSelectQuery() for $conditionsAndOptions arg value explanation
      */
-    public function selectColumn(string $table, string|DbExpr $column, ?DbExpr $conditionsAndOptions = null): array;
+    public function selectColumn(
+        string $table,
+        string|DbExpr $column,
+        DbExpr|array|null $conditionsAndOptions = null
+    ): array;
 
     /**
      * Select many records form DB by compiling simple query from passed parameters returning an associative array.
@@ -278,41 +304,42 @@ interface DbAdapterInterface
      * @param string $table
      * @param string|DbExpr $keysColumn
      * @param string|DbExpr $valuesColumn
-     * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @param DbExpr|array|null $conditionsAndOptions
+     * @see DbAdapterInterface::makeSelectQuery() for $conditionsAndOptions arg value explanation
      */
     public function selectAssoc(
         string $table,
         string|DbExpr $keysColumn,
         string|DbExpr $valuesColumn,
-        ?DbExpr $conditionsAndOptions = null
+        DbExpr|array|null $conditionsAndOptions = null
     ): array;
-
-    /**
-     * Select first matching record form DB by compiling simple query from passed parameters.
-     * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
-     * @param string $table
-     * @param array $columns - empty array means "all columns" (SELECT *), must contain only strings and DbExpr objects
-     * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
-     */
-    public function selectOne(string $table, array $columns = [], ?DbExpr $conditionsAndOptions = null): array;
 
     /**
      * Select a value form DB by compiling simple query from passed parameters.
      * The query is something like: "SELECT $expression FROM $table $conditionsAndOptions"
      * @param string $table
      * @param DbExpr $expression - something like "COUNT(*)" or anything else
-     * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
+     * @param DbExpr|array|null $conditionsAndOptions
+     * @see DbAdapterInterface::makeSelectQuery() for $conditionsAndOptions arg value explanation
      */
-    public function selectValue(string $table, DbExpr $expression, ?DbExpr $conditionsAndOptions = null): mixed;
+    public function selectValue(
+        string $table,
+        DbExpr $expression,
+        DbExpr|array|null $conditionsAndOptions = null
+    ): mixed;
 
     /**
      * Make a simple SELECT query from passed parameters
      * @param string $table
-     * @param array $columns - empty array means "all columns" (SELECT *), must contain only strings and DbExpr objects
-     * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
-     * @return string - something like: "SELECT $columns FROM $table $conditionsAndOptions"
+     * @param DbExpr|array|null $conditionsAndOptions
+     *  - DbExpr: anything to add to query after "FROM $table",
+     *  - array: conditions and options for query builder
+     * @see SelectQueryBuilderInterface::fromConfigsArray() for $conditionsAndOptions arg value explanation when array
      */
-    public function makeSelectQuery(string $table, array $columns = [], ?DbExpr $conditionsAndOptions = null): string;
+    public function makeSelectQuery(
+        string $table,
+        DbExpr|array|null $conditionsAndOptions = null
+    ): SelectQueryBuilderInterface;
 
     /**
      * Search for $table in $schema

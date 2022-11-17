@@ -146,7 +146,7 @@ class DbSelectTest extends BaseTestCase
         static::assertEquals($testData, $data);
         $data = $dbSelect->fetchOne();
         static::assertEquals($testData[0], $data);
-        $data = $dbSelect->fetchColumn();
+        $data = $dbSelect->fetchColumn('id');
         static::assertEquals(Set::extract('/id', $testData), $data);
         $data = $dbSelect->fetchAssoc('id', 'login');
         static::assertEquals(Set::combine($testData, '/id', '/login'), $data);
@@ -158,15 +158,14 @@ class DbSelectTest extends BaseTestCase
         static::assertInstanceOf(Select::class, $dbSelect);
         static::assertInstanceOf(Postgres::class, $dbSelect->getConnection());
         static::assertEquals('admins', $dbSelect->getTableName());
-        $data = $dbSelect->limit(1)
-            ->fetchNextPage();
+        $data = $dbSelect->limit(1)->fetchNextPage();
         static::assertEquals([$testData[1]], $data);
     }
     
     public function testInvalidColumns1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$columns argument must contain only strings and instances of DbExpr class");
+        $this->expectExceptionMessage('$columns[0] argument value cannot be empty');
         static::getNewSelect()
             ->columns(null)
             ->getQuery();
@@ -175,7 +174,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidColumns3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$columns argument must contain only strings and instances of DbExpr class");
+        $this->expectExceptionMessage('$columns[0]: value must be a string or instance of ');
         static::getNewSelect()
             ->columns(1)
             ->getQuery();
@@ -184,7 +183,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidColumns4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$columns argument contains an empty column name for a key");
+        $this->expectExceptionMessage('$columns[0] argument value cannot be empty');
         static::getNewSelect()
             ->columns([''])
             ->getQuery();
@@ -193,7 +192,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidColumns5(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$columns argument contains an empty column name for a key 'qq'");
+        $this->expectExceptionMessage('$columns[qq] argument value cannot be empty');
         static::getNewSelect()
             ->columns(['qq' => ''])
             ->getQuery();
@@ -202,7 +201,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidColumns6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$columns argument contains an empty column alias");
+        $this->expectExceptionMessage('$columns argument contains empty string as key for value');
         static::getNewSelect()
             ->columns(['' => 'qq'])
             ->getQuery();
@@ -211,7 +210,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidColumns7(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$columns argument must contain only strings and instances of DbExpr class");
+        $this->expectExceptionMessage('$columns[0]: value must be a string or instance of');
         static::getNewSelect()
             ->columns([$this])
             ->getQuery();
@@ -220,7 +219,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidColumns8(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$columns argument must contain only strings and instances of DbExpr class");
+        $this->expectExceptionMessage('$columns[0] argument value cannot be empty');
         static::getNewSelect()
             ->columns([[]])
             ->getQuery();
@@ -725,7 +724,7 @@ class DbSelectTest extends BaseTestCase
             $dbSelect->groupBy(['email'])->getQuery()
         );
         static::assertEquals(
-            'SELECT "tbl_Admins_3".* FROM "admins" AS "tbl_Admins_3" GROUP BY (RANDOM())',
+            'SELECT "tbl_Admins_3".* FROM "admins" AS "tbl_Admins_3" GROUP BY RANDOM()',
             $dbSelect->groupBy([DbExpr::create('RANDOM()')], false)->getQuery()
         );
     }

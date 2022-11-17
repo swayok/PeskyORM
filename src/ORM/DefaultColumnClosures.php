@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\ORM;
 
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\SelectQueryBuilderAbstract;
+use PeskyORM\Core\SelectQueryBuilderInterface;
 
 class DefaultColumnClosures implements ColumnClosuresInterface
 {
@@ -115,7 +115,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         if (count($errors) > 0) {
             return $errors;
         }
-        if ($value instanceof DbExpr || $value instanceof SelectQueryBuilderAbstract) {
+        if ($value instanceof DbExpr || $value instanceof SelectQueryBuilderInterface) {
             // can't be validated in any other way
             return [];
         }

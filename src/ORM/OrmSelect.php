@@ -9,6 +9,7 @@ use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
 use PeskyORM\Core\NormalJoinConfigInterface;
 use PeskyORM\Core\SelectQueryBuilderAbstract;
+use PeskyORM\Core\SelectQueryBuilderInterface;
 use PeskyORM\Core\Utils\QueryBuilderUtils;
 
 class OrmSelect extends SelectQueryBuilderAbstract
@@ -379,7 +380,7 @@ class OrmSelect extends SelectQueryBuilderAbstract
                     return $this->quoteDbExpr($rawValue);
                 }
 
-                if ($rawValue instanceof SelectQueryBuilderAbstract) {
+                if ($rawValue instanceof SelectQueryBuilderInterface) {
                     return $rawValue;
                 }
 

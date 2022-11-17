@@ -7,7 +7,7 @@ namespace PeskyORM\Adapter;
 use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\SelectQueryBuilderAbstract;
+use PeskyORM\Core\SelectQueryBuilderInterface;
 use PeskyORM\Exception\DbException;
 use PeskyORM\Exception\DbQueryReturningValuesException;
 
@@ -15,6 +15,7 @@ class Mysql extends DbAdapter
 {
 
     protected string $quoteForDbEntityName = '`';
+    protected MysqlConfig $connectionConfig;
 
     protected static array $dataTypesMap = [
         'bytea' => 'BINARY',
@@ -64,7 +65,12 @@ class Mysql extends DbAdapter
 
     public function __construct(MysqlConfig $connectionConfig)
     {
-        parent::__construct($connectionConfig);
+        $this->connectionConfig = $connectionConfig;
+    }
+
+    public function getConnectionConfig(): MysqlConfig
+    {
+        return $this->connectionConfig;
     }
 
     public function isDbSupportsTableSchemas(): bool
@@ -328,7 +334,7 @@ class Mysql extends DbAdapter
     protected function assembleConditionValuesExistsInJson(
         string $quotedColumn,
         string $operator,
-        string|int|float|bool|array|DbExpr|SelectQueryBuilderAbstract|null $rawValue,
+        string|int|float|bool|array|DbExpr|SelectQueryBuilderInterface|null $rawValue,
         bool $valueAlreadyQuoted = false
     ): string {
         // operators: '?', '?|', '?&'
@@ -364,7 +370,7 @@ class Mysql extends DbAdapter
     protected function assembleConditionJsonContainsJson(
         string $quotedColumn,
         string $operator,
-        string|int|float|bool|array|DbExpr|SelectQueryBuilderAbstract|null $rawValue,
+        string|int|float|bool|array|DbExpr|SelectQueryBuilderInterface|null $rawValue,
         bool $valueAlreadyQuoted = false
     ): string {
         // operators: '@>', '<@'

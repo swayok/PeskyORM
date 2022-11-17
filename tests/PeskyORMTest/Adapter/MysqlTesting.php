@@ -6,40 +6,16 @@ namespace PeskyORM\Tests\PeskyORMTest\Adapter;
 
 use PeskyORM\Adapter\Mysql;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\SelectQueryBuilderAbstract;
+use PeskyORM\Core\SelectQueryBuilderInterface;
+use PeskyORM\Core\Utils\DbAdapterMethodArgumentUtils;
 use PeskyORM\ORM\RecordInterface;
 
 class MysqlTesting extends Mysql
 {
-    
-    public function guardTableNameArg(string $table): void
-    {
-        parent::guardTableNameArg($table);
-    }
-    
-    public function guardConditionsArg(DbExpr|array $conditions): void
-    {
-        parent::guardConditionsArg($conditions);
-    }
-    
-    public function guardReturningArg(bool|array $returning): void
-    {
-        parent::guardReturningArg($returning);
-    }
-    
+
     public function guardPkNameArg(string $pkName): void
     {
-        parent::guardPkNameArg($pkName);
-    }
-    
-    public function guardDataArg(array $data): void
-    {
-        parent::guardDataArg($data);
-    }
-    
-    public function guardColumnsListArg(array $columns, bool $allowDbExpr = true): void
-    {
-        parent::guardColumnsListArg($columns, $allowDbExpr);
+        DbAdapterMethodArgumentUtils::guardPkNameArg($this, $pkName);
     }
     
     public function quoteJsonSelectorValue(string $key): string
@@ -59,13 +35,13 @@ class MysqlTesting extends Mysql
 
     public function normalizeConditionOperator(
         string $operator,
-        DbExpr|float|RecordInterface|int|bool|array|string|SelectQueryBuilderAbstract|null $value
+        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderInterface|null $value
     ): string {
         return parent::normalizeConditionOperator($operator, $value);
     }
 
     public function assembleConditionValue(
-        DbExpr|float|RecordInterface|int|bool|array|string|SelectQueryBuilderAbstract|null $value,
+        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderInterface|null $value,
         string $normalizedOperator,
         bool $valueAlreadyQuoted = false
     ): string {

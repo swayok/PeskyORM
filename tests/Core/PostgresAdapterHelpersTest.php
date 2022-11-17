@@ -6,6 +6,8 @@ namespace PeskyORM\Tests\Core;
 
 use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\Core\DbExpr;
+use PeskyORM\Core\JoinConfig;
+use PeskyORM\Core\Select;
 use PeskyORM\Core\Utils\DbAdapterMethodArgumentUtils;
 use PeskyORM\Core\Utils\QueryBuilderUtils;
 use PeskyORM\Tests\PeskyORMTest\Adapter\PostgresTesting;
@@ -426,27 +428,27 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidArgsInMakeSelectQuery2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$columns[0]: value cannot be');
+        $this->expectExceptionMessage('$conditions argument may contain only objects of class');
         $adapter = self::getValidAdapter();
-        $adapter->makeSelectQuery('table', [$this]);
+        $adapter->makeSelectQuery('table', [$this])->fetchOne();
     }
     
     public function testInvalidArgsInMakeSelectQuery3(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #3 ($conditionsAndOptions) must be of type');
+        $this->expectExceptionMessage('Argument #2 ($conditionsAndOptions) must be of type');
         $adapter = self::getValidAdapter();
         /** @noinspection PhpParamsInspection */
-        $adapter->makeSelectQuery('table', [], 'string');
+        $adapter->makeSelectQuery('table', 'string');
     }
 
     public function testInvalidArgsInMakeSelectQuery4(): void
     {
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage('$conditionsAndOptions[GROUP]: value must be instance of ' . DbExpr::class);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('$conditionsAndOptions[\'GROUP\']: value must be an array');
         $adapter = self::getValidAdapter();
         /** @noinspection PhpParamsInspection */
-        $adapter->makeSelectQuery('table', [], [QueryBuilderUtils::QUERY_PART_GROUP => '']);
+        $adapter->makeSelectQuery('table', [QueryBuilderUtils::QUERY_PART_GROUP => ' '])->fetchOne();
     }
 
     public function testInvalidArgsInMakeSelectQuery5(): void
@@ -455,56 +457,69 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $this->expectExceptionMessage('$conditionsAndOptions array cannot contain options: ' . QueryBuilderUtils::QUERY_PART_CONTAINS);
         $adapter = self::getValidAdapter();
         /** @noinspection PhpParamsInspection */
-        $adapter->makeSelectQuery('table', [], [QueryBuilderUtils::QUERY_PART_CONTAINS => '']);
+        $adapter->makeSelectQuery('table', [QueryBuilderUtils::QUERY_PART_CONTAINS => ' ']);
     }
 
     public function testInvalidArgsInMakeSelectQuery6(): void
     {
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage('$conditionsAndOptions array cannot contain options: ' . QueryBuilderUtils::QUERY_PART_DISTINCT);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('$conditionsAndOptions[\'DISTINCT\']: value must be an array');
         $adapter = self::getValidAdapter();
         /** @noinspection PhpParamsInspection */
-        $adapter->makeSelectQuery('table', [], [QueryBuilderUtils::QUERY_PART_DISTINCT => '']);
+        $adapter->makeSelectQuery('table', [QueryBuilderUtils::QUERY_PART_DISTINCT => ' '])->fetchOne();
+    }
+
+    public function testInvalidArgsInMakeSelectQuery7(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('$distinctColumns[0] argument value must be a not-empty string');
+        $adapter = self::getValidAdapter();
+        /** @noinspection PhpParamsInspection */
+        $adapter->makeSelectQuery('table', [QueryBuilderUtils::QUERY_PART_DISTINCT => [' ']])->fetchOne();
     }
     
     public function testMakeSelectQuery(): void
     {
         $adapter = self::getValidAdapter();
         
-        $query = $adapter->makeSelectQuery('test_table', ['col1', DbExpr::create('`col2` as `col22`')]);
+        $query = $adapter->makeSelectQuery('test_table')
+            ->columns(['col1', DbExpr::create('`col2` as `col22`')]);
         static::assertEquals(
             $adapter->quoteDbExpr(
                 DbExpr::create(
-                    'SELECT `col1`, (`col2` as `col22`) FROM `test_table`',
+                    'SELECT `tbl_TestTable_0`.`col1` AS `col_TestTable__col1_0`,'
+                    . ' (`col2` as `col22`)'
+                    . ' FROM `test_table` AS `tbl_TestTable_0`',
                     false
                 )
             ),
-            $query
+            $query->getQuery()
         );
         
-        $query = $adapter->makeSelectQuery('test_table', [], DbExpr::create('WHERE `col1` > ``0``', false));
+        $query = $adapter->makeSelectQuery('test_table', DbExpr::create('WHERE `col1` > ``0``', false));
         static::assertEquals(
             $adapter->quoteDbExpr(
                 DbExpr::create(
-                    'SELECT `*` FROM `test_table` WHERE `col1` > ``0``',
+                    'SELECT `tbl_TestTable_0`.* FROM `test_table` AS `tbl_TestTable_0` WHERE `col1` > ``0``',
                     false
                 )
             ),
-            $query
+            $query->columns('*')->getQuery()
         );
 
-        $query = $adapter->makeSelectQuery('test_table', [], ['col1 >' => 0]);
+        $query = $adapter->makeSelectQuery('test_table', ['col1 >' => 0]);
         static::assertEquals(
             $adapter->quoteDbExpr(
                 DbExpr::create(
-                    'SELECT `*` FROM `test_table` WHERE `col1` > ``0``',
+                    'SELECT `tbl_TestTable_0`.* FROM `test_table` AS `tbl_TestTable_0`'
+                    . ' WHERE `tbl_TestTable_0`.`col1` > ``0``',
                     false
                 )
             ),
-            $query
+            $query->columns('*')->getQuery()
         );
 
-        $query = $adapter->makeSelectQuery('test_table', [], [
+        $query = $adapter->makeSelectQuery('test_table', [
             'col1 >' => 0,
             'col2 <' => 1,
             'OR' => ['col3' => 3, 'col4' => 4]
@@ -512,45 +527,58 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         static::assertEquals(
             $adapter->quoteDbExpr(
                 DbExpr::create(
-                    'SELECT `*` FROM `test_table` WHERE `col1` > ``0`` AND `col2` < ``1`` AND (`col3` = ``3`` OR `col4` = ``4``)',
+                    'SELECT `tbl_TestTable_0`.* FROM `test_table` AS `tbl_TestTable_0`'
+                    . ' WHERE `tbl_TestTable_0`.`col1` > ``0``'
+                    . ' AND `tbl_TestTable_0`.`col2` < ``1``'
+                    . ' AND (`tbl_TestTable_0`.`col3` = ``3`` OR `tbl_TestTable_0`.`col4` = ``4``)',
                     false
                 )
             ),
-            $query
+            $query->columns('*')->getQuery()
         );
 
         $options = [
-            QueryBuilderUtils::QUERY_PART_WITH => DbExpr::create('(with query)'),
-            QueryBuilderUtils::QUERY_PART_JOINS => DbExpr::create('(joins list)'),
-            QueryBuilderUtils::QUERY_PART_GROUP => DbExpr::create('(grouping)'),
-            QueryBuilderUtils::QUERY_PART_HAVING => DbExpr::create('(having filters)'),
-            QueryBuilderUtils::QUERY_PART_ORDER => DbExpr::create('(ordering)'),
-            QueryBuilderUtils::QUERY_PART_LIMIT => DbExpr::create('(limit value)'),
-            QueryBuilderUtils::QUERY_PART_OFFSET => DbExpr::create('(offset value)'),
+            QueryBuilderUtils::QUERY_PART_WITH => ['test' => Select::from('some_table', $adapter)],
+            QueryBuilderUtils::QUERY_PART_JOINS => [new JoinConfig('Test', 'test', 'id', JoinConfig::JOIN_INNER, 'other', 'id')],
+            QueryBuilderUtils::QUERY_PART_GROUP => [DbExpr::create('[grouping]')],
+            QueryBuilderUtils::QUERY_PART_HAVING => [DbExpr::create('[having filters]')],
+            QueryBuilderUtils::QUERY_PART_ORDER => [DbExpr::create('[ordering]')],
+            QueryBuilderUtils::QUERY_PART_LIMIT => 1,
+            QueryBuilderUtils::QUERY_PART_OFFSET => 2,
         ];
-        $query = $adapter->makeSelectQuery('test_table', [], array_merge(
+        $query = $adapter->makeSelectQuery('test_table', array_merge(
             ['col1 >' => 0],
             $options
         ));
         static::assertEquals(
             $adapter->quoteDbExpr(
                 DbExpr::create(
-                    'WITH ((with query)) SELECT * FROM `test_table` (joins list) WHERE `col1` > ``0`` GROUP BY (grouping) HAVING (having filters) ORDER BY (ordering) LIMIT (limit value) OFFSET (offset value)',
+                    'WITH `test` AS (SELECT `tbl_SomeTable_0`.* FROM `some_table` AS `tbl_SomeTable_0`)'
+                    . ' SELECT `tbl_TestTable_0`.*, `tbl_Test_1`.* FROM `test_table` AS `tbl_TestTable_0`'
+                    . ' INNER JOIN `other` AS `tbl_Test_1`'
+                    . ' ON (`tbl_Test_1`.`id` = `tbl_Test_1`.`id`)'
+                    . ' WHERE `tbl_TestTable_0`.`col1` > ``0``'
+                    . ' GROUP BY [grouping] HAVING ([having filters]) ORDER BY [ordering]'
+                    . ' LIMIT 1 OFFSET 2',
                     false
                 )
             ),
-            $query
+            $query->columns('*')->getQuery()
         );
 
-        $query = $adapter->makeSelectQuery('test_table', [], $options);
+        $query = $adapter->makeSelectQuery('test_table', $options);
         static::assertEquals(
             $adapter->quoteDbExpr(
                 DbExpr::create(
-                    'WITH ((with query)) SELECT * FROM `test_table` (joins list) GROUP BY (grouping) HAVING (having filters) ORDER BY (ordering) LIMIT (limit value) OFFSET (offset value)',
+                    'WITH `test` AS (SELECT `tbl_SomeTable_1`.* FROM `some_table` AS `tbl_SomeTable_1`)'
+                    . ' SELECT `tbl_TestTable_0`.*, `tbl_Test_1`.* FROM `test_table` AS `tbl_TestTable_0`'
+                    . ' INNER JOIN `other` AS `tbl_Test_1` ON (`tbl_Test_1`.`id` = `tbl_Test_1`.`id`)'
+                    . ' GROUP BY [grouping] HAVING ([having filters]) ORDER BY [ordering]'
+                    . ' LIMIT 1 OFFSET 2',
                     false
                 )
             ),
-            $query
+            $query->columns('*')->getQuery()
         );
     }
     

@@ -184,7 +184,9 @@ abstract class Table implements TableInterface
         array $conditions = [],
         ?\Closure $configurator = null
     ): RecordsSet {
-        return RecordsSet::createFromOrmSelect(static::makeSelect($columns, $conditions, $configurator));
+        return RecordsSet::createFromOrmSelect(
+            static::makeSelect($columns, $conditions, $configurator)
+        );
     }
 
     public static function selectColumn(
@@ -192,8 +194,8 @@ abstract class Table implements TableInterface
         array $conditions = [],
         ?\Closure $configurator = null
     ): array {
-        return static::makeSelect(['value' => $column], $conditions, $configurator)
-            ->fetchColumn();
+        return static::makeSelect([], $conditions, $configurator)
+            ->fetchColumn($column);
     }
 
     public static function selectAssoc(

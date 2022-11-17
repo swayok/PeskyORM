@@ -6,9 +6,14 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\PeskyORMTest\Adapter;
 
 use PeskyORM\Core\DbAdapter;
+use PeskyORM\Core\DbConnectionConfigInterface;
 
 class OtherAdapterTesting2 extends DbAdapter
 {
+
+    public function __construct(protected DbConnectionConfigInterface $config)
+    {
+    }
 
     protected function getConditionAssembler(string $operator): ?\Closure
     {
@@ -56,5 +61,10 @@ class OtherAdapterTesting2 extends DbAdapter
     public function hasTable(string $table, ?string $schema = null): bool
     {
         return false;
+    }
+
+    public function getConnectionConfig(): DbConnectionConfigInterface
+    {
+        return $this->config;
     }
 }

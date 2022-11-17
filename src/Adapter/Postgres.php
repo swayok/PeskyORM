@@ -7,19 +7,16 @@ namespace PeskyORM\Adapter;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Core\DbAdapter;
 use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\SelectQueryBuilderAbstract;
+use PeskyORM\Core\SelectQueryBuilderInterface;
 use PeskyORM\Exception\DbException;
 use PeskyORM\Exception\DbInsertQueryException;
 
-/**
- * @property PostgresConfig $connectionConfig
- * @method PostgresConfig getConnectionConfig()
- */
 class Postgres extends DbAdapter
 {
     protected string $quoteForDbEntityName = '"';
     protected string $trueValue = 'TRUE';
     protected string $falseValue = 'FALSE';
+    protected PostgresConfig $connectionConfig;
 
     public const TRANSACTION_TYPE_READ_COMMITTED = 'READ COMMITTED';
     public const TRANSACTION_TYPE_REPEATABLE_READ = 'REPEATABLE READ';
@@ -74,7 +71,12 @@ class Postgres extends DbAdapter
 
     public function __construct(PostgresConfig $connectionConfig)
     {
-        parent::__construct($connectionConfig);
+        $this->connectionConfig = $connectionConfig;
+    }
+
+    public function getConnectionConfig(): PostgresConfig
+    {
+        return $this->connectionConfig;
     }
 
     public function disconnect(): static
@@ -248,7 +250,7 @@ class Postgres extends DbAdapter
     protected function assembleConditionValuesExistsInJson(
         string $quotedColumn,
         string $normalizedOperator,
-        string|int|float|bool|array|DbExpr|SelectQueryBuilderAbstract|null $rawValue,
+        string|int|float|bool|array|DbExpr|SelectQueryBuilderInterface|null $rawValue,
         bool $valueAlreadyQuoted = false
     ): string {
         if (is_object($rawValue)) {
@@ -274,7 +276,7 @@ class Postgres extends DbAdapter
     protected function assembleConditionJsonContainsJson(
         string $quotedColumn,
         string $operator,
-        string|int|float|bool|array|DbExpr|SelectQueryBuilderAbstract|null $rawValue,
+        string|int|float|bool|array|DbExpr|SelectQueryBuilderInterface|null $rawValue,
         bool $valueAlreadyQuoted = false
     ): string {
         if (is_object($rawValue)) {

@@ -6,6 +6,7 @@ namespace PeskyORM\Core;
 
 use PDO;
 use PDOStatement;
+use PeskyORM\Core\Utils\ArgumentValidators;
 use PeskyORM\Core\Utils\BacktraceUtils;
 use PeskyORM\Core\Utils\DbAdapterMethodArgumentUtils;
 use PeskyORM\Core\Utils\DbQuoter;
@@ -47,8 +48,6 @@ abstract class DbAdapter implements DbAdapterInterface
      */
     protected static bool $isTransactionTracesEnabled = false;
 
-    protected DbConnectionConfigInterface $connectionConfig;
-
     protected ?PDO $pdo = null;
 
     protected array $onConnectCallbacks = [];
@@ -82,11 +81,6 @@ abstract class DbAdapter implements DbAdapterInterface
 
     abstract protected function getConditionAssembler(string $operator): ?\Closure;
 
-    public function __construct(DbConnectionConfigInterface $connectionConfig)
-    {
-        $this->connectionConfig = $connectionConfig;
-    }
-
     /**
      * {@inheritDoc}
      * @throws \PDOException
@@ -96,16 +90,11 @@ abstract class DbAdapter implements DbAdapterInterface
         if ($this->pdo === null) {
             $this->pdo = $this->makePdo();
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $this->connectionConfig->onConnect($this->pdo);
+            $this->getConnectionConfig()->onConnect($this->pdo);
             $this->wrapConnection();
             $this->runOnConnectCallbacks($this->onConnectCallbacks);
         }
         return $this->pdo;
-    }
-
-    public function getConnectionConfig(): DbConnectionConfigInterface
-    {
-        return $this->connectionConfig;
     }
 
     /**
@@ -116,11 +105,12 @@ abstract class DbAdapter implements DbAdapterInterface
     protected function makePdo(): PDO
     {
         try {
+            $config = $this->getConnectionConfig();
             return new PDO(
-                $this->connectionConfig->getPdoConnectionString(),
-                $this->connectionConfig->getUserName(),
-                $this->connectionConfig->getUserPassword(),
-                $this->connectionConfig->getOptions()
+                $config->getPdoConnectionString(),
+                $config->getUserName(),
+                $config->getUserPassword(),
+                $config->getOptions()
             );
         } catch (\Exception $exc) {
             // hide connection settings
@@ -474,9 +464,12 @@ abstract class DbAdapter implements DbAdapterInterface
     /**
      * @throws \InvalidArgumentException
      */
-    protected function guardColumnsListArg(array $columns, bool $allowDbExpr = true): void
-    {
-        DbAdapterMethodArgumentUtils::guardColumnsListArg($columns, $allowDbExpr);
+    protected function guardColumnsListArg(
+        array $columns,
+        bool $allowDbExpr = true,
+        bool $canBeEmpty = false
+    ): void {
+        DbAdapterMethodArgumentUtils::guardColumnsListArg($columns, $allowDbExpr, $canBeEmpty);
     }
 
     /**
@@ -683,7 +676,7 @@ abstract class DbAdapter implements DbAdapterInterface
      * @throws \InvalidArgumentException
      */
     public function quoteValue(
-        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderAbstract|null $value,
+        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderInterface|null $value,
         ?int $valueDataType = null
     ): string {
         return DbQuoter::quoteValue(
@@ -712,7 +705,7 @@ abstract class DbAdapter implements DbAdapterInterface
      */
     protected function normalizeConditionOperator(
         string $operator,
-        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderAbstract|null $value
+        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderInterface|null $value
     ): string {
         /** @var string $operator */
         $operator = mb_strtoupper($operator);
@@ -785,7 +778,7 @@ abstract class DbAdapter implements DbAdapterInterface
      * @throws \InvalidArgumentException
      */
     protected function assembleConditionValue(
-        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderAbstract|null $value,
+        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderInterface|null $value,
         string $normalizedOperator,
         bool $valueAlreadyQuoted = false
     ): string {
@@ -840,7 +833,7 @@ abstract class DbAdapter implements DbAdapterInterface
     public function assembleCondition(
         string $quotedColumn,
         string $operator,
-        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderAbstract|null $rawValue,
+        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderInterface|null $rawValue,
         bool $valueAlreadyQuoted = false
     ): string {
         if ($rawValue instanceof RecordInterface) {
@@ -861,7 +854,7 @@ abstract class DbAdapter implements DbAdapterInterface
     protected function assembleConditionFromPreparedParts(
         string $quotedColumn,
         string $normalizedOperator,
-        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderAbstract|null $quotedValue,
+        string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderInterface|null $quotedValue,
     ): string {
         $convertedOperator = $this->convertNormalizedConditionOperatorForDbQuery($normalizedOperator);
         return "{$quotedColumn} {$convertedOperator} {$quotedValue}";
@@ -875,15 +868,36 @@ abstract class DbAdapter implements DbAdapterInterface
         return QueryBuilderUtils::assembleWhereConditionsFromArray($this, $conditions);
     }
 
+    /**
+     * {@inheritDoc}
+     * @throws \InvalidArgumentException
+     */
     public function select(
         string $table,
-        array $columns = [],
+        array $columns = ['*'],
         DbExpr|array|null $conditionsAndOptions = null
     ): array {
-        return $this->query(
-            $this->makeSelectQuery($table, $columns, $conditionsAndOptions),
-            static::FETCH_ALL
-        );
+        $select = $this->makeSelectQuery($table, $conditionsAndOptions);
+        if (!empty($columns)) {
+            $select->columns($columns);
+        }
+        return $select->fetchMany();
+    }
+
+    /**
+     * {@inheritDoc}
+     * @throws \InvalidArgumentException
+     */
+    public function selectOne(
+        string $table,
+        array $columns = ['*'],
+        DbExpr|array|null $conditionsAndOptions = null
+    ): array {
+        $select = $this->makeSelectQuery($table, $conditionsAndOptions);
+        if (!empty($columns)) {
+            $select->columns($columns);
+        }
+        return $select->fetchOne();
     }
 
     /**
@@ -895,18 +909,9 @@ abstract class DbAdapter implements DbAdapterInterface
         string|DbExpr $column,
         DbExpr|array|null $conditionsAndOptions = null
     ): array {
-        if (empty($column)) {
-            throw new \InvalidArgumentException('$column argument cannot be empty');
-        }
-
-        if (!is_string($column) && !($column instanceof DbExpr)) {
-            throw new \InvalidArgumentException('$column argument must be a string or DbExpr object');
-        }
-
-        return $this->query(
-            $this->makeSelectQuery($table, [$column], $conditionsAndOptions),
-            static::FETCH_COLUMN
-        );
+        ArgumentValidators::assertNotEmpty('$column', $column);
+        return $this->makeSelectQuery($table, $conditionsAndOptions)
+            ->fetchColumn($column);
     }
 
     /**
@@ -919,51 +924,10 @@ abstract class DbAdapter implements DbAdapterInterface
         string|DbExpr $valuesColumn,
         DbExpr|array|null $conditionsAndOptions = null
     ): array {
-        if (empty($keysColumn)) {
-            throw new \InvalidArgumentException('$keysColumn argument cannot be empty');
-        }
-
-        if (!is_string($keysColumn)) {
-            throw new \InvalidArgumentException('$keysColumn argument must be a string');
-        }
-
-        if (empty($valuesColumn)) {
-            throw new \InvalidArgumentException('$valuesColumn argument cannot be empty');
-        }
-
-        if (!is_string($valuesColumn)) {
-            throw new \InvalidArgumentException('$valuesColumn argument must be a string');
-        }
-
-        $records = $this->query(
-            $this->makeSelectQuery($table, [$keysColumn, $valuesColumn], $conditionsAndOptions),
-            static::FETCH_ALL
-        );
-        $assoc = [];
-        foreach ($records as $record) {
-            $assoc[$record[$keysColumn]] = $record[$valuesColumn];
-        }
-        return $assoc;
-    }
-
-    /**
-     * {@inheritDoc}
-     * Select first matching record form DB by compiling simple query from passed parameters.
-     * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
-     * @param string $table
-     * @param array $columns - empty array means "all columns" (SELECT *), must contain only strings and DbExpr objects
-     * @param DbExpr|null $conditionsAndOptions - Anything to add to query after "FROM $table"
-     * @return array
-     */
-    public function selectOne(
-        string $table,
-        array $columns = [],
-        DbExpr|array|null $conditionsAndOptions = null
-    ): array {
-        return $this->query(
-            $this->makeSelectQuery($table, $columns, $conditionsAndOptions),
-            static::FETCH_FIRST
-        );
+        ArgumentValidators::assertNotEmpty('$keysColumn', $keysColumn);
+        ArgumentValidators::assertNotEmpty('$valuesColumn', $valuesColumn);
+        return $this->makeSelectQuery($table, $conditionsAndOptions)
+            ->fetchAssoc($keysColumn, $valuesColumn);
     }
 
     public function selectValue(
@@ -971,78 +935,28 @@ abstract class DbAdapter implements DbAdapterInterface
         DbExpr $expression,
         DbExpr|array|null $conditionsAndOptions = null
     ): mixed {
-        return $this->query(
-            $this->makeSelectQuery($table, [$expression], $conditionsAndOptions),
-            static::FETCH_VALUE
-        );
+        return $this->makeSelectQuery($table, $conditionsAndOptions)
+            ->fetchValue($expression);
     }
 
+    /**
+     * {@inheritDoc}
+     * @throws \InvalidArgumentException
+     */
     public function makeSelectQuery(
         string $table,
-        array $columns = ['*'],
         DbExpr|array|null $conditionsAndOptions = null
-    ): string {
-        // todo: refactor to use Select object + add tests
+    ): SelectQueryBuilderInterface {
         $this->guardTableNameArg($table);
-        if (empty($columns)) {
-            $columns = ['*'];
-        } else {
-            $this->guardColumnsListArg($columns);
-        }
-
-        $prefix = '';
-        $suffix = '';
+        $select = Select::from($table, $this);
         if (is_array($conditionsAndOptions)) {
-            [$conditions, $options] = QueryBuilderUtils::separateConditionsAndOptions(
-                $conditionsAndOptions,
-                [QueryBuilderUtils::QUERY_PART_CONTAINS, QueryBuilderUtils::QUERY_PART_DISTINCT]
-            );
-            if (!empty($options)) {
-                foreach ($options as $option => $value) {
-                    if (!($value instanceof DbExpr)) {
-                        throw new \UnexpectedValueException(
-                            "\$conditionsAndOptions[{$option}]: value must be instance of " . DbExpr::class . '.'
-                        );
-                    }
-                }
-                if (isset($options[QueryBuilderUtils::QUERY_PART_WITH])) {
-                    $prefix .= 'WITH ' . $this->quoteDbExpr($options[QueryBuilderUtils::QUERY_PART_WITH]) . ' ';
-                }
-
-                if (isset($options[QueryBuilderUtils::QUERY_PART_JOINS])) {
-                    /** @var DbExpr $value */
-                    $value = $options[QueryBuilderUtils::QUERY_PART_JOINS];
-                    $suffix .= ' ' . $this->quoteDbExpr($value->setWrapInBrackets(false));
-                }
-
-                if (!empty($conditions)) {
-                    $suffix .= ' WHERE ' . $this->assembleConditions($conditions);
-                }
-
-                $partsOrder = [
-                    QueryBuilderUtils::QUERY_PART_GROUP => 'GROUP BY',
-                    QueryBuilderUtils::QUERY_PART_HAVING => 'HAVING',
-                    QueryBuilderUtils::QUERY_PART_ORDER => 'ORDER BY',
-                    QueryBuilderUtils::QUERY_PART_LIMIT => 'LIMIT',
-                    QueryBuilderUtils::QUERY_PART_OFFSET => 'OFFSET',
-                ];
-                foreach ($partsOrder as $part => $partNameForQuery) {
-                    if (isset($options[$part])) {
-                        /** @var DbExpr $value */
-                        $value = $options[$part];
-                        $suffix .= " {$partNameForQuery} " . $this->quoteDbExpr($value->setWrapInBrackets(false));
-                    }
-                }
-            } elseif (!empty($conditions)) {
-                $suffix .= ' WHERE ' . $this->assembleConditions($conditions);
+            $select->fromConfigsArray($conditionsAndOptions);
+        } else {
+            if ($conditionsAndOptions instanceof DbExpr) {
+                $select->appendDbExpr($conditionsAndOptions);
             }
-        } elseif ($conditionsAndOptions instanceof DbExpr) {
-            $suffix = ' ' . $this->quoteDbExpr($conditionsAndOptions);
         }
-
-        return $prefix . 'SELECT ' . $this->buildColumnsList($columns, false)
-            . ' FROM ' . $this->quoteDbEntityName($table)
-            . $suffix;
+        return $select;
     }
 
 }

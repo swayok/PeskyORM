@@ -57,7 +57,7 @@ interface SelectQueryBuilderInterface
      */
     public function fetchExistence(bool $ignoreLeftJoins = true): bool;
 
-    public function fetchColumn(): array;
+    public function fetchColumn(string|DbExpr $column): array;
 
     public function fetchAssoc(DbExpr|string $keysColumn, DbExpr|string $valuesColumn): array;
 
@@ -108,7 +108,7 @@ interface SelectQueryBuilderInterface
     /**
      * Set distinct flag to query (SELECT DISTINCT fields ...) or ((SELECT DISTINCT ON ($columns) fields)
      */
-    public function distinct(bool $value = true, ?array $columns = null): static;
+    public function distinct(bool $value = true, ?array $distinctColumns = null): static;
 
     /**
      * Set Conditions
@@ -188,13 +188,13 @@ interface SelectQueryBuilderInterface
     public function having(array $conditions): static;
 
     /**
-     * @param SelectQueryBuilderAbstract $select - a sub select that can be used as "table" in main select
+     * @param SelectQueryBuilderInterface $select - a sub select that can be used as "table" in main select
      * @param string $selectName - alias for passed $select (access to the select will be available using this alias)
      * @param bool $append
      * @return static
      * @see https://www.postgresql.org/docs/current/queries-with.html
      */
-    public function with(SelectQueryBuilderAbstract $select, string $selectName, bool $append = true): static;
+    public function with(SelectQueryBuilderInterface $select, string $selectName, bool $append = true): static;
 
     /**
      * Add INNER/LEFT/RIGHT/FULL JOIN
