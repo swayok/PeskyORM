@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\ORM;
+namespace PeskyORM\Join;
 
-use PeskyORM\Core\NormalJoinConfigAbstract;
+use PeskyORM\ORM\TableInterface;
 
-class OrmJoinInfo extends NormalJoinConfigAbstract
+class OrmJoinConfig extends NormalJoinConfigAbstract
 {
     
     protected TableInterface $dbTable;

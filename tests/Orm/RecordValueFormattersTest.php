@@ -342,7 +342,7 @@ class RecordValueFormattersTest extends BaseTestCase
     public function testDbExprValueInValueContainer(): void
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage('It is impossible to convert PeskyORM\Core\DbExpr object to anoter format');
+        $this->expectExceptionMessage('It is impossible to convert PeskyORM\DbExpr object to anoter format');
         $record = TestingFormatter::newEmptyRecord();
         $valueContainer = $record->getValueContainer('created_at');
         $formatter = RecordValueFormatters::getTimestampToDateFormatter();

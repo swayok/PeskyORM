@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace PeskyORM\Adapter;
 
 use PeskyORM\Config\Connection\PostgresConfig;
-use PeskyORM\Core\DbAdapter;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\SelectQueryBuilderInterface;
+use PeskyORM\DbExpr;
 use PeskyORM\Exception\DbException;
 use PeskyORM\Exception\DbInsertQueryException;
+use PeskyORM\Select\SelectQueryBuilderInterface;
 
-class Postgres extends DbAdapter
+class Postgres extends DbAdapterAbstract
 {
     protected string $quoteForDbEntityName = '"';
     protected string $trueValue = 'TRUE';
@@ -144,9 +143,9 @@ class Postgres extends DbAdapter
             if (!$this->rememberTransactionQueries) {
                 $this->lastQuery = $lastQuery;
             }
-            static::rememberTransactionTrace();
+            $this->rememberTransactionTrace();
         } catch (\PDOException $exc) {
-            static::rememberTransactionTrace('failed');
+            $this->rememberTransactionTrace('failed');
             throw $exc;
         }
         return $this;
@@ -161,6 +160,7 @@ class Postgres extends DbAdapter
             $this->lastQuery = $lastQuery;
         }
         $this->inTransaction = false;
+        $this->rememberTransactionTrace();
         return $this;
     }
 
@@ -173,6 +173,7 @@ class Postgres extends DbAdapter
         if (!$this->rememberTransactionQueries) {
             $this->lastQuery = $lastQuery;
         }
+        $this->rememberTransactionTrace();
         return $this;
     }
 

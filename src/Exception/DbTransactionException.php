@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Exception;
 
-use PeskyORM\Core\Utils\BacktraceUtils;
+use PeskyORM\Utils\BacktraceUtils;
 
 class DbTransactionException extends DbException
 {

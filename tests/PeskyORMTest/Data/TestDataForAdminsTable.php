@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\Data;
 
+use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Adapter\Mysql;
 use PeskyORM\Adapter\Postgres;
 
 trait TestDataForAdminsTable
 {
-    
+
     protected function getTestDataForAdminsTableInsert(): array
     {
         return [
@@ -51,10 +52,15 @@ trait TestDataForAdminsTable
             ],
         ];
     }
-    
-    public function convertTestDataForAdminsTableAssert(array $data, bool $convertIdToString = true): array
-    {
-        $adapter = $this->getValidAdapter();
+
+    public function convertTestDataForAdminsTableAssert(
+        array $data,
+        bool $convertIdToString = true,
+        DbAdapterInterface $adapter = null
+    ): array {
+        if (!$adapter) {
+            $adapter = $this->getValidAdapter();
+        }
         if ($adapter instanceof Postgres) {
             foreach ($data as &$item) {
                 $item['id'] = $convertIdToString ? (string)$item['id'] : (int)$item['id'];

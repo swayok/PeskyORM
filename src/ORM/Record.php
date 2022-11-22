@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\Utils\StringUtils;
+use PeskyORM\DbExpr;
 use PeskyORM\Exception\InvalidDataException;
 use PeskyORM\Exception\RecordNotFoundException;
+use PeskyORM\Select\OrmSelect;
+use PeskyORM\Utils\StringUtils;
 
 abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Serializable
 {

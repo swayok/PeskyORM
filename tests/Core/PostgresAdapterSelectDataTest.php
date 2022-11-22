@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\Core;
 
 use InvalidArgumentException;
-use PeskyORM\Core\DbAdapterInterface;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\Select;
+use PeskyORM\Adapter\DbAdapterInterface;
+use PeskyORM\DbExpr;
+use PeskyORM\Select\Select;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\Data\TestDataForAdminsTable;
 use PeskyORM\Tests\PeskyORMTest\Data\TestDataForSettingsTable;
@@ -117,7 +117,7 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
         $data = $adapter->select(
             'admins',
             ['id', 'parent_id'],
-            DbExpr::create(
+            \PeskyORM\DbExpr::create(
                 "WHERE `id` IN (``{$testData[0]['id']}``)"
             )
         );
@@ -141,7 +141,7 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
         $data = $adapter->selectOne(
             'admins',
             [],
-            DbExpr::create(
+            \PeskyORM\DbExpr::create(
                 "WHERE `id` IN (``{$testData[0]['id']}``)"
             )
         );
@@ -154,7 +154,7 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
         );
         static::assertEquals($dataForAssert[0], $data);
         
-        $data = $adapter->selectColumn('admins', 'email', DbExpr::create('ORDER BY `id`'));
+        $data = $adapter->selectColumn('admins', 'email', \PeskyORM\DbExpr::create('ORDER BY `id`'));
         static::assertCount(2, $data);
         static::assertEquals([$dataForAssert[0]['email'], $dataForAssert[1]['email']], $data);
 
@@ -162,7 +162,7 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
         static::assertCount(2, $data);
         static::assertEquals([$dataForAssert[0]['email'], $dataForAssert[1]['email']], $data);
         
-        $data = $adapter->selectAssoc('admins', 'id', 'email', DbExpr::create('ORDER BY `id`'));
+        $data = $adapter->selectAssoc('admins', 'id', 'email', \PeskyORM\DbExpr::create('ORDER BY `id`'));
         static::assertCount(2, $data);
         static::assertEquals(
             [
@@ -182,7 +182,7 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
             $data
         );
         
-        $data = $adapter->selectValue('admins', DbExpr::create('COUNT(`*`)'));
+        $data = $adapter->selectValue('admins', \PeskyORM\DbExpr::create('COUNT(`*`)'));
         static::assertEquals(2, $data);
     }
     
@@ -196,7 +196,7 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
         $data = $adapter->selectOne(
             'settings',
             ['id'],
-            DbExpr::create("WHERE `value`->``test4``->>``sub1`` = ``val1``")
+            \PeskyORM\DbExpr::create("WHERE `value`->``test4``->>``sub1`` = ``val1``")
         );
         static::assertNotEmpty($data);
         static::assertEquals(3, $data['id']);
@@ -204,7 +204,7 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
         $data = $adapter->selectOne(
             'settings',
             ['id'],
-            DbExpr::create("WHERE `value`#>>``{test4,sub1}`` = ``val1``")
+            \PeskyORM\DbExpr::create("WHERE `value`#>>``{test4,sub1}`` = ``val1``")
         );
         static::assertNotEmpty($data);
         static::assertEquals(3, $data['id']);
@@ -212,7 +212,7 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
         $data = $adapter->selectOne(
             'settings',
             ['id'],
-            DbExpr::create("WHERE `value`#>>``{test4,sub1}`` IS NOT NULL")
+            \PeskyORM\DbExpr::create("WHERE `value`#>>``{test4,sub1}`` IS NOT NULL")
         );
         static::assertNotEmpty($data);
         static::assertEquals(3, $data['id']);
@@ -220,7 +220,7 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
         $data = $adapter->selectOne(
             'settings',
             ['id'],
-            DbExpr::create("WHERE `value` ?? ``test4``")
+            \PeskyORM\DbExpr::create("WHERE `value` ?? ``test4``")
         );
         static::assertNotEmpty($data);
         static::assertEquals(3, $data['id']);
@@ -228,7 +228,7 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
         $data = $adapter->selectOne(
             'settings',
             ['id'],
-            DbExpr::create("WHERE `value` ?? ``test1``")
+            \PeskyORM\DbExpr::create("WHERE `value` ?? ``test1``")
         );
         static::assertNotEmpty($data);
         static::assertEquals(2, $data['id']);
@@ -236,7 +236,7 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
         $data = $adapter->selectOne(
             'settings',
             ['id'],
-            DbExpr::create("WHERE `value` ??| array[``test1``, ``test2``]")
+            \PeskyORM\DbExpr::create("WHERE `value` ??| array[``test1``, ``test2``]")
         );
         static::assertNotEmpty($data);
         static::assertEquals(2, $data['id']);
@@ -244,7 +244,7 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
         $data = $adapter->selectOne(
             'settings',
             ['id'],
-            DbExpr::create("WHERE `value` ??& array[``test1``, ``test2``]")
+            \PeskyORM\DbExpr::create("WHERE `value` ??& array[``test1``, ``test2``]")
         );
         static::assertNotEmpty($data);
         static::assertEquals(2, $data['id']);
@@ -275,7 +275,7 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
     
     public function testInvalidWith1(): void
     {
-        $select = new Select('admins', static::getValidAdapter());
+        $select = new \PeskyORM\Select\Select('admins', static::getValidAdapter());
         $withSelect = new Select('admins', static::getValidAdapter());
         // it is actually valid for PostgreSQL but not valid for MySQL
         $select->with($withSelect, 'asdas as das das');

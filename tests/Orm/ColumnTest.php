@@ -10,23 +10,11 @@ use PeskyORM\ORM\RecordValue;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
-use PeskyORM\Tests\PeskyORMTest\TestingApp;
 use PeskyORM\Tests\PeskyORMTest\TestingValueToObjectConverter;
 use Swayok\Utils\NormalizeValue;
 
 class ColumnTest extends BaseTestCase
 {
-    
-    public static function setUpBeforeClass(): void
-    {
-        TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
-        TestingApp::getPgsqlConnection();
-    }
-    
-    public static function tearDownAfterClass(): void
-    {
-        TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
-    }
     
     public function testInvalidConstructor1(): void
     {

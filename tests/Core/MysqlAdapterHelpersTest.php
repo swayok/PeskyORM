@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Core;
 
-use PeskyORM\Core\DbAdapterInterface;
+use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Tests\PeskyORMTest\Adapter\MysqlTesting;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
@@ -12,15 +12,15 @@ require_once __DIR__ . '/PostgresAdapterHelpersTest.php';
 
 class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
 {
-    
+
     /**
      * @return MysqlTesting
      */
-    protected static function getValidAdapter(): DbAdapterInterface
+    protected static function getValidAdapter(bool $reuseExisting = true): DbAdapterInterface
     {
-        return TestingApp::getMysqlConnection();
+        return TestingApp::getMysqlConnection($reuseExisting);
     }
-    
+
     public function testConvertConditionOperator(): void
     {
         $adapter = self::getValidAdapter();
@@ -57,7 +57,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
         $operator = $adapter->convertNormalizedConditionOperatorForDbQuery('NOT REGEX');
         static::assertEquals('NOT REGEX', $operator);
     }
-    
+
     public function testQuoteJsonSelectorValue(): void
     {
         static::assertEquals(
@@ -73,7 +73,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
             static::getValidAdapter()->quoteJsonSelectorValue('[0]')
         );
     }
-    
+
     public function testQuoteJsonSelectorExpression(): void
     {
         static::assertEquals(
@@ -99,7 +99,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
             ])
         );
     }
-    
+
     public function testAssembleConditionAdapterSpecific(): void
     {
         $adapter = static::getValidAdapter();
@@ -170,12 +170,12 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
         $this->expectExceptionMessage("\$pkName must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)");
         static::getValidAdapter()->guardPkNameArg('teasd as das d 90as9()');
     }
-    
+
     public function testIsValidDbEntityNameAndJsonSelector2(): void
     {
         static::assertFalse(static::getValidAdapter()->isValidJsonSelector('test test->test'));
         static::assertFalse(static::getValidAdapter()->isValidJsonSelector('test#test->test'));
-        
+
         static::assertFalse(static::getValidAdapter()->isValidDbEntityName('test test'));
         static::assertFalse(static::getValidAdapter()->isValidDbEntityName('test$test'));
         static::assertFalse(static::getValidAdapter()->isValidDbEntityName('test->test', false));

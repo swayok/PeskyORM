@@ -5,18 +5,19 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Orm;
 
+use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Adapter\Postgres;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\Select;
+use PeskyORM\DbExpr;
 use PeskyORM\ORM\FakeTable;
-use PeskyORM\ORM\OrmJoinInfo;
-use PeskyORM\ORM\OrmSelect;
+use PeskyORM\Select\OrmSelect;
+use PeskyORM\Select\Select;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\Data\TestDataForAdminsTable;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableLongAlias;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Tests\PeskyORMTest\TestingSettings\TestingSettingsTable;
 use PeskyORM\Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 use Swayok\Utils\Set;
 
@@ -27,17 +28,27 @@ class OrmSelectTest extends BaseTestCase
 
     public static function setUpBeforeClass(): void
     {
-        TestingApp::clearTables(static::getValidAdapter());
+        parent::setUpBeforeClass();
+        TestingApp::clearTables(TestingAdminsTable::getConnection(true));
     }
 
     public static function tearDownAfterClass(): void
     {
-        TestingApp::clearTables(static::getValidAdapter());
+        parent::tearDownAfterClass();
+        TestingApp::clearTables(TestingAdminsTable::getConnection(true));
     }
 
-    protected static function getValidAdapter(): Postgres
+    protected static function getConnection(): DbAdapterInterface
     {
-        return TestingApp::getPgsqlConnection();
+        return TestingAdminsTable::getConnection(true);
+    }
+
+    public static function fillAdminsTable(int $limit = 0): array
+    {
+        TestingAdminsTable::getConnection(true)->exec('TRUNCATE TABLE admins');
+        $data = TestingApp::getRecordsForDb('admins', $limit);
+        TestingAdminsTable::getConnection(true)->insertMany('admins', array_keys($data[0]), $data);
+        return $data;
     }
 
     protected static function getNewSelect(): OrmSelect
@@ -73,8 +84,8 @@ class OrmSelectTest extends BaseTestCase
         ];
         static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
 
-        $insertedData = TestingApp::fillAdminsTable(2);
-        $testData = $this->convertTestDataForAdminsTableAssert($insertedData, true);
+        $insertedData = static::fillAdminsTable(2);
+        $testData = $this->convertTestDataForAdminsTableAssert($insertedData, true, TestingAdminsTable::getConnection());
         unset($testData[0]['big_data'], $testData[1]['big_data']);
         $dbSelect->columns('*');
         $count = $dbSelect->fetchCount();
@@ -685,11 +696,11 @@ class OrmSelectTest extends BaseTestCase
     {
         $dbSelect = static::getNewSelect()->columns(['id']);
 
-        $joinConfig = OrmJoinInfo::create(
+        $joinConfig = \PeskyORM\Join\OrmJoinConfig::create(
             'Test',
             TestingAdminsTable::getInstance(),
             'parent_id',
-            OrmJoinInfo::JOIN_INNER,
+            \PeskyORM\Join\OrmJoinConfig::JOIN_INNER,
             TestingAdminsTable::getInstance(),
             'id'
         );
@@ -716,7 +727,7 @@ class OrmSelectTest extends BaseTestCase
         $colsInSelectForTest = implode(', ', $colsInSelectForTest);
 
         $joinConfig
-            ->setJoinType(OrmJoinInfo::JOIN_LEFT)
+            ->setJoinType(\PeskyORM\Join\OrmJoinConfig::JOIN_LEFT)
             ->setForeignColumnsToSelect('*')
             ->setAdditionalJoinConditions([
                 'email' => 'test@test.ru',
@@ -732,7 +743,7 @@ class OrmSelectTest extends BaseTestCase
 
         $dbSelect = static::getNewSelect()->columns(['id']);
         $joinConfig
-            ->setJoinType(OrmJoinInfo::JOIN_RIGHT)
+            ->setJoinType(\PeskyORM\Join\OrmJoinConfig::JOIN_RIGHT)
             ->setForeignColumnsToSelect(['email']);
         static::assertEquals(
             'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", "tbl_Test_1"."email" AS "col_Test__email_1"'
@@ -744,7 +755,7 @@ class OrmSelectTest extends BaseTestCase
 
         $dbSelect = static::getNewSelect()->columns(['id']);
         $joinConfig
-            ->setJoinType(OrmJoinInfo::JOIN_RIGHT)
+            ->setJoinType(\PeskyORM\Join\OrmJoinConfig::JOIN_RIGHT)
             ->setAdditionalJoinConditions([])
             ->setForeignColumnsToSelect([]);
         static::assertEquals(
@@ -754,7 +765,7 @@ class OrmSelectTest extends BaseTestCase
 
         $dbSelect = static::getNewSelect()->columns(['id']);
         $joinConfig
-            ->setJoinType(OrmJoinInfo::JOIN_FULL)
+            ->setJoinType(\PeskyORM\Join\OrmJoinConfig::JOIN_FULL)
             ->setForeignColumnsToSelect(['email']);
         static::assertEquals(
             'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", "tbl_Test_1"."email" AS "col_Test__email_1" FROM "admins" AS "tbl_Admins_0" FULL JOIN "admins" AS "tbl_Test_1" ON ("tbl_Admins_0"."parent_id" = "tbl_Test_1"."id")',
@@ -973,14 +984,14 @@ class OrmSelectTest extends BaseTestCase
     {
         $dbSelect = static::getNewSelect()
             ->columns('id')
-            ->with(Select::from('admins', static::getValidAdapter()), 'subselect');
+            ->with(Select::from('admins', TestingAdminsTable::getConnection()), 'subselect');
         static::assertEquals(
             'WITH "subselect" AS (SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0")'
             . ' SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0"',
             $dbSelect->getQuery()
         );
         $dbSelect->where([
-            'id IN' => Select::from('subselect', static::getValidAdapter()),
+            'id IN' => Select::from('subselect', TestingAdminsTable::getConnection()),
         ]);
         static::assertEquals(
             'WITH "subselect" AS (SELECT "tbl_Admins_1".* FROM "admins" AS "tbl_Admins_1")'
@@ -991,7 +1002,7 @@ class OrmSelectTest extends BaseTestCase
         $fakeTable = FakeTable::makeNewFakeTable('subselect');
         $dbSelect = OrmSelect::from($fakeTable)
             ->columns(['id'])
-            ->with(Select::from('admins', static::getValidAdapter()), 'subselect')
+            ->with(Select::from('admins', TestingAdminsTable::getConnection()), 'subselect')
             ->where(['created_at > ' => '2016-01-01']);
         static::assertEquals(
             'WITH "subselect" AS (SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0") '
@@ -1004,7 +1015,7 @@ class OrmSelectTest extends BaseTestCase
         $fakeTable->getTableStructure()->mimicTableStructure(TestingSettingsTableStructure::getInstance());
         $dbSelect = OrmSelect::from($fakeTable)
             ->columns(['id', 'key', 'value'])
-            ->with(Select::from('settings', static::getValidAdapter()), 'subselect2')
+            ->with(Select::from('settings', TestingSettingsTable::getConnection()), 'subselect2')
             ->where(['key' => 'test']);
         static::assertEquals(
             'WITH "subselect2" AS (SELECT "tbl_Settings_0".* FROM "settings" AS "tbl_Settings_0")'
@@ -1017,7 +1028,7 @@ class OrmSelectTest extends BaseTestCase
 
         $fakeTable2 = FakeTable::makeNewFakeTable('subselect3');
         $fakeTable2->getTableStructure()->mimicTableStructure(TestingSettingsTableStructure::getInstance());
-        $subselect2 = Select::from('settings', static::getValidAdapter())->columns(['*']);
+        $subselect2 = Select::from('settings', TestingSettingsTable::getConnection())->columns(['*']);
         static::assertEquals(
             'SELECT "tbl_Settings_0".* FROM "settings" AS "tbl_Settings_0"',
             $subselect2->buildQueryToBeUsedInWith()
@@ -1046,7 +1057,7 @@ class OrmSelectTest extends BaseTestCase
 
         $dbSelect = static::getNewSelect()
             ->columns('id')
-            ->with(Select::from('settings', static::getValidAdapter()), 'subselect2')
+            ->with(Select::from('settings', TestingSettingsTable::getConnection()), 'subselect2')
             ->with(
                 OrmSelect::from($fakeTable)
                     ->where(['key' => 'test']),
@@ -1054,7 +1065,7 @@ class OrmSelectTest extends BaseTestCase
             )
             ->where(
                 [
-                    'id IN' => Select::from('subselect3', static::getValidAdapter())
+                    'id IN' => Select::from('subselect3', TestingAdminsTable::getConnection())
                         ->where(['key' => 'test2']),
                 ]
             );
@@ -1073,7 +1084,7 @@ class OrmSelectTest extends BaseTestCase
     public function testNoColumnsForWildcardNormalization(): void
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessageMatches('%PeskyORM.ORM.OrmSelect::normalizeWildcardColumn\(\): PeskyORM.ORM.Fakes.FakeTableStructure\d+ForFake\d+ has no columns that exist in DB%');
+        $this->expectExceptionMessageMatches('%OrmSelect::normalizeWildcardColumn\(\): .*?FakeTableStructure\d+ForFake\d+ has no columns that exist in DB%');
         $fakeTable = FakeTable::makeNewFakeTable('fake1');
         $select = OrmSelect::from($fakeTable)->columns('*');
         $select->buildQueryToBeUsedInWith();

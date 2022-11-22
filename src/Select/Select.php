@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\Core;
+namespace PeskyORM\Select;
 
-use PeskyORM\Core\Utils\ArgumentValidators;
+use PeskyORM\Adapter\DbAdapterInterface;
+use PeskyORM\DbExpr;
+use PeskyORM\Utils\ArgumentValidators;
 
 class Select extends SelectQueryBuilderAbstract
 {

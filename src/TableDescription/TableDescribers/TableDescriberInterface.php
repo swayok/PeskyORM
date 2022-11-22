@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PeskyORM\TableDescription\TableDescribers;
 
-use PeskyORM\Core\DbAdapterInterface;
+use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\TableDescription\TableDescription;
 
 interface TableDescriberInterface

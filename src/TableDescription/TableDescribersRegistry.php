@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace PeskyORM\TableDescription;
 
+use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Adapter\Mysql;
 use PeskyORM\Adapter\Postgres;
-use PeskyORM\Core\DbAdapterInterface;
 use PeskyORM\TableDescription\TableDescribers\MysqlTableDescriber;
 use PeskyORM\TableDescription\TableDescribers\PostgresTableDescriber;
 use PeskyORM\TableDescription\TableDescribers\TableDescriberInterface;

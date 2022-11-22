@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\KeyValueTableHelpers;
 
-use PeskyORM\Core\DbExpr;
+use PeskyORM\DbExpr;
 use PeskyORM\ORM\RecordInterface;
 use PeskyORM\ORM\Relation;
 use Swayok\Utils\NormalizeValue;
@@ -78,9 +78,9 @@ trait KeyValueTableHelpers
     {
         if ($value instanceof DbExpr) {
             return $value;
-        } else {
-            return NormalizeValue::normalizeJson($value);
         }
+
+        return NormalizeValue::normalizeJson($value);
     }
     
     /**
@@ -150,7 +150,9 @@ trait KeyValueTableHelpers
             throw new \InvalidArgumentException(
                 '$record argument does not contain value for key \'' . static::getKeysColumnName() . '\' or its value is empty'
             );
-        } elseif (!array_key_exists(static::getValuesColumnName(), $data)) {
+        }
+
+        if (!array_key_exists(static::getValuesColumnName(), $data)) {
             throw new \InvalidArgumentException(
                 '$record argument does not contain value for key \'' . static::getValuesColumnName() . '\' or its value is empty'
             );
@@ -247,7 +249,7 @@ trait KeyValueTableHelpers
         
         $defaultClosure = ($default instanceof \Closure)
             ? $default
-            : function () use ($default) {
+            : static function () use ($default) {
                 return $default;
             };
         return static::getFormattedValueFromRecordData($recordData, $key, $format, $defaultClosure, $ignoreEmptyValue);
@@ -291,12 +293,13 @@ trait KeyValueTableHelpers
                 $recordObj = $table->newRecord();
                 if (empty($recordData)) {
                     return $recordObj->hasValue($column, true) ? $recordObj->getValue($column, $format) : $defaultClosure();
-                } else {
-                    $value = $recordObj
-                        ->updateValue($column, static::decodeValue($recordData[static::getValuesColumnName()]), false)
-                        ->getValue($column, $format);
-                    return ($ignoreEmptyValue && static::isEmptyValue($value)) ? $defaultClosure() : $value;
                 }
+
+                $value = $recordObj
+                    ->updateValue($column, static::decodeValue($recordData[static::getValuesColumnName()]), false)
+                    ->getValue($column, $format);
+
+                return ($ignoreEmptyValue && static::isEmptyValue($value)) ? $defaultClosure() : $value;
             }
         }
         if (empty($recordData)) {

@@ -2,7 +2,13 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\Core;
+namespace PeskyORM\Select;
+
+use PeskyORM\Adapter\DbAdapterInterface;
+use PeskyORM\DbExpr;
+use PeskyORM\Join\CrossJoinConfig;
+use PeskyORM\Join\NormalJoinConfigInterface;
+use PeskyORM\Utils\QueryBuilderUtils;
 
 interface SelectQueryBuilderInterface
 {

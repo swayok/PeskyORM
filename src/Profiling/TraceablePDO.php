@@ -16,20 +16,27 @@ class TraceablePDO extends PDO
     
     /** @var TracedStatement[] */
     protected array $executedStatements = [];
-    
+    protected ?string $uid = null;
+
     /**
      * @param PDO $pdo
-     * @param null|string $databaseName
+     * @param null|string $uid
      * @noinspection PhpMissingParentConstructorInspection
      * @noinspection MagicMethodsValidityInspection
      */
-    public function __construct(PDO $pdo, ?string $databaseName = null)
+    public function __construct(PDO $pdo, ?string $uid = null)
     {
         $this->pdo = $pdo;
         $this->pdo->setAttribute(PDO::ATTR_STATEMENT_CLASS, [TraceablePDOStatement::class, [$this]]);
-        PeskyOrmPdoProfiler::addConnection($this, $databaseName);
+        $this->uid = $uid ?? spl_object_hash($pdo);
+        PdoProfilingHelper::addConnection($this, $this->uid);
     }
-    
+
+    public function __destruct()
+    {
+        PdoProfilingHelper::removeConnection($this->uid);
+    }
+
     /**
      * Initiates a transaction
      *
@@ -58,7 +65,7 @@ class TraceablePDO extends PDO
      * @link   http://php.net/manual/en/pdo.errorinfo.php
      * @return array PDO::errorInfo returns an array of error information
      */
-    public function errorCode(): array
+    public function errorCode(): ?string
     {
         return $this->pdo->errorCode();
     }
@@ -131,13 +138,13 @@ class TraceablePDO extends PDO
      *
      * @link   http://php.net/manual/en/pdo.prepare.php
      * @param string $query This must be a valid SQL statement template for the target DB server.
-     * @param array|null $options [optional] This array holds one or more key=&gt;value pairs to
+     * @param array $options [optional] This array holds one or more key=&gt;value pairs to
      * set attribute values for the PDOStatement object that this method returns.
      * @return TraceablePDOStatement|false If the database server successfully prepares the statement,
      * PDO::prepare returns a PDOStatement object. If the database server cannot successfully prepare
      * the statement, PDO::prepare returns FALSE or emits PDOException (depending on error handling).
      */
-    public function prepare(string $query, array $options = null): false|TraceablePDOStatement
+    public function prepare(string $query, array $options = []): false|TraceablePDOStatement
     {
         /** @var TraceablePDOStatement|false $statement */
         $statement = $this->pdo->prepare($query, $options);
@@ -244,9 +251,9 @@ class TraceablePDO extends PDO
     /**
      * Returns the accumulated execution time of statements
      */
-    public function getAccumulatedStatementsDuration(): int
+    public function getAccumulatedStatementsDuration(): float
     {
-        return array_reduce($this->executedStatements, function ($duration, $statement) {
+        return array_reduce($this->executedStatements, static function ($duration, $statement) {
             /** @var $statement TracedStatement */
             return $duration + $statement->getDuration();
         });
@@ -255,9 +262,9 @@ class TraceablePDO extends PDO
     /**
      * Returns overall memory usage after performing all statements
      */
-    public function getMemoryUsage(): int
+    public function getMemoryUsage(): float
     {
-        return array_reduce($this->executedStatements, function ($memoryUsed, $statement) {
+        return array_reduce($this->executedStatements, static function ($memoryUsed, $statement) {
             /** @var $statement TracedStatement */
             return $memoryUsed + $statement->getMemoryUsage();
         });
@@ -266,9 +273,9 @@ class TraceablePDO extends PDO
     /**
      * Returns the peak memory usage while performing statements
      */
-    public function getPeakMemoryUsage(): int
+    public function getPeakMemoryUsage(): float
     {
-        return array_reduce($this->executedStatements, function ($maxMemoryUsed, $statement) {
+        return array_reduce($this->executedStatements, static function ($maxMemoryUsed, $statement) {
             /** @var $statement TracedStatement */
             $memoryUsed = $statement->getEndMemory();
             return max($memoryUsed, $maxMemoryUsed);
@@ -288,7 +295,7 @@ class TraceablePDO extends PDO
      */
     public function getFailedExecutedStatements(): array
     {
-        return array_filter($this->executedStatements, function ($statement) {
+        return array_filter($this->executedStatements, static function ($statement) {
             return !$statement->isSuccess();
         });
     }

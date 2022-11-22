@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\Traits;
 
-use PeskyORM\Core\DbExpr;
+use PeskyORM\DbExpr;
 use PeskyORM\ORM\Column;
 
 trait TestingTimestampColumnsTrait

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\Core;
+namespace PeskyORM\Config\Connection;
 
+use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Adapter\Mysql;
 use PeskyORM\Adapter\Postgres;
-use PeskyORM\Config\Connection\MysqlConfig;
-use PeskyORM\Config\Connection\PostgresConfig;
+use PeskyORM\Profiling\TraceablePDO;
 
 class DbConnectionsManager
 {
@@ -36,8 +36,8 @@ class DbConnectionsManager
     /**
      * Add custom DB adapter
      * @param string $name
-     * @param string $className - class must implement \PeskyORM\Core\DbAdapterInterface
-     * @param string $connectionConfigClassName - class must implement \PeskyORM\Core\DbConnectionConfigInterface
+     * @param string $className - class must implement \PeskyORM\Adapter\DbAdapterInterface
+     * @param string $connectionConfigClassName - class must implement \PeskyORM\Config\Connection\DbConnectionConfigInterface
      * @throws \InvalidArgumentException
      */
     public static function addAdapter(string $name, string $className, string $connectionConfigClassName): void
@@ -160,4 +160,19 @@ class DbConnectionsManager
         return self::$connections;
     }
 
+    public static function startProfilingForAllConnections(): void
+    {
+        foreach (static::$connections as $connection) {
+            static::startProfilingForConnection($connection);
+        }
+    }
+
+    public static function startProfilingForConnection(DbAdapterInterface $connection): void
+    {
+        $connection->setConnectionWrapper(function (DbAdapterInterface $adapter, \PDO $pdo) {
+            $name = $adapter->getConnectionConfig()->getName()
+                . ' (DB: ' . $adapter->getConnectionConfig()->getDbName() . ')';
+            return new TraceablePDO($pdo, $name);
+        });
+    }
 }

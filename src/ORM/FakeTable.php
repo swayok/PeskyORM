@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\DbAdapterInterface;
-use PeskyORM\Core\Utils\PdoUtils;
-use PeskyORM\Core\Utils\StringUtils;
+use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\ORM\Traits\FakeTableStructureHelpers;
+use PeskyORM\Utils\PdoUtils;
+use PeskyORM\Utils\StringUtils;
 
 abstract class FakeTable extends Table
 {

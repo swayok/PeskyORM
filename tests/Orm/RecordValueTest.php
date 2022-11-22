@@ -4,27 +4,15 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Orm;
 
-use PeskyORM\Core\DbExpr;
+use PeskyORM\DbExpr;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\RecordValue;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
-use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 class RecordValueTest extends BaseTestCase
 {
-    
-    public static function setUpBeforeClass(): void
-    {
-        TestingApp::getPgsqlConnection();
-        TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
-    }
-    
-    public static function tearDownAfterClass(): void
-    {
-        TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
-    }
     
     protected function getClonedColumn(string $columnName): Column
     {

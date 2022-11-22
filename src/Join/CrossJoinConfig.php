@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\Core;
+namespace PeskyORM\Join;
 
-use PeskyORM\Core\Utils\ArgumentValidators;
+use PeskyORM\DbExpr;
+use PeskyORM\Utils\ArgumentValidators;
 
 class CrossJoinConfig implements CrossJoinConfigInterface
 {

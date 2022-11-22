@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\Core;
+namespace PeskyORM\Adapter;
 
 use PDO;
 use PDOStatement;
-use PeskyORM\Core\Utils\PdoUtils;
+use PeskyORM\Config\Connection\DbConnectionConfigInterface;
+use PeskyORM\DbExpr;
 use PeskyORM\ORM\RecordInterface;
+use PeskyORM\Select\SelectQueryBuilderInterface;
 
 interface DbAdapterInterface
 {
@@ -18,7 +20,18 @@ interface DbAdapterInterface
      */
     public function getConnection(): PDO;
 
+    /**
+     * Check if connection to DB established
+     */
+    public function isConnected(): bool;
+
     public function getConnectionConfig(): DbConnectionConfigInterface;
+
+    /**
+     * Set/Remove a wrapper around PDO connection. Wrapper called on each DB connection.
+     * Usuallay used to profile and monitor queries
+     */
+    public function setConnectionWrapper(?\Closure $wrapper): void;
 
     /**
      * Run $callback when DB connection created (or right now if connection already established)
@@ -48,10 +61,10 @@ interface DbAdapterInterface
     public function prepare(string|DbExpr $query, array $options = []): PDOStatement;
 
     /**
-     * @see PdoUtils::getDataFromStatement()
      * @param string|DbExpr $query
      * @param string $fetchData - how to fetch data
      * @return mixed
+     *@see \PeskyORM\Utils\PdoUtils::getDataFromStatement()
      */
     public function query(
         string|DbExpr $query,
@@ -152,7 +165,7 @@ interface DbAdapterInterface
 
     /**
      * @param string $table
-     * @param array|DbExpr $conditions - WHERE conditions
+     * @param array|\PeskyORM\DbExpr $conditions - WHERE conditions
      * @param bool|array $returning - return some data back after $data inserted to $table
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
@@ -273,7 +286,7 @@ interface DbAdapterInterface
      * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
      * @param string $table
      * @param array $columns
-     * @param DbExpr|array|null $conditionsAndOptions - see makeSelectQuery() for details
+     * @param \PeskyORM\DbExpr|array|null $conditionsAndOptions - see makeSelectQuery() for details
      * @see SelectQueryBuilderInterface::columns() for $columns arg value possibilities
      * @see DbAdapterInterface::makeSelectQuery() for $conditionsAndOptions arg value explanation
      */

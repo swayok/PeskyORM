@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest;
 
+use PeskyORM\Adapter\DbAdapterInterface;
+use PeskyORM\Config\Connection\DbConnectionsManager;
 use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Config\Connection\PostgresConfig;
-use PeskyORM\Core\DbAdapterInterface;
-use PeskyORM\Core\DbConnectionsManager;
 use PeskyORM\ORM\Record;
 use PeskyORM\ORM\Table;
 use PeskyORM\ORM\TableStructure;
@@ -17,52 +17,101 @@ use PeskyORM\Tests\PeskyORMTest\Adapter\PostgresTesting;
 class TestingApp
 {
 
+    protected static bool $connectionsManageConfigured = false;
     public static ?PostgresTesting $pgsqlConnection = null;
+    public static bool $pgsqlConnectionInitiated = false;
     public static ?MysqlTesting $mysqlConnection = null;
+    public static bool $mysqlConnectionInitiated = false;
     protected static ?array $dataForDb = null;
     protected static ?array $dataForDbMinimal = null;
 
-    public static function getMysqlConnection(): MysqlTesting
+    public static function configureConnectionsManager(): void
     {
-        if (!static::$mysqlConnection) {
+        if (!static::$connectionsManageConfigured) {
             DbConnectionsManager::addAdapter(
                 DbConnectionsManager::ADAPTER_MYSQL,
                 MysqlTesting::class,
                 MysqlConfig::class
             );
-            /** @noinspection PhpFieldAssignmentTypeMismatchInspection */
-            static::$mysqlConnection = DbConnectionsManager::createConnection(
+            DbConnectionsManager::createConnection(
                 'mysql',
                 DbConnectionsManager::ADAPTER_MYSQL,
                 MysqlConfig::fromArray(static::getGlobalConfigs()['mysql'])
             );
-            static::$mysqlConnection->exec(file_get_contents(__DIR__ . '/../configs/db_schema_mysql.sql'));
-            date_default_timezone_set('UTC');
-        }
-        return static::$mysqlConnection;
-    }
 
-    public static function getPgsqlConnection(): PostgresTesting
-    {
-        if (!static::$pgsqlConnection) {
             DbConnectionsManager::addAdapter(
                 DbConnectionsManager::ADAPTER_POSTGRES,
                 PostgresTesting::class,
                 PostgresConfig::class
             );
-            /** @noinspection PhpFieldAssignmentTypeMismatchInspection */
-            static::$pgsqlConnection = DbConnectionsManager::createConnection(
+            DbConnectionsManager::createConnection(
                 'default',
                 DbConnectionsManager::ADAPTER_POSTGRES,
                 PostgresConfig::fromArray(static::getGlobalConfigs()['pgsql'])
             );
             DbConnectionsManager::addAlternativeNameForConnection('default', 'writable');
-            static::$pgsqlConnection->exec(file_get_contents(__DIR__ . '/../configs/db_schema_pgsql.sql'));
-            static::$pgsqlConnection->query('SET LOCAL TIME ZONE "UTC"');
+
             date_default_timezone_set('UTC');
+            static::$connectionsManageConfigured = true;
         }
-        static::$pgsqlConnection->rememberTransactionQueries = true;
+    }
+
+    public static function getMysqlConnection(bool $reuseExisting = true): MysqlTesting
+    {
+        if (!$reuseExisting) {
+            static::$mysqlConnection?->disconnect();
+            static::$mysqlConnection = null;
+        }
+        if (!static::$mysqlConnection) {
+            static::$mysqlConnection = new MysqlTesting(
+                MysqlConfig::fromArray(static::getGlobalConfigs()['mysql'])
+            );
+            if (!static::$mysqlConnectionInitiated) {
+                static::$mysqlConnection->exec(file_get_contents(__DIR__ . '/../configs/db_schema_mysql.sql'));
+                date_default_timezone_set('UTC');
+                static::$mysqlConnectionInitiated = true;
+            }
+        }
+        if (
+            static::$mysqlConnection->isConnected()
+            && get_class(static::$mysqlConnection->getConnection()) !== \PDO::class
+        ) {
+            throw new \UnexpectedValueException('$mysqlConnection is not pure \PDO connection');
+        }
+        return static::$mysqlConnection;
+    }
+
+    public static function getPgsqlConnection(bool $reuseExisting = true): PostgresTesting
+    {
+        if (!$reuseExisting) {
+            static::$pgsqlConnection?->disconnect();
+            static::$pgsqlConnection = null;
+        }
+        if (!static::$pgsqlConnection) {
+            static::$pgsqlConnection = new PostgresTesting(
+                PostgresConfig::fromArray(static::getGlobalConfigs()['pgsql'])
+            );
+            static::$pgsqlConnection->query('SET LOCAL TIME ZONE "UTC"');
+            if (!static::$pgsqlConnectionInitiated) {
+                static::$pgsqlConnection->exec(file_get_contents(__DIR__ . '/../configs/db_schema_pgsql.sql'));
+                date_default_timezone_set('UTC');
+                // for ORM tests
+                static::$pgsqlConnectionInitiated = true;
+            }
+        }
         return static::$pgsqlConnection;
+    }
+
+    public static function resetConnections(): void
+    {
+        $connection = static::getPgsqlConnection(false);
+        if (get_class($connection->getConnection()) !== \PDO::class) {
+            throw new \UnexpectedValueException('$pgsqlConnection is not pure \PDO connection');
+        }
+        $connection = static::getMysqlConnection(false);
+        if (get_class($connection->getConnection()) !== \PDO::class) {
+            throw new \UnexpectedValueException('$mysqlConnection is not pure \PDO connection');
+        }
     }
 
     protected static function getGlobalConfigs(): array
@@ -88,22 +137,6 @@ class TestingApp
         }
 
         return $records[$table];
-    }
-
-    public static function fillAdminsTable(int $limit = 0): array
-    {
-        static::$pgsqlConnection->exec('TRUNCATE TABLE admins');
-        $data = static::getRecordsForDb('admins', $limit);
-        static::$pgsqlConnection->insertMany('admins', array_keys($data[0]), $data);
-        return $data;
-    }
-
-    public static function fillSettingsTable(int $limit = 0): array
-    {
-        static::$pgsqlConnection->exec('TRUNCATE TABLE settings');
-        $data = static::getRecordsForDb('settings', $limit);
-        static::$pgsqlConnection->insertMany('settings', array_keys($data[0]), $data);
-        return $data;
     }
 
     public static function clearTables(DbAdapterInterface $adapter): void

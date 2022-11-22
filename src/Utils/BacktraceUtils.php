@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\Core\Utils;
+namespace PeskyORM\Utils;
 
 use JetBrains\PhpStorm\ArrayShape;
 
@@ -53,7 +53,7 @@ abstract class BacktraceUtils
     ])]
     private static function normalizeBacktraceItem(array $item): array
     {
-        if ($item['_normalized']) {
+        if (!empty($item['_normalized'])) {
             return $item;
         }
 

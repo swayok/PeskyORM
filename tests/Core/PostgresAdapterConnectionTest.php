@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\Core;
 
 use PeskyORM\Adapter\Postgres;
+use PeskyORM\Config\Connection\DbConnectionsManager;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
-use ReflectionClass;
 
 // WARNING: PostgreSQL Server shoud not have next lines in pg_hba.conf:
 //      host all all 0.0.0.0/0 trust
@@ -110,17 +110,14 @@ class PostgresAdapterConnectionTest extends BaseTestCase
         $stmnt = $adapter->query('SELECT 1');
         static::assertEquals(1, $stmnt->rowCount());
     }
-    
+
     public function testDisconnect(): void
     {
         $adapter = static::getValidAdapter();
+        DbConnectionsManager::startProfilingForConnection($adapter);
         $adapter->getConnection();
         $adapter->disconnect();
-        $reflector = new ReflectionClass($adapter);
-        $prop = $reflector->getProperty('pdo');
-        $prop->setAccessible(true);
-        static::assertEquals(null, $prop->getValue($adapter));
-        $reflector->getProperty('pdo')
-            ->setAccessible(false);
+        static::assertNull($this->getObjectPropertyValue($adapter, 'pdo'));
+        static::assertNull($this->getObjectPropertyValue($adapter, 'wrappedPdo'));
     }
 }

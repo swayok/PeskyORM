@@ -2,23 +2,27 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\Core;
+namespace PeskyORM\Adapter;
 
 use PDO;
 use PDOStatement;
-use PeskyORM\Core\Utils\ArgumentValidators;
-use PeskyORM\Core\Utils\BacktraceUtils;
-use PeskyORM\Core\Utils\DbAdapterMethodArgumentUtils;
-use PeskyORM\Core\Utils\DbQuoter;
-use PeskyORM\Core\Utils\PdoUtils;
-use PeskyORM\Core\Utils\QueryBuilderUtils;
+use PeskyORM\DbExpr;
 use PeskyORM\Exception\DbException;
 use PeskyORM\Exception\DbInsertQueryException;
 use PeskyORM\Exception\DbTransactionException;
 use PeskyORM\Exception\DetailedPDOException;
 use PeskyORM\ORM\RecordInterface;
+use PeskyORM\Profiling\TransactionsTracingInterface;
+use PeskyORM\Select\Select;
+use PeskyORM\Select\SelectQueryBuilderInterface;
+use PeskyORM\Utils\ArgumentValidators;
+use PeskyORM\Utils\BacktraceUtils;
+use PeskyORM\Utils\DbAdapterMethodArgumentUtils;
+use PeskyORM\Utils\DbQuoter;
+use PeskyORM\Utils\PdoUtils;
+use PeskyORM\Utils\QueryBuilderUtils;
 
-abstract class DbAdapter implements DbAdapterInterface
+abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTracingInterface
 {
 
     protected string $quoteForDbEntityName;
@@ -41,42 +45,35 @@ abstract class DbAdapter implements DbAdapterInterface
     /**
      * Traces of all transactions (required for debug)
      */
-    protected static array $transactionsTraces = [];
+    protected array $transactionsTraces = [];
 
     /**
      * Enables/disables collecting of transactions traces
      */
-    protected static bool $isTransactionTracesEnabled = false;
+    protected bool $allowTransactionsTracing = false;
 
     protected ?PDO $pdo = null;
+    protected ?PDO $wrappedPdo = null;
 
     protected array $onConnectCallbacks = [];
 
     /**
      * Class that wraps PDO connection. Used for debugging
-     * function (DbAdapter $adapter, \PDO $pdo) { return $wrappedPdo; }
+     * function (DbAdapterInterface $adapter, \PDO $pdo) { return $wrappedPdo; }
      */
-    protected static ?\Closure $connectionWrapper = null;
+    protected ?\Closure $connectionWrapper = null;
 
     /**
      * Last executed query
      */
     protected ?string $lastQuery = null;
 
-    /**
-     * Set a wrapper to PDO connection. Wrapper called on any new DB connection
-     */
-    public static function setConnectionWrapper(\Closure $wrapper): void
+    public function setConnectionWrapper(?\Closure $wrapper): void
     {
-        static::$connectionWrapper = $wrapper;
-    }
-
-    /**
-     * Remove PDO connection wrapper. This does not unwrap existing PDO objects
-     */
-    public static function unsetConnectionWrapper(): void
-    {
-        static::$connectionWrapper = null;
+        $this->connectionWrapper = $wrapper;
+        if ($this->isConnected()) {
+            $this->wrapConnection($this->pdo);
+        }
     }
 
     abstract protected function getConditionAssembler(string $operator): ?\Closure;
@@ -90,11 +87,16 @@ abstract class DbAdapter implements DbAdapterInterface
         if ($this->pdo === null) {
             $this->pdo = $this->makePdo();
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $this->getConnectionConfig()->onConnect($this->pdo);
-            $this->wrapConnection();
+            $this->wrapConnection($this->pdo);
+            $this->getConnectionConfig()->onConnect($this->wrappedPdo ?? $this->pdo);
             $this->runOnConnectCallbacks($this->onConnectCallbacks);
         }
-        return $this->pdo;
+        return $this->wrappedPdo ?? $this->pdo;
+    }
+
+    public function isConnected(): bool
+    {
+        return $this->pdo !== null;
     }
 
     /**
@@ -121,23 +123,25 @@ abstract class DbAdapter implements DbAdapterInterface
     public function disconnect(): static
     {
         $this->pdo = null;
+        $this->wrappedPdo = null;
         return $this;
     }
 
     /**
-     * Wrap PDO connection if wrapper is provided
-     * @throws \PDOException
+     * Wrap/unwrap connection
      */
-    private function wrapConnection(): void
+    protected function wrapConnection(PDO $pdo): void
     {
-        if (static::$connectionWrapper instanceof \Closure) {
-            $this->pdo = call_user_func(static::$connectionWrapper, $this, $this->getConnection());
+        if ($this->connectionWrapper) {
+            $this->wrappedPdo = call_user_func($this->connectionWrapper, $this, $pdo);
+        } else {
+            $this->wrappedPdo = null;
         }
     }
 
     public function onConnect(\Closure $callback, ?string $code = null): static
     {
-        $run = $this->pdo !== null;
+        $run = $this->isConnected();
         if (!$code) {
             $this->onConnectCallbacks[] = $callback;
         } elseif (!isset($this->onConnectCallbacks[$code])) {
@@ -168,9 +172,9 @@ abstract class DbAdapter implements DbAdapterInterface
      * Use when you have problems related to transactions
      * @param bool $enable = true: enable; false: disable
      */
-    public static function enableTransactionTraces(bool $enable = true): void
+    public function setTransactionsTracing(bool $enable = true): void
     {
-        static::$isTransactionTracesEnabled = $enable;
+        $this->allowTransactionsTracing = $enable;
     }
 
     public static function getExpressionToSetDefaultValueForAColumn(): DbExpr
@@ -202,8 +206,8 @@ abstract class DbAdapter implements DbAdapterInterface
     }
 
     /**
-     * @param string|DbExpr $query
-     * @return int - affected rows count
+     * {@inheritDoc}
+     * @throws DetailedPDOException
      */
     public function exec(DbExpr|string $query): int
     {
@@ -218,7 +222,11 @@ abstract class DbAdapter implements DbAdapterInterface
                 && $this->getConnection()->errorCode() !== PDO::ERR_NONE
             ) {
                 // error happened when performing query
-                throw new DetailedPDOException($this->getConnection(), $query);
+                [$sqlState, $pdoErrorCode, $errorMessage] = $this->getConnection()->errorInfo();
+                throw new \PDOException(
+                    $sqlState . ': ' . $errorMessage,
+                    $pdoErrorCode
+                );
             }
             return $affectedRowsCount;
         } catch (\PDOException $exc) {
@@ -551,9 +559,9 @@ abstract class DbAdapter implements DbAdapterInterface
         $this->guardBeginTransaction();
         try {
             $this->getConnection()->beginTransaction();
-            static::rememberTransactionTrace();
+            $this->rememberTransactionTrace();
         } catch (\PDOException $exc) {
-            static::rememberTransactionTrace('failed');
+            $this->rememberTransactionTrace('failed');
             throw $exc;
         }
         return $this;
@@ -563,6 +571,7 @@ abstract class DbAdapter implements DbAdapterInterface
     {
         $this->guardCommitTransaction();
         $this->getConnection()->commit();
+        $this->rememberTransactionTrace();
         return $this;
     }
 
@@ -570,17 +579,18 @@ abstract class DbAdapter implements DbAdapterInterface
     {
         $this->guardRollbackTransaction();
         $this->getConnection()->rollBack();
+        $this->rememberTransactionTrace();
         return $this;
     }
 
     protected function guardBeginTransaction(): void
     {
         if ($this->inTransaction()) {
-            static::rememberTransactionTrace('failed');
+            $this->rememberTransactionTrace('failed');
             throw new DbTransactionException(
                 'Already in transaction',
                 DbException::CODE_TRANSACTION_BEGIN_FAIL,
-                static::$transactionsTraces
+                $this->transactionsTraces
             );
         }
     }
@@ -588,11 +598,11 @@ abstract class DbAdapter implements DbAdapterInterface
     protected function guardCommitTransaction(): void
     {
         if (!$this->inTransaction()) {
-            static::rememberTransactionTrace('failed');
+            $this->rememberTransactionTrace('failed');
             throw new DbTransactionException(
                 'Attempt to commit not started transaction',
                 DbException::CODE_TRANSACTION_COMMIT_FAIL,
-                static::$transactionsTraces
+                $this->transactionsTraces
             );
         }
     }
@@ -600,27 +610,38 @@ abstract class DbAdapter implements DbAdapterInterface
     protected function guardRollbackTransaction(): void
     {
         if (!$this->inTransaction()) {
-            static::rememberTransactionTrace('failed');
+            $this->rememberTransactionTrace('failed');
             throw new DbTransactionException(
                 'Attempt to rollback not started transaction',
                 DbException::CODE_TRANSACTION_ROLLBACK_FAIL,
-                static::$transactionsTraces
+                $this->transactionsTraces
             );
         }
+    }
+
+    public function isTransactionsTracingEnabled(): bool
+    {
+        return $this->allowTransactionsTracing;
+    }
+
+    public function getTransactionsTraces(): array
+    {
+        return $this->transactionsTraces;
     }
 
     /**
      * Remember transaction trace
      * @param null|string $key - array key for this trace
      */
-    protected static function rememberTransactionTrace(?string $key = null): void
+    protected function rememberTransactionTrace(?string $key = null): void
     {
-        if (static::$isTransactionTracesEnabled) {
+        if ($this->isTransactionsTracingEnabled()) {
             $trace = BacktraceUtils::getBackTrace(false, 2);
             if ($key) {
-                static::$transactionsTraces[$key] = $trace;
+                $key = (count($this->transactionsTraces) + 1) . ':' . $key;
+                $this->transactionsTraces[$key] = $trace;
             } else {
-                static::$transactionsTraces[] = $trace;
+                $this->transactionsTraces[] = $trace;
             }
         }
     }
@@ -951,10 +972,8 @@ abstract class DbAdapter implements DbAdapterInterface
         $select = Select::from($table, $this);
         if (is_array($conditionsAndOptions)) {
             $select->fromConfigsArray($conditionsAndOptions);
-        } else {
-            if ($conditionsAndOptions instanceof DbExpr) {
-                $select->appendDbExpr($conditionsAndOptions);
-            }
+        } elseif ($conditionsAndOptions instanceof DbExpr) {
+            $select->appendDbExpr($conditionsAndOptions);
         }
         return $select;
     }

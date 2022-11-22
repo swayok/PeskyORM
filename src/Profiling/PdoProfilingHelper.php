@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace PeskyORM\Profiling;
 
-use PeskyORM\Core\DbAdapter;
-use PeskyORM\Core\DbAdapterInterface;
+use JetBrains\PhpStorm\ArrayShape;
 
-class PeskyOrmPdoProfiler
+abstract class PdoProfilingHelper
 {
     
     /**
@@ -16,42 +15,44 @@ class PeskyOrmPdoProfiler
     protected static array $connections = [];
     
     /**
-     * Init PDO profiling
-     */
-    public static function init(): void
-    {
-        DbAdapter::setConnectionWrapper(function (DbAdapterInterface $adapter, \PDO $pdo) {
-            $name = $adapter->getConnectionConfig()
-                    ->getName() . ' (DB: ' . $adapter->getConnectionConfig()
-                    ->getDbName() . ')';
-            return new TraceablePDO($pdo, $name);
-        });
-    }
-    
-    /**
-     * Adds a new PDO instance to be collector
-     *
+     * Adds a new PDO instance to be profiled
      * @param TraceablePDO $pdo
-     * @param string|null $name Optional connection name
+     * @param string $name - connection name or some id
      */
-    public static function addConnection(TraceablePDO $pdo, ?string $name = null): void
+    public static function addConnection(TraceablePDO $pdo, string $name): void
     {
-        if ($name === null) {
-            $name = spl_object_hash($pdo);
-        }
         static::$connections[$name] = $pdo;
     }
+
+    /**
+     * Remove PDO instance by name
+     */
+    public static function removeConnection(string $name): void
+    {
+        unset(static::$connections[$name]);
+    }
     
     /**
-     * Returns PDO instances to be collected
-     *
+     * Returns PDO instances to be profiled
      * @return TraceablePDO[]
      */
     public static function getConnections(): array
     {
         return static::$connections;
     }
-    
+
+    public static function forgetConnections(): void
+    {
+        static::$connections = [];
+    }
+
+    #[ArrayShape([
+        'statements_count' => 'int',
+        'failed_statements_count' => 'int',
+        'accumulated_duration' => 'float',
+        'max_memory_usage' => 'float',
+        'statements' => 'array'
+    ])]
     public static function collect(): array
     {
         $data = [
@@ -115,18 +116,20 @@ class PeskyOrmPdoProfiler
         ];
     }
     
-    public static function formatDuration(float $seconds): string
+    protected static function formatDuration(float $seconds): string
     {
         if ($seconds < 0.001) {
             return round($seconds * 1000000) . 'μs';
-        } elseif ($seconds < 1) {
+        }
+
+        if ($seconds < 1) {
             return round($seconds * 1000, 2) . 'ms';
         }
-        
+
         return round($seconds, 2) . 's';
     }
     
-    public static function formatBytes(int $size, int $precision = 2): string
+    protected static function formatBytes(int $size, int $precision = 2): string
     {
         if ($size === 0) {
             return '0B';

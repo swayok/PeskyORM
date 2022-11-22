@@ -6,12 +6,11 @@ namespace PeskyORM\Tests\Core;
 
 use PDOException;
 use PeskyORM\Adapter\Mysql;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\Utils;
-use PeskyORM\Core\Utils\PdoUtils;
+use PeskyORM\DbExpr;
 use PeskyORM\Exception\DbException;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Utils\PdoUtils;
 
 class MysqlAdapterQueriesTest extends BaseTestCase
 {
@@ -44,7 +43,7 @@ class MysqlAdapterQueriesTest extends BaseTestCase
         $this->expectExceptionMessageMatches("%Table '.*?\.abrakadabra' doesn't exist%i");
         $adapter = static::getValidAdapter();
         $adapter->exec(
-            DbExpr::create('INSERT INTO `abrakadabra` (`key`, `value`) VALUES (``test_key``, ``test_value``)')
+            \PeskyORM\DbExpr::create('INSERT INTO `abrakadabra` (`key`, `value`) VALUES (``test_key``, ``test_value``)')
         );
     }
     

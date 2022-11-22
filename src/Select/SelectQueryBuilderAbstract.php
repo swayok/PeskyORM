@@ -2,12 +2,17 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\Core;
+namespace PeskyORM\Select;
 
-use PeskyORM\Core\Utils\ArgumentValidators;
-use PeskyORM\Core\Utils\PdoUtils;
-use PeskyORM\Core\Utils\QueryBuilderUtils;
-use PeskyORM\Core\Utils\StringUtils;
+use PeskyORM\DbExpr;
+use PeskyORM\Join\CrossJoinConfig;
+use PeskyORM\Join\CrossJoinConfigInterface;
+use PeskyORM\Join\JoinConfig;
+use PeskyORM\Join\NormalJoinConfigInterface;
+use PeskyORM\Utils\ArgumentValidators;
+use PeskyORM\Utils\PdoUtils;
+use PeskyORM\Utils\QueryBuilderUtils;
+use PeskyORM\Utils\StringUtils;
 
 abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
 {
@@ -249,7 +254,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
     }
 
     /**
-     * @param string $selectionType - one of PeskyORM\Core\Utils\PdoUtils::FETCH_*
+     * @param string $selectionType - one of PeskyORM\Utils\PdoUtils::FETCH_*
      */
     protected function _fetch(string $selectionType): mixed
     {

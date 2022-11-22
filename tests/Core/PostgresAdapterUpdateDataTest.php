@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\Core;
 
 use PDO;
-use PeskyORM\Core\DbAdapterInterface;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\Utils;
-use PeskyORM\Core\Utils\PdoUtils;
+use PeskyORM\Adapter\DbAdapterInterface;
+use PeskyORM\DbExpr;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\Data\TestDataForAdminsTable;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Utils\PdoUtils;
 
 class PostgresAdapterUpdateDataTest extends BaseTestCase
 {
@@ -47,7 +46,7 @@ class PostgresAdapterUpdateDataTest extends BaseTestCase
         $adapter->update('settings', $update1, DbExpr::create("`key` = ``{$testData1[0]['key']}``"));
         static::assertEquals(
             $adapter->quoteDbExpr(
-                DbExpr::create(
+                \PeskyORM\DbExpr::create(
                     "UPDATE `settings` SET `value`=``\"test_value1.1\"`` WHERE (`key` = ``{$testData1[0]['key']}``)",
                     false
                 )
@@ -56,7 +55,7 @@ class PostgresAdapterUpdateDataTest extends BaseTestCase
         );
         $data = PdoUtils::getDataFromStatement(
             $adapter->query(
-                DbExpr::create(
+                \PeskyORM\DbExpr::create(
                     "SELECT * FROM `settings` WHERE (`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)) ORDER BY `key`",
                     false
                 )
@@ -85,7 +84,7 @@ class PostgresAdapterUpdateDataTest extends BaseTestCase
         );
         $data = PdoUtils::getDataFromStatement(
             $adapter->query(
-                DbExpr::create(
+                \PeskyORM\DbExpr::create(
                     "SELECT * FROM `admins` WHERE `id` IN (``{$testData2[0]['id']}``,``{$testData2[1]['id']}``) ORDER BY `id`"
                 )
             ),

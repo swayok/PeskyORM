@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\Core\Utils;
+namespace PeskyORM\Utils;
 
-use PeskyORM\Core\DbAdapterInterface;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\SelectQueryBuilderInterface;
+use PeskyORM\Adapter\DbAdapterInterface;
+use PeskyORM\DbExpr;
 use PeskyORM\ORM\RecordInterface;
+use PeskyORM\Select\SelectQueryBuilderInterface;
 
 abstract class DbQuoter
 {
@@ -16,7 +16,7 @@ abstract class DbQuoter
      * Names format:
      *  1. 'table', 'column', 'TableAlias'
      *  2. 'TableAlias.column' - quoted like '`TableAlias`.`column`'
-     * @param DbAdapterInterface $adapter
+     * @param \PeskyORM\Adapter\DbAdapterInterface $adapter
      * @param string $name - DB entity name to quote
      * @return string
      * @throws \InvalidArgumentException

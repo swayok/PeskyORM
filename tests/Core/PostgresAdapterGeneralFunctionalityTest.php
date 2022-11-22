@@ -6,7 +6,6 @@ namespace PeskyORM\Tests\Core;
 
 use PDO;
 use PeskyORM\Adapter\Postgres;
-use PeskyORM\Core\DbExpr;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 use ReflectionClass;
@@ -160,7 +159,7 @@ class PostgresAdapterGeneralFunctionalityTest extends BaseTestCase
     public function testQuotingOfInvalidDbExpr(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($expression) must be of type PeskyORM\Core\DbExpr');
+        $this->expectExceptionMessage('Argument #1 ($expression) must be of type PeskyORM\DbExpr');
         $adapter = static::getValidAdapter();
         /** @noinspection PhpParamsInspection */
         $adapter->quoteDbExpr('test');
@@ -200,7 +199,7 @@ class PostgresAdapterGeneralFunctionalityTest extends BaseTestCase
         static::assertEquals("'123'", $adapter->quoteValue(123, PDO::PARAM_INT));
         static::assertEquals(
             'DELETE FROM "table1" WHERE "col1" = \'value1\'',
-            $adapter->quoteDbExpr(DbExpr::create('DELETE FROM `table1` WHERE `col1` = ``value1``'))
+            $adapter->quoteDbExpr(\PeskyORM\DbExpr::create('DELETE FROM `table1` WHERE `col1` = ``value1``'))
         );
     }
     

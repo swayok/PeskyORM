@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\Core;
 
 use PeskyORM\Adapter\Postgres;
-use PeskyORM\Core\DbAdapterInterface;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\Utils;
-use PeskyORM\Core\Utils\PdoUtils;
-use PeskyORM\Core\Utils\QueryBuilderUtils;
+use PeskyORM\DbExpr;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Utils\PdoUtils;
+use PeskyORM\Utils\QueryBuilderUtils;
 use Swayok\Utils\Set;
 
 class UtilsTest extends BaseTestCase
@@ -112,7 +110,7 @@ class UtilsTest extends BaseTestCase
     {
         $testData = $this->convertTestDataForAdminsTableAssert(static::fillTables()['admins']);
         $statement = static::getValidAdapter()
-            ->query(DbExpr::create('SELECT * FROM `admins`'));
+            ->query(\PeskyORM\DbExpr::create('SELECT * FROM `admins`'));
         static::assertEquals(
             $testData,
             PdoUtils::getDataFromStatement($statement, PdoUtils::FETCH_ALL)
@@ -136,7 +134,7 @@ class UtilsTest extends BaseTestCase
             PdoUtils::getDataFromStatement($statement, PdoUtils::FETCH_VALUE)
         );
         $statement = static::getValidAdapter()
-            ->query(DbExpr::create('SELECT * FROM `admins` WHERE `id` < ``0``'));
+            ->query(\PeskyORM\DbExpr::create('SELECT * FROM `admins` WHERE `id` < ``0``'));
         static::assertEquals([], PdoUtils::getDataFromStatement($statement, PdoUtils::FETCH_ALL));
         $statement->closeCursor();
         $statement->execute();
@@ -404,10 +402,10 @@ class UtilsTest extends BaseTestCase
             "($col1 = $value1)",
             QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
-                [DbExpr::create('`col` = ``value``')],
+                [\PeskyORM\DbExpr::create('`col` = ``value``')],
                 $columnQuoter,
                 'AND',
-                function ($colName, $value, DbAdapterInterface $connection) {
+                function ($colName, $value, \PeskyORM\Adapter\DbAdapterInterface $connection) {
                     return $connection->quoteDbExpr($value);
                 }
             )
@@ -416,7 +414,7 @@ class UtilsTest extends BaseTestCase
             "$col1 = ($value1)",
             QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
-                ['col' => DbExpr::create('``value``')],
+                ['col' => \PeskyORM\DbExpr::create('``value``')],
                 $columnQuoter
             )
         );

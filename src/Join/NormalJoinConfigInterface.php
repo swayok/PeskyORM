@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\Core;
+namespace PeskyORM\Join;
 
 interface NormalJoinConfigInterface extends JoinConfigInterface
 {

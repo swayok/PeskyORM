@@ -10,15 +10,9 @@ use PeskyORM\ORM\RecordValue;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
-use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 class DefaultColumnClosuresTest extends BaseTestCase
 {
-    
-    public static function setUpBeforeClass(): void
-    {
-        TestingApp::getPgsqlConnection();
-    }
     
     public function testValueNormalizer(): void
     {

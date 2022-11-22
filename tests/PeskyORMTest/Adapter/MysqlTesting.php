@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\PeskyORMTest\Adapter;
 
 use PeskyORM\Adapter\Mysql;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\SelectQueryBuilderInterface;
-use PeskyORM\Core\Utils\DbAdapterMethodArgumentUtils;
+use PeskyORM\DbExpr;
 use PeskyORM\ORM\RecordInterface;
+use PeskyORM\Select\SelectQueryBuilderInterface;
+use PeskyORM\Utils\DbAdapterMethodArgumentUtils;
 
 class MysqlTesting extends Mysql
 {

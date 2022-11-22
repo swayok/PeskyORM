@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest;
 
-use PeskyORM\Core\Utils\StringUtils;
 use PeskyORM\ORM\RecordInterface;
 use PeskyORM\ORM\Table;
 use PeskyORM\ORM\TableStructure;
 use PeskyORM\ORM\TableStructureInterface;
+use PeskyORM\Utils\StringUtils;
 
 abstract class TestingBaseTable extends Table
 {

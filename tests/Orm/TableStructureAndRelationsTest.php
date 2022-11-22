@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Orm;
 
-use PeskyORM\Core\DbExpr;
+use PeskyORM\DbExpr;
 use PeskyORM\Exception\OrmException;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Relation;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmins4TableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
-use PeskyORM\Tests\PeskyORMTest\TestingApp;
 use PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidColumnsInTableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure2;
@@ -24,17 +23,6 @@ use ReflectionClass;
 
 class TableStructureAndRelationsTest extends BaseTestCase
 {
-    
-    public static function setUpBeforeClass(): void
-    {
-        TestingApp::getPgsqlConnection();
-        TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
-    }
-    
-    public static function tearDownAfterClass(): void
-    {
-        TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
-    }
     
     public function testTableStructureCore(): void
     {

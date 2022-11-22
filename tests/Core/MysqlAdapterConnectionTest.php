@@ -8,7 +8,6 @@ use PeskyORM\Adapter\Mysql;
 use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
-use ReflectionClass;
 
 class MysqlAdapterConnectionTest extends BaseTestCase
 {
@@ -103,17 +102,13 @@ class MysqlAdapterConnectionTest extends BaseTestCase
         $stmnt = $adapter->query('SELECT 1');
         static::assertEquals(1, $stmnt->rowCount());
     }
-    
+
     public function testDisconnect(): void
     {
         $adapter = static::getValidAdapter();
         $adapter->getConnection();
         $adapter->disconnect();
-        $reflector = new ReflectionClass($adapter);
-        $prop = $reflector->getProperty('pdo');
-        $prop->setAccessible(true);
-        static::assertEquals(null, $prop->getValue($adapter));
-        $reflector->getProperty('pdo')
-            ->setAccessible(false);
+        static::assertNull($this->getObjectPropertyValue($adapter, 'pdo'));
+        static::assertNull($this->getObjectPropertyValue($adapter, 'wrappedPdo'));
     }
 }

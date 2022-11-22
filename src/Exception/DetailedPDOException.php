@@ -17,11 +17,18 @@ class DetailedPDOException extends DbException
         protected string $query,
         ?\PDOException $previous = null
     ) {
-        [, $code, $message] = $this->connectionOrStatement->errorInfo();
+        [, $pdoCode, $message] = $this->connectionOrStatement->errorInfo();
         $this->originalMessage = $message;
-        if ($message === null) {
-            // there was no error
-            parent::__construct('', 0, $previous);
+
+        if (!$message && $previous) {
+            $message = $previous->getMessage();
+            $pdoCode = $previous->errorInfo[1];
+        }
+
+        if (!$message) {
+            // there was no error in PDO, and no exception
+            $message = '';
+            $pdoCode = 0;
         } else {
             if (preg_match('%syntax error at or near "\$\d+"%i', $message)) {
                 $message .= "\nNOTE: PeskyORM does not use prepared statements."
@@ -31,8 +38,8 @@ class DetailedPDOException extends DbException
                     . " or jsonb_exists_all(jsonb, text) respectively";
             }
             $message .= ". \nQuery: " . $this->query;
-            parent::__construct($message, $code, $previous);
         }
+        parent::__construct($message, $pdoCode, $previous);
     }
 
     public function getConnectionOrStatement(): PDO|PDOStatement

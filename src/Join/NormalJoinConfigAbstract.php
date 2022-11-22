@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\Core;
+namespace PeskyORM\Join;
 
-use PeskyORM\Core\Utils\ArgumentValidators;
-use PeskyORM\Core\Utils\DbAdapterMethodArgumentUtils;
-use PeskyORM\Core\Utils\StringUtils;
+use PeskyORM\Utils\ArgumentValidators;
+use PeskyORM\Utils\DbAdapterMethodArgumentUtils;
+use PeskyORM\Utils\StringUtils;
 
 abstract class NormalJoinConfigAbstract implements NormalJoinConfigInterface
 {

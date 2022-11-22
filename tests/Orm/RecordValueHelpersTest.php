@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Orm;
 
-use PeskyORM\Core\DbExpr;
+use PeskyORM\DbExpr;
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\RecordValueHelpers;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
@@ -14,12 +14,6 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class RecordValueHelpersTest extends BaseTestCase
 {
-    
-    public static function setUpBeforeClass(): void
-    {
-        date_default_timezone_set('UTC');
-        parent::setUpBeforeClass();
-    }
     
     public function testGetErrorMessage(): void
     {

@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace PeskyORM\TableDescription\TableDescribers;
 
 use JetBrains\PhpStorm\ArrayShape;
-use PeskyORM\Core\DbAdapterInterface;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\Utils;
-use PeskyORM\Core\Utils\PdoUtils;
+use PeskyORM\Adapter\DbAdapterInterface;
+use PeskyORM\DbExpr;
 use PeskyORM\ORM\Column;
 use PeskyORM\TableDescription\ColumnDescription;
 use PeskyORM\TableDescription\TableDescription;
+use PeskyORM\Utils\PdoUtils;
 use Swayok\Utils\ValidateValue;
 
 class PostgresTableDescriber implements TableDescriberInterface

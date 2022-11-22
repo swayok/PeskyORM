@@ -19,11 +19,6 @@ use SebastianBergmann\Comparator\ComparisonFailure;
 use SebastianBergmann\RecursionContext\InvalidArgumentException;
 use Traversable;
 
-use function array_replace_recursive;
-use function is_array;
-use function iterator_to_array;
-use function var_export;
-
 /**
  * Constraint that asserts that the array it is evaluated for has a specified subset.
  *

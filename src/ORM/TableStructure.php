@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\DbConnectionsManager;
-use PeskyORM\Core\Utils\StringUtils;
+use PeskyORM\Config\Connection\DbConnectionsManager;
 use PeskyORM\Exception\OrmException;
 use PeskyORM\TableDescription\TableDescribersRegistry;
 use PeskyORM\TableDescription\TableDescription;
+use PeskyORM\Utils\StringUtils;
 
 abstract class TableStructure implements TableStructureInterface
 {

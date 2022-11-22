@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace PeskyORM\ORM;
 
 use Closure;
-use PeskyORM\Core\DbExpr;
+use PeskyORM\DbExpr;
+use PeskyORM\Select\OrmSelect;
 
 class RecordsSet extends RecordsArray
 {
@@ -130,11 +131,11 @@ class RecordsSet extends RecordsArray
                 $this->resetRecords();
             }
             return $newSet;
-        } else {
-            // update OrmSelect and reset RecordSet
-            $this->setOrmSelect($this->select->where($conditions, true));
-            return $this;
         }
+
+        // update OrmSelect and reset RecordSet
+        $this->setOrmSelect($this->select->where($conditions, true));
+        return $this;
     }
     
     /**
@@ -233,9 +234,9 @@ class RecordsSet extends RecordsArray
     ): array {
         if ($closureOrColumnsListOrMethodName) {
             return $this->getDataFromEachObject($closureOrColumnsListOrMethodName, $argumentsForMethod, $enableReadOnlyMode);
-        } else {
-            return $this->getRecords();
         }
+
+        return $this->getRecords();
     }
     
     public function offsetExists(mixed $index): bool

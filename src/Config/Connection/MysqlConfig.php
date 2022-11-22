@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace PeskyORM\Config\Connection;
 
-use PeskyORM\Core\DbConnectionConfigInterface;
-
 class MysqlConfig implements DbConnectionConfigInterface
 {
     

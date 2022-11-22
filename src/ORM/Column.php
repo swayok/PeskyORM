@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\Utils\ArgumentValidators;
+use PeskyORM\DbExpr;
+use PeskyORM\Utils\ArgumentValidators;
 
 /**
  * Value setter workflow:

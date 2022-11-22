@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\DbAdapterInterface;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\Utils\StringUtils;
+use PeskyORM\Adapter\DbAdapterInterface;
+use PeskyORM\DbExpr;
 use PeskyORM\TableDescription\ColumnDescription;
 use PeskyORM\TableDescription\TableDescribersRegistry;
 use PeskyORM\TableDescription\TableDescription;
+use PeskyORM\Utils\StringUtils;
 
 class ClassBuilder
 {
@@ -101,7 +101,7 @@ namespace {$namespace};
 use {$parentClass};
 use PeskyORM\ORM\Column;
 use PeskyORM\ORM\Relation;
-use PeskyORM\Core\DbExpr;$includes
+use PeskyORM\DbExpr;$includes
 
 /**
 {$this->makePhpDocForTableStructure()}

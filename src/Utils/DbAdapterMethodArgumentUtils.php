@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\Core\Utils;
+namespace PeskyORM\Utils;
 
-use PeskyORM\Core\DbAdapterInterface;
-use PeskyORM\Core\DbExpr;
+use PeskyORM\Adapter\DbAdapterInterface;
+use PeskyORM\DbExpr;
 
 abstract class DbAdapterMethodArgumentUtils
 {

@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\DbAdapterInterface;
-use PeskyORM\Core\DbExpr;
+use PeskyORM\Adapter\DbAdapterInterface;
+use PeskyORM\DbExpr;
+use PeskyORM\Join\OrmJoinConfig;
 
 interface TableInterface
 {
@@ -42,13 +43,13 @@ interface TableInterface
      * @param string $relationName
      * @param string|null $alterLocalTableAlias - alter this table's alias in join config
      * @param string|null $joinName - string: specific join name; null: $relationName is used
-     * @return OrmJoinInfo
+     * @return OrmJoinConfig
      */
     public static function getJoinConfigForRelation(
         string $relationName,
         string $alterLocalTableAlias = null,
         string $joinName = null
-    ): OrmJoinInfo;
+    ): OrmJoinConfig;
     
     public static function hasPkColumn(): bool;
     

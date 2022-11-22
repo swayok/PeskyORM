@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\DbAdapter;
-use PeskyORM\Core\DbAdapterInterface;
-use PeskyORM\Core\DbConnectionsManager;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\Utils\QueryBuilderUtils;
-use PeskyORM\Core\Utils\StringUtils;
+use PeskyORM\Adapter\DbAdapterInterface;
+use PeskyORM\Config\Connection\DbConnectionsManager;
+use PeskyORM\DbExpr;
+use PeskyORM\Join\OrmJoinConfig;
+use PeskyORM\Select\OrmSelect;
+use PeskyORM\Utils\QueryBuilderUtils;
+use PeskyORM\Utils\StringUtils;
 
 abstract class Table implements TableInterface
 {
@@ -59,7 +60,7 @@ abstract class Table implements TableInterface
 
     /**
      * @param bool $writable - true: connection must have access to write data into DB
-     * @return DbAdapterInterface
+     * @return \PeskyORM\Adapter\DbAdapterInterface
      */
     public static function getConnection(bool $writable = false): DbAdapterInterface
     {
@@ -116,17 +117,17 @@ abstract class Table implements TableInterface
     }
 
     /**
-     * Get OrmJoinInfo for required relation
+     * Get OrmJoinConfig for required relation
      * @param string $relationName
      * @param string|null $alterLocalTableAlias - alter this table's alias in join config
      * @param string|null $joinName - string: specific join name; null: $relationName is used
-     * @return OrmJoinInfo
+     * @return OrmJoinConfig
      */
     public static function getJoinConfigForRelation(
         string $relationName,
         string $alterLocalTableAlias = null,
         string $joinName = null
-    ): OrmJoinInfo {
+    ): OrmJoinConfig {
         return static::getStructure()
             ->getRelation($relationName)
             ->toOrmJoinConfig(
@@ -147,7 +148,7 @@ abstract class Table implements TableInterface
 
     /**
      * @throws \BadMethodCallException
-     * @see DbAdapter::getExpressionToSetDefaultValueForAColumn()
+     * @see \PeskyORM\Adapter\DbAdapterInterface::getExpressionToSetDefaultValueForAColumn()
      */
     public static function getExpressionToSetDefaultValueForAColumn(): DbExpr
     {
@@ -332,7 +333,7 @@ abstract class Table implements TableInterface
     }
 
     /**
-     * @see DbAdapter::begin()
+     * @see \PeskyORM\Adapter\DbAdapterInterface::begin()
      */
     public static function beginTransaction(bool $readOnly = false, ?string $transactionType = null): void
     {
@@ -340,7 +341,7 @@ abstract class Table implements TableInterface
     }
 
     /**
-     * @see DbAdapter::inTransaction()
+     * @see \PeskyORM\Adapter\DbAdapterInterface::inTransaction()
      */
     public static function inTransaction(): bool
     {
@@ -348,7 +349,7 @@ abstract class Table implements TableInterface
     }
 
     /**
-     * @see DbAdapter::commit()
+     * @see \PeskyORM\Adapter\DbAdapterInterface::commit()
      */
     public static function commitTransaction(): void
     {
@@ -356,7 +357,7 @@ abstract class Table implements TableInterface
     }
 
     /**
-     * @see DbAdapter::rollBack()
+     * @see \PeskyORM\Adapter\DbAdapterInterface::rollBack()
      */
     public static function rollBackTransaction(): void
     {
@@ -371,7 +372,7 @@ abstract class Table implements TableInterface
     }
 
     /**
-     * @see DbAdapter::quoteDbEntityName()
+     * @see \PeskyORM\Adapter\DbAdapterInterface::quoteDbEntityName()
      */
     public static function quoteDbEntityName(string $name): string
     {
@@ -379,7 +380,7 @@ abstract class Table implements TableInterface
     }
 
     /**
-     * @see DbAdapter::quoteValue()
+     * @see \PeskyORM\Adapter\DbAdapterInterface::quoteValue()
      */
     public static function quoteValue($value, int $fieldInfoOrType = \PDO::PARAM_STR): string
     {
@@ -387,7 +388,7 @@ abstract class Table implements TableInterface
     }
 
     /**
-     * @see DbAdapter::quoteDbExpr()
+     * @see \PeskyORM\Adapter\DbAdapterInterface::quoteDbExpr()
      */
     public static function quoteDbExpr(DbExpr $value): string
     {
@@ -395,7 +396,7 @@ abstract class Table implements TableInterface
     }
 
     /**
-     * @see DbAdapter::query()
+     * @see \PeskyORM\Adapter\DbAdapterInterface::query()
      */
     public static function query(string|DbExpr $query, ?string $fetchData = null): mixed
     {
@@ -403,7 +404,7 @@ abstract class Table implements TableInterface
     }
 
     /**
-     * @see DbAdapter::exec()
+     * @see \PeskyORM\Adapter\DbAdapterInterface::exec()
      */
     public static function exec(string|DbExpr $query): int
     {
@@ -411,7 +412,7 @@ abstract class Table implements TableInterface
     }
 
     /**
-     * @see DbAdapter::insert()
+     * @see \PeskyORM\Adapter\DbAdapterInterface::insert()
      */
     public static function insert(array $data, array|bool $returning = false): ?array
     {
@@ -454,7 +455,7 @@ abstract class Table implements TableInterface
     }
 
     /**
-     * @see DbAdapter::insertMany()
+     * @see \PeskyORM\Adapter\DbAdapterInterface::insertMany()
      */
     public static function insertMany(array $columns, array $rows, array|bool $returning = false): ?array
     {
@@ -466,7 +467,7 @@ abstract class Table implements TableInterface
     }
 
     /**
-     * @see DbAdapter::insertMany()
+     * @see \PeskyORM\Adapter\DbAdapterInterface::insertMany()
      */
     public static function insertManyAsIs(array $columns, array $rows, $returning = false): ?array
     {
@@ -481,7 +482,7 @@ abstract class Table implements TableInterface
     }
 
     /**
-     * @see DbAdapter::update()
+     * @see \PeskyORM\Adapter\DbAdapterInterface::update()
      */
     public static function update(array $data, array $conditions, array|bool $returning = false): array|int
     {
@@ -496,7 +497,7 @@ abstract class Table implements TableInterface
     }
 
     /**
-     * @see DbAdapterInterface::delete()
+     * @see \PeskyORM\Adapter\DbAdapterInterface::delete()
      */
     public static function delete(array $conditions = [], array|bool $returning = false): array|int
     {

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\Core\Utils;
+namespace PeskyORM\Utils;
 
 use JetBrains\PhpStorm\ArrayShape;
-use PeskyORM\Core\DbAdapterInterface;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\SelectQueryBuilderInterface;
+use PeskyORM\Adapter\DbAdapterInterface;
+use PeskyORM\DbExpr;
+use PeskyORM\Select\SelectQueryBuilderInterface;
 
 abstract class QueryBuilderUtils
 {

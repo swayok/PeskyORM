@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\Core;
+namespace PeskyORM;
 
 /**
  * Used to add custom expressions to db queries

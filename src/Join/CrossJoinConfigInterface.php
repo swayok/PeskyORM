@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\Core;
+namespace PeskyORM\Join;
+
+use PeskyORM\DbExpr;
 
 interface CrossJoinConfigInterface extends JoinConfigInterface
 {

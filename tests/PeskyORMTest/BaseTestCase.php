@@ -14,6 +14,18 @@ use ReflectionMethod;
 
 class BaseTestCase extends TestCase
 {
+
+    public static function setUpBeforeClass(): void
+    {
+        TestingApp::configureConnectionsManager();
+        TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
+    }
+
+    public static function tearDownAfterClass(): void
+    {
+        TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
+    }
+
     /**
      * Asserts that an array has a specified subset.
      *

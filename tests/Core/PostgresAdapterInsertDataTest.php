@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\Core;
 
 use PDO;
-use PeskyORM\Core\DbAdapterInterface;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\Utils\PdoUtils;
+use PeskyORM\DbExpr;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\Data\TestDataForAdminsTable;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Utils\PdoUtils;
 
 class PostgresAdapterInsertDataTest extends BaseTestCase
 {
@@ -26,7 +25,7 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    protected static function getValidAdapter(): DbAdapterInterface
+    protected static function getValidAdapter(): \PeskyORM\Adapter\DbAdapterInterface
     {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
@@ -40,7 +39,7 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
         $testData1 = ['key' => 'test_key1', 'value' => json_encode('test_value1')];
         $adapter->insert('settings', $testData1);
         $data = PdoUtils::getDataFromStatement(
-            $adapter->query(DbExpr::create("SELECT * FROM `settings` WHERE `key` = ``{$testData1['key']}``")),
+            $adapter->query(\PeskyORM\DbExpr::create("SELECT * FROM `settings` WHERE `key` = ``{$testData1['key']}``")),
             PdoUtils::FETCH_FIRST
         );
         static::assertArraySubset($testData1, $data);
@@ -53,7 +52,7 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
             'is_active' => PDO::PARAM_BOOL,
         ]);
         $data = PdoUtils::getDataFromStatement(
-            $adapter->query(DbExpr::create("SELECT * FROM `admins` WHERE `id` = ``{$testData2['id']}``")),
+            $adapter->query(\PeskyORM\DbExpr::create("SELECT * FROM `admins` WHERE `id` = ``{$testData2['id']}``")),
             PdoUtils::FETCH_FIRST
         );
         $dataForAssert = $this->convertTestDataForAdminsTableAssert([$testData2])[0];
@@ -106,7 +105,7 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('$columns[0]: value cannot be');
         $adapter = static::getValidAdapter();
-        $adapter->insertMany('settings', [DbExpr::create('test')], [['key' => 'value']]);
+        $adapter->insertMany('settings', [\PeskyORM\DbExpr::create('test')], [['key' => 'value']]);
     }
     
     public function testInvalidColumnsForInsertMany3(): void

@@ -2,15 +2,18 @@
 
 declare(strict_types=1);
 
-namespace PeskyORM\ORM;
+namespace PeskyORM\Select;
 
-use PeskyORM\Core\CrossJoinConfigInterface;
-use PeskyORM\Core\DbAdapterInterface;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\NormalJoinConfigInterface;
-use PeskyORM\Core\SelectQueryBuilderAbstract;
-use PeskyORM\Core\SelectQueryBuilderInterface;
-use PeskyORM\Core\Utils\QueryBuilderUtils;
+use PeskyORM\Adapter\DbAdapterInterface;
+use PeskyORM\DbExpr;
+use PeskyORM\Join\CrossJoinConfigInterface;
+use PeskyORM\Join\NormalJoinConfigInterface;
+use PeskyORM\Join\OrmJoinConfig;
+use PeskyORM\ORM\RecordInterface;
+use PeskyORM\ORM\Relation;
+use PeskyORM\ORM\TableInterface;
+use PeskyORM\ORM\TableStructureInterface;
+use PeskyORM\Utils\QueryBuilderUtils;
 
 class OrmSelect extends SelectQueryBuilderAbstract
 {
@@ -132,7 +135,7 @@ class OrmSelect extends SelectQueryBuilderAbstract
     protected function normalizeJoinDataForRecord(NormalJoinConfigInterface $joinConfig, array $data): array
     {
         $data = parent::normalizeJoinDataForRecord($joinConfig, $data);
-        if ($joinConfig instanceof OrmJoinInfo) {
+        if ($joinConfig instanceof OrmJoinConfig) {
             $pkName = $joinConfig->getForeignDbTable()->getPkColumnName();
             if (array_key_exists($pkName, $data) && $data[$pkName] === null) {
                 // not existing related record
@@ -298,11 +301,11 @@ class OrmSelect extends SelectQueryBuilderAbstract
         return parent::getJoin($joins[count($joins) - 1]);
     }
 
-    protected function getOrmJoin(string $joinName): OrmJoinInfo
+    protected function getOrmJoin(string $joinName): OrmJoinConfig
     {
         $join = $this->getJoin($joinName);
         $this->validateJoin($join);
-        /** @var OrmJoinInfo $join - validated by guardJoinClass */
+        /** @var OrmJoinConfig $join - validated by guardJoinClass */
         return $join;
     }
 
@@ -474,7 +477,7 @@ class OrmSelect extends SelectQueryBuilderAbstract
             }
         } else {
             $join = $this->getJoin($columnInfo['join_name']);
-            if ($join instanceof OrmJoinInfo) {
+            if ($join instanceof OrmJoinConfig) {
                 $foreignTableStructure = $join->getForeignDbTable()->getTableStructure();
                 $isValid = $columnInfo['name'] === '*' || $foreignTableStructure::hasColumn($columnInfo['name']);
                 if (!$isValid) {
@@ -494,9 +497,9 @@ class OrmSelect extends SelectQueryBuilderAbstract
 
     protected function validateJoin(NormalJoinConfigInterface $joinConfig): void
     {
-        if (!($joinConfig instanceof OrmJoinInfo)) {
+        if (!($joinConfig instanceof OrmJoinConfig)) {
             throw new \UnexpectedValueException(
-                'Join ' . $joinConfig->getJoinName() . ' must be an instance of class ' . OrmJoinInfo::class
+                'Join ' . $joinConfig->getJoinName() . ' must be an instance of class ' . OrmJoinConfig::class
                 . ' but it is an instance of ' . get_class($joinConfig) . ' class'
             );
         }

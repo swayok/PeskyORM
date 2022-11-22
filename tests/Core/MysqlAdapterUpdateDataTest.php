@@ -6,7 +6,7 @@ namespace PeskyORM\Tests\Core;
 
 require_once __DIR__ . '/PostgresAdapterUpdateDataTest.php';
 
-use PeskyORM\Core\DbAdapterInterface;
+use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 class MysqlAdapterUpdateDataTest extends PostgresAdapterUpdateDataTest

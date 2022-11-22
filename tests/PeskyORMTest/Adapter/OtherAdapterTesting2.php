@@ -5,10 +5,10 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\Adapter;
 
-use PeskyORM\Core\DbAdapter;
-use PeskyORM\Core\DbConnectionConfigInterface;
+use PeskyORM\Adapter\DbAdapterAbstract;
+use PeskyORM\Config\Connection\DbConnectionConfigInterface;
 
-class OtherAdapterTesting2 extends DbAdapter
+class OtherAdapterTesting2 extends DbAdapterAbstract
 {
 
     public function __construct(protected DbConnectionConfigInterface $config)

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Orm;
 
-use PeskyORM\Core\DbExpr;
+use PeskyORM\DbExpr;
 use PeskyORM\ORM\ClassBuilder;
 use PeskyORM\ORM\Column;
 use PeskyORM\TableDescription\ColumnDescription;

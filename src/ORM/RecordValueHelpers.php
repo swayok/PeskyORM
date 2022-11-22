@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\SelectQueryBuilderInterface;
+use PeskyORM\DbExpr;
+use PeskyORM\Select\SelectQueryBuilderInterface;
 use Swayok\Utils\NormalizeValue;
 use Swayok\Utils\ValidateValue;
 use Symfony\Component\HttpFoundation\File\UploadedFile;

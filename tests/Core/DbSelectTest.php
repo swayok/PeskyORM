@@ -6,9 +6,9 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\Core;
 
 use PeskyORM\Adapter\Postgres;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\JoinConfig;
-use PeskyORM\Core\Select;
+use PeskyORM\DbExpr;
+use PeskyORM\Join\JoinConfig;
+use PeskyORM\Select\Select;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 use Swayok\Utils\Set;
@@ -129,7 +129,7 @@ class DbSelectTest extends BaseTestCase
         $adapter = static::getValidAdapter();
         // via new
         $dbSelect = new Select('admins', $adapter);
-        static::assertInstanceOf(Select::class, $dbSelect);
+        static::assertInstanceOf(\PeskyORM\Select\Select::class, $dbSelect);
         static::assertInstanceOf(Postgres::class, $dbSelect->getConnection());
         static::assertEquals('admins', $dbSelect->getTableName());
         static::assertEquals('Admins', $dbSelect->getTableAlias());
@@ -150,7 +150,7 @@ class DbSelectTest extends BaseTestCase
         static::assertEquals(Set::extract('/id', $testData), $data);
         $data = $dbSelect->fetchAssoc('id', 'login');
         static::assertEquals(Set::combine($testData, '/id', '/login'), $data);
-        $sum = $dbSelect->fetchValue(DbExpr::create('SUM(`id`)'));
+        $sum = $dbSelect->fetchValue(\PeskyORM\DbExpr::create('SUM(`id`)'));
         static::assertEquals(array_sum(Set::extract('/id', $testData)), $sum);
         
         // via static
@@ -228,7 +228,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidAnalyzeColumnName11(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($columnName) must be of type PeskyORM\Core\DbExpr|string');
+        $this->expectExceptionMessage('Argument #1 ($columnName) must be of type PeskyORM\DbExpr|string');
         $dbSelect = static::getNewSelect();
         $this->callObjectMethod($dbSelect, 'analyzeColumnName', null);
     }
@@ -244,7 +244,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidAnalyzeColumnName13(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($columnName) must be of type PeskyORM\Core\DbExpr|string');
+        $this->expectExceptionMessage('Argument #1 ($columnName) must be of type PeskyORM\DbExpr|string');
         $dbSelect = static::getNewSelect();
         $this->callObjectMethod($dbSelect, 'analyzeColumnName', []);
     }
@@ -393,7 +393,7 @@ class DbSelectTest extends BaseTestCase
             ],
             $this->callObjectMethod($dbSelect, 'analyzeColumnName', 'Other.id::int')
         );
-        $dbExpr = DbExpr::create('Other.id::int');
+        $dbExpr = \PeskyORM\DbExpr::create('Other.id::int');
         $columnInfo = $this->callObjectMethod($dbSelect, 'analyzeColumnName', $dbExpr);
         static::assertEquals(
             [
@@ -528,7 +528,7 @@ class DbSelectTest extends BaseTestCase
         static::assertEquals(
             'SELECT "tbl_Admins_0".*, (SUM("id")) AS "col_Admins__sum_1" FROM "admins" AS "tbl_Admins_0"',
             rtrim(
-                static::getNewSelect()->columns(['*', 'sum' => DbExpr::create('SUM(`id`)')])->getQuery()
+                static::getNewSelect()->columns(['*', 'sum' => \PeskyORM\DbExpr::create('SUM(`id`)')])->getQuery()
             )
         );
         // test column alias shortening
@@ -557,7 +557,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidOrderBy2(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($columnName) must be of type PeskyORM\Core\DbExpr|string');
+        $this->expectExceptionMessage('Argument #1 ($columnName) must be of type PeskyORM\DbExpr|string');
         /** @noinspection PhpStrictTypeCheckingInspection */
         static::getNewSelect()->orderBy(null);
     }
@@ -565,7 +565,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidOrderBy3(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($columnName) must be of type PeskyORM\Core\DbExpr|string');
+        $this->expectExceptionMessage('Argument #1 ($columnName) must be of type PeskyORM\DbExpr|string');
         /** @noinspection PhpStrictTypeCheckingInspection */
         static::getNewSelect()->orderBy(false);
     }
@@ -573,7 +573,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidOrderBy4(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($columnName) must be of type PeskyORM\Core\DbExpr|string');
+        $this->expectExceptionMessage('Argument #1 ($columnName) must be of type PeskyORM\DbExpr|string');
         /** @noinspection PhpStrictTypeCheckingInspection */
         static::getNewSelect()->orderBy(true);
     }
@@ -581,7 +581,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidOrderBy5(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($columnName) must be of type PeskyORM\Core\DbExpr|string');
+        $this->expectExceptionMessage('Argument #1 ($columnName) must be of type PeskyORM\DbExpr|string');
         /** @noinspection PhpParamsInspection */
         static::getNewSelect()->orderBy([]);
     }
@@ -589,7 +589,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidOrderBy6(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($columnName) must be of type PeskyORM\Core\DbExpr|string');
+        $this->expectExceptionMessage('Argument #1 ($columnName) must be of type PeskyORM\DbExpr|string');
         /** @noinspection PhpParamsInspection */
         static::getNewSelect()->orderBy($this);
     }
@@ -634,11 +634,11 @@ class DbSelectTest extends BaseTestCase
         );
         static::assertEquals(
             'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" ORDER BY "tbl_Admins_0"."id" asc nulls first',
-            static::getNewSelect()->orderBy('Admins.id', Select::ORDER_DIRECTION_ASC_NULLS_FIRST, true)->getQuery()
+            static::getNewSelect()->orderBy('Admins.id', \PeskyORM\Select\Select::ORDER_DIRECTION_ASC_NULLS_FIRST, true)->getQuery()
         );
         static::assertEquals(
             'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" ORDER BY "tbl_Admins_0"."id" asc nulls last',
-            static::getNewSelect()->orderBy('Admins.id', Select::ORDER_DIRECTION_ASC_NULLS_LAST, true)->getQuery()
+            static::getNewSelect()->orderBy('Admins.id', \PeskyORM\Select\Select::ORDER_DIRECTION_ASC_NULLS_LAST, true)->getQuery()
         );
         static::assertEquals(
             'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" ORDER BY "tbl_Admins_0"."id" desc',
@@ -646,16 +646,16 @@ class DbSelectTest extends BaseTestCase
         );
         static::assertEquals(
             'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" ORDER BY "tbl_Admins_0"."id" desc nulls first',
-            static::getNewSelect()->orderBy('Admins.id', Select::ORDER_DIRECTION_DESC_NULLS_FIRST, true)->getQuery()
+            static::getNewSelect()->orderBy('Admins.id', \PeskyORM\Select\Select::ORDER_DIRECTION_DESC_NULLS_FIRST, true)->getQuery()
         );
         static::assertEquals(
             'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" ORDER BY "tbl_Admins_0"."id" desc nulls last',
-            static::getNewSelect()->orderBy('Admins.id', Select::ORDER_DIRECTION_DESC_NULLS_LAST, true)->getQuery()
+            static::getNewSelect()->orderBy('Admins.id', \PeskyORM\Select\Select::ORDER_DIRECTION_DESC_NULLS_LAST, true)->getQuery()
         );
         // DbExpr
         static::assertEquals(
             'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" ORDER BY RANDOM()',
-            static::getNewSelect()->orderBy(DbExpr::create('RANDOM()'), '')->getQuery()
+            static::getNewSelect()->orderBy(\PeskyORM\DbExpr::create('RANDOM()'), '')->getQuery()
         );
     }
     
@@ -725,7 +725,7 @@ class DbSelectTest extends BaseTestCase
         );
         static::assertEquals(
             'SELECT "tbl_Admins_3".* FROM "admins" AS "tbl_Admins_3" GROUP BY RANDOM()',
-            $dbSelect->groupBy([DbExpr::create('RANDOM()')], false)->getQuery()
+            $dbSelect->groupBy([\PeskyORM\DbExpr::create('RANDOM()')], false)->getQuery()
         );
     }
     
@@ -908,7 +908,7 @@ class DbSelectTest extends BaseTestCase
         static::assertEquals(
             'SELECT "tbl_Admins_3".* FROM "admins" AS "tbl_Admins_3" WHERE (SUM("id") > \'1\') HAVING (SUM("id") > \'2\')',
             $dbSelect->where([DbExpr::create('SUM(`id`) > ``1``')])
-                ->having([DbExpr::create('SUM(`id`) > ``2``')])
+                ->having([\PeskyORM\DbExpr::create('SUM(`id`) > ``2``')])
                 ->getQuery()
         );
         // conditions assembling tests are in Utils::assembleWhereConditionsFromArray()
@@ -918,7 +918,7 @@ class DbSelectTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Join with name 'Test' already defined");
-        $joinConfig = JoinConfig::create('Test', 'admins', 'id', JoinConfig::JOIN_INNER, 'settings', 'id');
+        $joinConfig = \PeskyORM\Join\JoinConfig::create('Test', 'admins', 'id', \PeskyORM\Join\JoinConfig::JOIN_INNER, 'settings', 'id');
         static::getNewSelect()
             ->join($joinConfig)
             ->join($joinConfig);
@@ -937,14 +937,14 @@ class DbSelectTest extends BaseTestCase
     
     public function testJoins(): void
     {
-        $joinConfig = JoinConfig::create('Test', 'admins', 'id', JoinConfig::JOIN_INNER, 'settings', 'id')
+        $joinConfig = \PeskyORM\Join\JoinConfig::create('Test', 'admins', 'id', \PeskyORM\Join\JoinConfig::JOIN_INNER, 'settings', 'id')
             ->setForeignColumnsToSelect('key', 'value');
         static::assertEquals(
             'SELECT "tbl_Admins_0".*, "tbl_Test_1"."key" AS "col_Test__key_1", "tbl_Test_1"."value" AS "col_Test__value_2" FROM "admins" AS "tbl_Admins_0" INNER JOIN "settings" AS "tbl_Test_1" ON ("tbl_Admins_0"."id" = "tbl_Test_1"."id")',
             static::getNewSelect()->join($joinConfig)->getQuery()
         );
         $joinConfig
-            ->setJoinType(JoinConfig::JOIN_LEFT)
+            ->setJoinType(\PeskyORM\Join\JoinConfig::JOIN_LEFT)
             ->setForeignColumnsToSelect('*')
             ->setAdditionalJoinConditions([
                 'key' => 'name',
@@ -961,7 +961,7 @@ class DbSelectTest extends BaseTestCase
             static::getNewSelect()->join($joinConfig)->getQuery()
         );
         $joinConfig
-            ->setJoinType(JoinConfig::JOIN_RIGHT)
+            ->setJoinType(\PeskyORM\Join\JoinConfig::JOIN_RIGHT)
             ->setAdditionalJoinConditions([])
             ->setForeignColumnsToSelect([]);
         static::assertEquals(
@@ -969,7 +969,7 @@ class DbSelectTest extends BaseTestCase
             static::getNewSelect()->join($joinConfig)->getQuery()
         );
         $joinConfig
-            ->setJoinType(JoinConfig::JOIN_FULL)
+            ->setJoinType(\PeskyORM\Join\JoinConfig::JOIN_FULL)
             ->setAdditionalJoinConditions([])
             ->setForeignColumnsToSelect([]);
         static::assertEquals(
@@ -1316,7 +1316,7 @@ class DbSelectTest extends BaseTestCase
                 'Test.admin_id >' => '1',
             ],
             'JOIN' => [
-                JoinConfig::create('Test', 'admins', 'id', JoinConfig::JOIN_LEFT, 'settings', 'admin_id')
+                \PeskyORM\Join\JoinConfig::create('Test', 'admins', 'id', \PeskyORM\Join\JoinConfig::JOIN_LEFT, 'settings', 'admin_id')
                     ->setForeignColumnsToSelect(['admin_id', 'setting_value' => 'Test.value']),
             ],
         ];

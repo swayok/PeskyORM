@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\JoinConfigInterface;
-use PeskyORM\Core\Utils\ArgumentValidators;
+use PeskyORM\Join\JoinConfigInterface;
+use PeskyORM\Join\OrmJoinConfig;
+use PeskyORM\Utils\ArgumentValidators;
 
 class Relation
 {
@@ -279,8 +280,8 @@ class Relation
         ?string $localTableAlias = null,
         ?string $joinName = null,
         ?string $joinType = null
-    ): OrmJoinInfo {
-        $ormJoin = new OrmJoinInfo(
+    ): OrmJoinConfig {
+        $ormJoin = new OrmJoinConfig(
             $joinName ?: $this->getName(),
             $localTable,
             $this->getLocalColumnName(),

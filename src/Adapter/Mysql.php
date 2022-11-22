@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace PeskyORM\Adapter;
 
 use PeskyORM\Config\Connection\MysqlConfig;
-use PeskyORM\Core\DbAdapter;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\SelectQueryBuilderInterface;
+use PeskyORM\DbExpr;
 use PeskyORM\Exception\DbException;
 use PeskyORM\Exception\DbQueryReturningValuesException;
+use PeskyORM\Select\SelectQueryBuilderInterface;
 
-class Mysql extends DbAdapter
+class Mysql extends DbAdapterAbstract
 {
 
     protected string $quoteForDbEntityName = '`';

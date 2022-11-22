@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace PeskyORM\Config\Connection;
 
 use PDO;
-use PeskyORM\Core\DbConnectionConfigInterface;
 
 class PostgresConfig implements DbConnectionConfigInterface
 {

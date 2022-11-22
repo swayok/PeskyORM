@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Core;
 
-use PeskyORM\Core\DbAdapterInterface;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\Utils;
-use PeskyORM\Core\Utils\PdoUtils;
+use PeskyORM\Adapter\DbAdapterInterface;
+use PeskyORM\DbExpr;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Utils\PdoUtils;
 
 class PostgresAdapterDeleteDataTest extends BaseTestCase
 {
@@ -77,7 +76,7 @@ class PostgresAdapterDeleteDataTest extends BaseTestCase
         $insertedData = $adapter->insertMany('settings', ['key', 'value'], $testData1, [], true);
         $deletedRecords = $adapter->delete(
             'settings',
-            DbExpr::create("`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)"),
+            \PeskyORM\DbExpr::create("`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)"),
             true
         );
         static::assertCount(2, $deletedRecords);

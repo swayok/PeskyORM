@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM;
 
-use PeskyORM\Core\DbExpr;
+use PeskyORM\DbExpr;
 
 class RecordValue
 {
@@ -114,9 +114,9 @@ class RecordValue
             }
             if ($this->getColumn()->isItPrimaryKey()) {
                 return !$this->hasValue && $this->getDefaultValue() instanceof DbExpr;
-            } else {
-                return !$this->getRecord()->existsInDb();
             }
+
+            return !$this->getRecord()->existsInDb();
         }
         return $this->isDefaultValueCanBeSet;
     }
@@ -158,18 +158,22 @@ class RecordValue
     {
         if ($this->hasValue()) {
             return $this->value;
-        } elseif ($this->isDefaultValueCanBeSet()) {
+        }
+
+        if ($this->isDefaultValueCanBeSet()) {
             return $this->getDefaultValue();
-        } elseif ($this->hasDefaultValue()) {
+        }
+
+        if ($this->hasDefaultValue()) {
             throw new \BadMethodCallException(
                 "Value for {$this->getColumnInfoForException()} is not set and default value cannot be set because"
                 . ' record already exists in DB and there is danger of unintended value overwriting'
             );
-        } else {
-            throw new \BadMethodCallException(
-                "Value for {$this->getColumnInfoForException()} is not set and default value is not provided"
-            );
         }
+
+        throw new \BadMethodCallException(
+            "Value for {$this->getColumnInfoForException()} is not set and default value is not provided"
+        );
     }
     
     /**
@@ -261,17 +265,19 @@ class RecordValue
     {
         if ($key === null) {
             return $this->customInfo;
-        } elseif (array_key_exists($key, $this->customInfo)) {
-            return $this->customInfo[$key];
-        } else {
-            if ($default instanceof \Closure) {
-                $default = $default($this);
-            }
-            if ($storeDefaultValueIfUsed) {
-                $this->customInfo[$key] = $default;
-            }
-            return $default;
         }
+
+        if (array_key_exists($key, $this->customInfo)) {
+            return $this->customInfo[$key];
+        }
+
+        if ($default instanceof \Closure) {
+            $default = $default($this);
+        }
+        if ($storeDefaultValueIfUsed) {
+            $this->customInfo[$key] = $default;
+        }
+        return $default;
     }
     
     public function setCustomInfo(array $data): static

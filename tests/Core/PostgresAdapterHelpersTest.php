@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Core;
 
-use PeskyORM\Core\DbAdapterInterface;
-use PeskyORM\Core\DbExpr;
-use PeskyORM\Core\JoinConfig;
-use PeskyORM\Core\Select;
-use PeskyORM\Core\Utils\DbAdapterMethodArgumentUtils;
-use PeskyORM\Core\Utils\QueryBuilderUtils;
+use PeskyORM\Adapter\DbAdapterInterface;
+use PeskyORM\Config\Connection\DbConnectionsManager;
+use PeskyORM\DbExpr;
+use PeskyORM\Join\JoinConfig;
+use PeskyORM\Profiling\PdoProfilingHelper;
+use PeskyORM\Profiling\TraceablePDO;
 use PeskyORM\Tests\PeskyORMTest\Adapter\PostgresTesting;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
+use PeskyORM\Utils\DbAdapterMethodArgumentUtils;
+use PeskyORM\Utils\QueryBuilderUtils;
 
 class PostgresAdapterHelpersTest extends BaseTestCase
 {
@@ -20,11 +22,9 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     /**
      * @return PostgresTesting
      */
-    protected static function getValidAdapter(): DbAdapterInterface
+    protected static function getValidAdapter(bool $reuseExisting = true): DbAdapterInterface
     {
-        $adapter = TestingApp::getPgsqlConnection();
-        $adapter->rememberTransactionQueries = false;
-        return $adapter;
+        return TestingApp::getPgsqlConnection($reuseExisting);
     }
     
     public function testInvalidTable(): void
@@ -115,8 +115,8 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidColumns4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$columns[0]: value cannot be instance of ' . DbExpr::class);
-        DbAdapterMethodArgumentUtils::guardColumnsListArg([DbExpr::create('test')], false);
+        $this->expectExceptionMessage('$columns[0]: value cannot be instance of ' . \PeskyORM\DbExpr::class);
+        DbAdapterMethodArgumentUtils::guardColumnsListArg([\PeskyORM\DbExpr::create('test')], false);
     }
     
     public function testInvalidConditions1(): void
@@ -252,7 +252,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $this->expectExceptionMessage('Argument #2 ($pkName) must be of type string');
         /** @noinspection PhpStrictTypeCheckingInspection */
         /** @noinspection PhpParamsInspection */
-        DbAdapterMethodArgumentUtils::guardPkNameArg(static::getValidAdapter(), DbExpr::create('test'));
+        DbAdapterMethodArgumentUtils::guardPkNameArg(static::getValidAdapter(), \PeskyORM\DbExpr::create('test'));
     }
     
     public function testValidArgs(): void
@@ -326,7 +326,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         
         $operator = $adapter->normalizeConditionOperator('IN', DbExpr::create('SELECT'));
         static::assertEquals('IN', $operator);
-        $operator = $adapter->normalizeConditionOperator('NOT IN', DbExpr::create('SELECT'));
+        $operator = $adapter->normalizeConditionOperator('NOT IN', \PeskyORM\DbExpr::create('SELECT'));
         static::assertEquals('NOT IN', $operator);
     }
     
@@ -483,10 +483,10 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $adapter = self::getValidAdapter();
         
         $query = $adapter->makeSelectQuery('test_table')
-            ->columns(['col1', DbExpr::create('`col2` as `col22`')]);
+            ->columns(['col1', \PeskyORM\DbExpr::create('`col2` as `col22`')]);
         static::assertEquals(
             $adapter->quoteDbExpr(
-                DbExpr::create(
+                \PeskyORM\DbExpr::create(
                     'SELECT `tbl_TestTable_0`.`col1` AS `col_TestTable__col1_0`,'
                     . ' (`col2` as `col22`)'
                     . ' FROM `test_table` AS `tbl_TestTable_0`',
@@ -499,7 +499,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $query = $adapter->makeSelectQuery('test_table', DbExpr::create('WHERE `col1` > ``0``', false));
         static::assertEquals(
             $adapter->quoteDbExpr(
-                DbExpr::create(
+                \PeskyORM\DbExpr::create(
                     'SELECT `tbl_TestTable_0`.* FROM `test_table` AS `tbl_TestTable_0` WHERE `col1` > ``0``',
                     false
                 )
@@ -526,7 +526,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         ]);
         static::assertEquals(
             $adapter->quoteDbExpr(
-                DbExpr::create(
+                \PeskyORM\DbExpr::create(
                     'SELECT `tbl_TestTable_0`.* FROM `test_table` AS `tbl_TestTable_0`'
                     . ' WHERE `tbl_TestTable_0`.`col1` > ``0``'
                     . ' AND `tbl_TestTable_0`.`col2` < ``1``'
@@ -538,8 +538,8 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         );
 
         $options = [
-            QueryBuilderUtils::QUERY_PART_WITH => ['test' => Select::from('some_table', $adapter)],
-            QueryBuilderUtils::QUERY_PART_JOINS => [new JoinConfig('Test', 'test', 'id', JoinConfig::JOIN_INNER, 'other', 'id')],
+            QueryBuilderUtils::QUERY_PART_WITH => ['test' => \PeskyORM\Select\Select::from('some_table', $adapter)],
+            QueryBuilderUtils::QUERY_PART_JOINS => [new \PeskyORM\Join\JoinConfig('Test', 'test', 'id', JoinConfig::JOIN_INNER, 'other', 'id')],
             QueryBuilderUtils::QUERY_PART_GROUP => [DbExpr::create('[grouping]')],
             QueryBuilderUtils::QUERY_PART_HAVING => [DbExpr::create('[having filters]')],
             QueryBuilderUtils::QUERY_PART_ORDER => [DbExpr::create('[ordering]')],
@@ -552,7 +552,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         ));
         static::assertEquals(
             $adapter->quoteDbExpr(
-                DbExpr::create(
+                \PeskyORM\DbExpr::create(
                     'WITH `test` AS (SELECT `tbl_SomeTable_0`.* FROM `some_table` AS `tbl_SomeTable_0`)'
                     . ' SELECT `tbl_TestTable_0`.*, `tbl_Test_1`.* FROM `test_table` AS `tbl_TestTable_0`'
                     . ' INNER JOIN `other` AS `tbl_Test_1`'
@@ -569,7 +569,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $query = $adapter->makeSelectQuery('test_table', $options);
         static::assertEquals(
             $adapter->quoteDbExpr(
-                DbExpr::create(
+                \PeskyORM\DbExpr::create(
                     'WITH `test` AS (SELECT `tbl_SomeTable_1`.* FROM `some_table` AS `tbl_SomeTable_1`)'
                     . ' SELECT `tbl_TestTable_0`.*, `tbl_Test_1`.* FROM `test_table` AS `tbl_TestTable_0`'
                     . ' INNER JOIN `other` AS `tbl_Test_1` ON (`tbl_Test_1`.`id` = `tbl_Test_1`.`id`)'
@@ -760,12 +760,12 @@ class PostgresAdapterHelpersTest extends BaseTestCase
             $adapter->assembleConditionValue('str1', '=', true)
         );
         static::assertEquals(
-            $adapter->quoteValue(DbExpr::create('11')) . ' AND ' . $adapter->quoteValue(DbExpr::create('21')),
-            $adapter->assembleConditionValue([DbExpr::create('11'), DbExpr::create('21')], 'NOT BETWEEN')
+            $adapter->quoteValue(\PeskyORM\DbExpr::create('11')) . ' AND ' . $adapter->quoteValue(DbExpr::create('21')),
+            $adapter->assembleConditionValue([\PeskyORM\DbExpr::create('11'), \PeskyORM\DbExpr::create('21')], 'NOT BETWEEN')
         );
         static::assertEquals(
             '(' . $adapter->quoteValue(11) . ', ' . $adapter->quoteValue(12) . ', ' . $adapter->quoteValue(DbExpr::create('13')) . ')',
-            $adapter->assembleConditionValue([11, 12, DbExpr::create('13')], '=')
+            $adapter->assembleConditionValue([11, 12, \PeskyORM\DbExpr::create('13')], '=')
         );
         static::assertEquals(
             $adapter->quoteValue('string'),
@@ -904,5 +904,117 @@ class PostgresAdapterHelpersTest extends BaseTestCase
             }
         );
         static::assertEquals('test2', $adapter->assembleCondition('column', '>=<', 'value'));
+    }
+
+    public function testConnectionWrapping1(): void
+    {
+        TestingApp::resetConnections();
+        $adapter = static::getValidAdapter();
+        $adapter->disconnect();
+        $adapter->setConnectionWrapper(null);
+        // connect and get plain PDO
+        $pdo = $adapter->getConnection();
+        static::assertEquals(\PDO::class, get_class($pdo)); //< exact match required here
+        // wrap after connection established
+        DbConnectionsManager::startProfilingForConnection($adapter);
+        $wrappedPdo = $adapter->getConnection();
+        static::assertInstanceOf(TraceablePDO::class, $wrappedPdo);
+        // unwrap
+        $adapter->setConnectionWrapper(null);
+        $pdo = $adapter->getConnection();
+        static::assertEquals(\PDO::class, get_class($pdo));
+        TestingApp::resetConnections();
+    }
+
+    public function testConnectionWrapping2(): void
+    {
+        TestingApp::resetConnections();
+        $adapter = static::getValidAdapter();
+        // wrap before connection established
+        DbConnectionsManager::startProfilingForConnection($adapter);
+        $wrappedPdo = $adapter->getConnection();
+        static::assertInstanceOf(TraceablePDO::class, $wrappedPdo);
+        // unwrap
+        $adapter->setConnectionWrapper(null);
+        $pdo = $adapter->getConnection();
+        static::assertEquals(\PDO::class, get_class($pdo)); //< exact match required here
+        TestingApp::resetConnections();
+    }
+
+    public function testProfiler(): void
+    {
+        TestingApp::resetConnections();
+        PdoProfilingHelper::forgetConnections();
+        $adapter = static::getValidAdapter();
+        DbConnectionsManager::startProfilingForConnection($adapter);
+        $wrappedPdo = $adapter->getConnection();
+        static::assertInstanceOf(TraceablePDO::class, $wrappedPdo);
+        static::assertCount(1, PdoProfilingHelper::getConnections());
+        $adapter->query('SELECT NOW()');
+        $profilingInfo = PdoProfilingHelper::collect();
+        static::assertNotEmpty($profilingInfo);
+        static::assertArrayHasKey('statements_count', $profilingInfo);
+        static::assertArrayHasKey('failed_statements_count', $profilingInfo);
+        static::assertArrayHasKey('accumulated_duration', $profilingInfo);
+        static::assertArrayHasKey('max_memory_usage', $profilingInfo);
+        static::assertArrayHasKey('statements', $profilingInfo);
+        static::assertEquals(1, $profilingInfo['statements_count']);
+        static::assertEquals(0, $profilingInfo['failed_statements_count']);
+        static::assertGreaterThan(0.0, $profilingInfo['accumulated_duration']);
+        static::assertGreaterThan(0.0, $profilingInfo['max_memory_usage']);
+        static::assertIsArray($profilingInfo['statements']);
+        static::assertNotEmpty($profilingInfo['statements']);
+        foreach ($profilingInfo['statements'] as $connectionName => $statements) {
+            static::assertIsArray($statements);
+            foreach ($statements as $statementInfo) {
+                static::assertArrayHasKey('sql', $statementInfo);
+                static::assertArrayHasKey('row_count', $statementInfo);
+                static::assertArrayHasKey('prepared_statement_id', $statementInfo);
+                static::assertArrayHasKey('params', $statementInfo);
+                static::assertArrayHasKey('duration', $statementInfo);
+                static::assertArrayHasKey('memory_before', $statementInfo);
+                static::assertArrayHasKey('memory_used', $statementInfo);
+                static::assertArrayHasKey('memory_after', $statementInfo);
+                static::assertArrayHasKey('is_success', $statementInfo);
+                static::assertArrayHasKey('error_code', $statementInfo);
+                static::assertArrayHasKey('error_message', $statementInfo);
+                static::assertArrayHasKey('started_at', $statementInfo);
+                static::assertArrayHasKey('ended_at', $statementInfo);
+            }
+        }
+        TestingApp::resetConnections();
+        PdoProfilingHelper::forgetConnections();
+    }
+
+    public function testTransactionsTracing(): void
+    {
+        TestingApp::resetConnections();
+        PdoProfilingHelper::forgetConnections();
+        $adapter = static::getValidAdapter();
+        $adapter->setTransactionsTracing(true);
+        static::assertTrue($adapter->isTransactionsTracingEnabled());
+        static::assertCount(0, $adapter->getTransactionsTraces());
+        $adapter->begin();
+        static::assertCount(1, $adapter->getTransactionsTraces());
+        $adapter->rollBack();
+        static::assertCount(2, $adapter->getTransactionsTraces());
+        $adapter->begin();
+        static::assertCount(3, $adapter->getTransactionsTraces());
+        $adapter->commit();
+        static::assertCount(4, $adapter->getTransactionsTraces());
+        try {
+            $adapter->commit();
+        } catch (\Throwable) {
+        }
+        static::assertCount(5, $adapter->getTransactionsTraces());
+        static::assertArrayHasKey('5:failed', $adapter->getTransactionsTraces());
+        try {
+            $adapter->rollBack();
+        } catch (\Throwable) {
+        }
+        static::assertCount(6, $adapter->getTransactionsTraces());
+        static::assertArrayHasKey('6:failed', $adapter->getTransactionsTraces());
+        TestingApp::resetConnections();
+        PdoProfilingHelper::forgetConnections();
     }
 }
