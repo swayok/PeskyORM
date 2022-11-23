@@ -448,7 +448,6 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('$conditionsAndOptions[\'GROUP\']: value must be an array');
         $adapter = self::getValidAdapter();
-        /** @noinspection PhpParamsInspection */
         $adapter->makeSelectQuery('table', [QueryBuilderUtils::QUERY_PART_GROUP => ' '])->fetchOne();
     }
 
@@ -457,16 +456,14 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage('$conditionsAndOptions array cannot contain options: ' . QueryBuilderUtils::QUERY_PART_CONTAINS);
         $adapter = self::getValidAdapter();
-        /** @noinspection PhpParamsInspection */
         $adapter->makeSelectQuery('table', [QueryBuilderUtils::QUERY_PART_CONTAINS => ' ']);
     }
 
     public function testInvalidArgsInMakeSelectQuery6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$conditionsAndOptions[\'DISTINCT\']: value must be an array');
+        $this->expectExceptionMessage('$distinctColumns[0] argument value must be a not-empty string');
         $adapter = self::getValidAdapter();
-        /** @noinspection PhpParamsInspection */
         $adapter->makeSelectQuery('table', [QueryBuilderUtils::QUERY_PART_DISTINCT => ' '])->fetchOne();
     }
 
@@ -475,15 +472,14 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('$distinctColumns[0] argument value must be a not-empty string');
         $adapter = self::getValidAdapter();
-        /** @noinspection PhpParamsInspection */
         $adapter->makeSelectQuery('table', [QueryBuilderUtils::QUERY_PART_DISTINCT => [' ']])->fetchOne();
     }
-    
+
     public function testMakeSelectQuery(): void
     {
         $adapter = self::getValidAdapter();
         
-        $query = $adapter->makeSelectQuery('test_table')
+        $select = $adapter->makeSelectQuery('test_table')
             ->columns(['col1', DbExpr::create('`col2` as `col22`')]);
         static::assertEquals(
             $adapter->quoteDbExpr(
@@ -494,10 +490,10 @@ class PostgresAdapterHelpersTest extends BaseTestCase
                     false
                 )
             ),
-            $query->getQuery()
+            $select->getQuery()
         );
         
-        $query = $adapter->makeSelectQuery('test_table', DbExpr::create('WHERE `col1` > ``0``', false));
+        $select = $adapter->makeSelectQuery('test_table', DbExpr::create('WHERE `col1` > ``0``', false));
         static::assertEquals(
             $adapter->quoteDbExpr(
                 DbExpr::create(
@@ -505,10 +501,10 @@ class PostgresAdapterHelpersTest extends BaseTestCase
                     false
                 )
             ),
-            $query->columns('*')->getQuery()
+            $select->columns('*')->getQuery()
         );
 
-        $query = $adapter->makeSelectQuery('test_table', ['col1 >' => 0]);
+        $select = $adapter->makeSelectQuery('test_table', ['col1 >' => 0]);
         static::assertEquals(
             $adapter->quoteDbExpr(
                 DbExpr::create(
@@ -517,10 +513,10 @@ class PostgresAdapterHelpersTest extends BaseTestCase
                     false
                 )
             ),
-            $query->columns('*')->getQuery()
+            $select->columns('*')->getQuery()
         );
 
-        $query = $adapter->makeSelectQuery('test_table', [
+        $select = $adapter->makeSelectQuery('test_table', [
             'col1 >' => 0,
             'col2 <' => 1,
             'OR' => ['col3' => 3, 'col4' => 4]
@@ -535,7 +531,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
                     false
                 )
             ),
-            $query->columns('*')->getQuery()
+            $select->columns('*')->getQuery()
         );
 
         $options = [
@@ -547,7 +543,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
             QueryBuilderUtils::QUERY_PART_LIMIT => 1,
             QueryBuilderUtils::QUERY_PART_OFFSET => 2,
         ];
-        $query = $adapter->makeSelectQuery('test_table', array_merge(
+        $select = $adapter->makeSelectQuery('test_table', array_merge(
             ['col1 >' => 0],
             $options
         ));
@@ -564,10 +560,10 @@ class PostgresAdapterHelpersTest extends BaseTestCase
                     false
                 )
             ),
-            $query->columns('*')->getQuery()
+            $select->columns('*')->getQuery()
         );
 
-        $query = $adapter->makeSelectQuery('test_table', $options);
+        $select = $adapter->makeSelectQuery('test_table', $options);
         static::assertEquals(
             $adapter->quoteDbExpr(
                 DbExpr::create(
@@ -579,7 +575,50 @@ class PostgresAdapterHelpersTest extends BaseTestCase
                     false
                 )
             ),
-            $query->columns('*')->getQuery()
+            $select->columns('*')->getQuery()
+        );
+
+        // DISTINCT tests
+        $select = $adapter->makeSelectQuery('admins', [
+            QueryBuilderUtils::QUERY_PART_DISTINCT => true
+        ]);
+        static::assertEquals(
+            $adapter->quoteDbExpr(
+                DbExpr::create(
+                    'SELECT DISTINCT `tbl_Admins_0`.`id` AS "col_Admins__id_0" FROM `admins` AS `tbl_Admins_0`',
+                    false
+                )
+            ),
+            $select->columns('id')->getQuery()
+        );
+
+        $select = $adapter->makeSelectQuery('admins', [
+            QueryBuilderUtils::QUERY_PART_DISTINCT => false
+        ]);
+        static::assertEquals(
+            $adapter->quoteDbExpr(
+                DbExpr::create(
+                    'SELECT `tbl_Admins_0`.`id` AS "col_Admins__id_0" FROM `admins` AS `tbl_Admins_0`',
+                    false
+                )
+            ),
+            $select->columns('id')->getQuery()
+        );
+
+        $select = $adapter->makeSelectQuery('admins', [
+            QueryBuilderUtils::QUERY_PART_DISTINCT => ['id', 'login']
+        ]);
+        static::assertEquals(
+            $adapter->quoteDbExpr(
+                DbExpr::create(
+                    'SELECT DISTINCT ON ("tbl_Admins_0"."id","tbl_Admins_0"."login")'
+                    . ' `tbl_Admins_0`.`id` AS "col_Admins__id_0",'
+                    . ' "tbl_Admins_0"."login" AS "col_Admins__login_1"'
+                    . ' FROM `admins` AS `tbl_Admins_0`',
+                    false
+                )
+            ),
+            $select->columns('id', 'login')->getQuery()
         );
     }
     

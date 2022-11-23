@@ -6,7 +6,6 @@ namespace PeskyORM\Config\Connection;
 
 class MysqlConfig implements DbConnectionConfigInterface
 {
-    
     protected string $dbName;
     protected string $dbUser;
     protected string $dbPassword;

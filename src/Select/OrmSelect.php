@@ -17,7 +17,6 @@ use PeskyORM\Utils\QueryBuilderUtils;
 
 class OrmSelect extends SelectQueryBuilderAbstract
 {
-
     protected TableInterface $table;
     protected TableStructureInterface $tableStructure;
     /**
@@ -52,10 +51,91 @@ class OrmSelect extends SelectQueryBuilderAbstract
         return [];
     }
 
-    protected function processOptionsFromConfigsArray(array $options): void
-    {
-        // todo: handle CONTAINS option in processOptionsFromConfigsArray()
-        parent::processOptionsFromConfigsArray($options);
+    protected function processContainsOptionFromConfigsArray(array $contains): void {
+        $optionName = QueryBuilderUtils::QUERY_PART_CONTAINS;
+        $this->processSubcontainsOptionFromContainConfigArray(
+            $contains,
+            $this->getTable(),
+            $this->getTableAlias(),
+            "\$conditionsAndOptions['$optionName']"
+        );
+    }
+
+    protected function processSubcontainsOptionFromContainConfigArray(
+        array $contains,
+        TableInterface $table,
+        string $tableAlias,
+        string $argPathForException
+    ): void {
+        foreach ($contains as $relationName => $columnsToSelectForRelation) {
+            if ($columnsToSelectForRelation instanceof OrmJoinConfig) {
+                $this->join($columnsToSelectForRelation);
+                continue;
+            }
+
+            $subContains = [];
+            if (is_int($relationName)) {
+                $relationName = $columnsToSelectForRelation;
+                $columnsToSelectForRelation = ['*'];
+            } else {
+                if (empty($columnsToSelectForRelation)) {
+                    $columnsToSelectForRelation = [];
+                }
+            }
+            // parse "RelationName as RelationAlias"
+            $relationAlias = $relationName;
+            if (preg_match('%^\s*(.*?)\s+as\s+(.*)\s*$%i', $relationName, $matches)) {
+                [, $relationName, $relationAlias] = $matches[1];
+            }
+            $relationConfig = $this->getTableStructure()->getRelation($relationName);
+            if ($relationConfig->getType() === Relation::HAS_MANY) {
+                throw new \InvalidArgumentException(
+                    "$argPathForException[$relationName]: one-to-many joins are not allowed"
+                );
+            }
+
+            $foreignTable = $relationConfig->getForeignTable();
+            $joinType = $relationConfig->getJoinType();
+            if (is_array($columnsToSelectForRelation)) {
+                [$columnsToSelectForRelation, $options] = QueryBuilderUtils::separateColumnsAndSuboptionsForContainsOption(
+                    $columnsToSelectForRelation
+                );
+
+                if (isset($options[QueryBuilderUtils::CONTAINS_SUBOPTION_JOIN_TYPE])) {
+                    $joinType = $options[QueryBuilderUtils::CONTAINS_SUBOPTION_JOIN_TYPE];
+                }
+                if (!empty($options[QueryBuilderUtils::CONTAINS_SUBOPTION_SUBCONTAINS])) {
+                    $subContains = $options[QueryBuilderUtils::CONTAINS_SUBOPTION_SUBCONTAINS];
+                }
+                if (isset($options[QueryBuilderUtils::CONTAINS_SUBOPTION_ADDITIONAL_JOIN_CONDITIONS])) {
+                    $additionalJoinConditions = $options[QueryBuilderUtils::CONTAINS_SUBOPTION_ADDITIONAL_JOIN_CONDITIONS];
+                }
+            }
+
+            $ormJoinConfig = $relationConfig
+                ->toOrmJoinConfig(
+                    $table,
+                    $tableAlias,
+                    $relationAlias,
+                    $joinType
+                )
+                ->setForeignColumnsToSelect($columnsToSelectForRelation);
+
+            if (!empty($additionalJoinConditions)) {
+                $ormJoinConfig->setAdditionalJoinConditions($additionalJoinConditions);
+            }
+
+            $this->join($ormJoinConfig);
+
+            if (!empty($subContains)) {
+                $this->processSubcontainsOptionFromContainConfigArray(
+                    is_array($subContains) ? $subContains : [$subContains],
+                    $foreignTable,
+                    $relationAlias,
+                    $argPathForException . "[$relationName]"
+                );
+            }
+        }
     }
 
     public function getTableName(): string

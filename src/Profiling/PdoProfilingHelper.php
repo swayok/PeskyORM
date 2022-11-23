@@ -8,7 +8,6 @@ use JetBrains\PhpStorm\ArrayShape;
 
 abstract class PdoProfilingHelper
 {
-    
     /**
      * @var TraceablePDO[]
      */

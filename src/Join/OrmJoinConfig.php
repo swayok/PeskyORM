@@ -8,30 +8,8 @@ use PeskyORM\ORM\TableInterface;
 
 class OrmJoinConfig extends NormalJoinConfigAbstract
 {
-    
     protected TableInterface $dbTable;
     protected TableInterface $foreignDbTable;
-
-    /**
-     * @deprecated
-     */
-    public static function create(
-        string $joinName,
-        TableInterface $localTable,
-        string $localColumnName,
-        string $joinType,
-        TableInterface $foreignTable,
-        string $foreignColumnName
-    ): static {
-        return new static(
-            $joinName,
-            $localTable,
-            $localColumnName,
-            $joinType,
-            $foreignTable,
-            $foreignColumnName
-        );
-    }
 
     /**
      * @throws \InvalidArgumentException

@@ -8,7 +8,6 @@ use PDO;
 
 class PostgresConfig implements DbConnectionConfigInterface
 {
-    
     protected string $dbName;
     protected string $dbUser;
     protected string $dbPassword;

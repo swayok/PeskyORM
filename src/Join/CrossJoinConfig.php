@@ -12,11 +12,6 @@ class CrossJoinConfig implements CrossJoinConfigInterface
     protected string $joinName;
     protected DbExpr $joinQuery;
 
-    public static function create(string $joinName, DbExpr $joinQuery): static
-    {
-        return new static($joinName, $joinQuery);
-    }
-
     public function __construct(string $joinName, DbExpr $joinQuery)
     {
         $this->joinName = $joinName;

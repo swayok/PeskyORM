@@ -9,7 +9,6 @@ namespace PeskyORM\Profiling;
  */
 class TracedStatement
 {
-    
     protected string $sql;
     
     protected ?int $rowCount = null;

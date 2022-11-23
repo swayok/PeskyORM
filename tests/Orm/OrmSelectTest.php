@@ -70,7 +70,6 @@ class OrmSelectTest extends BaseTestCase
         static::assertCount(1, $this->getObjectPropertyValue($dbSelect, 'columnsRaw'));
         static::assertCount(0, $this->getObjectPropertyValue($dbSelect, 'columns'));
 
-
         static::assertEquals(['id'], $this->getObjectPropertyValue($dbSelect, 'columnsRaw'));
         static::assertEquals('SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0"', rtrim($dbSelect->getQuery()));
         static::assertEquals('SELECT COUNT(*) FROM "admins" AS "tbl_Admins_1"', rtrim($dbSelect->getCountQuery()));
@@ -1104,6 +1103,117 @@ class OrmSelectTest extends BaseTestCase
             preg_replace('%^SELECT "(.+?)"."id",*$%', '$1', $select->getQuery()),
             TestingAdminsTableLongAlias::getAlias()
         );
+    }
+
+    public function testContains(): void
+    {
+        $insertedData = static::fillAdminsTable();
+        $countWithParents = 0;
+        foreach ($insertedData as $record) {
+            if (!empty($record['parent_id'])) {
+                $countWithParents++;
+            }
+        }
+        unset($record);
+        static::assertGreaterThan(0, $countWithParents);
+
+        $select = OrmSelect::from(TestingAdminsTable::getInstance())
+            ->fromConfigsArray([
+                'parent_id !=' => null,
+                'CONTAINS' => ['Parent' => ['TYPE' => OrmJoinConfig::JOIN_LEFT]]
+            ]);
+        $records = $select->fetchMany();
+        static::assertNotEmpty($records);
+        static::assertCount($countWithParents, $records);
+        foreach ($records as $record) {
+            // no columns selected for Parent
+            static::assertArrayNotHasKey('Parent', $record);
+        }
+
+        $select = OrmSelect::from(TestingAdminsTable::getInstance())
+            ->fromConfigsArray([
+                'parent_id !=' => null,
+                'CONTAINS' => ['Parent' => ['*']]
+            ]);
+        $records = $select->fetchMany();
+
+        foreach ($records as $record) {
+            static::assertArrayHasKey('Parent', $record);
+            static::assertNotEmpty($record['Parent']);
+            static::assertIsArray($record['Parent']);
+        }
+
+        $select = OrmSelect::from(TestingAdminsTable::getInstance())
+            ->fromConfigsArray([
+                'CONTAINS' => ['Parent' => ['*', 'TYPE' => OrmJoinConfig::JOIN_INNER]]
+            ]);
+        $records = $select->fetchMany();
+
+        static::assertNotEmpty($records);
+        static::assertCount($countWithParents, $records);
+        foreach ($records as $record) {
+            static::assertArrayHasKey('Parent', $record);
+            static::assertNotEmpty($record['Parent']);
+            static::assertIsArray($record['Parent']);
+        }
+
+        $select = OrmSelect::from(TestingAdminsTable::getInstance())
+            ->fromConfigsArray([
+                'parent_id !=' => null,
+                'CONTAIN' => 'Parent'
+            ]);
+        $records = $select->fetchMany();
+        foreach ($records as $record) {
+            static::assertArrayHasKey('Parent', $record);
+            static::assertNotEmpty($record['Parent']);
+            static::assertIsArray($record['Parent']);
+        }
+
+        $select = OrmSelect::from(TestingAdminsTable::getInstance())
+            ->fromConfigsArray([
+                'parent_id !=' => null,
+                'CONTAIN' => ['Parent' => ['*', 'CONTAIN' => 'HasOne']]
+            ]);
+        $records = $select->fetchMany();
+
+        foreach ($records as $record) {
+            static::assertArrayHasKey('Parent', $record);
+            static::assertNotEmpty($record['Parent']);
+            static::assertIsArray($record['Parent']);
+            static::assertArrayHasKey('HasOne', $record['Parent']);
+            static::assertNotEmpty($record['Parent']['HasOne']);
+            static::assertIsArray($record['Parent']['HasOne']);
+        }
+
+        $select = OrmSelect::from(TestingAdminsTable::getInstance())
+            ->fromConfigsArray([
+                'parent_id !=' => null,
+                'CONTAIN' => ['Parent' => ['*', 'JOIN_CONDITIONS' => ['is_active' => false]]]
+            ]);
+        $records = $select->fetchMany();
+
+        static::assertNotEmpty($records);
+        foreach ($records as $record) {
+            static::assertArrayHasKey('Parent', $record);
+            // join condition will filter out all parent records
+            // because there are records with is_active=false
+            static::assertIsArray($record['Parent']);
+            static::assertEmpty($record['Parent']);
+        }
+
+        $select = OrmSelect::from(TestingAdminsTable::getInstance())
+            ->fromConfigsArray([
+                'parent_id !=' => null,
+                'CONTAIN' => ['Parent' => [
+                    '*',
+                    'TYPE' => OrmJoinConfig::JOIN_INNER,
+                    'JOIN_CONDITIONS' => ['is_active' => false]
+                ]]
+            ]);
+        $records = $select->fetchMany();
+        // inner join filters out all parent records
+        // because there are records with is_active=false
+        static::assertEmpty($records);
     }
 
 

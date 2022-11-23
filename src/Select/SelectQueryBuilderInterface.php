@@ -38,6 +38,8 @@ interface SelectQueryBuilderInterface
      *      'OFFSET' - int >= 0
      *      'HAVING' - DbExpr,
      *      'JOINS' - array of JoinConfig
+     *      'CONTAINS' - array of OrmJoinConfig
+ *              or ['RelationName' => ['column1', ..., 'TYPE' => JoinConfigInterface::JOIN_*, 'CONTAINS' => [...], ]]
      */
     public function fromConfigsArray(array $conditionsAndOptions): static;
 

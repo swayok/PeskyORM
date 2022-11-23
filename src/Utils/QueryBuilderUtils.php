@@ -32,6 +32,10 @@ abstract class QueryBuilderUtils
     public const QUERY_PART_GROUP = 'GROUP';
     public const QUERY_PART_HAVING = 'HAVING';
 
+    public const CONTAINS_SUBOPTION_JOIN_TYPE = 'TYPE';
+    public const CONTAINS_SUBOPTION_SUBCONTAINS = 'CONTAINS';
+    public const CONTAINS_SUBOPTION_ADDITIONAL_JOIN_CONDITIONS = 'JOIN_CONDITIONS';
+
     /**
      * @param array $columns - should contain only strings and DbExpr objects
      * @param bool $withBraces - add "()" around columns list
@@ -393,6 +397,12 @@ abstract class QueryBuilderUtils
             static::QUERY_PART_CONTAINS,
         ];
 
+        $strToArrayParts = [
+            static::QUERY_PART_DISTINCT,
+            static::QUERY_PART_ORDER,
+            static::QUERY_PART_CONTAINS,
+        ];
+
         if (array_key_exists('JOIN', $conditionsAndOptions)) {
             $conditionsAndOptions[static::QUERY_PART_JOINS] = $conditionsAndOptions['JOIN'];
             unset($conditionsAndOptions['JOIN']);
@@ -418,7 +428,44 @@ abstract class QueryBuilderUtils
                 unset($conditionsAndOptions[$part]);
             }
         }
+        // convert strings to arrays for some options that can handle this
+        foreach ($strToArrayParts as $part) {
+            if (isset($options[$part]) && is_string($options[$part])) {
+                $options[$part] = [$options[$part]];
+            }
+        }
 
         return [$conditionsAndOptions, $options];
+    }
+
+    public static function separateColumnsAndSuboptionsForContainsOption(
+        array $columnsAndOptions
+    ): array {
+        $options = [];
+
+        $parts = [
+            static::CONTAINS_SUBOPTION_JOIN_TYPE,
+            static::CONTAINS_SUBOPTION_ADDITIONAL_JOIN_CONDITIONS,
+            static::CONTAINS_SUBOPTION_SUBCONTAINS,
+        ];
+
+        if (array_key_exists('CONTAIN', $columnsAndOptions)) {
+            $columnsAndOptions[static::CONTAINS_SUBOPTION_SUBCONTAINS] = $columnsAndOptions['CONTAIN'];
+            unset($columnsAndOptions['CONTAIN']);
+        }
+
+        foreach ($parts as $part) {
+            if (array_key_exists($part, $columnsAndOptions)) {
+                $options[$part] = $columnsAndOptions[$part];
+                unset($columnsAndOptions[$part]);
+            }
+        }
+        // convert strings to arrays subcontains
+        $part = static::CONTAINS_SUBOPTION_SUBCONTAINS;
+        if (isset($options[$part]) && is_string($options[$part])) {
+            $options[$part] = [$options[$part]];
+        }
+
+        return [$columnsAndOptions, $options];
     }
 }

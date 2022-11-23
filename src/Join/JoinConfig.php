@@ -8,32 +8,6 @@ use PeskyORM\Utils\ArgumentValidators;
 
 class JoinConfig extends NormalJoinConfigAbstract
 {
-
-    /**
-     * @deprecated
-     */
-    public static function create(
-        string $joinName,
-        string $localTableName,
-        string $localColumnName,
-        string $joinType,
-        string $foreignTableName,
-        string $foreignColumnName,
-        ?string $localTableSchema = null,
-        ?string $foreignTableSchema = null
-    ): static {
-        return new static(
-            $joinName,
-            $localTableName,
-            $localColumnName,
-            $joinType,
-            $foreignTableName,
-            $foreignColumnName,
-            $localTableSchema,
-            $foreignTableSchema
-        );
-    }
-
     /**
      * @throws \InvalidArgumentException
      */

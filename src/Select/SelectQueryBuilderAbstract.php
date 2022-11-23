@@ -87,54 +87,67 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
     protected function processOptionsFromConfigsArray(array $options): void
     {
         // WITH
-        if (!empty($options['WITH'])) {
+        $optionName = QueryBuilderUtils::QUERY_PART_WITH;
+        if (!empty($options[$optionName])) {
             ArgumentValidators::assertArrayKeyValueIsArray(
-                "\$conditionsAndOptions['WITH']",
-                $options['WITH']
+                "\$conditionsAndOptions['$optionName']",
+                $options[$optionName]
             );
-            foreach ($options['WITH'] as $selectAlias => $select) {
+            foreach ($options[$optionName] as $selectAlias => $select) {
                 $this->with($select, $selectAlias);
             }
         }
         // JOINS - must be 1st to allow columns validation in OrmSelect or other child class
-        if (!empty($options['JOINS'])) {
+        $optionName = QueryBuilderUtils::QUERY_PART_JOINS;
+        if (!empty($options[$optionName])) {
             ArgumentValidators::assertArrayKeyValueIsArray(
-                "\$conditionsAndOptions['JOINS']",
-                $options['JOINS']
+                "\$conditionsAndOptions['$optionName']",
+                $options[$optionName]
             );
-            foreach ($options['JOINS'] as $key => $join) {
+            foreach ($options[$optionName] as $key => $join) {
                 if ($join instanceof CrossJoinConfigInterface) {
                     $this->crossJoin($join);
                 } elseif ($join instanceof NormalJoinConfigInterface) {
                     $this->join($join);
                 } else {
                     throw new \InvalidArgumentException(
-                        "\$conditionsAndOptions['JOINS'][$key]: value must be instance of "
+                        "\$conditionsAndOptions['$optionName'][$key]: value must be instance of "
                         . NormalJoinConfigInterface::class . ' or ' . CrossJoinConfigInterface::class . " class"
                     );
                 }
             }
         }
+        // CONTAINS
+        $optionName = QueryBuilderUtils::QUERY_PART_CONTAINS;
+        if (!empty($options[$optionName])) {
+            ArgumentValidators::assertArrayKeyValueIsArray(
+                "\$conditionsAndOptions['$optionName']",
+                $options[$optionName]
+            );
+            $this->processContainsOptionFromConfigsArray($options[$optionName]);
+        }
         // DISTINCT
-        if (!empty($options['DISTINCT'])) {
-            if ($options['DISTINCT'] !== true) {
+        $optionName = QueryBuilderUtils::QUERY_PART_DISTINCT;
+        if (!empty($options[$optionName])) {
+            if ($options[$optionName] !== true) {
                 ArgumentValidators::assertArrayKeyValueIsArray(
-                    "\$conditionsAndOptions['DISTINCT']",
-                    $options['DISTINCT']
+                    "\$conditionsAndOptions['$optionName']",
+                    $options[$optionName]
                 );
             }
             $this->distinct(
                 true,
-                is_array($options['DISTINCT']) ? $options['DISTINCT'] : null
+                is_array($options[$optionName]) ? $options[$optionName] : null
             );
         }
         // ORDER BY
-        if (!empty($options['ORDER'])) {
+        $optionName = QueryBuilderUtils::QUERY_PART_ORDER;
+        if (!empty($options[$optionName])) {
             ArgumentValidators::assertArrayKeyValueIsArray(
-                "\$conditionsAndOptions['ORDER']",
-                $options['ORDER']
+                "\$conditionsAndOptions['$optionName']",
+                $options[$optionName]
             );
-            foreach ($options['ORDER'] as $columnName => $direction) {
+            foreach ($options[$optionName] as $columnName => $direction) {
                 if ($direction instanceof DbExpr || is_int($columnName)) {
                     // DbExpr or column name without direction (use default direction)
                     $this->orderBy($direction);
@@ -144,29 +157,41 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
             }
         }
         // LIMIT
-        if (!empty($options['LIMIT'])) {
-            $this->limit($options['LIMIT']);
+        $optionName = QueryBuilderUtils::QUERY_PART_LIMIT;
+        if (!empty($options[$optionName])) {
+            $this->limit($options[$optionName]);
         }
         // OFFSET
-        if (!empty($options['OFFSET'])) {
-            $this->offset($options['OFFSET']);
+        $optionName = QueryBuilderUtils::QUERY_PART_OFFSET;
+        if (!empty($options[$optionName])) {
+            $this->offset($options[$optionName]);
         }
         // GROUP BY
-        if (!empty($options['GROUP'])) {
+        $optionName = QueryBuilderUtils::QUERY_PART_GROUP;
+        if (!empty($options[$optionName])) {
             ArgumentValidators::assertArrayKeyValueIsArray(
-                "\$conditionsAndOptions['GROUP']",
-                $options['GROUP']
+                "\$conditionsAndOptions['$optionName']",
+                $options[$optionName]
             );
-            $this->groupBy($options['GROUP']);
+            $this->groupBy($options[$optionName]);
         }
         // HAVING
-        if (!empty($options['HAVING'])) {
+        $optionName = QueryBuilderUtils::QUERY_PART_HAVING;
+        if (!empty($options[$optionName])) {
             ArgumentValidators::assertArrayKeyValueIsArray(
-                "\$conditionsAndOptions['HAVING']",
-                $options['HAVING']
+                "\$conditionsAndOptions['$optionName']",
+                $options[$optionName]
             );
-            $this->having($options['HAVING']);
+            $this->having($options[$optionName]);
         }
+    }
+
+    protected function processContainsOptionFromConfigsArray(array $contains): void
+    {
+        $optionName = QueryBuilderUtils::QUERY_PART_CONTAINS;
+        throw new \BadMethodCallException(
+            "\$conditionsAndOptions['$optionName']: option not supported"
+        );
     }
 
     public function setTableAlias(string $tableAlias): static
@@ -1262,7 +1287,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
             foreach ($this->distinctColumns as $columnInfo) {
                 $columns[] = $this->makeColumnNameForCondition($columnInfo, 'DISTINCT');
             }
-            $ret .= ' ON (' . implode(',', $columns) . ') ';
+            $ret .= 'ON (' . implode(',', $columns) . ') ';
         }
         return $ret;
     }

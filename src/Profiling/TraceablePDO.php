@@ -11,7 +11,6 @@ use PDO;
  */
 class TraceablePDO extends PDO
 {
-    
     protected PDO $pdo;
     
     /** @var TracedStatement[] */

@@ -9,7 +9,6 @@ use PDOStatement;
 
 class DetailedPDOException extends DbException
 {
-
     protected ?string $originalMessage = null;
 
     public function __construct(
