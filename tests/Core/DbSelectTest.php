@@ -1109,8 +1109,8 @@ class DbSelectTest extends BaseTestCase
     
     public function testInvalidFromConfigsArrayOrder1(): void
     {
-        $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($columnName) must be of type');
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('$conditionsAndOptions[\'ORDER\']: value must be an array');
         static::getNewSelect()
             ->fromConfigsArray([
                 'ORDER' => $this,
@@ -1119,8 +1119,8 @@ class DbSelectTest extends BaseTestCase
     
     public function testInvalidFromConfigsArrayOrder2(): void
     {
-        $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($columnName) must be of type');
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('$conditionsAndOptions[\'ORDER\']: value must be an array');
         static::getNewSelect()
             ->fromConfigsArray([
                 'ORDER' => true,
