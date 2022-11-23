@@ -8,8 +8,6 @@ use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Tests\PeskyORMTest\Adapter\MysqlTesting;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
-require_once __DIR__ . '/PostgresAdapterHelpersTest.php';
-
 class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
 {
 

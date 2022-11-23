@@ -43,7 +43,7 @@ class MysqlAdapterQueriesTest extends BaseTestCase
         $this->expectExceptionMessageMatches("%Table '.*?\.abrakadabra' doesn't exist%i");
         $adapter = static::getValidAdapter();
         $adapter->exec(
-            \PeskyORM\DbExpr::create('INSERT INTO `abrakadabra` (`key`, `value`) VALUES (``test_key``, ``test_value``)')
+            DbExpr::create('INSERT INTO `abrakadabra` (`key`, `value`) VALUES (``test_key``, ``test_value``)')
         );
     }
     

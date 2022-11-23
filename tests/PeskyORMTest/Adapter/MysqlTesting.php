@@ -23,11 +23,6 @@ class MysqlTesting extends Mysql
         return parent::quoteJsonSelectorValue($key);
     }
     
-    public function quoteJsonSelectorExpression(array $sequence): string
-    {
-        return parent::quoteJsonSelectorExpression($sequence);
-    }
-
     public function isValidJsonSelector(string $name): bool
     {
         return parent::isValidJsonSelector($name);

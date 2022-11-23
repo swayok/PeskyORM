@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace PeskyORM\Adapter;
 
+use PDOStatement;
 use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\DbExpr;
-use PeskyORM\Exception\DbException;
+use PeskyORM\Exception\DbAdapterDoesNotSupportFeature;
 use PeskyORM\Exception\DbQueryReturningValuesException;
 use PeskyORM\Select\SelectQueryBuilderInterface;
 
@@ -37,11 +38,11 @@ class Mysql extends DbAdapterAbstract
     ];
 
     static private array $conditionAssemblerForOperator = [
-        '?' => 'assembleConditionValuesExistsInJson',
-        '?|' => 'assembleConditionValuesExistsInJson',
-        '?&' => 'assembleConditionValuesExistsInJson',
-        '@>' => 'assembleConditionJsonContainsJson',
-        '<@' => 'assembleConditionJsonContainsJson',
+        '?' => 'assembleValuesExistInJsonCondition',
+        '?|' => 'assembleValuesExistInJsonCondition',
+        '?&' => 'assembleValuesExistInJsonCondition',
+        '@>' => 'assembleJsonContainsJsonCondition',
+        '<@' => 'assembleJsonContainsJsonCondition',
     ];
 
     /**
@@ -109,170 +110,188 @@ class Mysql extends DbAdapterAbstract
         return 'CHAR';
     }
 
-    protected function resolveQueryWithReturningColumns(
-        string $query,
-        string $tableNameWithPossibleAlias,
+    protected function resolveInsertOneQueryWithReturningColumns(
+        string $insertQuery,
+        string $table,
+        array $data,
+        array $dataTypes,
+        array $returning,
+        string $pkName
+    ): array {
+        $isLocalTransaction = !$this->inTransaction();
+        if ($isLocalTransaction) {
+            $this->begin();
+        }
+        /** @var PDOStatement $insertStatement */
+        $insertStatement = $this->query($insertQuery, static::FETCH_STATEMENT);
+        $this->assertInsertedRowsCount($table, 1, $insertStatement->rowCount());
+        // get id
+        $id = $this->getDataFromStatement(
+            $this->query('SELECT LAST_INSERT_ID()'),
+            static::FETCH_VALUE
+        );
+        if ($isLocalTransaction) {
+            $this->commit();
+        }
+        // get data for PK value
+        $record = $this->selectOne(
+            $table,
+            empty($returning) ? ['*'] : $returning,
+            [$pkName => $id]
+        );
+
+        $this->assertSelectedRecordsCountForReturningFeature(
+            $insertStatement->rowCount(),
+            (int)!empty($record),
+            $insertStatement->queryString,
+            $this->getLastQuery()
+        );
+
+        return $record;
+    }
+
+    protected function resolveInsertManyQueryWithReturningColumns(
+        string $insertQuery,
+        string $table,
         array $columns,
         array $data,
         array $dataTypes,
         array $returning,
-        ?string $pkName,
-        string $operation
+        string $pkName
     ): array {
-        $returningStr = empty($returning) ? '*' : $this->buildColumnsList($returning, false);
-        /** @noinspection PhpSwitchCanBeReplacedWithMatchExpressionInspection */
-        switch ($operation) {
-            case static::OPERATION_INSERT_ONE:
-                return $this->resolveInsertOneQueryWithReturningColumns(
-                    $tableNameWithPossibleAlias,
-                    $data,
-                    $dataTypes,
-                    $returningStr,
-                    $pkName
-                );
-            case static::OPERATION_INSERT_MANY:
-                return $this->resolveInsertManyQueryWithReturningColumns(
-                    $tableNameWithPossibleAlias,
-                    $columns,
-                    $data,
-                    $dataTypes,
-                    $returningStr,
-                    $pkName
-                );
-            case static::OPERATION_UPDATE:
-                return $this->resolveUpdateQueryWithReturningColumns($query, $tableNameWithPossibleAlias, $returningStr);
-            case static::OPERATION_DELETE:
-                return $this->resolveDeleteQueryWithReturningColumns($query, $tableNameWithPossibleAlias, $returningStr);
-            default:
-                throw new \InvalidArgumentException("\$operation '$operation' is not supported by " . __CLASS__);
+        $isLocalTransaction = !$this->inTransaction();
+        if ($isLocalTransaction) {
+            $this->begin();
         }
-    }
-
-    protected function resolveInsertOneQueryWithReturningColumns(
-        string $table,
-        array $data,
-        array $dataTypes,
-        string $returning,
-        string $pkName
-    ) {
-        /** @noinspection MissUsingParentKeywordInspection */
-        parent::insert($table, $data, $dataTypes, false);
-        $insertQuery = $this->getLastQuery();
-        $id = $this->quoteValue(
-            $this->getDataFromStatement(
-                $this->query('SELECT LAST_INSERT_ID()'),
-                static::FETCH_VALUE
-            )
+        /** @var PDOStatement $insertStatement */
+        $insertStatement = $this->query($insertQuery, static::FETCH_STATEMENT);
+        $this->assertInsertedRowsCount($table, count($data), $insertStatement->rowCount());
+        $minId = (int)$this->getDataFromStatement(
+            $this->query('SELECT LAST_INSERT_ID()'),
+            static::FETCH_VALUE
         );
-        $pkName = $this->quoteDbEntityName($pkName);
-        $query = DbExpr::create("SELECT {$returning} FROM {$table} WHERE $pkName=$id");
-        $stmnt = $this->query($query);
-
-        if (!$stmnt->rowCount()) {
+        if ($minId === 0) {
             throw new DbQueryReturningValuesException(
-                'No data received for $returning request after insert. Insert: ' . $insertQuery
-                . '. Select: ' . $this->getLastQuery(),
+                'Failed to get IDs of inserted records. LAST_INSERT_ID() returned 0 or non-numeric value',
+                $insertStatement->queryString
             );
         }
+        $maxId = $minId + $insertStatement->rowCount() - 1;
 
-        if ($stmnt->rowCount() > 1) {
-            throw new DbQueryReturningValuesException(
-                'Received more then 1 record for $returning request after insert. Insert: ' . $insertQuery
-                . '. Select: ' . $this->getLastQuery(),
-            );
-        }
-
-        return $this->getDataFromStatement($stmnt, static::FETCH_FIRST);
-    }
-
-    protected function resolveInsertManyQueryWithReturningColumns(
-        string $table,
-        array $columns,
-        array $data,
-        array $dataTypes,
-        string $returning,
-        string $pkName
-    ) {
-        /** @noinspection MissUsingParentKeywordInspection */
-        parent::insertMany($table, $columns, $data, $dataTypes, false);
-        $insertQuery = $this->getLastQuery();
-        $id1 = (int)trim(
-            $this->quoteValue(
-                $this->getDataFromStatement(
-                    $this->query('SELECT LAST_INSERT_ID()'),
-                    static::FETCH_VALUE
-                )
-            ),
-            "'"
+        $records = $this->select(
+            $table,
+            empty($returning) ? ['*'] : $returning,
+            [
+                $pkName . ' BETWEEN' => [$minId, $maxId],
+                'ORDER' => [$pkName => SelectQueryBuilderInterface::ORDER_DIRECTION_ASC],
+            ]
         );
-        if ($id1 === 0) {
-            throw new DbQueryReturningValuesException(
-                'Failed to get IDs of inserted records. LAST_INSERT_ID() returned 0',
-            );
-        }
-        $id2 = $id1 + count($data) - 1;
-        $pkName = $this->quoteDbEntityName($pkName);
-        $query = DbExpr::create(
-            "SELECT {$returning} FROM {$table} WHERE {$pkName} BETWEEN {$id1} AND {$id2} ORDER BY {$pkName}"
+
+        $this->assertSelectedRecordsCountForReturningFeature(
+            $insertStatement->rowCount(),
+            count($records),
+            $insertStatement->queryString,
+            $this->getLastQuery()
         );
-        $stmnt = $this->query($query);
 
-        if (!$stmnt->rowCount()) {
-            throw new DbQueryReturningValuesException(
-                'No data received for $returning request after insert. '
-                . "Insert: {$insertQuery}. Select: {$this->getLastQuery()}",
-            );
-        }
-
-        if ($stmnt->rowCount() !== count($data)) {
-            throw new DbQueryReturningValuesException(
-                "Received amount of records ({$stmnt->rowCount()}) differs from expected (" . count($data) . ')'
-                . '. Insert: ' . $insertQuery . '. Select: ' . $this->getLastQuery(),
-            );
-        }
-
-        return $this->getDataFromStatement($stmnt, static::FETCH_ALL);
+        return $records;
     }
 
     protected function resolveUpdateQueryWithReturningColumns(
         string $updateQuery,
+        string $assembledConditions,
         string $table,
-        string $returning
-    ) {
-        /** @noinspection MissUsingParentKeywordInspection */
-        $rowsUpdated = parent::exec($updateQuery);
-        if (empty($rowsUpdated)) {
+        array $updates,
+        array $dataTypes,
+        array $returning,
+        string $pkName
+    ): array {
+        $isLocalTransaction = !$this->inTransaction();
+        if ($isLocalTransaction) {
+            $this->begin();
+        }
+        // $this->query() won't work here because $pdoStatement->rowsCount() will be 0
+        $updatedRowsCount = $this->exec($updateQuery);
+        if ($updatedRowsCount === 0) {
             return [];
         }
-        $conditionsAndOptions = preg_replace('%^.*?WHERE\s*(.*)$%is', '$1', $updateQuery);
-        $selectQuery = DbExpr::create("SELECT {$returning} FROM {$table} WHERE {$conditionsAndOptions}");
-        $stmnt = $this->query($selectQuery);
-        if ($stmnt->rowCount() !== $rowsUpdated) {
-            throw new DbQueryReturningValuesException(
-                "Received amount of records ({$stmnt->rowCount()}) differs from expected ({$rowsUpdated})"
-                . '. Update: ' . $updateQuery . '. Select: ' . $this->getLastQuery()
-            );
+
+        $records = $this->select(
+            $table,
+            empty($returning) ? ['*'] : $returning,
+            DbExpr::create('WHERE ' . $assembledConditions)
+        );
+        $this->assertSelectedRecordsCountForReturningFeature(
+            $updatedRowsCount,
+            count($records),
+            $updateQuery,
+            $this->getLastQuery()
+        );
+        if ($isLocalTransaction) {
+            $this->commit();
         }
-        return $this->getDataFromStatement($stmnt, static::FETCH_ALL);
+
+        return $records;
     }
 
     protected function resolveDeleteQueryWithReturningColumns(
-        string $query,
+        string $deleteQuery,
+        string $assembledConditions,
         string $table,
-        string $returning
-    ) {
-        $conditions = preg_replace('%^.*WHERE%i', '', $query);
-        $stmnt = $this->query("SELECT {$returning} FROM {$table} WHERE {$conditions}");
-        if (!$stmnt->rowCount()) {
+        array $returning,
+        string $pkName
+    ): array {
+        $isLocalTransaction = !$this->inTransaction();
+        if ($isLocalTransaction) {
+            $this->begin();
+        }
+        // first we select data for records to be deleted
+        $records = $this->select(
+            $table,
+            empty($returning) ? ['*'] : $returning,
+            DbExpr::create('WHERE ' . $assembledConditions)
+        );
+        if (empty($records)) {
             return [];
         }
-        $this->exec($query);
-        return $this->getDataFromStatement($stmnt, static::FETCH_ALL);
+        $selectQuery = $this->getLastQuery();
+        // now we delete records
+        // $this->query() won't work here because $pdoStatement->rowsCount() will be 0
+        $deletedCount = $this->exec($deleteQuery);
+        $this->assertSelectedRecordsCountForReturningFeature(
+            $deletedCount,
+            count($records),
+            $deleteQuery,
+            $selectQuery
+        );
+        if ($isLocalTransaction) {
+            $this->commit();
+        }
+        return $records;
+    }
+
+    protected function assertSelectedRecordsCountForReturningFeature(
+        int $expectedCount,
+        int $selectedCount,
+        string $mainQuery,
+        string $selectQuery,
+    ): void {
+        if ($expectedCount !== $selectedCount) {
+            if ($this->inTransaction()) {
+                $this->rollBack();
+            }
+            throw new DbQueryReturningValuesException(
+                "Selected {$selectedCount} records while expected {$expectedCount}"
+                . ' records for RETURNING feature',
+                $mainQuery,
+                $selectQuery
+            );
+        }
     }
 
     /**
      * {@inheritDoc}
-     * @throws DbException
+     * @throws DbAdapterDoesNotSupportFeature
      */
     public function quoteJsonSelectorExpression(array $sequence): string
     {
@@ -301,7 +320,9 @@ class Mysql extends DbAdapterAbstract
                     $result = "JSON_UNQUOTE(JSON_EXTRACT({$result}, {$sequence[$i + 1]}))";
                     break;
                 default:
-                    throw new DbException("Unsopported json operator '{$sequence[$i]}' received", DbException::CODE_DB_DOES_NOT_SUPPORT_FEATURE);
+                    throw new DbAdapterDoesNotSupportFeature(
+                        "Mysql adapter does not support json operator '{$sequence[$i]}'"
+                    );
             }
         }
         return $result;
@@ -330,7 +351,7 @@ class Mysql extends DbAdapterAbstract
         return null;
     }
 
-    protected function assembleConditionValuesExistsInJson(
+    protected function assembleValuesExistInJsonCondition(
         string $quotedColumn,
         string $operator,
         string|int|float|bool|array|DbExpr|SelectQueryBuilderInterface|null $rawValue,
@@ -366,7 +387,7 @@ class Mysql extends DbAdapterAbstract
         return $this->quoteValue($key, \PDO::PARAM_STR);
     }
 
-    protected function assembleConditionJsonContainsJson(
+    protected function assembleJsonContainsJsonCondition(
         string $quotedColumn,
         string $operator,
         string|int|float|bool|array|DbExpr|SelectQueryBuilderInterface|null $rawValue,
@@ -392,15 +413,6 @@ class Mysql extends DbAdapterAbstract
         return "JSON_CONTAINS($quotedColumn, $value)";
     }
 
-    /**
-     * Search for $table in $schema
-     * @param string $table
-     * @param null|string $schema - name of DB schema that contains $table (for PostgreSQL)
-     * @return bool
-     * @throws DbException
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
-     */
     public function hasTable(string $table, ?string $schema = null): bool
     {
         $exists = (bool)$this->query(
@@ -410,22 +422,13 @@ class Mysql extends DbAdapterAbstract
         return !empty($exists);
     }
 
-    /**
-     * Listen for DB notifications (mostly for PostgreSQL LISTEN...NOTIFY)
-     * @param string $channel
-     * @param \Closure $handler - payload handler:
-     *      function(string $payload): boolean { return true; } - if it returns false: listener will stop
-     * @param int $sleepIfNoNotificationMs - miliseconds to sleep if there were no notifications last time
-     * @param int $sleepAfterNotificationMs - miliseconds to sleep after notification consumed
-     * @return void
-     */
     public function listen(
         string $channel,
         \Closure $handler,
         int $sleepIfNoNotificationMs = 1000,
         int $sleepAfterNotificationMs = 0
     ): void {
-        throw new DbException('MySQL does not support notifications', DbException::CODE_DB_DOES_NOT_SUPPORT_FEATURE);
+        throw new DbAdapterDoesNotSupportFeature('MySQL does not support notifications');
     }
 
 }

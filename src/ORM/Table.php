@@ -60,7 +60,7 @@ abstract class Table implements TableInterface
 
     /**
      * @param bool $writable - true: connection must have access to write data into DB
-     * @return \PeskyORM\Adapter\DbAdapterInterface
+     * @return DbAdapterInterface
      */
     public static function getConnection(bool $writable = false): DbAdapterInterface
     {
@@ -421,7 +421,8 @@ abstract class Table implements TableInterface
                 static::getNameWithSchema(),
                 $data,
                 static::getPdoDataTypesForColumns(),
-                $returning
+                $returning,
+                static::getPkColumnName()
             );
     }
 
@@ -477,7 +478,8 @@ abstract class Table implements TableInterface
                 $columns,
                 $rows,
                 static::getPdoDataTypesForColumns($columns),
-                $returning
+                $returning,
+                static::getPkColumnName()
             );
     }
 
@@ -492,7 +494,8 @@ abstract class Table implements TableInterface
                 $data,
                 $conditions,
                 static::getPdoDataTypesForColumns(),
-                $returning
+                $returning,
+                static::getPkColumnName()
             );
     }
 
@@ -505,7 +508,8 @@ abstract class Table implements TableInterface
             ->delete(
                 static::getNameWithSchema() . ' AS ' . static::getInstance()->getTableAlias(),
                 $conditions,
-                $returning
+                $returning,
+                static::getPkColumnName()
             );
     }
 

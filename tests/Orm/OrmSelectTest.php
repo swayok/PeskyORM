@@ -8,6 +8,7 @@ namespace PeskyORM\Tests\Orm;
 use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\DbExpr;
+use PeskyORM\Join\OrmJoinConfig;
 use PeskyORM\ORM\FakeTable;
 use PeskyORM\Select\OrmSelect;
 use PeskyORM\Select\Select;
@@ -681,7 +682,6 @@ class OrmSelectTest extends BaseTestCase
             ->columns(['id'])
             ->where([])
             ->having(['VeryLongRelationNameSoItMustBeShortenedButWeNeedAtLeast60Characters.parent_id !=' => null]);
-        $shortAlias = 'tbl_VrLngRltnNmSItMstBShrtnedButWeNeedAtLeast60Characters_1';
         static::assertEquals(
             'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0"'
             . ' LEFT JOIN "admins" AS "' . $shortAlias
@@ -696,11 +696,11 @@ class OrmSelectTest extends BaseTestCase
     {
         $dbSelect = static::getNewSelect()->columns(['id']);
 
-        $joinConfig = \PeskyORM\Join\OrmJoinConfig::create(
+        $joinConfig = new OrmJoinConfig(
             'Test',
             TestingAdminsTable::getInstance(),
             'parent_id',
-            \PeskyORM\Join\OrmJoinConfig::JOIN_INNER,
+            OrmJoinConfig::JOIN_INNER,
             TestingAdminsTable::getInstance(),
             'id'
         );
@@ -727,7 +727,7 @@ class OrmSelectTest extends BaseTestCase
         $colsInSelectForTest = implode(', ', $colsInSelectForTest);
 
         $joinConfig
-            ->setJoinType(\PeskyORM\Join\OrmJoinConfig::JOIN_LEFT)
+            ->setJoinType(OrmJoinConfig::JOIN_LEFT)
             ->setForeignColumnsToSelect('*')
             ->setAdditionalJoinConditions([
                 'email' => 'test@test.ru',
@@ -743,7 +743,7 @@ class OrmSelectTest extends BaseTestCase
 
         $dbSelect = static::getNewSelect()->columns(['id']);
         $joinConfig
-            ->setJoinType(\PeskyORM\Join\OrmJoinConfig::JOIN_RIGHT)
+            ->setJoinType(OrmJoinConfig::JOIN_RIGHT)
             ->setForeignColumnsToSelect(['email']);
         static::assertEquals(
             'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", "tbl_Test_1"."email" AS "col_Test__email_1"'
@@ -755,7 +755,7 @@ class OrmSelectTest extends BaseTestCase
 
         $dbSelect = static::getNewSelect()->columns(['id']);
         $joinConfig
-            ->setJoinType(\PeskyORM\Join\OrmJoinConfig::JOIN_RIGHT)
+            ->setJoinType(OrmJoinConfig::JOIN_RIGHT)
             ->setAdditionalJoinConditions([])
             ->setForeignColumnsToSelect([]);
         static::assertEquals(
@@ -765,7 +765,7 @@ class OrmSelectTest extends BaseTestCase
 
         $dbSelect = static::getNewSelect()->columns(['id']);
         $joinConfig
-            ->setJoinType(\PeskyORM\Join\OrmJoinConfig::JOIN_FULL)
+            ->setJoinType(OrmJoinConfig::JOIN_FULL)
             ->setForeignColumnsToSelect(['email']);
         static::assertEquals(
             'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", "tbl_Test_1"."email" AS "col_Test__email_1" FROM "admins" AS "tbl_Admins_0" FULL JOIN "admins" AS "tbl_Test_1" ON ("tbl_Admins_0"."parent_id" = "tbl_Test_1"."id")',

@@ -203,7 +203,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertTrue(
             $structure::getColumn('parent_id')
                 ->isItAForeignKey()
-        ); //< its not a mistake - it is affected only by existing relation
+        ); //< it is not a mistake - it is affected only by existing relation
         static::assertTrue(
             $structure::getColumn('email')
                 ->isValueMustBeUnique()

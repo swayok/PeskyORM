@@ -1005,7 +1005,7 @@ class RecordValueHelpersTest extends BaseTestCase
         static::assertEquals($message1, RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, 'ups', false));
         static::assertEquals($message2, RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['ups'], false));
         static::assertEquals($message2, RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, ['test', 'ups'], false));
-        // column is nullable so it converts empty string to null -> there should not be any errors with empty string
+        // column is nullable, so it converts empty string to null -> there should not be any errors with empty string
         static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, '', false));
         $column->setConvertEmptyStringToNull(false);
         // and now it will fail
@@ -1041,7 +1041,7 @@ class RecordValueHelpersTest extends BaseTestCase
                 ['one_of_values_is_not_allowed' => 'bad value']
             )
         );
-        // column is nullable so it converts empty string to null -> there should not be any errors with empty string
+        // column is nullable, so it converts empty string to null -> there should not be any errors with empty string
         static::assertEquals([], RecordValueHelpers::isValueWithinTheAllowedValuesOfTheColumn($column, '', false));
         $column->setConvertEmptyStringToNull(false);
         // and now it will fail

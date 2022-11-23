@@ -64,10 +64,8 @@ abstract class BacktraceUtils
         }
         if (isset($item['class'])) {
             $item['function'] = $item['class'] . $item['type'] . $item['function'];
-        } else {
-            if (!isset($item['function'])) {
-                $item['function'] = '';
-            }
+        } elseif (!isset($item['function'])) {
+            $item['function'] = '';
         }
         if (isset($item['args'])) {
             if (is_array($item['args'])) {

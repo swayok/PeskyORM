@@ -7,8 +7,6 @@ namespace PeskyORM\Tests\Core;
 use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
-require_once __DIR__ . '/PostgresAdapterDeleteDataTest.php';
-
 class MysqlAdapterDeleteDataTest extends PostgresAdapterDeleteDataTest
 {
     

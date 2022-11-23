@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\Core;
 
 use PDO;
+use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\DbExpr;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\Data\TestDataForAdminsTable;
@@ -25,7 +26,7 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    protected static function getValidAdapter(): \PeskyORM\Adapter\DbAdapterInterface
+    protected static function getValidAdapter(): DbAdapterInterface
     {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
@@ -39,7 +40,9 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
         $testData1 = ['key' => 'test_key1', 'value' => json_encode('test_value1')];
         $adapter->insert('settings', $testData1);
         $data = PdoUtils::getDataFromStatement(
-            $adapter->query(\PeskyORM\DbExpr::create("SELECT * FROM `settings` WHERE `key` = ``{$testData1['key']}``")),
+            $adapter->query(DbExpr::create(
+                "SELECT * FROM `settings` WHERE `key` = ``{$testData1['key']}``"
+            )),
             PdoUtils::FETCH_FIRST
         );
         static::assertArraySubset($testData1, $data);
@@ -52,7 +55,9 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
             'is_active' => PDO::PARAM_BOOL,
         ]);
         $data = PdoUtils::getDataFromStatement(
-            $adapter->query(\PeskyORM\DbExpr::create("SELECT * FROM `admins` WHERE `id` = ``{$testData2['id']}``")),
+            $adapter->query(DbExpr::create(
+                "SELECT * FROM `admins` WHERE `id` = ``{$testData2['id']}``"
+            )),
             PdoUtils::FETCH_FIRST
         );
         $dataForAssert = $this->convertTestDataForAdminsTableAssert([$testData2])[0];
@@ -105,7 +110,7 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('$columns[0]: value cannot be');
         $adapter = static::getValidAdapter();
-        $adapter->insertMany('settings', [\PeskyORM\DbExpr::create('test')], [['key' => 'value']]);
+        $adapter->insertMany('settings', [DbExpr::create('test')], [['key' => 'value']]);
     }
     
     public function testInvalidColumnsForInsertMany3(): void
@@ -139,7 +144,9 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
         $data = PdoUtils::getDataFromStatement(
             $adapter->query(
                 DbExpr::create(
-                    "SELECT * FROM `settings` WHERE (`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)) ORDER BY `key`",
+                    "SELECT * FROM `settings`"
+                    . " WHERE (`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``))"
+                    . " ORDER BY `key`",
                     false
                 )
             ),
@@ -149,7 +156,9 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
         static::assertArraySubset($testData1[1], $data[1]);
         $data = $adapter->query(
             DbExpr::create(
-                "SELECT * FROM `settings` WHERE (`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)) ORDER BY `key`",
+                "SELECT * FROM `settings`"
+                . " WHERE (`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``))"
+                . " ORDER BY `key`",
                 false
             ),
             PdoUtils::FETCH_ALL
@@ -167,7 +176,9 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
         $data = PdoUtils::getDataFromStatement(
             $adapter->query(
                 DbExpr::create(
-                    "SELECT * FROM `admins` WHERE `id` IN (``{$testData2[0]['id']}``,``{$testData2[1]['id']}``) ORDER BY `id`"
+                    "SELECT * FROM `admins`"
+                    . " WHERE `id` IN (``{$testData2[0]['id']}``,``{$testData2[1]['id']}``)"
+                    . " ORDER BY `id`"
                 )
             ),
             PdoUtils::FETCH_ALL
@@ -186,24 +197,24 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
         $adapter = static::getValidAdapter();
         TestingApp::clearTables($adapter);
         /** @var array $return */
-        $testData3 = [
+        $testData1 = [
             ['key' => 'test_key_returning2', 'value' => json_encode('test_value1')],
             ['key' => 'test_key_returning3', 'value' => json_encode('test_value1')],
         ];
-        $return = $adapter->insertMany('settings', ['key', 'value'], $testData3, [], true);
+        $return = $adapter->insertMany('settings', ['key', 'value'], $testData1, [], true);
         static::assertCount(2, $return);
         static::assertArrayHasKey('id', $return[0]);
-        static::assertArraySubset($testData3[0], $return[0]);
+        static::assertArraySubset($testData1[0], $return[0]);
         static::assertGreaterThanOrEqual(1, $return[0]['id']);
         static::assertArrayHasKey('id', $return[1]);
-        static::assertArraySubset($testData3[1], $return[1]);
+        static::assertArraySubset($testData1[1], $return[1]);
         static::assertGreaterThanOrEqual(1, $return[1]['id']);
         
-        $testData4 = [
+        $testData2 = [
             ['key' => 'test_key_returning4', 'value' => json_encode('test_value1')],
             ['key' => 'test_key_returning5', 'value' => json_encode('test_value1')],
         ];
-        $return = $adapter->insertMany('settings', ['key', 'value'], $testData4, [], ['id']);
+        $return = $adapter->insertMany('settings', ['key', 'value'], $testData2, [], ['id']);
         static::assertCount(2, $return);
         static::assertArrayHasKey('id', $return[0]);
         static::assertArrayNotHasKey('key', $return[0]);
@@ -213,6 +224,25 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
         static::assertArrayNotHasKey('key', $return[1]);
         static::assertArrayNotHasKey('value', $return[1]);
         static::assertGreaterThanOrEqual(1, $return[1]['id']);
+    }
+
+    public function testInsertOneReturning(): void
+    {
+        $adapter = static::getValidAdapter();
+        TestingApp::clearTables($adapter);
+        $testData1 = ['key' => 'test_key_returning2', 'value' => json_encode('test_value1')];
+        $record = $adapter->insert('settings', $testData1, [], true);
+        static::assertNotEmpty($record);
+        static::assertArrayHasKey('id', $record);
+        static::assertGreaterThanOrEqual(1, $record['id']);
+        static::assertArraySubset($testData1, $record);
+
+        $testData2 = ['key' => 'test_key_returning4', 'value' => json_encode('test_value1')];
+        $record = $adapter->insert('settings', $testData2, [], ['id']);
+        static::assertNotEmpty($record);
+        static::assertCount(1, $record);
+        static::assertArrayHasKey('id', $record);
+        static::assertGreaterThanOrEqual(1, $record['id']);
     }
     
 }

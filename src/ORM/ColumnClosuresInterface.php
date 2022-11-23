@@ -9,7 +9,7 @@ interface ColumnClosuresInterface
     
     /**
      * Set value. Should also normalize and validate value.
-     * $value may be instance of AbstractSelect, UploadedFile or DbExpr classes but
+     * $value may be an instance of AbstractSelect, UploadedFile or DbExpr classes but
      * not instance of RecordValue class.
      * $trustDataReceivedFromDb = true tells setter that $newValue is trusted when $isFromDb === true.
      * This usually means that normalization and validation of $newValue is not needed.
@@ -18,7 +18,7 @@ interface ColumnClosuresInterface
     
     /**
      * Slightly modify value before validation and value setter.
-     * $value may be instance of AbstractSelect, UploadedFile or DbExpr classes but
+     * $value may be an instance of AbstractSelect, UploadedFile or DbExpr classes but
      * not instance of RecordValue class.
      * Uses $column->isEmptyStringMustBeConvertedToNull(), $column->isValueLowercasingRequired()
      * and $column->isValueTrimmingRequired().
@@ -45,20 +45,20 @@ interface ColumnClosuresInterface
     /**
      * Extends value validation in addition to valueValidator.
      * Returns array of error messages or empty array if no errors.
-     * $value may be instance of AbstractSelect, UploadedFile or DbExpr classes but
+     * $value may be an instance of AbstractSelect, UploadedFile or DbExpr classes but
      * not instance of RecordValue class.
      */
     public static function valueValidatorExtender(mixed $value, bool $isFromDb, Column $column): array;
     
     /**
      * Validates if value is allowed.
-     * $value may be instance of AbstractSelect, UploadedFile, DbExpr or RecordValue classes.
+     * $value may be an instance of AbstractSelect, UploadedFile, DbExpr or RecordValue classes.
      */
     public static function valueIsAllowedValidator(mixed $value, bool $isFromDb, Column $column): array;
     
     /**
      * Normalize value to fit column's data type.
-     * $value may be instance of AbstractSelect, UploadedFile or DbExpr classes but
+     * $value may be an instance of AbstractSelect, UploadedFile or DbExpr classes but
      * not instance of RecordValue class.
      */
     public static function valueNormalizer(mixed $value, bool $isFromDb, Column $column): mixed;

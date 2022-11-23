@@ -63,7 +63,7 @@ class TraceablePDO extends PDO
      * Fetch extended error information associated with the last operation on the database handle
      *
      * @link   http://php.net/manual/en/pdo.errorinfo.php
-     * @return array PDO::errorInfo returns an array of error information
+     * @return string|null SQL error code or null
      */
     public function errorCode(): ?string
     {
@@ -74,7 +74,7 @@ class TraceablePDO extends PDO
      * Fetch extended error information associated with the last operation on the database handle
      *
      * @link   http://php.net/manual/en/pdo.errorinfo.php
-     * @return array PDO::errorInfo returns an array of error information
+     * @return array [0 => string (SQL error code), 1 => int (PDO error code), 2 => 'Message']
      */
     public function errorInfo(): array
     {

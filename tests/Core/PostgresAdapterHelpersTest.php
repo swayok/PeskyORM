@@ -10,6 +10,7 @@ use PeskyORM\DbExpr;
 use PeskyORM\Join\JoinConfig;
 use PeskyORM\Profiling\PdoProfilingHelper;
 use PeskyORM\Profiling\TraceablePDO;
+use PeskyORM\Select\Select;
 use PeskyORM\Tests\PeskyORMTest\Adapter\PostgresTesting;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
@@ -115,8 +116,8 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidColumns4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$columns[0]: value cannot be instance of ' . \PeskyORM\DbExpr::class);
-        DbAdapterMethodArgumentUtils::guardColumnsListArg([\PeskyORM\DbExpr::create('test')], false);
+        $this->expectExceptionMessage('$columns[0]: value cannot be instance of ' . DbExpr::class);
+        DbAdapterMethodArgumentUtils::guardColumnsListArg([DbExpr::create('test')], false);
     }
     
     public function testInvalidConditions1(): void
@@ -252,7 +253,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $this->expectExceptionMessage('Argument #2 ($pkName) must be of type string');
         /** @noinspection PhpStrictTypeCheckingInspection */
         /** @noinspection PhpParamsInspection */
-        DbAdapterMethodArgumentUtils::guardPkNameArg(static::getValidAdapter(), \PeskyORM\DbExpr::create('test'));
+        DbAdapterMethodArgumentUtils::guardPkNameArg(static::getValidAdapter(), DbExpr::create('test'));
     }
     
     public function testValidArgs(): void
@@ -326,7 +327,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         
         $operator = $adapter->normalizeConditionOperator('IN', DbExpr::create('SELECT'));
         static::assertEquals('IN', $operator);
-        $operator = $adapter->normalizeConditionOperator('NOT IN', \PeskyORM\DbExpr::create('SELECT'));
+        $operator = $adapter->normalizeConditionOperator('NOT IN', DbExpr::create('SELECT'));
         static::assertEquals('NOT IN', $operator);
     }
     
@@ -483,10 +484,10 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $adapter = self::getValidAdapter();
         
         $query = $adapter->makeSelectQuery('test_table')
-            ->columns(['col1', \PeskyORM\DbExpr::create('`col2` as `col22`')]);
+            ->columns(['col1', DbExpr::create('`col2` as `col22`')]);
         static::assertEquals(
             $adapter->quoteDbExpr(
-                \PeskyORM\DbExpr::create(
+                DbExpr::create(
                     'SELECT `tbl_TestTable_0`.`col1` AS `col_TestTable__col1_0`,'
                     . ' (`col2` as `col22`)'
                     . ' FROM `test_table` AS `tbl_TestTable_0`',
@@ -499,7 +500,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $query = $adapter->makeSelectQuery('test_table', DbExpr::create('WHERE `col1` > ``0``', false));
         static::assertEquals(
             $adapter->quoteDbExpr(
-                \PeskyORM\DbExpr::create(
+                DbExpr::create(
                     'SELECT `tbl_TestTable_0`.* FROM `test_table` AS `tbl_TestTable_0` WHERE `col1` > ``0``',
                     false
                 )
@@ -526,7 +527,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         ]);
         static::assertEquals(
             $adapter->quoteDbExpr(
-                \PeskyORM\DbExpr::create(
+                DbExpr::create(
                     'SELECT `tbl_TestTable_0`.* FROM `test_table` AS `tbl_TestTable_0`'
                     . ' WHERE `tbl_TestTable_0`.`col1` > ``0``'
                     . ' AND `tbl_TestTable_0`.`col2` < ``1``'
@@ -538,8 +539,8 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         );
 
         $options = [
-            QueryBuilderUtils::QUERY_PART_WITH => ['test' => \PeskyORM\Select\Select::from('some_table', $adapter)],
-            QueryBuilderUtils::QUERY_PART_JOINS => [new \PeskyORM\Join\JoinConfig('Test', 'test', 'id', JoinConfig::JOIN_INNER, 'other', 'id')],
+            QueryBuilderUtils::QUERY_PART_WITH => ['test' => Select::from('some_table', $adapter)],
+            QueryBuilderUtils::QUERY_PART_JOINS => [new JoinConfig('Test', 'test', 'id', JoinConfig::JOIN_INNER, 'other', 'id')],
             QueryBuilderUtils::QUERY_PART_GROUP => [DbExpr::create('[grouping]')],
             QueryBuilderUtils::QUERY_PART_HAVING => [DbExpr::create('[having filters]')],
             QueryBuilderUtils::QUERY_PART_ORDER => [DbExpr::create('[ordering]')],
@@ -552,7 +553,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         ));
         static::assertEquals(
             $adapter->quoteDbExpr(
-                \PeskyORM\DbExpr::create(
+                DbExpr::create(
                     'WITH `test` AS (SELECT `tbl_SomeTable_0`.* FROM `some_table` AS `tbl_SomeTable_0`)'
                     . ' SELECT `tbl_TestTable_0`.*, `tbl_Test_1`.* FROM `test_table` AS `tbl_TestTable_0`'
                     . ' INNER JOIN `other` AS `tbl_Test_1`'
@@ -569,7 +570,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $query = $adapter->makeSelectQuery('test_table', $options);
         static::assertEquals(
             $adapter->quoteDbExpr(
-                \PeskyORM\DbExpr::create(
+                DbExpr::create(
                     'WITH `test` AS (SELECT `tbl_SomeTable_1`.* FROM `some_table` AS `tbl_SomeTable_1`)'
                     . ' SELECT `tbl_TestTable_0`.*, `tbl_Test_1`.* FROM `test_table` AS `tbl_TestTable_0`'
                     . ' INNER JOIN `other` AS `tbl_Test_1` ON (`tbl_Test_1`.`id` = `tbl_Test_1`.`id`)'
@@ -760,12 +761,12 @@ class PostgresAdapterHelpersTest extends BaseTestCase
             $adapter->assembleConditionValue('str1', '=', true)
         );
         static::assertEquals(
-            $adapter->quoteValue(\PeskyORM\DbExpr::create('11')) . ' AND ' . $adapter->quoteValue(DbExpr::create('21')),
-            $adapter->assembleConditionValue([\PeskyORM\DbExpr::create('11'), \PeskyORM\DbExpr::create('21')], 'NOT BETWEEN')
+            $adapter->quoteValue(DbExpr::create('11')) . ' AND ' . $adapter->quoteValue(DbExpr::create('21')),
+            $adapter->assembleConditionValue([DbExpr::create('11'), DbExpr::create('21')], 'NOT BETWEEN')
         );
         static::assertEquals(
             '(' . $adapter->quoteValue(11) . ', ' . $adapter->quoteValue(12) . ', ' . $adapter->quoteValue(DbExpr::create('13')) . ')',
-            $adapter->assembleConditionValue([11, 12, \PeskyORM\DbExpr::create('13')], '=')
+            $adapter->assembleConditionValue([11, 12, DbExpr::create('13')], '=')
         );
         static::assertEquals(
             $adapter->quoteValue('string'),
@@ -873,6 +874,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         );
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function testCustomOperatorAssembler(): void
     {
         $adapter = static::getValidAdapter();
@@ -964,7 +966,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         static::assertGreaterThan(0.0, $profilingInfo['max_memory_usage']);
         static::assertIsArray($profilingInfo['statements']);
         static::assertNotEmpty($profilingInfo['statements']);
-        foreach ($profilingInfo['statements'] as $connectionName => $statements) {
+        foreach ($profilingInfo['statements'] as $statements) {
             static::assertIsArray($statements);
             foreach ($statements as $statementInfo) {
                 static::assertArrayHasKey('sql', $statementInfo);

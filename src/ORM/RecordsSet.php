@@ -277,7 +277,7 @@ class RecordsSet extends RecordsArray
     }
     
     /**
-     * This can speedup count query for simple cases when joins are not nested
+     * This can speed up a count query for simple cases when joins are not nested
      */
     public function setIgnoreLeftJoinsForCount(bool $ignoreLeftJoinsForCount): static
     {

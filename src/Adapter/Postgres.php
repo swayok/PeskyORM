@@ -6,7 +6,6 @@ namespace PeskyORM\Adapter;
 
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\DbExpr;
-use PeskyORM\Exception\DbException;
 use PeskyORM\Exception\DbInsertQueryException;
 use PeskyORM\Select\SelectQueryBuilderInterface;
 
@@ -37,10 +36,10 @@ class Postgres extends DbAdapterAbstract
     protected bool $inTransaction = false;
 
     static private array $conditionAssemblerForOperator = [
-        '?|' => 'assembleConditionValuesExistsInJson',
-        '?&' => 'assembleConditionValuesExistsInJson',
-        '@>' => 'assembleConditionJsonContainsJson',
-        '<@' => 'assembleConditionJsonContainsJson',
+        '?|' => 'assembleValuesExistInJsonCondition',
+        '?&' => 'assembleValuesExistInJsonCondition',
+        '@>' => 'assembleJsonContainsJsonCondition',
+        '<@' => 'assembleJsonContainsJsonCondition',
     ];
 
     /**
@@ -179,48 +178,67 @@ class Postgres extends DbAdapterAbstract
 
     /**
      * {@inheritDoc}
-     * @throws DbException
+     * @throws DbInsertQueryException
      */
-    protected function resolveQueryWithReturningColumns(
-        string $query,
-        string $tableNameWithPossibleAlias,
+    protected function resolveInsertOneQueryWithReturningColumns(
+        string $insertQuery,
+        string $table,
+        array $data,
+        array $dataTypes,
+        array $returning,
+        string $pkName
+    ): array {
+        $statement = $this->runQueryThatReturnsData($insertQuery, $returning);
+        $this->assertInsertedRowsCount($table, 1, $statement->rowCount());
+        return $this->getDataFromStatement($statement, static::FETCH_FIRST);
+    }
+
+    /**
+     * {@inheritDoc}
+     * @throws DbInsertQueryException
+     */
+    protected function resolveInsertManyQueryWithReturningColumns(
+        string $insertQuery,
+        string $table,
         array $columns,
         array $data,
         array $dataTypes,
         array $returning,
-        ?string $pkName,
-        string $operation
+        string $pkName
     ): array {
-
-        $query .= ' RETURNING ' . (empty($returning) ? '*' : $this->buildColumnsList($returning, false));
-
-        $statement = $this->query($query);
-
-        if (in_array($operation, [static::OPERATION_INSERT_ONE, static::OPERATION_INSERT_MANY], true)) {
-            if (!$statement->rowCount()) {
-                throw new DbInsertQueryException(
-                    "Inserting data into table {$tableNameWithPossibleAlias} resulted in modification of 0 rows."
-                    . ' Query: ' . $this->getLastQuery(),
-                );
-            }
-
-            if (
-                $operation === static::OPERATION_INSERT_MANY
-                && count($data) !== $statement->rowCount()
-            ) {
-                throw new DbInsertQueryException(
-                    "Inserting data into table {$tableNameWithPossibleAlias} resulted in"
-                    . " modification of {$statement->rowCount()} rows while "
-                    . count($data) . ' rows should be inserted. Query: ' . $this->getLastQuery(),
-                );
-            }
-        }
-
-        if ($operation === static::OPERATION_INSERT_ONE) {
-            return $this->getDataFromStatement($statement, static::FETCH_FIRST);
-        }
-
+        $statement = $this->runQueryThatReturnsData($insertQuery, $returning);
+        $this->assertInsertedRowsCount($table, count($data), $statement->rowCount());
         return $this->getDataFromStatement($statement, static::FETCH_ALL);
+    }
+
+    protected function resolveUpdateQueryWithReturningColumns(
+        string $updateQuery,
+        string $assembledConditions,
+        string $table,
+        array $updates,
+        array $dataTypes,
+        array $returning,
+        string $pkName
+    ): array {
+        $statement = $this->runQueryThatReturnsData($updateQuery, $returning);
+        return $this->getDataFromStatement($statement, static::FETCH_ALL);
+    }
+
+    protected function resolveDeleteQueryWithReturningColumns(
+        string $deleteQuery,
+        string $assembledConditions,
+        string $table,
+        array $returning,
+        string $pkName
+    ): array {
+        $statement = $this->runQueryThatReturnsData($deleteQuery, $returning);
+        return $this->getDataFromStatement($statement, static::FETCH_ALL);
+    }
+
+    protected function runQueryThatReturnsData(string $query, array $returning): \PDOStatement
+    {
+        $columnsList = empty($returning) ? '*' : $this->buildColumnsList($returning, false);
+        return $this->query($query . ' RETURNING ' . $columnsList, static::FETCH_STATEMENT);
     }
 
     public function quoteJsonSelectorExpression(array $sequence): string
@@ -248,7 +266,7 @@ class Postgres extends DbAdapterAbstract
         return null;
     }
 
-    protected function assembleConditionValuesExistsInJson(
+    protected function assembleValuesExistInJsonCondition(
         string $quotedColumn,
         string $normalizedOperator,
         string|int|float|bool|array|DbExpr|SelectQueryBuilderInterface|null $rawValue,
@@ -274,7 +292,7 @@ class Postgres extends DbAdapterAbstract
         return $this->assembleConditionFromPreparedParts($quotedColumn, $normalizedOperator, $value);
     }
 
-    protected function assembleConditionJsonContainsJson(
+    protected function assembleJsonContainsJsonCondition(
         string $quotedColumn,
         string $operator,
         string|int|float|bool|array|DbExpr|SelectQueryBuilderInterface|null $rawValue,

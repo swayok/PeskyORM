@@ -1,9 +1,8 @@
 <?php
 /** @noinspection PhpFullyQualifiedNameUsageInspection */
-
 /** @noinspection AutoloadingIssuesInspection */
-
 /** @noinspection PhpUnused */
+declare(strict_types=1);
 
 abstract class PeskyORMIdeHelperRecord extends \PeskyORM\ORM\Record
 {

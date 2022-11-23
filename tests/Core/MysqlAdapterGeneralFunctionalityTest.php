@@ -6,6 +6,7 @@ namespace PeskyORM\Tests\Core;
 
 use PDO;
 use PeskyORM\Adapter\Mysql;
+use PeskyORM\DbExpr;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 use ReflectionClass;
@@ -223,7 +224,7 @@ class MysqlAdapterGeneralFunctionalityTest extends BaseTestCase
         /** @noinspection SqlWithoutWhere */
         static::assertEquals(
             'DELETE FROM `table1` WHERE `col1` = \'value1\'',
-            $adapter->quoteDbExpr(\PeskyORM\DbExpr::create('DELETE FROM `table1` WHERE `col1` = ``value1``'))
+            $adapter->quoteDbExpr(DbExpr::create('DELETE FROM `table1` WHERE `col1` = ``value1``'))
         );
     }
     

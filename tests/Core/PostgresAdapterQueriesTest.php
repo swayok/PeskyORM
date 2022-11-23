@@ -38,7 +38,7 @@ class PostgresAdapterQueriesTest extends BaseTestCase
         $adapter = static::getValidAdapter();
         $adapter->begin();
         $adapter->exec(
-            \PeskyORM\DbExpr::create('INSERT INTO `settings` (`key`, `value`) VALUES (``test_key``, ``test_value``)')
+            DbExpr::create('INSERT INTO `settings` (`key`, `value`) VALUES (``test_key``, ``test_value``)')
         );
         $adapter->rollBack();
     }
@@ -56,8 +56,8 @@ class PostgresAdapterQueriesTest extends BaseTestCase
     public function testQueriesAndTransactions(): void
     {
         $adapter = static::getValidAdapter();
-        $insertQuery = \PeskyORM\DbExpr::create('INSERT INTO `settings` (`key`, `value`) VALUES(``test_key``, ``"test_value"``)');
-        $selectQuery = \PeskyORM\DbExpr::create('SELECT * FROM `settings` WHERE `key` = ``test_key``');
+        $insertQuery = DbExpr::create('INSERT INTO `settings` (`key`, `value`) VALUES(``test_key``, ``"test_value"``)');
+        $selectQuery = DbExpr::create('SELECT * FROM `settings` WHERE `key` = ``test_key``');
         $adapter->begin();
         $rowsAffected = $adapter->exec($insertQuery);
         static::assertEquals(

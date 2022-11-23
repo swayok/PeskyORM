@@ -46,8 +46,9 @@ class PostgresAdapterUpdateDataTest extends BaseTestCase
         $adapter->update('settings', $update1, DbExpr::create("`key` = ``{$testData1[0]['key']}``"));
         static::assertEquals(
             $adapter->quoteDbExpr(
-                \PeskyORM\DbExpr::create(
-                    "UPDATE `settings` SET `value`=``\"test_value1.1\"`` WHERE (`key` = ``{$testData1[0]['key']}``)",
+                DbExpr::create(
+                    "UPDATE `settings` SET `value`=``\"test_value1.1\"``"
+                    . " WHERE (`key` = ``{$testData1[0]['key']}``)",
                     false
                 )
             ),
@@ -55,8 +56,10 @@ class PostgresAdapterUpdateDataTest extends BaseTestCase
         );
         $data = PdoUtils::getDataFromStatement(
             $adapter->query(
-                \PeskyORM\DbExpr::create(
-                    "SELECT * FROM `settings` WHERE (`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)) ORDER BY `key`",
+                DbExpr::create(
+                    "SELECT * FROM `settings`"
+                    . " WHERE (`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``))"
+                    . " ORDER BY `key`",
                     false
                 )
             ),
@@ -84,8 +87,10 @@ class PostgresAdapterUpdateDataTest extends BaseTestCase
         );
         $data = PdoUtils::getDataFromStatement(
             $adapter->query(
-                \PeskyORM\DbExpr::create(
-                    "SELECT * FROM `admins` WHERE `id` IN (``{$testData2[0]['id']}``,``{$testData2[1]['id']}``) ORDER BY `id`"
+                DbExpr::create(
+                    "SELECT * FROM `admins`"
+                    . " WHERE `id` IN (``{$testData2[0]['id']}``,``{$testData2[1]['id']}``)"
+                    . " ORDER BY `id`"
                 )
             ),
             PdoUtils::FETCH_ALL
@@ -99,6 +104,40 @@ class PostgresAdapterUpdateDataTest extends BaseTestCase
         static::assertEquals($dataForAssert[1], $data[1]);
         static::assertEquals($dataForAssert[1]['is_active'], $data[1]['is_active']);
         static::assertEquals($dataForAssert[1]['parent_id'], $data[1]['parent_id']);
+    }
+
+    public function testUpdateReturning(): void {
+        $adapter = static::getValidAdapter();
+        TestingApp::clearTables($adapter);
+        $testData1 = [
+            ['key' => 'test_key1', 'value' => json_encode('test_value1')],
+            ['key' => 'test_key2', 'value' => json_encode('test_value2')],
+        ];
+        $insertedRecords = $adapter->insertMany('settings', ['key', 'value'], $testData1, [], true);
+        $update1 = ['value' => json_encode('test_value1.1')];
+        $updatedRecords = $adapter->update(
+            'settings',
+            $update1,
+            ['key' => $insertedRecords[0]['key']],
+            [],
+            true
+        );
+        static::assertCount(1, $updatedRecords);
+        static::assertArraySubset(array_replace($insertedRecords[0], $update1), $updatedRecords[0]);
+
+        $update2 = ['value' => json_encode('test_value2.2')];
+        $updatedRecords = $adapter->update(
+            'settings',
+            $update2,
+            ['key' => $insertedRecords[1]['key']],
+            [],
+            ['id', 'value']
+        );
+        static::assertCount(1, $updatedRecords);
+        static::assertCount(2, $updatedRecords[0]);
+        static::assertArrayHasKey('id', $updatedRecords[0]);
+        static::assertEquals($insertedRecords[1]['id'], $updatedRecords[0]['id']);
+        static::assertEquals($update2['value'], $updatedRecords[0]['value']);
     }
     
 }

@@ -100,8 +100,6 @@ class DbConnectionsManager
         if (empty($adapterName) || !isset(self::$adapters[$adapterName])) {
             throw new \InvalidArgumentException("DB adapter with name [$adapterName] not found");
         }
-        /** @var DbAdapterInterface $adapterClass */
-        $adapterClass = static::$adapters[$adapterName];
         /** @var DbConnectionConfigInterface $configClass */
         $configClass = static::$configClasses[$adapterName];
         $connectionConfig = $configClass::fromArray($connectionInfo, $connectionName);

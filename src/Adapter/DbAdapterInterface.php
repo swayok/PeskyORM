@@ -8,6 +8,7 @@ use PDO;
 use PDOStatement;
 use PeskyORM\Config\Connection\DbConnectionConfigInterface;
 use PeskyORM\DbExpr;
+use PeskyORM\Exception\DbAdapterDoesNotSupportFeature;
 use PeskyORM\ORM\RecordInterface;
 use PeskyORM\Select\SelectQueryBuilderInterface;
 
@@ -78,6 +79,7 @@ interface DbAdapterInterface
      *      function(string $payload): boolean { return true; } - if it returns false: listener will stop
      * @param int $sleepIfNoNotificationMs - miliseconds to sleep if there were no notifications last time
      * @param int $sleepAfterNotificationMs - miliseconds to sleep after notification consumed
+     * @throws DbAdapterDoesNotSupportFeature when functionality is not supported by adapter
      */
     public function listen(
         string $channel,
@@ -106,7 +108,7 @@ interface DbAdapterInterface
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
      *          - array: list of columns names to return values for
-     * @param string $pkName - Name of primary key for $returning in DB drivers that support only getLastInsertId()
+     * @param string $pkName - name of primary key for $returning in DB drivers that support only getLastInsertId()
      * @return array|null - array returned only if $returning is not empty
      */
     public function insert(
@@ -128,7 +130,7 @@ interface DbAdapterInterface
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
      *          - array: list of columns names to return values for
-     * @param string $pkName - Name of primary key for $returning in DB drivers that support only getLastInsertId()
+     * @param string $pkName - name of primary key for $returning in DB drivers that support only getLastInsertId()
      * @return array|null - array returned only if $returning is not empty
      */
     public function insertMany(
@@ -151,6 +153,7 @@ interface DbAdapterInterface
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
      *          - array: list of columns names to return values for
+     * @param string $pkName - name of primary key for $returning in DB drivers that support only getLastInsertId()
      * @return array|int - information about update execution
      *          - int: number of modified rows (when $returning === false)
      *          - array: modified records (when $returning !== false)
@@ -160,19 +163,26 @@ interface DbAdapterInterface
         array $data,
         array|DbExpr $conditions,
         array $dataTypes = [],
-        bool|array $returning = false
+        bool|array $returning = false,
+        string $pkName = 'id'
     ): array|int;
 
     /**
      * @param string $table
-     * @param array|\PeskyORM\DbExpr $conditions - WHERE conditions
+     * @param array|DbExpr $conditions - WHERE conditions
      * @param bool|array $returning - return some data back after $data inserted to $table
      *          - true: return values for all columns of inserted table row
      *          - false: do not return anything
      *          - array: list of columns names to return values for
+     * @param string $pkName - name of primary key for $returning in DB drivers that support only getLastInsertId()
      * @return array|int - int: number of deleted records | array: returned only if $returning is not empty
      */
-    public function delete(string $table, array|DbExpr $conditions, bool|array $returning = false): array|int;
+    public function delete(
+        string $table,
+        array|DbExpr $conditions,
+        bool|array $returning = false,
+        string $pkName = 'id'
+    ): array|int;
 
     public function inTransaction(): bool;
 
@@ -286,7 +296,7 @@ interface DbAdapterInterface
      * The query is something like: "SELECT $columns FROM $table $conditionsAndOptions"
      * @param string $table
      * @param array $columns
-     * @param \PeskyORM\DbExpr|array|null $conditionsAndOptions - see makeSelectQuery() for details
+     * @param DbExpr|array|null $conditionsAndOptions - see makeSelectQuery() for details
      * @see SelectQueryBuilderInterface::columns() for $columns arg value possibilities
      * @see DbAdapterInterface::makeSelectQuery() for $conditionsAndOptions arg value explanation
      */

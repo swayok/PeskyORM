@@ -16,8 +16,9 @@ abstract class DbQuoter
      * Names format:
      *  1. 'table', 'column', 'TableAlias'
      *  2. 'TableAlias.column' - quoted like '`TableAlias`.`column`'
-     * @param \PeskyORM\Adapter\DbAdapterInterface $adapter
+     * @param DbAdapterInterface $adapter
      * @param string $name - DB entity name to quote
+     * @param string $dbEntityQuote - DB entity quotation symbol
      * @return string
      * @throws \InvalidArgumentException
      */

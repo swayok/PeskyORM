@@ -18,11 +18,6 @@ class PostgresTesting extends Postgres
         DbAdapterMethodArgumentUtils::guardPkNameArg($this, $pkName);
     }
     
-    public function quoteJsonSelectorExpression(array $sequence): string
-    {
-        return parent::quoteJsonSelectorExpression($sequence);
-    }
-
     public function isValidJsonSelector(string $name): bool
     {
         return parent::isValidJsonSelector($name);

@@ -205,13 +205,13 @@ class TempRecord implements RecordInterface
             || in_array('*', $columnsNames, true)
         ) {
             return $this->data;
-        } else {
-            $ret = [];
-            foreach ($columnsNames as $key) {
-                $ret[$key] = $this->getValue($key);
-            }
-            return $ret;
         }
+
+        $ret = [];
+        foreach ($columnsNames as $key) {
+            $ret[$key] = $this->getValue($key);
+        }
+        return $ret;
     }
     
     public function toArrayWithoutFiles(

@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Core;
 
-require_once __DIR__ . '/PostgresAdapterSelectDataTest.php';
-
 use InvalidArgumentException;
+use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Select\Select;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 class MysqlAdapterSelectDataTest extends PostgresAdapterSelectDataTest
 {
     
-    protected static function getValidAdapter(): \PeskyORM\Adapter\DbAdapterInterface
+    protected static function getValidAdapter(): DbAdapterInterface
     {
         return TestingApp::getMysqlConnection();
     }

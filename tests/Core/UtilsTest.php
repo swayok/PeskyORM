@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Core;
 
+use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\DbExpr;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
@@ -14,22 +15,22 @@ use Swayok\Utils\Set;
 
 class UtilsTest extends BaseTestCase
 {
-    
+
     public static function setUpBeforeClass(): void
     {
         TestingApp::clearTables(static::getValidAdapter());
     }
-    
+
     public static function tearDownAfterClass(): void
     {
         TestingApp::clearTables(static::getValidAdapter());
     }
-    
+
     protected function tearDown(): void
     {
         TestingApp::clearTables(static::getValidAdapter());
     }
-    
+
     protected static function fillTables(): array
     {
         $data = static::getTestDataForAdminsTableInsert();
@@ -37,14 +38,14 @@ class UtilsTest extends BaseTestCase
             ->insertMany('admins', array_keys($data[0]), $data);
         return ['admins' => $data];
     }
-    
+
     protected static function getValidAdapter(): Postgres
     {
         $adapter = TestingApp::getPgsqlConnection();
         $adapter->rememberTransactionQueries = false;
         return $adapter;
     }
-    
+
     public static function getTestDataForAdminsTableInsert(): array
     {
         return [
@@ -86,7 +87,7 @@ class UtilsTest extends BaseTestCase
             ],
         ];
     }
-    
+
     public function convertTestDataForAdminsTableAssert($data)
     {
         foreach ($data as &$item) {
@@ -97,7 +98,7 @@ class UtilsTest extends BaseTestCase
         }
         return $data;
     }
-    
+
     public function testInvalidGetDataFromStatement1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
@@ -105,12 +106,12 @@ class UtilsTest extends BaseTestCase
         $statement = static::getValidAdapter()->query(DbExpr::create('SELECT 1'));
         PdoUtils::getDataFromStatement($statement, '???');
     }
-    
+
     public function testGetDataFromStatement(): void
     {
         $testData = $this->convertTestDataForAdminsTableAssert(static::fillTables()['admins']);
         $statement = static::getValidAdapter()
-            ->query(\PeskyORM\DbExpr::create('SELECT * FROM `admins`'));
+            ->query(DbExpr::create('SELECT * FROM `admins`'));
         static::assertEquals(
             $testData,
             PdoUtils::getDataFromStatement($statement, PdoUtils::FETCH_ALL)
@@ -134,7 +135,7 @@ class UtilsTest extends BaseTestCase
             PdoUtils::getDataFromStatement($statement, PdoUtils::FETCH_VALUE)
         );
         $statement = static::getValidAdapter()
-            ->query(\PeskyORM\DbExpr::create('SELECT * FROM `admins` WHERE `id` < ``0``'));
+            ->query(DbExpr::create('SELECT * FROM `admins` WHERE `id` < ``0``'));
         static::assertEquals([], PdoUtils::getDataFromStatement($statement, PdoUtils::FETCH_ALL));
         $statement->closeCursor();
         $statement->execute();
@@ -146,63 +147,88 @@ class UtilsTest extends BaseTestCase
         $statement->execute();
         static::assertEquals(null, PdoUtils::getDataFromStatement($statement, PdoUtils::FETCH_VALUE));
     }
-    
+
     public function testInvalidAssembleWhereConditionsFromArray1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$glue argument must be \"AND\" or \"OR\"");
-        QueryBuilderUtils::assembleWhereConditionsFromArray(static::getValidAdapter(), [], function () {
-        }, 'wow');
+        QueryBuilderUtils::assembleWhereConditionsFromArray(
+            static::getValidAdapter(),
+            [],
+            static function () {
+            },
+            'wow'
+        );
     }
-    
+
     public function testInvalidAssembleWhereConditionsFromArray3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage(
             "\$conditions argument may contain only objects of class DbExpr or AbstractSelect. Other objects are forbidden. Key: 0"
         );
-        QueryBuilderUtils::assembleWhereConditionsFromArray(static::getValidAdapter(), [$this], function () {
-        });
+        QueryBuilderUtils::assembleWhereConditionsFromArray(
+            static::getValidAdapter(),
+            [$this],
+            static function () {
+            }
+        );
     }
-    
+
     public function testInvalidAssembleWhereConditionsFromArray4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Empty column name detected in \$conditions argument");
-        QueryBuilderUtils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['' => 'value'], function () {
-        });
+        QueryBuilderUtils::assembleWhereConditionsFromArray(
+            static::getValidAdapter(),
+            ['' => 'value'],
+            static function () {
+            }
+        );
     }
-    
+
     public function testInvalidAssembleWhereConditionsFromArray5(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Empty column name detected in \$conditions argument");
-        QueryBuilderUtils::assembleWhereConditionsFromArray(static::getValidAdapter(), [' =' => ['value']], function () {
-        });
+        QueryBuilderUtils::assembleWhereConditionsFromArray(
+            static::getValidAdapter(),
+            [' =' => ['value']],
+            static function () {
+            }
+        );
     }
-    
+
     public function testInvalidAssembleWhereConditionsFromArray6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Empty column name detected in \$conditions argument");
-        QueryBuilderUtils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['=' => ['value']], function ($quotedColumn) {
-            return $quotedColumn;
-        });
+        QueryBuilderUtils::assembleWhereConditionsFromArray(
+            static::getValidAdapter(),
+            ['=' => ['value']],
+            static function ($quotedColumn) {
+                return $quotedColumn;
+            }
+        );
     }
-    
+
     public function testInvalidAssembleWhereConditionsFromArray7(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Condition operator [LIKE] does not support list of values");
-        QueryBuilderUtils::assembleWhereConditionsFromArray(static::getValidAdapter(), ['col1 LIKE' => ['value']], function ($quotedColumn) {
-            return $quotedColumn;
-        });
+        QueryBuilderUtils::assembleWhereConditionsFromArray(
+            static::getValidAdapter(),
+            ['col1 LIKE' => ['value']],
+            static function ($quotedColumn) {
+                return $quotedColumn;
+            }
+        );
     }
-    
+
     public function testGluesInAssembleWhereConditionsFromArray(): void
     {
         $adapter = static::getValidAdapter();
-        $columnQuoter = function ($columnName) use ($adapter) {
+        $columnQuoter = static function ($columnName) use ($adapter) {
             return $adapter->quoteDbEntityName($columnName);
         };
         $col1 = $adapter->quoteDbEntityName('col');
@@ -219,11 +245,17 @@ class UtilsTest extends BaseTestCase
         );
         static::assertEquals(
             "$col1 = $value1 AND $col2 = $value2",
-            QueryBuilderUtils::assembleWhereConditionsFromArray($adapter, ['col' => 'value', 'col2' => 'value2'], $columnQuoter)
+            QueryBuilderUtils::assembleWhereConditionsFromArray($adapter, [
+                'col' => 'value',
+                'col2' => 'value2',
+            ], $columnQuoter)
         );
         static::assertEquals(
             "$col1 = $value1 OR $col2 = $value2",
-            QueryBuilderUtils::assembleWhereConditionsFromArray($adapter, ['col' => 'value', 'col2' => 'value2'], $columnQuoter, 'OR')
+            QueryBuilderUtils::assembleWhereConditionsFromArray($adapter, [
+                'col' => 'value',
+                'col2' => 'value2',
+            ], $columnQuoter, 'OR')
         );
         static::assertEquals(
             "$col1 = $value1 AND ($col1 = $value1 OR $col2 = $value2)",
@@ -269,16 +301,20 @@ class UtilsTest extends BaseTestCase
             "$col1 = $value1 AND ($col1 = $value1 OR ($col1 = $value1 AND $col2 = $value2)) AND $col2 = $value2",
             QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
-                ['col' => 'value', 'OR' => ['col' => 'value', ['col' => 'value', 'col2' => 'value2']], 'col2' => 'value2'],
+                [
+                    'col' => 'value',
+                    'OR' => ['col' => 'value', ['col' => 'value', 'col2' => 'value2']],
+                    'col2' => 'value2',
+                ],
                 $columnQuoter
             )
         );
     }
-    
+
     public function testOperatorsInAssembleWhereConditionsFromArray(): void
     {
         $adapter = static::getValidAdapter();
-        $columnQuoter = function ($columnName) use ($adapter) {
+        $columnQuoter = static function ($columnName) use ($adapter) {
             return $adapter->quoteDbEntityName($columnName);
         };
         $col1 = $adapter->quoteDbEntityName('col');
@@ -374,7 +410,7 @@ class UtilsTest extends BaseTestCase
             )
         );
     }
-    
+
     public function testValidationViaAssembleWhereConditionsFromArray(): void
     {
         $this->expectException(\UnexpectedValueException::class);
@@ -384,16 +420,18 @@ class UtilsTest extends BaseTestCase
             ['test' => 'aaa'],
             null,
             'AND',
-            function ($colName, $value) {
-                throw new \UnexpectedValueException("Value [$value] for column name [$colName] is invalid");
+            static function ($colName, $value) {
+                throw new \UnexpectedValueException(
+                    "Value [$value] for column name [$colName] is invalid"
+                );
             }
         );
     }
-    
+
     public function testDbExprUsageInAssembleWhereConditionsFromArray(): void
     {
         $adapter = static::getValidAdapter();
-        $columnQuoter = function ($columnName) use ($adapter) {
+        $columnQuoter = static function ($columnName) use ($adapter) {
             return $adapter->quoteDbEntityName($columnName);
         };
         $col1 = $adapter->quoteDbEntityName('col');
@@ -402,10 +440,10 @@ class UtilsTest extends BaseTestCase
             "($col1 = $value1)",
             QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
-                [\PeskyORM\DbExpr::create('`col` = ``value``')],
+                [DbExpr::create('`col` = ``value``')],
                 $columnQuoter,
                 'AND',
-                function ($colName, $value, \PeskyORM\Adapter\DbAdapterInterface $connection) {
+                static function ($colName, $value, DbAdapterInterface $connection) {
                     return $connection->quoteDbExpr($value);
                 }
             )
@@ -414,7 +452,7 @@ class UtilsTest extends BaseTestCase
             "$col1 = ($value1)",
             QueryBuilderUtils::assembleWhereConditionsFromArray(
                 $adapter,
-                ['col' => \PeskyORM\DbExpr::create('``value``')],
+                ['col' => DbExpr::create('``value``')],
                 $columnQuoter
             )
         );

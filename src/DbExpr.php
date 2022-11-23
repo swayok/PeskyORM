@@ -7,10 +7,10 @@ namespace PeskyORM;
 /**
  * Used to add custom expressions to db queries
  * Why needed: for security reasons DB expressions should be protected from sql injections.
- * It is musch easier to make a special class for expressions so you can only use them from php code
+ * It is musch easier to make a special class for expressions, so you can only use them from php code
  * and eliminate possibility of sql injections
  * How to use: pass expression to constructor.
- * 1. DB entities (field names, tables, etc) should be queted by single ` (quote on tilda "~" key).
+ * 1. DB entities (field names, tables, etc.) should be queted by single ` (quote on tilda "~" key).
  * For example: `table` or `field`
  * 2. Values should be quoted with double `. Example: ``value``
  * Usage example: `field1` REGEXP ``regexp``

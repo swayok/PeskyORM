@@ -67,4 +67,49 @@ class OtherAdapterTesting extends DbAdapterAbstract
     {
         return $this->config;
     }
+
+    protected function resolveInsertOneQueryWithReturningColumns(
+        string $insertQuery,
+        string $table,
+        array $data,
+        array $dataTypes,
+        array $returning,
+        string $pkName
+    ): array {
+        return [];
+    }
+
+    protected function resolveInsertManyQueryWithReturningColumns(
+        string $insertQuery,
+        string $table,
+        array $columns,
+        array $data,
+        array $dataTypes,
+        array $returning,
+        string $pkName
+    ): array {
+        return [];
+    }
+
+    protected function resolveUpdateQueryWithReturningColumns(
+        string $updateQuery,
+        string $assembledConditions,
+        string $table,
+        array $updates,
+        array $dataTypes,
+        array $returning,
+        string $pkName
+    ): array {
+        return [];
+    }
+
+    protected function resolveDeleteQueryWithReturningColumns(
+        string $deleteQuery,
+        string $assembledConditions,
+        string $table,
+        array $returning,
+        string $pkName
+    ): array {
+        return [];
+    }
 }

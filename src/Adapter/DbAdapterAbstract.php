@@ -7,8 +7,10 @@ namespace PeskyORM\Adapter;
 use PDO;
 use PDOStatement;
 use PeskyORM\DbExpr;
+use PeskyORM\Exception\DbAdapterDoesNotSupportFeature;
 use PeskyORM\Exception\DbException;
 use PeskyORM\Exception\DbInsertQueryException;
+use PeskyORM\Exception\DbQueryReturningValuesException;
 use PeskyORM\Exception\DbTransactionException;
 use PeskyORM\Exception\DetailedPDOException;
 use PeskyORM\ORM\RecordInterface;
@@ -24,7 +26,6 @@ use PeskyORM\Utils\QueryBuilderUtils;
 
 abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTracingInterface
 {
-
     protected string $quoteForDbEntityName;
     protected string $trueValue = '1';
     protected string $falseValue = '0';
@@ -36,11 +37,6 @@ abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTrac
     public const FETCH_KEY_PAIR = PdoUtils::FETCH_KEY_PAIR;
     public const FETCH_STATEMENT = PdoUtils::FETCH_STATEMENT;
     public const FETCH_ROWS_COUNT = PdoUtils::FETCH_ROWS_COUNT;
-
-    protected const OPERATION_INSERT_ONE = 'insert';
-    protected const OPERATION_INSERT_MANY = 'insert_many';
-    protected const OPERATION_UPDATE = 'update';
-    protected const OPERATION_DELETE = 'delete';
 
     /**
      * Traces of all transactions (required for debug)
@@ -275,23 +271,17 @@ abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTrac
 
         if (empty($returning)) {
             $rowsAffected = $this->exec($query);
-            if (!$rowsAffected) {
-                throw new DbInsertQueryException(
-                    "Inserting data into table {$table} resulted in modification of 0 rows. Query: " . $this->getLastQuery(),
-                );
-            }
+            $this->assertInsertedRowsCount($table, 1, $rowsAffected);
             return null;
         }
 
-        return $this->resolveQueryWithReturningColumns(
+        return $this->resolveInsertOneQueryWithReturningColumns(
             $query,
             $table,
-            $columns,
             $data,
             $dataTypes,
             $returning === true ? [] : $returning,
-            $pkName,
-            static::OPERATION_INSERT_ONE
+            $pkName
         );
     }
 
@@ -319,11 +309,7 @@ abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTrac
             . ' ' . $this->buildColumnsList($columns) . ' VALUES ';
 
         foreach ($data as $key => $record) {
-            if (!is_array($record)) {
-                throw new \InvalidArgumentException(
-                    "\$data argument must contain only arrays. Non-array received at index [$key]"
-                );
-            }
+            ArgumentValidators::assertArrayKeyValueIsArray("\$data[{$key}]", $record);
             $query .= $this->buildValuesList($columns, $record, $dataTypes, $key) . ',';
         }
 
@@ -331,32 +317,18 @@ abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTrac
 
         if (empty($returning)) {
             $rowsAffected = $this->exec($query);
-
-            if (!$rowsAffected) {
-                throw new DbInsertQueryException(
-                    "Inserting data into table {$table} resulted in modification of 0 rows. Query: " . $this->getLastQuery(),
-                );
-            }
-
-            if (count($data) !== $rowsAffected) {
-                throw new DbInsertQueryException(
-                    "Inserting data into table {$table} resulted in modification of $rowsAffected rows while "
-                    . count($data) . ' rows should be inserted. Query: ' . $this->getLastQuery(),
-                );
-            }
-
+            $this->assertInsertedRowsCount($table, count($data), $rowsAffected);
             return null;
         }
 
-        return $this->resolveQueryWithReturningColumns(
+        return $this->resolveInsertManyQueryWithReturningColumns(
             $query,
             $table,
             $columns,
             $data,
             $dataTypes,
             $returning === true ? [] : $returning,
-            $pkName,
-            static::OPERATION_INSERT_MANY
+            $pkName
         );
     }
 
@@ -365,58 +337,81 @@ abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTrac
         array $data,
         array|DbExpr $conditions,
         array $dataTypes = [],
-        bool|array $returning = false
+        bool|array $returning = false,
+        string $pkName = 'id'
     ): array|int {
         $this->guardTableNameArg($table);
         $this->guardDataArg($data);
         $this->guardConditionsArg($conditions);
+        if ($returning) {
+            $this->guardPkNameArg($pkName);
+        }
 
+        $conditionsStr = $this->assembleConditions($conditions);
         $query = 'UPDATE ' . $this->assembleTableNameAndAlias($table)
             . ' SET ' . $this->buildValuesListForUpdate($data, $dataTypes)
-            . ' WHERE ' . $this->assembleConditions($conditions);
+            . ' WHERE ' . $conditionsStr;
 
         if (empty($returning)) {
             return $this->exec($query);
         }
 
-        return $this->resolveQueryWithReturningColumns(
+        return $this->resolveUpdateQueryWithReturningColumns(
             $query,
+            $conditionsStr,
             $table,
-            array_keys($data),
             $data,
             $dataTypes,
             $returning === true ? [] : $returning,
-            null,
-            static::OPERATION_UPDATE
+            $pkName
         );
     }
 
     public function delete(
         string $table,
         array|DbExpr $conditions,
-        bool|array $returning = false
+        bool|array $returning = false,
+        string $pkName = 'id'
     ): array|int {
         $this->guardTableNameArg($table);
         $this->guardConditionsArg($conditions);
         $this->guardReturningArg($returning);
+        if ($returning) {
+            $this->guardPkNameArg($pkName);
+        }
 
+        $conditionsStr = $this->assembleConditions($conditions);
         $query = 'DELETE FROM ' . $this->assembleTableNameAndAlias($table)
-            . ' WHERE ' . $this->assembleConditions($conditions);
+            . ' WHERE ' . $conditionsStr;
 
         if (empty($returning)) {
             return $this->exec($query);
         }
 
-        return $this->resolveQueryWithReturningColumns(
+        return $this->resolveDeleteQueryWithReturningColumns(
             $query,
+            $conditionsStr,
             $table,
-            [],
-            [],
-            [],
             $returning === true ? [] : $returning,
-            null,
-            static::OPERATION_DELETE
+            $pkName
         );
+    }
+
+    /**
+     * Check if affected rows count is same as expected count
+     */
+    protected function assertInsertedRowsCount(
+        string $table,
+        int $expectedCount,
+        int $affectedRowsCount
+    ): void {
+        if ($expectedCount !== $affectedRowsCount) {
+            throw new DbInsertQueryException(
+                "Insert query on table {$table} resulted in creation of {$affectedRowsCount} rows"
+                . " while {$expectedCount} rows are expected to be created.",
+                $this->getLastQuery()
+            );
+        }
     }
 
     protected function assembleTableNameAndAlias(string $tableNameWithAlias): string
@@ -518,32 +513,83 @@ abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTrac
     }
 
     /**
-     * This method should resolve RETURNING functionality and return requested data
-     * @param string $query - DB query to execute
-     * @param string $tableNameWithPossibleAlias
-     * @param array $columns
-     * @param array $data
-     * @param array $dataTypes
-     * @param array $returning - return some data back after $data inserted to $table
-     *          - empty array: return values for all columns of inserted/update/delete table record
-     *          - array: list of columns names to return values for
-     * @param string|null $pkName - Name of primary key for $returning in DB drivers that support only getLastInsertId()
-     * @param string $operation - Name of operation to perform: static::OPERATION_
-     * @return array
-     * @throws \InvalidArgumentException
+     * This method should resolve RETURNING functionality for INSERT ONE query and return requested data.
+     * This method is used only if 'returning' is requested.
+     * @param string $pkName - name of primary key for $returning in DB drivers that support only getLastInsertId()
+     *          Data type is one of \PDO::PARAM_* contants or null.
+     *          If value is null or column not present - value quoter will autodetect column type
+     * @param array $returning - list of columns to get values for. if empty - all columns will be used.
+     * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
+     * @throws DbAdapterDoesNotSupportFeature when 'returning' functionality is not supported
+     * @throws DbQueryReturningValuesException when something wrong with selected records
      */
-    protected function resolveQueryWithReturningColumns(
-        string $query,
-        string $tableNameWithPossibleAlias,
+    abstract protected function resolveInsertOneQueryWithReturningColumns(
+        string $insertQuery,
+        string $table,
+        array $data,
+        array $dataTypes,
+        array $returning,
+        string $pkName
+    ): array;
+
+    /**
+     * This method should resolve RETURNING functionality for INSERT MANY query and return requested data.
+     * This method is used only if 'returning' is requested.
+     * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
+     *          Data type is one of \PDO::PARAM_* contants or null.
+     *          If value is null or column not present - value quoter will autodetect column type
+     * @param array $returning - list of columns to get values for. if empty - all columns will be used.
+     * @param string $pkName - name of primary key for $returning in DB drivers that support only getLastInsertId()
+     * @throws DbAdapterDoesNotSupportFeature when 'returning' functionality is not supported
+     * @throws DbQueryReturningValuesException when something wrong with selected records
+     */
+    abstract protected function resolveInsertManyQueryWithReturningColumns(
+        string $insertQuery,
+        string $table,
         array $columns,
         array $data,
         array $dataTypes,
         array $returning,
-        ?string $pkName,
-        string $operation
-    ): array {
-        throw new \InvalidArgumentException('DB Adapter [' . get_class($this) . '] does not support RETURNING functionality');
-    }
+        string $pkName
+    ): array;
+
+    /**
+     * This method should resolve RETURNING functionality for UPDATE query and return requested data.
+     * This method is used only if 'returning' is requested.
+     * Update can update 0 to * rows, so it is expected to return array of arrays
+     * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
+     *          Data type is one of \PDO::PARAM_* contants or null.
+     *          If value is null or column not present - value quoter will autodetect column type
+     * @param array $returning - list of columns to get values for. if empty - all columns will be used.
+     * @param string $pkName - name of primary key for $returning in DB drivers that support only getLastInsertId()
+     * @throws DbAdapterDoesNotSupportFeature when 'returning' functionality is not supported
+     * @throws DbQueryReturningValuesException when something wrong with selected records
+     */
+    abstract protected function resolveUpdateQueryWithReturningColumns(
+        string $updateQuery,
+        string $assembledConditions,
+        string $table,
+        array $updates,
+        array $dataTypes,
+        array $returning,
+        string $pkName
+    ): array;
+
+    /**
+     * This method should resolve RETURNING functionality for DELETE query and return requested data.
+     * This method is used only if 'returning' is requested.
+     * @param array $returning - list of columns to get values for. if empty - all columns will be used.
+     * @param string $pkName - name of primary key for $returning in DB drivers that support only getLastInsertId()
+     * @throws DbAdapterDoesNotSupportFeature when 'returning' functionality is not supported
+     * @throws DbQueryReturningValuesException when something wrong with selected records
+     */
+    abstract protected function resolveDeleteQueryWithReturningColumns(
+        string $deleteQuery,
+        string $assembledConditions,
+        string $table,
+        array $returning,
+        string $pkName
+    ): array;
 
     public function inTransaction(): bool
     {

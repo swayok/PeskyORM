@@ -279,7 +279,9 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     ): array {
         if ($closureOrColumnsListOrMethodName) {
             return $this->getDataFromEachObject($closureOrColumnsListOrMethodName, $argumentsForMethod, $enableReadOnlyMode);
-        } elseif ($this->isRecordsContainObjects) {
+        }
+
+        if ($this->isRecordsContainObjects) {
             /** @var array|RecordInterface $data */
             foreach ($this->records as $index => $data) {
                 if (!is_array($data)) {
@@ -311,7 +313,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      *      - array: list of columns compatible with RecordInterface->toArray($columnsNames)
      *      - \Closure: function (RecordInterface $record) { return $record->toArray(); }
      *      - \Closure: function (RecordInterface $record) { return \PeskyORM\ORM\KeyValuePair::create($record->id, $record->toArray()); }
-     * @param array $argumentsForMethod - pass this arguments to ORM Record's method.
+     * @param array $argumentsForMethod - pass these arguments to ORM Record's method.
      *      Not used if $argumentsForMethod is Closure.
      *      If $closureOrColumnsListOrMethodName is array - 1st argument is $closureOrColumnsListOrMethodName.
      * @param bool $enableReadOnlyMode - true: disable all processing of Record's data during Record object creations so
@@ -336,7 +338,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
             }
             if (is_string($closureOrColumnsListOrMethodName)) {
                 // Record's method and arguments
-                $closure = function (RecordInterface $record) use ($closureOrColumnsListOrMethodName, $argumentsForMethod) {
+                $closure = static function (RecordInterface $record) use ($closureOrColumnsListOrMethodName, $argumentsForMethod) {
                     return call_user_func_array([$record, $closureOrColumnsListOrMethodName], $argumentsForMethod);
                 };
             } else {
@@ -363,7 +365,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
                     && (get_class($valueForKey) === get_class($record))
                 ) {
                     // disable db record instance reuse when $valueForKey is $record.
-                    // Otherwise it will cause unexpected problems
+                    // Otherwise, it will cause unexpected problems
                     $this->disableDbRecordInstanceReuseDuringIteration();
                 }
                 $data[$value->getKey()] = $valueForKey;
@@ -582,9 +584,9 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
                 $this->currentDbRecordIndex = $index;
             }
             return $dbRecord;
-        } else {
-            return $this->convertToObject($index);
         }
+
+        return $this->convertToObject($index);
     }
     
     /**

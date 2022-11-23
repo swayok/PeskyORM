@@ -76,7 +76,7 @@ class PostgresAdapterDeleteDataTest extends BaseTestCase
         $insertedData = $adapter->insertMany('settings', ['key', 'value'], $testData1, [], true);
         $deletedRecords = $adapter->delete(
             'settings',
-            \PeskyORM\DbExpr::create("`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)"),
+            ['key' => [$testData1[0]['key'], $testData1[1]['key']]],
             true
         );
         static::assertCount(2, $deletedRecords);
@@ -85,7 +85,7 @@ class PostgresAdapterDeleteDataTest extends BaseTestCase
         $insertedData = $adapter->insertMany('settings', ['key', 'value'], $testData1, [], ['id', 'value']);
         $deletedRecords = $adapter->delete(
             'settings',
-            DbExpr::create("`key` IN (``{$testData1[0]['key']}``,``{$testData1[1]['key']}``)"),
+            ['key' => [$testData1[0]['key'], $testData1[1]['key']]],
             ['id', 'value']
         );
         static::assertCount(2, $deletedRecords);

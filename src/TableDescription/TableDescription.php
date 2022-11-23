@@ -86,17 +86,17 @@ class TableDescription implements \Serializable
         return json_encode($data, JSON_THROW_ON_ERROR);
     }
     
-    public function unserialize(string $serialized): void
+    public function unserialize(string $data): void
     {
         /** @noinspection JsonEncodingApiUsageInspection */
-        $data = json_decode($serialized, true);
-        if (!is_array($data)) {
+        $unserialized = json_decode($data, true);
+        if (!is_array($unserialized)) {
             throw new \InvalidArgumentException('$serialized argument must be a json-encoded array');
         }
-        foreach ($data as $propertyName => $value) {
+        foreach ($unserialized as $propertyName => $value) {
             $this->$propertyName = $value;
         }
-        foreach ($data['columns'] as $columnName => $serializedColumnDescription) {
+        foreach ($unserialized['columns'] as $columnName => $serializedColumnDescription) {
             $this->columns[$columnName] = unserialize($serializedColumnDescription, ['allowed_classes' => [ColumnDescription::class]]);
         }
     }

@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace PeskyORM\Exception;
 
-class DbInsertQueryException extends DbException
+class DbInsertQueryException extends DbQueryException
 {
-
-    public function __construct(string $message)
+    public function __construct(string $message, string $query)
     {
-        parent::__construct($message, static::CODE_INSERT_FAILED);
+        parent::__construct($message, $query, static::CODE_INSERT_FAILED);
     }
 }

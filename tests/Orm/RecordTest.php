@@ -45,7 +45,7 @@ class RecordTest extends BaseTestCase
         TestingAdminsTable::getConnection(true)->exec('TRUNCATE TABLE admins');
         $data = TestingApp::getRecordsForDb('admins', $limit);
         // avoid using TestingAdminsTable::insertMany()
-        // to avoid autoupdatable columns usage *updated_at for example)
+        // to avoid autoupdatable columns usage *updated_at for example
         TestingAdminsTable::getConnection()->insertMany('admins', array_keys($data[0]), $data);
         return $data;
     }
@@ -1762,9 +1762,12 @@ class RecordTest extends BaseTestCase
         );
         
         $rec->reset();
-        $defaults = array_filter($rec->getDefaults($columnsToSave, true, false), function ($value) {
-            return $value !== null;
-        });
+        $defaults = array_filter(
+            $rec->getDefaults($columnsToSave, true, false),
+            static function ($value) {
+                return $value !== null;
+            }
+        );
         $expectedData = array_merge(
             [
                 'id' => TestingAdminsTable::getExpressionToSetDefaultValueForAColumn(),
@@ -2445,7 +2448,7 @@ class RecordTest extends BaseTestCase
         $rec = TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true);
         $cols = [];
         foreach ($rec as $name => $value) {
-            // in iteration it works like iteration over $rec->toArray()
+            // it works like iteration over $rec->toArray()
             static::assertEquals($this->callObjectMethod($rec, 'getColumnValueForToArray', $name), $value);
             $cols[] = $name;
         }

@@ -6,6 +6,7 @@ namespace PeskyORM\Tests\Core;
 
 use PDO;
 use PeskyORM\Adapter\Postgres;
+use PeskyORM\DbExpr;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 use ReflectionClass;
@@ -199,7 +200,7 @@ class PostgresAdapterGeneralFunctionalityTest extends BaseTestCase
         static::assertEquals("'123'", $adapter->quoteValue(123, PDO::PARAM_INT));
         static::assertEquals(
             'DELETE FROM "table1" WHERE "col1" = \'value1\'',
-            $adapter->quoteDbExpr(\PeskyORM\DbExpr::create('DELETE FROM `table1` WHERE `col1` = ``value1``'))
+            $adapter->quoteDbExpr(DbExpr::create('DELETE FROM `table1` WHERE `col1` = ``value1``'))
         );
     }
     
