@@ -77,10 +77,8 @@ class OrmSelect extends SelectQueryBuilderAbstract
             if (is_int($relationName)) {
                 $relationName = $columnsToSelectForRelation;
                 $columnsToSelectForRelation = ['*'];
-            } else {
-                if (empty($columnsToSelectForRelation)) {
-                    $columnsToSelectForRelation = [];
-                }
+            } elseif (empty($columnsToSelectForRelation)) {
+                $columnsToSelectForRelation = [];
             }
             // parse "RelationName as RelationAlias"
             $relationAlias = $relationName;
