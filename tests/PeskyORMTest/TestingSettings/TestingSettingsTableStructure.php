@@ -5,8 +5,8 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingSettings;
 
-use PeskyORM\ORM\Column;
-use PeskyORM\ORM\TableStructure;
+use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableStructure;
 
 class TestingSettingsTableStructure extends TableStructure
 {

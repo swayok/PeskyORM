@@ -6,10 +6,10 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
 use PeskyORM\DbExpr;
-use PeskyORM\ORM\Column;
-use PeskyORM\ORM\DefaultColumnClosures;
-use PeskyORM\ORM\Relation;
-use PeskyORM\ORM\TableStructure;
+use PeskyORM\ORM\TableStructure\Relation;
+use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures;
+use PeskyORM\ORM\TableStructure\TableStructure;
 
 class TestingAdmins3TableStructure extends TableStructure
 {

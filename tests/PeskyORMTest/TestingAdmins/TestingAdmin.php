@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
-use PeskyORM\ORM\Record;
-use PeskyORM\ORM\RecordsSet;
-use PeskyORM\ORM\TableInterface;
+use PeskyORM\ORM\Record\Record;
+use PeskyORM\ORM\Table\TableInterface;
 
 /**
  * @property int $id
@@ -18,9 +17,9 @@ use PeskyORM\ORM\TableInterface;
  * @property string $created_at_as_date
  *
  * @property TestingAdmin $Parent
- * @property Record $HasOne
- * @property RecordsSet $Children
- * @property Record $VeryLongRelationNameSoItMustBeShortened
+ * @property \PeskyORM\ORM\Record\Record $HasOne
+ * @property \PeskyORM\ORM\RecordsCollection\RecordsSet $Children
+ * @property \PeskyORM\ORM\Record\Record $VeryLongRelationNameSoItMustBeShortened
  *
  * @method $this setId($value, $isFromDb = false)
  * @method $this setParentId($value, $isFromDb = false)

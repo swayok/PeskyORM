@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
-use PeskyORM\ORM\Record;
-use PeskyORM\ORM\TableInterface;
+use PeskyORM\ORM\Record\Record;
+use PeskyORM\ORM\Table\TableInterface;
 
 class TestingAdmin2 extends Record
 {
     
     /**
-     * @return TableInterface
+     * @return \PeskyORM\ORM\Table\TableInterface
      */
     public static function getTable(): TableInterface
     {

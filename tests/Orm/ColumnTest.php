@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Orm;
 
-use PeskyORM\ORM\Column;
-use PeskyORM\ORM\DefaultColumnClosures;
-use PeskyORM\ORM\RecordValue;
+use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
@@ -61,7 +60,7 @@ class ColumnTest extends BaseTestCase
     public function testConstructor(): void
     {
         $obj = Column::create(Column::TYPE_BOOL);
-        static::assertInstanceOf(Column::class, $obj);
+        static::assertInstanceOf(\PeskyORM\ORM\TableStructure\TableColumn\Column::class, $obj);
         static::assertEquals(Column::TYPE_BOOL, $obj->getType());
         static::assertFalse($obj->hasName());
         static::assertEquals('id', $obj->setName('id')->getName());
@@ -98,7 +97,7 @@ class ColumnTest extends BaseTestCase
         $obj->primaryKey();
         static::assertTrue($obj->isItPrimaryKey());
     
-        $obj = Column::create(Column::TYPE_BOOL, 'parent_id');
+        $obj = Column::create(\PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_BOOL, 'parent_id');
         $obj->setTableStructure(TestingAdminsTableStructure::getInstance());
         static::assertTrue($obj->isItAForeignKey());
     }
@@ -109,7 +108,7 @@ class ColumnTest extends BaseTestCase
         /** @noinspection UnnecessaryAssertionInspection */
         static::assertInstanceOf(Column::class, $obj);
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('PeskyORM\ORM\Column::getTableStructure(): Return value must be of type PeskyORM\ORM\TableStructureInterface, null returned');
+        $this->expectExceptionMessage('PeskyORM\ORM\TableStructure\TableColumn\Column::getTableStructure(): Return value must be of type PeskyORM\ORM\TableStructure\TableStructureInterface, null returned');
         /** @noinspection PhpExpressionResultUnusedInspection */
         $obj->getTableStructure();
     }
@@ -118,14 +117,14 @@ class ColumnTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("DB column name is not provided");
-        Column::create(Column::TYPE_STRING, null)
+        Column::create(\PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_STRING, null)
             ->getName();
     }
     
     public function testInvalidName2(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('PeskyORM\ORM\Column::create(): Argument #2 ($name) must be of type ?string');
+        $this->expectExceptionMessage('PeskyORM\ORM\TableStructure\TableColumn\Column::create(): Argument #2 ($name) must be of type ?string');
         /** @noinspection PhpStrictTypeCheckingInspection */
         Column::create(Column::TYPE_STRING, false)
             ->getName();
@@ -134,7 +133,7 @@ class ColumnTest extends BaseTestCase
     public function testInvalidName3(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('PeskyORM\ORM\Column::create(): Argument #2 ($name) must be of type ?string');
+        $this->expectExceptionMessage('PeskyORM\ORM\TableStructure\TableColumn\Column::create(): Argument #2 ($name) must be of type ?string');
         /** @noinspection PhpStrictTypeCheckingInspection */
         /** @noinspection PhpParamsInspection */
         Column::create(Column::TYPE_STRING, [])
@@ -144,16 +143,16 @@ class ColumnTest extends BaseTestCase
     public function testInvalidNameSet1(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('PeskyORM\ORM\Column::create(): Argument #2 ($name) must be of type ?string');
+        $this->expectExceptionMessage('PeskyORM\ORM\TableStructure\TableColumn\Column::create(): Argument #2 ($name) must be of type ?string');
         /** @noinspection PhpStrictTypeCheckingInspection */
         /** @noinspection PhpParamsInspection */
-        Column::create(Column::TYPE_INT, ['arr']);
+        Column::create(\PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_INT, ['arr']);
     }
     
     public function testInvalidNameSet2(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('PeskyORM\ORM\Column::create(): Argument #2 ($name) must be of type ?string');
+        $this->expectExceptionMessage('PeskyORM\ORM\TableStructure\TableColumn\Column::create(): Argument #2 ($name) must be of type ?string');
         /** @noinspection PhpStrictTypeCheckingInspection */
         /** @noinspection PhpParamsInspection */
         Column::create(Column::TYPE_FLOAT, $this);
@@ -162,7 +161,7 @@ class ColumnTest extends BaseTestCase
     public function testInvalidNameSet3(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('PeskyORM\ORM\Column::create(): Argument #2 ($name) must be of type ?string');
+        $this->expectExceptionMessage('PeskyORM\ORM\TableStructure\TableColumn\Column::create(): Argument #2 ($name) must be of type ?string');
         /** @noinspection PhpStrictTypeCheckingInspection */
         Column::create(Column::TYPE_IPV4_ADDRESS, true);
     }
@@ -192,7 +191,7 @@ class ColumnTest extends BaseTestCase
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Column name changing is forbidden");
-        $obj = Column::create(Column::TYPE_ENUM)->setName('test');
+        $obj = \PeskyORM\ORM\TableStructure\TableColumn\Column::create(Column::TYPE_ENUM)->setName('test');
         $obj->setName('test');
     }
     
@@ -201,7 +200,7 @@ class ColumnTest extends BaseTestCase
         $obj = Column::create(Column::TYPE_FILE);
         static::assertEquals(Column::TYPE_FILE, $obj->getType());
         static::assertTrue($obj->isItAFile());
-        $obj = Column::create(Column::TYPE_IMAGE);
+        $obj = Column::create(\PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_IMAGE);
         static::assertEquals(Column::TYPE_IMAGE, $obj->getType());
         static::assertTrue($obj->isItAFile());
         static::assertTrue($obj->isItAnImage());
@@ -210,7 +209,7 @@ class ColumnTest extends BaseTestCase
     public function testEnumType(): void
     {
         $obj = Column::create(Column::TYPE_ENUM);
-        static::assertEquals(Column::TYPE_ENUM, $obj->getType());
+        static::assertEquals(\PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_ENUM, $obj->getType());
         static::assertTrue($obj->isEnum());
     }
     
@@ -221,7 +220,7 @@ class ColumnTest extends BaseTestCase
         $rec = TestingAdmin::newEmptyRecord();
         $rec->updateValue('login', 'test', false);
         static::assertEquals('test', $rec->getValue('login'));
-        /** @var RecordValue $value */
+        /** @var \PeskyORM\ORM\Record\RecordValue $value */
         $value = $this->getObjectPropertyValue($rec, 'values')['login'];
         static::assertEquals(
             '11:00:00',
@@ -236,10 +235,10 @@ class ColumnTest extends BaseTestCase
     public function testFormattersDetectedByType(): void
     {
         $obj = Column::create(Column::TYPE_TIMESTAMP);
-        static::assertEquals(Column::TYPE_TIMESTAMP, $obj->getType());
+        static::assertEquals(\PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_TIMESTAMP, $obj->getType());
         static::assertInstanceOf(\Closure::class, $obj->getValueFormatter());
         $rec = TestingAdmin::fromArray(['created_at' => '2016-11-21 11:00:00']);
-        /** @var RecordValue $value */
+        /** @var \PeskyORM\ORM\Record\RecordValue $value */
         $value = $this->getObjectPropertyValue($rec, 'values')['created_at'];
         static::assertEquals(
             '11:00:00',
@@ -256,7 +255,7 @@ class ColumnTest extends BaseTestCase
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Default value for column 'name' is not set");
-        Column::create(Column::TYPE_BOOL, 'name')
+        Column::create(\PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_BOOL, 'name')
             ->getDefaultValueAsIs();
     }
     
@@ -276,7 +275,7 @@ class ColumnTest extends BaseTestCase
         $this->expectExceptionMessage(
             "Fallback value of the default value for column PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->name is not valid. Errors: Value must be of a boolean data type."
         );
-        Column::create(Column::TYPE_BOOL, 'name')
+        Column::create(\PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_BOOL, 'name')
             ->setTableStructure(TestingAdminsTableStructure::getInstance())
             ->getValidDefaultValue(-1);
     }
@@ -351,7 +350,7 @@ class ColumnTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("Allowed values closure must return a not-empty array");
-        $obj = Column::create(Column::TYPE_BOOL)
+        $obj = \PeskyORM\ORM\TableStructure\TableColumn\Column::create(Column::TYPE_BOOL)
             ->setAllowedValues(function () {
                 return -1;
             });
@@ -404,7 +403,7 @@ class ColumnTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("\$allowedValues argument cannot be empty");
-        $obj = Column::create(Column::TYPE_BOOL)
+        $obj = \PeskyORM\ORM\TableStructure\TableColumn\Column::create(Column::TYPE_BOOL)
             ->setAllowedValues([]);
         $obj->getAllowedValues();
     }
@@ -414,14 +413,14 @@ class ColumnTest extends BaseTestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Argument #1 ($allowedValues) must be of type Closure|array');
         /** @noinspection PhpParamsInspection */
-        $obj = Column::create(Column::TYPE_BOOL)
+        $obj = Column::create(\PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_BOOL)
             ->setAllowedValues(null);
         $obj->getAllowedValues();
     }
     
     public function testAllwedValues(): void
     {
-        $obj = Column::create(Column::TYPE_ENUM);
+        $obj = Column::create(\PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_ENUM);
         static::assertEquals([], $obj->getAllowedValues());
         $obj->setAllowedValues(['test']);
         static::assertEquals(['test'], $obj->getAllowedValues());
@@ -452,10 +451,10 @@ class ColumnTest extends BaseTestCase
     public function testInvalidSetClosuresClass2(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('PeskyORM\ORM\Column::setClosuresClass(): Argument #1 ($className) must be of type string');
+        $this->expectExceptionMessage('PeskyORM\ORM\TableStructure\TableColumn\Column::setClosuresClass(): Argument #1 ($className) must be of type string');
         /** @noinspection PhpParamsInspection */
         /** @noinspection PhpStrictTypeCheckingInspection */
-        Column::create(Column::TYPE_STRING)
+        \PeskyORM\ORM\TableStructure\TableColumn\Column::create(Column::TYPE_STRING)
             ->setClosuresClass(new DefaultColumnClosures());
     }
     
@@ -480,7 +479,7 @@ class ColumnTest extends BaseTestCase
     public function testInvalidSetClassNameForValueToObjectFormatter(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$className argument must be a string and contain a full name of a class that implements PeskyORM\ORM\ValueToObjectConverterInterface');
+        $this->expectExceptionMessage('$className argument must be a string and contain a full name of a class that implements PeskyORM\ORM\TableStructure\TableColumn\ValueToObjectConverter\ValueToObjectConverterInterface');
         Column::create(Column::TYPE_STRING)
             ->setClassNameForValueToObjectFormatter(DefaultColumnClosures::class);
     }
@@ -492,7 +491,7 @@ class ColumnTest extends BaseTestCase
         
         static::assertEquals(TestingValueToObjectConverter::class, $obj->getObjectClassNameForValueToObjectFormatter());
     
-        $obj = Column::create(Column::TYPE_STRING)
+        $obj = \PeskyORM\ORM\TableStructure\TableColumn\Column::create(Column::TYPE_STRING)
             ->setClassNameForValueToObjectFormatter(null);
         static::assertNull($obj->getObjectClassNameForValueToObjectFormatter());
     }

@@ -8,9 +8,9 @@ use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Config\Connection\DbConnectionsManager;
 use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Config\Connection\PostgresConfig;
-use PeskyORM\ORM\Record;
-use PeskyORM\ORM\Table;
-use PeskyORM\ORM\TableStructure;
+use PeskyORM\ORM\Record\Record;
+use PeskyORM\ORM\Table\Table;
+use PeskyORM\ORM\TableStructure\TableStructure;
 use PeskyORM\Tests\PeskyORMTest\Adapter\MysqlTesting;
 use PeskyORM\Tests\PeskyORMTest\Adapter\PostgresTesting;
 

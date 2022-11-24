@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
-use PeskyORM\ORM\RecordInterface;
-use PeskyORM\ORM\Table;
-use PeskyORM\ORM\TableStructureInterface;
+use PeskyORM\ORM\Record\RecordInterface;
+use PeskyORM\ORM\Table\Table;
+use PeskyORM\ORM\TableStructure\TableStructureInterface;
 
 class TestingAdminsTable extends Table
 {

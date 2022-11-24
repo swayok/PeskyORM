@@ -2,9 +2,9 @@
 
 namespace App\Db;
 
-use PeskyORM\ORM\TableStructure;
-use PeskyORM\ORM\Column;
-use PeskyORM\ORM\Relation;
+use PeskyORM\ORM\TableStructure\TableStructure;
+use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\Relation;
 use PeskyORM\DbExpr;
 
 /**

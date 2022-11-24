@@ -4,18 +4,18 @@
 /** @noinspection PhpUnused */
 declare(strict_types=1);
 
-abstract class PeskyORMIdeHelperRecord extends \PeskyORM\ORM\Record
+abstract class PeskyORMIdeHelperRecord extends \PeskyORM\ORM\Record\Record
 {
     
-    use \PeskyORM\ORM\Traits\DbViewRecordProtection;
-    use \PeskyORM\ORM\KeyValueTableHelpers\KeyValueRecordHelpers;
+    use \PeskyORM\ORM\Record\DbViewRecordProtection;
+    use \PeskyORM\ORM\Record\GettersForKeyValueRecordValues;
 }
 
-class PeskyORMIdeHelperTableStructure extends \PeskyORM\ORM\TableStructure
+class PeskyORMIdeHelperTableStructure extends \PeskyORM\ORM\TableStructure\TableStructure
 {
     
-    private function id(): \PeskyORM\ORM\Column {
-        return \PeskyORM\ORM\Column::create(\PeskyORM\ORM\Column::TYPE_INT);
+    private function id(): \PeskyORM\ORM\TableStructure\TableColumn\Column {
+        return \PeskyORM\ORM\TableStructure\TableColumn\Column::create(\PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_INT);
     }
     
     public static function getTableName(): string
@@ -24,17 +24,17 @@ class PeskyORMIdeHelperTableStructure extends \PeskyORM\ORM\TableStructure
     }
 }
 
-class PeskyORMIdeHelperTable extends \PeskyORM\ORM\Table implements \PeskyORM\ORM\KeyValueTableHelpers\KeyValueTableInterface
+class PeskyORMIdeHelperTable extends \PeskyORM\ORM\Table\Table implements \PeskyORM\ORM\Table\KeyValueTableInterface
 {
     
-    use \PeskyORM\ORM\KeyValueTableHelpers\KeyValueTableHelpers;
+    use \PeskyORM\ORM\Table\KeyValueTableWorkflow;
     
-    public function newRecord(): \PeskyORM\ORM\RecordInterface
+    public function newRecord(): \PeskyORM\ORM\Record\RecordInterface
     {
         return PeskyORMIdeHelperRecord::newEmptyRecord();
     }
     
-    public function getTableStructure(): \PeskyORM\ORM\TableStructureInterface
+    public function getTableStructure(): \PeskyORM\ORM\TableStructure\TableStructureInterface
     {
         return PeskyORMIdeHelperTableStructure::getInstance();
     }

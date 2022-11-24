@@ -6,8 +6,8 @@ namespace PeskyORM\Tests\Orm;
 
 use PeskyORM\DbExpr;
 use PeskyORM\Exception\OrmException;
-use PeskyORM\ORM\Column;
-use PeskyORM\ORM\Relation;
+use PeskyORM\ORM\TableStructure\Relation;
+use PeskyORM\ORM\TableStructure\TableColumn\Column;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmins4TableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
@@ -119,8 +119,8 @@ class TableStructureAndRelationsTest extends BaseTestCase
     public function testInvalidTableStructure1(): void
     {
         $this->expectException(OrmException::class);
-        $this->expectExceptionMessage(
-            "Method PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidColumnsInTableStructure->invalid() must return instance of \PeskyORM\ORM\Column class"
+        $this->expectExceptionMessageMatches(
+            "%Method .*?->invalid\(\) must return instance of .*?Column class%"
         );
         TestingInvalidColumnsInTableStructure::getColumn('invalid');
     }
@@ -136,8 +136,8 @@ class TableStructureAndRelationsTest extends BaseTestCase
     public function testInvalidTableStructure3(): void
     {
         $this->expectException(OrmException::class);
-        $this->expectExceptionMessage(
-            "Method PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure->InvalidClass() must return instance of \PeskyORM\ORM\Relation class"
+        $this->expectExceptionMessageMatches(
+            "%Method .*?->InvalidClass\(\) must return instance of .*?Relation class%"
         );
         TestingInvalidRelationsInTableStructure::getRelation('InvalidClass');
     }
@@ -383,17 +383,17 @@ class TableStructureAndRelationsTest extends BaseTestCase
                 ->getType()
         );
         static::assertEquals(
-            Column::TYPE_STRING,
+            \PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_STRING,
             $structure::getColumn('password')
                 ->getType()
         );
         static::assertEquals(
-            Column::TYPE_STRING,
+            \PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_STRING,
             $structure::getColumn('remember_token')
                 ->getType()
         );
         static::assertEquals(
-            Column::TYPE_STRING,
+            \PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_STRING,
             $structure::getColumn('role')
                 ->getType()
         );
@@ -403,12 +403,12 @@ class TableStructureAndRelationsTest extends BaseTestCase
                 ->getType()
         );
         static::assertEquals(
-            Column::TYPE_STRING,
+            \PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_STRING,
             $structure::getColumn('email')
                 ->getType()
         );
         static::assertEquals(
-            Column::TYPE_STRING,
+            \PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_STRING,
             $structure::getColumn('timezone')
                 ->getType()
         );

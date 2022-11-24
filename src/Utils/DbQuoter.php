@@ -6,7 +6,7 @@ namespace PeskyORM\Utils;
 
 use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\DbExpr;
-use PeskyORM\ORM\RecordInterface;
+use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\Select\SelectQueryBuilderInterface;
 
 abstract class DbQuoter

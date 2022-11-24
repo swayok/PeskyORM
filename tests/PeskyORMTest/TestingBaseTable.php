@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest;
 
-use PeskyORM\ORM\RecordInterface;
-use PeskyORM\ORM\Table;
-use PeskyORM\ORM\TableStructure;
-use PeskyORM\ORM\TableStructureInterface;
+use PeskyORM\ORM\Record\RecordInterface;
+use PeskyORM\ORM\Table\Table;
+use PeskyORM\ORM\TableStructure\TableStructureInterface;
 use PeskyORM\Utils\StringUtils;
 
 abstract class TestingBaseTable extends Table
@@ -27,7 +26,7 @@ abstract class TestingBaseTable extends Table
     
     public function getTableStructure(): TableStructureInterface
     {
-        /** @var TableStructure $class */
+        /** @var \PeskyORM\ORM\TableStructure\TableStructure $class */
         $class = static::class . 'Structure';
         return $class::getInstance();
     }

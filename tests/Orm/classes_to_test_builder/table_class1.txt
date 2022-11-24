@@ -2,7 +2,7 @@
 
 namespace App\Db;
 
-use PeskyORM\ORM\Table;
+use PeskyORM\ORM\Table\Table;
 
 class AdminsTable extends Table
 {

@@ -6,7 +6,7 @@ namespace PeskyORM\Tests\PeskyORMTest\Adapter;
 
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\DbExpr;
-use PeskyORM\ORM\RecordInterface;
+use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\Select\SelectQueryBuilderInterface;
 use PeskyORM\Utils\DbAdapterMethodArgumentUtils;
 

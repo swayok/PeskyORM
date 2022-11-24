@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
-use PeskyORM\ORM\RecordInterface;
-use PeskyORM\ORM\TableStructureInterface;
+use PeskyORM\ORM\Record\RecordInterface;
+use PeskyORM\ORM\TableStructure\TableStructureInterface;
 use PeskyORM\Tests\PeskyORMTest\TestingBaseTable;
 
 class TestingAdminsTableLongAlias extends TestingBaseTable

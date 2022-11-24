@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\Traits;
 
-use PeskyORM\ORM\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\Column;
 
 trait TestingIdColumnTrait
 {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingFormatters;
 
-use PeskyORM\ORM\ValueToObjectConverter;
+use PeskyORM\ORM\TableStructure\TableColumn\ValueToObjectConverter\ValueToObjectConverter;
 
 class TestingFormatterJsonObject extends ValueToObjectConverter
 {

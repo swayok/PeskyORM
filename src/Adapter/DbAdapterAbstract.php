@@ -13,7 +13,7 @@ use PeskyORM\Exception\DbInsertQueryException;
 use PeskyORM\Exception\DbQueryReturningValuesException;
 use PeskyORM\Exception\DbTransactionException;
 use PeskyORM\Exception\DetailedPDOException;
-use PeskyORM\ORM\RecordInterface;
+use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\Profiling\TransactionsTracingInterface;
 use PeskyORM\Select\Select;
 use PeskyORM\Select\SelectQueryBuilderInterface;

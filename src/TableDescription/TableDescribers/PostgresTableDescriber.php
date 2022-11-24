@@ -7,7 +7,7 @@ namespace PeskyORM\TableDescription\TableDescribers;
 use JetBrains\PhpStorm\ArrayShape;
 use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\DbExpr;
-use PeskyORM\ORM\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\Column;
 use PeskyORM\TableDescription\ColumnDescription;
 use PeskyORM\TableDescription\TableDescription;
 use PeskyORM\Utils\PdoUtils;

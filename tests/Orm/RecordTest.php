@@ -7,10 +7,9 @@ namespace PeskyORM\Tests\Orm;
 use PeskyORM\DbExpr;
 use PeskyORM\Exception\InvalidDataException;
 use PeskyORM\Exception\RecordNotFoundException;
-use PeskyORM\ORM\Record;
-use PeskyORM\ORM\RecordsArray;
-use PeskyORM\ORM\RecordsSet;
-use PeskyORM\ORM\RecordValue;
+use PeskyORM\ORM\Record\Record;
+use PeskyORM\ORM\Record\RecordValue;
+use PeskyORM\ORM\RecordsCollection\RecordsSet;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin2;
@@ -914,7 +913,7 @@ class RecordTest extends BaseTestCase
     }
     
     /**
-     * @covers Record::serialize()
+     * @covers \PeskyORM\ORM\Record\Record::serialize()
      * @covers Record::unserialize()
      */
     public function testSerialization(): void
@@ -1095,8 +1094,8 @@ class RecordTest extends BaseTestCase
         static::assertArrayHasKey('Children', $relatedRecords);
         static::assertInstanceOf(TestingAdmin::class, $relatedRecords['Parent']);
         static::assertInstanceOf(TestingAdmin::class, $rec->getRelatedRecord('Parent', false));
-        static::assertInstanceOf(RecordsArray::class, $relatedRecords['Children']);
-        static::assertInstanceOf(RecordsArray::class, $rec->getRelatedRecord('Children', false));
+        static::assertInstanceOf(\PeskyORM\ORM\RecordsCollection\RecordsArray::class, $relatedRecords['Children']);
+        static::assertInstanceOf(\PeskyORM\ORM\RecordsCollection\RecordsArray::class, $rec->getRelatedRecord('Children', false));
         static::assertEquals(
             $recordsAdded[0]['password'],
             $rec->getRelatedRecord('Parent', false)
@@ -1385,7 +1384,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidSetRelatedRecord2(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #2 ($relatedRecord) must be of type PeskyORM\ORM\RecordInterface|PeskyORM\ORM\RecordsArray|PeskyORM\ORM\RecordsSet|array');
+        $this->expectExceptionMessage('Argument #2 ($relatedRecord) must be of type PeskyORM\ORM\Record\RecordInterface|PeskyORM\ORM\RecordsCollection\RecordsArray|PeskyORM\ORM\RecordsCollection\RecordsSet|array');
         /** @noinspection PhpParamsInspection */
         TestingAdmin::newEmptyRecord()
             ->updateRelatedRecord('Children', 'test');
@@ -1402,7 +1401,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidSetRelatedRecord4(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #2 ($relatedRecord) must be of type PeskyORM\ORM\RecordInterface|PeskyORM\ORM\RecordsArray|PeskyORM\ORM\RecordsSet|array');
+        $this->expectExceptionMessage('Argument #2 ($relatedRecord) must be of type PeskyORM\ORM\Record\RecordInterface|PeskyORM\ORM\RecordsCollection\RecordsArray|PeskyORM\ORM\RecordsCollection\RecordsSet|array');
         /** @noinspection PhpParamsInspection */
         TestingAdmin::newEmptyRecord()
             ->updateRelatedRecord('Parent', 'string');
@@ -1550,7 +1549,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidUpdateValuesData2(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #2 ($relatedRecord) must be of type PeskyORM\ORM\RecordInterface|PeskyORM\ORM\RecordsArray|PeskyORM\ORM\RecordsSet|array');
+        $this->expectExceptionMessage('Argument #2 ($relatedRecord) must be of type PeskyORM\ORM\Record\RecordInterface|PeskyORM\ORM\RecordsCollection\RecordsArray|PeskyORM\ORM\RecordsCollection\RecordsSet|array');
         TestingAdmin::newEmptyRecord()
             ->updateValues(['id' => 1, 'Parent' => null, 'Parent2' => null], true);
     }
@@ -2398,7 +2397,7 @@ class RecordTest extends BaseTestCase
     }
     
     /**
-     * @covers Record::beforeDelete()
+     * @covers \PeskyORM\ORM\Record\Record::beforeDelete()
      *
      *
      */
@@ -2437,7 +2436,7 @@ class RecordTest extends BaseTestCase
     }
     
     /**
-     * @covers Record::current()
+     * @covers \PeskyORM\ORM\Record\Record::current()
      * @covers Record::valid()
      * @covers Record::key()
      * @covers Record::next()
@@ -2467,7 +2466,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidArrayAccess1(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('PeskyORM\ORM\Record::hasColumn(): Argument #1 ($name) must be of type string');
+        $this->expectExceptionMessage('PeskyORM\ORM\Record\Record::hasColumn(): Argument #1 ($name) must be of type string');
         $rec = TestingAdmin::fromArray(TestingApp::getRecordsForDb('admins', 1)[0], true);
         $rec[0];
     }
@@ -2579,9 +2578,9 @@ class RecordTest extends BaseTestCase
         static::assertTrue(isset($rec['Children']));
         static::assertNotEmpty($rec['Children']);
         static::assertInstanceOf(TestingAdmin::class, $rec->Parent);
-        static::assertInstanceOf(RecordsArray::class, $rec->Children);
+        static::assertInstanceOf(\PeskyORM\ORM\RecordsCollection\RecordsArray::class, $rec->Children);
         static::assertInstanceOf(TestingAdmin::class, $rec['Parent']);
-        static::assertInstanceOf(RecordsArray::class, $rec['Children']);
+        static::assertInstanceOf(\PeskyORM\ORM\RecordsCollection\RecordsArray::class, $rec['Children']);
         static::assertEquals($data['password'], $rec->Parent->getValue('password'));
         unset($data['password']);
         static::assertEquals($data, $rec->Parent->toArray(array_keys($data)));

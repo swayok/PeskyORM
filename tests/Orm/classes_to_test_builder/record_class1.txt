@@ -2,7 +2,7 @@
 
 namespace App\Db;
 
-use PeskyORM\ORM\Record;
+use PeskyORM\ORM\Record\Record;
 use Carbon\Carbon;
 
 /**

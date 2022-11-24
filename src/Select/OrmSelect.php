@@ -9,10 +9,10 @@ use PeskyORM\DbExpr;
 use PeskyORM\Join\CrossJoinConfigInterface;
 use PeskyORM\Join\NormalJoinConfigInterface;
 use PeskyORM\Join\OrmJoinConfig;
-use PeskyORM\ORM\RecordInterface;
-use PeskyORM\ORM\Relation;
-use PeskyORM\ORM\TableInterface;
-use PeskyORM\ORM\TableStructureInterface;
+use PeskyORM\ORM\Record\RecordInterface;
+use PeskyORM\ORM\Table\TableInterface;
+use PeskyORM\ORM\TableStructure\Relation;
+use PeskyORM\ORM\TableStructure\TableStructureInterface;
 use PeskyORM\Utils\QueryBuilderUtils;
 
 class OrmSelect extends SelectQueryBuilderAbstract

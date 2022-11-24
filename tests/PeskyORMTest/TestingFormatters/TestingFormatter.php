@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\PeskyORMTest\TestingFormatters;
 
 use Carbon\CarbonImmutable;
-use PeskyORM\ORM\Column;
-use PeskyORM\ORM\Record;
-use PeskyORM\ORM\RecordValue;
-use PeskyORM\ORM\TableInterface;
+use PeskyORM\ORM\Record\Record;
+use PeskyORM\ORM\Record\RecordValue;
+use PeskyORM\ORM\Table\TableInterface;
+use PeskyORM\ORM\TableStructure\TableColumn\Column;
 
 /**
  * @property int    $id

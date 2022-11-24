@@ -5,9 +5,9 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses;
 
-use PeskyORM\ORM\Column;
-use PeskyORM\ORM\Relation;
-use PeskyORM\ORM\TableStructure;
+use PeskyORM\ORM\TableStructure\Relation;
+use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 
 class TestingInvalidRelationsInTableStructure4 extends TableStructure

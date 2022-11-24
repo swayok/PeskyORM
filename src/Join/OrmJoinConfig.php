@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Join;
 
-use PeskyORM\ORM\TableInterface;
+use PeskyORM\ORM\Table\TableInterface;
 
 class OrmJoinConfig extends NormalJoinConfigAbstract
 {

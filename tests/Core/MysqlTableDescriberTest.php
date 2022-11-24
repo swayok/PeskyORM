@@ -7,7 +7,7 @@ namespace PeskyORM\Tests\Core;
 use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\DbExpr;
-use PeskyORM\ORM\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\Column;
 use PeskyORM\TableDescription\TableDescribers\MysqlTableDescriber;
 use PeskyORM\TableDescription\TableDescribers\PostgresTableDescriber;
 use PeskyORM\TableDescription\TableDescribersRegistry;

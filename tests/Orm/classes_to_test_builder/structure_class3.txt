@@ -3,8 +3,8 @@
 namespace App\Db;
 
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
-use PeskyORM\ORM\Column;
-use PeskyORM\ORM\Relation;
+use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\Relation;
 use PeskyORM\DbExpr;
 use PeskyORM\Tests\PeskyORMTest\Traits\TestingIdColumnTrait;
 use PeskyORM\Tests\PeskyORMTest\Traits\TestingTimestampColumnsTrait;

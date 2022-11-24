@@ -9,7 +9,6 @@ use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\DbExpr;
 use PeskyORM\Join\OrmJoinConfig;
-use PeskyORM\ORM\FakeTable;
 use PeskyORM\Select\OrmSelect;
 use PeskyORM\Select\Select;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
@@ -998,7 +997,7 @@ class OrmSelectTest extends BaseTestCase
             . ' WHERE "tbl_Admins_1"."id" IN (SELECT "tbl_Subselect_0".* FROM "subselect" AS "tbl_Subselect_0")',
             $dbSelect->getQuery()
         );
-        $fakeTable = FakeTable::makeNewFakeTable('subselect');
+        $fakeTable = \PeskyORM\ORM\Fakes\FakeTable::makeNewFakeTable('subselect');
         $dbSelect = OrmSelect::from($fakeTable)
             ->columns(['id'])
             ->with(Select::from('admins', TestingAdminsTable::getConnection()), 'subselect')
@@ -1010,7 +1009,7 @@ class OrmSelectTest extends BaseTestCase
             . ' WHERE "tbl_Subselect_0"."created_at" > \'2016-01-01\'',
             $dbSelect->getQuery()
         );
-        $fakeTable = FakeTable::makeNewFakeTable('subselect2');
+        $fakeTable = \PeskyORM\ORM\Fakes\FakeTable::makeNewFakeTable('subselect2');
         $fakeTable->getTableStructure()->mimicTableStructure(TestingSettingsTableStructure::getInstance());
         $dbSelect = OrmSelect::from($fakeTable)
             ->columns(['id', 'key', 'value'])
@@ -1025,7 +1024,7 @@ class OrmSelectTest extends BaseTestCase
             $dbSelect->getQuery()
         );
 
-        $fakeTable2 = FakeTable::makeNewFakeTable('subselect3');
+        $fakeTable2 = \PeskyORM\ORM\Fakes\FakeTable::makeNewFakeTable('subselect3');
         $fakeTable2->getTableStructure()->mimicTableStructure(TestingSettingsTableStructure::getInstance());
         $subselect2 = Select::from('settings', TestingSettingsTable::getConnection())->columns(['*']);
         static::assertEquals(
@@ -1084,7 +1083,7 @@ class OrmSelectTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessageMatches('%OrmSelect::normalizeWildcardColumn\(\): .*?FakeTableStructure\d+ForFake\d+ has no columns that exist in DB%');
-        $fakeTable = FakeTable::makeNewFakeTable('fake1');
+        $fakeTable = \PeskyORM\ORM\Fakes\FakeTable::makeNewFakeTable('fake1');
         $select = OrmSelect::from($fakeTable)->columns('*');
         $select->buildQueryToBeUsedInWith();
     }

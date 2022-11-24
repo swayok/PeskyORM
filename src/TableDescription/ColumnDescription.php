@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\TableDescription;
 
 use PeskyORM\DbExpr;
-use PeskyORM\ORM\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\Column;
 
 class ColumnDescription implements \Serializable
 {
