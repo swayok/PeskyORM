@@ -259,7 +259,7 @@ class Relation implements RelationInterface
         return [static::JOIN_INNER, static::JOIN_LEFT, static::JOIN_RIGHT, static::JOIN_FULL];
     }
 
-    public function toOrmJoinConfig(
+    public function toJoinConfig(
         TableInterface $sourceTable,
         ?string $sourceTableAlias = null,
         ?string $overrideJoinName = null,

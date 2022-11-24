@@ -48,7 +48,7 @@ interface RelationInterface
         ?RecordInterface $localRecord = null
     ): array;
 
-    public function toOrmJoinConfig(
+    public function toJoinConfig(
         TableInterface $sourceTable,
         ?string $sourceTableAlias = null,
         ?string $overrideJoinName = null,

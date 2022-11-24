@@ -135,7 +135,7 @@ abstract class Table implements TableInterface
     ): NormalJoinConfigInterface {
         return static::getStructure()
             ->getRelation($relationName)
-            ->toOrmJoinConfig(
+            ->toJoinConfig(
                 static::getInstance(),
                 $alterLocalTableAlias,
                 $joinName

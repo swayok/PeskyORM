@@ -111,7 +111,7 @@ class OrmSelect extends SelectQueryBuilderAbstract
             }
 
             $ormJoinConfig = $relationConfig
-                ->toOrmJoinConfig($table, $tableAlias, $relationAlias, $joinType)
+                ->toJoinConfig($table, $tableAlias, $relationAlias, $joinType)
                 ->setForeignColumnsToSelect($columnsToSelectForRelation);
 
             if (!empty($additionalJoinConditions)) {
