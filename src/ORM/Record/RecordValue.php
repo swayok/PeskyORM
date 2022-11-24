@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace PeskyORM\ORM\Record;
 
 use PeskyORM\DbExpr;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 
 class RecordValue
 {
     
-    protected Column $column;
+    protected TableColumnInterface $column;
     protected RecordInterface $record;
     
     protected mixed $value = null;
@@ -27,12 +27,12 @@ class RecordValue
     protected array $customInfo = [];
     protected ?array $dataForSavingExtender = null;
     
-    public static function create(Column $dbTableColumn, RecordInterface $record): static
+    public static function create(TableColumnInterface $dbTableColumn, RecordInterface $record): static
     {
         return new static($dbTableColumn, $record);
     }
     
-    public function __construct(Column $dbTableColumn, RecordInterface $record)
+    public function __construct(TableColumnInterface $dbTableColumn, RecordInterface $record)
     {
         $this->column = $dbTableColumn;
         $this->record = $record;
@@ -56,7 +56,7 @@ class RecordValue
         }
     }
     
-    public function getColumn(): Column
+    public function getColumn(): TableColumnInterface
     {
         return $this->column;
     }

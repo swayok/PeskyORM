@@ -7,7 +7,7 @@ namespace PeskyORM\Tests\Core;
 use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\DbExpr;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\TableDescription\TableDescribers\MysqlTableDescriber;
 use PeskyORM\TableDescription\TableDescribers\PostgresTableDescriber;
 use PeskyORM\TableDescription\TableDescribersRegistry;
@@ -156,7 +156,7 @@ class MysqlTableDescriberTest extends PostgresTableDescriberTest
         $idCol = $description->getColumn('id');
         static::assertEquals('id', $idCol->getName());
         static::assertEquals('int(11)', $idCol->getDbType());
-        static::assertEquals(Column::TYPE_INT, $idCol->getOrmType());
+        static::assertEquals(TableColumn::TYPE_INT, $idCol->getOrmType());
         static::assertEquals(null, $idCol->getDefault());
         static::assertEquals(null, $idCol->getNumberPrecision());
         static::assertEquals(11, $idCol->getLimit());
@@ -168,7 +168,7 @@ class MysqlTableDescriberTest extends PostgresTableDescriberTest
         $keyCol = $description->getColumn('key');
         static::assertEquals('key', $keyCol->getName());
         static::assertEquals('varchar(100)', $keyCol->getDbType());
-        static::assertEquals(Column::TYPE_STRING, $keyCol->getOrmType());
+        static::assertEquals(TableColumn::TYPE_STRING, $keyCol->getOrmType());
         static::assertEquals(null, $keyCol->getDefault());
         static::assertEquals(null, $keyCol->getNumberPrecision());
         static::assertEquals(100, $keyCol->getLimit());
@@ -180,7 +180,7 @@ class MysqlTableDescriberTest extends PostgresTableDescriberTest
         $valueCol = $description->getColumn('value');
         static::assertEquals('value', $valueCol->getName());
         static::assertEquals('text', $valueCol->getDbType());
-        static::assertEquals(Column::TYPE_TEXT, $valueCol->getOrmType());
+        static::assertEquals(TableColumn::TYPE_TEXT, $valueCol->getOrmType());
         static::assertEquals(null, $valueCol->getDefault());
         static::assertEquals(null, $valueCol->getNumberPrecision());
         static::assertEquals(null, $valueCol->getLimit());

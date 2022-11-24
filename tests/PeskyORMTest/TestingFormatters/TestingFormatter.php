@@ -8,7 +8,7 @@ use Carbon\CarbonImmutable;
 use PeskyORM\ORM\Record\Record;
 use PeskyORM\ORM\Record\RecordValue;
 use PeskyORM\ORM\Table\TableInterface;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 
 /**
  * @property int    $id
@@ -56,7 +56,7 @@ class TestingFormatter extends Record
         return TestingFormattersTable::getInstance();
     }
 
-    public function getValueContainer(Column|string $colNameOrConfig): RecordValue
+    public function getValueContainer(TableColumnInterface|string $colNameOrConfig): RecordValue
     {
         return parent::getValueContainer($colNameOrConfig);
     }

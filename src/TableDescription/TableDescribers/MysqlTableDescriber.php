@@ -7,7 +7,7 @@ namespace PeskyORM\TableDescription\TableDescribers;
 use JetBrains\PhpStorm\ArrayShape;
 use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\DbExpr;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\TableDescription\ColumnDescription;
 use PeskyORM\TableDescription\TableDescription;
 use PeskyORM\Utils\PdoUtils;
@@ -17,38 +17,38 @@ class MysqlTableDescriber implements TableDescriberInterface
 {
 
     protected static array $dbTypeToOrmType = [
-        'bool' => Column::TYPE_BOOL,
-        'blob' => Column::TYPE_BLOB,
-        'tinyblob' => Column::TYPE_BLOB,
-        'mediumblob' => Column::TYPE_BLOB,
-        'longblob' => Column::TYPE_BLOB,
-        'tinyint' => Column::TYPE_INT,
-        'smallint' => Column::TYPE_INT,
-        'mediumint' => Column::TYPE_INT,
-        'bigint' => Column::TYPE_INT,
-        'int' => Column::TYPE_INT,
-        'integer' => Column::TYPE_INT,
-        'decimal' => Column::TYPE_FLOAT,
-        'dec' => Column::TYPE_FLOAT,
-        'float' => Column::TYPE_FLOAT,
-        'double' => Column::TYPE_FLOAT,
-        'double precision' => Column::TYPE_FLOAT,
-        'char' => Column::TYPE_STRING,
-        'binary' => Column::TYPE_STRING,
-        'varchar' => Column::TYPE_STRING,
-        'varbinary' => Column::TYPE_STRING,
-        'enum' => Column::TYPE_STRING,
-        'set' => Column::TYPE_STRING,
-        'text' => Column::TYPE_TEXT,
-        'tinytext' => Column::TYPE_TEXT,
-        'mediumtext' => Column::TYPE_TEXT,
-        'longtext' => Column::TYPE_TEXT,
-        'json' => Column::TYPE_JSON,
-        'date' => Column::TYPE_DATE,
-        'time' => Column::TYPE_TIME,
-        'datetime' => Column::TYPE_TIMESTAMP,
-        'timestamp' => Column::TYPE_TIMESTAMP,
-        'year' => Column::TYPE_INT,
+        'bool' => TableColumn::TYPE_BOOL,
+        'blob' => TableColumn::TYPE_BLOB,
+        'tinyblob' => TableColumn::TYPE_BLOB,
+        'mediumblob' => TableColumn::TYPE_BLOB,
+        'longblob' => TableColumn::TYPE_BLOB,
+        'tinyint' => TableColumn::TYPE_INT,
+        'smallint' => TableColumn::TYPE_INT,
+        'mediumint' => TableColumn::TYPE_INT,
+        'bigint' => TableColumn::TYPE_INT,
+        'int' => TableColumn::TYPE_INT,
+        'integer' => TableColumn::TYPE_INT,
+        'decimal' => TableColumn::TYPE_FLOAT,
+        'dec' => TableColumn::TYPE_FLOAT,
+        'float' => TableColumn::TYPE_FLOAT,
+        'double' => TableColumn::TYPE_FLOAT,
+        'double precision' => TableColumn::TYPE_FLOAT,
+        'char' => TableColumn::TYPE_STRING,
+        'binary' => TableColumn::TYPE_STRING,
+        'varchar' => TableColumn::TYPE_STRING,
+        'varbinary' => TableColumn::TYPE_STRING,
+        'enum' => TableColumn::TYPE_STRING,
+        'set' => TableColumn::TYPE_STRING,
+        'text' => TableColumn::TYPE_TEXT,
+        'tinytext' => TableColumn::TYPE_TEXT,
+        'mediumtext' => TableColumn::TYPE_TEXT,
+        'longtext' => TableColumn::TYPE_TEXT,
+        'json' => TableColumn::TYPE_JSON,
+        'date' => TableColumn::TYPE_DATE,
+        'time' => TableColumn::TYPE_TIME,
+        'datetime' => TableColumn::TYPE_TIMESTAMP,
+        'timestamp' => TableColumn::TYPE_TIMESTAMP,
+        'year' => TableColumn::TYPE_INT,
     ];
 
     public function __construct(private DbAdapterInterface $adapter)
@@ -83,7 +83,7 @@ class MysqlTableDescriber implements TableDescriberInterface
         $dbType = strtolower(preg_replace(['%\s*unsigned$%i', '%\([^)]+\)$%'], ['', ''], $dbType));
         return array_key_exists($dbType, static::$dbTypeToOrmType)
             ? static::$dbTypeToOrmType[$dbType]
-            : Column::TYPE_STRING;
+            : TableColumn::TYPE_STRING;
     }
 
     protected function cleanDefaultValueForColumnDescription(

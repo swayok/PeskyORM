@@ -45,11 +45,11 @@ class ClassBuilderTest extends BaseTestCase
             $this->callObjectMethod($builder, 'getShortClassName', TestingAdmin::class)
         );
         static::assertEquals(
-            'Column::TYPE_STRING',
+            'TableColumn::TYPE_STRING',
             $this->callObjectMethod($builder, 'getConstantNameForColumnType', 'string')
         );
         static::assertEquals(
-            'Column::TYPE_INT',
+            'TableColumn::TYPE_INT',
             $this->callObjectMethod($builder, 'getConstantNameForColumnType', 'integer')
         );
     }
@@ -78,79 +78,79 @@ class ClassBuilderTest extends BaseTestCase
     public function testMakeColumnConfig(): void
     {
         $builder = $this->getBuilder();
-        $columnDescr = new ColumnDescription('test', 'integer', \PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_INT);
+        $columnDescr = new ColumnDescription('test', 'integer', \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_INT);
         $columnDescr->setIsPrimaryKey(true);
         static::assertEquals(
-            'Column::create(Column::TYPE_INT)->primaryKey()',
+            'TableColumn::create(TableColumn::TYPE_INT)->primaryKey()',
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
             ->setIsPrimaryKey(false)
             ->setIsUnique(true);
         static::assertEquals(
-            'Column::create(Column::TYPE_INT)->uniqueValues()',
+            'TableColumn::create(TableColumn::TYPE_INT)->uniqueValues()',
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
             ->setIsUnique(false)
             ->setIsNullable(false);
         static::assertEquals(
-            'Column::create(Column::TYPE_INT)->disallowsNullValues()->convertsEmptyStringToNull()',
+            'TableColumn::create(TableColumn::TYPE_INT)->disallowsNullValues()->convertsEmptyStringToNull()',
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
             ->setIsNullable(true);
         static::assertEquals(
-            'Column::create(Column::TYPE_INT)',
+            'TableColumn::create(TableColumn::TYPE_INT)',
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
             ->setDefault('string with \' quotes " `');
         static::assertEquals(
-            "Column::create(Column::TYPE_INT)->setDefaultValue('string with \\' quotes \\\" `')",
+            "TableColumn::create(TableColumn::TYPE_INT)->setDefaultValue('string with \\' quotes \\\" `')",
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
             ->setDefault(true);
         static::assertEquals(
-            'Column::create(Column::TYPE_INT)->setDefaultValue(true)',
+            'TableColumn::create(TableColumn::TYPE_INT)->setDefaultValue(true)',
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
             ->setDefault(false);
         static::assertEquals(
-            'Column::create(Column::TYPE_INT)->setDefaultValue(false)',
+            'TableColumn::create(TableColumn::TYPE_INT)->setDefaultValue(false)',
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
             ->setDefault(null);
         static::assertEquals(
-            'Column::create(Column::TYPE_INT)',
+            'TableColumn::create(TableColumn::TYPE_INT)',
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
             ->setDefault(111);
         static::assertEquals(
-            'Column::create(Column::TYPE_INT)->setDefaultValue(111)',
+            'TableColumn::create(TableColumn::TYPE_INT)->setDefaultValue(111)',
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
             ->setDefault(111.11);
         static::assertEquals(
-            'Column::create(Column::TYPE_INT)->setDefaultValue(111.11)',
+            'TableColumn::create(TableColumn::TYPE_INT)->setDefaultValue(111.11)',
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
             ->setDefault(DbExpr::create("string with ' quotes \" `"));
         static::assertEquals(
-            "Column::create(Column::TYPE_INT)->setDefaultValue(DbExpr::create('string with \' quotes \\\" `'))",
+            "TableColumn::create(TableColumn::TYPE_INT)->setDefaultValue(DbExpr::create('string with \' quotes \\\" `'))",
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
         $columnDescr
             ->setDefault(DbExpr::create("string with ' quotes \" `"))
             ->setIsPrimaryKey(true);
         static::assertEquals(
-            'Column::create(Column::TYPE_INT)->primaryKey()',
+            'TableColumn::create(TableColumn::TYPE_INT)->primaryKey()',
             preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
         );
     }

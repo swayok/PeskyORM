@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\TableStructure;
 
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 
 interface TableStructureInterface
 {
@@ -26,16 +26,16 @@ interface TableStructureInterface
     
     public static function hasColumn(string $columnName): bool;
     
-    public static function getColumn(string $columnName): Column;
+    public static function getColumn(string $columnName): TableColumnInterface;
     
     /**
-     * @return Column[]
+     * @return TableColumnInterface[]
      */
     public static function getColumns(): array;
     
     public static function getPkColumnName(): ?string;
     
-    public static function getPkColumn(): ?Column;
+    public static function getPkColumn(): ?TableColumnInterface;
     
     public static function hasPkColumn(): bool;
     
@@ -44,16 +44,16 @@ interface TableStructureInterface
     public static function hasFileColumn(string $columnName): bool;
     
     /**
-     * @return Column[] - ['column_name' => Column]
+     * @return TableColumnInterface[] - ['column_name' => TableColumn]
      */
     public static function getFileColumns(): array;
     
     public static function hasRelation(string $relationName): bool;
     
-    public static function getRelation(string $relationName): Relation;
+    public static function getRelation(string $relationName): RelationInterface;
     
     /**
-     * @return Relation[]
+     * @return RelationInterface[]
      */
     public static function getRelations(): array;
     

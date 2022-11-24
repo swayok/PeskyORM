@@ -68,7 +68,7 @@ class TableDescription implements \Serializable
     public function getColumn($name): ColumnDescription
     {
         if (!array_key_exists($name, $this->columns)) {
-            throw new \InvalidArgumentException("Column '{$name}' does not exist");
+            throw new \InvalidArgumentException("TableColumn '{$name}' does not exist");
         }
         return $this->columns[$name];
     }

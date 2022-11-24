@@ -6,7 +6,8 @@ namespace PeskyORM\ORM\TableStructure;
 
 use PeskyORM\Config\Connection\DbConnectionsManager;
 use PeskyORM\Exception\OrmException;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\TableDescription\TableDescribersRegistry;
 use PeskyORM\TableDescription\TableDescription;
 use PeskyORM\Utils\StringUtils;
@@ -25,35 +26,35 @@ abstract class TableStructure implements TableStructureInterface
      */
     protected static bool $autoloadConfigsFromPrivateMethods = true;
 
-    protected ?Column $pk = null;
+    protected ?TableColumnInterface $pk = null;
     /**
-     * @var Column[]
+     * @var TableColumnInterface[]
      */
     protected array $fileColumns = [];
     /**
-     * @var Column[]
+     * @var TableColumnInterface[]
      */
     protected array $columsThatExistInDb = [];
     /**
-     * @var Column[]
+     * @var TableColumnInterface[]
      */
     protected array $columsThatDoNotExistInDb = [];
 
     /**
      * It contains only ReflectionMethod objects after class instance created
-     * Later it converts ReflectionMethod to Column objects on demand
-     * @var Column[]
+     * Later it converts ReflectionMethod to TableColumn objects on demand
+     * @var TableColumnInterface[]
      */
     protected array $columns = [];
 
     /**
      * Behaves like $columns
-     * @var Relation[]
+     * @var RelationInterface[]
      */
     protected array $relations = [];
 
     /**
-     * @var Relation[][]
+     * @var RelationInterface[][]
      */
     protected array $columnsRelations = [];
 
@@ -139,8 +140,8 @@ abstract class TableStructure implements TableStructureInterface
     protected function analyze(): void
     {
         foreach ($this->relations as $relationConfig) {
-            $this->_getColumn($relationConfig->getLocalColumnName()); //< validate local column existance
-            $this->columnsRelations[$relationConfig->getLocalColumnName()][$relationConfig->getName(
+            $this->_getColumn($relationConfig->getColumnName()); //< validate local column existance
+            $this->columnsRelations[$relationConfig->getColumnName()][$relationConfig->getName(
             )] = $relationConfig;
         }
     }
@@ -175,18 +176,16 @@ abstract class TableStructure implements TableStructureInterface
 
     public static function hasColumn(string $columnName): bool
     {
-        return static::getInstance()
-                     ->_hasColumn($columnName);
+        return static::getInstance()->_hasColumn($columnName);
     }
 
-    public static function getColumn(string $columnName): Column
+    public static function getColumn(string $columnName): TableColumnInterface
     {
-        return static::getInstance()
-                     ->_getColumn($columnName);
+        return static::getInstance()->_getColumn($columnName);
     }
 
     /**
-     * @return Column[] - key = column name
+     * @return TableColumnInterface[] - key = column name
      */
     public static function getColumns(): array
     {
@@ -198,7 +197,7 @@ abstract class TableStructure implements TableStructureInterface
         return static::getPkColumn()?->getName();
     }
 
-    public static function getPkColumn(): ?Column
+    public static function getPkColumn(): ?TableColumnInterface
     {
         return static::getInstance()->pk;
     }
@@ -224,7 +223,7 @@ abstract class TableStructure implements TableStructureInterface
     }
 
     /**
-     * @return Column[] = array('column_name' => Column)
+     * @return TableColumnInterface[] = array('column_name' => TableColumn)
      */
     public static function getFileColumns(): array
     {
@@ -232,7 +231,7 @@ abstract class TableStructure implements TableStructureInterface
     }
 
     /**
-     * @return Column[]
+     * @return TableColumnInterface[]
      */
     public static function getColumnsThatExistInDb(): array
     {
@@ -240,7 +239,7 @@ abstract class TableStructure implements TableStructureInterface
     }
 
     /**
-     * @return Column[]
+     * @return TableColumnInterface[]
      */
     public static function getColumnsThatDoNotExistInDb(): array
     {
@@ -249,18 +248,16 @@ abstract class TableStructure implements TableStructureInterface
 
     public static function hasRelation(string $relationName): bool
     {
-        return static::getInstance()
-                     ->_hasRelation($relationName);
+        return static::getInstance()->_hasRelation($relationName);
     }
 
-    public static function getRelation(string $relationName): Relation
+    public static function getRelation(string $relationName): RelationInterface
     {
-        return static::getInstance()
-                     ->_getRelation($relationName);
+        return static::getInstance()->_getRelation($relationName);
     }
 
     /**
-     * @return Relation[]
+     * @return RelationInterface[]
      */
     public static function getRelations(): array
     {
@@ -268,7 +265,7 @@ abstract class TableStructure implements TableStructureInterface
     }
 
     /**
-     * @return Relation[][]
+     * @return RelationInterface[][]
      */
     public static function getColumnsRelations(): array
     {
@@ -276,7 +273,7 @@ abstract class TableStructure implements TableStructureInterface
     }
 
     /**
-     * @return Relation[]
+     * @return RelationInterface[]
      */
     public static function getColumnRelations(string $columnName): array
     {
@@ -287,9 +284,9 @@ abstract class TableStructure implements TableStructureInterface
 
     /**
      * Collects column configs from private methods where method name is column name or relation name.
-     * Column name must be a lowercased string starting from letter: private function parent_id() {}
+     * TableColumn name must be a lowercased string starting from letter: private function parent_id() {}
      * Relation name must start from upper case letter: private function RelationName() {}
-     * Column method must return Column object
+     * TableColumn method must return TableColumn object
      * Relation method must return Relation object
      */
     protected function loadColumnsAndRelationsFromPrivateMethods(): void
@@ -322,7 +319,7 @@ abstract class TableStructure implements TableStructureInterface
         $description = $this->getTableDescription();
         foreach ($description->getColumns() as $columnName => $columnDescription) {
             if (!$this->_hasColumn($columnName)) {
-                $column = Column::create($columnDescription->getOrmType(), $columnName)
+                $column = TableColumn::create($columnDescription->getOrmType(), $columnName)
                                 ->setIsNullableValue($columnDescription->isNullable());
                 if ($columnDescription->isPrimaryKey()) {
                     $column->primaryKey();
@@ -355,7 +352,7 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * @throws \InvalidArgumentException
      */
-    protected function _getColumn(string $columnName): Column
+    protected function _getColumn(string $columnName): TableColumnInterface
     {
         if (!$this->_hasColumn($columnName)) {
             $class = static::class;
@@ -365,19 +362,19 @@ abstract class TableStructure implements TableStructureInterface
     }
 
     /**
-     * Make Column object for private method (if not made yet) and return it
+     * Make TableColumn object for private method (if not made yet) and return it
      * @throws OrmException
      */
     protected function loadColumnConfigFromMethodReflection(\ReflectionMethod $method): void
     {
         $method->setAccessible(true);
-        /** @var Column $column */
+        /** @var TableColumnInterface $column */
         $column = $method->invoke($this);
         $method->setAccessible(false);
-        if (!($column instanceof Column)) {
+        if (!($column instanceof TableColumn)) {
             $class = static::class;
             throw new OrmException(
-                "Method {$class}->{$method->getName()}() must return instance of \\PeskyORM\\ORM\\TableStructure\\TableColumn\\Column class",
+                "Method {$class}->{$method->getName()}() must return instance of \\PeskyORM\\ORM\\TableStructure\\TableColumn\\TableColumn class",
                 OrmException::CODE_INVALID_TABLE_COLUMN_CONFIG
             );
         }
@@ -390,7 +387,7 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * @throws OrmException
      */
-    protected function addColumn(Column $column): void
+    protected function addColumn(TableColumnInterface $column): void
     {
         $column->setTableStructure($this);
         $this->columns[$column->getName()] = $column;
@@ -422,7 +419,7 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * @throws \InvalidArgumentException
      */
-    protected function _getRelation(string $relationName): Relation
+    protected function _getRelation(string $relationName): RelationInterface
     {
         if (!$this->_hasRelation($relationName)) {
             $class = static::class;
@@ -443,10 +440,10 @@ abstract class TableStructure implements TableStructureInterface
     protected function loadRelationConfigFromMethodReflection(\ReflectionMethod $method): void
     {
         $method->setAccessible(true);
-        /** @var Relation $config */
+        /** @var RelationInterface $config */
         $config = $method->invoke($this);
         $method->setAccessible(false);
-        if (!($config instanceof Relation)) {
+        if (!($config instanceof RelationInterface)) {
             $class = static::class;
             throw new OrmException(
                 "Method {$class}->{$method->getName()}() must return instance of \\PeskyORM\\ORM\\TableStructure\\Relation class",
@@ -459,12 +456,12 @@ abstract class TableStructure implements TableStructureInterface
         $this->addRelation($config);
     }
 
-    protected function addRelation(Relation $relation): void
+    protected function addRelation(RelationInterface $relation): void
     {
         $this->relations[$relation->getName()] = $relation;
     }
 
-    public function __get(string $name): Column|Relation
+    public function __get(string $name): TableColumnInterface|RelationInterface
     {
         if ($this->_hasRelation($name)) {
             return static::getRelation($name);

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\Fakes;
 
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\ORM\TableStructure\TableStructure;
 
 trait FakeTableStructureHelpers
@@ -12,7 +12,7 @@ trait FakeTableStructureHelpers
     
     /**
      * @param array $columns - key-value array where key is column name and value is column type or
-     *          key is int and value is column name or instance of Column class
+     *          key is int and value is column name or instance of TableColumn class
      * @return static
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -23,9 +23,9 @@ trait FakeTableStructureHelpers
         foreach ($columns as $name => $typeOrColumnInstance) {
             if (is_int($name)) {
                 $name = $typeOrColumnInstance;
-                $typeOrColumnInstance = Column::TYPE_STRING;
+                $typeOrColumnInstance = TableColumn::TYPE_STRING;
             }
-            if ($typeOrColumnInstance instanceof Column) {
+            if ($typeOrColumnInstance instanceof TableColumn) {
                 if ($typeOrColumnInstance->hasName()) {
                     $name = $typeOrColumnInstance->getName();
                 } else {
@@ -33,7 +33,7 @@ trait FakeTableStructureHelpers
                 }
                 $this->columns[$name] = $typeOrColumnInstance;
             } else {
-                $this->columns[$name] = Column::create($typeOrColumnInstance, $name);
+                $this->columns[$name] = TableColumn::create($typeOrColumnInstance, $name);
             }
             if ($this->columns[$name]->isItAFile()) {
                 $this->fileColumns[] = $this->columns[$name];

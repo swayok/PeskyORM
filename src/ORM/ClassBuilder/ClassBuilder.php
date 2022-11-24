@@ -8,8 +8,8 @@ use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\Record\Record;
 use PeskyORM\ORM\Table\Table;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\ORM\TableStructure\TableStructure;
 use PeskyORM\TableDescription\ColumnDescription;
 use PeskyORM\TableDescription\TableDescribersRegistry;
@@ -104,7 +104,7 @@ VIEW;
 namespace {$namespace};
 
 use {$parentClass};
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\ORM\TableStructure\Relation;
 use PeskyORM\DbExpr;$includes
 
@@ -254,7 +254,7 @@ VIEW;
                 continue;
             }
             $columns[] = <<<VIEW
-    private function {$columnDescription->getName()}(): Column
+    private function {$columnDescription->getName()}(): TableColumnInterface
     {
         return {$this->makeColumnConfig($columnDescription)};
     }
@@ -269,7 +269,7 @@ VIEW;
      */
     protected function makeColumnConfig(ColumnDescription $columnDescription): string
     {
-        $ret = "Column::create({$this->getConstantNameForColumnType($columnDescription->getOrmType())})";
+        $ret = "TableColumn::create({$this->getConstantNameForColumnType($columnDescription->getOrmType())})";
         if ($columnDescription->isPrimaryKey()) {
             $ret .= "\n            ->primaryKey()";
         }
@@ -299,14 +299,15 @@ VIEW;
     
     /**
      * @param string $columnTypeValue - like 'string', 'integer', etc..
-     * @return string like Column::TYPE_*
+     * @return string like TableColumn::TYPE_*
      */
     protected function getConstantNameForColumnType(string $columnTypeValue): string
     {
+        // todo: refactor this
         if ($this->typeValueToTypeConstantName === null) {
             $this->typeValueToTypeConstantName = array_flip(
                 array_filter(
-                    (new \ReflectionClass(Column::class))->getConstants(),
+                    (new \ReflectionClass(TableColumn::class))->getConstants(),
                     static function ($key) {
                         return str_starts_with($key, 'TYPE_');
                     },
@@ -314,7 +315,7 @@ VIEW;
                 )
             );
         }
-        return 'Column::' . $this->typeValueToTypeConstantName[$columnTypeValue];
+        return 'TableColumn::' . $this->typeValueToTypeConstantName[$columnTypeValue];
     }
     
     protected function makePhpDocForRecord(): string
@@ -339,10 +340,10 @@ VIEW;
     {
         $description = $this->getTableDescription();
         $types = [
-            Column::TYPE_TIMESTAMP,
-            Column::TYPE_TIMESTAMP_WITH_TZ,
-            Column::TYPE_UNIX_TIMESTAMP,
-            Column::TYPE_DATE,
+            TableColumn::TYPE_TIMESTAMP,
+            TableColumn::TYPE_TIMESTAMP_WITH_TZ,
+            TableColumn::TYPE_UNIX_TIMESTAMP,
+            TableColumn::TYPE_DATE,
         ];
         foreach ($description->getColumns() as $columnDescription) {
             if (in_array($columnDescription->getOrmType(), $types, true)) {
@@ -355,9 +356,9 @@ VIEW;
     protected function getPhpTypeByColumnDescription(ColumnDescription $columnDescription): string
     {
         $type = match ($columnDescription->getOrmType()) {
-            Column::TYPE_INT => 'int',
-            Column::TYPE_FLOAT => 'float',
-            Column::TYPE_BOOL => 'bool',
+            TableColumn::TYPE_INT => 'int',
+            TableColumn::TYPE_FLOAT => 'float',
+            TableColumn::TYPE_BOOL => 'bool',
             default => 'string',
         };
         return ($columnDescription->isNullable() ? 'null|' : '') . $type;
@@ -387,7 +388,7 @@ VIEW;
         $description = $this->getTableDescription();
         $getters = [];
         foreach ($description->getColumns() as $columnDescription) {
-            $getters[] = " * @property-read Column    \${$columnDescription->getName()}";
+            $getters[] = " * @property-read TableColumn    \${$columnDescription->getName()}";
         }
         return implode("\n", $getters);
     }

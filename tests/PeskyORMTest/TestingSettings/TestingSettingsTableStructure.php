@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingSettings;
 
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\ORM\TableStructure\TableStructure;
 
 class TestingSettingsTableStructure extends TableStructure
@@ -16,24 +16,24 @@ class TestingSettingsTableStructure extends TableStructure
         return 'settings';
     }
     
-    private function id(): Column
+    private function id(): TableColumn
     {
-        return Column::create(Column::TYPE_INT)
+        return TableColumn::create(TableColumn::TYPE_INT)
             ->primaryKey()
             ->convertsEmptyStringToNull()
             ->disallowsNullValues();
     }
     
-    private function key(): Column
+    private function key(): TableColumn
     {
-        return Column::create(Column::TYPE_STRING)
+        return TableColumn::create(TableColumn::TYPE_STRING)
             ->convertsEmptyStringToNull()
             ->disallowsNullValues();
     }
     
-    private function value(): Column
+    private function value(): TableColumn
     {
-        return Column::create(Column::TYPE_JSONB)
+        return TableColumn::create(TableColumn::TYPE_JSONB)
             ->convertsEmptyStringToNull()
             ->disallowsNullValues()
             ->setDefaultValue('{}');

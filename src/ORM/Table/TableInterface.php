@@ -6,10 +6,11 @@ namespace PeskyORM\ORM\Table;
 
 use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\DbExpr;
+use PeskyORM\Join\NormalJoinConfigInterface;
 use PeskyORM\Join\OrmJoinConfig;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\RecordsCollection\RecordsSet;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\ORM\TableStructure\TableStructureInterface;
 
 interface TableInterface
@@ -53,11 +54,11 @@ interface TableInterface
         string $relationName,
         string $alterLocalTableAlias = null,
         string $joinName = null
-    ): OrmJoinConfig;
+    ): NormalJoinConfigInterface;
     
     public static function hasPkColumn(): bool;
     
-    public static function getPkColumn(): Column;
+    public static function getPkColumn(): TableColumnInterface;
     
     public static function getPkColumnName(): string;
     
@@ -138,13 +139,13 @@ interface TableInterface
 
     /**
      * Make a query that returns only 1 value for specific column
-     * @param string|Column $column
+     * @param string|TableColumnInterface $column
      * @param array $conditions
      * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
      * @throws \InvalidArgumentException
      */
     public static function selectColumnValue(
-        string|Column $column,
+        string|TableColumnInterface $column,
         array $conditions = [],
         ?\Closure $configurator = null
     ): mixed;

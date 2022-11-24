@@ -8,7 +8,7 @@ use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\DbExpr;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\TableDescription\TableDescribers\MysqlTableDescriber;
 use PeskyORM\TableDescription\TableDescribers\PostgresTableDescriber;
 use PeskyORM\TableDescription\TableDescribersRegistry;
@@ -186,7 +186,7 @@ class PostgresTableDescriberTest extends BaseTestCase
         $idCol = $description->getColumn('id');
         static::assertEquals('id', $idCol->getName());
         static::assertEquals('int4', $idCol->getDbType());
-        static::assertEquals(Column::TYPE_INT, $idCol->getOrmType());
+        static::assertEquals(TableColumn::TYPE_INT, $idCol->getOrmType());
         static::assertEquals(DbExpr::create('nextval(\'settings_id_seq\'::regclass)'), $idCol->getDefault());
         static::assertEquals(null, $idCol->getNumberPrecision());
         static::assertEquals(null, $idCol->getLimit());
@@ -198,7 +198,7 @@ class PostgresTableDescriberTest extends BaseTestCase
         $keyCol = $description->getColumn('key');
         static::assertEquals('key', $keyCol->getName());
         static::assertEquals('varchar', $keyCol->getDbType());
-        static::assertEquals(Column::TYPE_STRING, $keyCol->getOrmType());
+        static::assertEquals(TableColumn::TYPE_STRING, $keyCol->getOrmType());
         static::assertEquals(null, $keyCol->getDefault());
         static::assertEquals(null, $keyCol->getNumberPrecision());
         static::assertEquals(100, $keyCol->getLimit());
@@ -210,7 +210,7 @@ class PostgresTableDescriberTest extends BaseTestCase
         $valueCol = $description->getColumn('value');
         static::assertEquals('value', $valueCol->getName());
         static::assertEquals('jsonb', $valueCol->getDbType());
-        static::assertEquals(Column::TYPE_JSONB, $valueCol->getOrmType());
+        static::assertEquals(TableColumn::TYPE_JSONB, $valueCol->getOrmType());
         static::assertEquals('{}', $valueCol->getDefault());
         static::assertEquals(null, $valueCol->getNumberPrecision());
         static::assertEquals(null, $valueCol->getLimit());

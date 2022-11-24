@@ -4,24 +4,13 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\TableStructure;
 
-use PeskyORM\Join\JoinConfigInterface;
 use PeskyORM\Join\OrmJoinConfig;
-use PeskyORM\ORM\Record\Record;
+use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\Table\TableInterface;
 use PeskyORM\Utils\ArgumentValidators;
 
-class Relation
+class Relation implements RelationInterface
 {
-
-    public const HAS_ONE = 'has_one';
-    public const HAS_MANY = 'has_many';
-    public const BELONGS_TO = 'belongs_to';
-
-    public const JOIN_LEFT = JoinConfigInterface::JOIN_LEFT;
-    public const JOIN_RIGHT = JoinConfigInterface::JOIN_RIGHT;
-    public const JOIN_INNER = JoinConfigInterface::JOIN_INNER;
-    public const JOIN_FULL = JoinConfigInterface::JOIN_FULL;
-
     protected ?string $name = null;
     protected string $type;
     protected string $joinType = self::JOIN_LEFT;
@@ -35,15 +24,8 @@ class Relation
     protected string|\Closure|null $displayColumnName = null;
 
     protected \Closure|array $additionalJoinConditions = [];
-
-    public static function create(
-        string $localColumnName,
-        string $type,
-        TableInterface|string $foreignTableClass,
-        string $foreignColumnName
-    ): static {
-        return new static($localColumnName, $type, $foreignTableClass, $foreignColumnName);
-    }
+    protected ?TableInterface $localTable = null;
+    protected ?string $localTableAlias = null;
 
     public function __construct(
         string $localColumnName,
@@ -107,7 +89,7 @@ class Relation
         return $this;
     }
 
-    public function getLocalColumnName(): string
+    public function getColumnName(): string
     {
         return $this->localColumnName;
     }
@@ -205,17 +187,17 @@ class Relation
      * @throws \UnexpectedValueException
      */
     public function getAdditionalJoinConditions(
-        TableInterface $localTable,
-        ?string $localTableAlias,
+        TableInterface $sourceTable,
+        ?string $sourceTableAlias,
         bool $forStandaloneSelect,
-        ?Record $localRecord = null
+        ?RecordInterface $localRecord = null
     ): array {
         if ($this->additionalJoinConditions instanceof \Closure) {
             $conditions = call_user_func(
                 $this->additionalJoinConditions,
                 $this,
-                $localTable,
-                $localTableAlias ?: $localTable::getAlias(),
+                $sourceTable,
+                $sourceTableAlias ?? $sourceTable::getAlias(),
                 $forStandaloneSelect,
                 $localRecord
             );
@@ -278,22 +260,29 @@ class Relation
     }
 
     public function toOrmJoinConfig(
-        TableInterface $localTable,
-        ?string $localTableAlias = null,
-        ?string $joinName = null,
-        ?string $joinType = null
+        TableInterface $sourceTable,
+        ?string $sourceTableAlias = null,
+        ?string $overrideJoinName = null,
+        ?string $overrideJoinType = null
     ): OrmJoinConfig {
         $ormJoin = new OrmJoinConfig(
-            $joinName ?: $this->getName(),
-            $localTable,
-            $this->getLocalColumnName(),
-            $joinType ?: $this->getJoinType(),
+            $overrideJoinName ?? $this->getName(),
+            $sourceTable,
+            $this->getColumnName(),
+            $overrideJoinType ?? $this->getJoinType(),
             $this->getForeignTable(),
             $this->getForeignColumnName()
         );
+        if (!$sourceTableAlias) {
+            $sourceTableAlias = $sourceTable::getAlias();
+        }
         $ormJoin
-            ->setAdditionalJoinConditions($this->getAdditionalJoinConditions($localTable, $localTableAlias, false))
-            ->setTableAlias($localTableAlias ?: $localTable::getAlias());
+            ->setTableAlias($sourceTableAlias)
+            ->setAdditionalJoinConditions($this->getAdditionalJoinConditions(
+                $sourceTable,
+                $sourceTableAlias,
+                false
+            ));
         return $ormJoin;
     }
 

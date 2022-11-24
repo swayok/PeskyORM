@@ -103,7 +103,7 @@ class OrmJoinConfig extends NormalJoinConfigAbstract
 
                 if (!$tableStructure::hasColumn($columnName)) {
                     throw new \InvalidArgumentException(
-                        "Column with name [{$this->getJoinName()}.{$columnName}]"
+                        "TableColumn with name [{$this->getJoinName()}.{$columnName}]"
                         . (is_int($columnAlias) ? '' : " and alias [{$columnAlias}]")
                         . ' not found in ' . get_class($tableStructure)
                     );

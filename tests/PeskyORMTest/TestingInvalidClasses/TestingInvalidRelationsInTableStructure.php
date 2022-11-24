@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses;
 
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\ORM\TableStructure\TableStructure;
 
 class TestingInvalidRelationsInTableStructure extends TableStructure
@@ -16,9 +16,9 @@ class TestingInvalidRelationsInTableStructure extends TableStructure
         return 'some_table';
     }
     
-    private function valid(): Column
+    private function valid(): TableColumn
     {
-        return Column::create(Column::TYPE_INT)
+        return TableColumn::create(TableColumn::TYPE_INT)
             ->primaryKey();
     }
     

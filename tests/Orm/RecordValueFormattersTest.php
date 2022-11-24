@@ -451,7 +451,7 @@ class RecordValueFormattersTest extends BaseTestCase
     public function testInvalidCustomFormatter1(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('PeskyORM\ORM\TableStructure\TableColumn\Column::addCustomValueFormatter(): Argument #2 ($formatter) must be of type Closure');
+        $this->expectExceptionMessage('TableColumn::addCustomValueFormatter(): Argument #2 ($formatter) must be of type Closure');
         $record = TestingFormatter::newEmptyRecord();
         /** @noinspection PhpParamsInspection */
         $record::getColumn('json_data1')
@@ -461,7 +461,7 @@ class RecordValueFormattersTest extends BaseTestCase
     public function testInvalidCustomFormatter2(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('PeskyORM\ORM\TableStructure\TableColumn\Column::addCustomValueFormatter(): Argument #2 ($formatter) must be of type Closure');
+        $this->expectExceptionMessage('TableColumn::addCustomValueFormatter(): Argument #2 ($formatter) must be of type Closure');
         $record = TestingFormatter::newEmptyRecord();
         /** @noinspection PhpParamsInspection */
         $record::getColumn('json_data1')

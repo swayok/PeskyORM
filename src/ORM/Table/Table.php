@@ -7,10 +7,10 @@ namespace PeskyORM\ORM\Table;
 use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Config\Connection\DbConnectionsManager;
 use PeskyORM\DbExpr;
-use PeskyORM\Join\OrmJoinConfig;
+use PeskyORM\Join\NormalJoinConfigInterface;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\RecordsCollection\RecordsSet;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\ORM\TableStructure\TableStructure;
 use PeskyORM\ORM\TableStructure\TableStructureInterface;
 use PeskyORM\Select\OrmSelect;
@@ -100,7 +100,7 @@ abstract class Table implements TableInterface
         return static::getStructure()->hasPkColumn();
     }
 
-    public static function getPkColumn(): Column
+    public static function getPkColumn(): TableColumnInterface
     {
         return static::getStructure()->getPkColumn();
     }
@@ -126,13 +126,13 @@ abstract class Table implements TableInterface
      * @param string $relationName
      * @param string|null $alterLocalTableAlias - alter this table's alias in join config
      * @param string|null $joinName - string: specific join name; null: $relationName is used
-     * @return OrmJoinConfig
+     * @return NormalJoinConfigInterface
      */
     public static function getJoinConfigForRelation(
         string $relationName,
         string $alterLocalTableAlias = null,
         string $joinName = null
-    ): OrmJoinConfig {
+    ): NormalJoinConfigInterface {
         return static::getStructure()
             ->getRelation($relationName)
             ->toOrmJoinConfig(
@@ -239,7 +239,7 @@ abstract class Table implements TableInterface
     }
 
     public static function selectColumnValue(
-        string|Column $column,
+        string|TableColumnInterface $column,
         array $conditions = [],
         ?\Closure $configurator = null
     ): mixed {
@@ -569,9 +569,9 @@ abstract class Table implements TableInterface
 
     /**
      * Alter $rows to honor special columns features like isAutoUpdatingValue and fill missing values with defaults.
-     * Column features supported: isAutoUpdatingValue, isValueCanBeNull, convertsEmptyStringToNull,
+     * TableColumn features supported: isAutoUpdatingValue, isValueCanBeNull, convertsEmptyStringToNull,
      *      isValueTrimmingRequired, isValueLowercasingRequired, getValidDefaultValue.
-     * Also uses static::getExpressionToSetDefaultValueForAColumn() if Column has no default value
+     * Also uses static::getExpressionToSetDefaultValueForAColumn() if TableColumn has no default value
      * @param array $rows
      * @param array $columnsToSave
      * @param array|null $features - null: ['trim', 'lowercase', 'nullable', 'empty_string_to_null', 'auto']
@@ -590,7 +590,7 @@ abstract class Table implements TableInterface
             $features = ['trim', 'lowercase', 'nullable', 'empty_string_to_null', 'auto'];
         }
         $defaults = [];
-        /** @var Column[] $autoupdatableColumns */
+        /** @var TableColumnInterface[] $autoupdatableColumns */
         $autoupdatableColumns = [];
         $notNulls = [];
         $emptyToNull = [];

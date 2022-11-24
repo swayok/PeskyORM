@@ -6,21 +6,21 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\PeskyORMTest\Traits;
 
 use PeskyORM\DbExpr;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 
 trait TestingTimestampColumnsTrait
 {
     
-    private function created_at(): Column
+    private function created_at(): TableColumn
     {
-        return Column::create(Column::TYPE_TIMESTAMP_WITH_TZ)
+        return TableColumn::create(TableColumn::TYPE_TIMESTAMP_WITH_TZ)
             ->disallowsNullValues()
             ->setDefaultValue(DbExpr::create('now()'));
     }
     
-    private function updated_at(): Column
+    private function updated_at(): TableColumn
     {
-        return Column::create(Column::TYPE_TIMESTAMP_WITH_TZ)
+        return TableColumn::create(TableColumn::TYPE_TIMESTAMP_WITH_TZ)
             ->disallowsNullValues()
             ->setDefaultValue(DbExpr::create('now()'));
     }

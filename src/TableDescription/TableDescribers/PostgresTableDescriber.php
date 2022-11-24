@@ -7,7 +7,7 @@ namespace PeskyORM\TableDescription\TableDescribers;
 use JetBrains\PhpStorm\ArrayShape;
 use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\DbExpr;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\TableDescription\ColumnDescription;
 use PeskyORM\TableDescription\TableDescription;
 use PeskyORM\Utils\PdoUtils;
@@ -17,35 +17,35 @@ class PostgresTableDescriber implements TableDescriberInterface
 {
 
     protected static array $dbTypeToOrmType = [
-        'bool' => Column::TYPE_BOOL,
-        'bytea' => Column::TYPE_BLOB,
-        'bit' => Column::TYPE_BLOB,
-        'varbit' => Column::TYPE_BLOB,
-        'int8' => Column::TYPE_INT,
-        'int2' => Column::TYPE_INT,
-        'int4' => Column::TYPE_INT,
-        'float4' => Column::TYPE_FLOAT,
-        'float8' => Column::TYPE_FLOAT,
-        'numeric' => Column::TYPE_FLOAT,
-        'money' => Column::TYPE_FLOAT,
-        'macaddr' => Column::TYPE_STRING,
-        'inet' => Column::TYPE_STRING,       //< 192.168.0.0 or 192.168.0.0/24
-        'cidr' => Column::TYPE_STRING,       //< 192.168.0.0/24 only
-        'char' => Column::TYPE_STRING,
-        'name' => Column::TYPE_STRING,
-        'bpchar' => Column::TYPE_STRING,     //< blank-padded char == char, internal use but may happen
-        'varchar' => Column::TYPE_STRING,
-        'text' => Column::TYPE_TEXT,
-        'xml' => Column::TYPE_STRING,
-        'json' => Column::TYPE_JSON,
-        'jsonb' => Column::TYPE_JSONB,
-        'uuid' => Column::TYPE_STRING,
-        'date' => Column::TYPE_DATE,
-        'time' => Column::TYPE_TIME,
-        'timestamp' => Column::TYPE_TIMESTAMP,
-        'timestamptz' => Column::TYPE_TIMESTAMP_WITH_TZ,
-        'interval' => Column::TYPE_STRING,
-        'timetz' => Column::TYPE_TIME,
+        'bool' => TableColumn::TYPE_BOOL,
+        'bytea' => TableColumn::TYPE_BLOB,
+        'bit' => TableColumn::TYPE_BLOB,
+        'varbit' => TableColumn::TYPE_BLOB,
+        'int8' => TableColumn::TYPE_INT,
+        'int2' => TableColumn::TYPE_INT,
+        'int4' => TableColumn::TYPE_INT,
+        'float4' => TableColumn::TYPE_FLOAT,
+        'float8' => TableColumn::TYPE_FLOAT,
+        'numeric' => TableColumn::TYPE_FLOAT,
+        'money' => TableColumn::TYPE_FLOAT,
+        'macaddr' => TableColumn::TYPE_STRING,
+        'inet' => TableColumn::TYPE_STRING,       //< 192.168.0.0 or 192.168.0.0/24
+        'cidr' => TableColumn::TYPE_STRING,       //< 192.168.0.0/24 only
+        'char' => TableColumn::TYPE_STRING,
+        'name' => TableColumn::TYPE_STRING,
+        'bpchar' => TableColumn::TYPE_STRING,     //< blank-padded char == char, internal use but may happen
+        'varchar' => TableColumn::TYPE_STRING,
+        'text' => TableColumn::TYPE_TEXT,
+        'xml' => TableColumn::TYPE_STRING,
+        'json' => TableColumn::TYPE_JSON,
+        'jsonb' => TableColumn::TYPE_JSONB,
+        'uuid' => TableColumn::TYPE_STRING,
+        'date' => TableColumn::TYPE_DATE,
+        'time' => TableColumn::TYPE_TIME,
+        'timestamp' => TableColumn::TYPE_TIMESTAMP,
+        'timestamptz' => TableColumn::TYPE_TIMESTAMP_WITH_TZ,
+        'interval' => TableColumn::TYPE_STRING,
+        'timetz' => TableColumn::TYPE_TIME,
     ];
 
     public function __construct(private DbAdapterInterface $adapter)
@@ -129,7 +129,7 @@ class PostgresTableDescriber implements TableDescriberInterface
     {
         return array_key_exists($dbType, static::$dbTypeToOrmType)
             ? static::$dbTypeToOrmType[$dbType]
-            : Column::TYPE_STRING;
+            : TableColumn::TYPE_STRING;
     }
 
     protected function cleanDefaultValueForColumnDescription(

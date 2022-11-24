@@ -6,7 +6,8 @@ namespace PeskyORM\Tests\Orm;
 
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\Record\RecordValue;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
@@ -14,7 +15,7 @@ use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 class RecordValueTest extends BaseTestCase
 {
     
-    protected function getClonedColumn(string $columnName): \PeskyORM\ORM\TableStructure\TableColumn\Column
+    protected function getClonedColumn(string $columnName): TableColumn
     {
         return clone TestingAdminsTableStructure::getColumn($columnName);
     }
@@ -33,9 +34,9 @@ class RecordValueTest extends BaseTestCase
         static::assertFalse($this->getObjectPropertyValue($valueObj, 'isValidated'));
         static::assertEquals([], $this->getObjectPropertyValue($valueObj, 'validationErrors'));
         static::assertEquals([], $this->getObjectPropertyValue($valueObj, 'customInfo'));
-        static::assertInstanceOf(\PeskyORM\ORM\TableStructure\TableColumn\Column::class, $this->getObjectPropertyValue($valueObj, 'column'));
+        static::assertInstanceOf(TableColumnInterface::class, $this->getObjectPropertyValue($valueObj, 'column'));
         /** @noinspection UnnecessaryAssertionInspection */
-        static::assertInstanceOf(Column::class, $valueObj->getColumn());
+        static::assertInstanceOf(TableColumnInterface::class, $valueObj->getColumn());
         static::assertTrue(
             $this->getObjectPropertyValue($valueObj, 'column')
                 ->isItPrimaryKey()
@@ -52,9 +53,9 @@ class RecordValueTest extends BaseTestCase
         static::assertFalse($this->getObjectPropertyValue($clone, 'isValidated'));
         static::assertEquals([], $this->getObjectPropertyValue($clone, 'validationErrors'));
         static::assertEquals([], $this->getObjectPropertyValue($clone, 'customInfo'));
-        static::assertInstanceOf(\PeskyORM\ORM\TableStructure\TableColumn\Column::class, $this->getObjectPropertyValue($clone, 'column'));
+        static::assertInstanceOf(TableColumnInterface::class, $this->getObjectPropertyValue($clone, 'column'));
         /** @noinspection UnnecessaryAssertionInspection */
-        static::assertInstanceOf(Column::class, $clone->getColumn());
+        static::assertInstanceOf(TableColumnInterface::class, $clone->getColumn());
         static::assertTrue(
             $this->getObjectPropertyValue($clone, 'column')
                 ->isItPrimaryKey()

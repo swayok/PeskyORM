@@ -5,14 +5,14 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\Traits;
 
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 
 trait TestingIdColumnTrait
 {
     
-    private function id(): Column
+    private function id(): TableColumn
     {
-        return Column::create(Column::TYPE_INT)
+        return TableColumn::create(TableColumn::TYPE_INT)
             ->primaryKey()
             ->disallowsNullValues();
     }

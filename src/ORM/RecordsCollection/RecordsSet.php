@@ -8,7 +8,7 @@ use Closure;
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\Table\TableInterface;
-use PeskyORM\ORM\TableStructure\Relation;
+use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\Select\OrmSelect;
 
 class RecordsSet extends RecordsArray
@@ -85,10 +85,10 @@ class RecordsSet extends RecordsArray
     }
     
     /**
-     * @param Relation $relation
+     * @param \PeskyORM\ORM\TableStructure\RelationInterface $relation
      * @param array $columnsToSelect
      */
-    protected function injectHasManyRelationDataIntoRecords(Relation $relation, array $columnsToSelect = ['*']): void
+    protected function injectHasManyRelationDataIntoRecords(RelationInterface $relation, array $columnsToSelect = ['*']): void
     {
         $this->hasManyRelationsToInject[$relation->getName()] = [
             'relation' => $relation,

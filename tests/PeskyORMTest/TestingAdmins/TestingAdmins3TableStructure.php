@@ -7,8 +7,9 @@ namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\TableStructure\Relation;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
 use PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\ORM\TableStructure\TableStructure;
 
 class TestingAdmins3TableStructure extends TableStructure
@@ -19,25 +20,25 @@ class TestingAdmins3TableStructure extends TableStructure
         return 'admins';
     }
     
-    private function id(): Column
+    private function id(): TableColumn
     {
-        return Column::create(Column::TYPE_INT)
+        return TableColumn::create(TableColumn::TYPE_INT)
             ->primaryKey()
             ->convertsEmptyStringToNull()
             ->disallowsNullValues()
             ->setDefaultValue(TestingAdminsTable::getExpressionToSetDefaultValueForAColumn());
     }
     
-    private function parent_id(): Column
+    private function parent_id(): TableColumn
     {
-        return Column::create(Column::TYPE_INT)
+        return TableColumn::create(TableColumn::TYPE_INT)
             ->convertsEmptyStringToNull()
             ->allowsNullValues();
     }
     
-    private function login(): Column
+    private function login(): TableColumn
     {
-        return Column::create(Column::TYPE_STRING)
+        return TableColumn::create(TableColumn::TYPE_STRING)
             ->convertsEmptyStringToNull()
             ->disallowsNullValues()
             ->trimsValue()
@@ -48,13 +49,13 @@ class TestingAdmins3TableStructure extends TableStructure
             });
     }
     
-    private function password(): Column
+    private function password(): TableColumn
     {
-        return Column::create(Column::TYPE_PASSWORD)
+        return TableColumn::create(TableColumn::TYPE_PASSWORD)
             ->convertsEmptyStringToNull()
             ->disallowsNullValues()
             ->trimsValue()
-            ->setValuePreprocessor(function ($value, $isDbValue, $isForValidation, Column $column) {
+            ->setValuePreprocessor(function ($value, $isDbValue, $isForValidation, TableColumnInterface $column) {
                 $value = DefaultColumnClosures::valuePreprocessor($value, $isDbValue, $isForValidation, $column);
                 if (!$isDbValue && !empty($value)) {
                     return password_hash($value, PASSWORD_BCRYPT);
@@ -69,95 +70,95 @@ class TestingAdmins3TableStructure extends TableStructure
             });
     }
     
-    private function created_at(): Column
+    private function created_at(): TableColumn
     {
-        return Column::create(Column::TYPE_TIMESTAMP)
+        return TableColumn::create(TableColumn::TYPE_TIMESTAMP)
             ->disallowsNullValues()
             ->setDefaultValue(DbExpr::create('NOW()'));
     }
     
-    private function updated_at(): Column
+    private function updated_at(): TableColumn
     {
-        return Column::create(Column::TYPE_TIMESTAMP)
+        return TableColumn::create(TableColumn::TYPE_TIMESTAMP)
             ->disallowsNullValues()
             ->autoUpdateValueOnEachSaveWith(function () {
                 return DbExpr::create('NOW()');
             });
     }
     
-    private function remember_token(): Column
+    private function remember_token(): TableColumn
     {
-        return Column::create(Column::TYPE_STRING)
+        return TableColumn::create(TableColumn::TYPE_STRING)
             ->convertsEmptyStringToNull()
             ->allowsNullValues()
             ->trimsValue();
     }
     
-    private function is_superadmin(): Column
+    private function is_superadmin(): TableColumn
     {
-        return Column::create(Column::TYPE_BOOL)
+        return TableColumn::create(TableColumn::TYPE_BOOL)
             ->convertsEmptyStringToNull()
             ->disallowsNullValues()
             ->setDefaultValue(false);
     }
     
-    private function language(): Column
+    private function language(): TableColumn
     {
-        return Column::create(Column::TYPE_ENUM)
+        return TableColumn::create(TableColumn::TYPE_ENUM)
             ->setAllowedValues(['en', 'ru', 'de'])
             ->convertsEmptyStringToNull()
             ->disallowsNullValues()
             ->setDefaultValue('en');
     }
     
-    private function ip(): Column
+    private function ip(): TableColumn
     {
-        return Column::create(Column::TYPE_IPV4_ADDRESS)
+        return TableColumn::create(TableColumn::TYPE_IPV4_ADDRESS)
             ->allowsNullValues()
             ->convertsEmptyStringToNull();
     }
     
-    private function role(): Column
+    private function role(): TableColumn
     {
-        return Column::create(Column::TYPE_ENUM)
+        return TableColumn::create(TableColumn::TYPE_ENUM)
             ->setAllowedValues(['admin', 'manager', 'guest'])
             ->convertsEmptyStringToNull()
             ->disallowsNullValues()
             ->setDefaultValue('guest');
     }
     
-    private function is_active(): Column
+    private function is_active(): TableColumn
     {
-        return Column::create(Column::TYPE_BOOL)
+        return TableColumn::create(TableColumn::TYPE_BOOL)
             ->convertsEmptyStringToNull()
             ->disallowsNullValues()
             ->setDefaultValue(true);
     }
     
-    private function name(): Column
+    private function name(): TableColumn
     {
-        return Column::create(Column::TYPE_STRING)
+        return TableColumn::create(TableColumn::TYPE_STRING)
             ->disallowsNullValues()
             ->setDefaultValue('');
     }
     
-    private function email(): Column
+    private function email(): TableColumn
     {
-        return Column::create(Column::TYPE_EMAIL)
+        return TableColumn::create(TableColumn::TYPE_EMAIL)
             ->allowsNullValues();
     }
     
-    private function timezone(): Column
+    private function timezone(): TableColumn
     {
-        return Column::create(Column::TYPE_STRING)
+        return TableColumn::create(TableColumn::TYPE_STRING)
             ->convertsEmptyStringToNull()
             ->disallowsNullValues()
             ->setDefaultValue('UTC');
     }
     
-    private function avatar(): Column
+    private function avatar(): TableColumn
     {
-        return Column::create(Column::TYPE_IMAGE)
+        return TableColumn::create(TableColumn::TYPE_IMAGE)
             ->doesNotExistInDb()
             ->allowsNullValues()
             ->setValueFormatter(function () {
@@ -165,9 +166,9 @@ class TestingAdmins3TableStructure extends TableStructure
             });
     }
     
-    private function some_file(): Column
+    private function some_file(): TableColumn
     {
-        return Column::create(Column::TYPE_FILE)
+        return TableColumn::create(TableColumn::TYPE_FILE)
             ->doesNotExistInDb()
             ->allowsNullValues()
             ->setValueFormatter(function () {
@@ -178,39 +179,39 @@ class TestingAdmins3TableStructure extends TableStructure
             });
     }
     
-    private function big_data(): Column
+    private function big_data(): TableColumn
     {
-        return Column::create(Column::TYPE_TEXT)
+        return TableColumn::create(TableColumn::TYPE_TEXT)
             ->disallowsNullValues()
             ->setDefaultValue('this is big data value! really! I\'m not joking!')
             ->valueIsHeavy();
     }
     
-    private function not_changeable_column(): Column
+    private function not_changeable_column(): TableColumn
     {
-        return Column::create(Column::TYPE_STRING)
+        return TableColumn::create(TableColumn::TYPE_STRING)
             ->valueCannotBeSetOrChanged();
     }
     
-    private function not_existing_column(): Column
+    private function not_existing_column(): TableColumn
     {
-        return Column::create(Column::TYPE_STRING)
+        return TableColumn::create(TableColumn::TYPE_STRING)
             ->doesNotExistInDb();
     }
     
     private function Parent(): Relation
     {
-        return Relation::create('parent_id', Relation::BELONGS_TO, TestingAdminsTable::class, 'id');
+        return new Relation('parent_id', Relation::BELONGS_TO, TestingAdminsTable::class, 'id');
     }
     
     private function Children(): Relation
     {
-        return Relation::create('id', Relation::HAS_MANY, TestingAdminsTable::class, 'parent_id');
+        return new Relation('id', Relation::HAS_MANY, TestingAdminsTable::class, 'parent_id');
     }
     
     private function VeryLongRelationNameSoItMustBeShortenedButWeNeedAtLeast60Characters(): Relation
     {
-        return Relation::create('login', Relation::BELONGS_TO, TestingAdminsTable::class, 'id');
+        return new Relation('login', Relation::BELONGS_TO, TestingAdminsTable::class, 'id');
     }
     
     

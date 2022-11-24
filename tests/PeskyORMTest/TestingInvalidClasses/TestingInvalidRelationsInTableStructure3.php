@@ -6,7 +6,7 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses;
 
 use PeskyORM\ORM\TableStructure\Relation;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\ORM\TableStructure\TableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 
@@ -18,15 +18,15 @@ class TestingInvalidRelationsInTableStructure3 extends TableStructure
         return 'some_table';
     }
     
-    private function valid(): Column
+    private function valid(): TableColumn
     {
-        return Column::create(Column::TYPE_INT)
+        return TableColumn::create(TableColumn::TYPE_INT)
             ->primaryKey();
     }
     
     private function InvalidLocalColumnName(): Relation
     {
-        return Relation::create('local_invalid', Relation::HAS_MANY, TestingAdminsTable::class, 'id');
+        return new Relation('local_invalid', Relation::HAS_MANY, TestingAdminsTable::class, 'id');
     }
     
 }

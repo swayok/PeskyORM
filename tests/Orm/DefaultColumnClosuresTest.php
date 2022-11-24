@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\Orm;
 
 use PeskyORM\ORM\Record\RecordValue;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
 use PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
@@ -16,7 +16,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
     
     public function testValueNormalizer(): void
     {
-        $column = Column::create(Column::TYPE_BOOL, 'test');
+        $column = TableColumn::create(TableColumn::TYPE_BOOL, 'test');
         static::assertTrue(DefaultColumnClosures::valueNormalizer('1', false, $column));
     }
     
@@ -39,7 +39,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
     
     public function testValuePreprocessor(): void
     {
-        $column = Column::create(\PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_BOOL, 'test');
+        $column = TableColumn::create(\PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_BOOL, 'test');
         static::assertEquals('', DefaultColumnClosures::valuePreprocessor('', false, false, $column));
         static::assertEquals(' ', \PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures::valuePreprocessor(' ', false, false, $column));
         static::assertEquals(null, DefaultColumnClosures::valuePreprocessor(null, false, false, $column));
@@ -61,7 +61,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
     
     public function testIsValueAllowedValidator(): void
     {
-        $column = Column::create(\PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_ENUM, 'test')
+        $column = TableColumn::create(\PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_ENUM, 'test')
             ->setAllowedValues(['a', 'b']);
         static::assertEquals([], DefaultColumnClosures::valueIsAllowedValidator('a', false, $column));
         static::assertEquals(
@@ -72,7 +72,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
     
     public function testValueValidator(): void
     {
-        $column = Column::create(Column::TYPE_ENUM, 'test')
+        $column = TableColumn::create(TableColumn::TYPE_ENUM, 'test')
             ->setAllowedValues(['a', 'b'])
             ->setValueValidatorExtender(function ($value) {
                 return $value === 'a' ? ['extender!!!'] : [];
@@ -129,15 +129,15 @@ class DefaultColumnClosuresTest extends BaseTestCase
     public function testValueSetIsForbidden(): void
     {
         $this->expectException(\BadMethodCallException::class);
-        $this->expectExceptionMessage("Column 'test2' restricts value modification");
-        $column = Column::create(Column::TYPE_STRING, 'test1')
+        $this->expectExceptionMessage("TableColumn 'test2' restricts value modification");
+        $column = TableColumn::create(TableColumn::TYPE_STRING, 'test1')
             ->valueCannotBeSetOrChanged();
         $valueObj = RecordValue::create($column, TestingAdmin::_());
         DefaultColumnClosures::valueSetter('1', true, $valueObj, false);
         static::assertEquals('1', $valueObj->getRawValue());
         static::assertEquals('1', $valueObj->getValue());
         
-        $column = \PeskyORM\ORM\TableStructure\TableColumn\Column::create(Column::TYPE_STRING, 'test2')
+        $column = \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::create(TableColumn::TYPE_STRING, 'test2')
             ->valueCannotBeSetOrChanged();
         $valueObj = \PeskyORM\ORM\Record\RecordValue::create($column, TestingAdmin::_());
         DefaultColumnClosures::valueSetter('2', false, $valueObj, false);

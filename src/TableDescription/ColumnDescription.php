@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\TableDescription;
 
 use PeskyORM\DbExpr;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 
 class ColumnDescription implements \Serializable
 {
@@ -47,7 +47,7 @@ class ColumnDescription implements \Serializable
     public function setLimitAndPrecision(?int $limit, ?int $numberPrecision = null): static
     {
         $this->limit = $limit;
-        if ($this->getOrmType() === Column::TYPE_FLOAT) {
+        if ($this->getOrmType() === TableColumn::TYPE_FLOAT) {
             $this->numberPrecision = $numberPrecision;
         }
         return $this;

@@ -7,7 +7,7 @@ namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\TableStructure\Relation;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\ORM\TableStructure\TableStructure;
 
 class TestingAdmins4TableStructure extends TableStructure
@@ -20,9 +20,9 @@ class TestingAdmins4TableStructure extends TableStructure
         return 'admins';
     }
     
-    private function updated_at(): Column
+    private function updated_at(): TableColumn
     {
-        return Column::create(Column::TYPE_TIMESTAMP)
+        return TableColumn::create(TableColumn::TYPE_TIMESTAMP)
             ->disallowsNullValues()
             ->autoUpdateValueOnEachSaveWith(function () {
                 return DbExpr::create('NOW()');
@@ -31,7 +31,7 @@ class TestingAdmins4TableStructure extends TableStructure
     
     private function Parent(): Relation
     {
-        return Relation::create('parent_id', Relation::BELONGS_TO, TestingAdminsTable::class, 'id');
+        return new Relation('parent_id', Relation::BELONGS_TO, TestingAdminsTable::class, 'id');
     }
     
 }

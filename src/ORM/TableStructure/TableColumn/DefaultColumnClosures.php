@@ -20,7 +20,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         $column = $valueContainer->getColumn();
         if (!$isFromDb && !$column->isValueCanBeSetOrChanged()) {
             throw new \BadMethodCallException(
-                "Column '{$column->getName()}' restricts value modification"
+                "TableColumn '{$column->getName()}' restricts value modification"
             );
         }
         if ($isFromDb && $trustDataReceivedFromDb) {
@@ -63,7 +63,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         return $valueContainer;
     }
     
-    public static function valuePreprocessor(mixed $value, bool $isFromDb, bool $isForValidation, Column $column): mixed
+    public static function valuePreprocessor(mixed $value, bool $isFromDb, bool $isForValidation, TableColumnInterface $column): mixed
     {
         if ($isFromDb && !$isForValidation) {
             return $value;
@@ -105,7 +105,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
     /**
      * @throws \UnexpectedValueException
      */
-    public static function valueValidator(mixed $value, bool $isFromDb, bool $isForCondition, Column $column): array
+    public static function valueValidator(mixed $value, bool $isFromDb, bool $isForCondition, TableColumnInterface $column): array
     {
         $errors = ColumnValueProcessingHelpers::isValidDbColumnValue(
             $column,
@@ -138,7 +138,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         return $errors;
     }
     
-    public static function valueIsAllowedValidator(mixed $value, bool $isFromDb, Column $column): array
+    public static function valueIsAllowedValidator(mixed $value, bool $isFromDb, TableColumnInterface $column): array
     {
         return ColumnValueProcessingHelpers::isValueWithinTheAllowedValuesOfTheColumn(
             $column,
@@ -148,7 +148,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         );
     }
     
-    public static function valueNormalizer(mixed $value, bool $isFromDb, Column $column): mixed
+    public static function valueNormalizer(mixed $value, bool $isFromDb, TableColumnInterface $column): mixed
     {
         return $isFromDb
             ? ColumnValueProcessingHelpers::normalizeValueReceivedFromDb($value, $column->getType())
@@ -163,7 +163,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
     {
     }
     
-    public static function valueValidatorExtender(mixed $value, bool $isFromDb, Column $column): array
+    public static function valueValidatorExtender(mixed $value, bool $isFromDb, TableColumnInterface $column): array
     {
         return [];
     }

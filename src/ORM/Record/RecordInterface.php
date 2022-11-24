@@ -7,8 +7,8 @@ namespace PeskyORM\ORM\Record;
 use PeskyORM\ORM\RecordsCollection\RecordsArray;
 use PeskyORM\ORM\RecordsCollection\RecordsSet;
 use PeskyORM\ORM\Table\TableInterface;
-use PeskyORM\ORM\TableStructure\Relation;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\RelationInterface;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 
 interface RecordInterface
 {
@@ -26,19 +26,19 @@ interface RecordInterface
      * @param string $name
      * @param string|null $format - filled when $name is something like 'timestamp_as_date' (returns 'date')
      */
-    public static function getColumn(string $name, string &$format = null): Column;
+    public static function getColumn(string $name, string &$format = null): TableColumnInterface;
     
     public static function getPrimaryKeyColumnName(): string;
     
     public static function hasPrimaryKeyColumn(): bool;
     
-    public static function getPrimaryKeyColumn(): Column;
+    public static function getPrimaryKeyColumn(): TableColumnInterface;
     
     public static function getRelations(): array;
     
     public static function hasRelation(string $name): bool;
     
-    public static function getRelation(string $name): Relation;
+    public static function getRelation(string $name): RelationInterface;
     
     /**
      * Resets all values and related records
@@ -47,22 +47,22 @@ interface RecordInterface
     
     /**
      * Get a value from specific $columnName with optional $format
-     * @param string|Column $column
-     * @param null|string $format - change value format (list of formats depend on Column type and config)
+     * @param string|TableColumnInterface $column
+     * @param null|string $format - change value format (list of formats depend on TableColumn type and config)
      */
-    public function getValue(string|Column $column, ?string $format = null): mixed;
+    public function getValue(string|TableColumnInterface $column, ?string $format = null): mixed;
     
     /**
      * Check if there is a value for $columnName
-     * @param string|\PeskyORM\ORM\TableStructure\\PeskyORM\ORM\TableStructure\TableColumn\Column $column
+     * @param string|TableColumnInterface $column
      * @param bool $trueIfThereIsDefaultValue - true: returns true if there is no value set but column has default value
      */
-    public function hasValue(string|Column $column, bool $trueIfThereIsDefaultValue = false): bool;
+    public function hasValue(string|TableColumnInterface $column, bool $trueIfThereIsDefaultValue = false): bool;
     
     /**
      * Set a $value for $columnName
      */
-    public function updateValue(string|Column $column, mixed $value, bool $isFromDb): static;
+    public function updateValue(string|TableColumnInterface $column, mixed $value, bool $isFromDb): static;
     
     /**
      * Get a value of the primary key column
@@ -99,13 +99,13 @@ interface RecordInterface
     public function isRelatedRecordAttached(string $relationName): bool;
     
     /**
-     * @param string|\PeskyORM\ORM\TableStructure\Relation $relationName
+     * @param string|RelationInterface $relationName
      * @param array|RecordInterface|RecordsArray|RecordsSet $relatedRecord
      * @param bool|null $isFromDb - true: marks values as loaded from DB | null: autodetect
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
      */
     public function updateRelatedRecord(
-        string|Relation $relationName,
+        string|RelationInterface $relationName,
         array|RecordInterface|RecordsArray|RecordsSet $relatedRecord,
         ?bool $isFromDb = null,
         bool $haltOnUnknownColumnNames = true

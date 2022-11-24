@@ -14,8 +14,8 @@ abstract class PeskyORMIdeHelperRecord extends \PeskyORM\ORM\Record\Record
 class PeskyORMIdeHelperTableStructure extends \PeskyORM\ORM\TableStructure\TableStructure
 {
     
-    private function id(): \PeskyORM\ORM\TableStructure\TableColumn\Column {
-        return \PeskyORM\ORM\TableStructure\TableColumn\Column::create(\PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_INT);
+    private function id(): \PeskyORM\ORM\TableStructure\TableColumn\TableColumn {
+        return \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::create(\PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_INT);
     }
     
     public static function getTableName(): string

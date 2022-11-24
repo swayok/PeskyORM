@@ -11,7 +11,7 @@ use PeskyORM\Join\NormalJoinConfigInterface;
 use PeskyORM\Join\OrmJoinConfig;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\Table\TableInterface;
-use PeskyORM\ORM\TableStructure\Relation;
+use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\ORM\TableStructure\TableStructureInterface;
 use PeskyORM\Utils\QueryBuilderUtils;
 
@@ -85,8 +85,8 @@ class OrmSelect extends SelectQueryBuilderAbstract
             if (preg_match('%^\s*(.*?)\s+as\s+(.*)\s*$%i', $relationName, $matches)) {
                 [, $relationName, $relationAlias] = $matches[1];
             }
-            $relationConfig = $this->getTableStructure()->getRelation($relationName);
-            if ($relationConfig->getType() === Relation::HAS_MANY) {
+            $relationConfig = $table->getTableStructure()->getRelation($relationName);
+            if ($relationConfig->getType() === RelationInterface::HAS_MANY) {
                 throw new \InvalidArgumentException(
                     "$argPathForException[$relationName]: one-to-many joins are not allowed"
                 );
@@ -111,12 +111,7 @@ class OrmSelect extends SelectQueryBuilderAbstract
             }
 
             $ormJoinConfig = $relationConfig
-                ->toOrmJoinConfig(
-                    $table,
-                    $tableAlias,
-                    $relationAlias,
-                    $joinType
-                )
+                ->toOrmJoinConfig($table, $tableAlias, $relationAlias, $joinType)
                 ->setForeignColumnsToSelect($columnsToSelectForRelation);
 
             if (!empty($additionalJoinConditions)) {
@@ -408,20 +403,23 @@ class OrmSelect extends SelectQueryBuilderAbstract
             $parentJoinName = $this->joinedRelationsParents[$joinName];
             if ($parentJoinName === null) {
                 // join on base table
-                if ($this->getTableStructure()->getRelation($relationName)->getType() === Relation::HAS_MANY) {
+                if ($this->getTableStructure()->getRelation($relationName)->getType() === RelationInterface::HAS_MANY) {
                     throw new \UnexpectedValueException(
                         "Relation '{$relationName}' has type 'HAS MANY' and should not be used as JOIN (not optimal). "
                         . 'Select that records outside of OrmSelect.'
                     );
                 }
-                $joinConfig = $this->getTable()
-                    ->getJoinConfigForRelation($relationName, $this->getTableAlias(), $joinName);
+                $joinConfig = $this->getTable()::getJoinConfigForRelation(
+                    $relationName,
+                    $this->getTableAlias(),
+                    $joinName
+                );
             } else {
                 // join on other join
                 $this->addJoinFromRelation($parentJoinName);
                 $parentJoin = $this->getOrmJoin($parentJoinName);
                 $foreignTable = $parentJoin->getForeignDbTable();
-                if ($foreignTable->getTableStructure()->getRelation($relationName)->getType() === Relation::HAS_MANY) {
+                if ($foreignTable->getTableStructure()->getRelation($relationName)->getType() === RelationInterface::HAS_MANY) {
                     throw new \UnexpectedValueException(
                         "Relation '{$relationName}' has type 'HAS MANY' and should not be used as JOIN (not optimal). "
                         . 'Select that records outside of OrmSelect.'
@@ -549,7 +547,7 @@ class OrmSelect extends SelectQueryBuilderAbstract
             $isValid = $this->getTableStructure()->hasColumn($columnInfo['name']);
             if (!$isValid) {
                 throw new \UnexpectedValueException(
-                    "{$subject}: Column with name [{$columnInfo['name']}] not found in "
+                    "{$subject}: TableColumn with name [{$columnInfo['name']}] not found in "
                     . get_class($this->getTableStructure())
                 );
             }
@@ -560,7 +558,7 @@ class OrmSelect extends SelectQueryBuilderAbstract
                 $isValid = $columnInfo['name'] === '*' || $foreignTableStructure::hasColumn($columnInfo['name']);
                 if (!$isValid) {
                     throw new \UnexpectedValueException(
-                        "{$subject}: Column with name [{$columnInfo['join_name']}.{$columnInfo['name']}] not found in "
+                        "{$subject}: TableColumn with name [{$columnInfo['join_name']}.{$columnInfo['name']}] not found in "
                         . get_class($foreignTableStructure)
                     );
                 }

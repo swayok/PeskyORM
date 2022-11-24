@@ -6,8 +6,9 @@ namespace PeskyORM\Tests\Orm;
 
 use PeskyORM\DbExpr;
 use PeskyORM\Exception\OrmException;
-use PeskyORM\ORM\TableStructure\Relation;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\RelationInterface;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmins4TableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
@@ -69,8 +70,8 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertTrue(TestingAdminsTableStructure::hasColumn('login'));
         static::assertFalse(TestingAdminsTableStructure::hasColumn('abrakadabra'));
         /** @noinspection UnnecessaryAssertionInspection */
-        static::assertInstanceOf(Column::class, TestingAdminsTableStructure::getColumn('login'));
-        static::assertInstanceOf(Column::class, TestingAdminsTableStructure::getPkColumn());
+        static::assertInstanceOf(TableColumnInterface::class, TestingAdminsTableStructure::getColumn('login'));
+        static::assertInstanceOf(TableColumnInterface::class, TestingAdminsTableStructure::getPkColumn());
         static::assertEquals(
             'id',
             TestingAdminsTableStructure::getPkColumn()
@@ -88,14 +89,13 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertTrue(TestingAdminsTableStructure::hasRelation('Parent'));
         static::assertFalse(TestingAdminsTableStructure::hasRelation('Abrakadabra'));
         $relation = TestingAdminsTableStructure::getRelation('Parent');
-        /** @noinspection UnnecessaryAssertionInspection */
-        static::assertInstanceOf(Relation::class, $relation);
+        static::assertInstanceOf(RelationInterface::class, $relation);
         static::assertTrue(
-            TestingAdminsTableStructure::getColumn($relation->getLocalColumnName())
+            TestingAdminsTableStructure::getColumn($relation->getColumnName())
                 ->hasRelation($relation->getName())
         );
         static::assertTrue(
-            TestingAdminsTableStructure::getColumn($relation->getLocalColumnName())
+            TestingAdminsTableStructure::getColumn($relation->getColumnName())
                 ->isItAForeignKey()
         );
     }
@@ -120,7 +120,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
     {
         $this->expectException(OrmException::class);
         $this->expectExceptionMessageMatches(
-            "%Method .*?->invalid\(\) must return instance of .*?Column class%"
+            "%Method .*?->invalid\(\) must return instance of .*?TableColumn.* class%"
         );
         TestingInvalidColumnsInTableStructure::getColumn('invalid');
     }
@@ -338,82 +338,82 @@ class TableStructureAndRelationsTest extends BaseTestCase
         );
         // types
         static::assertEquals(
-            Column::TYPE_BOOL,
+            TableColumn::TYPE_BOOL,
             $structure::getColumn('is_active')
                 ->getType()
         );
         static::assertEquals(
-            Column::TYPE_BOOL,
+            TableColumn::TYPE_BOOL,
             $structure::getColumn('is_superadmin')
                 ->getType()
         );
         static::assertEquals(
-            Column::TYPE_STRING,
+            TableColumn::TYPE_STRING,
             $structure::getColumn('ip')
                 ->getType()
         );
         static::assertEquals(
-            Column::TYPE_INT,
+            TableColumn::TYPE_INT,
             $structure::getColumn('id')
                 ->getType()
         );
         static::assertEquals(
-            Column::TYPE_INT,
+            TableColumn::TYPE_INT,
             $structure::getColumn('parent_id')
                 ->getType()
         );
         static::assertEquals(
-            Column::TYPE_TIMESTAMP_WITH_TZ,
+            TableColumn::TYPE_TIMESTAMP_WITH_TZ,
             $structure::getColumn('created_at')
                 ->getType()
         );
         static::assertEquals(
-            Column::TYPE_TIMESTAMP,
+            TableColumn::TYPE_TIMESTAMP,
             $structure::getColumn('updated_at')
                 ->getType()
         );
         static::assertEquals(
-            Column::TYPE_STRING,
+            TableColumn::TYPE_STRING,
             $structure::getColumn('language')
                 ->getType()
         );
         static::assertEquals(
-            Column::TYPE_STRING,
+            TableColumn::TYPE_STRING,
             $structure::getColumn('login')
                 ->getType()
         );
         static::assertEquals(
-            \PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_STRING,
+            \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_STRING,
             $structure::getColumn('password')
                 ->getType()
         );
         static::assertEquals(
-            \PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_STRING,
+            \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_STRING,
             $structure::getColumn('remember_token')
                 ->getType()
         );
         static::assertEquals(
-            \PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_STRING,
+            \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_STRING,
             $structure::getColumn('role')
                 ->getType()
         );
         static::assertEquals(
-            Column::TYPE_STRING,
+            TableColumn::TYPE_STRING,
             $structure::getColumn('name')
                 ->getType()
         );
         static::assertEquals(
-            \PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_STRING,
+            \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_STRING,
             $structure::getColumn('email')
                 ->getType()
         );
         static::assertEquals(
-            \PeskyORM\ORM\TableStructure\TableColumn\Column::TYPE_STRING,
+            \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_STRING,
             $structure::getColumn('timezone')
                 ->getType()
         );
         static::assertEquals(
-            Column::TYPE_STRING,
+            TableColumn::TYPE_STRING,
             $structure::getColumn('not_changeable_column')
                 ->getType()
         );

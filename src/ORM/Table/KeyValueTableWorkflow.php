@@ -6,7 +6,7 @@ namespace PeskyORM\ORM\Table;
 
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\Record\RecordInterface;
-use PeskyORM\ORM\TableStructure\Relation;
+use PeskyORM\ORM\TableStructure\RelationInterface;
 
 /**
  * @psalm-require-implements \PeskyORM\ORM\Table\KeyValueTableInterface
@@ -38,7 +38,7 @@ trait KeyValueTableWorkflow
         /** @var KeyValueTableInterface $this */
         if (!$instance->_detectedMainForeignKeyColumnName) {
             foreach ($instance->getTableStructure()->getRelations() as $relationConfig) {
-                if ($relationConfig->getType() === Relation::BELONGS_TO) {
+                if ($relationConfig->getType() === RelationInterface::BELONGS_TO) {
                     $instance->_detectedMainForeignKeyColumnName = $relationConfig->getLocalColumnName();
                     break;
                 }

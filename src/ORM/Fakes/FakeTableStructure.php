@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\Fakes;
 
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\ORM\TableStructure\TableStructure;
 use PeskyORM\ORM\TableStructure\TableStructureInterface;
 use PeskyORM\Utils\PdoUtils;
@@ -87,7 +88,7 @@ VIEW;
     
     protected function loadConfigs(): void
     {
-        $this->pk = $this->columns['id'] = Column::create(Column::TYPE_INT, 'id')->primaryKey();
+        $this->pk = $this->columns['id'] = TableColumn::create(TableColumn::TYPE_INT, 'id')->primaryKey();
         parent::loadConfigs();
     }
     
@@ -111,15 +112,15 @@ VIEW;
     
     /**
      * @param string $columnName
-     * @return \PeskyORM\ORM\TableStructure\TableColumn\Column
+     * @return TableColumnInterface
      * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    public static function getColumn(string $columnName): Column
+    public static function getColumn(string $columnName): TableColumnInterface
     {
         if (static::getInstance()->treatAnyColumnNameAsValid && !parent::hasColumn($columnName)) {
-            static::getInstance()->columns[$columnName] = Column::create(Column::TYPE_STRING, $columnName);
+            static::getInstance()->columns[$columnName] = TableColumn::create(TableColumn::TYPE_STRING, $columnName);
         }
         return parent::getColumn($columnName);
     }

@@ -6,7 +6,7 @@ namespace PeskyORM\ORM\RecordsCollection;
 
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\Table\TableInterface;
-use PeskyORM\ORM\TableStructure\Relation;
+use PeskyORM\ORM\TableStructure\RelationInterface;
 use Swayok\Utils\Set;
 
 class RecordsArray implements \ArrayAccess, \Iterator, \Countable
@@ -104,10 +104,10 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         return $this;
     }
     
-    protected function injectHasManyRelationDataIntoRecords(Relation $relation, array $columnsToSelect = ['*']): void
+    protected function injectHasManyRelationDataIntoRecords(RelationInterface $relation, array $columnsToSelect = ['*']): void
     {
         $relationName = $relation->getName();
-        $localColumnName = $relation->getLocalColumnName();
+        $localColumnName = $relation->getColumnName();
         $ids = $this->getValuesForColumn($localColumnName, null, function ($value) {
             return !empty($value);
         });

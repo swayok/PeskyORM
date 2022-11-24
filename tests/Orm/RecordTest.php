@@ -1129,7 +1129,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidColumnInFromDb1(): void
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("SELECT: Column with name [invalid] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("SELECT: TableColumn with name [invalid] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         TestingAdmin::newEmptyRecord()
             ->fetch(['id' => 1], ['invalid']);
     }
@@ -1147,7 +1147,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidConditionInFromDb(): void
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("WHERE: Column with name [invalid] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectExceptionMessage("WHERE: TableColumn with name [invalid] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         TestingAdmin::newEmptyRecord()
             ->fetch(['invalid' => 1], ['id']);
     }

@@ -14,7 +14,7 @@ abstract class ColumnValueProcessingHelpers
 {
     
     public static function isValidDbColumnValue(
-        Column $column,
+        TableColumn $column,
         mixed $value,
         bool $isFromDb,
         bool $isForCondition,
@@ -49,7 +49,7 @@ abstract class ColumnValueProcessingHelpers
      * Preprocess value using $column->getValuePreprocessor(). This will perform basic processing like
      * converting empty string to null, trimming and lowercasing if any required
      */
-    public static function preprocessColumnValue(Column $column, mixed $value, bool $isDbValue, bool $isForValidation): mixed
+    public static function preprocessColumnValue(TableColumnInterface $column, mixed $value, bool $isDbValue, bool $isForValidation): mixed
     {
         return call_user_func($column->getValuePreprocessor(), $value, $isDbValue, $isForValidation, $column);
     }
@@ -57,7 +57,7 @@ abstract class ColumnValueProcessingHelpers
     /**
      * Test if $value fits data type ($type)
      * @param mixed $value
-     * @param string $type - one of Column::TYPE_*
+     * @param string $type - one of TableColumn::TYPE_*
      * @param bool $isForCondition - true: validate less strictly | false: validate strictly
      * @param array $errorMessages
      * @return array
@@ -65,89 +65,89 @@ abstract class ColumnValueProcessingHelpers
     public static function isValueFitsDataType(mixed $value, string $type, bool $isForCondition, array $errorMessages = []): array
     {
         switch ($type) {
-            case Column::TYPE_BOOL:
+            case TableColumn::TYPE_BOOL:
                 if (!ValidateValue::isBoolean($value)) {
-                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_BOOLEAN)];
+                    return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_BOOLEAN)];
                 }
                 break;
-            case Column::TYPE_INT:
+            case TableColumn::TYPE_INT:
                 if (!ValidateValue::isInteger($value)) {
-                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_INTEGER)];
+                    return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_INTEGER)];
                 }
                 break;
-            case Column::TYPE_FLOAT:
+            case TableColumn::TYPE_FLOAT:
                 if (!ValidateValue::isFloat($value)) {
-                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_FLOAT)];
+                    return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_FLOAT)];
                 }
                 break;
-            case Column::TYPE_ENUM:
+            case TableColumn::TYPE_ENUM:
                 if (!is_string($value) && !is_numeric($value)) {
-                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_STRING_OR_NUMERIC)];
+                    return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_STRING_OR_NUMERIC)];
                 }
                 break;
-            case Column::TYPE_DATE:
+            case TableColumn::TYPE_DATE:
                 if (!ValidateValue::isDateTime($value)) {
-                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_DATE)];
+                    return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_DATE)];
                 }
                 break;
-            case Column::TYPE_TIME:
+            case TableColumn::TYPE_TIME:
                 if (!ValidateValue::isDateTime($value)) {
-                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_TIME)];
+                    return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_TIME)];
                 }
                 break;
-            case Column::TYPE_TIMESTAMP:
-            case Column::TYPE_UNIX_TIMESTAMP:
+            case TableColumn::TYPE_TIMESTAMP:
+            case TableColumn::TYPE_UNIX_TIMESTAMP:
                 if (!ValidateValue::isDateTime($value)) {
-                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_TIMESTAMP)];
+                    return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_TIMESTAMP)];
                 }
                 break;
-            case Column::TYPE_TIMESTAMP_WITH_TZ:
+            case TableColumn::TYPE_TIMESTAMP_WITH_TZ:
                 if (!ValidateValue::isDateTimeWithTz($value)) {
-                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_TIMESTAMP_WITH_TZ)];
+                    return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_TIMESTAMP_WITH_TZ)];
                 }
                 break;
-            case Column::TYPE_TIMEZONE_OFFSET:
+            case TableColumn::TYPE_TIMEZONE_OFFSET:
                 if (!ValidateValue::isTimezoneOffset($value)) {
-                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_TIMEZONE_OFFSET)];
+                    return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_TIMEZONE_OFFSET)];
                 }
                 break;
-            case Column::TYPE_IPV4_ADDRESS:
+            case TableColumn::TYPE_IPV4_ADDRESS:
                 if (!is_string($value) || (!$isForCondition && !ValidateValue::isIpAddress($value))) {
-                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_IPV4_ADDRESS)];
+                    return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_IPV4_ADDRESS)];
                 }
                 break;
-            case Column::TYPE_JSON:
-            case Column::TYPE_JSONB:
+            case TableColumn::TYPE_JSON:
+            case TableColumn::TYPE_JSONB:
                 if ($isForCondition && !is_string($value)) {
-                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_STRING)];
+                    return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_STRING)];
                 }
 
                 if (!$isForCondition && !ValidateValue::isJson($value)) {
-                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_JSON)];
+                    return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_JSON)];
                 }
                 break;
-            case Column::TYPE_FILE:
+            case TableColumn::TYPE_FILE:
                 if (!ValidateValue::isUploadedFile($value, true)) {
-                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_FILE)];
+                    return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_FILE)];
                 }
                 break;
-            case Column::TYPE_IMAGE:
+            case TableColumn::TYPE_IMAGE:
                 if (!ValidateValue::isUploadedImage($value, true)) {
-                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_IMAGE)];
+                    return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_IMAGE)];
                 }
                 break;
-            case Column::TYPE_EMAIL:
+            case TableColumn::TYPE_EMAIL:
                 if ($isForCondition && !is_string($value)) {
-                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_STRING)];
+                    return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_STRING)];
                 }
 
                 if (!$isForCondition && !ValidateValue::isEmail($value)) {
-                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_EMAIL)];
+                    return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_EMAIL)];
                 }
                 break;
-            case Column::TYPE_PASSWORD:
-            case Column::TYPE_TEXT:
-            case Column::TYPE_STRING:
+            case TableColumn::TYPE_PASSWORD:
+            case TableColumn::TYPE_TEXT:
+            case TableColumn::TYPE_STRING:
                 if (
                     !is_string($value)
                     && !is_numeric($value)
@@ -157,7 +157,7 @@ abstract class ColumnValueProcessingHelpers
                     )
                 ) {
                     //^ numbers can be normally converted to strings
-                    return [static::getErrorMessage($errorMessages, Column::VALUE_MUST_BE_STRING)];
+                    return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_STRING)];
                 }
                 break;
         }
@@ -180,7 +180,7 @@ abstract class ColumnValueProcessingHelpers
      *     empty string with option $column->isEmptyStringMustBeConvertedToNull() === true;
      */
     public static function isValueWithinTheAllowedValuesOfTheColumn(
-        Column $column,
+        TableColumn $column,
         int|float|bool|string|array|null $value,
         bool $isFromDb,
         array $errorMessages = []
@@ -211,10 +211,10 @@ abstract class ColumnValueProcessingHelpers
         if (is_array($preprocessedValue)) {
             // compare if $value array is contained inside $allowedValues array
             if (count(array_diff($preprocessedValue, $allowedValues)) > 0) {
-                return [static::getErrorMessage($errorMessages, Column::ONE_OF_VALUES_IS_NOT_ALLOWED)];
+                return [static::getErrorMessage($errorMessages, TableColumn::ONE_OF_VALUES_IS_NOT_ALLOWED)];
             }
         } elseif (!in_array($preprocessedValue, $allowedValues, true)) {
-            return [str_replace(':value', $preprocessedValue, static::getErrorMessage($errorMessages, Column::VALUE_IS_NOT_ALLOWED))];
+            return [str_replace(':value', $preprocessedValue, static::getErrorMessage($errorMessages, TableColumn::VALUE_IS_NOT_ALLOWED))];
         }
         return [];
     }
@@ -227,7 +227,7 @@ abstract class ColumnValueProcessingHelpers
     /**
      * Normalize $value according to expected data type ($type)
      * @param mixed $value
-     * @param string $type - one of Column::TYPE_*
+     * @param string $type - one of TableColumn::TYPE_*
      * @return mixed
      */
     public static function normalizeValue(mixed $value, string $type): mixed
@@ -242,33 +242,33 @@ abstract class ColumnValueProcessingHelpers
 
         /** @noinspection PhpSwitchCanBeReplacedWithMatchExpressionInspection */
         switch ($type) {
-            case Column::TYPE_BOOL:
+            case TableColumn::TYPE_BOOL:
                 return NormalizeValue::normalizeBoolean($value);
-            case Column::TYPE_INT:
-            case Column::TYPE_UNIX_TIMESTAMP:
+            case TableColumn::TYPE_INT:
+            case TableColumn::TYPE_UNIX_TIMESTAMP:
                 return NormalizeValue::normalizeInteger($value);
-            case Column::TYPE_FLOAT:
+            case TableColumn::TYPE_FLOAT:
                 return NormalizeValue::normalizeFloat($value);
-            case Column::TYPE_DATE:
+            case TableColumn::TYPE_DATE:
                 return NormalizeValue::normalizeDate($value);
-            case Column::TYPE_TIME:
-            case Column::TYPE_TIMEZONE_OFFSET:
+            case TableColumn::TYPE_TIME:
+            case TableColumn::TYPE_TIMEZONE_OFFSET:
                 return NormalizeValue::normalizeTime($value);
-            case Column::TYPE_TIMESTAMP:
+            case TableColumn::TYPE_TIMESTAMP:
                 return NormalizeValue::normalizeDateTime($value);
-            case Column::TYPE_TIMESTAMP_WITH_TZ:
+            case TableColumn::TYPE_TIMESTAMP_WITH_TZ:
                 return NormalizeValue::normalizeDateTimeWithTz($value);
-            case Column::TYPE_JSON:
-            case Column::TYPE_JSONB:
+            case TableColumn::TYPE_JSON:
+            case TableColumn::TYPE_JSONB:
                 return NormalizeValue::normalizeJson($value);
-            case Column::TYPE_FILE:
-            case Column::TYPE_IMAGE:
+            case TableColumn::TYPE_FILE:
+            case TableColumn::TYPE_IMAGE:
                 return static::normalizeFile($value);
-            case Column::TYPE_STRING:
-            case Column::TYPE_IPV4_ADDRESS:
-            case Column::TYPE_EMAIL:
-            case Column::TYPE_PASSWORD:
-            case Column::TYPE_TEXT:
+            case TableColumn::TYPE_STRING:
+            case TableColumn::TYPE_IPV4_ADDRESS:
+            case TableColumn::TYPE_EMAIL:
+            case TableColumn::TYPE_PASSWORD:
+            case TableColumn::TYPE_TEXT:
                 return (string)$value;
             default:
                 return $value;
@@ -279,7 +279,7 @@ abstract class ColumnValueProcessingHelpers
      * Normalize $value received form DB according to expected data type ($type)
      * Note: lighter version of normalizeValue() to optimize processing of large amount of records
      * @param mixed $value
-     * @param string $type - one of Column::TYPE_*
+     * @param string $type - one of TableColumn::TYPE_*
      * @return mixed|null
      */
     public static function normalizeValueReceivedFromDb(mixed $value, string $type): mixed
@@ -293,9 +293,9 @@ abstract class ColumnValueProcessingHelpers
         }
 
         return match ($type) {
-            Column::TYPE_BOOL => NormalizeValue::normalizeBoolean($value),
-            Column::TYPE_INT, Column::TYPE_UNIX_TIMESTAMP => NormalizeValue::normalizeInteger($value),
-            Column::TYPE_FLOAT => NormalizeValue::normalizeFloat($value),
+            TableColumn::TYPE_BOOL => NormalizeValue::normalizeBoolean($value),
+            TableColumn::TYPE_INT, TableColumn::TYPE_UNIX_TIMESTAMP => NormalizeValue::normalizeInteger($value),
+            TableColumn::TYPE_FLOAT => NormalizeValue::normalizeFloat($value),
             default => $value,
         };
     }

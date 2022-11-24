@@ -7,7 +7,7 @@ namespace PeskyORM\ORM\TableStructure\TableColumn;
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\Record\RecordValue;
-use PeskyORM\ORM\TableStructure\Relation;
+use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\ValueToObjectConverter\ValueToObjectConverterInterface;
 use PeskyORM\ORM\TableStructure\TableStructureInterface;
 use PeskyORM\Utils\ArgumentValidators;
@@ -24,7 +24,7 @@ use PeskyORM\Utils\ArgumentValidators;
  * Value getter workflow:
  * $this->valueGetter closure is called, and it will possibly call $this->valueFormatter closure
  */
-class Column
+class TableColumn implements TableColumnInterface
 {
     
     public const TYPE_INT = 'integer';
@@ -102,7 +102,7 @@ class Column
     
     protected ?TableStructureInterface $tableStructure = null;
     /**
-     * @var Relation[]|null
+     * @var RelationInterface[]|null
      */
     protected ?array $relations = null;
     protected ?string $name = null;
@@ -249,7 +249,7 @@ class Column
     /**
      * relation that stores values for this column
      */
-    protected ?Relation $foreignKeyRelation = null;
+    protected ?RelationInterface $foreignKeyRelation = null;
     
     protected ?string $classNameForValueToObjectFormatter = null;
     
@@ -300,23 +300,23 @@ class Column
                         ->getClosuresClass();
                     return $class::valueSetter($newValue, $isFromDb, $valueContainer, $trustDataReceivedFromDb);
                 },
-                'valueValidator' => function ($value, $isFromDb, $isForCondition, Column $column) {
+                'valueValidator' => function ($value, $isFromDb, $isForCondition, TableColumnInterface $column) {
                     $class = $column->getClosuresClass();
                     return $class::valueValidator($value, $isFromDb, $isForCondition, $column);
                 },
-                'valueIsAllowedValidator' => function ($value, $isFromDb, $isForCondition, Column $column) {
+                'valueIsAllowedValidator' => function ($value, $isFromDb, $isForCondition, TableColumnInterface $column) {
                     $class = $column->getClosuresClass();
                     return $class::valueIsAllowedValidator($value, $isFromDb, $column);
                 },
-                'valueValidatorExtender' => function ($value, $isFromDb, $isForCondition, Column $column) {
+                'valueValidatorExtender' => function ($value, $isFromDb, $isForCondition, TableColumnInterface $column) {
                     $class = $column->getClosuresClass();
                     return $class::valueValidatorExtender($value, $isFromDb, $column);
                 },
-                'valueNormalizer' => function ($value, $isFromDb, Column $column) {
+                'valueNormalizer' => function ($value, $isFromDb, TableColumnInterface $column) {
                     $class = $column->getClosuresClass();
                     return $class::valueNormalizer($value, $isFromDb, $column);
                 },
-                'valuePreprocessor' => function ($newValue, $isFromDb, $isForValidation, Column $column) {
+                'valuePreprocessor' => function ($newValue, $isFromDb, $isForValidation, TableColumnInterface $column) {
                     $class = $column->getClosuresClass();
                     return $class::valuePreprocessor($newValue, $isFromDb, $isForValidation, $column);
                 },
@@ -392,7 +392,7 @@ class Column
     
     /**
      * Set class that provides all behavioral closures for a column (class must implement ColumnClosuresInterface).
-     * Class' closures will be used by default. But any closure may be overriden by calling Column->set{ClosureName}(\Closure $fn).
+     * Class' closures will be used by default. But any closure may be overriden by calling TableColumn->set{ClosureName}(\Closure $fn).
      * In this case overrides will have priority over defaults.
      * @throws \InvalidArgumentException
      */
@@ -442,7 +442,7 @@ class Column
     public function setName(string $name): static
     {
         if ($this->hasName()) {
-            throw new \BadMethodCallException('Column name changing is forbidden');
+            throw new \BadMethodCallException('TableColumn name changing is forbidden');
         }
         ArgumentValidators::assertNotEmpty('$name', $name);
         ArgumentValidators::assertSnakeCase('$name', $name);
@@ -499,6 +499,7 @@ class Column
     
     /**
      * Computed value that indicates if value must be not empty
+     * todo: it is not used. remove?
      */
     public function isValueRequiredToBeNotEmpty(): bool
     {
@@ -592,7 +593,7 @@ class Column
     }
     
     /**
-     * @param \Closure $validDefaultValueGetter - function (mixed $fallbackValue, Column $column): mixed { return 'default'; }
+     * @param \Closure $validDefaultValueGetter - function (mixed $fallbackValue, TableColumnInterface $column): mixed { return 'default'; }
      */
     public function setValidDefaultValueGetter(\Closure $validDefaultValueGetter): static
     {
@@ -753,7 +754,7 @@ class Column
     }
     
     /**
-     * @return Relation[]
+     * @return RelationInterface[]
      */
     public function getRelations(): array
     {
@@ -772,23 +773,23 @@ class Column
     /**
      * @throws \InvalidArgumentException
      */
-    public function getRelation(string $relationName): Relation
+    public function getRelation(string $relationName): RelationInterface
     {
         if (!$this->hasRelation($relationName)) {
             throw new \InvalidArgumentException(
-                "Column '{$this->getName()}' is not linked with '{$relationName}' relation"
+                "TableColumn '{$this->getName()}' is not linked with '{$relationName}' relation"
             );
         }
         return $this->relations[$relationName];
     }
     
-    public function getForeignKeyRelation(): ?Relation
+    public function getForeignKeyRelation(): ?RelationInterface
     {
         if ($this->isForeignKey === null) {
             $this->foreignKeyRelation = null;
             $this->isForeignKey = false;
             foreach ($this->getRelations() as $relation) {
-                if ($relation->getType() === Relation::BELONGS_TO) {
+                if ($relation->getType() === RelationInterface::BELONGS_TO) {
                     $this->itIsForeignKey($relation);
                     // don't break here - let it validate if there are no multiple foreign keys here
                 }
@@ -803,10 +804,10 @@ class Column
     }
     
     /**
-     * @param Relation $relation - relation that stores values for this column
+     * @param RelationInterface $relation - relation that stores values for this column
      * @throws \InvalidArgumentException
      */
-    protected function itIsForeignKey(Relation $relation): static
+    protected function itIsForeignKey(RelationInterface $relation): static
     {
         if ($this->foreignKeyRelation) {
             throw new \InvalidArgumentException(
@@ -897,7 +898,7 @@ class Column
     
     /**
      * Function to preprocess raw value for validation and normalization
-     * @param \Closure $newValuePreprocessor - function (mixed $value, bool $isFromDb, Column $column): mixed { return $value }
+     * @param \Closure $newValuePreprocessor - function (mixed $value, bool $isFromDb, TableColumnInterface $column): mixed { return $value }
      */
     public function setValuePreprocessor(\Closure $newValuePreprocessor): static
     {
@@ -945,7 +946,7 @@ class Column
     }
     
     /**
-     * @param \Closure $validator - function (mixed|RecordValue $value, bool $isFromDb, bool $isForCondition, Column $column): array { return ['validation error 1', ...]; }
+     * @param \Closure $validator - function (mixed|RecordValue $value, bool $isFromDb, bool $isForCondition, TableColumnInterface $column): array { return ['validation error 1', ...]; }
      * Notes:
      * - value is 'mixed' or a RecordValue instance. If value is 'mixed' - it should be preprocessed;
      * - if there are no errors - return empty array;
@@ -964,7 +965,7 @@ class Column
     }
     
     /**
-     * @param \Closure $validator - function (mixed $value, bool $isFromDb, bool $isForCondition, Column $column): array { return ['validation error 1', ...]; }
+     * @param \Closure $validator - function (mixed $value, bool $isFromDb, bool $isForCondition, TableColumnInterface $column): array { return ['validation error 1', ...]; }
      * Note: ValueIsAllowedValidator closure is used in default ValueValidator closure.
      * So if you override ValueValidator - you may need to call ValueIsAllowedValidator in your custom validator.
      */
@@ -984,7 +985,7 @@ class Column
     
     /**
      * Additional validation called after
-     * @param \Closure $extender - function (mixed $value, bool $isFromDb, bool $isForCondition, Column $column): array { return ['validation error 1', ...]; }
+     * @param \Closure $extender - function (mixed $value, bool $isFromDb, bool $isForCondition, TableColumnInterface $column): array { return ['validation error 1', ...]; }
      * Notes:
      * - value has mixed type, not a RecordValue instance;
      * - if there are no errors - return empty array.
@@ -996,8 +997,8 @@ class Column
     }
     
     /**
-     * Alias for Column::extendValueValidator
-     * @see Column::extendValueValidator
+     * Alias for TableColumn::extendValueValidator
+     * @see TableColumn::extendValueValidator
      */
     public function setValueValidatorExtender(\Closure $validator): static
     {
@@ -1027,7 +1028,7 @@ class Column
     
     /**
      * Function to process new value (for example: convert a value to proper data type)
-     * @param \Closure $normalizer - function (mixed $value, bool $isFromDb, Column $column): mixed { return 'normalized value'; }
+     * @param \Closure $normalizer - function (mixed $value, bool $isFromDb, TableColumnInterface $column): mixed { return 'normalized value'; }
      */
     public function setValueNormalizer(\Closure $normalizer): static
     {
@@ -1067,7 +1068,7 @@ class Column
     }
     
     /**
-     * Designed to manage file-related Column
+     * Designed to manage file-related TableColumn
      * Called after Record::afterDelete() and after transaction started inside Record::delete() was closed
      * but before Record's values is wiped.
      * Note: if transaction started outside of Record::delete() it won't be closed inside it.
@@ -1186,5 +1187,16 @@ class Column
     {
         return $this->classNameForValueToObjectFormatter;
     }
-    
+
+    public function getPossibleColumnNames(): array
+    {
+        $name = $this->getName();
+        $ret = [
+            $name
+        ];
+        foreach ($this->getValueFormattersNames() as $formatterName) {
+            $ret[] = $name . '_as_' . $formatterName;
+        }
+        return $ret;
+    }
 }

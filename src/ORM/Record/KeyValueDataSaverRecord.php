@@ -9,7 +9,8 @@ use PeskyORM\ORM\Fakes\FakeTable;
 use PeskyORM\ORM\Table\KeyValueTableInterface;
 use PeskyORM\ORM\Table\KeyValueTableWorkflow;
 use PeskyORM\ORM\Table\TableInterface;
-use PeskyORM\ORM\TableStructure\TableColumn\Column;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use Swayok\Utils\NormalizeValue;
 
 // todo: refactor key-value helper classes and system to be more clear
@@ -32,16 +33,16 @@ class KeyValueDataSaverRecord extends Record
         float|int|string|null $fkValue = null,
         array $constantAdditionalData = []
     ): void {
-        /** @var array|Column[] $columns */
+        /** @var array|TableColumnInterface[] $columns */
         $columns = [
-            'fakeid' => Column::TYPE_INT,
+            'fakeid' => TableColumn::TYPE_INT,
         ];
         $tableStructure = $table->getTableStructure();
         foreach ($newData as $key => $value) {
             if ($tableStructure::hasColumn($key)) {
                 $columns[$key] = $tableStructure::getColumn($key);
             } else {
-                $columns[$key] = is_array($value) ? Column::TYPE_JSON : Column::TYPE_TEXT;
+                $columns[$key] = is_array($value) ? TableColumn::TYPE_JSON : TableColumn::TYPE_TEXT;
             }
         }
         static::$originalTable = $table;
