@@ -6,93 +6,50 @@ namespace PeskyORM\Join;
 
 use PeskyORM\ORM\Table\TableInterface;
 
-class OrmJoinConfig extends NormalJoinConfigAbstract
+class OrmJoinConfig extends NormalJoinConfigAbstract implements OrmJoinConfigInterface
 {
-    protected TableInterface $dbTable;
-    protected TableInterface $foreignDbTable;
+    protected TableInterface $localTable;
+    protected TableInterface $foreignTable;
 
     /**
      * @throws \InvalidArgumentException
      */
     public function __construct(
         string $joinName,
-        TableInterface $localTable,
-        string $localColumnName,
         string $joinType,
+        string $localTableAlias,
+        string $localColumnName,
         TableInterface $foreignTable,
         string $foreignColumnName
     ) {
-        parent::__construct($joinName);
-        $this
-            ->setConfigForLocalTable($localTable, $localColumnName)
-            ->setJoinType($joinType)
-            ->setConfigForForeignTable($foreignTable, $foreignColumnName);
-    }
-
-    /**
-     * @throws \InvalidArgumentException
-     */
-    public function setConfigForLocalTable(TableInterface $table, string $columnName): static
-    {
-        return $this
-            ->setDbTable($table)
-            ->setColumnName($columnName);
-    }
-
-    /**
-     * @throws \InvalidArgumentException
-     */
-    public function setConfigForForeignTable(TableInterface $foreignTable, string $foreignColumnName): static
-    {
-        return $this
-            ->setForeignDbTable($foreignTable)
+        parent::__construct($joinName, $joinType);
+        $this->setLocalTableAlias($localTableAlias)
+            ->setLocalColumnName($localColumnName)
+            ->setForeignTable($foreignTable)
             ->setForeignColumnName($foreignColumnName);
     }
 
-    /**
-     * @throws \InvalidArgumentException
-     */
-    public function setDbTable(TableInterface $dbTable): static
+    protected function setForeignTable(TableInterface $foreignDbTable): static
     {
-        $this->dbTable = $dbTable;
-        $this->tableName = $dbTable->getName();
-        $this->tableSchema = $dbTable->getTableStructure()->getSchema();
-        if ($this->tableAlias === null) {
-            $this->setTableAlias($this->dbTable::getAlias());
-        }
-        return $this;
-    }
-    
-    public function getDbTable(): TableInterface
-    {
-        return $this->dbTable;
-    }
-    
-    public function setForeignDbTable(TableInterface $foreignDbTable): static
-    {
-        $this->foreignDbTable = $foreignDbTable;
+        $this->foreignTable = $foreignDbTable;
         $this->foreignTableName = $foreignDbTable->getName();
         $this->foreignTableSchema = $foreignDbTable->getTableStructure()->getSchema();
         return $this;
     }
     
-    public function getForeignDbTable(): TableInterface
+    public function getForeignTable(): TableInterface
     {
-        return $this->foreignDbTable;
+        return $this->foreignTable;
     }
     
     /**
      * {@inheritDoc}
      * @throws \InvalidArgumentException
      */
-    public function setForeignColumnsToSelect(...$columns): static
+    public function setForeignColumnsToSelect(array $columns): static
     {
-        if (count($columns) === 1 && is_array($columns[0])) {
-            /** @var array $columns */
-            $columns = $columns[0];
-        }
         $this->foreignColumnsToSelect = [];
-        $tableStructure = $this->getForeignDbTable()->getTableStructure();
+        $tableStructure = $this->getForeignTable()->getTableStructure();
         foreach ($columns as $columnAlias => $columnName) {
             if ($columnName !== '*') {
                 if (!is_string($columnName)) {
@@ -110,7 +67,7 @@ class OrmJoinConfig extends NormalJoinConfigAbstract
                 }
                 $this->foreignColumnsToSelect[$columnAlias] = $columnName;
             } else {
-                $knownColumns = $this->getForeignDbTable()
+                $knownColumns = $this->getForeignTable()
                     ->getTableStructure()
                     ->getColumns();
                 foreach ($knownColumns as $knownColumnName => $columnInfo) {
@@ -123,6 +80,4 @@ class OrmJoinConfig extends NormalJoinConfigAbstract
         }
         return $this;
     }
-    
-    
 }

@@ -7,8 +7,9 @@ namespace PeskyORM\Select;
 use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\DbExpr;
 use PeskyORM\Join\CrossJoinConfigInterface;
+use PeskyORM\Join\JoinConfigInterface;
 use PeskyORM\Join\NormalJoinConfigInterface;
-use PeskyORM\Join\OrmJoinConfig;
+use PeskyORM\Join\OrmJoinConfigInterface;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\Table\TableInterface;
 use PeskyORM\ORM\TableStructure\RelationInterface;
@@ -51,7 +52,8 @@ class OrmSelect extends SelectQueryBuilderAbstract
         return [];
     }
 
-    protected function processContainsOptionFromConfigsArray(array $contains): void {
+    protected function processContainsOptionFromConfigsArray(array $contains): void
+    {
         $optionName = QueryBuilderUtils::QUERY_PART_CONTAINS;
         $this->processSubcontainsOptionFromContainConfigArray(
             $contains,
@@ -68,7 +70,7 @@ class OrmSelect extends SelectQueryBuilderAbstract
         string $argPathForException
     ): void {
         foreach ($contains as $relationName => $columnsToSelectForRelation) {
-            if ($columnsToSelectForRelation instanceof OrmJoinConfig) {
+            if ($columnsToSelectForRelation instanceof OrmJoinConfigInterface) {
                 $this->join($columnsToSelectForRelation);
                 continue;
             }
@@ -95,7 +97,10 @@ class OrmSelect extends SelectQueryBuilderAbstract
             $foreignTable = $relationConfig->getForeignTable();
             $joinType = $relationConfig->getJoinType();
             if (is_array($columnsToSelectForRelation)) {
-                [$columnsToSelectForRelation, $options] = QueryBuilderUtils::separateColumnsAndSuboptionsForContainsOption(
+                [
+                    $columnsToSelectForRelation,
+                    $options,
+                ] = QueryBuilderUtils::separateColumnsAndSuboptionsForContainsOption(
                     $columnsToSelectForRelation
                 );
 
@@ -111,7 +116,7 @@ class OrmSelect extends SelectQueryBuilderAbstract
             }
 
             $ormJoinConfig = $relationConfig
-                ->toJoinConfig($table, $tableAlias, $relationAlias, $joinType)
+                ->toJoinConfig($tableAlias, $relationAlias, $joinType)
                 ->setForeignColumnsToSelect($columnsToSelectForRelation);
 
             if (!empty($additionalJoinConditions)) {
@@ -208,8 +213,8 @@ class OrmSelect extends SelectQueryBuilderAbstract
     protected function normalizeJoinDataForRecord(NormalJoinConfigInterface $joinConfig, array $data): array
     {
         $data = parent::normalizeJoinDataForRecord($joinConfig, $data);
-        if ($joinConfig instanceof OrmJoinConfig) {
-            $pkName = $joinConfig->getForeignDbTable()->getPkColumnName();
+        if ($joinConfig instanceof OrmJoinConfigInterface) {
+            $pkName = $joinConfig->getForeignTable()->getPkColumnName();
             if (array_key_exists($pkName, $data) && $data[$pkName] === null) {
                 // not existing related record
                 return [];
@@ -257,7 +262,12 @@ class OrmSelect extends SelectQueryBuilderAbstract
         parent::processRawColumns();
         foreach ($this->columnsToSelectFromJoinedRelations as $joinName => $columns) {
             try {
-                $this->getJoin($joinName)->setForeignColumnsToSelect(empty($columns) ? [] : $columns);
+                if (empty($columns)) {
+                    $columns = [];
+                } elseif (!is_array($columns)) {
+                    $columns = [$columns];
+                }
+                $this->getJoin($joinName)->setForeignColumnsToSelect($columns);
             } catch (\InvalidArgumentException $exc) {
                 throw new \UnexpectedValueException('SELECT: ' . $exc->getMessage(), 0);
             }
@@ -276,8 +286,15 @@ class OrmSelect extends SelectQueryBuilderAbstract
         if ($joinName === null) {
             $tableStructure = $this->getTableStructure();
         } else {
-            $join = $this->getOrmJoin($joinName);
-            $tableStructure = $join->getForeignDbTable()->getTableStructure();
+            $join = $this->getJoin($joinName);
+            if ($join instanceof OrmJoinConfigInterface) {
+                $tableStructure = $join->getForeignTable()->getTableStructure();
+            } else {
+                // we have no access to TableStructure for this join
+                return [
+                    $this->analyzeColumnName('*', null, $joinName, 'SELECT')
+                ];
+            }
         }
         $normalizedColumns = [];
         if ($excludeColumns === null) {
@@ -309,12 +326,12 @@ class OrmSelect extends SelectQueryBuilderAbstract
                 if ($columnAlias === '*' && empty($columnName)) {
                     // ['*' => []] situation - convert to select '*'
                     $columnName = $columnAlias;
-                    $columnAlias = -1;
+                    $columnAlias = -1; //< pretend that it is an index in array
                 }
                 if ($columnAlias === '*') {
                     // all columns except those listed in $columnName
                     $joinColumns = $this->getOrmJoin($joinName)
-                        ->getForeignDbTable()
+                        ->getForeignTable()
                         ->getTableStructure()
                         ->getColumnsThatExistInDb();
                     $filteredColumns = array_merge(
@@ -374,11 +391,11 @@ class OrmSelect extends SelectQueryBuilderAbstract
         return parent::getJoin($joins[count($joins) - 1]);
     }
 
-    protected function getOrmJoin(string $joinName): OrmJoinConfig
+    protected function getOrmJoin(string $joinName): OrmJoinConfigInterface
     {
         $join = $this->getJoin($joinName);
         $this->validateJoin($join);
-        /** @var OrmJoinConfig $join - validated by guardJoinClass */
+        /** @var OrmJoinConfigInterface $join - validated by guardJoinClass */
         return $join;
     }
 
@@ -403,14 +420,15 @@ class OrmSelect extends SelectQueryBuilderAbstract
             $parentJoinName = $this->joinedRelationsParents[$joinName];
             if ($parentJoinName === null) {
                 // join on base table
-                if ($this->getTableStructure()->getRelation($relationName)->getType() === RelationInterface::HAS_MANY) {
+                $relation = $this->getTableStructure()->getRelation($relationName);
+                if ($relation->getType() === RelationInterface::HAS_MANY) {
                     throw new \UnexpectedValueException(
                         "Relation '{$relationName}' has type 'HAS MANY' and should not be used as JOIN (not optimal). "
                         . 'Select that records outside of OrmSelect.'
                     );
                 }
                 $joinConfig = $this->getTable()::getJoinConfigForRelation(
-                    $relationName,
+                    $relation,
                     $this->getTableAlias(),
                     $joinName
                 );
@@ -418,21 +436,32 @@ class OrmSelect extends SelectQueryBuilderAbstract
                 // join on other join
                 $this->addJoinFromRelation($parentJoinName);
                 $parentJoin = $this->getOrmJoin($parentJoinName);
-                $foreignTable = $parentJoin->getForeignDbTable();
-                if ($foreignTable->getTableStructure()->getRelation($relationName)->getType() === RelationInterface::HAS_MANY) {
+                $foreignTable = $parentJoin->getForeignTable();
+                $relation = $foreignTable->getTableStructure()->getRelation($relationName);
+                if ($relation->getType() === RelationInterface::HAS_MANY) {
                     throw new \UnexpectedValueException(
                         "Relation '{$relationName}' has type 'HAS MANY' and should not be used as JOIN (not optimal). "
                         . 'Select that records outside of OrmSelect.'
                     );
                 }
-                $joinConfig = $foreignTable::getJoinConfigForRelation($relationName, $parentJoin->getJoinName(), $joinName);
+                $joinConfig = $foreignTable::getJoinConfigForRelation(
+                    $relation,
+                    $parentJoin->getJoinName(),
+                    $joinName
+                );
             }
             $this->joinsAddedByRelations[] = $joinName;
-            $joinConfig->setForeignColumnsToSelect(
-                empty($this->columnsToSelectFromJoinedRelations[$joinName])
-                    ? []
-                    : $this->columnsToSelectFromJoinedRelations[$joinName]
-            );
+            if (empty($this->columnsToSelectFromJoinedRelations[$joinName])) {
+                // select no columns for this join
+                $joinConfig->setForeignColumnsToSelect([]);
+            } else {
+                $joinConfig->setForeignColumnsToSelect(
+                    is_array($this->columnsToSelectFromJoinedRelations[$joinName])
+                        ? $this->columnsToSelectFromJoinedRelations[$joinName]
+                        : [$this->columnsToSelectFromJoinedRelations[$joinName]]
+                );
+            }
+
             $this->join($joinConfig);
         }
         return $this;
@@ -455,50 +484,64 @@ class OrmSelect extends SelectQueryBuilderAbstract
             },
             'AND',
             function ($columnName, $rawValue) use ($subject, $joinName) {
-                if ($rawValue instanceof DbExpr) {
-                    return $this->quoteDbExpr($rawValue);
-                }
-
-                if ($rawValue instanceof SelectQueryBuilderInterface) {
-                    return $rawValue;
-                }
-
-                if (!($columnName instanceof DbExpr)) {
-                    $columnInfo = $this->analyzeColumnName($columnName, null, $joinName, $subject);
-                    if ($columnInfo['join_name'] === null) {
-                        $column = $this->getTableStructure()
-                            ->getColumn($columnInfo['name']);
-                    } else {
-                        $join = $this->getOrmJoin($columnInfo['join_name']);
-                        $column = $join->getForeignDbTable()
-                            ->getStructure()
-                            ->getColumn($columnInfo['name']);
-                    }
-                    if (!$columnInfo['json_selector'] && !$columnInfo['type_cast']) {
-                        // in json selector there may be any type of value and type casting is responsibility of developer
-                        if (is_array($rawValue)) {
-                            foreach ($rawValue as $arrValue) {
-                                $errors = $column->validateValue($arrValue, false, true);
-                                if (!empty($errors)) {
-                                    break;
-                                }
-                            }
-                        } elseif ($rawValue !== null) {
-                            $errors = $column->validateValue($rawValue, false, true);
-                        }
-                    }
-                    if (!empty($errors)) {
-                        throw new \UnexpectedValueException(
-                            "Invalid {$subject} condition value provided for column [{$columnName}]. Value: "
-                            . var_export($rawValue, true) . '; Errors: ' . implode('; ', $errors)
-                        );
-                    }
-                }
-                return $rawValue;
+                return $this->processConditionValue($subject, $columnName, $rawValue, $joinName);
             }
         );
         $assembled = trim($assembled);
         return empty($assembled) ? '' : " {$subject} {$assembled}";
+    }
+
+    protected function processConditionValue(
+        string $subject,
+        ?string $columnName,
+        mixed $rawValue,
+        ?string $joinName = null
+    ): mixed {
+        if ($rawValue instanceof DbExpr) {
+            return $this->quoteDbExpr($rawValue);
+        }
+
+        if ($rawValue instanceof SelectQueryBuilderInterface) {
+            return $rawValue;
+        }
+
+        $columnInfo = $this->analyzeColumnName($columnName, null, $joinName, $subject);
+        // Run validation for condition value except when there are:
+        // 1. json selector - there may be any type of value and validation by $column is not possible
+        // 2. type casting - it is responsibility of developer so ORM should not interfere
+        if ($columnInfo['json_selector'] || $columnInfo['type_cast']) {
+            return $rawValue;
+        }
+        if ($columnInfo['join_name'] === null) {
+            $column = $this->getTableStructure()->getColumn($columnInfo['name']);
+        } else {
+            $join = $this->getJoin($columnInfo['join_name']);
+            if ($join instanceof OrmJoinConfigInterface) {
+                $column = $join->getForeignTable()
+                    ->getStructure()
+                    ->getColumn($columnInfo['name']);
+            } else {
+                // join has no link to Table, so we cannot get $column and validate value
+                return $rawValue;
+            }
+        }
+        if (is_array($rawValue)) {
+            foreach ($rawValue as $arrValue) {
+                $errors = $column->validateValue($arrValue, false, true);
+                if (!empty($errors)) {
+                    break;
+                }
+            }
+        } elseif ($rawValue !== null) {
+            $errors = $column->validateValue($rawValue, false, true);
+        }
+        if (!empty($errors)) {
+            throw new \UnexpectedValueException(
+                "Invalid {$subject} condition value provided for column [{$columnName}]. Value: "
+                . var_export($rawValue, true) . '; Errors: ' . implode('; ', $errors) . '.'
+            );
+        }
+        return $rawValue;
     }
 
     protected function makeColumnNameWithAliasForQuery(array $columnInfo, bool $itIsWithQuery = false): string
@@ -553,8 +596,8 @@ class OrmSelect extends SelectQueryBuilderAbstract
             }
         } else {
             $join = $this->getJoin($columnInfo['join_name']);
-            if ($join instanceof OrmJoinConfig) {
-                $foreignTableStructure = $join->getForeignDbTable()->getTableStructure();
+            if ($join instanceof OrmJoinConfigInterface) {
+                $foreignTableStructure = $join->getForeignTable()->getTableStructure();
                 $isValid = $columnInfo['name'] === '*' || $foreignTableStructure::hasColumn($columnInfo['name']);
                 if (!$isValid) {
                     throw new \UnexpectedValueException(
@@ -571,11 +614,16 @@ class OrmSelect extends SelectQueryBuilderAbstract
         $this->validateColumnInfo($columnInfo, $subject);
     }
 
-    protected function validateJoin(NormalJoinConfigInterface $joinConfig): void
+    protected function validateJoin(JoinConfigInterface $joinConfig): void
     {
-        if (!($joinConfig instanceof OrmJoinConfig)) {
+        // todo: does this condition really needed?
+        if (
+            !($joinConfig instanceof OrmJoinConfigInterface)
+            && !($joinConfig instanceof CrossJoinConfigInterface)
+        ) {
             throw new \UnexpectedValueException(
-                'Join ' . $joinConfig->getJoinName() . ' must be an instance of class ' . OrmJoinConfig::class
+                'Join config ' . $joinConfig->getJoinName() . ' must implement '
+                . OrmJoinConfigInterface::class . ' or ' . CrossJoinConfigInterface::class
                 . ' but it is an instance of ' . get_class($joinConfig) . ' class'
             );
         }

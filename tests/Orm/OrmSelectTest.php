@@ -8,6 +8,7 @@ namespace PeskyORM\Tests\Orm;
 use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Adapter\Postgres;
 use PeskyORM\DbExpr;
+use PeskyORM\Join\JoinConfigInterface;
 use PeskyORM\Join\OrmJoinConfig;
 use PeskyORM\Select\OrmSelect;
 use PeskyORM\Select\Select;
@@ -167,7 +168,7 @@ class OrmSelectTest extends BaseTestCase
             ->getQuery();
         static::assertEquals(
             'SELECT "tbl_Parent_0"."id" AS "col_Parent__id_0" FROM "admins" AS "tbl_Admins_1"'
-            . ' LEFT JOIN "admins" AS "tbl_Parent_0" ON ("tbl_Admins_1"."parent_id" = "tbl_Parent_0"."id")',
+            . ' LEFT JOIN "admins" AS "tbl_Parent_0" ON ("tbl_Parent_0"."id" = "tbl_Admins_1"."parent_id")',
             $query
         );
     }
@@ -419,11 +420,15 @@ class OrmSelectTest extends BaseTestCase
     public function testColumnsWithRelations(): void
     {
         static::assertEquals(
-            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", "tbl_Parent_1"."id" AS "col_Parent__id_1" FROM "admins" AS "tbl_Admins_0" LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Admins_0"."parent_id" = "tbl_Parent_1"."id")',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", "tbl_Parent_1"."id" AS "col_Parent__id_1"'
+            . ' FROM "admins" AS "tbl_Admins_0"'
+            . ' LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Parent_1"."id" = "tbl_Admins_0"."parent_id")',
             static::getNewSelect()->columns(['id', 'Parent.id'])->getQuery()
         );
         static::assertEquals(
-            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", "tbl_Parent_1"."id" AS "col_Parent__id_1" FROM "admins" AS "tbl_Admins_0" LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Admins_0"."parent_id" = "tbl_Parent_1"."id")',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", "tbl_Parent_1"."id" AS "col_Parent__id_1"'
+            . ' FROM "admins" AS "tbl_Admins_0"'
+            . ' LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Parent_1"."id" = "tbl_Admins_0"."parent_id")',
             static::getNewSelect()->columns(['id', 'Parent' => ['id']])->getQuery()
         );
         static::assertEquals(
@@ -431,7 +436,7 @@ class OrmSelectTest extends BaseTestCase
             . ' "tbl_Parent_1"."id" AS "col_Parent__id_1",'
             . ' "tbl_Parent_1"."login" AS "col_Parent__login_2"'
             . ' FROM "admins" AS "tbl_Admins_0"'
-            . ' LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Admins_0"."parent_id" = "tbl_Parent_1"."id")',
+            . ' LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Parent_1"."id" = "tbl_Admins_0"."parent_id")',
             static::getNewSelect()->columns(['id', 'Parent' => ['id', 'login']])->getQuery()
         );
         static::assertEquals(
@@ -439,8 +444,8 @@ class OrmSelectTest extends BaseTestCase
             . ' "tbl_Parent_1"."id" AS "col_Parent__id_1",' 
             . ' "tbl_Parent2_2"."id" AS "col_Parent2__id_2"'
             . ' FROM "admins" AS "tbl_Admins_0"'
-            . ' LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Admins_0"."parent_id" = "tbl_Parent_1"."id")'
-            . ' LEFT JOIN "admins" AS "tbl_Parent2_2" ON ("tbl_Parent_1"."parent_id" = "tbl_Parent2_2"."id")',
+            . ' LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Parent_1"."id" = "tbl_Admins_0"."parent_id")'
+            . ' LEFT JOIN "admins" AS "tbl_Parent2_2" ON ("tbl_Parent2_2"."id" = "tbl_Parent_1"."parent_id")',
             static::getNewSelect()->columns(['id', 'Parent' => ['id', 'Parent as Parent2' => ['id']]])->getQuery()
         );
 
@@ -462,8 +467,8 @@ class OrmSelectTest extends BaseTestCase
             'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", ' . $colsInSelectForParent
             . ', "tbl_Parent2_2"."id" AS "col_Parent2__id_18"'
             . ' FROM "admins" AS "tbl_Admins_0"'
-            . ' LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Admins_0"."parent_id" = "tbl_Parent_1"."id")'
-            . ' LEFT JOIN "admins" AS "tbl_Parent2_2" ON ("tbl_Parent_1"."parent_id" = "tbl_Parent2_2"."id")',
+            . ' LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Parent_1"."id" = "tbl_Admins_0"."parent_id")'
+            . ' LEFT JOIN "admins" AS "tbl_Parent2_2" ON ("tbl_Parent2_2"."id" = "tbl_Parent_1"."parent_id")',
             static::getNewSelect()->columns(['id', 'Parent' => ['*', 'Parent as Parent2' => ['id']]])->getQuery()
         );
 
@@ -480,7 +485,11 @@ class OrmSelectTest extends BaseTestCase
         $colsInSelectForParent2 = implode(', ', $colsInSelectForParent2);
 
         static::assertEquals(
-            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", "tbl_Parent_1"."id" AS "col_Parent__id_1", ' . $colsInSelectForParent2 . ' FROM "admins" AS "tbl_Admins_0" LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Admins_0"."parent_id" = "tbl_Parent_1"."id") LEFT JOIN "admins" AS "tbl_Parent2_2" ON ("tbl_Parent_1"."parent_id" = "tbl_Parent2_2"."id")',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0",'
+            . ' "tbl_Parent_1"."id" AS "col_Parent__id_1", ' . $colsInSelectForParent2
+            . ' FROM "admins" AS "tbl_Admins_0"'
+            . ' LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Parent_1"."id" = "tbl_Admins_0"."parent_id")'
+            . ' LEFT JOIN "admins" AS "tbl_Parent2_2" ON ("tbl_Parent2_2"."id" = "tbl_Parent_1"."parent_id")',
             static::getNewSelect()->columns(['id', 'Parent' => ['id', 'Parent as Parent2' => '*']])->getQuery()
         );
 
@@ -499,9 +508,9 @@ class OrmSelectTest extends BaseTestCase
             . ' "' . $shortJoinName2 . '"."id" AS "col_VrLngRltnNmSItMstBShrtndBtWNdAtLst60Chrctrs2__VrLngClm_2"'
             . ' FROM "admins" AS "tbl_Admins_0"'
             . ' LEFT JOIN "admins" AS "' . $shortJoinName . '"'
-            . ' ON ("tbl_Admins_0"."login" = "' . $shortJoinName . '"."id")'
+            . ' ON ("' . $shortJoinName . '"."id" = "tbl_Admins_0"."login")'
             . ' LEFT JOIN "admins" AS "' . $shortJoinName2 . '"'
-            . ' ON ("' . $shortJoinName . '"."login" = "' . $shortJoinName2 . '"."id")',
+            . ' ON ("' . $shortJoinName2 . '"."id" = "' . $shortJoinName . '"."login")',
             $dbSelect->getQuery()
         );
     }
@@ -635,7 +644,10 @@ class OrmSelectTest extends BaseTestCase
         );
         // test relations usage
         static::assertEquals(
-            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0" LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Admins_0"."parent_id" = "tbl_Parent_1"."id") WHERE "tbl_Parent_1"."parent_id" IS NOT NULL',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0"'
+            . ' LEFT JOIN "admins" AS "tbl_Parent_1"'
+            . ' ON ("tbl_Parent_1"."id" = "tbl_Admins_0"."parent_id")'
+            . ' WHERE "tbl_Parent_1"."parent_id" IS NOT NULL',
             static::getNewSelect()
                 ->columns('id')
                 ->where(['Parent.parent_id !=' => null])
@@ -643,7 +655,10 @@ class OrmSelectTest extends BaseTestCase
                 ->getQuery()
         );
         static::assertEquals(
-            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0" LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Admins_0"."parent_id" = "tbl_Parent_1"."id") HAVING "tbl_Parent_1"."parent_id" IS NOT NULL',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0"'
+            . ' LEFT JOIN "admins" AS "tbl_Parent_1"'
+            . ' ON ("tbl_Parent_1"."id" = "tbl_Admins_0"."parent_id")'
+            . ' HAVING "tbl_Parent_1"."parent_id" IS NOT NULL',
             static::getNewSelect()
                 ->columns('id')
                 ->where([])
@@ -658,8 +673,8 @@ class OrmSelectTest extends BaseTestCase
             'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0",'
             . ' "tbl_Parent2_1"."id" AS "col_Parent2__id_1"'
             . ' FROM "admins" AS "tbl_Admins_0"'
-            . ' LEFT JOIN "admins" AS "tbl_Parent_2" ON ("tbl_Admins_0"."parent_id" = "tbl_Parent_2"."id")'
-            . ' LEFT JOIN "admins" AS "tbl_Parent2_1" ON ("tbl_Parent_2"."parent_id" = "tbl_Parent2_1"."id")'
+            . ' LEFT JOIN "admins" AS "tbl_Parent_2" ON ("tbl_Parent_2"."id" = "tbl_Admins_0"."parent_id")'
+            . ' LEFT JOIN "admins" AS "tbl_Parent2_1" ON ("tbl_Parent2_1"."id" = "tbl_Parent_2"."parent_id")'
             . ' WHERE "tbl_Parent2_1"."parent_id" IS NOT NULL HAVING "tbl_Parent2_1"."parent_id" IS NOT NULL',
             $dbSelect->getQuery()
         );
@@ -672,7 +687,7 @@ class OrmSelectTest extends BaseTestCase
         static::assertEquals(
             'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0"'
             . ' LEFT JOIN "admins" AS "' . $shortAlias
-            . '" ON ("tbl_Admins_0"."login" = "' . $shortAlias . '"."id") WHERE "'
+            . '" ON ("' . $shortAlias . '"."id" = "tbl_Admins_0"."login") WHERE "'
             . $shortAlias . '"."parent_id" IS NOT NULL',
             $dbSelect->getQuery()
         );
@@ -683,7 +698,7 @@ class OrmSelectTest extends BaseTestCase
         static::assertEquals(
             'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0"'
             . ' LEFT JOIN "admins" AS "' . $shortAlias
-            . '" ON ("tbl_Admins_0"."login" = "' . $shortAlias . '"."id") HAVING "'
+            . '" ON ("' . $shortAlias . '"."id" = "tbl_Admins_0"."login") HAVING "'
             . $shortAlias . '"."parent_id" IS NOT NULL',
             $dbSelect->getQuery()
         );
@@ -696,20 +711,20 @@ class OrmSelectTest extends BaseTestCase
 
         $joinConfig = new OrmJoinConfig(
             'Test',
-            TestingAdminsTable::getInstance(),
+            JoinConfigInterface::JOIN_INNER,
+            TestingAdminsTable::getInstance()->getTableAlias(),
             'parent_id',
-            OrmJoinConfig::JOIN_INNER,
             TestingAdminsTable::getInstance(),
             'id'
         );
-        $joinConfig->setForeignColumnsToSelect('login', 'email');
+        $joinConfig->setForeignColumnsToSelect(['login', 'email']);
 
         static::assertEquals(
             'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0",'
             . ' "tbl_Test_1"."login" AS "col_Test__login_1",'
             . ' "tbl_Test_1"."email" AS "col_Test__email_2"'
             . ' FROM "admins" AS "tbl_Admins_0"'
-            . ' INNER JOIN "admins" AS "tbl_Test_1" ON ("tbl_Admins_0"."parent_id" = "tbl_Test_1"."id")',
+            . ' INNER JOIN "admins" AS "tbl_Test_1" ON ("tbl_Test_1"."id" = "tbl_Admins_0"."parent_id")',
             $dbSelect->join($joinConfig)->getQuery()
         );
 
@@ -725,8 +740,8 @@ class OrmSelectTest extends BaseTestCase
         $colsInSelectForTest = implode(', ', $colsInSelectForTest);
 
         $joinConfig
-            ->setJoinType(OrmJoinConfig::JOIN_LEFT)
-            ->setForeignColumnsToSelect('*')
+            ->setJoinType(JoinConfigInterface::JOIN_LEFT)
+            ->setForeignColumnsToSelect(['*'])
             ->setAdditionalJoinConditions([
                 'email' => 'test@test.ru',
             ]);
@@ -735,38 +750,38 @@ class OrmSelectTest extends BaseTestCase
             . $colsInSelectForTest
             . ' FROM "admins" AS "tbl_Admins_0"'
             . ' LEFT JOIN "admins" AS "tbl_Test_1"'
-            . ' ON ("tbl_Admins_0"."parent_id" = "tbl_Test_1"."id" AND "tbl_Test_1"."email" = \'test@test.ru\')',
+            . ' ON ("tbl_Test_1"."id" = "tbl_Admins_0"."parent_id" AND "tbl_Test_1"."email" = \'test@test.ru\')',
             $dbSelect->join($joinConfig)->getQuery()
         );
 
         $dbSelect = static::getNewSelect()->columns(['id']);
         $joinConfig
-            ->setJoinType(OrmJoinConfig::JOIN_RIGHT)
+            ->setJoinType(JoinConfigInterface::JOIN_RIGHT)
             ->setForeignColumnsToSelect(['email']);
         static::assertEquals(
             'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", "tbl_Test_1"."email" AS "col_Test__email_1"'
             . ' FROM "admins" AS "tbl_Admins_0"'
             . ' RIGHT JOIN "admins" AS "tbl_Test_1"'
-            . ' ON ("tbl_Admins_0"."parent_id" = "tbl_Test_1"."id" AND "tbl_Test_1"."email" = \'test@test.ru\')',
+            . ' ON ("tbl_Test_1"."id" = "tbl_Admins_0"."parent_id" AND "tbl_Test_1"."email" = \'test@test.ru\')',
             $dbSelect->join($joinConfig)->getQuery()
         );
 
         $dbSelect = static::getNewSelect()->columns(['id']);
         $joinConfig
-            ->setJoinType(OrmJoinConfig::JOIN_RIGHT)
+            ->setJoinType(JoinConfigInterface::JOIN_RIGHT)
             ->setAdditionalJoinConditions([])
             ->setForeignColumnsToSelect([]);
         static::assertEquals(
-            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0" RIGHT JOIN "admins" AS "tbl_Test_1" ON ("tbl_Admins_0"."parent_id" = "tbl_Test_1"."id")',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0" RIGHT JOIN "admins" AS "tbl_Test_1" ON ("tbl_Test_1"."id" = "tbl_Admins_0"."parent_id")',
             $dbSelect->join($joinConfig)->getQuery()
         );
 
         $dbSelect = static::getNewSelect()->columns(['id']);
         $joinConfig
-            ->setJoinType(OrmJoinConfig::JOIN_FULL)
+            ->setJoinType(JoinConfigInterface::JOIN_FULL)
             ->setForeignColumnsToSelect(['email']);
         static::assertEquals(
-            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", "tbl_Test_1"."email" AS "col_Test__email_1" FROM "admins" AS "tbl_Admins_0" FULL JOIN "admins" AS "tbl_Test_1" ON ("tbl_Admins_0"."parent_id" = "tbl_Test_1"."id")',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", "tbl_Test_1"."email" AS "col_Test__email_1" FROM "admins" AS "tbl_Admins_0" FULL JOIN "admins" AS "tbl_Test_1" ON ("tbl_Test_1"."id" = "tbl_Admins_0"."parent_id")',
             $dbSelect->join($joinConfig)->getQuery()
         );
     }
@@ -951,7 +966,9 @@ class OrmSelectTest extends BaseTestCase
     public function testOrderByAndGroupBy(): void
     {
         static::assertEquals(
-            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0" LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Admins_0"."parent_id" = "tbl_Parent_1"."id") ORDER BY "tbl_Parent_1"."id" asc',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0"'
+            . ' LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Parent_1"."id" = "tbl_Admins_0"."parent_id")'
+            . ' ORDER BY "tbl_Parent_1"."id" asc',
             static::getNewSelect()
                 ->columns('id')
                 ->orderBy('Parent.id')
@@ -959,7 +976,9 @@ class OrmSelectTest extends BaseTestCase
         );
 
         static::assertEquals(
-            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0" LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Admins_0"."parent_id" = "tbl_Parent_1"."id") GROUP BY "tbl_Parent_1"."id"',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0"'
+            . ' LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Parent_1"."id" = "tbl_Admins_0"."parent_id")'
+            . ' GROUP BY "tbl_Parent_1"."id"',
             static::getNewSelect()
                 ->orderBy('Parent.id')
                 ->removeOrdering()
@@ -969,7 +988,9 @@ class OrmSelectTest extends BaseTestCase
         );
 
         static::assertEquals(
-            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0" LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Admins_0"."parent_id" = "tbl_Parent_1"."id") GROUP BY "tbl_Parent_1"."id", "tbl_Parent_1"."parent_id" ORDER BY "tbl_Parent_1"."id" asc',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0"'
+            . ' LEFT JOIN "admins" AS "tbl_Parent_1" ON ("tbl_Parent_1"."id" = "tbl_Admins_0"."parent_id")'
+            . ' GROUP BY "tbl_Parent_1"."id", "tbl_Parent_1"."parent_id" ORDER BY "tbl_Parent_1"."id" asc',
             static::getNewSelect()
                 ->columns('id')
                 ->orderBy('Parent.id')
@@ -1119,7 +1140,7 @@ class OrmSelectTest extends BaseTestCase
         $select = OrmSelect::from(TestingAdminsTable::getInstance())
             ->fromConfigsArray([
                 'parent_id !=' => null,
-                'CONTAINS' => ['Parent' => ['TYPE' => OrmJoinConfig::JOIN_LEFT]]
+                'CONTAINS' => ['Parent' => ['TYPE' => JoinConfigInterface::JOIN_LEFT]]
             ]);
         $records = $select->fetchMany();
         static::assertNotEmpty($records);
@@ -1144,7 +1165,7 @@ class OrmSelectTest extends BaseTestCase
 
         $select = OrmSelect::from(TestingAdminsTable::getInstance())
             ->fromConfigsArray([
-                'CONTAINS' => ['Parent' => ['*', 'TYPE' => OrmJoinConfig::JOIN_INNER]]
+                'CONTAINS' => ['Parent' => ['*', 'TYPE' => JoinConfigInterface::JOIN_INNER]]
             ]);
         $records = $select->fetchMany();
 
@@ -1205,7 +1226,7 @@ class OrmSelectTest extends BaseTestCase
                 'parent_id !=' => null,
                 'CONTAIN' => ['Parent' => [
                     '*',
-                    'TYPE' => OrmJoinConfig::JOIN_INNER,
+                    'TYPE' => JoinConfigInterface::JOIN_INNER,
                     'JOIN_CONDITIONS' => ['is_active' => false]
                 ]]
             ]);

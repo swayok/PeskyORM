@@ -7,9 +7,9 @@ namespace PeskyORM\ORM\Table;
 use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\DbExpr;
 use PeskyORM\Join\NormalJoinConfigInterface;
-use PeskyORM\Join\OrmJoinConfig;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\RecordsCollection\RecordsSet;
+use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\ORM\TableStructure\TableStructureInterface;
 
@@ -45,13 +45,12 @@ interface TableInterface
     public function getTableStructure(): TableStructureInterface;
     
     /**
-     * @param string $relationName
+     * @param string|RelationInterface $relation
      * @param string|null $alterLocalTableAlias - alter this table's alias in join config
      * @param string|null $joinName - string: specific join name; null: $relationName is used
-     * @return OrmJoinConfig
      */
     public static function getJoinConfigForRelation(
-        string $relationName,
+        string|RelationInterface $relation,
         string $alterLocalTableAlias = null,
         string $joinName = null
     ): NormalJoinConfigInterface;
@@ -88,9 +87,12 @@ interface TableInterface
      * @param string|DbExpr $column
      * @param array $conditions
      * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
-     * @return array
      */
-    public static function selectColumn(string|DbExpr $column, array $conditions = [], ?\Closure $configurator = null): array;
+    public static function selectColumn(
+        string|DbExpr $column,
+        array $conditions = [],
+        ?\Closure $configurator = null
+    ): array;
     
     /**
      * Select associative array
@@ -98,7 +100,8 @@ interface TableInterface
      * @param string|DbExpr|null $keysColumn
      * @param string|DbExpr|null $valuesColumn
      * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect.
+     *      function (SelectQueryBuilderInterface $select): void {}
      */
     public static function selectAssoc(
         string|DbExpr|null $keysColumn,
@@ -111,24 +114,35 @@ interface TableInterface
      * Get 1 record from DB as array
      * @param string|array $columns
      * @param array $conditions
-     * @param \Closure|null $configurator - \Closure to configure OrmSelect. function (OrmSelect $select): void {}
+     * @param \Closure|null $configurator - \Closure to configure OrmSelect.
+     *      function (SelectQueryBuilderInterface $select): void {}
      */
-    public static function selectOne(string|array $columns, array $conditions, ?\Closure $configurator = null): array;
+    public static function selectOne(
+        string|array $columns,
+        array $conditions,
+        ?\Closure $configurator = null
+    ): array;
     
     /**
      * Get 1 record from DB as Record
      * @param string|array $columns
      * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect.
+     *      function (SelectQueryBuilderInterface $select): void {}
      * @return RecordInterface
      */
-    public static function selectOneAsDbRecord(string|array $columns, array $conditions, ?\Closure $configurator = null): RecordInterface;
+    public static function selectOneAsDbRecord(
+        string|array $columns,
+        array $conditions,
+        ?\Closure $configurator = null
+    ): RecordInterface;
     
     /**
      * Make a query that returns only 1 value defined by $expression
      * @param DbExpr $expression - example: DbExpr::create('COUNT(*)'), DbExpr::create('SUM(`field`)')
      * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect.
+     *      function (SelectQueryBuilderInterface $select): void {}
      * @throws \InvalidArgumentException
      */
     public static function selectValue(
@@ -141,7 +155,8 @@ interface TableInterface
      * Make a query that returns only 1 value for specific column
      * @param string|TableColumnInterface $column
      * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect.
+     *      function (SelectQueryBuilderInterface $select): void {}
      * @throws \InvalidArgumentException
      */
     public static function selectColumnValue(
@@ -153,7 +168,8 @@ interface TableInterface
     /**
      * Does table contain any record matching provided condition
      * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
+     * @param \Closure|null $configurator - closure to configure OrmSelect.
+     *      function (SelectQueryBuilderInterface $select): void {}
      * @return bool
      * @throws \InvalidArgumentException
      */

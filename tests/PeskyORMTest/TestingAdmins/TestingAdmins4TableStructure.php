@@ -12,8 +12,7 @@ use PeskyORM\ORM\TableStructure\TableStructure;
 
 class TestingAdmins4TableStructure extends TableStructure
 {
-    
-    protected static bool $autodetectColumns = true;
+    protected bool $autodetectColumns = true;
     
     public static function getTableName(): string
     {
@@ -28,10 +27,10 @@ class TestingAdmins4TableStructure extends TableStructure
                 return DbExpr::create('NOW()');
             });
     }
-    
+
     private function Parent(): Relation
     {
-        return new Relation('parent_id', Relation::BELONGS_TO, TestingAdminsTable::class, 'id');
+        return new Relation('parent_id', Relation::BELONGS_TO, TestingAdminsTable::getInstance(), 'id');
     }
     
 }

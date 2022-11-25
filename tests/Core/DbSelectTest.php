@@ -424,7 +424,7 @@ class DbSelectTest extends BaseTestCase
     {
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage(
-            "You must use JoinConfig->setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'"
+            "You must use NormalJoinConfigInterface::setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'"
         );
         static::assertEquals(
             'SELECT "OtherTable"."id" AS "_OtherTable__id" FROM "admins" AS "Admins"',
@@ -440,7 +440,7 @@ class DbSelectTest extends BaseTestCase
     {
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage(
-            "You must use JoinConfig->setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'"
+            "You must use NormalJoinConfigInterface::setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'"
         );
         static::assertEquals(
             'SELECT "OtherTable"."id" AS "_OtherTable__id" FROM "admins" AS "Admins"',
@@ -456,7 +456,7 @@ class DbSelectTest extends BaseTestCase
     {
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage(
-            "You must use JoinConfig->setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'"
+            "You must use NormalJoinConfigInterface::setForeignColumnsToSelect() to set the columns list to select for join named 'OtherTable'"
         );
         static::assertEquals(
             'SELECT "OtherTable"."id" AS "_OtherTable__id" FROM "admins" AS "Admins"',
@@ -918,7 +918,7 @@ class DbSelectTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Join with name 'Test' already defined");
-        $joinConfig = new JoinConfig('Test', 'admins', 'id', JoinConfig::JOIN_INNER, 'settings', 'id');
+        $joinConfig = new JoinConfig('Test', JoinConfig::JOIN_INNER, 'admins', 'id', 'settings', 'id');
         static::getNewSelect()
             ->join($joinConfig)
             ->join($joinConfig);
@@ -928,8 +928,8 @@ class DbSelectTest extends BaseTestCase
     {
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage("Invalid join name 'NotTest' used in columns list for join named 'Test'");
-        $joinConfig = (new JoinConfig('Test', 'admins', 'id', JoinConfig::JOIN_INNER, 'settings', 'id'))
-            ->setForeignColumnsToSelect('Test.key', 'NotTest.value');
+        $joinConfig = (new JoinConfig('Test', JoinConfig::JOIN_INNER, 'admins', 'id', 'settings', 'id'))
+            ->setForeignColumnsToSelect(['Test.key', 'NotTest.value']);
         static::getNewSelect()
             ->join($joinConfig)
             ->getQuery();
@@ -937,27 +937,37 @@ class DbSelectTest extends BaseTestCase
     
     public function testJoins(): void
     {
-        $joinConfig = (new JoinConfig('Test', 'admins', 'id', JoinConfig::JOIN_INNER, 'settings', 'id'))
-            ->setForeignColumnsToSelect('key', 'value');
+        $joinConfig = (new JoinConfig('Test', JoinConfig::JOIN_INNER, 'Admins', 'id', 'settings', 'id'))
+            ->setForeignColumnsToSelect(['key', 'value']);
         static::assertEquals(
-            'SELECT "tbl_Admins_0".*, "tbl_Test_1"."key" AS "col_Test__key_1", "tbl_Test_1"."value" AS "col_Test__value_2" FROM "admins" AS "tbl_Admins_0" INNER JOIN "settings" AS "tbl_Test_1" ON ("tbl_Admins_0"."id" = "tbl_Test_1"."id")',
+            'SELECT "tbl_Admins_0".*,'
+            . ' "tbl_Test_1"."key" AS "col_Test__key_1",'
+            . ' "tbl_Test_1"."value" AS "col_Test__value_2"'
+            . ' FROM "admins" AS "tbl_Admins_0"'
+            . ' INNER JOIN "settings" AS "tbl_Test_1" ON ("tbl_Test_1"."id" = "tbl_Admins_0"."id")',
             static::getNewSelect()->join($joinConfig)->getQuery()
         );
         $joinConfig
             ->setJoinType(JoinConfig::JOIN_LEFT)
-            ->setForeignColumnsToSelect('*')
+            ->setForeignColumnsToSelect(['*'])
             ->setAdditionalJoinConditions([
                 'key' => 'name',
             ]);
         static::assertEquals(
-            'SELECT "tbl_Admins_0".*, "tbl_Test_1".* FROM "admins" AS "tbl_Admins_0" LEFT JOIN "settings" AS "tbl_Test_1" ON ("tbl_Admins_0"."id" = "tbl_Test_1"."id" AND "tbl_Test_1"."key" = \'name\')',
+            'SELECT "tbl_Admins_0".*, "tbl_Test_1".*'
+            . ' FROM "admins" AS "tbl_Admins_0"'
+            . ' LEFT JOIN "settings" AS "tbl_Test_1"'
+            . ' ON ("tbl_Test_1"."id" = "tbl_Admins_0"."id" AND "tbl_Test_1"."key" = \'name\')',
             static::getNewSelect()->join($joinConfig)->getQuery()
         );
         $joinConfig
             ->setJoinType(JoinConfig::JOIN_RIGHT)
             ->setForeignColumnsToSelect(['value']);
         static::assertEquals(
-            'SELECT "tbl_Admins_0".*, "tbl_Test_1"."value" AS "col_Test__value_1" FROM "admins" AS "tbl_Admins_0" RIGHT JOIN "settings" AS "tbl_Test_1" ON ("tbl_Admins_0"."id" = "tbl_Test_1"."id" AND "tbl_Test_1"."key" = \'name\')',
+            'SELECT "tbl_Admins_0".*, "tbl_Test_1"."value" AS "col_Test__value_1"'
+            . ' FROM "admins" AS "tbl_Admins_0"'
+            . ' RIGHT JOIN "settings" AS "tbl_Test_1"'
+            . ' ON ("tbl_Test_1"."id" = "tbl_Admins_0"."id" AND "tbl_Test_1"."key" = \'name\')',
             static::getNewSelect()->join($joinConfig)->getQuery()
         );
         $joinConfig
@@ -965,7 +975,8 @@ class DbSelectTest extends BaseTestCase
             ->setAdditionalJoinConditions([])
             ->setForeignColumnsToSelect([]);
         static::assertEquals(
-            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" RIGHT JOIN "settings" AS "tbl_Test_1" ON ("tbl_Admins_0"."id" = "tbl_Test_1"."id")',
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0"'
+            . ' RIGHT JOIN "settings" AS "tbl_Test_1" ON ("tbl_Test_1"."id" = "tbl_Admins_0"."id")',
             static::getNewSelect()->join($joinConfig)->getQuery()
         );
         $joinConfig
@@ -973,13 +984,19 @@ class DbSelectTest extends BaseTestCase
             ->setAdditionalJoinConditions([])
             ->setForeignColumnsToSelect([]);
         static::assertEquals(
-            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" FULL JOIN "settings" AS "tbl_Test_1" ON ("tbl_Admins_0"."id" = "tbl_Test_1"."id")',
+            'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0"'
+            . ' FULL JOIN "settings" AS "tbl_Test_1" ON ("tbl_Test_1"."id" = "tbl_Admins_0"."id")',
             static::getNewSelect()->join($joinConfig)->getQuery()
         );
         // test join name shortening
-        $joinConfig
-            ->setJoinType(JoinConfig::JOIN_RIGHT)
-            ->setJoinName('VeryLongJoinNameSoItMustBeShortenedButWeNeedMoreThen60Characters')
+        $joinConfig = (new JoinConfig(
+                'VeryLongJoinNameSoItMustBeShortenedButWeNeedMoreThen60Characters',
+                JoinConfig::JOIN_RIGHT,
+                'Admins',
+                'id',
+                'settings',
+                'id'
+            ))
             ->setAdditionalJoinConditions([
                 'VeryLongJoinNameSoItMustBeShortenedButWeNeedMoreThen60Characters.parentId' => null
             ])
@@ -987,7 +1004,7 @@ class DbSelectTest extends BaseTestCase
         static::assertEquals(
             'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0"'
             . ' RIGHT JOIN "settings" AS "tbl_VrLngJnNmSItMstBShrtenedButWeNeedMoreThen60Characters_1"'
-            . ' ON ("tbl_Admins_0"."id" = "tbl_VrLngJnNmSItMstBShrtenedButWeNeedMoreThen60Characters_1"."id"'
+            . ' ON ("tbl_VrLngJnNmSItMstBShrtenedButWeNeedMoreThen60Characters_1"."id" = "tbl_Admins_0"."id"'
             . ' AND "tbl_VrLngJnNmSItMstBShrtenedButWeNeedMoreThen60Characters_1"."parentId" IS NULL)',
             static::getNewSelect()->join($joinConfig)->getQuery()
         );
@@ -1306,7 +1323,7 @@ class DbSelectTest extends BaseTestCase
                 'Test.admin_id >' => '1',
             ],
             'JOIN' => [
-                (new JoinConfig('Test', 'admins', 'id', JoinConfig::JOIN_LEFT, 'settings', 'admin_id'))
+                (new JoinConfig('Test', JoinConfig::JOIN_LEFT, 'Admins', 'id', 'settings', 'admin_id'))
                     ->setForeignColumnsToSelect(['admin_id', 'setting_value' => 'Test.value']),
             ],
         ];
@@ -1319,7 +1336,7 @@ class DbSelectTest extends BaseTestCase
             . ' "tbl_Test_1"."admin_id" AS "col_Test__admin_id_4",'
             . ' "tbl_Test_1"."value" AS "col_Test__setting_value_5"'
             . ' FROM "admins" AS "tbl_Admins_0"'
-            . ' LEFT JOIN "settings" AS "tbl_Test_1" ON ("tbl_Admins_0"."id" = "tbl_Test_1"."admin_id")'
+            . ' LEFT JOIN "settings" AS "tbl_Test_1" ON ("tbl_Test_1"."admin_id" = "tbl_Admins_0"."id")'
             . ' WHERE "tbl_Admins_0"."colname" = \'value\''
             . ' AND ("tbl_Admins_0"."colname2" = \'value2\' OR "tbl_Admins_0"."colname3" = \'value3\')'
             . ' GROUP BY "tbl_Admins_0"."colname", "tbl_Test_1"."admin_id"'

@@ -4,7 +4,6 @@ namespace App\Db;
 
 use PeskyORM\ORM\TableStructure\TableStructure;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
-use PeskyORM\ORM\TableStructure\Relation;
 use PeskyORM\DbExpr;
 
 /**

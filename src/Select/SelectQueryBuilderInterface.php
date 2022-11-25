@@ -6,7 +6,7 @@ namespace PeskyORM\Select;
 
 use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\DbExpr;
-use PeskyORM\Join\CrossJoinConfig;
+use PeskyORM\Join\CrossJoinConfigInterface;
 use PeskyORM\Join\NormalJoinConfigInterface;
 use PeskyORM\Utils\QueryBuilderUtils;
 
@@ -214,7 +214,7 @@ interface SelectQueryBuilderInterface
      * Add a CROSS JOIN to query
      * @see https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
      */
-    public function crossJoin(CrossJoinConfig $joinConfig, bool $append = true): static;
+    public function crossJoin(CrossJoinConfigInterface $joinConfig, bool $append = true): static;
 
     public function __clone();
 }

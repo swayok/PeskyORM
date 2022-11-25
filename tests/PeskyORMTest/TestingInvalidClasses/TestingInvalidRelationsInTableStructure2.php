@@ -26,17 +26,7 @@ class TestingInvalidRelationsInTableStructure2 extends TableStructure
     
     private function InvalidLocalColumnName(): Relation
     {
-        return new Relation('local_invalid', Relation::HAS_MANY, TestingAdminsTable::class, 'id');
-    }
-    
-    private function InvalidForeignColumnName(): Relation
-    {
-        return new Relation('valid', Relation::HAS_MANY, TestingAdminsTable::class, 'foreign_invalid');
-    }
-    
-    private function InvalidForeignTableClass(): Relation
-    {
-        return new Relation('valid', Relation::HAS_MANY, '___class_invalid', 'id');
+        return new Relation('local_invalid', Relation::HAS_MANY, TestingAdminsTable::getInstance(), 'parent_id');
     }
     
 }

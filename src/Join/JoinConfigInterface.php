@@ -14,7 +14,9 @@ interface JoinConfigInterface
 
     /**
      * Get JOIN name (alias)
-     * Example: INNER JOIN foreign_table_schema.foreign_table_name as ForeignTableAlias ON ($conditions) AS $joinName
+     * Examples:
+     * {join_type} JOIN {foreign_table_schema_and_name} AS {join_name} ...
+     * CROSS JOIN {query} AS {join_name} ...
      */
     public function getJoinName(): ?string;
 

@@ -6,17 +6,17 @@ namespace PeskyORM\Tests\Orm;
 
 use PeskyORM\DbExpr;
 use PeskyORM\Exception\OrmException;
+use PeskyORM\ORM\TableStructure\Relation;
 use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmins4TableStructure;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidColumnsInTableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure2;
-use PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure3;
-use PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure4;
 use PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingNoPkColumnInTableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses\TestingTwoPrimaryKeysColumnsTableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
@@ -91,11 +91,11 @@ class TableStructureAndRelationsTest extends BaseTestCase
         $relation = TestingAdminsTableStructure::getRelation('Parent');
         static::assertInstanceOf(RelationInterface::class, $relation);
         static::assertTrue(
-            TestingAdminsTableStructure::getColumn($relation->getColumnName())
+            TestingAdminsTableStructure::getColumn($relation->getLocalColumnName())
                 ->hasRelation($relation->getName())
         );
         static::assertTrue(
-            TestingAdminsTableStructure::getColumn($relation->getColumnName())
+            TestingAdminsTableStructure::getColumn($relation->getLocalColumnName())
                 ->isItAForeignKey()
         );
     }
@@ -120,7 +120,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
     {
         $this->expectException(OrmException::class);
         $this->expectExceptionMessageMatches(
-            "%Method .*?->invalid\(\) must return instance of .*?TableColumn.* class%"
+            "%Method .*?->invalid\(\) must return an instance of class that implements .*?TableColumnInterface%"
         );
         TestingInvalidColumnsInTableStructure::getColumn('invalid');
     }
@@ -137,58 +137,67 @@ class TableStructureAndRelationsTest extends BaseTestCase
     {
         $this->expectException(OrmException::class);
         $this->expectExceptionMessageMatches(
-            "%Method .*?->InvalidClass\(\) must return instance of .*?Relation class%"
+            "%Method .*?->InvalidClass\(\) must return an instance of class that implements .*?RelationInterface%"
         );
         TestingInvalidRelationsInTableStructure::getRelation('InvalidClass');
     }
     
     public function testInvalidTableStructure4(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$foreignTableClass argument contains invalid value: class '___class_invalid' does not exist");
-        TestingInvalidRelationsInTableStructure2::getRelation('InvalidForeignTableClass');
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage('Argument #3 ($foreignTable) must be of type');
+        /** @noinspection PhpParamsInspection */
+        new Relation('valid', Relation::HAS_MANY, $this, 'id');
     }
-    
+
     public function testInvalidTableStructure5(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Tests\PeskyORMTest\TestingInvalidClasses\TestingInvalidRelationsInTableStructure3 does not know about column named 'local_invalid'");
-        TestingInvalidRelationsInTableStructure3::getRelation('InvalidLocalColumnName');
+        $this->expectExceptionMessage('$foreignColumnName argument value (\'id\') refers to a primary key column. It makes no sense for HAS MANY relation.');
+        new Relation('id', Relation::HAS_MANY, TestingAdminsTable::getInstance(), 'id');
     }
     
     public function testInvalidTableStructure6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("Related table PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable has no column 'foreign_invalid'");
-        TestingInvalidRelationsInTableStructure4::getRelation('InvalidForeignColumnName')->getForeignColumnName();
+        $this->expectExceptionMessage("TestingInvalidRelationsInTableStructure2 does not know about column named 'local_invalid'");
+        TestingInvalidRelationsInTableStructure2::getRelation('InvalidLocalColumnName');
+    }
+
+    public function testInvalidTableStructure7(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("TestingAdminsTableStructure does not know about column named 'foreign_invalid'");
+        new Relation('id', Relation::HAS_MANY, TestingAdminsTable::getInstance(), 'foreign_invalid');
     }
     
     public function testCreateMissingColumnConfigsFromDbTableDescription(): void
     {
         $structure = TestingAdmins4TableStructure::getInstance();
         static::assertCount(17, $structure::getColumns());
-        static::assertEquals(
-            [
-                'updated_at',
-                'id',
-                'login',
-                'password',
-                'parent_id',
-                'created_at',
-                'remember_token',
-                'is_superadmin',
-                'language',
-                'ip',
-                'role',
-                'is_active',
-                'name',
-                'email',
-                'timezone',
-                'not_changeable_column',
-                'big_data',
-            ],
-            array_keys($structure::getColumns())
-        );
+        $expected = [
+            'updated_at',
+            'id',
+            'login',
+            'password',
+            'parent_id',
+            'created_at',
+            'remember_token',
+            'is_superadmin',
+            'language',
+            'ip',
+            'role',
+            'is_active',
+            'name',
+            'email',
+            'timezone',
+            'not_changeable_column',
+            'big_data',
+        ];
+        sort($expected);
+        $actual = array_keys($structure::getColumns());
+        sort($actual);
+        static::assertEquals($expected, $actual);
         // defined column
         $col = $structure::getColumn('updated_at');
         static::assertFalse($col->isValueCanBeNull());

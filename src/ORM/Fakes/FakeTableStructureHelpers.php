@@ -36,7 +36,7 @@ trait FakeTableStructureHelpers
                 $this->columns[$name] = TableColumn::create($typeOrColumnInstance, $name);
             }
             if ($this->columns[$name]->isItAFile()) {
-                $this->fileColumns[] = $this->columns[$name];
+                $this->fileColumns[$name] = $this->columns[$name];
             } elseif ($this->columns[$name]->isItPrimaryKey()) {
                 $this->pk = $this->columns[$name];
             }

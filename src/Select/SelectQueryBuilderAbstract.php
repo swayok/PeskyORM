@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace PeskyORM\Select;
 
 use PeskyORM\DbExpr;
-use PeskyORM\Join\CrossJoinConfig;
 use PeskyORM\Join\CrossJoinConfigInterface;
-use PeskyORM\Join\JoinConfig;
+use PeskyORM\Join\JoinConfigInterface;
 use PeskyORM\Join\NormalJoinConfigInterface;
 use PeskyORM\Utils\ArgumentValidators;
 use PeskyORM\Utils\PdoUtils;
@@ -600,27 +599,29 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
         return $this;
     }
 
-    protected function validateJoin(NormalJoinConfigInterface $joinConfig): void
+    protected function validateJoin(JoinConfigInterface $joinConfig): void
     {
         if (!$joinConfig->isValid()) {
-            throw new \InvalidArgumentException("Join config with name '{$joinConfig->getJoinName()}' is not valid");
+            throw new \InvalidArgumentException(
+                "Join config with name '{$joinConfig->getJoinName()}' is not valid"
+            );
         }
     }
 
     /**
+     * {@inheritDoc}
      * @throws \InvalidArgumentException
      */
-    public function crossJoin(CrossJoinConfig $joinConfig, bool $append = true): static
+    public function crossJoin(CrossJoinConfigInterface $joinConfig, bool $append = true): static
     {
-        // @see CROSS JOIN docs for details
-        if (!$joinConfig->isValid()) {
-            throw new \InvalidArgumentException("Cross join config with name '{$joinConfig->getJoinName()}' is not valid");
-        }
+        $this->validateJoin($joinConfig);
         if (!$append) {
             $this->crossJoins = [];
         }
         if (isset($this->crossJoins[$joinConfig->getJoinName()])) {
-            throw new \InvalidArgumentException("Cross join with name '{$joinConfig->getJoinName()}' already defined");
+            throw new \InvalidArgumentException(
+                "Cross join with name '{$joinConfig->getJoinName()}' already defined"
+            );
         }
         $this->crossJoins[$joinConfig->getJoinName()] = $joinConfig;
         $this->setDirty('joins');
@@ -1103,7 +1104,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
         bool $appendColumnsToExisting = false
     ): void {
         throw new \UnexpectedValueException(
-            "You must use JoinConfig->setForeignColumnsToSelect() to set the columns list to select for join named '{$joinName}'"
+            "You must use NormalJoinConfigInterface::setForeignColumnsToSelect() to set the columns list to select for join named '{$joinName}'"
         );
     }
 
@@ -1126,7 +1127,6 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
                 if ($rawValue instanceof DbExpr) {
                     return $this->quoteDbExpr($rawValue);
                 }
-
                 return $rawValue;
             }
         );
@@ -1216,15 +1216,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
 
     protected function makeJoinConditions(NormalJoinConfigInterface $joinConfig): string
     {
-        $shortJoinName = $this->getShortTableAlias($joinConfig->getJoinName());
-        $conditions = array_merge(
-            [
-                $this->getShortTableAlias($joinConfig->getTableAlias()) . '.' . $joinConfig->getColumnName()
-                => DbExpr::create("`{$shortJoinName}`.`{$joinConfig->getForeignColumnName()}`", false),
-            ],
-            $joinConfig->getAdditionalJoinConditions()
-        );
-        return trim($this->makeConditions($conditions, '', $joinConfig->getJoinName()));
+        return trim($this->makeConditions($joinConfig->getJoinConditions(), '', $joinConfig->getJoinName()));
     }
 
     protected function makeWithQueries(): string
@@ -1380,7 +1372,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
         foreach (array_merge($this->joins, $this->crossJoins) as $joinConfig) {
             if (!empty($dataBlocks[$joinConfig->getJoinName()])) {
                 $data = $this->normalizeJoinDataForRecord($joinConfig, $dataBlocks[$joinConfig->getJoinName()]);
-                if ($joinConfig->getTableAlias() === $this->getTableAlias()) {
+                if ($joinConfig->getLocalTableAlias() === $this->getTableAlias()) {
                     $nested[$joinConfig->getJoinName()] = $data;
                 } else {
                     $deepNestedJoins[] = [
@@ -1389,7 +1381,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
                     ];
                 }
             } elseif (count($joinConfig->getForeignColumnsToSelect()) > 0) {
-                if ($joinConfig->getTableAlias() === $this->getTableAlias()) {
+                if ($joinConfig->getLocalTableAlias() === $this->getTableAlias()) {
                     $nested[$joinConfig->getJoinName()] = [];
                 } else {
                     $deepNestedJoins[] = [
@@ -1407,30 +1399,35 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
 
     /**
      * Insert deeply nested joins data into record data
+     * @param array $joins = [['config' => JoinConfigInterface, 'data' => array], ...]
      */
     protected function placeDataOfDeepNestedJoinsIntoRecord(array $joins, array &$data): void
     {
-        /** @var JoinConfig[] $usedJoins */
+        /** @var JoinConfigInterface[] $usedJoins */
         $usedJoins = [];
         foreach ($joins as $index => $join) {
-            /** @var JoinConfig $config */
+            /** @var JoinConfigInterface $config */
             $config = $join['config'];
-            if (array_key_exists($config->getTableAlias(), $data)) {
-                $data[$config->getTableAlias()][$config->getJoinName()] = $join['data'];
-                $usedJoins[] = $config;
-                unset($joins[$index]);
+            if ($config instanceof NormalJoinConfigInterface) {
+                if (array_key_exists($config->getLocalTableAlias(), $data)) {
+                    $data[$config->getLocalTableAlias()][$config->getJoinName()] = $join['data'];
+                    $usedJoins[] = $config;
+                    unset($joins[$index]);
+                }
+            } else {
+                $data[$config->getJoinName()] = $join['data'];
             }
         }
         if (count($usedJoins) > 0) {
             foreach ($usedJoins as $config) {
-                if (count($joins) > 0 && isset($data[$config->getTableAlias()])) {
-                    $this->placeDataOfDeepNestedJoinsIntoRecord($joins, $data[$config->getTableAlias()]);
+                if (count($joins) > 0 && isset($data[$config->getLocalTableAlias()])) {
+                    $this->placeDataOfDeepNestedJoinsIntoRecord($joins, $data[$config->getLocalTableAlias()]);
                 }
-                if (empty($data[$config->getTableAlias()][$config->getJoinName()])) {
-                    unset($data[$config->getTableAlias()][$config->getJoinName()]);
+                if (empty($data[$config->getLocalTableAlias()][$config->getJoinName()])) {
+                    unset($data[$config->getLocalTableAlias()][$config->getJoinName()]);
                 }
-                if (empty($data[$config->getTableAlias()])) {
-                    unset($data[$config->getTableAlias()]);
+                if (empty($data[$config->getLocalTableAlias()])) {
+                    unset($data[$config->getLocalTableAlias()]);
                 }
             }
         }

@@ -107,7 +107,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     protected function injectHasManyRelationDataIntoRecords(RelationInterface $relation, array $columnsToSelect = ['*']): void
     {
         $relationName = $relation->getName();
-        $localColumnName = $relation->getColumnName();
+        $localColumnName = $relation->getLocalColumnName();
         $ids = $this->getValuesForColumn($localColumnName, null, function ($value) {
             return !empty($value);
         });

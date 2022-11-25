@@ -536,7 +536,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
 
         $options = [
             QueryBuilderUtils::QUERY_PART_WITH => ['test' => Select::from('some_table', $adapter)],
-            QueryBuilderUtils::QUERY_PART_JOINS => [new JoinConfig('Test', 'test', 'id', JoinConfig::JOIN_INNER, 'other', 'id')],
+            QueryBuilderUtils::QUERY_PART_JOINS => [new JoinConfig('Test', JoinConfig::JOIN_INNER, 'test', 'id', 'other', 'id')],
             QueryBuilderUtils::QUERY_PART_GROUP => [DbExpr::create('[grouping]')],
             QueryBuilderUtils::QUERY_PART_HAVING => [DbExpr::create('[having filters]')],
             QueryBuilderUtils::QUERY_PART_ORDER => [DbExpr::create('[ordering]')],
@@ -553,7 +553,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
                     'WITH `test` AS (SELECT `tbl_SomeTable_0`.* FROM `some_table` AS `tbl_SomeTable_0`)'
                     . ' SELECT `tbl_TestTable_0`.*, `tbl_Test_1`.* FROM `test_table` AS `tbl_TestTable_0`'
                     . ' INNER JOIN `other` AS `tbl_Test_1`'
-                    . ' ON (`tbl_Test_1`.`id` = `tbl_Test_1`.`id`)'
+                    . ' ON (`tbl_Test_1`.`id` = `test`.`id`)'
                     . ' WHERE `tbl_TestTable_0`.`col1` > ``0``'
                     . ' GROUP BY [grouping] HAVING ([having filters]) ORDER BY [ordering]'
                     . ' LIMIT 1 OFFSET 2',
@@ -569,7 +569,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
                 DbExpr::create(
                     'WITH `test` AS (SELECT `tbl_SomeTable_1`.* FROM `some_table` AS `tbl_SomeTable_1`)'
                     . ' SELECT `tbl_TestTable_0`.*, `tbl_Test_1`.* FROM `test_table` AS `tbl_TestTable_0`'
-                    . ' INNER JOIN `other` AS `tbl_Test_1` ON (`tbl_Test_1`.`id` = `tbl_Test_1`.`id`)'
+                    . ' INNER JOIN `other` AS `tbl_Test_1` ON (`tbl_Test_1`.`id` = `test`.`id`)'
                     . ' GROUP BY [grouping] HAVING ([having filters]) ORDER BY [ordering]'
                     . ' LIMIT 1 OFFSET 2',
                     false

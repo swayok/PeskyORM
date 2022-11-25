@@ -105,7 +105,6 @@ namespace {$namespace};
 
 use {$parentClass};
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
-use PeskyORM\ORM\TableStructure\Relation;
 use PeskyORM\DbExpr;$includes
 
 /**

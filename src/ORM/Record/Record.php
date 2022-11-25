@@ -823,10 +823,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         if (!$this->isRelatedRecordCanBeRead($relation)) {
             throw new \BadMethodCallException(
                 'Record ' . get_class($this) . " has not enough data to read related record '{$relationName}'. "
-                . "You need to provide a value for '{$relation->getColumnName()}' column."
+                . "You need to provide a value for '{$relation->getLocalColumnName()}' column."
             );
         }
-        $fkValue = $this->getValue($relation->getColumnName());
+        $fkValue = $this->getValue($relation->getLocalColumnName());
         $relatedTable = $relation->getForeignTable();
         if ($fkValue === null) {
             $relatedRecord = $relatedTable->newRecord();
@@ -835,8 +835,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             }
         } else {
             $conditions = array_merge(
-                [$relation->getForeignColumnName() => $this->getValue($relation->getColumnName())],
-                $relation->getAdditionalJoinConditions(static::getTable(), null, true, $this)
+                [$relation->getForeignColumnName() => $this->getValue($relation->getLocalColumnName())],
+                $relation->getAdditionalJoinConditions(true, static::getTable()::getAlias(), $this)
             );
             if ($relation->getType() === RelationInterface::HAS_MANY) {
                 $relatedRecord = $relatedTable::select(
@@ -880,7 +880,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $relation = $relation instanceof RelationInterface
             ? $relation
             : static::getRelation($relation);
-        return $this->hasValue($relation->getColumnName());
+        return $this->hasValue($relation->getLocalColumnName());
     }
     
     public function isRelatedRecordAttached(string $relationName): bool
@@ -1518,21 +1518,21 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 if ($relations[$relationName]->getType() === $relations[$relationName]::HAS_ONE) {
                     $relatedRecord->updateValue(
                         $relations[$relationName]->getForeignColumnName(),
-                        $this->getValue($relations[$relationName]->getColumnName()),
+                        $this->getValue($relations[$relationName]->getLocalColumnName()),
                         false
                     );
                     $relatedRecord->save();
                 } elseif ($relations[$relationName]->getType() === $relations[$relationName]::BELONGS_TO) {
                     $relatedRecord->save();
                     $this->updateValue(
-                        $relations[$relationName]->getColumnName(),
+                        $relations[$relationName]->getLocalColumnName(),
                         $relatedRecord->getValue($relations[$relationName]->getForeignColumnName()),
                         false
                     );
-                    $this->saveToDb([$relations[$relationName]->getColumnName()]);
+                    $this->saveToDb([$relations[$relationName]->getLocalColumnName()]);
                 } else {
                     $fkColName = $relations[$relationName]->getForeignColumnName();
-                    $fkValue = $this->getValue($relations[$relationName]->getColumnName());
+                    $fkValue = $this->getValue($relations[$relationName]->getLocalColumnName());
                     if ($deleteNotListedRelatedRecords) {
                         $pkValues = [];
                         foreach ($relatedRecord as $recordObj) {

@@ -4,7 +4,6 @@ namespace App\Db;
 
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
-use PeskyORM\ORM\TableStructure\Relation;
 use PeskyORM\DbExpr;
 use PeskyORM\Tests\PeskyORMTest\Traits\TestingIdColumnTrait;
 use PeskyORM\Tests\PeskyORMTest\Traits\TestingTimestampColumnsTrait;

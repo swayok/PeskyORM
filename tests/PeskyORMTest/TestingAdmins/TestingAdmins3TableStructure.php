@@ -201,17 +201,17 @@ class TestingAdmins3TableStructure extends TableStructure
     
     private function Parent(): Relation
     {
-        return new Relation('parent_id', Relation::BELONGS_TO, TestingAdminsTable::class, 'id');
+        return new Relation('parent_id', Relation::BELONGS_TO, TestingAdminsTable::getInstance(), 'id');
     }
     
     private function Children(): Relation
     {
-        return new Relation('id', Relation::HAS_MANY, TestingAdminsTable::class, 'parent_id');
+        return new Relation('id', Relation::HAS_MANY, TestingAdminsTable::getInstance(), 'parent_id');
     }
     
     private function VeryLongRelationNameSoItMustBeShortenedButWeNeedAtLeast60Characters(): Relation
     {
-        return new Relation('login', Relation::BELONGS_TO, TestingAdminsTable::class, 'id');
+        return new Relation('login', Relation::BELONGS_TO, TestingAdminsTable::getInstance(), 'id');
     }
     
     

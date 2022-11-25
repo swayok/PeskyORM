@@ -88,4 +88,13 @@ abstract class ArgumentValidators
             );
         }
     }
+
+    public static function assertInArray(string $argName, string $value, array $allowedValues): void
+    {
+        if (!in_array($value, $allowedValues, true)) {
+            throw new \InvalidArgumentException(
+                "{$argName} argument value must be one of: " . implode(', ', $allowedValues)
+            );
+        }
+    }
 }

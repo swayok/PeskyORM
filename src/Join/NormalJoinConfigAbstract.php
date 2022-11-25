@@ -4,82 +4,26 @@ declare(strict_types=1);
 
 namespace PeskyORM\Join;
 
+use PeskyORM\DbExpr;
 use PeskyORM\Utils\ArgumentValidators;
 use PeskyORM\Utils\DbAdapterMethodArgumentUtils;
-use PeskyORM\Utils\StringUtils;
 
 abstract class NormalJoinConfigAbstract implements NormalJoinConfigInterface
 {
     protected string $joinName;
-    protected ?string $tableName = null;
-    protected ?string $tableSchema = null;
-    protected ?string $tableAlias = null;
-    protected ?string $columnName = null;
-    protected ?string $joinType = null;
+    protected string $joinType;
+    protected ?string $localTableAlias = null;
+    protected ?string $localColumnName = null;
     protected ?string $foreignTableName = null;
     protected ?string $foreignTableSchema = null;
     protected ?string $foreignColumnName = null;
     protected array $additionalJoinConditions = [];
     protected array $foreignColumnsToSelect = ['*'];
 
-    public function __construct(string $joinName)
+    public function __construct(string $joinName, string $joinType)
     {
-        $this->setJoinName($joinName);
-    }
-
-    /**
-     * Get source table column name
-     */
-    public function getColumnName(): ?string
-    {
-        return $this->columnName;
-    }
-
-    /**
-     * Set source table column name
-     * @throws \InvalidArgumentException
-     */
-    public function setColumnName(string $columnName): static
-    {
-        if (empty($columnName)) {
-            throw new \InvalidArgumentException('$columnName argument must be a not-empty string');
-        }
-        $this->columnName = $columnName;
-        return $this;
-    }
-
-    /**
-     * Get foreign table column name
-     */
-    public function getForeignColumnName(): ?string
-    {
-        return $this->foreignColumnName;
-    }
-
-    /**
-     * Set foreign table column name
-     * @throws \InvalidArgumentException
-     */
-    public function setForeignColumnName(string $foreignColumnName): static
-    {
-        if (empty($foreignColumnName)) {
-            throw new \InvalidArgumentException('$foreignColumnName argument must be a not-empty string');
-        }
-        $this->foreignColumnName = $foreignColumnName;
-        return $this;
-    }
-
-    /**
-     * @return string|null
-     */
-    public function getForeignTableName(): ?string
-    {
-        return $this->foreignTableName;
-    }
-
-    public function getForeignTableSchema(): ?string
-    {
-        return $this->foreignTableSchema;
+        $this->setJoinName($joinName)
+            ->setJoinType($joinType);
     }
 
     public function getJoinName(): ?string
@@ -88,11 +32,9 @@ abstract class NormalJoinConfigAbstract implements NormalJoinConfigInterface
     }
 
     /**
-     * Set name that will be used in SQL query to address joined table columns
-     * Example: INNER JOIN foreign_table_schema.foreign_table_name as ForeignTableAlias ON ($conditions) AS $joinName
      * @throws \InvalidArgumentException
      */
-    public function setJoinName(string $joinName): static
+    protected function setJoinName(string $joinName): static
     {
         ArgumentValidators::assertNotEmpty('$joinName', $joinName);
         ArgumentValidators::assertPascalCase('$joinName', $joinName);
@@ -111,19 +53,9 @@ abstract class NormalJoinConfigAbstract implements NormalJoinConfigInterface
      */
     public function setJoinType(string $joinType): static
     {
-        if (empty($joinType)) {
-            throw new \InvalidArgumentException('$joinType argument must be a not-empty string');
-        }
-
+        ArgumentValidators::assertNotEmpty('$joinType', $joinType);
         $joinType = strtolower($joinType);
-
-        $joinTypes = $this->getJoinTypes();
-        if (!in_array($joinType, $joinTypes, true)) {
-            throw new \InvalidArgumentException(
-                '$joinType argument must be one of: ' . implode(',', $joinTypes)
-            );
-        }
-
+        ArgumentValidators::assertInArray('$joinType', $joinType, $this->getJoinTypes());
         $this->joinType = $joinType;
         return $this;
     }
@@ -133,63 +65,68 @@ abstract class NormalJoinConfigAbstract implements NormalJoinConfigInterface
         return [self::JOIN_INNER, self::JOIN_LEFT, self::JOIN_RIGHT, self::JOIN_FULL];
     }
 
-    /**
-     * Get source table name
-     */
-    public function getTableName(): ?string
+    public function getLocalTableAlias(): string
     {
-        return $this->tableName;
-    }
-
-    protected function hasTableName(): bool
-    {
-        return !empty($this->tableName);
+        return $this->localTableAlias;
     }
 
     /**
-     * Get source table schema
-     */
-    public function getTableSchema(): ?string
-    {
-        return $this->tableSchema;
-    }
-
-    /**
-     * Get source table alias
-     */
-    public function getTableAlias(): ?string
-    {
-        if (!$this->tableAlias) {
-            $this->setTableAlias(StringUtils::toPascalCase($this->tableName));
-        }
-        return $this->tableAlias;
-    }
-
-    /**
-     * Set source table alias
-     * For example when "table_join_name AS $tableAlias" is used
      * @throws \InvalidArgumentException
      */
-    public function setTableAlias(string $alias): static
+    protected function setLocalTableAlias(string $localTableAlias): static
     {
-        if (empty($alias)) {
-            throw new \InvalidArgumentException('$alias argument must be a not-empty string');
-        }
-        $this->tableAlias = $alias;
+        ArgumentValidators::assertNotEmpty('$localTableAlias', $localTableAlias);
+        $this->localTableAlias = $localTableAlias;
         return $this;
     }
 
-    public function getAdditionalJoinConditions(): array
+    public function getLocalColumnName(): string
+    {
+        return $this->localColumnName;
+    }
+
+    /**
+     * @throws \InvalidArgumentException
+     */
+    protected function setLocalColumnName(string $columnName): static
+    {
+        ArgumentValidators::assertNotEmpty('$columnName', $columnName);
+        $this->localColumnName = $columnName;
+        return $this;
+    }
+
+    public function getForeignTableName(): string
+    {
+        return $this->foreignTableName;
+    }
+
+    public function getForeignColumnName(): string
+    {
+        return $this->foreignColumnName;
+    }
+
+    /**
+     * @throws \InvalidArgumentException
+     */
+    protected function setForeignColumnName(string $foreignColumnName): static
+    {
+        ArgumentValidators::assertNotEmpty('$foreignColumnName', $foreignColumnName);
+        $this->foreignColumnName = $foreignColumnName;
+        return $this;
+    }
+
+
+
+    public function getForeignTableSchema(): ?string
+    {
+        return $this->foreignTableSchema;
+    }
+
+    protected function getAdditionalJoinConditions(): array
     {
         return $this->additionalJoinConditions;
     }
 
-    /**
-     * Add more join conditions.
-     * By default, join adds only one condition:
-     * "ON LocalTableAlias.local_column_name = ForeignTableAlias.foreign_column_name".
-     * This way you can add more conditions to JOIN.
-     */
     public function setAdditionalJoinConditions(array $conditions): static
     {
         $this->additionalJoinConditions = $conditions;
@@ -201,28 +138,35 @@ abstract class NormalJoinConfigAbstract implements NormalJoinConfigInterface
         return $this->foreignColumnsToSelect;
     }
 
-    /**
-     * @param array $columns - use '*' or ['*'] to select all columns and empty array to select none
-     */
-    public function setForeignColumnsToSelect(...$columns): static
+    public function setForeignColumnsToSelect(array $columns): static
     {
-        if (count($columns) === 1 && is_array($columns[0])) {
-            $columns = $columns[0];
-        }
         DbAdapterMethodArgumentUtils::guardColumnsListArg($columns, true, true);
         $this->foreignColumnsToSelect = $columns;
         return $this;
     }
 
+    public function getJoinConditions(): array
+    {
+        return array_merge(
+            [
+                $this->getJoinName() . '.' . $this->getForeignColumnName() => DbExpr::create(
+                    "`{$this->getLocalTableAlias()}`.`{$this->getLocalColumnName()}`",
+                    false
+                )
+            ],
+            $this->getAdditionalJoinConditions()
+        );
+    }
+
     public function isValid(): bool
     {
         return (
-            $this->hasTableName()
-            && $this->getColumnName()
-            && $this->getForeignTableName()
-            && $this->getForeignColumnName()
-            && $this->getJoinType()
-            && $this->getJoinName()
+            $this->localTableAlias
+            && $this->localColumnName
+            && $this->foreignTableName
+            && $this->foreignColumnName
+            && $this->joinType
+            && $this->joinName
         );
     }
 

@@ -59,47 +59,47 @@ class ColumnTest extends BaseTestCase
     
     public function testConstructor(): void
     {
-        $obj = TableColumn::create(TableColumn::TYPE_BOOL);
-        static::assertInstanceOf(TableColumn::class, $obj);
-        static::assertEquals(TableColumn::TYPE_BOOL, $obj->getType());
-        static::assertFalse($obj->hasName());
-        static::assertEquals('id', $obj->setName('id')->getName());
-        static::assertTrue($obj->hasName());
-        static::assertInstanceOf(\Closure::class, $obj->getValueGetter());
-        static::assertInstanceOf(\Closure::class, $obj->getValueExistenceChecker());
-        static::assertInstanceOf(\Closure::class, $obj->getValueSetter());
-        static::assertInstanceOf(\Closure::class, $obj->getValueValidator());
-        static::assertInstanceOf(\Closure::class, $obj->getValueIsAllowedValidator());
-        static::assertInstanceOf(\Closure::class, $obj->getValueValidatorExtender());
-        static::assertInstanceOf(\Closure::class, $obj->getValueNormalizer());
-        static::assertInstanceOf(\Closure::class, $obj->getValuePreprocessor());
-        static::assertInstanceOf(\Closure::class, $obj->getValueSavingExtender());
-        static::assertInstanceOf(\Closure::class, $obj->getValueDeleteExtender());
-        static::assertTrue($obj->isItExistsInDb());
-        static::assertFalse($obj->isItPrimaryKey());
-        static::assertTrue($obj->isValueCanBeSetOrChanged());
-        static::assertFalse($obj->isValueLowercasingRequired());
-        static::assertFalse($obj->isValueMustBeUnique());
-        static::assertFalse($obj->isValuePrivate());
-        static::assertFalse($obj->isValueTrimmingRequired());
-        static::assertFalse($obj->isAutoUpdatingValue());
-        static::assertFalse($obj->isEnum());
-        static::assertFalse($obj->isItAFile());
-        static::assertFalse($obj->isItAnImage());
-        static::assertTrue($obj->isValueCanBeNull());
-        static::assertTrue($obj->isEmptyStringMustBeConvertedToNull());
-        $obj->disallowsNullValues();
-        static::assertFalse($obj->isValueCanBeNull());
-        static::assertFalse($obj->isEmptyStringMustBeConvertedToNull());
+        $column = TableColumn::create(TableColumn::TYPE_BOOL);
+        static::assertInstanceOf(TableColumn::class, $column);
+        static::assertEquals(TableColumn::TYPE_BOOL, $column->getType());
+        static::assertFalse($column->hasName());
+        static::assertEquals('id', $column->setName('id')->getName());
+        static::assertTrue($column->hasName());
+        static::assertInstanceOf(\Closure::class, $column->getValueGetter());
+        static::assertInstanceOf(\Closure::class, $column->getValueExistenceChecker());
+        static::assertInstanceOf(\Closure::class, $column->getValueSetter());
+        static::assertInstanceOf(\Closure::class, $column->getValueValidator());
+        static::assertInstanceOf(\Closure::class, $column->getValueIsAllowedValidator());
+        static::assertInstanceOf(\Closure::class, $column->getValueValidatorExtender());
+        static::assertInstanceOf(\Closure::class, $column->getValueNormalizer());
+        static::assertInstanceOf(\Closure::class, $column->getValuePreprocessor());
+        static::assertInstanceOf(\Closure::class, $column->getValueSavingExtender());
+        static::assertInstanceOf(\Closure::class, $column->getValueDeleteExtender());
+        static::assertTrue($column->isItExistsInDb());
+        static::assertFalse($column->isItPrimaryKey());
+        static::assertTrue($column->isValueCanBeSetOrChanged());
+        static::assertFalse($column->isValueLowercasingRequired());
+        static::assertFalse($column->isValueMustBeUnique());
+        static::assertFalse($column->isValuePrivate());
+        static::assertFalse($column->isValueTrimmingRequired());
+        static::assertFalse($column->isAutoUpdatingValue());
+        static::assertFalse($column->isEnum());
+        static::assertFalse($column->isItAFile());
+        static::assertFalse($column->isItAnImage());
+        static::assertTrue($column->isValueCanBeNull());
+        static::assertTrue($column->isEmptyStringMustBeConvertedToNull());
+        $column->disallowsNullValues();
+        static::assertFalse($column->isValueCanBeNull());
+        static::assertFalse($column->isEmptyStringMustBeConvertedToNull());
     
-        $obj->setTableStructure(TestingAdminsTableStructure::getInstance());
-        static::assertFalse($obj->isItAForeignKey());
-        $obj->primaryKey();
-        static::assertTrue($obj->isItPrimaryKey());
+        $column->setTableStructure(TestingAdminsTableStructure::getInstance());
+        static::assertFalse($column->isItAForeignKey());
+        $column->primaryKey();
+        static::assertTrue($column->isItPrimaryKey());
     
-        $obj = TableColumn::create(TableColumn::TYPE_BOOL, 'parent_id');
-        $obj->setTableStructure(TestingAdminsTableStructure::getInstance());
-        static::assertTrue($obj->isItAForeignKey());
+        $column = TableColumn::create(TableColumn::TYPE_BOOL, 'parent_id');
+        $column->setTableStructure(TestingAdminsTableStructure::getInstance());
+        static::assertTrue($column->isItAForeignKey());
     }
     
     public function testTableStructureNotSet1(): void

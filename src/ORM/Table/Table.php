@@ -10,6 +10,7 @@ use PeskyORM\DbExpr;
 use PeskyORM\Join\NormalJoinConfigInterface;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\RecordsCollection\RecordsSet;
+use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\ORM\TableStructure\TableStructure;
 use PeskyORM\ORM\TableStructure\TableStructureInterface;
@@ -123,23 +124,16 @@ abstract class Table implements TableInterface
 
     /**
      * Get OrmJoinConfig for required relation
-     * @param string $relationName
-     * @param string|null $alterLocalTableAlias - alter this table's alias in join config
-     * @param string|null $joinName - string: specific join name; null: $relationName is used
-     * @return NormalJoinConfigInterface
      */
     public static function getJoinConfigForRelation(
-        string $relationName,
+        string|RelationInterface $relation,
         string $alterLocalTableAlias = null,
         string $joinName = null
     ): NormalJoinConfigInterface {
-        return static::getStructure()
-            ->getRelation($relationName)
-            ->toJoinConfig(
-                static::getInstance(),
-                $alterLocalTableAlias,
-                $joinName
-            );
+        if (is_string($relation)) {
+            $relation = static::getStructure()::getRelation($relation);
+        }
+        return $relation->toJoinConfig($alterLocalTableAlias, $joinName);
     }
 
     /**

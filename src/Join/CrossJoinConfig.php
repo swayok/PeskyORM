@@ -7,6 +7,9 @@ namespace PeskyORM\Join;
 use PeskyORM\DbExpr;
 use PeskyORM\Utils\ArgumentValidators;
 
+/**
+ * @see https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
+ */
 class CrossJoinConfig implements CrossJoinConfigInterface
 {
     protected string $joinName;
@@ -14,9 +17,8 @@ class CrossJoinConfig implements CrossJoinConfigInterface
 
     public function __construct(string $joinName, DbExpr $joinQuery)
     {
-        $this->joinName = $joinName;
-        $joinQuery->setWrapInBrackets(false);
-        $this->joinQuery = $joinQuery;
+        $this->setJoinName($joinName)
+            ->setJoinQuery($joinQuery);
     }
 
     public function getJoinName(): ?string
@@ -25,11 +27,9 @@ class CrossJoinConfig implements CrossJoinConfigInterface
     }
 
     /**
-     * Set name that will be used in SQL query to address joined table columns
-     * Example: INNER JOIN foreign_table_schema.foreign_table_name as ForeignTableAlias ON ($conditions) AS $joinName
      * @throws \InvalidArgumentException
      */
-    public function setJoinName(string $joinName): static
+    protected function setJoinName(string $joinName): static
     {
         ArgumentValidators::assertNotEmpty('$joinName', $joinName);
         ArgumentValidators::assertPascalCase('$joinName', $joinName);
@@ -42,9 +42,19 @@ class CrossJoinConfig implements CrossJoinConfigInterface
         return $this->joinQuery;
     }
 
+    protected function setJoinQuery(DbExpr $joinQuery): static
+    {
+        $joinQuery->setWrapInBrackets(false);
+        $this->joinQuery = $joinQuery;
+        return $this;
+    }
+
     public function isValid(): bool
     {
-        return true;
+        return (
+            $this->joinName
+            && $this->joinQuery
+        );
     }
 
     public function getJoinType(): ?string
