@@ -909,8 +909,8 @@ class OrmSelectTest extends BaseTestCase
 
     public function testInvalidOrderBy3(): void
     {
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("ORDER BY: TableColumn with name [Parent.qweasd ASC] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("ORDER BY: Invalid column name: [Parent.qweasd ASC]");
         static::getNewSelect()
             ->orderBy('Parent.qweasd ASC')
             ->getQuery();
@@ -947,8 +947,8 @@ class OrmSelectTest extends BaseTestCase
 
     public function testInvalidGroupBy3(): void
     {
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("GROUP BY: TableColumn with name [Parent.qweasd ASC] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("GROUP BY: Invalid column name: [Parent.qweasd ASC]");
         static::getNewSelect()
             ->groupBy(['Parent.qweasd ASC'])
             ->getQuery();

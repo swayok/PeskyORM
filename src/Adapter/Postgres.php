@@ -62,9 +62,11 @@ class Postgres extends DbAdapterAbstract
 
     protected function _isValidDbEntityName(string $name): bool
     {
-        // $name can literally be anything when quoted, and it is always quoted unless developer skips quotes
+        // $name can literally be anything when quoted, and it is always quoted unless developer skips quotes:
         // https://www.postgresql.org/docs/10/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
-        return preg_match('%^[a-zA-Z_].*$%', $name) > 0;
+        // But ORM won't be able to work properly if there are spaces, tabs, new lines,
+        // so all spacing symbols are forbidden.
+        return preg_match('%^[a-zA-Z_]\S*$%', $name) > 0;
     }
 
     public function __construct(PostgresConfig $connectionConfig)

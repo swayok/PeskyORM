@@ -166,21 +166,21 @@ class ColumnTest extends BaseTestCase
     public function testInvalidNameSet4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$name argument contains invalid value: \'two words\'');
+        $this->expectExceptionMessage('$name argument value (two words) has invalid format.');
         TableColumn::create(TableColumn::TYPE_BLOB, 'two words');
     }
     
     public function testInvalidNameSet5(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$name argument contains invalid value: \'camelCase\'');
+        $this->expectExceptionMessage('$name argument value (camelCase) has invalid format.');
         TableColumn::create(TableColumn::TYPE_DATE, 'camelCase');
     }
     
     public function testInvalidNameSet6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$name argument contains invalid value: \'UpperCase\'');
+        $this->expectExceptionMessage('$name argument value (UpperCase) has invalid format.');
         TableColumn::create(TableColumn::TYPE_EMAIL, 'UpperCase');
     }
     

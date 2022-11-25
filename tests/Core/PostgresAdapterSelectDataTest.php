@@ -251,9 +251,8 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
     
     public function testInvalidAnalyzeColumnName1(): void
     {
-        $this->expectException(\PDOException::class);
-        $this->expectExceptionMessage('ERROR:  column tbl_Admins_0.test test does not exist');
-        // it is actually valid for PostgreSQL but not valid for MySQL
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('SELECT: Invalid column name: [test test]');
         static::getValidAdapter()->selectColumn('admins', 'test test');
     }
     
@@ -261,22 +260,22 @@ class PostgresAdapterSelectDataTest extends BaseTestCase
     {
         $this->expectException(\PDOException::class);
         $this->expectExceptionMessage('ERROR:  column tbl_Admins_0.test%test does not exist');
-        // it is actually valid for PostgreSQL but not valid for MySQL
         static::getValidAdapter()->selectColumn('admins', 'test%test');
     }
 
     public function testInvalidAnalyzeColumnName3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$column argument value cannot be empty");
+        $this->expectExceptionMessage('$column argument value cannot be empty');
         static::getValidAdapter()->selectColumn('admins', '');
     }
     
     public function testInvalidWith1(): void
     {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('$selectName argument value does not fit DB entity naming rules');
         $select = new Select('admins', static::getValidAdapter());
         $withSelect = new Select('admins', static::getValidAdapter());
-        // it is actually valid for PostgreSQL but not valid for MySQL
         $select->with($withSelect, 'asdas as das das');
         static::assertTrue(true);
     }

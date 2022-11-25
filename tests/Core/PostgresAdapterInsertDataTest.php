@@ -108,7 +108,7 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
     public function testInvalidColumnsForInsertMany2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$columns[0]: value cannot be');
+        $this->expectExceptionMessage('$columns[0]: value must be a string');
         $adapter = static::getValidAdapter();
         $adapter->insertMany('settings', [DbExpr::create('test')], [['key' => 'value']]);
     }
@@ -116,7 +116,7 @@ class PostgresAdapterInsertDataTest extends BaseTestCase
     public function testInvalidColumnsForInsertMany3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$columns[0]: value cannot be');
+        $this->expectExceptionMessage('$columns[0]: value must be a string');
         $adapter = static::getValidAdapter();
         $adapter->insertMany('settings', [['subarray']], [['key' => 'value']]);
     }

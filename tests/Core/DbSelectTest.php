@@ -775,7 +775,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidLimit6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$limit argument value must be a positive integer or 0');
+        $this->expectExceptionMessage('$limit argument value (-1) must be a positive integer or 0');
         static::getNewSelect()->limit(-1);
     }
     
@@ -825,7 +825,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidOffset6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$offset argument value must be a positive integer or 0');
+        $this->expectExceptionMessage('$offset argument value (-1) must be a positive integer or 0');
         static::getNewSelect()
             ->offset(-1);
     }
@@ -1257,7 +1257,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidFromConfigsArrayLimit3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$limit argument value must be a positive integer or 0');
+        $this->expectExceptionMessage('$limit argument value (-1) must be a positive integer or 0');
         static::getNewSelect()
             ->fromConfigsArray([
                 'LIMIT' => -1,
@@ -1287,7 +1287,7 @@ class DbSelectTest extends BaseTestCase
     public function testInvalidFromConfigsArrayOffset3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$offset argument value must be a positive integer or 0');
+        $this->expectExceptionMessage('$offset argument value (-1) must be a positive integer or 0');
         static::getNewSelect()
             ->fromConfigsArray([
                 'OFFSET' => -1,

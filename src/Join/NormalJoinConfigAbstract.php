@@ -75,7 +75,9 @@ abstract class NormalJoinConfigAbstract implements NormalJoinConfigInterface
      */
     protected function setLocalTableAlias(string $localTableAlias): static
     {
-        ArgumentValidators::assertNotEmpty('$localTableAlias', $localTableAlias);
+        ArgumentValidators::assertValidDbEntityName('$localTableAlias', $localTableAlias);
+        // we do not use ArgumentValidators::assertPascalCase() here to allow
+        // targeting local table by name instead of alias
         $this->localTableAlias = $localTableAlias;
         return $this;
     }
@@ -114,8 +116,6 @@ abstract class NormalJoinConfigAbstract implements NormalJoinConfigInterface
         $this->foreignColumnName = $foreignColumnName;
         return $this;
     }
-
-
 
     public function getForeignTableSchema(): ?string
     {

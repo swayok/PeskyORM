@@ -165,7 +165,7 @@ class MysqlAdapterHelpersTest extends PostgresAdapterHelpersTest
     public function testInvalidPkName4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$pkName must be a string that fits DB entity naming rules (usually alphanumeric string with underscores)");
+        $this->expectExceptionMessage('$pkName argument value (teasd as das d 90as9()) must be a string that matches DB entity naming rules');
         static::getValidAdapter()->guardPkNameArg('teasd as das d 90as9()');
     }
 

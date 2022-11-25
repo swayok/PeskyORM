@@ -39,7 +39,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidTable2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$table argument cannot be empty');
+        $this->expectExceptionMessage('$table argument value must be a not-empty string.');
         DbAdapterMethodArgumentUtils::guardTableNameArg(static::getValidAdapter(), '');
     }
     
@@ -79,7 +79,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidData(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$data argument cannot be empty');
+        $this->expectExceptionMessage('$data argument value cannot be empty');
         DbAdapterMethodArgumentUtils::guardDataArg([]);
     }
     
@@ -94,7 +94,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidColumns(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$columns argument cannot be empty');
+        $this->expectExceptionMessage('$columns argument value cannot be empty');
         DbAdapterMethodArgumentUtils::guardColumnsListArg([]);
     }
     
@@ -109,14 +109,14 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidColumns3(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$columns[0]: value cannot be instance of');
+        $this->expectExceptionMessage('$columns[0]: value must be a string or instance of');
         DbAdapterMethodArgumentUtils::guardColumnsListArg([$this]);
     }
     
     public function testInvalidColumns4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$columns[0]: value cannot be instance of ' . DbExpr::class);
+        $this->expectExceptionMessage('$columns[0]: value must be a string.');
         DbAdapterMethodArgumentUtils::guardColumnsListArg([DbExpr::create('test')], false);
     }
     
@@ -131,7 +131,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidConditions2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$conditions argument is not allowed to be empty');
+        $this->expectExceptionMessage('$conditions argument value cannot be empty');
         /** @noinspection PhpParamsInspection */
         DbAdapterMethodArgumentUtils::guardConditionsArg([]);
     }
@@ -195,7 +195,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidReturning4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$returning[0]: value cannot be of type');
+        $this->expectExceptionMessage('$returning[0]: value must be a not-empty string');
         /** @noinspection PhpStrictTypeCheckingInspection */
         DbAdapterMethodArgumentUtils::guardReturningArg([123]);
     }
@@ -203,7 +203,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidReturning5(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$returning[0]: value cannot be empty');
+        $this->expectExceptionMessage('$returning[0]: value must be a not-empty string');
         /** @noinspection PhpStrictTypeCheckingInspection */
         DbAdapterMethodArgumentUtils::guardReturningArg([[]]);
     }
@@ -211,7 +211,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidReturning6(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$returning[0]: value cannot be of type');
+        $this->expectExceptionMessage('$returning[0]: value must be a not-empty string');
         /** @noinspection PhpStrictTypeCheckingInspection */
         DbAdapterMethodArgumentUtils::guardReturningArg([true]);
     }
@@ -219,7 +219,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidPkName(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$pkName argument cannot be empty');
+        $this->expectExceptionMessage('$pkName argument value must be a not-empty string.');
         DbAdapterMethodArgumentUtils::guardPkNameArg(static::getValidAdapter(), '');
     }
     
@@ -242,7 +242,8 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     
     public function testInvalidPkName4(): void
     {
-        // it is valid for PostgreSQL
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('$pkName argument value (teasd as das d 90as9()) must be a string that matches DB entity naming rules');
         DbAdapterMethodArgumentUtils::guardPkNameArg(static::getValidAdapter(), 'teasd as das d 90as9()');
         static::assertTrue(true);
     }
@@ -421,7 +422,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidArgsInMakeSelectQuery(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('$table argument cannot be empty and must be a non-numeric string');
+        $this->expectExceptionMessage('$table argument value must be a not-empty string.');
         $adapter = self::getValidAdapter();
         $adapter->makeSelectQuery('');
     }
@@ -679,10 +680,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testIsValidDbEntityNameAndJsonSelector2(): void
     {
         // for PostgreSQL these are ok while for other RDBMS it might be not
-        static::assertTrue(static::getValidAdapter()->isValidJsonSelector('test test->test'));
         static::assertTrue(static::getValidAdapter()->isValidJsonSelector('test#test->test'));
-    
-        static::assertTrue(static::getValidAdapter()->isValidDbEntityName('test test'));
         static::assertTrue(static::getValidAdapter()->isValidDbEntityName('test$test'));
         static::assertTrue(static::getValidAdapter()->isValidDbEntityName('test->test', false));
     }

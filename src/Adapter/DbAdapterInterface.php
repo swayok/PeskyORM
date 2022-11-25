@@ -99,7 +99,7 @@ interface DbAdapterInterface
     public function setSearchPath(string $newSearchPath): static;
 
     /**
-     * @param string $table
+     * @param string $table - it is allowed to be like: 'table AS Alias'
      * @param array $data - key-value array where key = table column and value = value of associated column
      * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
      *          Data type is one of \PDO::PARAM_* contants or null.
@@ -120,7 +120,7 @@ interface DbAdapterInterface
     ): ?array;
 
     /**
-     * @param string $table
+     * @param string $table - it is allowed to be like: 'table AS Alias'
      * @param array $columns - list of columns to insert data to
      * @param array $data - key-value array where key = table column and value = value of associated column
      * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
@@ -143,7 +143,7 @@ interface DbAdapterInterface
     ): ?array;
 
     /**
-     * @param string $table
+     * @param string $table - it is allowed to be like: 'table AS Alias'
      * @param array $data - key-value array where key = table column and value = value of associated column
      * @param array|DbExpr $conditions - WHERE conditions
      * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
@@ -168,7 +168,7 @@ interface DbAdapterInterface
     ): array|int;
 
     /**
-     * @param string $table
+     * @param string $table - it is allowed to be like: 'table AS Alias'
      * @param array|DbExpr $conditions - WHERE conditions
      * @param bool|array $returning - return some data back after $data inserted to $table
      *          - true: return values for all columns of inserted table row

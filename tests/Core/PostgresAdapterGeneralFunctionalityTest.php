@@ -85,10 +85,10 @@ class PostgresAdapterGeneralFunctionalityTest extends BaseTestCase
     
     public function testQuotingOfInvalidDbEntity7(): void
     {
-        // OK for PostgreSQL
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid db entity name: [colname-> ->]");
         $adapter = static::getValidAdapter();
         $adapter->quoteDbEntityName('colname-> ->');
-        static::assertTrue(true);
     }
     
     public function testQuotingOfInvalidDbEntity8(): void
