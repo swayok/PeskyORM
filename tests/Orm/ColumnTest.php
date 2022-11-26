@@ -77,7 +77,7 @@ class ColumnTest extends BaseTestCase
         static::assertInstanceOf(\Closure::class, $column->getValueDeleteExtender());
         static::assertTrue($column->isReal());
         static::assertFalse($column->isPrimaryKey());
-        static::assertTrue($column->isValuesModificationAllowed());
+        static::assertTrue($column->isReadonly());
         static::assertFalse($column->shouldLowercaseValues());
         static::assertFalse($column->isValueMustBeUnique());
         static::assertFalse($column->isPrivateValues());

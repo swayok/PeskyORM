@@ -22,7 +22,7 @@ interface TableColumnInterface
 
     public function isReal(): bool;
 
-    public function isValuesModificationAllowed(): bool;
+    public function isReadonly(): bool;
 
     public function isHeavyValues(): bool;
 

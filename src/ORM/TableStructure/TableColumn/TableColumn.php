@@ -675,7 +675,7 @@ class TableColumn implements TableColumnInterface
         return $this;
     }
     
-    public function isValuesModificationAllowed(): bool
+    public function isReadonly(): bool
     {
         return $this->isValueCanBeSetOrChanged;
     }

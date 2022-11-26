@@ -18,7 +18,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
     public static function valueSetter(mixed $newValue, bool $isFromDb, RecordValue $valueContainer, bool $trustDataReceivedFromDb): RecordValue
     {
         $column = $valueContainer->getColumn();
-        if (!$isFromDb && !$column->isValuesModificationAllowed()) {
+        if (!$isFromDb && !$column->isReadonly()) {
             throw new \BadMethodCallException(
                 "TableColumn '{$column->getName()}' restricts value modification"
             );

@@ -512,7 +512,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     public function _updateValue(TableColumnInterface $column, mixed $value, bool $isFromDb): static
     {
         $valueContainer = $this->getValueContainerByColumnConfig($column);
-        if (!$isFromDb && !$column->isValuesModificationAllowed()) {
+        if (!$isFromDb && !$column->isReadonly()) {
             throw new \BadMethodCallException(
                 "It is forbidden to modify or set value of a '{$valueContainer->getColumn()->getName()}' column"
             );
@@ -640,7 +640,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             throw new \BadMethodCallException('Record->resetValueToDefault() cannot be applied to primary key column');
         }
         $valueContainer = $this->getValueContainer($column);
-        if ($column->isValuesModificationAllowed() && !$column->isAutoUpdatingValues() && $column->isReal()) {
+        if ($column->isReadonly() && !$column->isAutoUpdatingValues() && $column->isReal()) {
             $this->updateValue($column, $valueContainer->getDefaultValueOrNull(), false);
         }
         return $this;
@@ -1161,7 +1161,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     {
         $columnsNames = [];
         foreach (static::getColumns() as $columnName => $column) {
-            if ($column->isValuesModificationAllowed() && $column->isReal()) {
+            if ($column->isReadonly() && $column->isReal()) {
                 $columnsNames[] = $columnName;
             }
         }
@@ -2048,7 +2048,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 && (
                     !$column->isReal()
                     || $column->isAutoUpdatingValues()
-                    || !$column->isValuesModificationAllowed()
+                    || !$column->isReadonly()
                 )
             ) {
                 continue;
