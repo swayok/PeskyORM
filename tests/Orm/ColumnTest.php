@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Orm;
 
+use PeskyORM\ORM\TableStructure\Relation;
 use PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
-use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 use PeskyORM\Tests\PeskyORMTest\TestingValueToObjectConverter;
 use Swayok\Utils\NormalizeValue;
 
@@ -69,48 +70,39 @@ class ColumnTest extends BaseTestCase
         static::assertInstanceOf(\Closure::class, $column->getValueExistenceChecker());
         static::assertInstanceOf(\Closure::class, $column->getValueSetter());
         static::assertInstanceOf(\Closure::class, $column->getValueValidator());
-        static::assertInstanceOf(\Closure::class, $column->getValueIsAllowedValidator());
         static::assertInstanceOf(\Closure::class, $column->getValueValidatorExtender());
         static::assertInstanceOf(\Closure::class, $column->getValueNormalizer());
         static::assertInstanceOf(\Closure::class, $column->getValuePreprocessor());
         static::assertInstanceOf(\Closure::class, $column->getValueSavingExtender());
         static::assertInstanceOf(\Closure::class, $column->getValueDeleteExtender());
-        static::assertTrue($column->isItExistsInDb());
-        static::assertFalse($column->isItPrimaryKey());
-        static::assertTrue($column->isValueCanBeSetOrChanged());
-        static::assertFalse($column->isValueLowercasingRequired());
+        static::assertTrue($column->isReal());
+        static::assertFalse($column->isPrimaryKey());
+        static::assertTrue($column->isValuesModificationAllowed());
+        static::assertFalse($column->shouldLowercaseValues());
         static::assertFalse($column->isValueMustBeUnique());
-        static::assertFalse($column->isValuePrivate());
-        static::assertFalse($column->isValueTrimmingRequired());
-        static::assertFalse($column->isAutoUpdatingValue());
-        static::assertFalse($column->isEnum());
-        static::assertFalse($column->isItAFile());
-        static::assertFalse($column->isItAnImage());
-        static::assertTrue($column->isValueCanBeNull());
-        static::assertTrue($column->isEmptyStringMustBeConvertedToNull());
+        static::assertFalse($column->isPrivateValues());
+        static::assertFalse($column->shouldTrimValues());
+        static::assertFalse($column->isAutoUpdatingValues());
+        static::assertFalse($column->isFile());
+        static::assertTrue($column->isNullableValues());
+        static::assertTrue($column->shouldConvertEmptyStringToNull());
         $column->disallowsNullValues();
-        static::assertFalse($column->isValueCanBeNull());
-        static::assertFalse($column->isEmptyStringMustBeConvertedToNull());
+        static::assertFalse($column->isNullableValues());
+        static::assertFalse($column->shouldConvertEmptyStringToNull());
     
-        $column->setTableStructure(TestingAdminsTableStructure::getInstance());
-        static::assertFalse($column->isItAForeignKey());
+        static::assertFalse($column->isForeignKey());
         $column->primaryKey();
-        static::assertTrue($column->isItPrimaryKey());
+        static::assertTrue($column->isPrimaryKey());
     
         $column = TableColumn::create(TableColumn::TYPE_BOOL, 'parent_id');
-        $column->setTableStructure(TestingAdminsTableStructure::getInstance());
-        static::assertTrue($column->isItAForeignKey());
-    }
-    
-    public function testTableStructureNotSet1(): void
-    {
-        $obj = TableColumn::create(TableColumn::TYPE_BOOL);
-        /** @noinspection UnnecessaryAssertionInspection */
-        static::assertInstanceOf(TableColumn::class, $obj);
-        $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('TableColumn::getTableStructure(): Return value must be of type PeskyORM\ORM\TableStructure\TableStructureInterface, null returned');
-        /** @noinspection PhpExpressionResultUnusedInspection */
-        $obj->getTableStructure();
+        $relation = new Relation(
+            'parent_id',
+            Relation::BELONGS_TO,
+            TestingAdminsTable::getInstance(),
+            'id'
+        );
+        $column->addRelation($relation->setName('Parent'));
+        static::assertTrue($column->isForeignKey());
     }
     
     public function testInvalidName1(): void
@@ -188,7 +180,7 @@ class ColumnTest extends BaseTestCase
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("TableColumn name changing is forbidden");
-        $obj = TableColumn::create(TableColumn::TYPE_ENUM)->setName('test');
+        $obj = TableColumn::create(TableColumn::TYPE_STRING)->setName('test');
         $obj->setName('test');
     }
     
@@ -196,18 +188,10 @@ class ColumnTest extends BaseTestCase
     {
         $obj = TableColumn::create(TableColumn::TYPE_FILE);
         static::assertEquals(TableColumn::TYPE_FILE, $obj->getType());
-        static::assertTrue($obj->isItAFile());
+        static::assertTrue($obj->isFile());
         $obj = TableColumn::create(TableColumn::TYPE_IMAGE);
         static::assertEquals(TableColumn::TYPE_IMAGE, $obj->getType());
-        static::assertTrue($obj->isItAFile());
-        static::assertTrue($obj->isItAnImage());
-    }
-    
-    public function testEnumType(): void
-    {
-        $obj = TableColumn::create(TableColumn::TYPE_ENUM);
-        static::assertEquals(TableColumn::TYPE_ENUM, $obj->getType());
-        static::assertTrue($obj->isEnum());
+        static::assertTrue($obj->isFile());
     }
     
     public function testInvalidValueFormat(): void
@@ -253,15 +237,16 @@ class ColumnTest extends BaseTestCase
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Default value for column 'name' is not set");
         TableColumn::create(TableColumn::TYPE_BOOL, 'name')
-            ->getDefaultValueAsIs();
+            ->getDefaultValue();
     }
     
     public function testInvalidDefaultValueGet2(): void
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Default value for column PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->name is not valid. Errors: Value must be of a boolean data type.");
+        $this->expectExceptionMessageMatches(
+            "%Default value for column 'name' \(.+?\) is not valid\. Errors: Value must be of a boolean data type\.%"
+        );
         TableColumn::create(TableColumn::TYPE_BOOL, 'name')
-            ->setTableStructure(TestingAdminsTableStructure::getInstance())
             ->setDefaultValue(-1)
             ->getValidDefaultValue();
     }
@@ -269,22 +254,20 @@ class ColumnTest extends BaseTestCase
     public function testInvalidDefaultValueGet3(): void
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage(
-            "Fallback value of the default value for column PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->name is not valid. Errors: Value must be of a boolean data type."
+        $this->expectExceptionMessageMatches(
+            "%Fallback value of the default value for column 'name' \(.+?\) is not valid\. Errors: Value must be of a boolean data type\.%"
         );
         TableColumn::create(TableColumn::TYPE_BOOL, 'name')
-            ->setTableStructure(TestingAdminsTableStructure::getInstance())
             ->getValidDefaultValue(-1);
     }
     
     public function testInvalidDefaultValueGet4(): void
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage(
-            "Default value received from validDefaultValueGetter Closure for column PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->name is not valid. Errors: Value must be of a boolean data type."
+        $this->expectExceptionMessageMatches(
+            "%Default value received from validDefaultValueGetter Closure for column 'name' \(.+?\) is not valid\. Errors: Value must be of a boolean data type\.%"
         );
         TableColumn::create(TableColumn::TYPE_BOOL, 'name')
-            ->setTableStructure(TestingAdminsTableStructure::getInstance())
             ->setValidDefaultValueGetter(function () {
                 return -1;
             })
@@ -306,17 +289,17 @@ class ColumnTest extends BaseTestCase
             return false;
         });
         static::assertTrue($obj->hasDefaultValue());
-        static::assertInstanceOf(\Closure::class, $obj->getDefaultValueAsIs());
+        static::assertInstanceOf(\Closure::class, $obj->getDefaultValue());
         static::assertFalse($obj->getValidDefaultValue(true));
         
         $obj->setDefaultValue(false);
         static::assertTrue($obj->hasDefaultValue());
-        static::assertFalse($obj->getDefaultValueAsIs());
+        static::assertFalse($obj->getDefaultValue());
         static::assertFalse($obj->getValidDefaultValue(true));
         
         $obj->setDefaultValue(null);
         static::assertTrue($obj->hasDefaultValue());
-        static::assertNull($obj->getDefaultValueAsIs());
+        static::assertNull($obj->getDefaultValue());
         static::assertNull($obj->getValidDefaultValue(true));
         
         // default value getter
@@ -325,7 +308,7 @@ class ColumnTest extends BaseTestCase
         });
         $obj->setDefaultValue(true);
         static::assertTrue($obj->hasDefaultValue());
-        static::assertTrue($obj->getDefaultValueAsIs());
+        static::assertTrue($obj->getDefaultValue());
         static::assertFalse($obj->getValidDefaultValue(false));
         
         // default value that needs normalization
@@ -343,97 +326,12 @@ class ColumnTest extends BaseTestCase
         static::assertEquals(date(NormalizeValue::DATETIME_FORMAT, $nowTs), $defaultValue);
     }
     
-    public function testInvalidGetAllowedValues(): void
-    {
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Allowed values closure must return a not-empty array");
-        $obj = TableColumn::create(TableColumn::TYPE_BOOL)
-            ->setAllowedValues(function () {
-                return -1;
-            });
-        $obj->getAllowedValues();
-    }
-    
-    public function testInvalidSetAllowedValues1(): void
-    {
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Allowed values closure must return a not-empty array");
-        $obj = TableColumn::create(TableColumn::TYPE_BOOL)
-            ->setAllowedValues(function () {
-                return -1;
-            });
-        $obj->getAllowedValues();
-    }
-    
-    public function testInvalidSetAllowedValues2(): void
-    {
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Allowed values closure must return a not-empty array");
-        $obj = TableColumn::create(TableColumn::TYPE_BOOL)
-            ->setAllowedValues(function () {
-                return [];
-            });
-        $obj->getAllowedValues();
-    }
-    
-    public function testInvalidSetAllowedValues3(): void
-    {
-        $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($allowedValues) must be of type Closure|array');
-        /** @noinspection PhpParamsInspection */
-        $obj = TableColumn::create(TableColumn::TYPE_BOOL)
-            ->setAllowedValues(-1);
-        $obj->getAllowedValues();
-    }
-    
-    public function testInvalidSetAllowedValues4(): void
-    {
-        $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($allowedValues) must be of type Closure|array');
-        /** @noinspection PhpParamsInspection */
-        $obj = TableColumn::create(TableColumn::TYPE_BOOL)
-            ->setAllowedValues(false);
-        $obj->getAllowedValues();
-    }
-    
-    public function testInvalidSetAllowedValues5(): void
-    {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("\$allowedValues argument cannot be empty");
-        $obj = TableColumn::create(TableColumn::TYPE_BOOL)
-            ->setAllowedValues([]);
-        $obj->getAllowedValues();
-    }
-    
-    public function testInvalidSetAllowedValues6(): void
-    {
-        $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($allowedValues) must be of type Closure|array');
-        /** @noinspection PhpParamsInspection */
-        $obj = TableColumn::create(TableColumn::TYPE_BOOL)
-            ->setAllowedValues(null);
-        $obj->getAllowedValues();
-    }
-    
-    public function testAllwedValues(): void
-    {
-        $obj = TableColumn::create(TableColumn::TYPE_ENUM);
-        static::assertEquals([], $obj->getAllowedValues());
-        $obj->setAllowedValues(['test']);
-        static::assertEquals(['test'], $obj->getAllowedValues());
-        $obj->setAllowedValues(function () {
-            return ['test2'];
-        });
-        static::assertEquals(['test2'], $obj->getAllowedValues());
-    }
-    
     public function testInvalidGetRelation(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("TableColumn 'id' is not linked with 'Test' relation");
-        TableColumn::create(TableColumn::TYPE_ENUM)
+        TableColumn::create(TableColumn::TYPE_STRING)
             ->setName('id')
-            ->setTableStructure(TestingAdminsTableStructure::getInstance())
             ->getRelation('Test');
     }
     
@@ -463,7 +361,6 @@ class ColumnTest extends BaseTestCase
         static::assertInstanceOf(\Closure::class, $obj->getValueExistenceChecker());
         static::assertInstanceOf(\Closure::class, $obj->getValueSetter());
         static::assertInstanceOf(\Closure::class, $obj->getValueValidator());
-        static::assertInstanceOf(\Closure::class, $obj->getValueIsAllowedValidator());
         static::assertInstanceOf(\Closure::class, $obj->getValueValidatorExtender());
         static::assertInstanceOf(\Closure::class, $obj->getValueNormalizer());
         static::assertInstanceOf(\Closure::class, $obj->getValuePreprocessor());

@@ -53,12 +53,6 @@ interface ColumnClosuresInterface
     public static function valueValidatorExtender(mixed $value, bool $isFromDb, TableColumnInterface $column): array;
     
     /**
-     * Validates if value is allowed.
-     * $value may be an instance of AbstractSelect, UploadedFile, DbExpr or RecordValue classes.
-     */
-    public static function valueIsAllowedValidator(mixed $value, bool $isFromDb, TableColumnInterface $column): array;
-    
-    /**
      * Normalize value to fit column's data type.
      * $value may be an instance of AbstractSelect, UploadedFile or DbExpr classes but
      * not instance of RecordValue class.

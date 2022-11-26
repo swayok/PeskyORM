@@ -183,11 +183,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 'columns' => $columns,
                 'columns_and_formats' => [],
                 'not_private_columns' => array_filter($columns, static function (TableColumnInterface $column) {
-                    return !$column->isValuePrivate();
+                    return !$column->isPrivateValues();
                 }),
-                'db_columns' => $tableStructure::getColumnsThatExistInDb(),
-                'not_db_columns' => $tableStructure::getColumnsThatDoNotExistInDb(),
-                'file_columns' => $tableStructure::getFileColumns(),
+                'db_columns' => $tableStructure::getRealColumns(),
+                'not_db_columns' => $tableStructure::getVirtualColumns(),
                 'pk_column' => $tableStructure::getPkColumn(),
                 'relations' => $tableStructure::getRelations(),
             ];
@@ -286,19 +285,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         return isset(static::getRelations()[$name]);
     }
     
-    /**
-     * @return TableColumnInterface[]
-     */
-    public static function getFileColumns(): array
-    {
-        return static::getCachedColumnsOrRelations('file_columns');
-    }
-    
-    public static function hasFileColumns(): bool
-    {
-        return count(static::getFileColumns()) > 0;
-    }
-    
     public function enableTrustModeForDbData(): static
     {
         $this->trustDbDataMode = true;
@@ -349,7 +335,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             );
         }
         foreach (static::getColumns() as $column) {
-            if (!$column->isItPrimaryKey()) {
+            if (!$column->isPrimaryKey()) {
                 $this->resetValueToDefault($column);
             }
         }
@@ -432,7 +418,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     {
         if ($this->isReadOnly()) {
             $value = $this->readOnlyData[$column->getName()] ?? null;
-            if (empty($format) && $column->isItExistsInDb()) {
+            if (empty($format) && $column->isReal()) {
                 return $value;
             }
 
@@ -526,7 +512,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     public function _updateValue(TableColumnInterface $column, mixed $value, bool $isFromDb): static
     {
         $valueContainer = $this->getValueContainerByColumnConfig($column);
-        if (!$isFromDb && !$column->isValueCanBeSetOrChanged()) {
+        if (!$isFromDb && !$column->isValuesModificationAllowed()) {
             throw new \BadMethodCallException(
                 "It is forbidden to modify or set value of a '{$valueContainer->getColumn()->getName()}' column"
             );
@@ -535,7 +521,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             throw new \BadMethodCallException('It is forbidden to set value with $isFromDb === true after begin()');
         }
         
-        if ($column->isItPrimaryKey()) {
+        if ($column->isPrimaryKey()) {
             if ($value === null) {
                 return $this->unsetPrimaryKeyValue();
             }
@@ -558,7 +544,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $colName = $column->getName();
         $prevPkValue = null;
         // backup existing pk value
-        if ($column->isItPrimaryKey() && $valueContainer->hasValue() /*&& $valueContainer->isItFromDb()*/) {
+        if ($column->isPrimaryKey() && $valueContainer->hasValue() /*&& $valueContainer->isItFromDb()*/) {
             $prevPkValue = $valueContainer->getValue();
         }
         if ($this->isCollectingUpdates && !isset($this->valuesBackup[$colName])) {
@@ -635,7 +621,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             $colName = $column->getName();
             $this->values[$colName] = $this->createValueObject($column);
             $this->values[$colName]->setOldValue($oldValueObject);
-            if ($column->isItPrimaryKey()) {
+            if ($column->isPrimaryKey()) {
                 $this->onPrimaryKeyChangeForRecordReceivedFromDb($oldValueObject->getValue());
             }
         }
@@ -650,11 +636,11 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         if (is_string($column)) {
             $column = static::getColumn($column);
         }
-        if ($column->isItPrimaryKey()) {
+        if ($column->isPrimaryKey()) {
             throw new \BadMethodCallException('Record->resetValueToDefault() cannot be applied to primary key column');
         }
         $valueContainer = $this->getValueContainer($column);
-        if ($column->isValueCanBeSetOrChanged() && !$column->isAutoUpdatingValue() && $column->isItExistsInDb()) {
+        if ($column->isValuesModificationAllowed() && !$column->isAutoUpdatingValues() && $column->isReal()) {
             $this->updateValue($column, $valueContainer->getDefaultValueOrNull(), false);
         }
         return $this;
@@ -1175,7 +1161,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     {
         $columnsNames = [];
         foreach (static::getColumns() as $columnName => $column) {
-            if ($column->isValueCanBeSetOrChanged() && $column->isItExistsInDb()) {
+            if ($column->isValuesModificationAllowed() && $column->isReal()) {
                 $columnsNames[] = $columnName;
             }
         }
@@ -1190,7 +1176,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     {
         $columnsNames = [];
         foreach (static::getColumns() as $columnName => $column) {
-            if ($column->isAutoUpdatingValue() && $column->isItExistsInDb()) {
+            if ($column->isAutoUpdatingValues() && $column->isReal()) {
                 $columnsNames[] = $columnName;
             }
         }
@@ -1351,8 +1337,8 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             $column = static::getColumn($columnName);
             $valueContainer = $this->getValueContainerByColumnConfig($column);
             if (
-                $column->isItExistsInDb()
-                && !$column->isItPrimaryKey()
+                $column->isReal()
+                && !$column->isPrimaryKey()
                 && $this->_hasValue($column, true)
                 && !$valueContainer->isItFromDb()
             ) {
@@ -1394,7 +1380,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 $column = static::getColumn($column);
             }
             $valueObject = $this->getValueContainerByColumnConfig($column);
-            if ($column->isItExistsInDb() || $valueObject->hasValue()) {
+            if ($column->isReal() || $valueObject->hasValue()) {
                 call_user_func(
                     $column->getValueSavingExtender(),
                     $valueObject,
@@ -1822,7 +1808,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     {
         $columnsNames = static::getColumns();
         foreach ($columnsNames as $column) {
-            if ($column->isItExistsInDb() && $this->hasValue($column, false)) {
+            if ($column->isReal() && $this->hasValue($column, false)) {
                 return true;
             }
         }
@@ -1834,7 +1820,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $columnsNames = static::getColumns();
         $ret = [];
         foreach ($columnsNames as $columnName => $column) {
-            if ($column->isItExistsInDb() && $this->hasValue($column, false)) {
+            if ($column->isReal() && $this->hasValue($column, false)) {
                 $ret[$columnName] = $this->_getValue($column, null);
             }
         }
@@ -1864,7 +1850,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             return $this->modifyValueForToArray(null, $columnAlias, null, $valueModifier, $isset);
         }
         $column = static::getColumn($columnName, $format);
-        if (!$skipPrivateValueCheck && $column->isValuePrivate()) {
+        if (!$skipPrivateValueCheck && $column->isPrivateValues()) {
             return null;
         }
         if ($this->isReadOnly()) {
@@ -1895,7 +1881,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 return $this->modifyValueForToArray($columnName, $columnAlias, null, $valueModifier);
             }
         }
-        if ($column->isItAFile()) {
+        if ($column->isFile()) {
             if (!$returnNullForFiles && $this->_hasValue($column, false)) {
                 $isset = true;
                 return $this->modifyValueForToArray(
@@ -2060,9 +2046,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             if (
                 $ignoreColumnsThatCannotBeSetManually
                 && (
-                    !$column->isItExistsInDb()
-                    || $column->isAutoUpdatingValue()
-                    || !$column->isValueCanBeSetOrChanged()
+                    !$column->isReal()
+                    || $column->isAutoUpdatingValues()
+                    || !$column->isValuesModificationAllowed()
                 )
             ) {
                 continue;
@@ -2318,7 +2304,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             $column = static::getColumn($columnName);
             $isFromDb = array_key_exists(1, $arguments)
                 ? $arguments[1]
-                : $column->isItPrimaryKey(); //< make pk key be "from DB" by default, or it will crash
+                : $column->isPrimaryKey(); //< make pk key be "from DB" by default, or it will crash
             $this->_updateValue($column, $value, $isFromDb);
         }
         return $this;

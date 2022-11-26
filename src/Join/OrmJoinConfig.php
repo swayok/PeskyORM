@@ -71,7 +71,7 @@ class OrmJoinConfig extends NormalJoinConfigAbstract implements OrmJoinConfigInt
                     ->getTableStructure()
                     ->getColumns();
                 foreach ($knownColumns as $knownColumnName => $columnInfo) {
-                    if ($columnInfo->isItExistsInDb() && !in_array($knownColumnName, $columns, true)) {
+                    if ($columnInfo->isReal() && !in_array($knownColumnName, $columns, true)) {
                         // add only columns still not listed here
                         $this->foreignColumnsToSelect[] = $knownColumnName;
                     }

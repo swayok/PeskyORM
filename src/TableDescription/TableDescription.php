@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace PeskyORM\TableDescription;
 
-class TableDescription implements \Serializable
+class TableDescription implements TableDescriptionInterface
 {
-    
     /**
      * Name of DB schema that contains this table (PostgreSQL)
      */
     protected ?string $dbSchema = null;
     protected string $tableName;
     /**
-     * @var ColumnDescription[]
+     * @var ColumnDescriptionInterface[]
+     * ['column_name' => ColumnDescriptionInterface, ...]
      */
     protected array $columns = [];
     
@@ -27,23 +27,6 @@ class TableDescription implements \Serializable
         $this->dbSchema = $dbSchema;
     }
     
-    /**
-     * @param ColumnDescription $columnDescription
-     * @throws \UnexpectedValueException
-     */
-    public function addColumn(ColumnDescription $columnDescription): void
-    {
-        if (array_key_exists($columnDescription->getName(), $this->columns)) {
-            throw new \UnexpectedValueException("Table description already has description for column '{$columnDescription->getName()}'");
-        }
-        $this->columns[$columnDescription->getName()] = $columnDescription;
-    }
-    
-    public function hasColumn(string $columnName): bool
-    {
-        return !empty($this->columns[$columnName]);
-    }
-    
     public function getDbSchema(): ?string
     {
         return $this->dbSchema;
@@ -53,24 +36,38 @@ class TableDescription implements \Serializable
     {
         return $this->tableName;
     }
-    
-    /**
-     * @return ColumnDescription[]
-     */
+
     public function getColumns(): array
     {
         return $this->columns;
+    }
+
+    public function hasColumn(string $columnName): bool
+    {
+        return !empty($this->columns[$columnName]);
     }
     
     /**
      * @throws \InvalidArgumentException
      */
-    public function getColumn($name): ColumnDescription
+    public function getColumn($name): ColumnDescriptionInterface
     {
         if (!array_key_exists($name, $this->columns)) {
             throw new \InvalidArgumentException("TableColumn '{$name}' does not exist");
         }
         return $this->columns[$name];
+    }
+
+    /**
+     * @param ColumnDescriptionInterface $columnDescription
+     * @throws \UnexpectedValueException
+     */
+    public function addColumn(ColumnDescriptionInterface $columnDescription): void
+    {
+        if (array_key_exists($columnDescription->getName(), $this->columns)) {
+            throw new \UnexpectedValueException("Table description already has description for column '{$columnDescription->getName()}'");
+        }
+        $this->columns[$columnDescription->getName()] = $columnDescription;
     }
     
     public function serialize(): string
@@ -97,7 +94,9 @@ class TableDescription implements \Serializable
             $this->$propertyName = $value;
         }
         foreach ($unserialized['columns'] as $columnName => $serializedColumnDescription) {
-            $this->columns[$columnName] = unserialize($serializedColumnDescription, ['allowed_classes' => [ColumnDescription::class]]);
+            $this->columns[$columnName] = unserialize($serializedColumnDescription, [
+                'allowed_classes' => [ColumnDescriptionInterface::class]
+            ]);
         }
     }
 }

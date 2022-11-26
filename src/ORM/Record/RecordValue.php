@@ -113,7 +113,7 @@ class RecordValue
             if (!$this->hasDefaultValue()) {
                 return false;
             }
-            if ($this->getColumn()->isItPrimaryKey()) {
+            if ($this->getColumn()->isPrimaryKey()) {
                 return !$this->hasValue && $this->getDefaultValue() instanceof DbExpr;
             }
 
@@ -340,7 +340,7 @@ class RecordValue
     {
         $recordClass = get_class($this->getRecord());
         $pk = 'undefined';
-        if (!$this->getColumn()->isItPrimaryKey()) {
+        if (!$this->getColumn()->isPrimaryKey()) {
             try {
                 $pk = $this->getRecord()->existsInDb()
                     ? $this->getRecord()->getPrimaryKeyValue()

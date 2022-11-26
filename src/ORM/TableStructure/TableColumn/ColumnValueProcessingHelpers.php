@@ -30,7 +30,7 @@ abstract class ColumnValueProcessingHelpers
                 return [];
             }
 
-            if (($isFromDb && $value !== null) || $column->isValueCanBeNull()) {
+            if (($isFromDb && $value !== null) || $column->isNullableValues()) {
                 // db value is not null but was preprocessed into null - it is not an error
                 return [];
             }
@@ -78,11 +78,6 @@ abstract class ColumnValueProcessingHelpers
             case TableColumn::TYPE_FLOAT:
                 if (!ValidateValue::isFloat($value)) {
                     return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_FLOAT)];
-                }
-                break;
-            case TableColumn::TYPE_ENUM:
-                if (!is_string($value) && !is_numeric($value)) {
-                    return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_STRING_OR_NUMERIC)];
                 }
                 break;
             case TableColumn::TYPE_DATE:
@@ -160,61 +155,6 @@ abstract class ColumnValueProcessingHelpers
                     return [static::getErrorMessage($errorMessages, TableColumn::VALUE_MUST_BE_STRING)];
                 }
                 break;
-        }
-        return [];
-    }
-    
-    /**
-     * Test if value is present in $column->getAllowedValues() (if any)
-     * Notes:
-     * - $value is not allowed be an object or resouce
-     * - if $value is array - all entries of this array will be validated to be contained in $column->getAllowedValues();
-     * > if $column->isEnum() === true
-     *   - it is expected to have not empty $column->getAllowedValues()
-     *   - empty string $value when $column->isEmptyStringMustBeConvertedToNull() === true will be treated as null
-     *   - null $value is allowed only when $column->isValueCanBeNull() === true
-     *   - in other cases empty string $value will be validated to be contained in $column->getAllowedValues()
-     * > if $column->isEnum() === false
-     *   - validation will be ignored when $column->getAllowedValues() is empty
-     *   - validation will be ignored when $column->isValueCanBeNull() === true and value is null or
-     *     empty string with option $column->isEmptyStringMustBeConvertedToNull() === true;
-     */
-    public static function isValueWithinTheAllowedValuesOfTheColumn(
-        TableColumn $column,
-        int|float|bool|string|array|null $value,
-        bool $isFromDb,
-        array $errorMessages = []
-    ): array {
-        $allowedValues = $column->getAllowedValues();
-        $isEnum = $column->isEnum();
-        if (count($allowedValues) === 0) {
-            if ($isEnum) {
-                throw new \UnexpectedValueException(
-                    "Enum column [{$column->getName()}] is required to have a list of allowed values"
-                );
-            }
-
-            return [];
-        }
-        $preprocessedValue = static::preprocessColumnValue($column, $value, $isFromDb, true);
-        // column is nullable and value is null or should be converted to null
-        if ($preprocessedValue === null && ($column->isValueCanBeNull() || ($isFromDb && $value !== null))) {
-            return [];
-        }
-        // can value be used?
-        if (!is_scalar($preprocessedValue) && !is_array($preprocessedValue)) {
-            throw new \InvalidArgumentException(
-                '$value argument must be a string, integer, float or array to be able to validate if it is within allowed values'
-            );
-        }
-        // validate
-        if (is_array($preprocessedValue)) {
-            // compare if $value array is contained inside $allowedValues array
-            if (count(array_diff($preprocessedValue, $allowedValues)) > 0) {
-                return [static::getErrorMessage($errorMessages, TableColumn::ONE_OF_VALUES_IS_NOT_ALLOWED)];
-            }
-        } elseif (!in_array($preprocessedValue, $allowedValues, true)) {
-            return [str_replace(':value', $preprocessedValue, static::getErrorMessage($errorMessages, TableColumn::VALUE_IS_NOT_ALLOWED))];
         }
         return [];
     }

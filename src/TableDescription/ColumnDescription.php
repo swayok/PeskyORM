@@ -7,9 +7,8 @@ namespace PeskyORM\TableDescription;
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 
-class ColumnDescription implements \Serializable
+class ColumnDescription implements ColumnDescriptionInterface
 {
-    
     protected string $name;
     protected string $dbType;
     protected string $ormType;

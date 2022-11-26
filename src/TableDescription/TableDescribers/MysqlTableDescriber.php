@@ -10,6 +10,7 @@ use PeskyORM\DbExpr;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\TableDescription\ColumnDescription;
 use PeskyORM\TableDescription\TableDescription;
+use PeskyORM\TableDescription\TableDescriptionInterface;
 use PeskyORM\Utils\PdoUtils;
 use Swayok\Utils\ValidateValue;
 
@@ -55,7 +56,7 @@ class MysqlTableDescriber implements TableDescriberInterface
     {
     }
 
-    public function getTableDescription(string $tableName, ?string $schema = null): TableDescription
+    public function getTableDescription(string $tableName, ?string $schema = null): TableDescriptionInterface
     {
         $description = new TableDescription($tableName, $schema ?? $this->adapter->getDefaultTableSchema());
         /** @var array $columns */

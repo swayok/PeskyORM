@@ -104,8 +104,7 @@ class TestingAdmins3TableStructure extends TableStructure
     
     private function language(): TableColumn
     {
-        return TableColumn::create(TableColumn::TYPE_ENUM)
-            ->setAllowedValues(['en', 'ru', 'de'])
+        return TableColumn::create(TableColumn::TYPE_STRING)
             ->convertsEmptyStringToNull()
             ->disallowsNullValues()
             ->setDefaultValue('en');
@@ -120,8 +119,7 @@ class TestingAdmins3TableStructure extends TableStructure
     
     private function role(): TableColumn
     {
-        return TableColumn::create(TableColumn::TYPE_ENUM)
-            ->setAllowedValues(['admin', 'manager', 'guest'])
+        return TableColumn::create(TableColumn::TYPE_STRING)
             ->convertsEmptyStringToNull()
             ->disallowsNullValues()
             ->setDefaultValue('guest');

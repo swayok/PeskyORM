@@ -10,6 +10,7 @@ use PeskyORM\DbExpr;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\TableDescription\ColumnDescription;
 use PeskyORM\TableDescription\TableDescription;
+use PeskyORM\TableDescription\TableDescriptionInterface;
 use PeskyORM\Utils\PdoUtils;
 use Swayok\Utils\ValidateValue;
 
@@ -52,7 +53,7 @@ class PostgresTableDescriber implements TableDescriberInterface
     {
     }
 
-    public function getTableDescription(string $tableName, ?string $schema = null): TableDescription
+    public function getTableDescription(string $tableName, ?string $schema = null): TableDescriptionInterface
     {
         $description = new TableDescription($tableName, $schema ?? $this->adapter->getDefaultTableSchema());
         $query = $this->getSqlQuery($description);
@@ -77,7 +78,7 @@ class PostgresTableDescriber implements TableDescriberInterface
         return $description;
     }
 
-    protected function getSqlQuery(TableDescription $description): string
+    protected function getSqlQuery(TableDescriptionInterface $description): string
     {
         return "
             SELECT

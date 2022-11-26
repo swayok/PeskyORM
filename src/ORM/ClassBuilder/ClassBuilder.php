@@ -11,9 +11,9 @@ use PeskyORM\ORM\Table\Table;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\ORM\TableStructure\TableStructure;
-use PeskyORM\TableDescription\ColumnDescription;
+use PeskyORM\TableDescription\ColumnDescriptionInterface;
 use PeskyORM\TableDescription\TableDescribersRegistry;
-use PeskyORM\TableDescription\TableDescription;
+use PeskyORM\TableDescription\TableDescriptionInterface;
 use PeskyORM\Utils\StringUtils;
 
 class ClassBuilder
@@ -23,7 +23,7 @@ class ClassBuilder
     protected DbAdapterInterface $connection;
     
     protected ?string $dbSchemaName = null;
-    protected ?TableDescription $tableDescription = null;
+    protected ?TableDescriptionInterface $tableDescription = null;
     
     private ?array $typeValueToTypeConstantName = null;
     
@@ -157,7 +157,7 @@ class {$this::makeRecordClassName($this->tableName)} extends {$this->getShortCla
 VIEW;
     }
     
-    protected function getTableDescription(): TableDescription
+    protected function getTableDescription(): TableDescriptionInterface
     {
         if (!$this->tableDescription) {
             $this->tableDescription = TableDescribersRegistry::describeTable($this->connection, $this->tableName, $this->dbSchemaName);
@@ -203,10 +203,7 @@ VIEW;
         $traits = [];
         $classesToInclude = [];
         $usedColumns = [];
-        $columnsNames = array_keys(
-            $this->getTableDescription()
-                ->getColumns()
-        );
+        $columnsNames = array_keys($this->getTableDescription()->getColumns());
         foreach ($traitsForColumns as $traitClass) {
             $traitMethods = (new \ReflectionClass($traitClass))->getMethods(\ReflectionMethod::IS_PRIVATE);
             if (empty($traitMethods)) {
@@ -245,10 +242,7 @@ VIEW;
     protected function makeColumnsMethodsForTableStructure(array $excludeColumns = []): string
     {
         $columns = [];
-        foreach (
-            $this->getTableDescription()
-                ->getColumns() as $columnDescription
-        ) {
+        foreach ($this->getTableDescription()->getColumns() as $columnDescription) {
             if (in_array($columnDescription->getName(), $excludeColumns, true)) {
                 continue;
             }
@@ -262,11 +256,7 @@ VIEW;
         return implode("\n\n", $columns);
     }
     
-    /**
-     * @param ColumnDescription $columnDescription
-     * @return string
-     */
-    protected function makeColumnConfig(ColumnDescription $columnDescription): string
+    protected function makeColumnConfig(ColumnDescriptionInterface $columnDescription): string
     {
         $ret = "TableColumn::create({$this->getConstantNameForColumnType($columnDescription->getOrmType())})";
         if ($columnDescription->isPrimaryKey()) {
@@ -352,7 +342,7 @@ VIEW;
         return false;
     }
     
-    protected function getPhpTypeByColumnDescription(ColumnDescription $columnDescription): string
+    protected function getPhpTypeByColumnDescription(ColumnDescriptionInterface $columnDescription): string
     {
         $type = match ($columnDescription->getOrmType()) {
             TableColumn::TYPE_INT => 'int',

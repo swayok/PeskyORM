@@ -300,14 +300,14 @@ class OrmSelect extends SelectQueryBuilderAbstract
         if ($excludeColumns === null) {
             $excludeColumns = [];
         }
-        $existingColumns = $tableStructure::getColumnsThatExistInDb();
+        $existingColumns = $tableStructure::getRealColumns();
         if (empty($existingColumns)) {
             throw new \UnexpectedValueException(
                 __METHOD__ . '(): ' . get_class($tableStructure) . ' has no columns that exist in DB'
             );
         }
         foreach ($existingColumns as $columnName => $config) {
-            if (($includeHeavyColumns || !$config->isValueHeavy()) && !in_array($columnName, $excludeColumns, true)) {
+            if (($includeHeavyColumns || !$config->isHeavyValues()) && !in_array($columnName, $excludeColumns, true)) {
                 $normalizedColumns[] = $this->analyzeColumnName($columnName, null, $joinName, 'SELECT');
             }
         }
@@ -333,7 +333,7 @@ class OrmSelect extends SelectQueryBuilderAbstract
                     $joinColumns = $this->getOrmJoin($joinName)
                         ->getForeignTable()
                         ->getTableStructure()
-                        ->getColumnsThatExistInDb();
+                        ->getRealColumns();
                     $filteredColumns = array_merge(
                         $filteredColumns,
                         array_diff(

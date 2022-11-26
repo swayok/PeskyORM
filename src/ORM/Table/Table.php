@@ -96,11 +96,6 @@ abstract class Table implements TableInterface
         return $this->alias;
     }
 
-    public static function hasPkColumn(): bool
-    {
-        return static::getStructure()->hasPkColumn();
-    }
-
     public static function getPkColumn(): TableColumnInterface
     {
         return static::getStructure()->getPkColumn();
@@ -576,6 +571,7 @@ abstract class Table implements TableInterface
         array $columnsToSave = [],
         ?array $features = null
     ): array {
+        // todo: find a way to process values by ColumnInterface instead of using features
         $allColumns = static::getStructure()->getColumns();
         if (empty($columnsToSave)) {
             $columnsToSave = array_keys($allColumns);
@@ -593,7 +589,10 @@ abstract class Table implements TableInterface
         $dbDefault = static::getExpressionToSetDefaultValueForAColumn();
         foreach ($columnsToSave as $columnName) {
             $column = $allColumns[$columnName];
-            if (in_array('auto', $features, true) && $column->isAutoUpdatingValue()) {
+            if (
+                in_array('auto', $features, true)
+                && $column->isAutoUpdatingValues()
+            ) {
                 $autoupdatableColumns[$columnName] = $column;
             } else {
                 if ($column->hasDefaultValue()) {
@@ -601,16 +600,28 @@ abstract class Table implements TableInterface
                 } else {
                     $defaults[$columnName] = $dbDefault;
                 }
-                if (in_array('nullable', $features, true) && !$column->isValueCanBeNull()) {
+                if (
+                    in_array('nullable', $features, true)
+                    && !$column->isNullableValues()
+                ) {
                     $notNulls[] = $columnName;
                 }
-                if (in_array('empty_string_to_null', $features, true) && !$column->convertsEmptyStringToNull()) {
+                if (
+                    in_array('empty_string_to_null', $features, true)
+                    && !$column->shouldConvertEmptyStringToNull()
+                ) {
                     $emptyToNull[] = $columnName;
                 }
-                if (in_array('trim', $features, true) && $column->isValueTrimmingRequired()) {
+                if (
+                    in_array('trim', $features, true)
+                    && $column->shouldTrimValues()
+                ) {
                     $trims[] = $columnName;
                 }
-                if (in_array('lowercase', $features, true) && $column->isValueLowercasingRequired()) {
+                if (
+                    in_array('lowercase', $features, true)
+                    && $column->shouldLowercaseValues()
+                ) {
                     $lowercases[] = $columnName;
                 }
             }

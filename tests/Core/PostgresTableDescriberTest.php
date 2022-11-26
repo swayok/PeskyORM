@@ -12,7 +12,7 @@ use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\TableDescription\TableDescribers\MysqlTableDescriber;
 use PeskyORM\TableDescription\TableDescribers\PostgresTableDescriber;
 use PeskyORM\TableDescription\TableDescribersRegistry;
-use PeskyORM\TableDescription\TableDescription;
+use PeskyORM\TableDescription\TableDescriptionInterface;
 use PeskyORM\Tests\PeskyORMTest\Adapter\OtherAdapterTesting;
 use PeskyORM\Tests\PeskyORMTest\Adapter\OtherAdapterTesting2;
 use PeskyORM\Tests\PeskyORMTest\Adapter\PostgresTesting;
@@ -21,7 +21,6 @@ use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 class PostgresTableDescriberTest extends BaseTestCase
 {
-
     /**
      * @return PostgresTesting
      */
@@ -42,8 +41,7 @@ class PostgresTableDescriberTest extends BaseTestCase
     {
         $adapter = self::getValidAdapter();
         static::assertInstanceOf(PostgresTableDescriber::class, TableDescribersRegistry::getDescriber($adapter));
-        /** @noinspection UnnecessaryAssertionInspection */
-        static::assertInstanceOf(TableDescription::class, TableDescribersRegistry::describeTable($adapter, 'settings'));
+        static::assertInstanceOf(TableDescriptionInterface::class, TableDescribersRegistry::describeTable($adapter, 'settings'));
 
         // set custom describer
         $otherAdapter = new OtherAdapterTesting(new PostgresConfig('test', 'test', 'test'));
@@ -178,7 +176,7 @@ class PostgresTableDescriberTest extends BaseTestCase
         $describer = new PostgresTableDescriber(static::getValidAdapter());
 
         $description = $describer->getTableDescription('settings');
-        static::assertInstanceOf(TableDescription::class, $description);
+        static::assertInstanceOf(TableDescriptionInterface::class, $description);
         static::assertEquals('settings', $description->getTableName());
         static::assertEquals('public', $description->getDbSchema());
         static::assertCount(3, $description->getColumns());

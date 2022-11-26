@@ -18,7 +18,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
     public static function valueSetter(mixed $newValue, bool $isFromDb, RecordValue $valueContainer, bool $trustDataReceivedFromDb): RecordValue
     {
         $column = $valueContainer->getColumn();
-        if (!$isFromDb && !$column->isValueCanBeSetOrChanged()) {
+        if (!$isFromDb && !$column->isValuesModificationAllowed()) {
             throw new \BadMethodCallException(
                 "TableColumn '{$column->getName()}' restricts value modification"
             );
@@ -69,13 +69,13 @@ class DefaultColumnClosures implements ColumnClosuresInterface
             return $value;
         }
         if (is_string($value)) {
-            if (!$isFromDb && $column->isValueTrimmingRequired()) {
+            if (!$isFromDb && $column->shouldTrimValues()) {
                 $value = trim($value);
             }
-            if ($value === '' && $column->isEmptyStringMustBeConvertedToNull()) {
+            if ($value === '' && $column->shouldConvertEmptyStringToNull()) {
                 return null;
             }
-            if (!$isFromDb && $column->isValueLowercasingRequired()) {
+            if (!$isFromDb && $column->shouldLowercaseValues()) {
                 $value = mb_strtolower($value);
             }
         } elseif ($value instanceof RecordsSet) {
@@ -121,14 +121,6 @@ class DefaultColumnClosures implements ColumnClosuresInterface
             // can't be validated in any other way
             return [];
         }
-        $errors = call_user_func($column->getValueIsAllowedValidator(), $value, $isFromDb, $isForCondition, $column);
-        if (!is_array($errors)) {
-            throw new \UnexpectedValueException('Allowed value validator closure must return an array');
-        }
-
-        if (count($errors) > 0) {
-            return $errors;
-        }
 
         $errors = call_user_func($column->getValueValidatorExtender(), $value, $isFromDb, $isForCondition, $column);
         if (!is_array($errors)) {
@@ -136,16 +128,6 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         }
 
         return $errors;
-    }
-    
-    public static function valueIsAllowedValidator(mixed $value, bool $isFromDb, TableColumnInterface $column): array
-    {
-        return ColumnValueProcessingHelpers::isValueWithinTheAllowedValuesOfTheColumn(
-            $column,
-            $value,
-            $isFromDb,
-            $column::getValidationErrorsMessages()
-        );
     }
     
     public static function valueNormalizer(mixed $value, bool $isFromDb, TableColumnInterface $column): mixed

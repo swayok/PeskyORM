@@ -8,8 +8,9 @@ use PeskyORM\Config\Connection\DbConnectionsManager;
 use PeskyORM\Exception\OrmException;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
+use PeskyORM\TableDescription\ColumnDescriptionInterface;
 use PeskyORM\TableDescription\TableDescribersRegistry;
-use PeskyORM\TableDescription\TableDescription;
+use PeskyORM\TableDescription\TableDescriptionInterface;
 use PeskyORM\Utils\StringUtils;
 
 abstract class TableStructure implements TableStructureInterface
@@ -29,15 +30,11 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * @var TableColumnInterface[]
      */
-    protected array $fileColumns = [];
+    protected array $realColumns = [];
     /**
      * @var TableColumnInterface[]
      */
-    protected array $columsThatExistInDb = [];
-    /**
-     * @var TableColumnInterface[]
-     */
-    protected array $columsThatDoNotExistInDb = [];
+    protected array $virtualColumns = [];
 
     /**
      * It contains only ReflectionMethod objects after class instance created
@@ -52,22 +49,13 @@ abstract class TableStructure implements TableStructureInterface
      */
     protected array $relations = [];
 
-    /**
-     * @var RelationInterface[][]
-     */
-    protected array $columnsRelations = [];
-
     /** @var TableStructureInterface[] */
     private static array $instances = [];
 
-    /**
-     * @return static
-     */
     final public static function getInstance(): TableStructureInterface
     {
         if (!isset(self::$instances[static::class])) {
-            self::$instances[static::class] = new static();
-            self::$instances[static::class]->loadConfigs();
+            new static();
         }
         return self::$instances[static::class];
     }
@@ -75,6 +63,7 @@ abstract class TableStructure implements TableStructureInterface
     /**
      * Resets class instances (used for testing only, that's why it is private)
      * @noinspection PhpUnusedPrivateMethodInspection
+     * todo: move to instances container
      */
     private static function resetInstances(): void
     {
@@ -82,50 +71,55 @@ abstract class TableStructure implements TableStructureInterface
     }
 
     /**
-     * @return static
-     */
-    final public static function i(): TableStructureInterface
-    {
-        return static::getInstance();
-    }
-
-    /**
-     * Use loadConfigs() method to do anything you wanted to do via constructor overwrite
      * @throws \BadMethodCallException
      */
-    final protected function __construct()
+    final private function __construct()
     {
         if (isset(self::$instances[static::class])) {
-            throw new \BadMethodCallException('Attempt to create 2nd instance of class ' . static::class);
+            throw new \BadMethodCallException(
+                'Attempt to create 2nd instance of class ' . static::class
+            );
         }
+        self::$instances[static::class] = $this;
+        $this->loadColumnsAndRelations();
     }
 
     /**
      * Load columns and relations configs
      */
-    protected function loadConfigs(): void
+    protected function loadColumnsAndRelations(): void
     {
         $this->loadColumnsAndRelationsFromPrivateMethods();
+        $this->registerColumns();
         $this->createMissingColumnsConfigsFromDbTableDescription();
-        $this->loadColumnsConfigs(); //< this is correct place - here virtual columns may use real columns
-        $this->loadRelationsConfigs();
+        $this->registerRelations();
+        $this->registerVirtualColumns(); // virtual columns may use real columns
         $this->analyze();
         $this->validate();
     }
 
     /**
-     * Load columns configs that are not loaded from private methods
-     * Use $this->addColumn() to add column config
+     * Register real columns that are not loaded from private methods
+     * Use $this->addColumn() to add column
      */
-    protected function loadColumnsConfigs(): void
+    protected function registerColumns(): void
     {
     }
 
     /**
-     * Load relations configs that are not loaded from private methods
-     * Use $this->addRelation() to add relation config
+     * Register columns that do not exist in DB (virtual columns)
+     * and are not loaded from private methods
+     * Use $this->addColumn() to add column
      */
-    protected function loadRelationsConfigs(): void
+    protected function registerVirtualColumns(): void
+    {
+    }
+
+    /**
+     * Register relations that are not loaded from private methods
+     * Use $this->addRelation() to add relation
+     */
+    protected function registerRelations(): void
     {
     }
 
@@ -134,15 +128,10 @@ abstract class TableStructure implements TableStructureInterface
      */
     protected function analyze(): void
     {
-        foreach ($this->relations as $relationConfig) {
-            $this->_getColumn($relationConfig->getLocalColumnName()); //< validate local column existance
-            $this->columnsRelations[$relationConfig->getLocalColumnName()][$relationConfig->getName(
-            )] = $relationConfig;
-        }
     }
 
     /**
-     * Validate configs
+     * Validate consistency of table structure
      * @throws OrmException
      */
     protected function validate(): void
@@ -179,9 +168,6 @@ abstract class TableStructure implements TableStructureInterface
         return static::getInstance()->_getColumn($columnName);
     }
 
-    /**
-     * @return TableColumnInterface[] - key = column name
-     */
     public static function getColumns(): array
     {
         return static::getInstance()->columns;
@@ -197,43 +183,14 @@ abstract class TableStructure implements TableStructureInterface
         return static::getInstance()->pk;
     }
 
-    public static function hasPkColumn(): bool
+    public static function getRealColumns(): array
     {
-        return static::getInstance()->pk !== null;
+        return static::getInstance()->realColumns;
     }
 
-    public static function hasFileColumns(): bool
+    public static function getVirtualColumns(): array
     {
-        return count(static::getInstance()->fileColumns) > 0;
-    }
-
-    public static function hasFileColumn(string $columnName): bool
-    {
-        return isset(static::getInstance()->fileColumns[$columnName]);
-    }
-
-    /**
-     * @return TableColumnInterface[] = array('column_name' => TableColumnInterface)
-     */
-    public static function getFileColumns(): array
-    {
-        return static::getInstance()->fileColumns;
-    }
-
-    /**
-     * @return TableColumnInterface[]
-     */
-    public static function getColumnsThatExistInDb(): array
-    {
-        return static::getInstance()->columsThatExistInDb;
-    }
-
-    /**
-     * @return TableColumnInterface[]
-     */
-    public static function getColumnsThatDoNotExistInDb(): array
-    {
-        return static::getInstance()->columsThatDoNotExistInDb;
+        return static::getInstance()->virtualColumns;
     }
 
     public static function hasRelation(string $relationName): bool
@@ -246,30 +203,9 @@ abstract class TableStructure implements TableStructureInterface
         return static::getInstance()->_getRelation($relationName);
     }
 
-    /**
-     * @return RelationInterface[]
-     */
     public static function getRelations(): array
     {
         return static::getInstance()->relations;
-    }
-
-    /**
-     * @return RelationInterface[][]
-     */
-    public static function getColumnsRelations(): array
-    {
-        return static::getInstance()->columnsRelations;
-    }
-
-    /**
-     * @return RelationInterface[]
-     */
-    public static function getColumnRelations(string $columnName): array
-    {
-        $instance = static::getInstance();
-        $instance->_getColumn($columnName);
-        return $instance->columnsRelations[$columnName] ?? [];
     }
 
     /**
@@ -317,21 +253,28 @@ abstract class TableStructure implements TableStructureInterface
         $description = $this->getTableDescription();
         foreach ($description->getColumns() as $columnName => $columnDescription) {
             if (!$this->_hasColumn($columnName)) {
-                $column = TableColumn::create($columnDescription->getOrmType(), $columnName)
-                                ->setIsNullableValue($columnDescription->isNullable());
-                if ($columnDescription->isPrimaryKey()) {
-                    $column->primaryKey();
-                }
-                if ($columnDescription->isUnique()) {
-                    $column->uniqueValues();
-                }
-                if ($columnDescription->getDefault() !== null) {
-                    $column->setDefaultValue($columnDescription->getDefault());
-                }
-                $this->addColumn($column);
+                $this->addColumnFromColumnDescription($columnName, $columnDescription);
             }
         }
         $this->autodetectColumns = false;
+    }
+
+    protected function addColumnFromColumnDescription(
+        string $columnName,
+        ColumnDescriptionInterface $columnDescription
+    ): void {
+        $column = TableColumn::create($columnDescription->getOrmType(), $columnName)
+            ->setIsNullableValue($columnDescription->isNullable());
+        if ($columnDescription->isPrimaryKey()) {
+            $column->primaryKey();
+        }
+        if ($columnDescription->isUnique()) {
+            $column->uniqueValues();
+        }
+        if ($columnDescription->getDefault() !== null) {
+            $column->setDefaultValue($columnDescription->getDefault());
+        }
+        $this->addColumn($column);
     }
 
     /**
@@ -339,7 +282,7 @@ abstract class TableStructure implements TableStructureInterface
      * Use serialize($tableDescription) to save it to cache as string.
      * Use unserialize($cachedTableDescription) to restore into TableDescription object.
      */
-    protected function getTableDescription(): TableDescription
+    protected function getTableDescription(): TableDescriptionInterface
     {
         return TableDescribersRegistry::describeTable(
             DbConnectionsManager::getConnection(static::getConnectionName(false)),
@@ -390,9 +333,8 @@ abstract class TableStructure implements TableStructureInterface
      */
     protected function addColumn(TableColumnInterface $column): void
     {
-        $column->setTableStructure($this);
         $this->columns[$column->getName()] = $column;
-        if ($column->isItPrimaryKey()) {
+        if ($column->isPrimaryKey()) {
             if (!empty($this->pk)) {
                 $class = static::class;
                 throw new OrmException(
@@ -403,13 +345,10 @@ abstract class TableStructure implements TableStructureInterface
             }
             $this->pk = $column;
         }
-        if ($column->isItAFile()) {
-            $this->fileColumns[$column->getName()] = $column;
-        }
-        if ($column->isItExistsInDb()) {
-            $this->columsThatExistInDb[$column->getName()] = $column;
+        if ($column->isReal()) {
+            $this->realColumns[$column->getName()] = $column;
         } else {
-            $this->columsThatDoNotExistInDb[$column->getName()] = $column;
+            $this->virtualColumns[$column->getName()] = $column;
         }
     }
 
@@ -460,8 +399,9 @@ abstract class TableStructure implements TableStructureInterface
 
     protected function addRelation(RelationInterface $relation): void
     {
-        // validate if local column exists
-        $this->_getColumn($relation->getLocalColumnName());
+        // validate local column existance and attach relation to it
+        $column = $this->_getColumn($relation->getLocalColumnName());
+        $column->addRelation($relation);
         $this->relations[$relation->getName()] = $relation;
     }
 

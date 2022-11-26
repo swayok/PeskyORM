@@ -55,8 +55,6 @@ interface TableInterface
         string $joinName = null
     ): NormalJoinConfigInterface;
     
-    public static function hasPkColumn(): bool;
-    
     public static function getPkColumn(): TableColumnInterface;
     
     public static function getPkColumnName(): string;

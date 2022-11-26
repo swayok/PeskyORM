@@ -28,7 +28,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
         static::assertFalse(DefaultColumnClosures::valueExistenceChecker($valueObj, true));
         
         $column->setDefaultValue(1);
-        static::assertFalse(\PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures::valueExistenceChecker($valueObj, false));
+        static::assertFalse(DefaultColumnClosures::valueExistenceChecker($valueObj, false));
         static::assertTrue(DefaultColumnClosures::valueExistenceChecker($valueObj, true));
         
         $valueObj->setRawValue(1, 1, true)
@@ -41,53 +41,37 @@ class DefaultColumnClosuresTest extends BaseTestCase
     {
         $column = TableColumn::create(\PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_BOOL, 'test');
         static::assertEquals('', DefaultColumnClosures::valuePreprocessor('', false, false, $column));
-        static::assertEquals(' ', \PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures::valuePreprocessor(' ', false, false, $column));
+        static::assertEquals(' ', DefaultColumnClosures::valuePreprocessor(' ', false, false, $column));
         static::assertEquals(null, DefaultColumnClosures::valuePreprocessor(null, false, false, $column));
         static::assertEquals([], DefaultColumnClosures::valuePreprocessor([], false, false, $column));
         static::assertEquals(['arr'], DefaultColumnClosures::valuePreprocessor(['arr'], false, false, $column));
         static::assertEquals(true, DefaultColumnClosures::valuePreprocessor(true, false, false, $column));
         static::assertEquals(false, DefaultColumnClosures::valuePreprocessor(false, false, false, $column));
-        static::assertEquals(1, \PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures::valuePreprocessor(1, false, false, $column));
+        static::assertEquals(1, DefaultColumnClosures::valuePreprocessor(1, false, false, $column));
         static::assertEquals(-1.23, DefaultColumnClosures::valuePreprocessor(-1.23, false, false, $column));
         static::assertEquals('1.23', DefaultColumnClosures::valuePreprocessor('1.23', false, false, $column));
         $column->trimsValue()
             ->lowercasesValue()
             ->convertsEmptyStringToNull();
         static::assertEquals(null, DefaultColumnClosures::valuePreprocessor('', false, false, $column));
-        static::assertEquals(null, \PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures::valuePreprocessor(' ', false, false, $column));
+        static::assertEquals(null, DefaultColumnClosures::valuePreprocessor(' ', false, false, $column));
         static::assertEquals('a', DefaultColumnClosures::valuePreprocessor(' a ', false, false, $column));
         static::assertEquals('b', DefaultColumnClosures::valuePreprocessor(' B ', false, false, $column));
     }
     
-    public function testIsValueAllowedValidator(): void
-    {
-        $column = TableColumn::create(\PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_ENUM, 'test')
-            ->setAllowedValues(['a', 'b']);
-        static::assertEquals([], DefaultColumnClosures::valueIsAllowedValidator('a', false, $column));
-        static::assertEquals(
-            ['Value is not allowed: c.'],
-            DefaultColumnClosures::valueIsAllowedValidator('c', false, $column)
-        );
-    }
-    
     public function testValueValidator(): void
     {
-        $column = TableColumn::create(TableColumn::TYPE_ENUM, 'test')
-            ->setAllowedValues(['a', 'b'])
+        $column = TableColumn::create(TableColumn::TYPE_STRING, 'test')
             ->setValueValidatorExtender(function ($value) {
                 return $value === 'a' ? ['extender!!!'] : [];
             });
         static::assertEquals(
-            ['Value is not allowed: c.'],
-            DefaultColumnClosures::valueValidator('c', false, false, $column)
-        );
-        static::assertEquals(
-            ['Value must be a string or a number.'],
-            \PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures::valueValidator(true, false, false, $column)
+            ['Value must be a string.'],
+            DefaultColumnClosures::valueValidator(true, false, false, $column)
         );
         static::assertEquals(
             ['extender!!!'],
-            \PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures::valueValidator('a', false, false, $column)
+            DefaultColumnClosures::valueValidator('a', false, false, $column)
         );
         static::assertEquals([], DefaultColumnClosures::valueValidator('b', false, false, $column));
     }
@@ -97,7 +81,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Value format 'nooooo!' is not supported for column 'parent_id'. Supported formats: none");
         $valueObj = \PeskyORM\ORM\Record\RecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
-        \PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures::valueGetter($valueObj, 'nooooo!');
+        DefaultColumnClosures::valueGetter($valueObj, 'nooooo!');
     }
     
     public function testInvalidFormatInValueGetter1(): void
@@ -123,7 +107,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
         $valueObj->setRawValue('2016-09-01', '2016-09-01', true)
             ->setValidValue('2016-09-01', '2016-09-01');
         static::assertEquals('2016-09-01', DefaultColumnClosures::valueGetter($valueObj));
-        static::assertEquals(strtotime('2016-09-01'), \PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures::valueGetter($valueObj, 'unix_ts'));
+        static::assertEquals(strtotime('2016-09-01'), DefaultColumnClosures::valueGetter($valueObj, 'unix_ts'));
     }
     
     public function testValueSetIsForbidden(): void
@@ -155,7 +139,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
         static::assertFalse($valueObj->isItFromDb());
         static::assertFalse($valueObj->hasOldValue());
         // change 'isItFromDb' status to true (should not be any changes other than $valueObj->isItFromDb())
-        \PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures::valueSetter(1, true, $valueObj, false);
+        DefaultColumnClosures::valueSetter(1, true, $valueObj, false);
         static::assertEquals('1', $valueObj->getRawValue());
         static::assertEquals(1, $valueObj->getValue());
         static::assertTrue($valueObj->isValidated());
@@ -163,7 +147,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
         static::assertTrue($valueObj->isItFromDb());
         static::assertFalse($valueObj->hasOldValue());
         // change value
-        \PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures::valueSetter('2', true, $valueObj, false);
+        DefaultColumnClosures::valueSetter('2', true, $valueObj, false);
         static::assertEquals('2', $valueObj->getRawValue());
         static::assertEquals(2, $valueObj->getValue());
         static::assertTrue($valueObj->hasOldValue());
@@ -173,7 +157,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
         static::assertTrue($valueObj->isValid());
         static::assertTrue($valueObj->isItFromDb());
         // invalid value
-        \PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures::valueSetter(false, true, $valueObj, false);
+        DefaultColumnClosures::valueSetter(false, true, $valueObj, false);
         static::assertEquals(false, $valueObj->getRawValue());
         static::assertEquals(false, $valueObj->getValue());
         static::assertTrue($valueObj->hasOldValue());

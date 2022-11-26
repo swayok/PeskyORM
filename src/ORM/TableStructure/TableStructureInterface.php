@@ -29,31 +29,32 @@ interface TableStructureInterface
     public static function getColumn(string $columnName): TableColumnInterface;
     
     /**
-     * @return TableColumnInterface[]
+     * @return TableColumnInterface[] - ['column_name' => TableColumnInterface]
      */
     public static function getColumns(): array;
+
+    /**
+     * Get columns that really exist in DB
+     * @return TableColumnInterface[] - ['column_name' => TableColumnInterface]
+     */
+    public static function getRealColumns(): array;
+
+    /**
+     * Get columns that do not exist in DB
+     * @return TableColumnInterface[] - ['column_name' => TableColumnInterface]
+     */
+    public static function getVirtualColumns(): array;
     
     public static function getPkColumnName(): ?string;
     
     public static function getPkColumn(): ?TableColumnInterface;
-    
-    public static function hasPkColumn(): bool;
-    
-    public static function hasFileColumns(): bool;
-    
-    public static function hasFileColumn(string $columnName): bool;
-    
-    /**
-     * @return TableColumnInterface[] - ['column_name' => TableColumn]
-     */
-    public static function getFileColumns(): array;
     
     public static function hasRelation(string $relationName): bool;
     
     public static function getRelation(string $relationName): RelationInterface;
     
     /**
-     * @return RelationInterface[]
+     * @return RelationInterface[] - ['relation_name' => RelationInterface]
      */
     public static function getRelations(): array;
     

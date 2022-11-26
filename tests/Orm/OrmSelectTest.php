@@ -10,6 +10,7 @@ use PeskyORM\Adapter\Postgres;
 use PeskyORM\DbExpr;
 use PeskyORM\Join\JoinConfigInterface;
 use PeskyORM\Join\OrmJoinConfig;
+use PeskyORM\ORM\Fakes\FakeTable;
 use PeskyORM\Select\OrmSelect;
 use PeskyORM\Select\Select;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
@@ -191,11 +192,11 @@ class OrmSelectTest extends BaseTestCase
         $bigDataColsInSelect = [];
         $bigDataColsNames = [];
         foreach ($dbSelect->getTable()->getTableStructure()->getColumns() as $column) {
-            if (!$column->isItExistsInDb()) {
+            if (!$column->isReal()) {
                 continue;
             }
             $shortName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', $column->getName(), 'Admins');
-            if ($column->isValueHeavy()) {
+            if ($column->isHeavyValues()) {
                 $bigDataColsInfo[] = [
                     'name' => $column->getName(),
                     'alias' => null,
@@ -455,7 +456,7 @@ class OrmSelectTest extends BaseTestCase
         $dbSelect = static::getNewSelect();
         $this->callObjectMethod($dbSelect, 'getShortColumnAlias', '*', 'Parent');
         foreach ($columns as $column) {
-            if ($column->isItExistsInDb()) {
+            if ($column->isReal()) {
                 $shortName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', $column->getName(), 'Parent');
                 $colsInSelectForParent[] = '"tbl_Parent_1"."' . $column->getName() . '" AS "' . $shortName . '"';
             }
@@ -477,7 +478,7 @@ class OrmSelectTest extends BaseTestCase
         $this->callObjectMethod($dbSelect, 'getShortColumnAlias', '*', 'Parent2');
         $this->callObjectMethod($dbSelect, 'getShortColumnAlias', 'id', 'Parent');
         foreach ($columns as $column) {
-            if ($column->isItExistsInDb()) {
+            if ($column->isReal()) {
                 $shortName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', $column->getName(), 'Parent2');
                 $colsInSelectForParent2[] = '"tbl_Parent2_2"."' . $column->getName() . '" AS "' . $shortName . '"';
             }
@@ -732,7 +733,7 @@ class OrmSelectTest extends BaseTestCase
         $colsInSelectForTest = [];
         $adminsIdShortName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', 'id', 'Admins');
         foreach ($dbSelect->getTable()->getTableStructure()->getColumns() as $column) {
-            if ($column->isItExistsInDb()) {
+            if ($column->isReal()) {
                 $shortName = $this->callObjectMethod($dbSelect, 'getShortColumnAlias', $column->getName(), 'Test');
                 $colsInSelectForTest[] = '"tbl_Test_1"."' . $column->getName() . '" AS "' . $shortName . '"';
             }
@@ -1018,7 +1019,7 @@ class OrmSelectTest extends BaseTestCase
             . ' WHERE "tbl_Admins_1"."id" IN (SELECT "tbl_Subselect_0".* FROM "subselect" AS "tbl_Subselect_0")',
             $dbSelect->getQuery()
         );
-        $fakeTable = \PeskyORM\ORM\Fakes\FakeTable::makeNewFakeTable('subselect');
+        $fakeTable = FakeTable::makeNewFakeTable('subselect');
         $dbSelect = OrmSelect::from($fakeTable)
             ->columns(['id'])
             ->with(Select::from('admins', TestingAdminsTable::getConnection()), 'subselect')
@@ -1030,7 +1031,7 @@ class OrmSelectTest extends BaseTestCase
             . ' WHERE "tbl_Subselect_0"."created_at" > \'2016-01-01\'',
             $dbSelect->getQuery()
         );
-        $fakeTable = \PeskyORM\ORM\Fakes\FakeTable::makeNewFakeTable('subselect2');
+        $fakeTable = FakeTable::makeNewFakeTable('subselect2');
         $fakeTable->getTableStructure()->mimicTableStructure(TestingSettingsTableStructure::getInstance());
         $dbSelect = OrmSelect::from($fakeTable)
             ->columns(['id', 'key', 'value'])
@@ -1045,7 +1046,7 @@ class OrmSelectTest extends BaseTestCase
             $dbSelect->getQuery()
         );
 
-        $fakeTable2 = \PeskyORM\ORM\Fakes\FakeTable::makeNewFakeTable('subselect3');
+        $fakeTable2 = FakeTable::makeNewFakeTable('subselect3');
         $fakeTable2->getTableStructure()->mimicTableStructure(TestingSettingsTableStructure::getInstance());
         $subselect2 = Select::from('settings', TestingSettingsTable::getConnection())->columns(['*']);
         static::assertEquals(
@@ -1104,7 +1105,7 @@ class OrmSelectTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessageMatches('%OrmSelect::normalizeWildcardColumn\(\): .*?FakeTableStructure\d+ForFake\d+ has no columns that exist in DB%');
-        $fakeTable = \PeskyORM\ORM\Fakes\FakeTable::makeNewFakeTable('fake1');
+        $fakeTable = FakeTable::makeNewFakeTable('fake1');
         $select = OrmSelect::from($fakeTable)->columns('*');
         $select->buildQueryToBeUsedInWith();
     }

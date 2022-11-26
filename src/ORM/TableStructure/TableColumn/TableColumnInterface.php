@@ -5,23 +5,14 @@ declare(strict_types=1);
 namespace PeskyORM\ORM\TableStructure\TableColumn;
 
 use PeskyORM\ORM\TableStructure\RelationInterface;
-use PeskyORM\ORM\TableStructure\TableStructureInterface;
 
 interface TableColumnInterface
 {
-    public function setTableStructure(TableStructureInterface $tableStructure): static;
-
     public function getName(): string;
 
-    public function isValueCanBeNull(): bool;
+    public function isNullableValues(): bool;
 
-    public function isEmptyStringMustBeConvertedToNull(): bool;
-
-    public function isValueTrimmingRequired(): bool;
-
-    public function isValueLowercasingRequired(): bool;
-
-    public function isItPrimaryKey(): bool;
+    public function isPrimaryKey(): bool;
 
     public function isValueMustBeUnique(): bool;
 
@@ -29,24 +20,47 @@ interface TableColumnInterface
 
     public function getUniqueContraintAdditonalColumns(): array;
 
-    public function isItExistsInDb(): bool;
+    public function isReal(): bool;
 
-    public function isValueCanBeSetOrChanged(): bool;
+    public function isValuesModificationAllowed(): bool;
 
-    public function isValueHeavy(): bool;
+    public function isHeavyValues(): bool;
 
-    public function isItAForeignKey(): bool;
+    public function isForeignKey(): bool;
 
-    public function isItAFile(): bool;
+    public function getForeignKeyRelation(): ?RelationInterface;
 
-    public function isItAnImage(): bool;
+    public function isFile(): bool;
 
-    public function isValuePrivate(): bool;
+    public function isPrivateValues(): bool;
 
-    public function isAutoUpdatingValue(): bool;
+    public function isAutoUpdatingValues(): bool;
 
-    public function setDefaultValue(mixed $defaultValue): static;
+    /**
+     * @deprecated
+     */
+    public function shouldConvertEmptyStringToNull(): bool;
 
+    /**
+     * @deprecated
+     */
+    public function shouldTrimValues(): bool;
+
+    /**
+     * @deprecated
+     */
+    public function shouldLowercaseValues(): bool;
+
+    /**
+     * Returns default value as it is when it was added to column
+     */
+    public function getDefaultValue(): mixed;
+
+    /**
+     * Validates original default value and returns it.
+     * If default value is not set - returns $fallbackValue after validation.
+     * @throws \UnexpectedValueException when default value or $fallbackValue are invalid
+     */
     public function getValidDefaultValue(mixed $fallbackValue = null): mixed;
 
     public function hasDefaultValue(): bool;
@@ -56,6 +70,8 @@ interface TableColumnInterface
     public function hasRelation(string $relationName): bool;
 
     public function getRelation(string $relationName): RelationInterface;
+
+    public function addRelation(RelationInterface $relation): static;
 
     /**
      * Get list of column names including formatters.

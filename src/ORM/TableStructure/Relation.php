@@ -128,7 +128,7 @@ class Relation implements RelationInterface
             ::getColumn($foreignColumnName);
         // Check if foreign column name is not a primary key in HAS MANY relation.
         // Otherwise, it is a mistake.
-        if ($this->getType() === static::HAS_MANY && $foreignColumn->isItPrimaryKey()) {
+        if ($this->getType() === static::HAS_MANY && $foreignColumn->isPrimaryKey()) {
             throw new \InvalidArgumentException(
                 "\$foreignColumnName argument value ('{$foreignColumnName}') refers to"
                 . " a primary key column. It makes no sense for HAS MANY relation."

@@ -86,10 +86,10 @@ VIEW;
         return $fullClassName::getInstance();
     }
     
-    protected function loadConfigs(): void
+    protected function loadColumnsAndRelations(): void
     {
         $this->pk = $this->columns['id'] = TableColumn::create(TableColumn::TYPE_INT, 'id')->primaryKey();
-        parent::loadConfigs();
+        parent::loadColumnsAndRelations();
     }
     
     /**

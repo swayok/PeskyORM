@@ -252,18 +252,11 @@ class RecordTest extends BaseTestCase
         static::assertEquals(TestingSettingsTableStructure::getRelations(), TestingSetting::getRelations());
         static::assertFalse(TestingSetting::hasRelation('Parent'));
         
-        // file columns
-        static::assertTrue(TestingAdmin::hasFileColumns());
-        static::assertEquals(TestingAdminsTableStructure::getFileColumns(), TestingAdmin::getFileColumns());
-        
-        static::assertFalse(TestingSetting::hasFileColumns());
-        static::assertEquals(TestingSettingsTableStructure::getFileColumns(), TestingSetting::getFileColumns());
-        
         // validate value
         static::assertEquals([], TestingAdmin::validateValue('language', 'ru', true));
         static::assertEquals([], TestingAdmin::validateValue('language', 'ru', false));
-        static::assertEquals(['Value is not allowed: qq.'], TestingAdmin::validateValue('language', 'qq', true));
-        static::assertEquals(['Value is not allowed: qq.'], TestingAdmin::validateValue('language', 'qq', false));
+        static::assertEquals([], TestingAdmin::validateValue('language', 'qq', true));
+        static::assertEquals([], TestingAdmin::validateValue('language', 'qq', false));
         
         // columns that exist in db or not
         $expectedNotExistingColumnsList = [
@@ -356,7 +349,7 @@ class RecordTest extends BaseTestCase
         $rec = TestingAdmin::newEmptyRecord();
         static::assertEquals(
             TestingAdmin::getColumn('id')
-                ->getDefaultValueAsIs(),
+                ->getDefaultValue(),
             $rec->getValue('id')
         );
         $rec->updateValue('id', 2, true);
@@ -572,12 +565,12 @@ class RecordTest extends BaseTestCase
         static::assertEquals(
             [
                 'id' => TestingAdminsTableStructure::getColumn('id')
-                    ->getDefaultValueAsIs(),
+                    ->getDefaultValue(),
                 'parent_id' => null,
                 'login' => null,
                 'password' => null,
                 'created_at' => TestingAdminsTableStructure::getColumn('created_at')
-                    ->getDefaultValueAsIs(),
+                    ->getDefaultValue(),
                 'updated_at' => null,
                 'remember_token' => null,
                 'is_superadmin' => false,
@@ -2558,7 +2551,7 @@ class RecordTest extends BaseTestCase
         $rec = TestingAdmin::fromArray($data, true);
         $rec->updateValues(['Parent' => $data, 'Children' => [$data, $data]], true);
         foreach ($rec::getColumns() as $name => $config) {
-            if ($config->isItExistsInDb()) {
+            if ($config->isReal()) {
                 static::assertEquals(isset($data[$name]), isset($rec->$name), "isset property: $name");
                 static::assertEquals(isset($data[$name]), isset($rec[$name]), "isset array key: $name");
                 static::assertEquals($rec->getValue($name), $rec->$name, "get property: $name");

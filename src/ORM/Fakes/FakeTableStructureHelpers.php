@@ -6,6 +6,7 @@ namespace PeskyORM\ORM\Fakes;
 
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\ORM\TableStructure\TableStructure;
+use PeskyORM\ORM\TableStructure\TableStructureInterface;
 
 trait FakeTableStructureHelpers
 {
@@ -35,15 +36,13 @@ trait FakeTableStructureHelpers
             } else {
                 $this->columns[$name] = TableColumn::create($typeOrColumnInstance, $name);
             }
-            if ($this->columns[$name]->isItAFile()) {
-                $this->fileColumns[$name] = $this->columns[$name];
-            } elseif ($this->columns[$name]->isItPrimaryKey()) {
+            if ($this->columns[$name]->isPrimaryKey()) {
                 $this->pk = $this->columns[$name];
             }
-            if ($this->columns[$name]->isItExistsInDb()) {
-                $this->columsThatExistInDb[$name] = $this->columns[$name];
+            if ($this->columns[$name]->isReal()) {
+                $this->realColumns[$name] = $this->columns[$name];
             } else {
-                $this->columsThatDoNotExistInDb[$name] = $this->columns[$name];
+                $this->virtualColumns[$name] = $this->columns[$name];
             }
         }
         $this->treatAnyColumnNameAsValid = count($this->columns) === 0;
@@ -61,20 +60,17 @@ trait FakeTableStructureHelpers
      * @param bool $append - true: existing structure will be appended; false - replaced
      * @return static
      */
-    public function mimicTableStructure(TableStructure $structure, bool $append = false): static
+    public function mimicTableStructure(TableStructureInterface $structure, bool $append = false): static
     {
         if (!$append) {
             $this->columns = [];
             $this->relations = [];
-            $this->fileColumns = [];
             $this->pk = null;
         }
         $this->columns = array_merge($this->columns, $structure::getColumns());
-        $this->columsThatExistInDb = array_merge($this->columsThatExistInDb, $structure::getColumnsThatExistInDb());
-        $this->columsThatDoNotExistInDb = array_merge($this->columsThatDoNotExistInDb, $structure::getColumnsThatDoNotExistInDb());
+        $this->realColumns = array_merge($this->realColumns, $structure::getRealColumns());
+        $this->virtualColumns = array_merge($this->virtualColumns, $structure::getVirtualColumns());
         $this->relations = array_merge($this->columns, $structure::getRelations());
-        $this->columnsRelations = array_merge($this->columns, $structure::getColumnsRelations());
-        $this->fileColumns = array_merge($this->fileColumns, $structure::getFileColumns());
         $this->pk = $structure::getPkColumn();
         $this->connectionName = $structure::getConnectionName(false);
         $this->connectionNameWritable = $structure::getConnectionName(true);

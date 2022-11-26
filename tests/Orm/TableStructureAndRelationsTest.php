@@ -56,16 +56,12 @@ class TableStructureAndRelationsTest extends BaseTestCase
     {
         static::assertInstanceOf(TestingSettingsTableStructure::class, TestingSettingsTableStructure::getInstance());
         static::assertInstanceOf(TestingAdminsTableStructure::class, TestingAdminsTableStructure::getInstance());
-        
-        static::assertInstanceOf(TestingSettingsTableStructure::class, TestingSettingsTableStructure::i());
-        static::assertInstanceOf(TestingAdminsTableStructure::class, TestingAdminsTableStructure::i());
     }
     
     public function testTableStructureColumns(): void
     {
         $columns = TestingAdminsTableStructure::getColumns();
         static::assertCount(22, $columns);
-        static::assertTrue(TestingAdminsTableStructure::hasPkColumn());
         static::assertEquals('id', TestingAdminsTableStructure::getPkColumnName());
         static::assertTrue(TestingAdminsTableStructure::hasColumn('login'));
         static::assertFalse(TestingAdminsTableStructure::hasColumn('abrakadabra'));
@@ -77,10 +73,6 @@ class TableStructureAndRelationsTest extends BaseTestCase
             TestingAdminsTableStructure::getPkColumn()
                 ->getName()
         );
-        static::assertTrue(TestingAdminsTableStructure::hasFileColumns());
-        static::assertCount(2, TestingAdminsTableStructure::getFileColumns());
-        static::assertTrue(TestingAdminsTableStructure::hasFileColumn('avatar'));
-        static::assertFalse(TestingAdminsTableStructure::hasFileColumn('abrakadabra'));
     }
     
     public function testTableStructureRelations(): void
@@ -96,7 +88,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         );
         static::assertTrue(
             TestingAdminsTableStructure::getColumn($relation->getLocalColumnName())
-                ->isItAForeignKey()
+                ->isForeignKey()
         );
     }
     
@@ -200,18 +192,18 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertEquals($expected, $actual);
         // defined column
         $col = $structure::getColumn('updated_at');
-        static::assertFalse($col->isValueCanBeNull());
-        static::assertTrue($col->isAutoUpdatingValue());
+        static::assertFalse($col->isNullableValues());
+        static::assertTrue($col->isAutoUpdatingValues());
         static::assertFalse($col->hasDefaultValue());
         // autoloaded columns
         // costraints
         static::assertTrue(
             $structure::getColumn('id')
-                ->isItPrimaryKey()
+                ->isPrimaryKey()
         );
         static::assertTrue(
             $structure::getColumn('parent_id')
-                ->isItAForeignKey()
+                ->isForeignKey()
         ); //< it is not a mistake - it is affected only by existing relation
         static::assertTrue(
             $structure::getColumn('email')
@@ -224,19 +216,19 @@ class TableStructureAndRelationsTest extends BaseTestCase
         // nullable
         static::assertTrue(
             $structure::getColumn('parent_id')
-                ->isValueCanBeNull()
+                ->isNullableValues()
         );
         static::assertTrue(
             $structure::getColumn('email')
-                ->isValueCanBeNull()
+                ->isNullableValues()
         );
         static::assertFalse(
             $structure::getColumn('login')
-                ->isValueCanBeNull()
+                ->isNullableValues()
         );
         static::assertFalse(
             $structure::getColumn('password')
-                ->isValueCanBeNull()
+                ->isNullableValues()
         );
         // defaults
         static::assertFalse(
@@ -262,7 +254,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertEquals(
             'en',
             $structure::getColumn('language')
-                ->getDefaultValueAsIs()
+                ->getDefaultValue()
         );
         static::assertTrue(
             $structure::getColumn('is_superadmin')
@@ -271,7 +263,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertEquals(
             false,
             $structure::getColumn('is_superadmin')
-                ->getDefaultValueAsIs()
+                ->getDefaultValue()
         );
         static::assertTrue(
             $structure::getColumn('remember_token')
@@ -280,7 +272,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertEquals(
             '',
             $structure::getColumn('remember_token')
-                ->getDefaultValueAsIs()
+                ->getDefaultValue()
         );
         static::assertTrue(
             $structure::getColumn('created_at')
@@ -289,7 +281,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertEquals(
             DbExpr::create('now()'),
             $structure::getColumn('created_at')
-                ->getDefaultValueAsIs()
+                ->getDefaultValue()
         );
         static::assertTrue(
             $structure::getColumn('id')
@@ -298,7 +290,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertEquals(
             DbExpr::create("nextval('admins_id_seq'::regclass)"),
             $structure::getColumn('id')
-                ->getDefaultValueAsIs()
+                ->getDefaultValue()
         );
         static::assertTrue(
             $structure::getColumn('ip')
@@ -307,7 +299,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertEquals(
             '192.168.1.1',
             $structure::getColumn('ip')
-                ->getDefaultValueAsIs()
+                ->getDefaultValue()
         );
         static::assertTrue(
             $structure::getColumn('role')
@@ -316,7 +308,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertEquals(
             '',
             $structure::getColumn('role')
-                ->getDefaultValueAsIs()
+                ->getDefaultValue()
         );
         static::assertTrue(
             $structure::getColumn('is_active')
@@ -325,7 +317,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertEquals(
             true,
             $structure::getColumn('is_active')
-                ->getDefaultValueAsIs()
+                ->getDefaultValue()
         );
         static::assertTrue(
             $structure::getColumn('timezone')
@@ -334,7 +326,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertEquals(
             'UTC',
             $structure::getColumn('timezone')
-                ->getDefaultValueAsIs()
+                ->getDefaultValue()
         );
         static::assertTrue(
             $structure::getColumn('not_changeable_column')
@@ -343,7 +335,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertEquals(
             'not changable',
             $structure::getColumn('not_changeable_column')
-                ->getDefaultValueAsIs()
+                ->getDefaultValue()
         );
         // types
         static::assertEquals(

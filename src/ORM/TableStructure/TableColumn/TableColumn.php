@@ -42,7 +42,6 @@ class TableColumn implements TableColumnInterface
     public const TYPE_DATE = 'date';
     public const TYPE_TIME = 'time';
     public const TYPE_TIMEZONE_OFFSET = 'timezone_offset';
-    public const TYPE_ENUM = 'enum';
     public const TYPE_IPV4_ADDRESS = 'ip';
     public const TYPE_FILE = 'file';
     public const TYPE_IMAGE = 'image';
@@ -65,15 +64,13 @@ class TableColumn implements TableColumnInterface
     public const VALUE_MUST_BE_TIMESTAMP_WITH_TZ = 'value_must_be_timestamp_with_tz';
     public const VALUE_MUST_BE_TIME = 'value_must_be_time';
     public const VALUE_MUST_BE_DATE = 'value_must_be_date';
-    public const VALUE_IS_NOT_ALLOWED = 'value_is_not_allowed';
-    public const ONE_OF_VALUES_IS_NOT_ALLOWED = 'one_of_values_is_not_allowed';
     public const VALUE_MUST_BE_STRING = 'value_must_be_string';
-    public const VALUE_MUST_BE_STRING_OR_NUMERIC = 'value_must_be_string_or_numeric';
     public const VALUE_MUST_BE_ARRAY = 'value_must_be_array';
     
     public const CASE_SENSITIVE = true;
     public const CASE_INSENSITIVE = false;
-    
+
+    // todo: refactor this to get validator through class container
     protected static array $defaultValidationErrorsMessages = [
         self::VALUE_CANNOT_BE_NULL => 'Null value is not allowed.',
         self::VALUE_MUST_BE_BOOLEAN => 'Value must be of a boolean data type.',
@@ -89,25 +86,23 @@ class TableColumn implements TableColumnInterface
         self::VALUE_MUST_BE_TIMESTAMP_WITH_TZ => 'Value must be a valid timestamp with time zone.',
         self::VALUE_MUST_BE_TIME => 'Value must be a valid time.',
         self::VALUE_MUST_BE_DATE => 'Value must be a valid date.',
-        self::VALUE_IS_NOT_ALLOWED => 'Value is not allowed: :value.',
-        self::ONE_OF_VALUES_IS_NOT_ALLOWED => 'One of values in the received array is not allowed.',
         self::VALUE_MUST_BE_STRING => 'Value must be a string.',
-        self::VALUE_MUST_BE_STRING_OR_NUMERIC => 'Value must be a string or a number.',
         self::VALUE_MUST_BE_ARRAY => 'Value must be an array.',
     ];
     
     protected static array $validationErrorsMessages = [];
+
+    protected ?string $name = null;
+    protected string $type;
     
     // params that can be set directly or calculated
     
     protected ?TableStructureInterface $tableStructure = null;
     /**
-     * @var RelationInterface[]|null
+     * @var RelationInterface[]
      */
-    protected ?array $relations = null;
-    protected ?string $name = null;
-    protected string $type;
-    
+    protected array $relations = [];
+
     protected bool $valueCanBeNull = true;
     protected bool $trimValue = false;
     protected bool $lowercaseValue = false;
@@ -117,8 +112,6 @@ class TableColumn implements TableColumnInterface
      * false - forbids null values;
      */
     protected ?bool $convertEmptyStringToNull = null;
-    
-    protected \Closure|array $allowedValues = [];
     
     /**
      * @var mixed|\Closure
@@ -199,11 +192,6 @@ class TableColumn implements TableColumnInterface
      */
     protected ?\Closure $valueValidator = null;
     /**
-     * Validates if column value is within $this->allowedValues (if any)
-     * By default: $defaultClosuresClass::valueIsAllowedValidator()
-     */
-    protected ?\Closure $valueIsAllowedValidator = null;
-    /**
      * Extends default value validator.
      * Useful for additional validation like min/max length, min/max value, regex, etc
      */
@@ -242,10 +230,6 @@ class TableColumn implements TableColumnInterface
     // calculated params (not allowed to be set directly)
     protected bool $isFile = false;
     protected bool $isImage = false;
-    /**
-     * null value means "needs detection"
-     */
-    protected ?bool $isForeignKey = null;
     /**
      * relation that stores values for this column
      */
@@ -304,10 +288,6 @@ class TableColumn implements TableColumnInterface
                     $class = $column->getClosuresClass();
                     return $class::valueValidator($value, $isFromDb, $isForCondition, $column);
                 },
-                'valueIsAllowedValidator' => function ($value, $isFromDb, $isForCondition, TableColumnInterface $column) {
-                    $class = $column->getClosuresClass();
-                    return $class::valueIsAllowedValidator($value, $isFromDb, $column);
-                },
                 'valueValidatorExtender' => function ($value, $isFromDb, $isForCondition, TableColumnInterface $column) {
                     $class = $column->getClosuresClass();
                     return $class::valueValidatorExtender($value, $isFromDb, $column);
@@ -355,9 +335,6 @@ class TableColumn implements TableColumnInterface
         if (!$this->valueValidator) {
             $this->setValueValidator($closures['valueValidator']);
         }
-        if (!$this->valueIsAllowedValidator) {
-            $this->setValueIsAllowedValidator($closures['valueIsAllowedValidator']);
-        }
         if (!$this->valueValidatorExtender) {
             $this->setValueValidatorExtender($closures['valueValidatorExtender']);
         }
@@ -376,17 +353,6 @@ class TableColumn implements TableColumnInterface
         if (!$this->valueFormatter) {
             $this->setValueFormatter($closures['valueFormatter']);
         }
-        return $this;
-    }
-    
-    public function getTableStructure(): TableStructureInterface
-    {
-        return $this->tableStructure;
-    }
-    
-    public function setTableStructure(TableStructureInterface $tableStructure): static
-    {
-        $this->tableStructure = $tableStructure;
         return $this;
     }
     
@@ -456,11 +422,6 @@ class TableColumn implements TableColumnInterface
         return $this->type;
     }
     
-    public function isEnum(): bool
-    {
-        return $this->getType() === static::TYPE_ENUM;
-    }
-    
     protected function setType(string $type): static
     {
         $this->type = mb_strtolower($type);
@@ -474,7 +435,7 @@ class TableColumn implements TableColumnInterface
         return $this;
     }
     
-    public function isValueCanBeNull(): bool
+    public function isNullableValues(): bool
     {
         return $this->valueCanBeNull;
     }
@@ -504,9 +465,9 @@ class TableColumn implements TableColumnInterface
     public function isValueRequiredToBeNotEmpty(): bool
     {
         return (
-            !$this->isValueCanBeNull()
+            !$this->isNullableValues()
             && (
-                $this->isEmptyStringMustBeConvertedToNull()
+                $this->shouldConvertEmptyStringToNull()
                 || !$this->hasDefaultValue()
                 || !empty($this->getValidDefaultValue(''))
             )
@@ -519,7 +480,7 @@ class TableColumn implements TableColumnInterface
         return $this;
     }
     
-    public function isValueTrimmingRequired(): bool
+    public function shouldTrimValues(): bool
     {
         return $this->trimValue;
     }
@@ -530,7 +491,7 @@ class TableColumn implements TableColumnInterface
         return $this;
     }
     
-    public function isValueLowercasingRequired(): bool
+    public function shouldLowercaseValues(): bool
     {
         return $this->lowercaseValue;
     }
@@ -540,19 +501,20 @@ class TableColumn implements TableColumnInterface
      * @return mixed - may be a \Closure: function() { return 'default value'; }
      * @throws \BadMethodCallException
      */
-    public function getDefaultValueAsIs(): mixed
+    public function getDefaultValue(): mixed
     {
         if (!$this->hasDefaultValue()) {
-            throw new \BadMethodCallException("Default value for column '{$this->getName()}' is not set");
+            throw new \BadMethodCallException(
+                "Default value for column '{$this->getName()}' is not set"
+            );
         }
         return $this->defaultValue;
     }
     
     /**
-     * Get validated default value
+     * {@inheritDoc}
      * @param mixed|null|\Closure $fallbackValue - value to be returned when default value was not configured
      * @return mixed - validated default value or $fallbackValue or return from $this->validDefaultValueGetter
-     * @throws \UnexpectedValueException
      */
     public function getValidDefaultValue(mixed $fallbackValue = null): mixed
     {
@@ -575,9 +537,10 @@ class TableColumn implements TableColumnInterface
             $errors = $this->validateValue($defaultValue, false, false);
             if (!($defaultValue instanceof DbExpr)) {
                 if (count($errors) > 0) {
-                    $tableStructureClass = get_class($this->getTableStructure());
+                    $class = static::class;
                     throw new \UnexpectedValueException(
-                        "{$excPrefix} for column {$tableStructureClass}->{$this->getName()} is not valid. Errors: " . implode(', ', $errors)
+                        "{$excPrefix} for column '{$this->getName()}' ({$class}) is not valid. Errors: "
+                        . implode(', ', $errors)
                     );
                 }
 
@@ -619,9 +582,9 @@ class TableColumn implements TableColumnInterface
         return $this;
     }
     
-    public function isEmptyStringMustBeConvertedToNull(): bool
+    public function shouldConvertEmptyStringToNull(): bool
     {
-        return $this->convertEmptyStringToNull ?? $this->isValueCanBeNull();
+        return $this->convertEmptyStringToNull ?? $this->isNullableValues();
     }
     
     public function convertsEmptyStringToNull(): static
@@ -636,35 +599,7 @@ class TableColumn implements TableColumnInterface
         return $this;
     }
     
-    /**
-     * @throws \UnexpectedValueException
-     */
-    public function getAllowedValues(): array
-    {
-        if ($this->allowedValues instanceof \Closure) {
-            $allowedValues = call_user_func($this->allowedValues);
-            if (!is_array($allowedValues) || empty($allowedValues)) {
-                throw new \UnexpectedValueException('Allowed values closure must return a not-empty array');
-            }
-            $this->allowedValues = $allowedValues;
-        }
-        return $this->allowedValues;
-    }
-    
-    /**
-     * @param array|\Closure $allowedValues - \Closure: function () { return [] }
-     * @throws \InvalidArgumentException
-     */
-    public function setAllowedValues(array|\Closure $allowedValues): static
-    {
-        if (!($allowedValues instanceof \Closure) && (!is_array($allowedValues) || empty($allowedValues))) {
-            throw new \InvalidArgumentException('$allowedValues argument cannot be empty');
-        }
-        $this->allowedValues = $allowedValues;
-        return $this;
-    }
-    
-    public function isItPrimaryKey(): bool
+    public function isPrimaryKey(): bool
     {
         return $this->isPrimaryKey;
     }
@@ -702,9 +637,15 @@ class TableColumn implements TableColumnInterface
     {
         $this->isValueMustBeUnique = true;
         $this->isUniqueContraintCaseSensitive = $caseSensitive;
-        $this->uniqueContraintAdditonalColumns = count($withinColumns) === 1 && isset($withinColumns[0]) && is_array($withinColumns[0])
-            ? $withinColumns[0]
-            : $withinColumns;
+        if (
+            count($withinColumns) === 1
+            && isset($withinColumns[0])
+            && is_array($withinColumns[0])
+        ) {
+            $this->uniqueContraintAdditonalColumns = $withinColumns[0];
+        } else {
+            $this->uniqueContraintAdditonalColumns = $withinColumns;
+        }
         return $this;
     }
     
@@ -717,7 +658,7 @@ class TableColumn implements TableColumnInterface
     /**
      * Is this column exists in DB?
      */
-    public function isItExistsInDb(): bool
+    public function isReal(): bool
     {
         return $this->existsInDb;
     }
@@ -734,7 +675,7 @@ class TableColumn implements TableColumnInterface
         return $this;
     }
     
-    public function isValueCanBeSetOrChanged(): bool
+    public function isValuesModificationAllowed(): bool
     {
         return $this->isValueCanBeSetOrChanged;
     }
@@ -748,9 +689,18 @@ class TableColumn implements TableColumnInterface
         return $this;
     }
     
-    public function isValueHeavy(): bool
+    public function isHeavyValues(): bool
     {
         return $this->isHeavy;
+    }
+
+    public function addRelation(RelationInterface $relation): static
+    {
+        $this->relations[$relation->getName()] = $relation;
+        if ($relation->getType() === RelationInterface::BELONGS_TO) {
+            $this->setForeignKeyRelation($relation);
+        }
+        return $this;
     }
     
     /**
@@ -758,16 +708,12 @@ class TableColumn implements TableColumnInterface
      */
     public function getRelations(): array
     {
-        if ($this->relations === null) {
-            $this->relations = $this->getTableStructure()
-                ->getColumnRelations($this->getName());
-        }
         return $this->relations;
     }
     
     public function hasRelation(string $relationName): bool
     {
-        return isset($this->getRelations()[$relationName]);
+        return isset($this->relations[$relationName]);
     }
     
     /**
@@ -783,45 +729,35 @@ class TableColumn implements TableColumnInterface
         return $this->relations[$relationName];
     }
     
+    public function isForeignKey(): bool
+    {
+        return $this->foreignKeyRelation !== null;
+    }
+
     public function getForeignKeyRelation(): ?RelationInterface
     {
-        if ($this->isForeignKey === null) {
-            $this->foreignKeyRelation = null;
-            $this->isForeignKey = false;
-            foreach ($this->getRelations() as $relation) {
-                if ($relation->getType() === RelationInterface::BELONGS_TO) {
-                    $this->itIsForeignKey($relation);
-                    // don't break here - let it validate if there are no multiple foreign keys here
-                }
-            }
-        }
         return $this->foreignKeyRelation;
-    }
-    
-    public function isItAForeignKey(): bool
-    {
-        return $this->getForeignKeyRelation() !== null; //< lazy load!
     }
     
     /**
      * @param RelationInterface $relation - relation that stores values for this column
      * @throws \InvalidArgumentException
      */
-    protected function itIsForeignKey(RelationInterface $relation): static
+    protected function setForeignKeyRelation(RelationInterface $relation): static
     {
         if ($this->foreignKeyRelation) {
             throw new \InvalidArgumentException(
-                'Conflict detected for column ' . $this->getName() . ': relation ' . $relation->getName() . ' pretends to be the source of '
+                'Conflict detected for column ' . $this->getName() . ': relation '
+                . $relation->getName() . ' pretends to be the source of '
                 . 'values for this foreign key but there is already another relation for this: '
                 . $this->foreignKeyRelation->getName()
             );
         }
         $this->foreignKeyRelation = $relation;
-        $this->isForeignKey = true;
         return $this;
     }
     
-    public function isItAFile(): bool
+    public function isFile(): bool
     {
         return $this->isFile;
     }
@@ -832,7 +768,7 @@ class TableColumn implements TableColumnInterface
         return $this;
     }
     
-    public function isItAnImage(): bool
+    public function isImage(): bool
     {
         return $this->isImage;
     }
@@ -843,7 +779,7 @@ class TableColumn implements TableColumnInterface
         return $this;
     }
     
-    public function isValuePrivate(): bool
+    public function isPrivateValues(): bool
     {
         return $this->isPrivate;
     }
@@ -950,28 +886,12 @@ class TableColumn implements TableColumnInterface
      * Notes:
      * - value is 'mixed' or a RecordValue instance. If value is 'mixed' - it should be preprocessed;
      * - if there are no errors - return empty array;
-     * - default validator uses $this->getValueIsAllowedValidator() and  $this->getValueValidatorExtender().
+     * - default validator uses $this->getValueValidatorExtender().
      *   Make sure to use that additional validators if needed.
      */
     public function setValueValidator(\Closure $validator): static
     {
         $this->valueValidator = $validator;
-        return $this;
-    }
-    
-    public function getValueIsAllowedValidator(): \Closure
-    {
-        return $this->valueIsAllowedValidator;
-    }
-    
-    /**
-     * @param \Closure $validator - function (mixed $value, bool $isFromDb, bool $isForCondition, TableColumnInterface $column): array { return ['validation error 1', ...]; }
-     * Note: ValueIsAllowedValidator closure is used in default ValueValidator closure.
-     * So if you override ValueValidator - you may need to call ValueIsAllowedValidator in your custom validator.
-     */
-    public function setValueIsAllowedValidator(\Closure $validator): static
-    {
-        $this->valueIsAllowedValidator = $validator;
         return $this;
     }
     
@@ -1151,7 +1071,7 @@ class TableColumn implements TableColumnInterface
         return call_user_func($this->valueAutoUpdater, $record);
     }
     
-    public function isAutoUpdatingValue(): bool
+    public function isAutoUpdatingValues(): bool
     {
         return !empty($this->valueAutoUpdater);
     }

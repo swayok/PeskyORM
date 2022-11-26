@@ -196,7 +196,7 @@ trait KeyValueTableWorkflow
             // modify value so that it is processed by custom column defined in table structure
             // if $recordData is empty it uses default value provided by $column prior to $default
             $column = $table->getTableStructure()->getColumn($key);
-            if (!$column->isItExistsInDb()) {
+            if (!$column->isReal()) {
                 $recordObj = $table->newRecord();
                 if (empty($recordData)) {
                     return $recordObj->hasValue($column, true) ? $recordObj->getValue($column, $format) : $defaultClosure();
@@ -263,7 +263,7 @@ trait KeyValueTableWorkflow
             $data[$table::getPkColumnName()] = 0;
             $record = $table->newRecord()->updateValues($data, true, false);
             foreach ($columns as $columnName => $column) {
-                if (!$column->isItExistsInDb()) {
+                if (!$column->isReal()) {
                     $isJson = in_array($column->getType(), [$column::TYPE_JSON, $column::TYPE_JSONB], true);
                     if (
                         (

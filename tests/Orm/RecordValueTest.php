@@ -7,7 +7,6 @@ namespace PeskyORM\Tests\Orm;
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\Record\RecordValue;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
@@ -34,13 +33,7 @@ class RecordValueTest extends BaseTestCase
         static::assertFalse($this->getObjectPropertyValue($valueObj, 'isValidated'));
         static::assertEquals([], $this->getObjectPropertyValue($valueObj, 'validationErrors'));
         static::assertEquals([], $this->getObjectPropertyValue($valueObj, 'customInfo'));
-        static::assertInstanceOf(TableColumnInterface::class, $this->getObjectPropertyValue($valueObj, 'column'));
-        /** @noinspection UnnecessaryAssertionInspection */
-        static::assertInstanceOf(TableColumnInterface::class, $valueObj->getColumn());
-        static::assertTrue(
-            $this->getObjectPropertyValue($valueObj, 'column')
-                ->isItPrimaryKey()
-        );
+        static::assertTrue($valueObj->getColumn()->isPrimaryKey());
         static::assertInstanceOf(TestingAdmin::class, $this->getObjectPropertyValue($valueObj, 'record'));
         static::assertInstanceOf(TestingAdmin::class, $valueObj->getRecord());
         
@@ -53,13 +46,7 @@ class RecordValueTest extends BaseTestCase
         static::assertFalse($this->getObjectPropertyValue($clone, 'isValidated'));
         static::assertEquals([], $this->getObjectPropertyValue($clone, 'validationErrors'));
         static::assertEquals([], $this->getObjectPropertyValue($clone, 'customInfo'));
-        static::assertInstanceOf(TableColumnInterface::class, $this->getObjectPropertyValue($clone, 'column'));
-        /** @noinspection UnnecessaryAssertionInspection */
-        static::assertInstanceOf(TableColumnInterface::class, $clone->getColumn());
-        static::assertTrue(
-            $this->getObjectPropertyValue($clone, 'column')
-                ->isItPrimaryKey()
-        );
+        static::assertTrue($clone->getColumn()->isPrimaryKey());
         static::assertInstanceOf(TestingAdmin::class, $this->getObjectPropertyValue($clone, 'record'));
         static::assertInstanceOf(TestingAdmin::class, $clone->getRecord());
         
@@ -73,7 +60,7 @@ class RecordValueTest extends BaseTestCase
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage("Argument #1 (\$key) must be of type ?string");
-        $valueObj = \PeskyORM\ORM\Record\RecordValue::create(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
+        $valueObj = RecordValue::create(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
         /** @noinspection PhpStrictTypeCheckingInspection */
         /** @noinspection PhpParamsInspection */
         $valueObj->getCustomInfo($this);
@@ -83,7 +70,7 @@ class RecordValueTest extends BaseTestCase
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage("Argument #1 (\$key) must be of type ?string");
-        $valueObj = \PeskyORM\ORM\Record\RecordValue::create(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
+        $valueObj = RecordValue::create(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
         /** @noinspection PhpStrictTypeCheckingInspection */
         /** @noinspection PhpParamsInspection */
         $valueObj->removeCustomInfo($this);
@@ -142,20 +129,12 @@ class RecordValueTest extends BaseTestCase
         static::assertTrue($valueObj->isItFromDb());
     }
     
-    public function testInvalidDefaultValue(): void
+    public function testInvalidDefaultValue1(): void
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Default value for column PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->language is not valid");
-        $col = $this->getClonedColumn('language')
-            ->setDefaultValue('invalid');
-        $valueObj = \PeskyORM\ORM\Record\RecordValue::create($col, TestingAdmin::_());
-        $valueObj->getDefaultValue();
-    }
-    
-    public function testInvalidDefaultValue2(): void
-    {
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Fallback value of the default value for column PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->parent_id is not valid. Errors: Null value is not allowed");
+        $this->expectExceptionMessageMatches(
+            "%Fallback value of the default value for column 'parent_id' \(.+?\) is not valid\. Errors: Null value is not allowed\.%"
+        );
         $valueObj = RecordValue::create(
             $this->getClonedColumn('parent_id')
                 ->disallowsNullValues(),
@@ -164,11 +143,13 @@ class RecordValueTest extends BaseTestCase
         $valueObj->getDefaultValue();
     }
     
-    public function testInvalidDefaultValue3(): void
+    public function testInvalidDefaultValue2(): void
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage("Default value for column PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->parent_id is not valid. Errors: Null value is not allowed");
-        $valueObj = \PeskyORM\ORM\Record\RecordValue::create(
+        $this->expectExceptionMessageMatches(
+            "%Default value for column 'parent_id' \(.+?\) is not valid\. Errors: Null value is not allowed\.%"
+        );
+        $valueObj = RecordValue::create(
             $this->getClonedColumn('parent_id')
                 ->disallowsNullValues()
                 ->setDefaultValue(null),
@@ -177,11 +158,11 @@ class RecordValueTest extends BaseTestCase
         $valueObj->getDefaultValue();
     }
     
-    public function testInvalidDefaultValue4(): void
+    public function testInvalidDefaultValue3(): void
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage(
-            "Default value received from validDefaultValueGetter Closure for column PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->parent_id is not valid. Errors: Null value is not allowed."
+        $this->expectExceptionMessageMatches(
+            "%Default value received from validDefaultValueGetter Closure for column 'parent_id' \(.+?\) is not valid\. Errors: Null value is not allowed\.%"
         );
         $valueObj = RecordValue::create(
             $this->getClonedColumn('parent_id')
@@ -194,11 +175,11 @@ class RecordValueTest extends BaseTestCase
         $valueObj->getDefaultValue();
     }
     
-    public function testInvalidDefaultValue5(): void
+    public function testInvalidDefaultValue4(): void
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage(
-            "Default value for column PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure->language is not valid. Errors: Value must be a string or a number."
+        $this->expectExceptionMessageMatches(
+            "%Default value for column 'language' \(.+?\) is not valid\. Errors: Value must be a string\.%"
         );
         $langCol = clone TestingAdminsTableStructure::getColumn('language');
         $langCol->setDefaultValue(new \stdClass());
@@ -256,7 +237,7 @@ class RecordValueTest extends BaseTestCase
             ->setValidValue('ru', 'ru');
         static::assertEquals('ru', $valueObj->getValue());
         
-        $idColValueObj = \PeskyORM\ORM\Record\RecordValue::create(TestingAdminsTableStructure::getPkColumn(), $record);
+        $idColValueObj = RecordValue::create(TestingAdminsTableStructure::getPkColumn(), $record);
         static::assertTrue($idColValueObj->isDefaultValueCanBeSet());
         $langColValueObj = RecordValue::create($langCol, $record);
         $record->reset()
@@ -282,7 +263,7 @@ class RecordValueTest extends BaseTestCase
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Old value is not set");
-        $valueObj = \PeskyORM\ORM\Record\RecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
+        $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
         $valueObj->getOldValue();
     }
     
@@ -290,7 +271,7 @@ class RecordValueTest extends BaseTestCase
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Old value is not set");
-        $valueObj = \PeskyORM\ORM\Record\RecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
+        $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
         $valueObj->isOldValueWasFromDb();
     }
     
@@ -340,7 +321,7 @@ class RecordValueTest extends BaseTestCase
     public function testRawValueAndValidValue(): void
     {
         $record = TestingAdmin::_();
-        $valueObj = \PeskyORM\ORM\Record\RecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), $record);
+        $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), $record);
         
         $valueObj
             ->setCustomInfo(['1'])

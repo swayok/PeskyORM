@@ -42,7 +42,7 @@ abstract class TableDescribersRegistry
         DbAdapterInterface $dbAdapter,
         string $tableName,
         ?string $schemaName = null
-    ): TableDescription {
+    ): TableDescriptionInterface {
         return static::getDescriber($dbAdapter)->getTableDescription($tableName, $schemaName);
     }
 }
