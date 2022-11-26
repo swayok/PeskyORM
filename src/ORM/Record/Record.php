@@ -512,7 +512,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     public function _updateValue(TableColumnInterface $column, mixed $value, bool $isFromDb): static
     {
         $valueContainer = $this->getValueContainerByColumnConfig($column);
-        if (!$isFromDb && !$column->isReadonly()) {
+        if (!$isFromDb && $column->isReadonly()) {
             throw new \BadMethodCallException(
                 "It is forbidden to modify or set value of a '{$valueContainer->getColumn()->getName()}' column"
             );
@@ -640,7 +640,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             throw new \BadMethodCallException('Record->resetValueToDefault() cannot be applied to primary key column');
         }
         $valueContainer = $this->getValueContainer($column);
-        if ($column->isReadonly() && !$column->isAutoUpdatingValues() && $column->isReal()) {
+        if (!$column->isReadonly() && !$column->isAutoUpdatingValues() && $column->isReal()) {
             $this->updateValue($column, $valueContainer->getDefaultValueOrNull(), false);
         }
         return $this;
@@ -1161,7 +1161,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     {
         $columnsNames = [];
         foreach (static::getColumns() as $columnName => $column) {
-            if ($column->isReadonly() && $column->isReal()) {
+            if ($column->isReal() && !$column->isReadonly()) {
                 $columnsNames[] = $columnName;
             }
         }
@@ -1359,11 +1359,38 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         // set pk value
         $data[static::getPrimaryKeyColumnName()] = $isUpdate
             ? $this->getPrimaryKeyValue()
-            : static::getTable()
-                ->getExpressionToSetDefaultValueForAColumn();
+            : static::getTable()->getExpressionToSetDefaultValueForAColumn();
         return $data;
     }
-    
+
+    public function getValuesForInsertMany(array $columnsToSave): array
+    {
+        $ret = [];
+        // collect values that are not from DB
+        $existsInDb = $this->existsInDb();
+        foreach ($columnsToSave as $columnName) {
+            $column = static::getColumn($columnName);
+            if (!$column->isReal()) {
+                continue;
+            }
+            $recordValue = $this->getValueContainer($column);
+            if (
+                $column->isAutoUpdatingValues()
+                && (!$existsInDb || !$recordValue->hasValue())
+            ) {
+                $value = $column->getAutoUpdateForAValue($this);
+            } elseif ($recordValue->hasValue()) {
+                $value = $recordValue->getValue();
+            } elseif ($recordValue->hasDefaultValue()) {
+                $value = $recordValue->getDefaultValue();
+            } else {
+                $value = static::getTable()->getExpressionToSetDefaultValueForAColumn();
+            }
+            $ret[$columnName] = $value;
+        }
+        return $ret;
+    }
+
     protected function runColumnSavingExtenders(
         array $columnsToSave,
         array $dataSavedToDb,
@@ -2048,7 +2075,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 && (
                     !$column->isReal()
                     || $column->isAutoUpdatingValues()
-                    || !$column->isReadonly()
+                    || $column->isReadonly()
                 )
             ) {
                 continue;

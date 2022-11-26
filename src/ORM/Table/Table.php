@@ -563,102 +563,30 @@ abstract class Table implements TableInterface
      * Also uses static::getExpressionToSetDefaultValueForAColumn() if TableColumn has no default value
      * @param array $rows
      * @param array $columnsToSave
-     * @param array|null $features - null: ['trim', 'lowercase', 'nullable', 'empty_string_to_null', 'auto']
      * @return array
      */
     protected static function prepareDataForInsertMany(
         array $rows,
-        array $columnsToSave = [],
-        ?array $features = null
+        array $columnsToSave = []
     ): array {
-        // todo: find a way to process values by ColumnInterface instead of using features
-        $allColumns = static::getStructure()->getColumns();
         if (empty($columnsToSave)) {
-            $columnsToSave = array_keys($allColumns);
-        }
-        if ($features === null) {
-            $features = ['trim', 'lowercase', 'nullable', 'empty_string_to_null', 'auto'];
-        }
-        $defaults = [];
-        /** @var TableColumnInterface[] $autoupdatableColumns */
-        $autoupdatableColumns = [];
-        $notNulls = [];
-        $emptyToNull = [];
-        $trims = [];
-        $lowercases = [];
-        $dbDefault = static::getExpressionToSetDefaultValueForAColumn();
-        foreach ($columnsToSave as $columnName) {
-            $column = $allColumns[$columnName];
-            if (
-                in_array('auto', $features, true)
-                && $column->isAutoUpdatingValues()
-            ) {
-                $autoupdatableColumns[$columnName] = $column;
-            } else {
-                if ($column->hasDefaultValue()) {
-                    $defaults[$columnName] = $column->getValidDefaultValue();
-                } else {
-                    $defaults[$columnName] = $dbDefault;
-                }
-                if (
-                    in_array('nullable', $features, true)
-                    && !$column->isNullableValues()
-                ) {
-                    $notNulls[] = $columnName;
-                }
-                if (
-                    in_array('empty_string_to_null', $features, true)
-                    && !$column->shouldConvertEmptyStringToNull()
-                ) {
-                    $emptyToNull[] = $columnName;
-                }
-                if (
-                    in_array('trim', $features, true)
-                    && $column->shouldTrimValues()
-                ) {
-                    $trims[] = $columnName;
-                }
-                if (
-                    in_array('lowercase', $features, true)
-                    && $column->shouldLowercaseValues()
-                ) {
-                    $lowercases[] = $columnName;
+            foreach (static::getStructure()->getColumns() as $column) {
+                if ($column->isReal() && !$column->isReadonly()) {
+                    $columnsToSave[] = $column->getName();
                 }
             }
         }
-        foreach ($rows as &$row) {
+        $record = static::getInstance()->newRecord();
+        $pkColumnName = static::getPkColumnName();
+        array_walk($rows, static function (&$row) use ($pkColumnName, $columnsToSave, $record) {
             if ($row instanceof RecordInterface) {
-                $row = $row->toArray($columnsToSave);
+                $row = $row->getValuesForInsertMany($columnsToSave);
+            } else {
+                $record->fromData($row, isset($row[$pkColumnName]));
+                $row = $record->getValuesForInsertMany($columnsToSave);
+                $record->reset();
             }
-            // trim before $emptyToNull
-            foreach ($trims as $columnName) {
-                if (isset($row[$columnName])) {
-                    $row[$columnName] = trim($row[$columnName]);
-                }
-            }
-            // $emptyToNull before $notNulls
-            foreach ($emptyToNull as $columnName) {
-                if (isset($row[$columnName]) && $row[$columnName] === '') {
-                    // convert empty string to null
-                    $row[$columnName] = null;
-                }
-            }
-            foreach ($notNulls as $columnName) {
-                if (!isset($row[$columnName])) {
-                    // remove column from array totally so that default value can replace it
-                    unset($row[$columnName]);
-                }
-            }
-            foreach ($lowercases as $columnName) {
-                if (isset($row[$columnName])) {
-                    $row[$columnName] = mb_strtolower($row[$columnName]);
-                }
-            }
-            $row = array_merge($defaults, $row);
-            foreach ($autoupdatableColumns as $columnName => $column) {
-                $row[$columnName] = $column->getAutoUpdateForAValue($row);
-            }
-        }
+        });
         return $rows;
     }
 

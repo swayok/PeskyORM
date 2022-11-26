@@ -206,7 +206,7 @@ interface RecordInterface
      *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      */
     public function save(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false): static;
-    
+
     /**
      * Save requested relations to DB
      * @param array $relationsToSave
@@ -217,7 +217,7 @@ interface RecordInterface
      *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      */
     public function saveRelations(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false): void;
-    
+
     /**
      * Delete current Record from DB
      * Note: this Record must exist in DB
@@ -225,7 +225,14 @@ interface RecordInterface
      * @param bool $deleteFiles - true: delete all attached files | false: do not delete attached files
      */
     public function delete(bool $resetAllValuesAfterDelete = true, bool $deleteFiles = true): static;
-    
+
+    /**
+     * Get normalized values for specified columns for insert query.
+     * Should be used in TableInterface::insertMany() to get processed values
+     * according to TableColumnInterface options.
+     */
+    public function getValuesForInsertMany(array $columnsToSave): array;
+
     /**
      * Get required values as array
      * @param array $columnsNames - empty: return all columns
