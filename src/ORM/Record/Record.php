@@ -1271,7 +1271,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             $this->cleanCacheAfterSave(!$isUpdate);
             $this->afterSave(!$isUpdate, $columnsToSave);
         } catch (\Throwable $exc) {
-            static::getTable()::rollBackTransactionIfExists();
+            static::getTable()::rollBackTransaction(true);
             throw $exc;
         }
     }
@@ -1314,10 +1314,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     // DO NOT RETURN FROM HERE! Transaction will hang
                 }
             } else {
-                $this->updateValues($table::insert($data, true), true);
+                $this->updateValues($table::insert($data, true, true), true);
             }
         } catch (\Throwable $exc) {
-            $table::rollBackTransactionIfExists();
+            $table::rollBackTransaction(true);
             throw $exc;
         }
         if (!$alreadyInTransaction) {
@@ -1363,10 +1363,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         return $data;
     }
 
-    public function getValuesForInsertMany(array $columnsToSave): array
+    public function getValuesForInsertQuery(array $columnsToSave): array
     {
         $ret = [];
-        // collect values that are not from DB
         $existsInDb = $this->existsInDb();
         foreach ($columnsToSave as $columnName) {
             $column = static::getColumn($columnName);
@@ -1598,7 +1597,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         try {
             $table::delete([static::getPrimaryKeyColumnName() => $this->getPrimaryKeyValue()]);
         } catch (\PDOException $exc) {
-            $table::rollBackTransactionIfExists();
+            $table::rollBackTransaction(true);
             throw $exc;
         }
         $this->afterDelete(); //< transaction may be closed there

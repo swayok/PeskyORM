@@ -15,9 +15,6 @@ class StaticPropertiesAndMethodsTest extends BaseTestCase
     {
         static::assertInstanceOf(TestingSettingsTable::class, TestingSettingsTable::getInstance());
         static::assertInstanceOf(TestingAdminsTable::class, TestingAdminsTable::getInstance());
-        
-        static::assertInstanceOf(TestingSettingsTable::class, TestingSettingsTable::i());
-        static::assertInstanceOf(TestingAdminsTable::class, TestingAdminsTable::i());
     }
     
 }

@@ -12,16 +12,15 @@ use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\RecordsCollection\RecordsSet;
 use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
-use PeskyORM\ORM\TableStructure\TableStructure;
 use PeskyORM\ORM\TableStructure\TableStructureInterface;
 use PeskyORM\Select\OrmSelect;
-use PeskyORM\Utils\QueryBuilderUtils;
+use PeskyORM\Utils\ArgumentValidators;
+use PeskyORM\Utils\PdoUtils;
 use PeskyORM\Utils\StringUtils;
 
 abstract class Table implements TableInterface
 {
-
-    /** @var Table[] */
+    /** @var TableInterface[] */
     private static array $instances = [];
     protected ?string $alias = null;
 
@@ -45,29 +44,11 @@ abstract class Table implements TableInterface
         self::$instances = [];
     }
 
-    /**
-     * Shortcut for static::getInstance()
-     * @return static
-     */
-    final public static function i(): TableInterface
-    {
-        return static::getInstance();
-    }
-
-    /**
-     * Get table name
-     * @return string
-     */
     public static function getName(): string
     {
-        return static::getStructure()
-            ->getTableName();
+        return static::getStructure()->getTableName();
     }
 
-    /**
-     * @param bool $writable - true: connection must have access to write data into DB
-     * @return DbAdapterInterface
-     */
     public static function getConnection(bool $writable = false): DbAdapterInterface
     {
         return DbConnectionsManager::getConnection(
@@ -75,9 +56,6 @@ abstract class Table implements TableInterface
         );
     }
 
-    /**
-     * @return TableStructure
-     */
     public static function getStructure(): TableStructureInterface
     {
         return static::getInstance()->getTableStructure();
@@ -107,17 +85,6 @@ abstract class Table implements TableInterface
     }
 
     /**
-     * @param string $relationName - alias for relation defined in TableStructure
-     * @return TableInterface
-     */
-    public static function getRelatedTable(string $relationName): TableInterface
-    {
-        return static::getStructure()
-            ->getRelation($relationName)
-            ->getForeignTable();
-    }
-
-    /**
      * Get OrmJoinConfig for required relation
      */
     public static function getJoinConfigForRelation(
@@ -132,17 +99,8 @@ abstract class Table implements TableInterface
     }
 
     /**
-     * @param string $relationName - alias for relation defined in TableStructure
-     * @return bool
-     */
-    public static function hasRelation(string $relationName): bool
-    {
-        return static::getStructure()->hasRelation($relationName);
-    }
-
-    /**
+     * {@inheritDoc}
      * @throws \BadMethodCallException
-     * @see \PeskyORM\Adapter\DbAdapterInterface::getExpressionToSetDefaultValueForAColumn()
      */
     public static function getExpressionToSetDefaultValueForAColumn(): DbExpr
     {
@@ -154,13 +112,7 @@ abstract class Table implements TableInterface
         return static::getConnection(true)->getExpressionToSetDefaultValueForAColumn();
     }
 
-    /**
-     * @param array|string $columns
-     * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
-     * @return OrmSelect
-     */
-    public static function makeSelect(
+    public static function makeQueryBuilder(
         array|string $columns,
         array $conditions = [],
         ?\Closure $configurator = null
@@ -180,7 +132,7 @@ abstract class Table implements TableInterface
         ?\Closure $configurator = null
     ): RecordsSet {
         return RecordsSet::createFromOrmSelect(
-            static::makeSelect($columns, $conditions, $configurator)
+            static::makeQueryBuilder($columns, $conditions, $configurator)
         );
     }
 
@@ -189,7 +141,7 @@ abstract class Table implements TableInterface
         array $conditions = [],
         ?\Closure $configurator = null
     ): array {
-        return static::makeSelect([], $conditions, $configurator)
+        return static::makeQueryBuilder([], $conditions, $configurator)
             ->fetchColumn($column);
     }
 
@@ -199,13 +151,13 @@ abstract class Table implements TableInterface
         array $conditions = [],
         ?\Closure $configurator = null
     ): array {
-        return static::makeSelect([], $conditions, $configurator)
+        return static::makeQueryBuilder([], $conditions, $configurator)
             ->fetchAssoc($keysColumn, $valuesColumn);
     }
 
     public static function selectOne(string|array $columns, array $conditions, ?\Closure $configurator = null): array
     {
-        return static::makeSelect($columns, $conditions, $configurator)
+        return static::makeQueryBuilder($columns, $conditions, $configurator)
             ->fetchOne();
     }
 
@@ -214,7 +166,7 @@ abstract class Table implements TableInterface
         array $conditions,
         ?\Closure $configurator = null
     ): RecordInterface {
-        return static::makeSelect($columns, $conditions, $configurator)
+        return static::makeQueryBuilder($columns, $conditions, $configurator)
             ->fetchOneAsDbRecord();
     }
 
@@ -223,7 +175,7 @@ abstract class Table implements TableInterface
         array $conditions = [],
         ?\Closure $configurator = null
     ): mixed {
-        return static::makeSelect([], $conditions, $configurator)
+        return static::makeQueryBuilder([], $conditions, $configurator)
             ->fetchValue($expression);
     }
 
@@ -260,76 +212,11 @@ abstract class Table implements TableInterface
         ?\Closure $configurator = null,
         bool $removeNotInnerJoins = false
     ): int {
-        return static::makeSelect(
-            [
-                static::getInstance()
-                    ->getTableStructure()
-                    ->getPkColumnName(),
-            ],
+        return static::makeQueryBuilder(
+            [static::getPkColumnName()],
             $conditions,
             $configurator
         )->fetchCount($removeNotInnerJoins);
-    }
-
-    public static function makeConditionsFromArray(array $conditions): DbExpr
-    {
-        $assembled = QueryBuilderUtils::assembleWhereConditionsFromArray(
-            static::getConnection(),
-            $conditions,
-            static function ($columnName) {
-                $columnInfo = static::analyzeColumnName($columnName);
-                $tableAlias = $columnInfo['join_name'] ?: static::getAlias();
-                $columnNameForDbExpr = '`' . $tableAlias . '`.';
-                if ($columnInfo['json_selector']) {
-                    $columnNameForDbExpr .= static::quoteDbEntityName($columnInfo['json_selector']);
-                } else {
-                    $columnNameForDbExpr .= '`' . $columnInfo['name'] . '`';
-                }
-                if ($columnInfo['type_cast']) {
-                    $columnNameForDbExpr = static::getConnection()
-                        ->addDataTypeCastToExpression($columnInfo['type_cast'], $columnNameForDbExpr);
-                }
-                return $columnNameForDbExpr;
-            },
-            'AND',
-            static function ($columnName, $rawValue) {
-                if ($rawValue instanceof DbExpr) {
-                    return $rawValue->get();
-                }
-                return $rawValue;
-            }
-        );
-        return DbExpr::create(trim($assembled), false);
-    }
-
-    public static function analyzeColumnName($columnName): array
-    {
-        if ($columnName instanceof DbExpr) {
-            $ret = [
-                'name' => $columnName,
-                'alias' => null,
-                'join_name' => null,
-                'type_cast' => null,
-            ];
-        } else {
-            $columnName = trim($columnName);
-            $ret = QueryBuilderUtils::splitColumnName($columnName);
-            if (!static::getConnection()
-                ->isValidDbEntityName($ret['json_selector'] ?: $ret['name'], true)) {
-                if ($ret['json_selector']) {
-                    throw new \InvalidArgumentException("Invalid json selector: [{$ret['json_selector']}]");
-                }
-
-                throw new \InvalidArgumentException("Invalid column name: [{$ret['name']}]");
-            }
-        }
-
-        // nullify join name if it same as current table alias
-        if ($ret['join_name'] === static::getAlias()) {
-            $ret['join_name'] = null;
-        }
-
-        return $ret;
     }
 
     public static function getLastQuery(bool $useWritableConnection): ?string
@@ -341,43 +228,27 @@ abstract class Table implements TableInterface
         }
     }
 
-    /**
-     * @see \PeskyORM\Adapter\DbAdapterInterface::begin()
-     */
     public static function beginTransaction(bool $readOnly = false, ?string $transactionType = null): void
     {
         static::getConnection(true)->begin($readOnly, $transactionType);
     }
 
-    /**
-     * @see \PeskyORM\Adapter\DbAdapterInterface::inTransaction()
-     */
     public static function inTransaction(): bool
     {
         return static::getConnection(true)->inTransaction();
     }
 
-    /**
-     * @see \PeskyORM\Adapter\DbAdapterInterface::commit()
-     */
     public static function commitTransaction(): void
     {
         static::getConnection(true)->commit();
     }
 
-    /**
-     * @see \PeskyORM\Adapter\DbAdapterInterface::rollBack()
-     */
-    public static function rollBackTransaction(): void
+    public static function rollBackTransaction(bool $onlyIfExists = false): void
     {
-        static::getConnection(true)->rollBack();
-    }
-
-    public static function rollBackTransactionIfExists(): void
-    {
-        if (static::inTransaction()) {
-            static::rollBackTransaction();
+        if ($onlyIfExists && !static::inTransaction()) {
+            return;
         }
+        static::getConnection(true)->rollBack();
     }
 
     /**
@@ -404,27 +275,29 @@ abstract class Table implements TableInterface
         return static::getConnection(true)->quoteDbExpr($value);
     }
 
-    /**
-     * @see \PeskyORM\Adapter\DbAdapterInterface::query()
-     */
-    public static function query(string|DbExpr $query, ?string $fetchData = null): mixed
-    {
+    public static function query(
+        string|DbExpr $query,
+        string $fetchData = PdoUtils::FETCH_STATEMENT
+    ): mixed {
         return static::getConnection(true)->query($query, $fetchData);
     }
 
-    /**
-     * @see \PeskyORM\Adapter\DbAdapterInterface::exec()
-     */
     public static function exec(string|DbExpr $query): int
     {
         return static::getConnection(true)->exec($query);
     }
 
-    /**
-     * @see \PeskyORM\Adapter\DbAdapterInterface::insert()
-     */
-    public static function insert(array $data, array|bool $returning = false): ?array
-    {
+    public static function insert(
+        array $data,
+        array|bool $returning = false,
+        bool $valuesAreProcessed = true
+    ): ?array {
+        if (!$valuesAreProcessed) {
+            $data = static::getInstance()
+                ->newRecord()
+                ->fromData($data, isset($data[static::getPkColumnName()]))
+                ->getValuesForInsertQuery(array_keys($data));
+        }
         return static::getConnection(true)
             ->insert(
                 static::getNameWithSchema(),
@@ -435,24 +308,25 @@ abstract class Table implements TableInterface
             );
     }
 
-    /**
-     * Insert new record or update existing one if duplicate value found for $columnName
-     * @param array $data
-     * @param string $columnName - column to detect duplicates (only 1 column allowed!)
-     * @return \PeskyORM\ORM\Record\RecordInterface
-     */
-    public static function upsert(array $data, string $columnName): RecordInterface
+    public static function upsert(array $data, array $uniqueColumnNames): RecordInterface
     {
-        if (!isset($data[$columnName])) {
-            throw new \InvalidArgumentException("There is no value for column {$columnName} in passed \$data");
-        }
+        ArgumentValidators::assertNotEmpty('$uniqueColumnNames', $uniqueColumnNames);
         $record = static::getInstance()->newRecord();
-        $record->updateValue($columnName, $data[$columnName], false); //< to validate and normalize value
-        $record->fetch([
-            $columnName => $record->getValue($columnName),
-        ]);
+        $conditions = [];
+        foreach ($uniqueColumnNames as $index => $columnName) {
+            ArgumentValidators::assertNotEmptyString("\$uniqueColumnNames[{$index}]", $columnName, true);
+            ArgumentValidators::assertArrayKeyValueIsNotEmpty(
+                "\$data[{$columnName}]",
+                $data[$columnName] ?? null
+            );
+            // validate and normalize value
+            $uniqueValue = $record->updateValue($columnName, $data[$columnName], false)
+                ->getValue($columnName);
+            $conditions[$columnName] = $uniqueValue;
+        }
+
+        $record->fetch($conditions);
         if ($record->existsInDb()) {
-            unset($data[$columnName]);
             $record->begin()
                 ->updateValues($data, false)
                 ->commit();
@@ -464,23 +338,15 @@ abstract class Table implements TableInterface
         return $record;
     }
 
-    /**
-     * @see \PeskyORM\Adapter\DbAdapterInterface::insertMany()
-     */
-    public static function insertMany(array $columns, array $rows, array|bool $returning = false): ?array
-    {
-        return static::insertManyAsIs(
-            $columns,
-            static::prepareDataForInsertMany($rows),
-            $returning
-        );
-    }
-
-    /**
-     * @see \PeskyORM\Adapter\DbAdapterInterface::insertMany()
-     */
-    public static function insertManyAsIs(array $columns, array $rows, $returning = false): ?array
-    {
+    public static function insertMany(
+        array $columns,
+        array $rows,
+        array|bool $returning = false,
+        bool $valuesAreProcessed = true
+    ): ?array {
+        if (!$valuesAreProcessed) {
+            $rows = static::prepareDataForInsertMany($rows, $columns);
+        }
         return static::getConnection(true)
             ->insertMany(
                 static::getNameWithSchema(),
@@ -492,9 +358,6 @@ abstract class Table implements TableInterface
             );
     }
 
-    /**
-     * @see \PeskyORM\Adapter\DbAdapterInterface::update()
-     */
     public static function update(array $data, array $conditions, array|bool $returning = false): array|int
     {
         return static::getConnection(true)
@@ -508,9 +371,6 @@ abstract class Table implements TableInterface
             );
     }
 
-    /**
-     * @see \PeskyORM\Adapter\DbAdapterInterface::delete()
-     */
     public static function delete(array $conditions = [], array|bool $returning = false): array|int
     {
         return static::getConnection(true)
@@ -557,13 +417,9 @@ abstract class Table implements TableInterface
     }
 
     /**
-     * Alter $rows to honor special columns features like isAutoUpdatingValue and fill missing values with defaults.
-     * TableColumn features supported: isAutoUpdatingValue, isValueCanBeNull, convertsEmptyStringToNull,
-     *      isValueTrimmingRequired, isValueLowercasingRequired, getValidDefaultValue.
-     * Also uses static::getExpressionToSetDefaultValueForAColumn() if TableColumn has no default value
-     * @param array $rows
-     * @param array $columnsToSave
-     * @return array
+     * Alter $rows to honor special columns features like values trimming, autoupdates, etc.
+     * Missing values will be filled with defaults.
+     * @see RecordInterface::getValuesForInsertQuery()
      */
     protected static function prepareDataForInsertMany(
         array $rows,
@@ -578,12 +434,13 @@ abstract class Table implements TableInterface
         }
         $record = static::getInstance()->newRecord();
         $pkColumnName = static::getPkColumnName();
-        array_walk($rows, static function (&$row) use ($pkColumnName, $columnsToSave, $record) {
+        array_walk($rows, static function (&$row, $index) use ($pkColumnName, $columnsToSave, $record) {
             if ($row instanceof RecordInterface) {
-                $row = $row->getValuesForInsertMany($columnsToSave);
+                $row = $row->getValuesForInsertQuery($columnsToSave);
             } else {
+                ArgumentValidators::assertArrayKeyValueIsArray("\$rows[{$index}]", $row);
                 $record->fromData($row, isset($row[$pkColumnName]));
-                $row = $record->getValuesForInsertMany($columnsToSave);
+                $row = $record->getValuesForInsertQuery($columnsToSave);
                 $record->reset();
             }
         });

@@ -228,10 +228,13 @@ interface RecordInterface
 
     /**
      * Get normalized values for specified columns for insert query.
-     * Should be used in TableInterface::insertMany() to get processed values
-     * according to TableColumnInterface options.
+     * Should be used in TableInterface::insertMany() and TableInterface::insert()
+     * to get processed values according to TableColumnInterface options.
+     * @see TableInterface::insertMany()
+     * @see TableInterface::insert()
+     * @see TableColumnInterface
      */
-    public function getValuesForInsertMany(array $columnsToSave): array;
+    public function getValuesForInsertQuery(array $columnsToSave): array;
 
     /**
      * Get required values as array

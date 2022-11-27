@@ -87,7 +87,7 @@ class RecordTest extends BaseTestCase
                 'timezone' => 'Europe/Moscow',
             ],
         ];
-        TestingAdminsTable::insertMany(array_keys($data[0]), $data);
+        TestingAdminsTable::getConnection(true)->insertMany('admins', array_keys($data[0]), $data);
     }
     
     private function getDataForSingleAdmin($withId = false): array

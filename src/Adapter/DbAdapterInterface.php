@@ -63,9 +63,9 @@ interface DbAdapterInterface
 
     /**
      * @param string|DbExpr $query
-     * @param string $fetchData - how to fetch data
+     * @param string $fetchData - what to return: one of \PeskyORM\Core\Utils::FETCH_*
      * @return mixed
-     *@see \PeskyORM\Utils\PdoUtils::getDataFromStatement()
+     * @see \PeskyORM\Utils\PdoUtils::getDataFromStatement()
      */
     public function query(
         string|DbExpr $query,
@@ -122,7 +122,7 @@ interface DbAdapterInterface
     /**
      * @param string $table - it is allowed to be like: 'table AS Alias'
      * @param array $columns - list of columns to insert data to
-     * @param array $data - key-value array where key = table column and value = value of associated column
+     * @param array $rows - key-value array where key = table column and value = value of associated column
      * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
      *          Data type is one of \PDO::PARAM_* contants or null.
      *          If value is null or column not present - value quoter will autodetect column type (see quoteValue())
@@ -136,7 +136,7 @@ interface DbAdapterInterface
     public function insertMany(
         string $table,
         array $columns,
-        array $data,
+        array $rows,
         array $dataTypes = [],
         bool|array $returning = false,
         string $pkName = 'id'
@@ -144,7 +144,7 @@ interface DbAdapterInterface
 
     /**
      * @param string $table - it is allowed to be like: 'table AS Alias'
-     * @param array $data - key-value array where key = table column and value = value of associated column
+     * @param array $data - ['column_name' => value, ...]
      * @param array|DbExpr $conditions - WHERE conditions
      * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
      *          Data type is one of \PDO::PARAM_* contants or null.
@@ -190,7 +190,10 @@ interface DbAdapterInterface
      * @param bool $readOnly - true: transaction only reads data
      * @param null|string $transactionType - type of transaction
      */
-    public function begin(bool $readOnly = false, ?string $transactionType = null): static;
+    public function begin(
+        bool $readOnly = false,
+        ?string $transactionType = null
+    ): static;
 
     public function commit(): static;
 

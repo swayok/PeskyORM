@@ -12,28 +12,29 @@ use PeskyORM\ORM\RecordsCollection\RecordsSet;
 use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\ORM\TableStructure\TableStructureInterface;
+use PeskyORM\Select\SelectQueryBuilderInterface;
+use PeskyORM\Utils\PdoUtils;
 
 interface TableInterface
 {
-    
+    public static function getInstance(): TableInterface;
+
     /**
-     * Table Name
+     * Get table name
      */
     public static function getName(): string;
-    
+
     /**
      * Table alias.
      * For example: if table name is 'user_actions' the alias might be 'UserActions'
      */
     public static function getAlias(): string;
-    
+
     /**
      * @param bool $writable - true: connection must have access to write data into DB
      */
     public static function getConnection(bool $writable = false): DbAdapterInterface;
-    
-    public static function getInstance(): TableInterface;
-    
+
     /**
      * Table schema description
      */
@@ -60,31 +61,37 @@ interface TableInterface
     public static function getPkColumnName(): string;
     
     public function newRecord(): RecordInterface;
-    
+
+    /**
+     * @see DbAdapterInterface::getLastQuery()
+     */
     public static function getLastQuery(bool $useWritableConnection): ?string;
-    
+
+    /**
+     * @see DbAdapterInterface::exec()
+     */
     public static function exec(string|DbExpr $query): int;
     
     /**
-     * @param string|DbExpr $query
-     * @param string|null $fetchData - null: return PDOStatement; string: one of \PeskyORM\Core\Utils::FETCH_*
+     * @see DbAdapterInterface::query()
      */
-    public static function query(string|DbExpr $query, ?string $fetchData = null): mixed;
+    public static function query(
+        string|DbExpr $query,
+        string $fetchData = PdoUtils::FETCH_STATEMENT
+    ): mixed;
     
     /**
-     * @param string|array $columns
-     * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
-     * @return array|RecordsSet
-     * @throws \InvalidArgumentException
+     * @see self::makeQueryBuilder()
      */
-    public static function select(string|array $columns = '*', array $conditions = [], ?\Closure $configurator = null): RecordsSet|array;
+    public static function select(
+        string|array $columns = '*',
+        array $conditions = [],
+        ?\Closure $configurator = null
+    ): RecordsSet|array;
     
     /**
-     * Selects only 1 column
-     * @param string|DbExpr $column
-     * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
+     * Selects values from specified column
+     * @see self::makeQueryBuilder()
      */
     public static function selectColumn(
         string|DbExpr $column,
@@ -94,12 +101,7 @@ interface TableInterface
     
     /**
      * Select associative array
-     * Note: does not support columns from foreign models
-     * @param string|DbExpr|null $keysColumn
-     * @param string|DbExpr|null $valuesColumn
-     * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect.
-     *      function (SelectQueryBuilderInterface $select): void {}
+     * @see self::makeQueryBuilder()
      */
     public static function selectAssoc(
         string|DbExpr|null $keysColumn,
@@ -110,10 +112,7 @@ interface TableInterface
     
     /**
      * Get 1 record from DB as array
-     * @param string|array $columns
-     * @param array $conditions
-     * @param \Closure|null $configurator - \Closure to configure OrmSelect.
-     *      function (SelectQueryBuilderInterface $select): void {}
+     * @see self::makeQueryBuilder()
      */
     public static function selectOne(
         string|array $columns,
@@ -122,12 +121,9 @@ interface TableInterface
     ): array;
     
     /**
-     * Get 1 record from DB as Record
-     * @param string|array $columns
-     * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect.
-     *      function (SelectQueryBuilderInterface $select): void {}
-     * @return RecordInterface
+     * Get 1 row from DB and convert its data to RecordInterface
+     * @see self::makeQueryBuilder()
+     * @see self::newRecord()
      */
     public static function selectOneAsDbRecord(
         string|array $columns,
@@ -137,11 +133,8 @@ interface TableInterface
     
     /**
      * Make a query that returns only 1 value defined by $expression
-     * @param DbExpr $expression - example: DbExpr::create('COUNT(*)'), DbExpr::create('SUM(`field`)')
-     * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect.
-     *      function (SelectQueryBuilderInterface $select): void {}
-     * @throws \InvalidArgumentException
+     * Examples for $expression: DbExpr::create('COUNT(*)'), DbExpr::create('SUM(`field`)')
+     * @see self::makeQueryBuilder()
      */
     public static function selectValue(
         DbExpr $expression,
@@ -151,11 +144,7 @@ interface TableInterface
 
     /**
      * Make a query that returns only 1 value for specific column
-     * @param string|TableColumnInterface $column
-     * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect.
-     *      function (SelectQueryBuilderInterface $select): void {}
-     * @throws \InvalidArgumentException
+     * @see self::makeQueryBuilder()
      */
     public static function selectColumnValue(
         string|TableColumnInterface $column,
@@ -164,86 +153,114 @@ interface TableInterface
     ): mixed;
     
     /**
-     * Does table contain any record matching provided condition
-     * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect.
-     *      function (SelectQueryBuilderInterface $select): void {}
-     * @return bool
-     * @throws \InvalidArgumentException
+     * Check if table contains a record matching provided conditions
+     * @see self::makeQueryBuilder()
      */
     public static function hasMatchingRecord(array $conditions, ?\Closure $configurator = null): bool;
     
     /**
-     * @param array $conditions
-     * @param \Closure|null $configurator - closure to configure OrmSelect. function (OrmSelect $select): void {}
-     * @param bool $removeNotInnerJoins - true: LEFT JOINs will be removed to count query (speedup for most cases)
-     * @return int
+     * Using $removeNotInnerJoins = true will ignore all not INNER JOINs to build a count query.
+     * This will improve query performance. But in some cases it may cause errors,
+     * so you need to decide if your query will perform normally without LEFT/RIGHT/FULL JOINs.
+     * When $conditions depend on Relations/Joins - use $removeNotInnerJoins = false to be safe
+     * @see self::makeQueryBuilder()
      */
-    public static function count(array $conditions = [], ?\Closure $configurator = null, bool $removeNotInnerJoins = false): int;
-    
-    public static function beginTransaction(bool $readOnly = false, ?string $transactionType = null): void;
-    
+    public static function count(
+        array $conditions = [],
+        ?\Closure $configurator = null,
+        bool $removeNotInnerJoins = false
+    ): int;
+
+    /**
+     * @param array|string $columns - columns to select
+     * @param array $conditions - Where conditions and options
+     * @param \Closure|null $configurator - closure to configure Select instance:
+     *      function (SelectQueryBuilderInterface $select): void {}
+     * @return SelectQueryBuilderInterface
+     * @see SelectQueryBuilderInterface::fromConfigsArray()
+     * @see SelectQueryBuilderInterface::columns()
+     * @see SelectQueryBuilderInterface::where()
+     */
+    public static function makeQueryBuilder(
+        array|string $columns,
+        array $conditions = [],
+        ?\Closure $configurator = null
+    ): SelectQueryBuilderInterface;
+
+    /**
+     * @see DbAdapterInterface::begin()
+     */
+    public static function beginTransaction(
+        bool $readOnly = false,
+        ?string $transactionType = null
+    ): void;
+
+    /**
+     * @see DbAdapterInterface::inTransaction()
+     */
     public static function inTransaction(): bool;
-    
+
+    /**
+     * @see DbAdapterInterface::commit()
+     */
     public static function commitTransaction(): void;
-    
-    public static function rollBackTransaction(): void;
-    
+
     /**
-     * @param array $data
-     * @param array|bool $returning - return some data back after $data inserted to $table
-     *          - true: return values for all columns of inserted table row
-     *          - false: do not return anything
-     *          - array: list of columns to return values for
-     * @return array|null - array returned only if $returning is not empty
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
+     * @see DbAdapterInterface::rollBack()
      */
-    public static function insert(array $data, array|bool $returning = false): ?array;
+    public static function rollBackTransaction(bool $onlyIfExists = false): void;
     
     /**
-     * @param array $columns - list of column names to insert data for
-     * @param array $rows - data to insert
-     * @param array|bool $returning - return some data back after $data inserted to $table
-     *          - true: return values for all columns of inserted table row
-     *          - false: do not return anything
-     *          - array: list of columns to return values for
-     * @return array|null - array returned only if $returning is not empty
-     * @throws \InvalidArgumentException
-     * @throws \PDOException
+     * @param bool $valuesAreProcessed - should values be processed via
+     *      - true: values are ready to be inserted;
+     *      - false - values must be processed according to TableColumnInterface options
+     * @see RecordInterface::getValuesForInsertQuery()
+     * @see DbAdapterInterface::insert()
      */
-    public static function insertMany(array $columns, array $rows, array|bool $returning = false): ?array;
+    public static function insert(
+        array $data,
+        array|bool $returning = false,
+        bool $valuesAreProcessed = true
+    ): ?array;
     
     /**
-     * @param array $data - key-value array where key = table column and value = value of associated column
-     * @param array $conditions - WHERE conditions
-     * @param array|bool $returning - return some data back after $data inserted to $table
-     *          - true: return values for all columns of inserted table row
-     *          - false: do not return anything
-     *          - array: list of columns to return values for
-     * @return array|int - information about update execution
-     *          - int: number of modified rows (when $returning === false)
-     *          - array: modified records (when $returning !== false)
-     * @throws \PDOException
+     * @param bool $valuesAreProcessed - should values be processed via
+     *      - true: values are ready to be inserted;
+     *      - false - values must be processed according to TableColumnInterface options
+     * @see RecordInterface::getValuesForInsertQuery()
+     * @see DbAdapterInterface::insertMany()
+     */
+    public static function insertMany(
+        array $columns,
+        array $rows,
+        array|bool $returning = false,
+        bool $valuesAreProcessed = true
+    ): ?array;
+
+    /**
+     * Insert new record or update existing one if duplicate value found for $columnName
+     * @param array $data - must contain values for all columns in $uniqueColumnNames
+     * @param array $uniqueColumnNames - list of columns used to detect if $data already exists in table
+     * @return RecordInterface
      * @throws \InvalidArgumentException
+     * @see self::newRecord()
+     */
+    public static function upsert(array $data, array $uniqueColumnNames): RecordInterface;
+    
+    /**
+     * @see DbAdapterInterface::update()
      */
     public static function update(array $data, array $conditions, array|bool $returning = false): array|int;
     
     /**
-     * @param array $conditions - WHERE conditions
-     * @param array|bool $returning - return some data back after $data inserted to $table
-     *          - true: return values for all columns of inserted table row
-     *          - false: do not return anything
-     *          - array: list of columns to return values for
-     * @return array|int - int: number of deleted records | array: returned only if $returning is not empty
-     * @throws \PDOException
-     * @throws \InvalidArgumentException
+     * @see DbAdapterInterface::delete()
      */
     public static function delete(array $conditions = [], array|bool $returning = false): array|int;
     
     /**
      * Return DbExpr to set default value for a column.
      * Example for MySQL and PostgreSQL: DbExpr::create('DEFAULT')
+     * @see DbAdapterInterface::getExpressionToSetDefaultValueForAColumn()
      */
     public static function getExpressionToSetDefaultValueForAColumn(): DbExpr;
     

@@ -41,9 +41,9 @@ abstract class DbAdapterMethodArgumentUtils
     /**
      * @throws \InvalidArgumentException
      */
-    public static function guardDataArg(array $data): void
+    public static function guardDataArg(string $argName, array $data): void
     {
-        ArgumentValidators::assertNotEmpty('$data', $data);
+        ArgumentValidators::assertNotEmpty($argName, $data);
     }
 
     /**

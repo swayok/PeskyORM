@@ -257,7 +257,7 @@ abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTrac
         string $pkName = 'id'
     ): ?array {
         $this->guardTableNameArg($table);
-        $this->guardDataArg($data);
+        $this->guardDataArg('$data', $data);
         $this->guardReturningArg($returning);
         if ($returning) {
             $this->guardPkNameArg($pkName);
@@ -292,14 +292,14 @@ abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTrac
     public function insertMany(
         string $table,
         array $columns,
-        array $data,
+        array $rows,
         array $dataTypes = [],
         bool|array $returning = false,
         string $pkName = 'id'
     ): ?array {
         $this->guardTableNameArg($table);
         $this->guardColumnsListArg($columns, false);
-        $this->guardDataArg($data);
+        $this->guardDataArg('$rows', $rows);
         $this->guardReturningArg($returning);
         if ($returning) {
             $this->guardPkNameArg($pkName);
@@ -308,8 +308,8 @@ abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTrac
         $query = 'INSERT INTO ' . $this->assembleTableNameAndAlias($table)
             . ' ' . $this->buildColumnsList($columns) . ' VALUES ';
 
-        foreach ($data as $key => $record) {
-            ArgumentValidators::assertArrayKeyValueIsArray("\$data[{$key}]", $record);
+        foreach ($rows as $key => $record) {
+            ArgumentValidators::assertArrayKeyValueIsArray("\$rows[{$key}]", $record);
             $query .= $this->buildValuesList($columns, $record, $dataTypes, $key) . ',';
         }
 
@@ -317,7 +317,7 @@ abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTrac
 
         if (empty($returning)) {
             $rowsAffected = $this->exec($query);
-            $this->assertInsertedRowsCount($table, count($data), $rowsAffected);
+            $this->assertInsertedRowsCount($table, count($rows), $rowsAffected);
             return null;
         }
 
@@ -325,7 +325,7 @@ abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTrac
             $query,
             $table,
             $columns,
-            $data,
+            $rows,
             $dataTypes,
             $returning === true ? [] : $returning,
             $pkName
@@ -341,7 +341,7 @@ abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTrac
         string $pkName = 'id'
     ): array|int {
         $this->guardTableNameArg($table);
-        $this->guardDataArg($data);
+        $this->guardDataArg('$data', $data);
         $this->guardConditionsArg($conditions);
         if ($returning) {
             $this->guardPkNameArg($pkName);
@@ -459,9 +459,9 @@ abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTrac
     /**
      * @throws \InvalidArgumentException
      */
-    protected function guardDataArg(array $data): void
+    protected function guardDataArg(string $argName, array $data): void
     {
-        DbAdapterMethodArgumentUtils::guardDataArg($data);
+        DbAdapterMethodArgumentUtils::guardDataArg($argName, $data);
     }
 
     /**

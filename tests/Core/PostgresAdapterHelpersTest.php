@@ -80,7 +80,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('$data argument value cannot be empty');
-        DbAdapterMethodArgumentUtils::guardDataArg([]);
+        DbAdapterMethodArgumentUtils::guardDataArg('$data', []);
     }
     
     public function testInvalidData2(): void
@@ -88,7 +88,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Argument #1 ($data) must be of type array, string given');
         /** @noinspection PhpParamsInspection */
-        DbAdapterMethodArgumentUtils::guardDataArg('test');
+        DbAdapterMethodArgumentUtils::guardDataArg('$data', 'test');
     }
     
     public function testInvalidColumns(): void
@@ -260,7 +260,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testValidArgs(): void
     {
         DbAdapterMethodArgumentUtils::guardTableNameArg(static::getValidAdapter(), 'table');
-        DbAdapterMethodArgumentUtils::guardDataArg(['key' => 'value']);
+        DbAdapterMethodArgumentUtils::guardDataArg('$data', ['key' => 'value']);
         DbAdapterMethodArgumentUtils::guardColumnsListArg(['key1', DbExpr::create('key2')]);
         DbAdapterMethodArgumentUtils::guardConditionsArg(['column !=' => 'value']);
         DbAdapterMethodArgumentUtils::guardConditionsArg(DbExpr::create('test'));
