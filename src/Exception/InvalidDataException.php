@@ -4,15 +4,20 @@ declare(strict_types=1);
 
 namespace PeskyORM\Exception;
 
+use PeskyORM\ORM\Record\RecordInterface;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use Swayok\Utils\Set;
 
 class InvalidDataException extends OrmException
 {
-    
     protected array $errors = [];
-    
-    public function __construct(array $errors)
-    {
+
+    public function __construct(
+        array $errors,
+        protected RecordInterface $record,
+        protected ?TableColumnInterface $column = null,
+        protected mixed $invalidValue = null
+    ) {
         $message = [];
         foreach ($errors as $key => $error) {
             $errorMsg = '';
@@ -28,7 +33,7 @@ class InvalidDataException extends OrmException
         parent::__construct(static::MESSAGE_INVALID_DATA . implode('; ', $message), static::CODE_INVALID_DATA);
         $this->errors = $errors;
     }
-    
+
     /**
      * @param bool $flatten - false: return errors as is; true: flatten errors (2 levels only)
      * Example: $errors = ['images' => ['source.0' => ['error message1', 'error message 2'], 'source.1' => ['err']];
@@ -52,5 +57,19 @@ class InvalidDataException extends OrmException
         }
         return $flatErrors;
     }
-    
+
+    public function getRecord(): RecordInterface
+    {
+        return $this->record;
+    }
+
+    public function getColumn(): ?TableColumnInterface
+    {
+        return $this->column;
+    }
+
+    public function getInvalidValue(): mixed
+    {
+        return $this->invalidValue;
+    }
 }

@@ -18,9 +18,8 @@ use PeskyORM\ORM\TableStructure\TableStructureInterface;
 use PeskyORM\Select\OrmSelect;
 use PeskyORM\Utils\StringUtils;
 
-abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Serializable
+abstract class Record implements RecordInterface, \Iterator, \Serializable
 {
-    
     /**
      * @var TableColumnInterface[]
      */
@@ -257,7 +256,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     }
     
     /**
-     * @return \PeskyORM\ORM\TableStructure\RelationInterface[]
+     * @return RelationInterface[]
      */
     public static function getRelations(): array
     {
@@ -266,7 +265,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     
     /**
      * @param string $name
-     * @return \PeskyORM\ORM\TableStructure\RelationInterface
+     * @return RelationInterface
      * @throws \InvalidArgumentException
      */
     public static function getRelation(string $name): RelationInterface
@@ -417,15 +416,17 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     protected function _getValue(TableColumnInterface $column, ?string $format): mixed
     {
         if ($this->isReadOnly()) {
+            // todo: add tests for read only mode
             $value = $this->readOnlyData[$column->getName()] ?? null;
             if (empty($format) && $column->isReal()) {
                 return $value;
             }
 
+            $valueContainer = $this->createValueObject($column);
+            $valueContainer->setValue($value, $value, true);
             return call_user_func(
                 $column->getValueGetter(),
-                $this->createValueObject($column)
-                    ->setRawValue($value, $value, true),
+                $valueContainer,
                 $format
             );
         }
@@ -440,24 +441,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     public function getValueIfExistsInDb(string $columnName, mixed $default = null): mixed
     {
         return ($this->existsInDb() && isset($this->$columnName)) ? $this->$columnName : $default;
-    }
-    
-    public function getOldValue(TableColumnInterface|string $column): mixed
-    {
-        return $this->getValueContainer($column)
-            ->getOldValue();
-    }
-    
-    public function hasOldValue(TableColumnInterface|string $column): bool
-    {
-        return $this->getValueContainer($column)
-            ->hasOldValue();
-    }
-    
-    public function isOldValueWasFromDb(TableColumnInterface|string $column): bool
-    {
-        return $this->getValueContainer($column)
-            ->isOldValueWasFromDb();
     }
     
     public function hasValue(string|TableColumnInterface $column, bool $trueIfThereIsDefaultValue = false): bool
@@ -551,9 +534,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             $this->valuesBackup[$colName] = clone $valueContainer;
         }
         call_user_func($column->getValueSetter(), $value, $isFromDb, $valueContainer, $this->isTrustDbDataMode());
-        if (!$valueContainer->isValid()) {
-            throw new InvalidDataException([$colName => $valueContainer->getValidationErrors()]);
-        }
         if ($isFromDb) {
             $this->unsetNotRelatedRecordsForColumnAfterValueUpdate($column);
         }
@@ -618,11 +598,11 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $oldValueObject = $this->getValueContainer($column);
         if ($oldValueObject->hasValue()) {
             $column = $oldValueObject->getColumn();
-            $colName = $column->getName();
-            $this->values[$colName] = $this->createValueObject($column);
-            $this->values[$colName]->setOldValue($oldValueObject);
+            $this->values[$column->getName()] = $this->createValueObject($column);
             if ($column->isPrimaryKey()) {
-                $this->onPrimaryKeyChangeForRecordReceivedFromDb($oldValueObject->getValue());
+                $this->onPrimaryKeyChangeForRecordReceivedFromDb(
+                    $oldValueObject->getValue()
+                );
             }
         }
         return $this;
@@ -935,7 +915,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         }
         $columnsFromRelations = [];
         $hasManyRelations = [];
-        /** @var \PeskyORM\ORM\TableStructure\RelationInterface[] $relations */
+        /** @var RelationInterface[] $relations */
         $relations = [];
         foreach ($readRelatedRecords as $relationName => $realtionColumns) {
             if (is_int($relationName)) {
@@ -1252,13 +1232,9 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         $data = $this->collectValuesForSave($columnsToSave, $isUpdate);
         $updatedData = [];
         if (!empty($data)) {
-            $errors = $this->validateNewData($data, $columnsToSave, $isUpdate);
-            if (!empty($errors)) {
-                throw new InvalidDataException($errors);
-            }
             $errors = $this->beforeSave($columnsToSave, $data, $isUpdate);
             if (!empty($errors)) {
-                throw new InvalidDataException($errors);
+                throw new InvalidDataException($errors, $this);
             }
             
             if (!$this->performDataSave($isUpdate, $data)) {
@@ -1414,7 +1390,10 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                     $updatesReceivedFromDb
                 );
             }
-            $valueObject->pullDataForSavingExtender();
+            // to be sure no data remains after extender is used
+            $valueObject->pullPayload(
+                RecordValueContainerInterface::PAYLOAD_KEY_FOR_VALUE_SAVING_EXTENDER
+            );
         }
         if (empty($this->valuesBackup)) {
             // needed to prevent infinite recursion caused by calling this method from saveToDb() method
@@ -1462,32 +1441,6 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             $column = static::getColumn($column);
         }
         return $column->validateValue($value, $isFromDb, false);
-    }
-    
-    /**
-     * Validate data
-     */
-    protected function validateNewData(array $data, array $columnsNames = [], bool $isUpdate = false): array
-    {
-        if (!count($columnsNames)) {
-            $columnsNames = array_keys($data);
-        }
-        $errors = [];
-        foreach ($columnsNames as $columnName) {
-            $column = static::getColumn($columnName);
-            if (array_key_exists($columnName, $data)) {
-                $value = $data[$columnName];
-            } elseif ($isUpdate) {
-                continue;
-            } else {
-                $value = null;
-            }
-            $columnErrors = $column->validateValue($value, false, false);
-            if (!empty($columnErrors)) {
-                $errors[$columnName] = $columnErrors;
-            }
-        }
-        return $errors;
     }
     
     /**
@@ -1895,7 +1848,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
                 $isset = true;
                 if (array_key_exists($column->getName(), $this->readOnlyData)) {
                     $value = $this->readOnlyData[$column->getName()];
-                    $valueContainer->setRawValue($value, $value, true);
+                    $valueContainer->setValue($value, $value, true);
                     return $this->modifyValueForToArray(
                         $columnName,
                         $columnAlias,
@@ -2349,7 +2302,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             'values' => [],
         ];
         foreach ($this->values as $name => $value) {
-            $data['values'][$name] = $value->serialize();
+            $data['values'][$name] = $value->toArray();
         }
         return json_encode($data, JSON_THROW_ON_ERROR);
     }
@@ -2370,7 +2323,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         }
         foreach ($data['values'] as $name => $value) {
             $this->getValueContainerByColumnName($name)
-                ->unserialize($value);
+                ->fromArray($value);
         }
     }
     

@@ -10,7 +10,7 @@ use PeskyORM\ORM\Table\TableInterface;
 use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 
-interface RecordInterface
+interface RecordInterface extends \ArrayAccess
 {
     
     /**

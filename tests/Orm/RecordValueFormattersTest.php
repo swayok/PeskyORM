@@ -24,22 +24,22 @@ class RecordValueFormattersTest extends BaseTestCase
 
     public function testTimestampFormatters(): void
     {
-        $formatters = \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getTimestampFormatters();
+        $formatters = ColumnValueFormatters::getTimestampFormatters();
         static::assertIsArray($formatters);
 
         static::assertSame(
             [
-                \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::FORMAT_DATE => \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getTimestampToDateFormatter(),
-                \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::FORMAT_TIME => ColumnValueFormatters::getTimestampToTimeFormatter(),
-                ColumnValueFormatters::FORMAT_UNIX_TS => \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getDateTimeToUnixTsFormatter(),
-                ColumnValueFormatters::FORMAT_CARBON => \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getTimestampToCarbonFormatter(),
+                ColumnValueFormatters::FORMAT_DATE => ColumnValueFormatters::getTimestampToDateFormatter(),
+                ColumnValueFormatters::FORMAT_TIME => ColumnValueFormatters::getTimestampToTimeFormatter(),
+                ColumnValueFormatters::FORMAT_UNIX_TS => ColumnValueFormatters::getDateTimeToUnixTsFormatter(),
+                ColumnValueFormatters::FORMAT_CARBON => ColumnValueFormatters::getTimestampToCarbonFormatter(),
             ],
             $formatters
         );
         static::assertInstanceOf(\Closure::class, $formatters[ColumnValueFormatters::FORMAT_DATE]);
         static::assertInstanceOf(\Closure::class, $formatters[ColumnValueFormatters::FORMAT_TIME]);
         static::assertInstanceOf(\Closure::class, $formatters[ColumnValueFormatters::FORMAT_UNIX_TS]);
-        static::assertInstanceOf(\Closure::class, $formatters[\PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::FORMAT_CARBON]);
+        static::assertInstanceOf(\Closure::class, $formatters[ColumnValueFormatters::FORMAT_CARBON]);
 
         $ts = time();
         $dateTime = date('Y-m-d H:i:s', $ts);
@@ -63,12 +63,12 @@ class RecordValueFormattersTest extends BaseTestCase
         static::assertEquals($time, ColumnValueFormatters::getTimestampToTimeFormatter()($valueContainerAlt));
         // unix_ts formatter
         static::assertEquals($ts, $record->created_at_as_unix_ts);
-        static::assertEquals($ts, \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getDateTimeToUnixTsFormatter()($valueContainerAlt));
+        static::assertEquals($ts, ColumnValueFormatters::getDateTimeToUnixTsFormatter()($valueContainerAlt));
         // carbon formatter
         static::assertInstanceOf(CarbonImmutable::class, $record->created_at_as_carbon);
         static::assertEquals($dateTime, $record->created_at_as_carbon->format('Y-m-d H:i:s'));
         static::assertInstanceOf(CarbonImmutable::class, ColumnValueFormatters::getTimestampToCarbonFormatter()($valueContainerAlt));
-        static::assertEquals($dateTime, \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getTimestampToCarbonFormatter()($valueContainerAlt)->format('Y-m-d H:i:s'));
+        static::assertEquals($dateTime, ColumnValueFormatters::getTimestampToCarbonFormatter()($valueContainerAlt)->format('Y-m-d H:i:s'));
 
         // test value changing and formatted values cache cleanup
         $updatedDate = '2022-01-01';
@@ -81,7 +81,6 @@ class RecordValueFormattersTest extends BaseTestCase
         static::assertEquals($updatedTime, $record->created_at_as_time);
         static::assertEquals(strtotime($updatedDateTime), $record->created_at_as_unix_ts);
         static::assertEquals($updatedDateTime, $record->created_at_as_carbon->format('Y-m-d H:i:s'));
-        static::assertEquals($dateTime, $valueContainer->getOldValue());
     }
 
     public function testUnixTimestampFormatters(): void
@@ -91,16 +90,16 @@ class RecordValueFormattersTest extends BaseTestCase
         static::assertSame(
             [
                 ColumnValueFormatters::FORMAT_DATE_TIME => ColumnValueFormatters::getUnixTimestampToDateTimeFormatter(),
-                ColumnValueFormatters::FORMAT_DATE => \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getTimestampToDateFormatter(),
+                ColumnValueFormatters::FORMAT_DATE => ColumnValueFormatters::getTimestampToDateFormatter(),
                 ColumnValueFormatters::FORMAT_TIME => ColumnValueFormatters::getTimestampToTimeFormatter(),
-                \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::FORMAT_CARBON => \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getTimestampToCarbonFormatter(),
+                ColumnValueFormatters::FORMAT_CARBON => ColumnValueFormatters::getTimestampToCarbonFormatter(),
             ],
             $formatters
         );
         static::assertInstanceOf(\Closure::class, $formatters[ColumnValueFormatters::FORMAT_DATE_TIME]);
-        static::assertInstanceOf(\Closure::class, $formatters[\PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::FORMAT_DATE]);
+        static::assertInstanceOf(\Closure::class, $formatters[ColumnValueFormatters::FORMAT_DATE]);
         static::assertInstanceOf(\Closure::class, $formatters[ColumnValueFormatters::FORMAT_TIME]);
-        static::assertInstanceOf(\Closure::class, $formatters[\PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::FORMAT_CARBON]);
+        static::assertInstanceOf(\Closure::class, $formatters[ColumnValueFormatters::FORMAT_CARBON]);
 
         $ts = time();
         $record = TestingFormatter::fromArray(['created_at_unix' => $ts]);
@@ -116,11 +115,11 @@ class RecordValueFormattersTest extends BaseTestCase
         // data-time formatter
         $dateTime = date('Y-m-d H:i:s', $ts);
         static::assertEquals($dateTime, $record->created_at_unix_as_date_time);
-        static::assertEquals($dateTime, \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getUnixTimestampToDateTimeFormatter()($valueContainerAlt));
+        static::assertEquals($dateTime, ColumnValueFormatters::getUnixTimestampToDateTimeFormatter()($valueContainerAlt));
         // date formatter
         $date = date('Y-m-d', $ts);
         static::assertEquals($date, $record->created_at_unix_as_date);
-        static::assertEquals($date, \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getTimestampToDateFormatter()($valueContainerAlt));
+        static::assertEquals($date, ColumnValueFormatters::getTimestampToDateFormatter()($valueContainerAlt));
         // time formatter
         $time = date('H:i:s', $ts);
         static::assertEquals($time, $record->created_at_unix_as_time);
@@ -129,7 +128,7 @@ class RecordValueFormattersTest extends BaseTestCase
         static::assertInstanceOf(CarbonImmutable::class, $record->created_at_unix_as_carbon);
         static::assertEquals($dateTime, $record->created_at_unix_as_carbon->format('Y-m-d H:i:s'));
         static::assertInstanceOf(CarbonImmutable::class, ColumnValueFormatters::getTimestampToCarbonFormatter()($valueContainerAlt));
-        static::assertEquals($dateTime, \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getTimestampToCarbonFormatter()($valueContainerAlt)->format('Y-m-d H:i:s'));
+        static::assertEquals($dateTime, ColumnValueFormatters::getTimestampToCarbonFormatter()($valueContainerAlt)->format('Y-m-d H:i:s'));
 
         // test value changing and formatted values cache cleanup
         $updatedDate = '2022-01-01';
@@ -146,17 +145,17 @@ class RecordValueFormattersTest extends BaseTestCase
 
     public function testDateFormatters(): void
     {
-        $formatters = \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getDateFormatters();
+        $formatters = ColumnValueFormatters::getDateFormatters();
         static::assertIsArray($formatters);
 
         static::assertSame(
             [
-                \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::FORMAT_UNIX_TS => ColumnValueFormatters::getDateTimeToUnixTsFormatter(),
-                \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::FORMAT_CARBON => \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getDateToCarbonFormatter(),
+                ColumnValueFormatters::FORMAT_UNIX_TS => ColumnValueFormatters::getDateTimeToUnixTsFormatter(),
+                ColumnValueFormatters::FORMAT_CARBON => ColumnValueFormatters::getDateToCarbonFormatter(),
             ],
             $formatters
         );
-        static::assertInstanceOf(\Closure::class, $formatters[\PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::FORMAT_UNIX_TS]);
+        static::assertInstanceOf(\Closure::class, $formatters[ColumnValueFormatters::FORMAT_UNIX_TS]);
         static::assertInstanceOf(\Closure::class, $formatters[ColumnValueFormatters::FORMAT_CARBON]);
 
         $date = date('Y-m-d');
@@ -178,7 +177,7 @@ class RecordValueFormattersTest extends BaseTestCase
         // carbon formatter
         static::assertInstanceOf(CarbonImmutable::class, $record->creation_date_as_carbon);
         static::assertEquals($dateTime, $record->creation_date_as_carbon->format('Y-m-d H:i:s'));
-        static::assertInstanceOf(CarbonImmutable::class, \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getDateToCarbonFormatter()($valueContainerAlt));
+        static::assertInstanceOf(CarbonImmutable::class, ColumnValueFormatters::getDateToCarbonFormatter()($valueContainerAlt));
         static::assertEquals($dateTime, ColumnValueFormatters::getDateToCarbonFormatter()($valueContainerAlt)->format('Y-m-d H:i:s'));
     }
 
@@ -209,23 +208,23 @@ class RecordValueFormattersTest extends BaseTestCase
 
         // unix_ts formatter
         static::assertEquals($ts, $record->creation_time_as_unix_ts);
-        static::assertEquals($ts, \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getDateTimeToUnixTsFormatter()($valueContainerAlt));
+        static::assertEquals($ts, ColumnValueFormatters::getDateTimeToUnixTsFormatter()($valueContainerAlt));
     }
 
     public function testJsonFormatters1(): void
     {
-        $formatters = \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getJsonFormatters();
+        $formatters = ColumnValueFormatters::getJsonFormatters();
         static::assertIsArray($formatters);
 
         static::assertSame(
             [
-                \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::FORMAT_ARRAY => \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getJsonToArrayFormatter(),
+                ColumnValueFormatters::FORMAT_ARRAY => ColumnValueFormatters::getJsonToArrayFormatter(),
                 ColumnValueFormatters::FORMAT_OBJECT => ColumnValueFormatters::getJsonToObjectFormatter(),
             ],
             $formatters
         );
-        static::assertInstanceOf(\Closure::class, $formatters[\PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::FORMAT_ARRAY]);
-        static::assertInstanceOf(\Closure::class, $formatters[\PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::FORMAT_OBJECT]);
+        static::assertInstanceOf(\Closure::class, $formatters[ColumnValueFormatters::FORMAT_ARRAY]);
+        static::assertInstanceOf(\Closure::class, $formatters[ColumnValueFormatters::FORMAT_OBJECT]);
 
         $data = [
             'key1' => 1,
@@ -255,7 +254,7 @@ class RecordValueFormattersTest extends BaseTestCase
 
         // array formatter
         static::assertEquals($data, $record->json_data1_as_array);
-        static::assertEquals($data, \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getJsonToArrayFormatter()($valueContainerAlt));
+        static::assertEquals($data, ColumnValueFormatters::getJsonToArrayFormatter()($valueContainerAlt));
         // object formatter
         static::assertInstanceOf(\stdClass::class, $record->json_data1_as_object);
         $object = (object)$data;
@@ -276,18 +275,18 @@ class RecordValueFormattersTest extends BaseTestCase
 
     public function testJsonFormatters2(): void
     {
-        $formatters = \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getJsonFormatters();
+        $formatters = ColumnValueFormatters::getJsonFormatters();
         static::assertIsArray($formatters);
 
         static::assertSame(
             [
                 ColumnValueFormatters::FORMAT_ARRAY => ColumnValueFormatters::getJsonToArrayFormatter(),
-                ColumnValueFormatters::FORMAT_OBJECT => \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getJsonToObjectFormatter(),
+                ColumnValueFormatters::FORMAT_OBJECT => ColumnValueFormatters::getJsonToObjectFormatter(),
             ],
             $formatters
         );
         static::assertInstanceOf(\Closure::class, $formatters[ColumnValueFormatters::FORMAT_ARRAY]);
-        static::assertInstanceOf(\Closure::class, $formatters[\PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::FORMAT_OBJECT]);
+        static::assertInstanceOf(\Closure::class, $formatters[ColumnValueFormatters::FORMAT_OBJECT]);
 
         $data = [
             'key1' => 1,
@@ -317,7 +316,7 @@ class RecordValueFormattersTest extends BaseTestCase
 
         // array formatter
         static::assertEquals($data, $record->json_data2_as_array);
-        static::assertEquals($data, \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getJsonToArrayFormatter()($valueContainerAlt));
+        static::assertEquals($data, ColumnValueFormatters::getJsonToArrayFormatter()($valueContainerAlt));
         // object formatter
         static::assertInstanceOf(TestingFormatterJsonObject::class, $record->json_data2_as_object);
         $object = new TestingFormatterJsonObject();
@@ -326,7 +325,7 @@ class RecordValueFormattersTest extends BaseTestCase
         $object->key3 = $data['key3'];
         $object->other = array_diff_key($data, ['key1' => '', 'key2' => '', 'key3' => '']);
         static::assertEquals($object, $record->json_data2_as_object);
-        static::assertEquals($object, \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getJsonToObjectFormatter()($valueContainerAlt));
+        static::assertEquals($object, ColumnValueFormatters::getJsonToObjectFormatter()($valueContainerAlt));
 
         // test array as incoming value
         $record = TestingFormatter::fromArray(['json_data2' => $data]);
@@ -358,8 +357,7 @@ class RecordValueFormattersTest extends BaseTestCase
         );
         $record = TestingFormatter::newEmptyRecord();
         $valueContainer = $record->getValueContainer('created_at');
-        $valueContainer->setRawValue('invalid_date', 'invalid_date', false);
-        $valueContainer->setValidValue('invalid_date', 'invalid_date');
+        $valueContainer->setValue('invalid_date', 'invalid_date', false);
         $formatter = ColumnValueFormatters::getTimestampToDateFormatter();
         static::assertInstanceOf(\Closure::class, $formatter);
         $formatter($valueContainer);
@@ -373,9 +371,8 @@ class RecordValueFormattersTest extends BaseTestCase
         );
         $record = TestingFormatter::newEmptyRecord();
         $valueContainer = $record->getValueContainer('creation_date');
-        $valueContainer->setRawValue('invalid_date', 'invalid_date', false);
-        $valueContainer->setValidValue('invalid_date', 'invalid_date');
-        $formatter = \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getTimestampToDateFormatter();
+        $valueContainer->setValue('invalid_date', 'invalid_date', false);
+        $formatter = ColumnValueFormatters::getTimestampToDateFormatter();
         static::assertInstanceOf(\Closure::class, $formatter);
         $formatter($valueContainer);
     }
@@ -388,9 +385,8 @@ class RecordValueFormattersTest extends BaseTestCase
         );
         $record = TestingFormatter::newEmptyRecord();
         $valueContainer = $record->getValueContainer('creation_time');
-        $valueContainer->setRawValue('invalid_time', 'invalid_time', false);
-        $valueContainer->setValidValue('invalid_time', 'invalid_time');
-        $formatter = \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getTimestampToDateFormatter();
+        $valueContainer->setValue('invalid_time', 'invalid_time', false);
+        $formatter = ColumnValueFormatters::getTimestampToDateFormatter();
         static::assertInstanceOf(\Closure::class, $formatter);
         $formatter($valueContainer);
     }
@@ -403,8 +399,7 @@ class RecordValueFormattersTest extends BaseTestCase
         );
         $record = TestingFormatter::newEmptyRecord();
         $valueContainer = $record->getValueContainer('created_at_unix');
-        $valueContainer->setRawValue('invalid_ts', 'invalid_ts', false);
-        $valueContainer->setValidValue('invalid_ts', 'invalid_ts');
+        $valueContainer->setValue('invalid_ts', 'invalid_ts', false);
         $formatter = ColumnValueFormatters::getTimestampToDateFormatter();
         static::assertInstanceOf(\Closure::class, $formatter);
         $formatter($valueContainer);
@@ -418,9 +413,8 @@ class RecordValueFormattersTest extends BaseTestCase
         );
         $record = TestingFormatter::newEmptyRecord();
         $valueContainer = $record->getValueContainer('json_data1');
-        $valueContainer->setRawValue('invalid_json', 'invalid_json', false);
-        $valueContainer->setValidValue('invalid_json', 'invalid_json');
-        $formatter = \PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters::getTimestampToDateFormatter();
+        $valueContainer->setValue('invalid_json', 'invalid_json', false);
+        $formatter = ColumnValueFormatters::getTimestampToDateFormatter();
         static::assertInstanceOf(\Closure::class, $formatter);
         $formatter($valueContainer);
     }
@@ -433,8 +427,7 @@ class RecordValueFormattersTest extends BaseTestCase
         );
         $record = TestingFormatter::newEmptyRecord();
         $valueContainer = $record->getValueContainer('json_data2');
-        $valueContainer->setRawValue('invalid_json', 'invalid_json', false);
-        $valueContainer->setValidValue('invalid_json', 'invalid_json');
+        $valueContainer->setValue('invalid_json', 'invalid_json', false);
         $formatter = ColumnValueFormatters::getTimestampToDateFormatter();
         static::assertInstanceOf(\Closure::class, $formatter);
         $formatter($valueContainer);
@@ -504,6 +497,7 @@ class RecordValueFormattersTest extends BaseTestCase
                 return $value;
             });
         $record = TestingFormatter::newEmptyRecord();
+        $record->setJsonData1('{}');
         static::assertEquals(['test' => true], $record->getValue('json_data1_as_test'));
 
         $data = ['key1' => 'value1'];

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\ORM\TableStructure\TableColumn;
 
 use PeskyORM\DbExpr;
+use PeskyORM\Exception\InvalidDataException;
 use PeskyORM\ORM\Record\RecordValue;
 use PeskyORM\ORM\RecordsCollection\RecordsSet;
 use PeskyORM\Select\SelectQueryBuilderInterface;
@@ -25,8 +26,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         }
         if ($isFromDb && $trustDataReceivedFromDb) {
             $normalziedValue = ColumnValueProcessingHelpers::normalizeValueReceivedFromDb($newValue, $column->getType());
-            $valueContainer->setRawValue($newValue, $normalziedValue, true);
-            $valueContainer->setValidValue($normalziedValue, $newValue);
+            $valueContainer->setValue($newValue, $normalziedValue, true);
         } else {
             $preprocessedValue = call_user_func($column->getValuePreprocessor(), $newValue, $isFromDb, false, $column);
             if ($preprocessedValue === null && $column->hasDefaultValue()) {
@@ -45,19 +45,25 @@ class DefaultColumnClosures implements ColumnClosuresInterface
                     $valueContainer->setIsFromDb(true);
                 }
             } else {
-                $valueContainer->setRawValue($newValue, $preprocessedValue, $isFromDb);
+                $valueContainer->setValue($newValue, $preprocessedValue, $isFromDb);
+
                 $errors = $column->validateValue($valueContainer->getValue(), $isFromDb, false);
                 if (count($errors) > 0) {
-                    $valueContainer->setValidationErrors($errors);
-                } else {
-                    $normalziedValue = call_user_func(
-                        $column->getValueNormalizer(),
-                        $preprocessedValue,
-                        $isFromDb,
-                        $column
+                    throw new InvalidDataException(
+                        [$column->getName() => $errors],
+                        $valueContainer->getRecord(),
+                        $column,
+                        $newValue
                     );
-                    $valueContainer->setValidValue($normalziedValue, $newValue);
                 }
+
+                $normalziedValue = call_user_func(
+                    $column->getValueNormalizer(),
+                    $preprocessedValue,
+                    $isFromDb,
+                    $column
+                );
+                $valueContainer->setValue($newValue, $normalziedValue, $isFromDb);
             }
         }
         return $valueContainer;
@@ -112,7 +118,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
             $value,
             $isFromDb,
             $isForCondition,
-            $column::getValidationErrorsMessages()
+            $column->getValidationErrorsMessages()
         );
         if (count($errors) > 0) {
             return $errors;

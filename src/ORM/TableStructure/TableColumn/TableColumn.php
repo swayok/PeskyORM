@@ -8,6 +8,8 @@ use PeskyORM\DbExpr;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\Record\RecordValue;
 use PeskyORM\ORM\TableStructure\RelationInterface;
+use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesEn;
+use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\ValueToObjectConverter\ValueToObjectConverterInterface;
 use PeskyORM\ORM\TableStructure\TableStructureInterface;
 use PeskyORM\Utils\ArgumentValidators;
@@ -19,7 +21,7 @@ use PeskyORM\Utils\ArgumentValidators;
  * 2. $this->valueValidator closure (validation errors saved to RecordValue->setRawValue(...))
  * 2.1. $this->valueValidatorExtender closure (if DefaultColumnClosures::valueValidator() is used and value is still valid)
  * 3. (if value is valid) $this->valueNormalizer closure
- * Valid value saved to RecordValue->setValidValue(....)
+ * Valid value saved to RecordValue->setValue(...)
  *
  * Value getter workflow:
  * $this->valueGetter closure is called, and it will possibly call $this->valueFormatter closure
@@ -70,34 +72,12 @@ class TableColumn implements TableColumnInterface
     public const CASE_SENSITIVE = true;
     public const CASE_INSENSITIVE = false;
 
-    // todo: refactor this to get validator through class container
-    protected static array $defaultValidationErrorsMessages = [
-        self::VALUE_CANNOT_BE_NULL => 'Null value is not allowed.',
-        self::VALUE_MUST_BE_BOOLEAN => 'Value must be of a boolean data type.',
-        self::VALUE_MUST_BE_INTEGER => 'Value must be of an integer data type.',
-        self::VALUE_MUST_BE_FLOAT => 'Value must be of a numeric data type.',
-        self::VALUE_MUST_BE_IMAGE => 'Value must be an uploaded image info.',
-        self::VALUE_MUST_BE_FILE => 'Value must be an uploaded file info.',
-        self::VALUE_MUST_BE_JSON => 'Value must be a json-encoded string or array.',
-        self::VALUE_MUST_BE_IPV4_ADDRESS => 'Value must be an IPv4 address.',
-        self::VALUE_MUST_BE_EMAIL => 'Value must be an email.',
-        self::VALUE_MUST_BE_TIMEZONE_OFFSET => 'Value must be a valid timezone offset.',
-        self::VALUE_MUST_BE_TIMESTAMP => 'Value must be a valid timestamp.',
-        self::VALUE_MUST_BE_TIMESTAMP_WITH_TZ => 'Value must be a valid timestamp with time zone.',
-        self::VALUE_MUST_BE_TIME => 'Value must be a valid time.',
-        self::VALUE_MUST_BE_DATE => 'Value must be a valid date.',
-        self::VALUE_MUST_BE_STRING => 'Value must be a string.',
-        self::VALUE_MUST_BE_ARRAY => 'Value must be an array.',
-    ];
-    
-    protected static array $validationErrorsMessages = [];
-
     protected ?string $name = null;
     protected string $type;
+    protected ?TableStructureInterface $tableStructure = null;
     
     // params that can be set directly or calculated
     
-    protected ?TableStructureInterface $tableStructure = null;
     /**
      * @var RelationInterface[]
      */
@@ -246,6 +226,8 @@ class TableColumn implements TableColumnInterface
     public static array $imageFileTypes = [
         self::TYPE_IMAGE,
     ];
+
+    protected ColumnValueValidationMessagesInterface $validationErrorsMessages;
     
     public static function create(string $type, ?string $name = null): static
     {
@@ -259,6 +241,7 @@ class TableColumn implements TableColumnInterface
         }
         $this->setType($type);
         $this->setDefaultColumnClosures();
+        $this->validationErrorsMessages = new ColumnValueValidationMessagesEn();
     }
     
     /**
@@ -458,22 +441,6 @@ class TableColumn implements TableColumnInterface
         return $this;
     }
     
-    /**
-     * Computed value that indicates if value must be not empty
-     * todo: it is not used. remove?
-     */
-    public function isValueRequiredToBeNotEmpty(): bool
-    {
-        return (
-            !$this->isNullableValues()
-            && (
-                $this->shouldConvertEmptyStringToNull()
-                || !$this->hasDefaultValue()
-                || !empty($this->getValidDefaultValue(''))
-            )
-        );
-    }
-    
     public function trimsValue(): static
     {
         $this->trimValue = true;
@@ -496,40 +463,33 @@ class TableColumn implements TableColumnInterface
         return $this->lowercaseValue;
     }
     
-    /**
-     * Get default value set via $this->setDefaultValue()
-     * @return mixed - may be a \Closure: function() { return 'default value'; }
-     * @throws \BadMethodCallException
-     */
     public function getDefaultValue(): mixed
     {
         if (!$this->hasDefaultValue()) {
             throw new \BadMethodCallException(
-                "Default value for column '{$this->getName()}' is not set"
+                "Default value for column {$this->getColumnNameForException()} is not set."
             );
         }
         return $this->defaultValue;
     }
+
+    protected function getColumnNameForException(): string
+    {
+        if ($this->hasTableStructure()) {
+            return get_class($this->getTableStructure()) . '->' . $this->getName();
+        }
+        return static::class . "('{$this->getName()}')";
+    }
     
-    /**
-     * {@inheritDoc}
-     * @param mixed|null|\Closure $fallbackValue - value to be returned when default value was not configured
-     * @return mixed - validated default value or $fallbackValue or return from $this->validDefaultValueGetter
-     */
-    public function getValidDefaultValue(mixed $fallbackValue = null): mixed
+    public function getValidDefaultValue(): mixed
     {
         if ($this->validDefaultValue === self::VALID_DEFAULT_VALUE_UNDEFINED) {
-            $rememberValidDefaultValue = true;
             if ($this->validDefaultValueGetter) {
-                $defaultValue = call_user_func($this->validDefaultValueGetter, $fallbackValue, $this);
+                $defaultValue = call_user_func($this->validDefaultValueGetter, null, $this);
                 $excPrefix = 'Default value received from validDefaultValueGetter Closure';
-            } elseif ($this->hasDefaultValue()) {
-                $defaultValue = $this->defaultValue;
-                $excPrefix = 'Default value';
             } else {
-                $rememberValidDefaultValue = false;
-                $defaultValue = $fallbackValue;
-                $excPrefix = 'Fallback value of the default value';
+                $defaultValue = $this->getDefaultValue();
+                $excPrefix = 'Default value';
             }
             if ($defaultValue instanceof \Closure) {
                 $defaultValue = $defaultValue();
@@ -537,20 +497,15 @@ class TableColumn implements TableColumnInterface
             $errors = $this->validateValue($defaultValue, false, false);
             if (!($defaultValue instanceof DbExpr)) {
                 if (count($errors) > 0) {
-                    $class = static::class;
                     throw new \UnexpectedValueException(
-                        "{$excPrefix} for column '{$this->getName()}' ({$class}) is not valid. Errors: "
+                        "{$excPrefix} for column {$this->getColumnNameForException()} is not valid. Errors: "
                         . implode(', ', $errors)
                     );
                 }
 
                 $defaultValue = call_user_func($this->getValueNormalizer(), $defaultValue, false, $this);
             }
-            if ($rememberValidDefaultValue) {
-                $this->validDefaultValue = $defaultValue;
-            } else {
-                return $defaultValue;
-            }
+            $this->validDefaultValue = $defaultValue;
         }
         return $this->validDefaultValue;
     }
@@ -723,7 +678,7 @@ class TableColumn implements TableColumnInterface
     {
         if (!$this->hasRelation($relationName)) {
             throw new \InvalidArgumentException(
-                "TableColumn '{$this->getName()}' is not linked with '{$relationName}' relation"
+                "Column {$this->getColumnNameForException()} is not linked with '{$relationName}' relation"
             );
         }
         return $this->relations[$relationName];
@@ -747,9 +702,9 @@ class TableColumn implements TableColumnInterface
     {
         if ($this->foreignKeyRelation) {
             throw new \InvalidArgumentException(
-                'Conflict detected for column ' . $this->getName() . ': relation '
-                . $relation->getName() . ' pretends to be the source of '
-                . 'values for this foreign key but there is already another relation for this: '
+                'Conflict detected for column ' . $this->getColumnNameForException()
+                . ": relation {$relation->getName()} pretends to be the source of values"
+                . ' for this foreign key but there is already another relation for this: '
                 . $this->foreignKeyRelation->getName()
             );
         }
@@ -793,23 +748,9 @@ class TableColumn implements TableColumnInterface
         return $this;
     }
     
-    public static function getValidationErrorsMessages(): array
+    public function getValidationErrorsMessages(): ColumnValueValidationMessagesInterface
     {
-        return static::$validationErrorsMessages ?: static::$defaultValidationErrorsMessages;
-    }
-    
-    /**
-     * Provide custom validation errors messages.
-     * Default errors are listed in static::$defaultValidationErrorsLocalization
-     */
-    public static function setValidationErrorsMessages(array $validationErrorsMessages): void
-    {
-        if (!empty($validationErrorsMessages)) {
-            static::$validationErrorsMessages = array_merge(
-                static::$defaultValidationErrorsMessages,
-                $validationErrorsMessages
-            );
-        }
+        return $this->validationErrorsMessages;
     }
     
     public function getValueSetter(): \Closure
@@ -1118,5 +1059,21 @@ class TableColumn implements TableColumnInterface
             $ret[] = $name . '_as_' . $formatterName;
         }
         return $ret;
+    }
+
+    public function setTableStructure(TableStructureInterface $tableStructure): static
+    {
+        $this->tableStructure = $tableStructure;
+        return $this;
+    }
+
+    public function getTableStructure(): TableStructureInterface
+    {
+        return $this->tableStructure;
+    }
+
+    protected function hasTableStructure(): bool
+    {
+        return $this->tableStructure !== null;
     }
 }

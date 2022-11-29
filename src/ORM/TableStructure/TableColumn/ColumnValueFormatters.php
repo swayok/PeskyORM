@@ -265,7 +265,7 @@ abstract class ColumnValueFormatters
     public static function wrapGetterIntoFormatter(string $format, \Closure $getter): \Closure
     {
         return static function (RecordValue $valueContainer) use ($getter, $format) {
-            return $valueContainer->getCustomInfo('format:' . $format, $getter, true);
+            return $valueContainer->rememberPayload('format:' . $format, $getter);
         };
     }
 

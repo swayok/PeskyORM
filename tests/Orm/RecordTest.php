@@ -183,7 +183,6 @@ class RecordTest extends BaseTestCase
         static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
         /** @var RecordValue $valId2 */
         $valId2 = $this->callObjectMethod($rec, 'getValueContainer', 'id');
-        static::assertFalse($valId2->hasOldValue());
         $rec->updateValue('id', 2, true);
         /** @var RecordValue $valId3 */
         $valId3 = $this->callObjectMethod($rec, 'getValueContainer', 'id');
@@ -442,16 +441,13 @@ class RecordTest extends BaseTestCase
         /** @var RecordValue $val */
         $val = $this->callObjectMethod($rec, 'getValueContainer', 'id');
         static::assertTrue($val->isItFromDb());
-        static::assertFalse($val->hasOldValue());
         $rec->updateValue('id', 3, true);
         static::assertTrue($rec->hasValue('id'));
         static::assertEquals(3, $rec->getValue('id'));
         /** @var RecordValue $val */
         $val = $this->callObjectMethod($rec, 'getValueContainer', 'id');
         static::assertTrue($val->isItFromDb());
-        static::assertTrue($val->hasOldValue());
-        static::assertEquals(2, $val->getOldValue());
-        
+
         $rec->updateValue('id', 4, true)
             ->begin()
             ->updateValue('parent_id', 3, false);
@@ -482,9 +478,6 @@ class RecordTest extends BaseTestCase
         static::assertTrue($rec->hasPrimaryKeyValue());
         static::assertEquals(2, $rec->getValue('id'));
         static::assertTrue($rec->isValueFromDb('id'));
-        static::assertTrue($rec->hasOldValue('id'));
-        static::assertTrue($rec->isOldValueWasFromDb('id'));
-        static::assertEquals(1, $rec->getOldValue('id'));
         static::assertEquals(4, $rec->getValue('parent_id'));
         static::assertFalse($rec->isValueFromDb('parent_id'));
         static::assertEquals('test@test.cc', $rec->getValue('email'));
@@ -510,9 +503,6 @@ class RecordTest extends BaseTestCase
         static::assertEquals(4, $rec->getValue('parent_id'));
         $rec->unsetValue('parent_id');
         static::assertFalse($rec->hasValue('parent_id'));
-        static::assertTrue($rec->hasOldValue('parent_id'));
-        static::assertTrue($rec->isOldValueWasFromDb('parent_id'));
-        static::assertEquals(4, $rec->getOldValue('parent_id'));
         static::assertEquals('test@test.cc', $rec->getValue('email'));
     }
     
@@ -914,7 +904,7 @@ class RecordTest extends BaseTestCase
         $rec = TestingAdmin::fromArray($this->getDataForSingleAdmin(true), true);
         $recSerialized = serialize($rec);
         static::assertEquals(
-            'C:54:"PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin":4139:{{"props":{"existsInDb":true},"values":{"id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"login":{"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","rawValue":"2AE351AF-131D-6654-9DB2-79B8F273986C","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"parent_id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"created_at":{"value":"2015-05-14 02:12:05","rawValue":"2015-05-14 02:12:05","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"updated_at":{"value":"2015-06-10 19:30:24","rawValue":"2015-06-10 19:30:24","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"remember_token":{"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","rawValue":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_superadmin":{"value":true,"rawValue":true,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"language":{"value":"en","rawValue":"en","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"ip":{"value":"192.168.0.1","rawValue":"192.168.0.1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"role":{"value":"admin","rawValue":"admin","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_active":{"value":true,"rawValue":"1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"name":{"value":"Lionel Freeman","rawValue":"Lionel Freeman","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"email":{"value":"diam.at.pretium@idmollisnec.co.uk","rawValue":"diam.at.pretium@idmollisnec.co.uk","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"timezone":{"value":"Europe\/Moscow","rawValue":"Europe\/Moscow","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"big_data":{"value":"biiiig data","rawValue":"biiiig data","oldValue":null,"oldValueIsFromDb":false,"isFromDb":true,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null}}}}',
+            'C:54:"PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin":2129:{{"props":{"existsInDb":true},"values":{"id":{"value":1,"rawValue":1,"hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"login":{"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","rawValue":"2AE351AF-131D-6654-9DB2-79B8F273986C","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"parent_id":{"value":1,"rawValue":1,"hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"created_at":{"value":"2015-05-14 02:12:05","rawValue":"2015-05-14 02:12:05","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"updated_at":{"value":"2015-06-10 19:30:24","rawValue":"2015-06-10 19:30:24","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"remember_token":{"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","rawValue":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"is_superadmin":{"value":true,"rawValue":true,"hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"language":{"value":"en","rawValue":"en","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"ip":{"value":"192.168.0.1","rawValue":"192.168.0.1","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"role":{"value":"admin","rawValue":"admin","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"is_active":{"value":true,"rawValue":"1","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"name":{"value":"Lionel Freeman","rawValue":"Lionel Freeman","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"email":{"value":"diam.at.pretium@idmollisnec.co.uk","rawValue":"diam.at.pretium@idmollisnec.co.uk","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"timezone":{"value":"Europe\/Moscow","rawValue":"Europe\/Moscow","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"big_data":{"value":"biiiig data","rawValue":"biiiig data","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]}}}}',
             $recSerialized
         );
         /** @var TestingAdmin $recUnserialized */
@@ -929,7 +919,7 @@ class RecordTest extends BaseTestCase
         $rec->fromData($this->getDataForSingleAdmin(false), false);
         $recSerialized = serialize($rec);
         static::assertEquals(
-            'C:54:"PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin":3914:{{"props":{"existsInDb":null},"values":{"login":{"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","rawValue":"2AE351AF-131D-6654-9DB2-79B8F273986C","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"parent_id":{"value":1,"rawValue":1,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"created_at":{"value":"2015-05-14 02:12:05","rawValue":"2015-05-14 02:12:05","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"updated_at":{"value":"2015-06-10 19:30:24","rawValue":"2015-06-10 19:30:24","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"remember_token":{"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","rawValue":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_superadmin":{"value":true,"rawValue":true,"oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"language":{"value":"en","rawValue":"en","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"ip":{"value":"192.168.0.1","rawValue":"192.168.0.1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"role":{"value":"admin","rawValue":"admin","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"is_active":{"value":true,"rawValue":"1","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"name":{"value":"Lionel Freeman","rawValue":"Lionel Freeman","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"email":{"value":"diam.at.pretium@idmollisnec.co.uk","rawValue":"diam.at.pretium@idmollisnec.co.uk","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"timezone":{"value":"Europe\/Moscow","rawValue":"Europe\/Moscow","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null},"big_data":{"value":"biiiig data","rawValue":"biiiig data","oldValue":null,"oldValueIsFromDb":false,"isFromDb":false,"hasValue":true,"hasOldValue":false,"isValidated":true,"validationErrors":[],"isDefaultValueCanBeSet":null,"customInfo":[],"dataForSavingExtender":null}}}}',
+            'C:54:"PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin":2038:{{"props":{"existsInDb":null},"values":{"login":{"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","rawValue":"2AE351AF-131D-6654-9DB2-79B8F273986C","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"parent_id":{"value":1,"rawValue":1,"hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"created_at":{"value":"2015-05-14 02:12:05","rawValue":"2015-05-14 02:12:05","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"updated_at":{"value":"2015-06-10 19:30:24","rawValue":"2015-06-10 19:30:24","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"remember_token":{"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","rawValue":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"is_superadmin":{"value":true,"rawValue":true,"hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"language":{"value":"en","rawValue":"en","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"ip":{"value":"192.168.0.1","rawValue":"192.168.0.1","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"role":{"value":"admin","rawValue":"admin","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"is_active":{"value":true,"rawValue":"1","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"name":{"value":"Lionel Freeman","rawValue":"Lionel Freeman","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"email":{"value":"diam.at.pretium@idmollisnec.co.uk","rawValue":"diam.at.pretium@idmollisnec.co.uk","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"timezone":{"value":"Europe\/Moscow","rawValue":"Europe\/Moscow","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"big_data":{"value":"biiiig data","rawValue":"biiiig data","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]}}}}',
             $recSerialized
         );
         /** @var TestingAdmin $recUnserialized */
@@ -1719,11 +1709,7 @@ class RecordTest extends BaseTestCase
             $expectedData,
             $rec->collectValuesForSave($columnsToSave, true)
         );
-        static::assertEquals(
-            [],
-            $rec->validateNewData($expectedData, $columnsToSave, true)
-        );
-        
+
         $rec->reset()
             ->updateValue('id', $originalData['id'], true);
         $rec->updateValues(array_diff_key($updates, ['updated_at' => '']));
@@ -1732,11 +1718,7 @@ class RecordTest extends BaseTestCase
             $expectedData,
             $rec->collectValuesForSave($columnsToSave, true)
         );
-        static::assertEquals(
-            [],
-            $rec->validateNewData($expectedData, $columnsToSave, true)
-        );
-        
+
         $rec->unsetPrimaryKeyValue();
         $expectedData = array_merge(
             $originalData,
@@ -1748,11 +1730,7 @@ class RecordTest extends BaseTestCase
             $expectedData,
             $rec->collectValuesForSave($columnsToSave, false)
         );
-        static::assertEquals(
-            ['password' => ['Null value is not allowed.']],
-            $rec->validateNewData($expectedData, $columnsToSave, false)
-        );
-        
+
         $rec->reset();
         $defaults = array_filter(
             $rec->getDefaults($columnsToSave, true, false),
@@ -1771,29 +1749,13 @@ class RecordTest extends BaseTestCase
             $expectedData,
             $rec->collectValuesForSave($columnsToSave, false)
         );
-        static::assertEquals(
-            [
-                'login' => ['Null value is not allowed.'],
-                'password' => ['Null value is not allowed.'],
-            ],
-            $rec->validateNewData($expectedData, $columnsToSave, false)
-        );
-        
+
         $rec->reset();
         $expectedData = ['id' => 1, 'parent_id' => null, 'email' => 'test@test.cc', 'login' => 'test'];
         $rec->fromData($expectedData, true);
         static::assertEquals(
             [],
             $rec->collectValuesForSave($columnsToSave, false)
-        );
-        
-        static::assertEquals(
-            ['email' => ['Value must be an email.']],
-            $rec->validateNewData(['email' => 'invalid'], ['email'], true)
-        );
-        static::assertEquals(
-            ['email' => ['Value must be an email.']],
-            $rec->validateNewData(['email' => 'invalid'], ['email'], false)
         );
     }
     
@@ -2081,19 +2043,11 @@ class RecordTest extends BaseTestCase
         static::assertInstanceOf(RecordValue::class, $this->getObjectPropertyValue($rec, 'valuesBackup')['email']);
         static::assertFalse($this->getObjectPropertyValue($rec, 'valuesBackup')['email']->hasValue());
         static::assertEquals('email.was@changed.hehe', $rec->getValue('email'));
-        static::assertFalse(
-            $this->callObjectMethod($rec, 'getValueContainer', 'email')
-                ->hasOldValue()
-        );
         $rec->rollback();
         static::assertFalse($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
         static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
         static::assertFalse($rec->hasValue('email'));
-        static::assertFalse(
-            $this->callObjectMethod($rec, 'getValueContainer', 'email')
-                ->hasOldValue()
-        );
-        
+
         $rec->begin();
         $rec->updateValue('email', 'email.was@changed.hehe', false);
         $rec->updateValue('login', 'email.was@changed.hehe', false);
@@ -2106,27 +2060,11 @@ class RecordTest extends BaseTestCase
         static::assertFalse($this->getObjectPropertyValue($rec, 'valuesBackup')['login']->hasValue());
         static::assertEquals('email.was@changed.hehe', $rec->getValue('email'));
         static::assertEquals('email.was@changed.hehe', $rec->getValue('login'));
-        static::assertFalse(
-            $this->callObjectMethod($rec, 'getValueContainer', 'email')
-                ->hasOldValue()
-        );
-        static::assertFalse(
-            $this->callObjectMethod($rec, 'getValueContainer', 'login')
-                ->hasOldValue()
-        );
         $rec->rollback();
         static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
         static::assertFalse($rec->hasValue('email'));
         static::assertFalse($rec->hasValue('login'));
-        static::assertFalse(
-            $this->callObjectMethod($rec, 'getValueContainer', 'email')
-                ->hasOldValue()
-        );
-        static::assertFalse(
-            $this->callObjectMethod($rec, 'getValueContainer', 'login')
-                ->hasOldValue()
-        );
-        
+
         $data = TestingApp::getRecordsForDb('admins', 1)[0];
         $data = array_merge($data, ['not_existing_column' => null]);
         $rec->fromData($data, true); //< it should not fail even if there was no commit() or rollback() after previous begin()
@@ -2141,19 +2079,10 @@ class RecordTest extends BaseTestCase
         static::assertArrayHasKey('email', $this->getObjectPropertyValue($rec, 'valuesBackup'));
         static::assertEquals($data['email'], $this->getObjectPropertyValue($rec, 'valuesBackup')['email']->getValue());
         static::assertEquals('email.was@changed.hehe', $rec->getValue('email'));
-        static::assertEquals(
-            $data['email'],
-            $this->callObjectMethod($rec, 'getValueContainer', 'email')
-                ->getOldValue()
-        );
         $rec->rollback();
         static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
         static::assertTrue($rec->hasValue('email'));
         static::assertEquals($data['email'], $rec->getValue('email'));
-        static::assertFalse(
-            $this->callObjectMethod($rec, 'getValueContainer', 'email')
-                ->hasOldValue()
-        );
         static::assertEquals($data, $rec->toArrayWithoutFiles(array_keys($data)));
         
         $rec->begin();
@@ -2167,29 +2096,11 @@ class RecordTest extends BaseTestCase
         static::assertEquals($data['login'], $this->getObjectPropertyValue($rec, 'valuesBackup')['login']->getValue());
         static::assertEquals('email.was@changed.hehe', $rec->getValue('email'));
         static::assertEquals('email.was@changed.hehe', $rec->getValue('login'));
-        static::assertEquals(
-            $data['email'],
-            $this->callObjectMethod($rec, 'getValueContainer', 'email')
-                ->getOldValue()
-        );
-        static::assertEquals(
-            $data['login'],
-            $this->callObjectMethod($rec, 'getValueContainer', 'login')
-                ->getOldValue()
-        );
         $rec->rollback();
         static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
         static::assertTrue($rec->hasValue('email'));
         static::assertTrue($rec->hasValue('login'));
         static::assertEquals($data, $rec->toArrayWithoutFiles(array_keys($data)));
-        static::assertFalse(
-            $this->callObjectMethod($rec, 'getValueContainer', 'email')
-                ->hasOldValue()
-        );
-        static::assertFalse(
-            $this->callObjectMethod($rec, 'getValueContainer', 'login')
-                ->hasOldValue()
-        );
     }
     
     public function testInvalidCommit1(): void

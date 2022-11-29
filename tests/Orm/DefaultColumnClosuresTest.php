@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Orm;
 
+use PeskyORM\Exception\InvalidDataException;
 use PeskyORM\ORM\Record\RecordValue;
 use PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
@@ -23,7 +24,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
     public function testValueExistenceChecker(): void
     {
         $column = TestingAdminsTableStructure::getColumn('parent_id');
-        $valueObj = \PeskyORM\ORM\Record\RecordValue::create($column, TestingAdmin::_());
+        $valueObj = new RecordValue($column, TestingAdmin::_());
         static::assertFalse(DefaultColumnClosures::valueExistenceChecker($valueObj, false));
         static::assertFalse(DefaultColumnClosures::valueExistenceChecker($valueObj, true));
         
@@ -31,15 +32,14 @@ class DefaultColumnClosuresTest extends BaseTestCase
         static::assertFalse(DefaultColumnClosures::valueExistenceChecker($valueObj, false));
         static::assertTrue(DefaultColumnClosures::valueExistenceChecker($valueObj, true));
         
-        $valueObj->setRawValue(1, 1, true)
-            ->setValidValue(1, 1);
+        $valueObj->setValue(1, 1, true);
         static::assertTrue(DefaultColumnClosures::valueExistenceChecker($valueObj, false));
         static::assertTrue(DefaultColumnClosures::valueExistenceChecker($valueObj, true));
     }
     
     public function testValuePreprocessor(): void
     {
-        $column = TableColumn::create(\PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_BOOL, 'test');
+        $column = TableColumn::create(TableColumn::TYPE_BOOL, 'test');
         static::assertEquals('', DefaultColumnClosures::valuePreprocessor('', false, false, $column));
         static::assertEquals(' ', DefaultColumnClosures::valuePreprocessor(' ', false, false, $column));
         static::assertEquals(null, DefaultColumnClosures::valuePreprocessor(null, false, false, $column));
@@ -80,7 +80,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Value format 'nooooo!' is not supported for column 'parent_id'. Supported formats: none");
-        $valueObj = \PeskyORM\ORM\Record\RecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
+        $valueObj = new RecordValue(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
         DefaultColumnClosures::valueGetter($valueObj, 'nooooo!');
     }
     
@@ -88,7 +88,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("Value format 'nooooo!' is not supported for column 'created_at'. Supported formats: date, time, unix_ts");
-        $valueObj = RecordValue::create(TestingAdminsTableStructure::getColumn('created_at'), TestingAdmin::_());
+        $valueObj = new RecordValue(TestingAdminsTableStructure::getColumn('created_at'), TestingAdmin::_());
         DefaultColumnClosures::valueGetter($valueObj, 'nooooo!');
     }
     
@@ -96,16 +96,15 @@ class DefaultColumnClosuresTest extends BaseTestCase
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage("Argument #2 (\$format) must be of type ?string");
-        $valueObj = \PeskyORM\ORM\Record\RecordValue::create(TestingAdminsTableStructure::getColumn('created_at'), TestingAdmin::_());
+        $valueObj = new RecordValue(TestingAdminsTableStructure::getColumn('created_at'), TestingAdmin::_());
         /** @noinspection PhpStrictTypeCheckingInspection */
         DefaultColumnClosures::valueGetter($valueObj, false);
     }
     
     public function testValueGetter(): void
     {
-        $valueObj = \PeskyORM\ORM\Record\RecordValue::create(TestingAdminsTableStructure::getColumn('created_at'), TestingAdmin::_());
-        $valueObj->setRawValue('2016-09-01', '2016-09-01', true)
-            ->setValidValue('2016-09-01', '2016-09-01');
+        $valueObj = new RecordValue(TestingAdminsTableStructure::getColumn('created_at'), TestingAdmin::_());
+        $valueObj->setValue('2016-09-01', '2016-09-01', true);
         static::assertEquals('2016-09-01', DefaultColumnClosures::valueGetter($valueObj));
         static::assertEquals(strtotime('2016-09-01'), DefaultColumnClosures::valueGetter($valueObj, 'unix_ts'));
     }
@@ -116,55 +115,46 @@ class DefaultColumnClosuresTest extends BaseTestCase
         $this->expectExceptionMessage("TableColumn 'test2' restricts value modification");
         $column = TableColumn::create(TableColumn::TYPE_STRING, 'test1')
             ->valueCannotBeSetOrChanged();
-        $valueObj = RecordValue::create($column, TestingAdmin::_());
+        $valueObj = new RecordValue($column, TestingAdmin::_());
         DefaultColumnClosures::valueSetter('1', true, $valueObj, false);
         static::assertEquals('1', $valueObj->getRawValue());
         static::assertEquals('1', $valueObj->getValue());
         
-        $column = \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::create(TableColumn::TYPE_STRING, 'test2')
+        $column = TableColumn::create(TableColumn::TYPE_STRING, 'test2')
             ->valueCannotBeSetOrChanged();
-        $valueObj = \PeskyORM\ORM\Record\RecordValue::create($column, TestingAdmin::_());
+        $valueObj = new RecordValue($column, TestingAdmin::_());
         DefaultColumnClosures::valueSetter('2', false, $valueObj, false);
     }
     
     public function testValueSetter(): void
     {
-        $valueObj = \PeskyORM\ORM\Record\RecordValue::create(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
+        $valueObj = new RecordValue(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
         // new value
         DefaultColumnClosures::valueSetter('1', false, $valueObj, false);
         static::assertEquals('1', $valueObj->getRawValue());
         static::assertEquals(1, $valueObj->getValue());
-        static::assertTrue($valueObj->isValidated());
-        static::assertTrue($valueObj->isValid());
         static::assertFalse($valueObj->isItFromDb());
-        static::assertFalse($valueObj->hasOldValue());
         // change 'isItFromDb' status to true (should not be any changes other than $valueObj->isItFromDb())
         DefaultColumnClosures::valueSetter(1, true, $valueObj, false);
         static::assertEquals('1', $valueObj->getRawValue());
         static::assertEquals(1, $valueObj->getValue());
-        static::assertTrue($valueObj->isValidated());
-        static::assertTrue($valueObj->isValid());
         static::assertTrue($valueObj->isItFromDb());
-        static::assertFalse($valueObj->hasOldValue());
         // change value
         DefaultColumnClosures::valueSetter('2', true, $valueObj, false);
         static::assertEquals('2', $valueObj->getRawValue());
         static::assertEquals(2, $valueObj->getValue());
-        static::assertTrue($valueObj->hasOldValue());
-        static::assertEquals(1, $valueObj->getOldValue());
-        static::assertTrue($valueObj->isOldValueWasFromDb());
-        static::assertTrue($valueObj->isValidated());
-        static::assertTrue($valueObj->isValid());
-        static::assertTrue($valueObj->isItFromDb());
+
+    }
+
+    public function testValueSetterWithInvalidValue(): void
+    {
+        $this->expectException(InvalidDataException::class);
+        $this->expectExceptionMessage('Validation errors: [parent_id] Value must be of an integer data type.');
+        $valueObj = new RecordValue(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
         // invalid value
         DefaultColumnClosures::valueSetter(false, true, $valueObj, false);
         static::assertEquals(false, $valueObj->getRawValue());
         static::assertEquals(false, $valueObj->getValue());
-        static::assertTrue($valueObj->hasOldValue());
-        static::assertEquals(2, $valueObj->getOldValue());
-        static::assertTrue($valueObj->isValidated());
-        static::assertFalse($valueObj->isValid());
-        static::assertEquals(['Value must be of an integer data type.'], $valueObj->getValidationErrors());
     }
     
 }

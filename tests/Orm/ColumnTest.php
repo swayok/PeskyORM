@@ -224,8 +224,7 @@ class ColumnTest extends BaseTestCase
         static::assertEquals(
             '11:00:00',
             call_user_func(
-                $value->getColumn()
-                    ->getValueFormatter(),
+                $value->getColumn()->getValueFormatter(),
                 $value,
                 'time'
             )
@@ -235,7 +234,9 @@ class ColumnTest extends BaseTestCase
     public function testInvalidDefaultValueGet1(): void
     {
         $this->expectException(\BadMethodCallException::class);
-        $this->expectExceptionMessage("Default value for column 'name' is not set");
+        $this->expectExceptionMessageMatches(
+            "%Default value for column .*?'name'.*? is not set%"
+        );
         TableColumn::create(TableColumn::TYPE_BOOL, 'name')
             ->getDefaultValue();
     }
@@ -244,7 +245,7 @@ class ColumnTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessageMatches(
-            "%Default value for column 'name' \(.+?\) is not valid\. Errors: Value must be of a boolean data type\.%"
+            "%Default value for column .*?'name'.*? is not valid\. Errors: Value must be of a boolean data type\.%"
         );
         TableColumn::create(TableColumn::TYPE_BOOL, 'name')
             ->setDefaultValue(-1)
@@ -253,63 +254,57 @@ class ColumnTest extends BaseTestCase
     
     public function testInvalidDefaultValueGet3(): void
     {
-        $this->expectException(\UnexpectedValueException::class);
+        $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessageMatches(
-            "%Fallback value of the default value for column 'name' \(.+?\) is not valid\. Errors: Value must be of a boolean data type\.%"
+            "%Default value for column .*?'name'.*? is not set%"
         );
         TableColumn::create(TableColumn::TYPE_BOOL, 'name')
-            ->getValidDefaultValue(-1);
+            ->getValidDefaultValue();
     }
     
     public function testInvalidDefaultValueGet4(): void
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessageMatches(
-            "%Default value received from validDefaultValueGetter Closure for column 'name' \(.+?\) is not valid\. Errors: Value must be of a boolean data type\.%"
+            "%Default value received from validDefaultValueGetter Closure for column .*?'name'.*? is not valid\. Errors: Value must be of a boolean data type\.%"
         );
         TableColumn::create(TableColumn::TYPE_BOOL, 'name')
             ->setValidDefaultValueGetter(function () {
                 return -1;
             })
-            ->getValidDefaultValue(true);
+            ->getValidDefaultValue();
     }
     
     public function testDefaultValues(): void
     {
         $obj = TableColumn::create(TableColumn::TYPE_BOOL, 'name');
         static::assertFalse($obj->hasDefaultValue());
-        static::assertFalse($obj->getValidDefaultValue(false));
-        static::assertTrue(
-            $obj->getValidDefaultValue(function () {
-                return true;
-            })
-        );
-        
+
         $obj->setDefaultValue(function () {
             return false;
         });
         static::assertTrue($obj->hasDefaultValue());
         static::assertInstanceOf(\Closure::class, $obj->getDefaultValue());
-        static::assertFalse($obj->getValidDefaultValue(true));
+        static::assertFalse($obj->getValidDefaultValue());
         
         $obj->setDefaultValue(false);
         static::assertTrue($obj->hasDefaultValue());
         static::assertFalse($obj->getDefaultValue());
-        static::assertFalse($obj->getValidDefaultValue(true));
+        static::assertFalse($obj->getValidDefaultValue());
         
         $obj->setDefaultValue(null);
         static::assertTrue($obj->hasDefaultValue());
         static::assertNull($obj->getDefaultValue());
-        static::assertNull($obj->getValidDefaultValue(true));
+        static::assertNull($obj->getValidDefaultValue());
         
         // default value getter
-        $obj->setValidDefaultValueGetter(function ($fallbackValue) {
-            return $fallbackValue;
+        $obj->setValidDefaultValueGetter(function () {
+            return false;
         });
         $obj->setDefaultValue(true);
         static::assertTrue($obj->hasDefaultValue());
         static::assertTrue($obj->getDefaultValue());
-        static::assertFalse($obj->getValidDefaultValue(false));
+        static::assertFalse($obj->getValidDefaultValue());
         
         // default value that needs normalization
         $nowTs = time();
@@ -329,7 +324,9 @@ class ColumnTest extends BaseTestCase
     public function testInvalidGetRelation(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("TableColumn 'id' is not linked with 'Test' relation");
+        $this->expectExceptionMessageMatches(
+            "%Column .*?'id'.*? is not linked with 'Test' relation%"
+        );
         TableColumn::create(TableColumn::TYPE_STRING)
             ->setName('id')
             ->getRelation('Test');

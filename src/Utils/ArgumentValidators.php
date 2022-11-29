@@ -36,6 +36,18 @@ abstract class ArgumentValidators
         static::assertNotEmptyString($argName, $value, true);
     }
 
+    public static function assertArrayHasKey(
+        string $argName,
+        array $array,
+        string|int|float|bool $key
+    ): void {
+        if (!array_key_exists($key, $array)) {
+            throw new \InvalidArgumentException(
+                "Array {$argName} has no key {$key}."
+            );
+        }
+    }
+
     public static function assertArrayKeyValueIsNotEmpty(string $arrayKeyPath, mixed $value): void
     {
         if (empty($value)) {
