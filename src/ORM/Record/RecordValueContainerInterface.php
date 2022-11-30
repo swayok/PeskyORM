@@ -20,28 +20,10 @@ interface RecordValueContainerInterface
 
     public function hasValue(): bool;
 
-    public function hasValueOrDefault(): bool;
-
-    public function hasDefaultValue(): bool;
-
-    public function getDefaultValue(): mixed;
-
-    /**
-     * Return null if there is no default value.
-     * When there is no default value this method will avoid validation of a NULL value so that there will be no
-     * exception 'default value is not valid' if column is not nullable
-     */
-    public function getDefaultValueOrNull(): mixed;
-
     /**
      * @throws \BadMethodCallException when value not set
      */
     public function getValue(): mixed;
-
-    /**
-     * @throws \BadMethodCallException when both value and default value are not set
-     */
-    public function getValueOrDefault(): mixed;
 
     public function getRawValue(): mixed;
 

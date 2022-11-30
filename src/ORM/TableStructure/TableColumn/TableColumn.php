@@ -7,6 +7,7 @@ namespace PeskyORM\ORM\TableStructure\TableColumn;
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\Record\RecordValue;
+use PeskyORM\ORM\Record\RecordValueContainerInterface;
 use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesEn;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
@@ -28,7 +29,7 @@ use PeskyORM\Utils\ArgumentValidators;
  */
 class TableColumn implements TableColumnInterface
 {
-    
+
     public const TYPE_INT = 'integer';
     public const TYPE_FLOAT = 'float';
     public const TYPE_BOOL = 'boolean';
@@ -48,10 +49,10 @@ class TableColumn implements TableColumnInterface
     public const TYPE_FILE = 'file';
     public const TYPE_IMAGE = 'image';
     public const TYPE_BLOB = 'blob';
-    
+
     public const DEFAULT_VALUE_NOT_SET = '___NOT_SET___';
     public const VALID_DEFAULT_VALUE_UNDEFINED = '___UNDEFINED___';
-    
+
     public const VALUE_CANNOT_BE_NULL = 'value_cannot_be_null';
     public const VALUE_MUST_BE_BOOLEAN = 'value_must_be_boolean';
     public const VALUE_MUST_BE_INTEGER = 'value_must_be_integer';
@@ -68,16 +69,16 @@ class TableColumn implements TableColumnInterface
     public const VALUE_MUST_BE_DATE = 'value_must_be_date';
     public const VALUE_MUST_BE_STRING = 'value_must_be_string';
     public const VALUE_MUST_BE_ARRAY = 'value_must_be_array';
-    
+
     public const CASE_SENSITIVE = true;
     public const CASE_INSENSITIVE = false;
 
     protected ?string $name = null;
     protected string $type;
     protected ?TableStructureInterface $tableStructure = null;
-    
+
     // params that can be set directly or calculated
-    
+
     /**
      * @var RelationInterface[]
      */
@@ -92,7 +93,7 @@ class TableColumn implements TableColumnInterface
      * false - forbids null values;
      */
     protected ?bool $convertEmptyStringToNull = null;
-    
+
     /**
      * @var mixed|\Closure
      */
@@ -102,7 +103,7 @@ class TableColumn implements TableColumnInterface
      * @var mixed
      */
     protected mixed $validDefaultValue = self::VALID_DEFAULT_VALUE_UNDEFINED;
-    
+
     protected bool $isPrimaryKey = false;
     protected bool $isValueMustBeUnique = false;
     /**
@@ -133,7 +134,7 @@ class TableColumn implements TableColumnInterface
      * Then true - value contains a lot of data and should not be fetched by '*' selects
      */
     protected bool $isHeavy = false;
-    
+
     private string $columnClosuresClass = DefaultColumnClosures::class;
     /**
      * Function to return default column value
@@ -206,7 +207,7 @@ class TableColumn implements TableColumnInterface
      * Usage example: updated_at column
      */
     protected ?\Closure $valueAutoUpdater = null;
-    
+
     // calculated params (not allowed to be set directly)
     protected bool $isFile = false;
     protected bool $isImage = false;
@@ -214,36 +215,36 @@ class TableColumn implements TableColumnInterface
      * relation that stores values for this column
      */
     protected ?RelationInterface $foreignKeyRelation = null;
-    
+
     protected ?string $classNameForValueToObjectFormatter = null;
-    
+
     // service params
     public static array $fileTypes = [
         self::TYPE_FILE,
         self::TYPE_IMAGE,
     ];
-    
+
     public static array $imageFileTypes = [
         self::TYPE_IMAGE,
     ];
 
     protected ColumnValueValidationMessagesInterface $validationErrorsMessages;
-    
+
     public static function create(string $type, ?string $name = null): static
     {
         return new static($name, $type);
     }
-    
+
     public function __construct(?string $name, string $type)
     {
         if (!empty($name)) {
             $this->setName($name);
         }
-        $this->setType($type);
+        $this->setDataType($type);
         $this->setDefaultColumnClosures();
         $this->validationErrorsMessages = new ColumnValueValidationMessagesEn();
     }
-    
+
     /**
      * @return \Closure[]
      */
@@ -262,16 +263,25 @@ class TableColumn implements TableColumnInterface
                         ->getClosuresClass();
                     return $class::valueExistenceChecker($valueContainer, $checkDefaultValue);
                 },
-                'valueSetter' => function ($newValue, $isFromDb, RecordValue $valueContainer, $trustDataReceivedFromDb) {
-                    $class = $valueContainer->getColumn()
-                        ->getClosuresClass();
+                'valueSetter' => function (
+                    $newValue,
+                    $isFromDb,
+                    RecordValue $valueContainer,
+                    $trustDataReceivedFromDb
+                ) {
+                    $class = $valueContainer->getColumn()->getClosuresClass();
                     return $class::valueSetter($newValue, $isFromDb, $valueContainer, $trustDataReceivedFromDb);
                 },
                 'valueValidator' => function ($value, $isFromDb, $isForCondition, TableColumnInterface $column) {
                     $class = $column->getClosuresClass();
                     return $class::valueValidator($value, $isFromDb, $isForCondition, $column);
                 },
-                'valueValidatorExtender' => function ($value, $isFromDb, $isForCondition, TableColumnInterface $column) {
+                'valueValidatorExtender' => function (
+                    $value,
+                    $isFromDb,
+                    $isForCondition,
+                    TableColumnInterface $column
+                ) {
                     $class = $column->getClosuresClass();
                     return $class::valueValidatorExtender($value, $isFromDb, $column);
                 },
@@ -302,7 +312,7 @@ class TableColumn implements TableColumnInterface
         }
         return $defaultClosures;
     }
-    
+
     protected function setDefaultColumnClosures(): static
     {
         $closures = static::getDefaultColumnClosures();
@@ -338,7 +348,7 @@ class TableColumn implements TableColumnInterface
         }
         return $this;
     }
-    
+
     /**
      * Set class that provides all behavioral closures for a column (class must implement ColumnClosuresInterface).
      * Class' closures will be used by default. But any closure may be overriden by calling TableColumn->set{ClosureName}(\Closure $fn).
@@ -358,7 +368,7 @@ class TableColumn implements TableColumnInterface
         $this->columnClosuresClass = $className;
         return $this;
     }
-    
+
     /**
      * @return string|ColumnClosuresInterface
      * @noinspection PhpDocSignatureInspection
@@ -367,7 +377,7 @@ class TableColumn implements TableColumnInterface
     {
         return $this->columnClosuresClass;
     }
-    
+
     /**
      * @throws \UnexpectedValueException
      */
@@ -378,12 +388,12 @@ class TableColumn implements TableColumnInterface
         }
         return $this->name;
     }
-    
+
     public function hasName(): bool
     {
         return !empty($this->name);
     }
-    
+
     /**
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -399,13 +409,13 @@ class TableColumn implements TableColumnInterface
         $this->name = $name;
         return $this;
     }
-    
-    public function getType(): string
+
+    public function getDataType(): string
     {
         return $this->type;
     }
-    
-    protected function setType(string $type): static
+
+    protected function setDataType(string $type): static
     {
         $this->type = mb_strtolower($type);
         if (in_array($type, self::$fileTypes, true)) {
@@ -417,52 +427,52 @@ class TableColumn implements TableColumnInterface
         $this->valueFormattersForColumnType = null;
         return $this;
     }
-    
+
     public function isNullableValues(): bool
     {
         return $this->valueCanBeNull;
     }
-    
+
     public function allowsNullValues(): static
     {
         $this->valueCanBeNull = true;
         return $this;
     }
-    
+
     public function disallowsNullValues(): static
     {
         $this->valueCanBeNull = false;
         return $this;
     }
-    
+
     public function setIsNullableValue(bool $bool): static
     {
         $this->valueCanBeNull = $bool;
         return $this;
     }
-    
+
     public function trimsValue(): static
     {
         $this->trimValue = true;
         return $this;
     }
-    
+
     public function shouldTrimValues(): bool
     {
         return $this->trimValue;
     }
-    
+
     public function lowercasesValue(): static
     {
         $this->lowercaseValue = true;
         return $this;
     }
-    
+
     public function shouldLowercaseValues(): bool
     {
         return $this->lowercaseValue;
     }
-    
+
     public function getDefaultValue(): mixed
     {
         if (!$this->hasDefaultValue()) {
@@ -480,7 +490,7 @@ class TableColumn implements TableColumnInterface
         }
         return static::class . "('{$this->getName()}')";
     }
-    
+
     public function getValidDefaultValue(): mixed
     {
         if ($this->validDefaultValue === self::VALID_DEFAULT_VALUE_UNDEFINED) {
@@ -509,7 +519,7 @@ class TableColumn implements TableColumnInterface
         }
         return $this->validDefaultValue;
     }
-    
+
     /**
      * @param \Closure $validDefaultValueGetter - function (mixed $fallbackValue, TableColumnInterface $column): mixed { return 'default'; }
      */
@@ -518,7 +528,7 @@ class TableColumn implements TableColumnInterface
         $this->validDefaultValueGetter = $validDefaultValueGetter;
         return $this;
     }
-    
+
     public function hasDefaultValue(): bool
     {
         if ($this->hasDefaultValue === null) {
@@ -526,7 +536,7 @@ class TableColumn implements TableColumnInterface
         }
         return $this->hasDefaultValue();
     }
-    
+
     /**
      * @param mixed|\Closure $defaultValue - may be a \Closure: function() { return 'default value'; }
      */
@@ -536,50 +546,50 @@ class TableColumn implements TableColumnInterface
         $this->validDefaultValue = self::VALID_DEFAULT_VALUE_UNDEFINED;
         return $this;
     }
-    
+
     public function shouldConvertEmptyStringToNull(): bool
     {
         return $this->convertEmptyStringToNull ?? $this->isNullableValues();
     }
-    
+
     public function convertsEmptyStringToNull(): static
     {
         $this->convertEmptyStringToNull = true;
         return $this;
     }
-    
+
     public function setConvertEmptyStringToNull(?bool $convert): static
     {
         $this->convertEmptyStringToNull = $convert;
         return $this;
     }
-    
+
     public function isPrimaryKey(): bool
     {
         return $this->isPrimaryKey;
     }
-    
+
     public function primaryKey(): static
     {
         $this->isPrimaryKey = true;
         return $this;
     }
-    
+
     public function isValueMustBeUnique(): bool
     {
         return $this->isValueMustBeUnique;
     }
-    
+
     public function isUniqueContraintCaseSensitive(): bool
     {
         return $this->isUniqueContraintCaseSensitive;
     }
-    
+
     public function getUniqueContraintAdditonalColumns(): array
     {
         return $this->uniqueContraintAdditonalColumns;
     }
-    
+
     /**
      * Note: there is no automatic uniqueness validation in DefaultColumnClosures class!
      * @param bool $caseSensitive - true: compare values as is; false: compare lowercased values (emails for example);
@@ -603,13 +613,13 @@ class TableColumn implements TableColumnInterface
         }
         return $this;
     }
-    
+
     public function doesNotExistInDb(): static
     {
         $this->existsInDb = false;
         return $this;
     }
-    
+
     /**
      * Is this column exists in DB?
      */
@@ -617,24 +627,24 @@ class TableColumn implements TableColumnInterface
     {
         return $this->existsInDb;
     }
-    
+
     public function valueCannotBeSetOrChanged(): static
     {
         $this->isValueCanBeSetOrChanged = false;
         return $this;
     }
-    
+
     public function setIsValueCanBeSetOrChanged(bool $can): static
     {
         $this->isValueCanBeSetOrChanged = $can;
         return $this;
     }
-    
+
     public function isReadonly(): bool
     {
         return !$this->isValueCanBeSetOrChanged;
     }
-    
+
     /**
      * Value contains a lot of data and should not be fetched by '*' selects
      */
@@ -643,7 +653,7 @@ class TableColumn implements TableColumnInterface
         $this->isHeavy = true;
         return $this;
     }
-    
+
     public function isHeavyValues(): bool
     {
         return $this->isHeavy;
@@ -657,7 +667,7 @@ class TableColumn implements TableColumnInterface
         }
         return $this;
     }
-    
+
     /**
      * @return RelationInterface[]
      */
@@ -665,12 +675,12 @@ class TableColumn implements TableColumnInterface
     {
         return $this->relations;
     }
-    
+
     public function hasRelation(string $relationName): bool
     {
         return isset($this->relations[$relationName]);
     }
-    
+
     /**
      * @throws \InvalidArgumentException
      */
@@ -683,7 +693,7 @@ class TableColumn implements TableColumnInterface
         }
         return $this->relations[$relationName];
     }
-    
+
     public function isForeignKey(): bool
     {
         return $this->foreignKeyRelation !== null;
@@ -693,7 +703,7 @@ class TableColumn implements TableColumnInterface
     {
         return $this->foreignKeyRelation;
     }
-    
+
     /**
      * @param RelationInterface $relation - relation that stores values for this column
      * @throws \InvalidArgumentException
@@ -711,34 +721,34 @@ class TableColumn implements TableColumnInterface
         $this->foreignKeyRelation = $relation;
         return $this;
     }
-    
+
     public function isFile(): bool
     {
         return $this->isFile;
     }
-    
+
     protected function itIsFile(): static
     {
         $this->isFile = true;
         return $this;
     }
-    
+
     public function isImage(): bool
     {
         return $this->isImage;
     }
-    
+
     protected function itIsImage(): static
     {
         $this->isImage = true;
         return $this;
     }
-    
+
     public function isPrivateValues(): bool
     {
         return $this->isPrivate;
     }
-    
+
     /**
      * Value will not appear in Record->toArray() results and in iteration
      */
@@ -747,17 +757,17 @@ class TableColumn implements TableColumnInterface
         $this->isPrivate = true;
         return $this;
     }
-    
+
     public function getValidationErrorsMessages(): ColumnValueValidationMessagesInterface
     {
         return $this->validationErrorsMessages;
     }
-    
+
     public function getValueSetter(): \Closure
     {
         return $this->valueSetter;
     }
-    
+
     /**
      * Sets new value. Called after value validation
      * @param \Closure $valueSetter - function (mixed $newValue, bool $isFromDb, RecordValue $valueContainer, bool $trustDataReceivedFromDb): RecordValue { modify $valueContainer }
@@ -767,12 +777,12 @@ class TableColumn implements TableColumnInterface
         $this->valueSetter = $valueSetter;
         return $this;
     }
-    
+
     public function getValuePreprocessor(): \Closure
     {
         return $this->valuePreprocessor;
     }
-    
+
     /**
      * Function to preprocess raw value for validation and normalization
      * @param \Closure $newValuePreprocessor - function (mixed $value, bool $isFromDb, TableColumnInterface $column): mixed { return $value }
@@ -782,12 +792,12 @@ class TableColumn implements TableColumnInterface
         $this->valuePreprocessor = $newValuePreprocessor;
         return $this;
     }
-    
+
     public function getValueGetter(): \Closure
     {
         return $this->valueGetter;
     }
-    
+
     /**
      * @param \Closure $valueGetter - function (RecordValue $value, ?string $format = null): mixed { return $value->getValue(); }
      * Note: do not forget to provide valueExistenceChecker in case of columns that do not exist in db
@@ -797,7 +807,7 @@ class TableColumn implements TableColumnInterface
         $this->valueGetter = $valueGetter;
         return $this;
     }
-    
+
     /**
      * Get function that checks if column value is set
      */
@@ -805,7 +815,7 @@ class TableColumn implements TableColumnInterface
     {
         return $this->valueExistenceChecker;
     }
-    
+
     /**
      * Set function that checks if column value is set and returns boolean value (true: value is set)
      * Note: column value is set if it has any value (even null) or default value
@@ -816,12 +826,12 @@ class TableColumn implements TableColumnInterface
         $this->valueExistenceChecker = $valueChecker;
         return $this;
     }
-    
+
     public function getValueValidator(): \Closure
     {
         return $this->valueValidator;
     }
-    
+
     /**
      * @param \Closure $validator - function (mixed|RecordValue $value, bool $isFromDb, bool $isForCondition, TableColumnInterface $column): array { return ['validation error 1', ...]; }
      * Notes:
@@ -835,7 +845,7 @@ class TableColumn implements TableColumnInterface
         $this->valueValidator = $validator;
         return $this;
     }
-    
+
     /**
      * Note: it should not be used as public. Better use setValueValidator() method
      */
@@ -843,7 +853,7 @@ class TableColumn implements TableColumnInterface
     {
         return $this->valueValidatorExtender;
     }
-    
+
     /**
      * Additional validation called after
      * @param \Closure $extender - function (mixed $value, bool $isFromDb, bool $isForCondition, TableColumnInterface $column): array { return ['validation error 1', ...]; }
@@ -856,7 +866,7 @@ class TableColumn implements TableColumnInterface
         $this->valueValidatorExtender = $extender;
         return $this;
     }
-    
+
     /**
      * Alias for TableColumn::extendValueValidator
      * @see TableColumn::extendValueValidator
@@ -865,7 +875,7 @@ class TableColumn implements TableColumnInterface
     {
         return $this->extendValueValidator($validator);
     }
-    
+
     /**
      * Validates a new value
      * @param mixed|RecordValue $value
@@ -881,12 +891,12 @@ class TableColumn implements TableColumnInterface
         }
         return $errors;
     }
-    
+
     public function getValueNormalizer(): \Closure
     {
         return $this->valueNormalizer;
     }
-    
+
     /**
      * Function to process new value (for example: convert a value to proper data type)
      * @param \Closure $normalizer - function (mixed $value, bool $isFromDb, TableColumnInterface $column): mixed { return 'normalized value'; }
@@ -896,12 +906,12 @@ class TableColumn implements TableColumnInterface
         $this->valueNormalizer = $normalizer;
         return $this;
     }
-    
+
     public function getValueSavingExtender(): \Closure
     {
         return $this->valueSavingExtender;
     }
-    
+
     /**
      * Additional processing for a column's value during a save.
      * WARNING: to be triggered one of conditions is required to be true:
@@ -922,12 +932,12 @@ class TableColumn implements TableColumnInterface
         $this->valueSavingExtender = $valueSaver;
         return $this;
     }
-    
+
     public function getValueDeleteExtender(): \Closure
     {
         return $this->valueDeleteExtender;
     }
-    
+
     /**
      * Designed to manage file-related TableColumn
      * Called after Record::afterDelete() and after transaction started inside Record::delete() was closed
@@ -943,12 +953,12 @@ class TableColumn implements TableColumnInterface
         $this->valueDeleteExtender = $valueDeleteExtender;
         return $this;
     }
-    
+
     public function getValueFormatter(): \Closure
     {
         return $this->valueFormatter;
     }
-    
+
     /**
      * Function to transform original value into another format and return result. Used in value getter
      * @param \Closure $valueFormatter - function (RecordValue $valueContainer, string $format): mixed { return 'formatted value'; }
@@ -958,7 +968,7 @@ class TableColumn implements TableColumnInterface
         $this->valueFormatter = $valueFormatter;
         return $this;
     }
-    
+
     public function getValueFormattersNames(): array
     {
         return array_merge(
@@ -966,15 +976,15 @@ class TableColumn implements TableColumnInterface
             array_keys($this->customValueFormatters)
         );
     }
-    
+
     public function getValueFormattersForColumnType(): array
     {
         if ($this->valueFormattersForColumnType === null) {
-            $this->valueFormattersForColumnType = ColumnValueFormatters::getFormattersForColumnType($this->getType());
+            $this->valueFormattersForColumnType = ColumnValueFormatters::getFormattersForColumnType($this->getDataType());
         }
         return $this->valueFormattersForColumnType;
     }
-    
+
     /**
      * @param string $name - name of formatter.
      * If column name is 'datetime' and formatter name is 'timestamp',
@@ -986,12 +996,12 @@ class TableColumn implements TableColumnInterface
         $this->customValueFormatters[$name] = $formatter;
         return $this;
     }
-    
+
     public function getCustomValueFormatters(): array
     {
         return $this->customValueFormatters;
     }
-    
+
     /**
      * @param \Closure $valueGenerator - function (array|RecordInterface $record): mixed { return 'value' }
      */
@@ -1000,7 +1010,7 @@ class TableColumn implements TableColumnInterface
         $this->valueAutoUpdater = $valueGenerator;
         return $this;
     }
-    
+
     /**
      * @throws \UnexpectedValueException
      */
@@ -1011,12 +1021,12 @@ class TableColumn implements TableColumnInterface
         }
         return call_user_func($this->valueAutoUpdater, $record);
     }
-    
+
     public function isAutoUpdatingValues(): bool
     {
         return !empty($this->valueAutoUpdater);
     }
-    
+
     /**
      * Used in 'object' formatter for columns with JSON values and also can be used in custom formatters
      * @param string|null $className - string: custom class name | null: \stdClass
@@ -1039,7 +1049,7 @@ class TableColumn implements TableColumnInterface
         $this->classNameForValueToObjectFormatter = $className;
         return $this;
     }
-    
+
     /**
      * @return string|null|ValueToObjectConverterInterface
      * @noinspection PhpDocSignatureInspection
@@ -1053,7 +1063,7 @@ class TableColumn implements TableColumnInterface
     {
         $name = $this->getName();
         $ret = [
-            $name
+            $name,
         ];
         foreach ($this->getValueFormattersNames() as $formatterName) {
             $ret[] = $name . '_as_' . $formatterName;
@@ -1075,5 +1085,11 @@ class TableColumn implements TableColumnInterface
     protected function hasTableStructure(): bool
     {
         return $this->tableStructure !== null;
+    }
+
+    public function getNewRecordValueContainer(
+        RecordInterface $record
+    ): RecordValueContainerInterface {
+        return new RecordValue($this, $record);
     }
 }

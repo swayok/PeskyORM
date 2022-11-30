@@ -6,6 +6,7 @@ namespace PeskyORM\Tests\Orm;
 
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\ClassBuilder\ClassBuilder;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\TableDescription\ColumnDescription;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
@@ -78,7 +79,7 @@ class ClassBuilderTest extends BaseTestCase
     public function testMakeColumnConfig(): void
     {
         $builder = $this->getBuilder();
-        $columnDescr = new ColumnDescription('test', 'integer', \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_INT);
+        $columnDescr = new ColumnDescription('test', 'integer', TableColumn::TYPE_INT);
         $columnDescr->setIsPrimaryKey(true);
         static::assertEquals(
             'TableColumn::create(TableColumn::TYPE_INT)->primaryKey()',

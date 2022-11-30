@@ -30,7 +30,11 @@ class InvalidDataException extends OrmException
             $errorMsg .= $error;
             $message[] = $errorMsg;
         }
-        parent::__construct(static::MESSAGE_INVALID_DATA . implode('; ', $message), static::CODE_INVALID_DATA);
+        // todo: use classes container to get translator to get static::MESSAGE_INVALID_DATA from it
+        parent::__construct(
+            static::MESSAGE_INVALID_DATA . implode('; ', $message),
+            static::CODE_INVALID_DATA
+        );
         $this->errors = $errors;
     }
 

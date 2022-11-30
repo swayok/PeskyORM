@@ -326,7 +326,7 @@ class RecordTest extends BaseTestCase
         static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
     }
     
-    public function testgetValueContainer(): void
+    public function testGetValueContainer(): void
     {
         $rec = TestingAdmin::newEmptyRecord();
         static::assertArrayNotHasKey('id', $this->getObjectPropertyValue($rec, 'values')); //< lazy load
@@ -343,17 +343,37 @@ class RecordTest extends BaseTestCase
         );
     }
     
+    public function testInvalidGetValue1(): void
+    {
+        $this->expectException(\BadMethodCallException::class);
+        $this->expectExceptionMessageMatches(
+            "%Value for .*?\->id is not set and default value is not provided%"
+        );
+        $rec = TestingAdmin::newEmptyRecord();
+        $rec->getValue('id');
+    }
+
+    public function testInvalidGetValue2(): void
+    {
+        $this->expectException(\BadMethodCallException::class);
+        $this->expectExceptionMessageMatches(
+            "%Value for .*?\(#1\)->is_superadmin is not set and default value cannot be used%"
+        );
+        $rec = TestingAdmin::newEmptyRecord();
+        $rec->setId(1, true);
+        $rec->getValue('is_superadmin');
+    }
+
     public function testGetValue(): void
     {
         $rec = TestingAdmin::newEmptyRecord();
         static::assertEquals(
-            TestingAdmin::getColumn('id')
-                ->getDefaultValue(),
-            $rec->getValue('id')
+            TestingAdmin::getColumn('is_superadmin')->getDefaultValue(),
+            $rec->getValue('is_superadmin')
         );
-        $rec->updateValue('id', 2, true);
-        static::assertEquals(2, $rec->getValue('id'));
-        static::assertEquals(2, $rec->getValue(TestingAdmin::getColumn('id')));
+        $rec->updateValue('is_superadmin', true, false);
+        static::assertTrue($rec->getValue('is_superadmin'));
+        static::assertTrue($rec->getValue(TestingAdmin::getColumn('is_superadmin')));
     }
     
     public function testHasValueOrDefaultValue(): void
@@ -361,12 +381,11 @@ class RecordTest extends BaseTestCase
         $rec = new TestingAdmin();
         static::assertFalse($rec->hasValue('id'));
         static::assertFalse($rec->hasValue('id', false));
-        static::assertTrue($rec->hasValue('id', true));
-        
-//        $val = $this->callObjectMethod($rec, 'getValueContainer', 'id');
-//        static::assertFalse($this->callObjectMethod($rec, '_hasValue', $val));
-//        static::assertFalse($this->callObjectMethod($rec, '_hasValue', $val, false));
-//        static::assertTrue($this->callObjectMethod($rec, '_hasValue', $val, true));
+        static::assertFalse($rec->hasValue('id', true));
+
+        static::assertFalse($rec->hasValue('is_superadmin'));
+        static::assertFalse($rec->hasValue('is_superadmin', false));
+        static::assertTrue($rec->hasValue('is_superadmin', true));
         
         $rec->updateValue('id', 2, true);
         static::assertTrue($rec->hasValue('id', false));
@@ -375,6 +394,11 @@ class RecordTest extends BaseTestCase
         static::assertFalse($rec->hasValue('parent_id'));
         static::assertFalse($rec->hasValue('parent_id', false));
         static::assertFalse($rec->hasValue('parent_id', true));
+
+        static::assertFalse($rec->hasValue('is_superadmin'));
+        static::assertFalse($rec->hasValue('is_superadmin', false));
+        // record has pk value so default value cannot be used
+        static::assertFalse($rec->hasValue('is_superadmin', true));
     }
     
     public function testInvalidSetValue1(): void
@@ -554,8 +578,7 @@ class RecordTest extends BaseTestCase
         );
         static::assertEquals(
             [
-                'id' => TestingAdminsTableStructure::getColumn('id')
-                    ->getDefaultValue(),
+                'id' => null,
                 'parent_id' => null,
                 'login' => null,
                 'password' => null,
@@ -904,7 +927,7 @@ class RecordTest extends BaseTestCase
         $rec = TestingAdmin::fromArray($this->getDataForSingleAdmin(true), true);
         $recSerialized = serialize($rec);
         static::assertEquals(
-            'C:54:"PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin":2129:{{"props":{"existsInDb":true},"values":{"id":{"value":1,"rawValue":1,"hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"login":{"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","rawValue":"2AE351AF-131D-6654-9DB2-79B8F273986C","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"parent_id":{"value":1,"rawValue":1,"hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"created_at":{"value":"2015-05-14 02:12:05","rawValue":"2015-05-14 02:12:05","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"updated_at":{"value":"2015-06-10 19:30:24","rawValue":"2015-06-10 19:30:24","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"remember_token":{"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","rawValue":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"is_superadmin":{"value":true,"rawValue":true,"hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"language":{"value":"en","rawValue":"en","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"ip":{"value":"192.168.0.1","rawValue":"192.168.0.1","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"role":{"value":"admin","rawValue":"admin","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"is_active":{"value":true,"rawValue":"1","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"name":{"value":"Lionel Freeman","rawValue":"Lionel Freeman","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"email":{"value":"diam.at.pretium@idmollisnec.co.uk","rawValue":"diam.at.pretium@idmollisnec.co.uk","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"timezone":{"value":"Europe\/Moscow","rawValue":"Europe\/Moscow","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]},"big_data":{"value":"biiiig data","rawValue":"biiiig data","hasValue":true,"isFromDb":true,"isDefaultValueCanBeSet":null,"payload":[]}}}}',
+            'C:54:"PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin":1838:{{"props":{"existsInDb":true},"values":{"id":{"rawValue":null,"ignoreRawValue":true,"value":1,"hasValue":true,"isFromDb":true,"payload":[]},"login":{"rawValue":null,"ignoreRawValue":true,"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","hasValue":true,"isFromDb":true,"payload":[]},"parent_id":{"rawValue":null,"ignoreRawValue":true,"value":1,"hasValue":true,"isFromDb":true,"payload":[]},"created_at":{"rawValue":null,"ignoreRawValue":true,"value":"2015-05-14 02:12:05","hasValue":true,"isFromDb":true,"payload":[]},"updated_at":{"rawValue":null,"ignoreRawValue":true,"value":"2015-06-10 19:30:24","hasValue":true,"isFromDb":true,"payload":[]},"remember_token":{"rawValue":null,"ignoreRawValue":true,"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","hasValue":true,"isFromDb":true,"payload":[]},"is_superadmin":{"rawValue":null,"ignoreRawValue":true,"value":true,"hasValue":true,"isFromDb":true,"payload":[]},"language":{"rawValue":null,"ignoreRawValue":true,"value":"en","hasValue":true,"isFromDb":true,"payload":[]},"ip":{"rawValue":null,"ignoreRawValue":true,"value":"192.168.0.1","hasValue":true,"isFromDb":true,"payload":[]},"role":{"rawValue":null,"ignoreRawValue":true,"value":"admin","hasValue":true,"isFromDb":true,"payload":[]},"is_active":{"rawValue":"1","ignoreRawValue":false,"value":true,"hasValue":true,"isFromDb":true,"payload":[]},"name":{"rawValue":null,"ignoreRawValue":true,"value":"Lionel Freeman","hasValue":true,"isFromDb":true,"payload":[]},"email":{"rawValue":null,"ignoreRawValue":true,"value":"diam.at.pretium@idmollisnec.co.uk","hasValue":true,"isFromDb":true,"payload":[]},"timezone":{"rawValue":null,"ignoreRawValue":true,"value":"Europe\/Moscow","hasValue":true,"isFromDb":true,"payload":[]},"big_data":{"rawValue":null,"ignoreRawValue":true,"value":"biiiig data","hasValue":true,"isFromDb":true,"payload":[]}}}}',
             $recSerialized
         );
         /** @var TestingAdmin $recUnserialized */
@@ -919,7 +942,7 @@ class RecordTest extends BaseTestCase
         $rec->fromData($this->getDataForSingleAdmin(false), false);
         $recSerialized = serialize($rec);
         static::assertEquals(
-            'C:54:"PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin":2038:{{"props":{"existsInDb":null},"values":{"login":{"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","rawValue":"2AE351AF-131D-6654-9DB2-79B8F273986C","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"parent_id":{"value":1,"rawValue":1,"hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"created_at":{"value":"2015-05-14 02:12:05","rawValue":"2015-05-14 02:12:05","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"updated_at":{"value":"2015-06-10 19:30:24","rawValue":"2015-06-10 19:30:24","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"remember_token":{"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","rawValue":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"is_superadmin":{"value":true,"rawValue":true,"hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"language":{"value":"en","rawValue":"en","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"ip":{"value":"192.168.0.1","rawValue":"192.168.0.1","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"role":{"value":"admin","rawValue":"admin","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"is_active":{"value":true,"rawValue":"1","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"name":{"value":"Lionel Freeman","rawValue":"Lionel Freeman","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"email":{"value":"diam.at.pretium@idmollisnec.co.uk","rawValue":"diam.at.pretium@idmollisnec.co.uk","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"timezone":{"value":"Europe\/Moscow","rawValue":"Europe\/Moscow","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]},"big_data":{"value":"biiiig data","rawValue":"biiiig data","hasValue":true,"isFromDb":false,"isDefaultValueCanBeSet":null,"payload":[]}}}}',
+            'C:54:"PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin":1752:{{"props":{"existsInDb":null},"values":{"login":{"rawValue":null,"ignoreRawValue":true,"value":"2AE351AF-131D-6654-9DB2-79B8F273986C","hasValue":true,"isFromDb":false,"payload":[]},"parent_id":{"rawValue":null,"ignoreRawValue":true,"value":1,"hasValue":true,"isFromDb":false,"payload":[]},"created_at":{"rawValue":null,"ignoreRawValue":true,"value":"2015-05-14 02:12:05","hasValue":true,"isFromDb":false,"payload":[]},"updated_at":{"rawValue":null,"ignoreRawValue":true,"value":"2015-06-10 19:30:24","hasValue":true,"isFromDb":false,"payload":[]},"remember_token":{"rawValue":null,"ignoreRawValue":true,"value":"6A758CB2-234F-F7A1-24FE-4FE263E6FF81","hasValue":true,"isFromDb":false,"payload":[]},"is_superadmin":{"rawValue":null,"ignoreRawValue":true,"value":true,"hasValue":true,"isFromDb":false,"payload":[]},"language":{"rawValue":null,"ignoreRawValue":true,"value":"en","hasValue":true,"isFromDb":false,"payload":[]},"ip":{"rawValue":null,"ignoreRawValue":true,"value":"192.168.0.1","hasValue":true,"isFromDb":false,"payload":[]},"role":{"rawValue":null,"ignoreRawValue":true,"value":"admin","hasValue":true,"isFromDb":false,"payload":[]},"is_active":{"rawValue":"1","ignoreRawValue":false,"value":true,"hasValue":true,"isFromDb":false,"payload":[]},"name":{"rawValue":null,"ignoreRawValue":true,"value":"Lionel Freeman","hasValue":true,"isFromDb":false,"payload":[]},"email":{"rawValue":null,"ignoreRawValue":true,"value":"diam.at.pretium@idmollisnec.co.uk","hasValue":true,"isFromDb":false,"payload":[]},"timezone":{"rawValue":null,"ignoreRawValue":true,"value":"Europe\/Moscow","hasValue":true,"isFromDb":false,"payload":[]},"big_data":{"rawValue":null,"ignoreRawValue":true,"value":"biiiig data","hasValue":true,"isFromDb":false,"payload":[]}}}}',
             $recSerialized
         );
         /** @var TestingAdmin $recUnserialized */
@@ -936,14 +959,11 @@ class RecordTest extends BaseTestCase
     {
         $rec = TestingAdmin::newEmptyRecord();
         $rec->updateValue('parent_id', 1, false);
-        /** @var RecordValue $val */
-        $val = $this->callObjectMethod($rec, 'getValueContainer', 'parent_id');
-        static::assertFalse($val->isItFromDb());
         static::assertFalse($rec->isValueFromDb('parent_id'));
         $rec
             ->updateValue('id', 1, true)
             ->updateValue('parent_id', 2, true);
-        static::assertTrue($val->isItFromDb());
+        static::assertTrue($rec->isValueFromDb('id'));
         static::assertTrue($rec->isValueFromDb('parent_id'));
     }
     

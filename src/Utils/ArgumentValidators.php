@@ -195,7 +195,7 @@ abstract class ArgumentValidators
             : PdoUtils::isValidDbEntityName($value);
     }
 
-    private static function getValueInfoForException(mixed $value): string
+    public static function getValueInfoForException(mixed $value): string
     {
         if (is_object($value)) {
             return 'Instance of ' . get_class($value) . ' class received.';

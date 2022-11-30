@@ -7,6 +7,7 @@ namespace PeskyORM\ORM\TableStructure\TableColumn;
 use Carbon\CarbonImmutable;
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\Record\RecordValue;
+use PeskyORM\Select\SelectQueryBuilderInterface;
 use Swayok\Utils\NormalizeValue;
 use Swayok\Utils\ValidateValue;
 
@@ -87,7 +88,7 @@ abstract class ColumnValueFormatters
             $formatter = static::wrapGetterIntoFormatter(
                 static::FORMAT_DATE,
                 static function (RecordValue $valueContainer): string {
-                    $value = static::getSimpleValueFormContainer($valueContainer);
+                    $value = static::getSimpleValueFromContainer($valueContainer);
                     if (ValidateValue::isDateTime($value, true)) {
                         // $value converted to unix timestamp in ValidateValue::isDateTime()
                         return date(NormalizeValue::DATE_FORMAT, $value);
@@ -106,7 +107,7 @@ abstract class ColumnValueFormatters
             $formatter = static::wrapGetterIntoFormatter(
                 static::FORMAT_TIME,
                 static function (RecordValue $valueContainer): string {
-                    $value = static::getSimpleValueFormContainer($valueContainer);
+                    $value = static::getSimpleValueFromContainer($valueContainer);
                     if (ValidateValue::isDateTime($value, true)) {
                         // $value converted to unix timestamp in ValidateValue::isDateTime()
                         return date(NormalizeValue::TIME_FORMAT, $value);
@@ -125,7 +126,7 @@ abstract class ColumnValueFormatters
             $formatter = static::wrapGetterIntoFormatter(
                 static::FORMAT_UNIX_TS,
                 static function (RecordValue $valueContainer): int {
-                    $value = static::getSimpleValueFormContainer($valueContainer);
+                    $value = static::getSimpleValueFromContainer($valueContainer);
                     if (ValidateValue::isDateTime($value, true)) {
                         // $value converted to unix timestamp in ValidateValue::isDateTime()
                         return $value;
@@ -144,7 +145,7 @@ abstract class ColumnValueFormatters
             $formatter = static::wrapGetterIntoFormatter(
                 static::FORMAT_DATE_TIME,
                 static function (RecordValue $valueContainer): string {
-                    $value = static::getSimpleValueFormContainer($valueContainer);
+                    $value = static::getSimpleValueFromContainer($valueContainer);
                     if (is_numeric($value) && $value > 0) {
                         return date('Y-m-d H:i:s', $value);
                     }
@@ -162,7 +163,7 @@ abstract class ColumnValueFormatters
             $formatter = static::wrapGetterIntoFormatter(
                 static::FORMAT_CARBON,
                 static function (RecordValue $valueContainer): CarbonImmutable {
-                    $value = static::getSimpleValueFormContainer($valueContainer);
+                    $value = static::getSimpleValueFromContainer($valueContainer);
                     if (is_numeric($value)) {
                         $carbon = CarbonImmutable::createFromTimestampUTC($value);
                     } else {
@@ -185,7 +186,7 @@ abstract class ColumnValueFormatters
             $formatter = static::wrapGetterIntoFormatter(
                 static::FORMAT_CARBON,
                 static function (RecordValue $valueContainer): CarbonImmutable {
-                    $value = static::getSimpleValueFormContainer($valueContainer);
+                    $value = static::getSimpleValueFromContainer($valueContainer);
                     $carbon = CarbonImmutable::parse($value)
                         ->startOfDay();
                     if ($carbon->isValid()) {
@@ -205,7 +206,7 @@ abstract class ColumnValueFormatters
             $formatter = static::wrapGetterIntoFormatter(
                 static::FORMAT_ARRAY,
                 static function (RecordValue $valueContainer): array|string|bool|null|int|float {
-                    $value = static::getSimpleValueFormContainer($valueContainer);
+                    $value = static::getSimpleValueFromContainer($valueContainer);
                     if (ValidateValue::isJson($value, true)) {
                         return $value;
                     }
@@ -224,7 +225,7 @@ abstract class ColumnValueFormatters
             $formatter = static::wrapGetterIntoFormatter(
                 static::FORMAT_OBJECT,
                 static function (RecordValue $valueContainer) {
-                    $value = static::getSimpleValueFormContainer($valueContainer);
+                    $value = static::getSimpleValueFromContainer($valueContainer);
                     if (ValidateValue::isJson($value, true)) {
                         $targetClassName = $valueContainer->getColumn()
                             ->getObjectClassNameForValueToObjectFormatter();
@@ -253,11 +254,13 @@ abstract class ColumnValueFormatters
     /**
      * @throws \UnexpectedValueException
      */
-    public static function getSimpleValueFormContainer(RecordValue $valueContainer): mixed
+    public static function getSimpleValueFromContainer(RecordValue $valueContainer): mixed
     {
-        $value = $valueContainer->getValueOrDefault();
-        if ($value instanceof DbExpr) {
-            throw new \UnexpectedValueException('It is impossible to convert ' . DbExpr::class . ' object to anoter format');
+        $value = $valueContainer->getValue();
+        if ($value instanceof DbExpr || $value instanceof SelectQueryBuilderInterface) {
+            throw new \UnexpectedValueException(
+                'It is impossible to convert ' . get_class($value) . ' instance to anoter format.'
+            );
         }
         return $value;
     }

@@ -4,17 +4,22 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\Record;
 
-use PeskyORM\DbExpr;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 
 class RecordValue implements RecordValueContainerInterface
 {
-    protected mixed $value = null;
     protected mixed $rawValue = null;
+    /**
+     * When true: $value will be used insterad of $rawValue.
+     * This required to lower memory usage when raw value is
+     * same as normalized value.
+     */
+    protected bool $ignoreRawValue = false;
 
+    protected mixed $value = null;
     protected bool $hasValue = false;
     protected bool $isFromDb = false;
-    protected ?bool $isDefaultValueCanBeSet = null;
+
     protected array $payload = [];
 
     public function __construct(
@@ -63,53 +68,32 @@ class RecordValue implements RecordValueContainerInterface
         return $this->hasValue;
     }
 
-    public function hasValueOrDefault(): bool
-    {
-        // todo: move this to TableColumnAbstract - it should not be here
-        return $this->hasValue() || $this->isDefaultValueCanBeSet();
-    }
-
-    public function hasDefaultValue(): bool
-    {
-        // todo: move this to TableColumnAbstract - it should not be here
-        return $this->getColumn()->hasDefaultValue();
-    }
-
-    public function getDefaultValue(): mixed
-    {
-        // todo: move this to TableColumnAbstract - it should not be here
-        return $this->getColumn()->getValidDefaultValue();
-    }
-
-    /**
-     * Return null if there is no default value.
-     * When there is no default value this method will avoid validation of a NULL value so that there will be no
-     * exception 'default value is not valid' if column is not nullable
-     */
-    public function getDefaultValueOrNull(): mixed
-    {
-        // todo: move this to TableColumnAbstract - it should not be here
-        return $this->hasDefaultValue()
-            ? $this->getColumn()->getValidDefaultValue()
-            : null;
-    }
-
-    public function getRawValue(): mixed
-    {
-        return $this->rawValue;
-    }
-
     public function setValue(
         mixed $rawValue,
         mixed $processedValue,
         bool $isFromDb
     ): void {
-        $this->rawValue = $rawValue;
+        if ($this->hasValue()) {
+            throw new \BadMethodCallException(
+                "Value for {$this->getColumnInfoForException()} aready set."
+                . ' You need to create a new instance of ' . static::class
+                . ' to store different value.'
+            );
+        }
         $this->value = $processedValue;
-        $this->hasValue = true;
-        $this->isDefaultValueCanBeSet = null;
         $this->isFromDb = $isFromDb;
-        $this->payload = [];
+        $this->hasValue = true;
+        if ($rawValue === $processedValue) {
+            $this->ignoreRawValue = true;
+        } else {
+            $this->rawValue = $rawValue;
+        }
+    }
+
+    public function getRawValue(): mixed
+    {
+        $this->assertValueIsSet();
+        return $this->ignoreRawValue ? $this->value : $this->rawValue;
     }
 
     /**
@@ -117,57 +101,17 @@ class RecordValue implements RecordValueContainerInterface
      */
     public function getValue(): mixed
     {
-        if (!$this->hasValue) {
-            throw new \BadMethodCallException(
-                "Value for {$this->getColumnInfoForException()} is not set"
-            );
-        }
+        $this->assertValueIsSet();
         return $this->value;
     }
 
-    /**
-     * @throws \BadMethodCallException
-     */
-    public function getValueOrDefault(): mixed
+    protected function assertValueIsSet(): void
     {
-        // todo: move implementation to TableColumnAbstract, use delegated call here
-        if ($this->hasValue()) {
-            return $this->value;
-        }
-
-        if ($this->isDefaultValueCanBeSet()) {
-            return $this->getDefaultValue();
-        }
-
-        if ($this->hasDefaultValue()) {
+        if (!$this->hasValue) {
             throw new \BadMethodCallException(
-                "Value for {$this->getColumnInfoForException()} is not set and default value cannot be set because"
-                . ' record already exists in DB and there is danger of unintended value overwriting'
+                "Value for {$this->getColumnInfoForException()} is not set."
             );
         }
-
-        throw new \BadMethodCallException(
-            "Value for {$this->getColumnInfoForException()} is not set and default value is not provided"
-        );
-    }
-
-    protected function isDefaultValueCanBeSet(): bool
-    {
-        // todo: move to ColumnInterface?
-        if ($this->isDefaultValueCanBeSet === null) {
-            if (!$this->hasDefaultValue()) {
-                return false;
-            }
-            if ($this->getColumn()->isPrimaryKey()) {
-                return (
-                    !$this->hasValue
-                    && $this->getDefaultValue() instanceof DbExpr
-                );
-            }
-
-            return !$this->getRecord()->existsInDb();
-        }
-        return $this->isDefaultValueCanBeSet;
     }
 
     public function getPayload(?string $key = null, mixed $default = null): mixed

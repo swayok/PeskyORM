@@ -6,6 +6,7 @@ namespace PeskyORM\ORM\TableStructure;
 
 use PeskyORM\Config\Connection\DbConnectionsManager;
 use PeskyORM\Exception\OrmException;
+use PeskyORM\Exception\TableColumnConfigException;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\TableDescription\ColumnDescriptionInterface;
@@ -316,10 +317,10 @@ abstract class TableStructure implements TableStructureInterface
         $method->setAccessible(false);
         if (!($column instanceof TableColumn)) {
             $class = static::class;
-            throw new OrmException(
+            throw new TableColumnConfigException(
                 "Method {$class}->{$method->getName()}() must return an instance of class that implements "
                 . TableColumnInterface::class,
-                OrmException::CODE_INVALID_TABLE_COLUMN_CONFIG
+                null
             );
         }
         if (!$column->hasName()) {
@@ -337,10 +338,10 @@ abstract class TableStructure implements TableStructureInterface
         if ($column->isPrimaryKey()) {
             if (!empty($this->pk)) {
                 $class = static::class;
-                throw new OrmException(
+                throw new TableColumnConfigException(
                     '2 primary keys in one table is forbidden:'
                     . " '{$this->pk->getName()}' and '{$column->getName()}' (class: {$class})",
-                    OrmException::CODE_INVALID_TABLE_COLUMN_CONFIG
+                    $column
                 );
             }
             $this->pk = $column;

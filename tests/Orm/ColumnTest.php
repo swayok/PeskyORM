@@ -62,7 +62,7 @@ class ColumnTest extends BaseTestCase
     {
         $column = TableColumn::create(TableColumn::TYPE_BOOL);
         static::assertInstanceOf(TableColumn::class, $column);
-        static::assertEquals(TableColumn::TYPE_BOOL, $column->getType());
+        static::assertEquals(TableColumn::TYPE_BOOL, $column->getDataType());
         static::assertFalse($column->hasName());
         static::assertEquals('id', $column->setName('id')->getName());
         static::assertTrue($column->hasName());
@@ -187,10 +187,10 @@ class ColumnTest extends BaseTestCase
     public function testFileTypes(): void
     {
         $obj = TableColumn::create(TableColumn::TYPE_FILE);
-        static::assertEquals(TableColumn::TYPE_FILE, $obj->getType());
+        static::assertEquals(TableColumn::TYPE_FILE, $obj->getDataType());
         static::assertTrue($obj->isFile());
         $obj = TableColumn::create(TableColumn::TYPE_IMAGE);
-        static::assertEquals(TableColumn::TYPE_IMAGE, $obj->getType());
+        static::assertEquals(TableColumn::TYPE_IMAGE, $obj->getDataType());
         static::assertTrue($obj->isFile());
     }
     
@@ -216,7 +216,7 @@ class ColumnTest extends BaseTestCase
     public function testFormattersDetectedByType(): void
     {
         $obj = TableColumn::create(TableColumn::TYPE_TIMESTAMP);
-        static::assertEquals(TableColumn::TYPE_TIMESTAMP, $obj->getType());
+        static::assertEquals(TableColumn::TYPE_TIMESTAMP, $obj->getDataType());
         static::assertInstanceOf(\Closure::class, $obj->getValueFormatter());
         $rec = TestingAdmin::fromArray(['created_at' => '2016-11-21 11:00:00']);
         /** @var \PeskyORM\ORM\Record\RecordValue $value */

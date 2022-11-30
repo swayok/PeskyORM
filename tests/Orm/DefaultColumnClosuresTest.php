@@ -116,7 +116,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
         $column = TableColumn::create(TableColumn::TYPE_STRING, 'test1')
             ->valueCannotBeSetOrChanged();
         $valueObj = new RecordValue($column, TestingAdmin::_());
-        DefaultColumnClosures::valueSetter('1', true, $valueObj, false);
+        $valueObj = DefaultColumnClosures::valueSetter('1', true, $valueObj, false);
         static::assertEquals('1', $valueObj->getRawValue());
         static::assertEquals('1', $valueObj->getValue());
         
@@ -130,20 +130,19 @@ class DefaultColumnClosuresTest extends BaseTestCase
     {
         $valueObj = new RecordValue(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
         // new value
-        DefaultColumnClosures::valueSetter('1', false, $valueObj, false);
+        $valueObj = DefaultColumnClosures::valueSetter('1', false, $valueObj, false);
         static::assertEquals('1', $valueObj->getRawValue());
         static::assertEquals(1, $valueObj->getValue());
         static::assertFalse($valueObj->isItFromDb());
         // change 'isItFromDb' status to true (should not be any changes other than $valueObj->isItFromDb())
-        DefaultColumnClosures::valueSetter(1, true, $valueObj, false);
+        $valueObj = DefaultColumnClosures::valueSetter(1, true, $valueObj, false);
         static::assertEquals('1', $valueObj->getRawValue());
         static::assertEquals(1, $valueObj->getValue());
         static::assertTrue($valueObj->isItFromDb());
         // change value
-        DefaultColumnClosures::valueSetter('2', true, $valueObj, false);
+        $valueObj = DefaultColumnClosures::valueSetter('2', true, $valueObj, false);
         static::assertEquals('2', $valueObj->getRawValue());
         static::assertEquals(2, $valueObj->getValue());
-
     }
 
     public function testValueSetterWithInvalidValue(): void
@@ -152,7 +151,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
         $this->expectExceptionMessage('Validation errors: [parent_id] Value must be of an integer data type.');
         $valueObj = new RecordValue(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
         // invalid value
-        DefaultColumnClosures::valueSetter(false, true, $valueObj, false);
+        $valueObj = DefaultColumnClosures::valueSetter(false, true, $valueObj, false);
         static::assertEquals(false, $valueObj->getRawValue());
         static::assertEquals(false, $valueObj->getValue());
     }

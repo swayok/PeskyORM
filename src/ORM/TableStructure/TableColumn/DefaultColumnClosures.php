@@ -6,18 +6,22 @@ namespace PeskyORM\ORM\TableStructure\TableColumn;
 
 use PeskyORM\DbExpr;
 use PeskyORM\Exception\InvalidDataException;
-use PeskyORM\ORM\Record\RecordValue;
+use PeskyORM\ORM\Record\RecordValueContainerInterface;
 use PeskyORM\ORM\RecordsCollection\RecordsSet;
 use PeskyORM\Select\SelectQueryBuilderInterface;
 
 class DefaultColumnClosures implements ColumnClosuresInterface
 {
-    
+
     /**
      * @throws \BadMethodCallException
      */
-    public static function valueSetter(mixed $newValue, bool $isFromDb, RecordValue $valueContainer, bool $trustDataReceivedFromDb): RecordValue
-    {
+    public static function valueSetter(
+        mixed $newValue,
+        bool $isFromDb,
+        RecordValueContainerInterface $valueContainer,
+        bool $trustDataReceivedFromDb
+    ): RecordValueContainerInterface {
         $column = $valueContainer->getColumn();
         if (!$isFromDb && $column->isReadonly()) {
             throw new \BadMethodCallException(
@@ -25,7 +29,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
             );
         }
         if ($isFromDb && $trustDataReceivedFromDb) {
-            $normalziedValue = ColumnValueProcessingHelpers::normalizeValueReceivedFromDb($newValue, $column->getType());
+            $normalziedValue = ColumnValueProcessingHelpers::normalizeValueReceivedFromDb($newValue, $column->getDataType());
             $valueContainer->setValue($newValue, $normalziedValue, true);
         } else {
             $preprocessedValue = call_user_func($column->getValuePreprocessor(), $newValue, $isFromDb, false, $column);
@@ -45,9 +49,11 @@ class DefaultColumnClosures implements ColumnClosuresInterface
                     $valueContainer->setIsFromDb(true);
                 }
             } else {
-                $valueContainer->setValue($newValue, $preprocessedValue, $isFromDb);
-
-                $errors = $column->validateValue($valueContainer->getValue(), $isFromDb, false);
+                if ($valueContainer->hasValue()) {
+                    // create new container
+                    $valueContainer = $column->getNewRecordValueContainer($valueContainer->getRecord());
+                }
+                $errors = $column->validateValue($preprocessedValue, $isFromDb, false);
                 if (count($errors) > 0) {
                     throw new InvalidDataException(
                         [$column->getName() => $errors],
@@ -68,9 +74,13 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         }
         return $valueContainer;
     }
-    
-    public static function valuePreprocessor(mixed $value, bool $isFromDb, bool $isForValidation, TableColumnInterface $column): mixed
-    {
+
+    public static function valuePreprocessor(
+        mixed $value,
+        bool $isFromDb,
+        bool $isForValidation,
+        TableColumn $column
+    ): mixed {
         if ($isFromDb && !$isForValidation) {
             return $value;
         }
@@ -89,30 +99,80 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         }
         return $value;
     }
-    
-    public static function valueGetter(RecordValue $valueContainer, ?string $format = null): mixed
+
+    public static function valueGetter(RecordValueContainerInterface $valueContainer, ?string $format = null): mixed
     {
+        $column = $valueContainer->getColumn();
         if ($format !== null) {
             return call_user_func(
-                $valueContainer->getColumn()->getValueFormatter(),
+                $column->getValueFormatter(),
                 $valueContainer,
                 $format
             );
         }
 
-        return $valueContainer->getValueOrDefault();
+        if ($valueContainer->hasValue()) {
+            return $valueContainer->getValue();
+        }
+
+        if (
+            !$column->isPrimaryKey()
+            && $column->hasDefaultValue()
+            && !$valueContainer->getRecord()->existsInDb()
+        ) {
+            return $column->getValidDefaultValue();
+        }
+
+        $columnInfo = static::getRecordAndColumnInfoForException($valueContainer);
+        if (!$column->hasDefaultValue()) {
+            $defaultValueRestriction = 'is not provided.';
+        } else {
+            $defaultValueRestriction = 'cannot be used.';
+        }
+        throw new \BadMethodCallException(
+            "Value for {$columnInfo} is not set and default value "
+            . $defaultValueRestriction
+        );
     }
-    
-    public static function valueExistenceChecker(RecordValue $valueContainer, bool $checkDefaultValue = false): bool
+
+    protected static function getRecordAndColumnInfoForException(
+        RecordValueContainerInterface $valueContainer
+    ): string {
+        $record =  $valueContainer->getRecord();
+        $pk = 'undefined';
+        if (!$valueContainer->getColumn()->isPrimaryKey()) {
+            try {
+                $pk = $record->existsInDb() ? $record->getPrimaryKeyValue() : 'null';
+            } catch (\Throwable) {
+            }
+        }
+        return get_class($record) . '(#' . $pk . ')->' . $valueContainer->getColumn()->getName();
+    }
+
+    public static function valueExistenceChecker(RecordValueContainerInterface $valueContainer, bool $checkDefaultValue = false): bool
     {
-        return $checkDefaultValue ? $valueContainer->hasValueOrDefault() : $valueContainer->hasValue();
+        if ($valueContainer->hasValue()) {
+            return true;
+        }
+        if (
+            !$checkDefaultValue
+            || $valueContainer->getColumn()->isPrimaryKey()
+            || $valueContainer->getRecord()->existsInDb()
+        ) {
+            return false;
+        }
+        return $valueContainer->getColumn()->hasDefaultValue();
     }
-    
+
     /**
      * @throws \UnexpectedValueException
      */
-    public static function valueValidator(mixed $value, bool $isFromDb, bool $isForCondition, TableColumnInterface $column): array
-    {
+    public static function valueValidator(
+        mixed $value,
+        bool $isFromDb,
+        bool $isForCondition,
+        TableColumnInterface $column
+    ): array {
         $errors = ColumnValueProcessingHelpers::isValidDbColumnValue(
             $column,
             $value,
@@ -135,31 +195,31 @@ class DefaultColumnClosures implements ColumnClosuresInterface
 
         return $errors;
     }
-    
+
     public static function valueNormalizer(mixed $value, bool $isFromDb, TableColumnInterface $column): mixed
     {
         return $isFromDb
-            ? ColumnValueProcessingHelpers::normalizeValueReceivedFromDb($value, $column->getType())
-            : ColumnValueProcessingHelpers::normalizeValue($value, $column->getType());
+            ? ColumnValueProcessingHelpers::normalizeValueReceivedFromDb($value, $column->getDataType())
+            : ColumnValueProcessingHelpers::normalizeValue($value, $column->getDataType());
     }
-    
-    public static function valueSavingExtender(RecordValue $valueContainer, bool $isUpdate, array $savedData): void
+
+    public static function valueSavingExtender(RecordValueContainerInterface $valueContainer, bool $isUpdate, array $savedData): void
     {
     }
-    
-    public static function valueDeleteExtender(RecordValue $valueContainer, bool $deleteFiles): void
+
+    public static function valueDeleteExtender(RecordValueContainerInterface $valueContainer, bool $deleteFiles): void
     {
     }
-    
+
     public static function valueValidatorExtender(mixed $value, bool $isFromDb, TableColumnInterface $column): array
     {
         return [];
     }
-    
+
     /**
      * @throws \InvalidArgumentException
      */
-    public static function valueFormatter(RecordValue $valueContainer, string $format): mixed
+    public static function valueFormatter(RecordValueContainerInterface $valueContainer, string $format): mixed
     {
         $column = $valueContainer->getColumn();
         $customFormatters = $column->getCustomValueFormatters();

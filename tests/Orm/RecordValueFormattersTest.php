@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\Orm;
 
 use Carbon\CarbonImmutable;
+use PeskyORM\DbExpr;
 use PeskyORM\Exception\InvalidDataException;
 use PeskyORM\ORM\Record\RecordValue;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters;
@@ -75,7 +76,7 @@ class RecordValueFormattersTest extends BaseTestCase
         $updatedTime = '23:59:59';
         $updatedDateTime = $updatedDate . ' ' . $updatedTime;
         $record->setCreatedAt($updatedDateTime);
-        static::assertSame($valueContainer, $record->getValueContainer('created_at'));
+        static::assertNotSame($valueContainer, $record->getValueContainer('created_at'));
         static::assertEquals($updatedDateTime, $record->created_at);
         static::assertEquals($updatedDate, $record->created_at_as_date);
         static::assertEquals($updatedTime, $record->created_at_as_time);
@@ -136,7 +137,7 @@ class RecordValueFormattersTest extends BaseTestCase
         $updatedDateTime = $updatedDate . ' ' . $updatedTime;
         $ts = strtotime($updatedDateTime);
         $record->setCreatedAtUnix($ts);
-        static::assertSame($valueContainer, $record->getValueContainer('created_at_unix'));
+        static::assertNotSame($valueContainer, $record->getValueContainer('created_at_unix'));
         static::assertEquals($ts, $record->created_at_unix);
         static::assertEquals($updatedDate, $record->created_at_unix_as_date);
         static::assertEquals($updatedTime, $record->created_at_unix_as_time);
@@ -341,8 +342,9 @@ class RecordValueFormattersTest extends BaseTestCase
     public function testDbExprValueInValueContainer(): void
     {
         $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessage('It is impossible to convert PeskyORM\DbExpr object to anoter format');
+        $this->expectExceptionMessage('It is impossible to convert PeskyORM\DbExpr instance to anoter format');
         $record = TestingFormatter::newEmptyRecord();
+        $record->setCreatedAt(new DbExpr('NOW()'));
         $valueContainer = $record->getValueContainer('created_at');
         $formatter = ColumnValueFormatters::getTimestampToDateFormatter();
         static::assertInstanceOf(\Closure::class, $formatter);

@@ -6,6 +6,7 @@ namespace PeskyORM\ORM\TableStructure\TableColumn;
 
 use PeskyORM\DbExpr;
 use PeskyORM\Exception\InvalidDataException;
+use PeskyORM\Exception\TableColumnConfigException;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\Record\RecordValue;
 use PeskyORM\ORM\Record\RecordValueContainerInterface;
@@ -19,39 +20,10 @@ use PeskyORM\Utils\ArgumentValidators;
 
 abstract class TableColumnAbstract implements TableColumnInterface
 {
-    public const CASE_SENSITIVE = true;
-    public const CASE_INSENSITIVE = false;
-
     protected ?string $name = null;
     protected ?TableStructureInterface $tableStructure = null;
 
-    protected bool $valueCanBeNull = true;
-    protected bool $trimValue = false;
-    protected bool $lowercaseValue = false;
-    /**
-     * null - autodetect depending on $this->valueCanBeNull value;
-     * true - accepts null values;
-     * false - forbids null values;
-     */
-    protected ?bool $convertEmptyStringToNull = null;
-
-    /**
-     * @var mixed|\Closure
-     */
-    protected mixed $defaultValue = null;
-    protected bool $hasDefaultValue = false;
-    protected bool $isDefaultValueValidated = false;
-    protected mixed $validDefaultValue = null;
-
-    protected bool $isValueMustBeUnique = false;
-    /**
-     * Should value uniqueness be case-sensitive or not?
-     */
-    protected bool $isUniqueContraintCaseSensitive = true;
-    /**
-     * Other columns used in uniqueness constraint (multi-column uniqueness)
-     */
-    protected array $uniqueContraintAdditonalColumns = [];
+    protected bool $valueCanBeNull = false;
 
     /**
      * This column is private for the object and will be excluded from iteration, toArray(), etc.
@@ -66,17 +38,22 @@ abstract class TableColumnAbstract implements TableColumnInterface
     protected bool $isReal = true;
     /**
      * Allow/disallow value setting and modification
-     * Record will not save columns that cannot be set or modified
+     * Record will not save columns that are read only
      */
-    protected bool $isValueCanBeSetOrChanged = true;
+    protected bool $isReadonly = true;
     /**
      * Then true - value contains a lot of data and should not be fetched by '*' selects
      */
     protected bool $isHeavy = false;
 
-    protected bool $isFile = false;
+    /**
+     * @var mixed|\Closure
+     */
+    protected mixed $defaultValue = null;
+    protected bool $hasDefaultValue = false;
+    protected bool $isDefaultValueValidated = false;
+    protected mixed $validDefaultValue = null;
 
-    protected bool $isPrimaryKey = false;
     /**
      * @var RelationInterface[]
      */
@@ -136,13 +113,16 @@ abstract class TableColumnAbstract implements TableColumnInterface
         return $this;
     }
 
-    protected function getColumnNameForException(): string
+    protected function getNameForException(?TableColumnInterface $column = null): string
     {
-        $tableStructure = $this->getTableStructure();
-        if ($tableStructure) {
-            return get_class($tableStructure) . '->' . $this->getName();
+        if (!$column) {
+            $column = $this;
         }
-        return static::class . "('{$this->getName()}')";
+        $tableStructure = $column->getTableStructure();
+        if ($tableStructure) {
+            return get_class($tableStructure) . '->' . $column->getName();
+        }
+        return static::class . "('{$column->getName()}')";
     }
 
     public function isNullableValues(): bool
@@ -150,111 +130,24 @@ abstract class TableColumnAbstract implements TableColumnInterface
         return $this->valueCanBeNull;
     }
 
-    public function allowsNullValues(): static
-    {
-        $this->valueCanBeNull = true;
-        return $this;
-    }
-
-    public function disallowsNullValues(): static
-    {
-        $this->valueCanBeNull = false;
-        return $this;
-    }
-
-    public function setIsNullableValue(bool $bool): static
-    {
-        $this->valueCanBeNull = $bool;
-        return $this;
-    }
-
-    public function trimsValue(): static
-    {
-        $this->trimValue = true;
-        return $this;
-    }
-
-    protected function shouldTrimValues(): bool
-    {
-        return $this->trimValue;
-    }
-
-    public function lowercasesValue(): static
-    {
-        $this->lowercaseValue = true;
-        return $this;
-    }
-
-    protected function shouldLowercaseValues(): bool
-    {
-        return $this->lowercaseValue;
-    }
-
-    protected function shouldConvertEmptyStringToNull(): bool
-    {
-        return $this->convertEmptyStringToNull ?? $this->isNullableValues();
-    }
-
-    public function convertsEmptyStringToNull(): static
-    {
-        $this->convertEmptyStringToNull = true;
-        return $this;
-    }
-
-    public function setConvertEmptyStringToNull(?bool $convert): static
-    {
-        $this->convertEmptyStringToNull = $convert;
-        return $this;
-    }
-
     public function isPrimaryKey(): bool
     {
-        return $this->isPrimaryKey;
-    }
-
-    public function primaryKey(): static
-    {
-        $this->isPrimaryKey = true;
-        return $this;
+        return false;
     }
 
     public function isValueMustBeUnique(): bool
     {
-        return $this->isValueMustBeUnique;
+        return false;
     }
 
     public function isUniqueContraintCaseSensitive(): bool
     {
-        return $this->isUniqueContraintCaseSensitive;
+        return true;
     }
 
     public function getUniqueContraintAdditonalColumns(): array
     {
-        return $this->uniqueContraintAdditonalColumns;
-    }
-
-    /**
-     * Note: there is no automatic uniqueness validation in DefaultColumnClosures class!
-     * @param bool $caseSensitive - true: compare values as is; false: compare lowercased values (emails for example);
-     *      Note that case-insensitive mode uses more resources than case-sensitive!
-     * @param array $withinColumns - used to provide list of columns for cases when uniqueness constraint in DB
-     *      uses 2 or more columns.
-     *      For example: when 'title' column must be unique within 'category' (category_id column)
-     */
-    public function uniqueValues(bool $caseSensitive = self::CASE_SENSITIVE, ...$withinColumns): static
-    {
-        $this->isValueMustBeUnique = true;
-        $this->isUniqueContraintCaseSensitive = $caseSensitive;
-        if (
-            count($withinColumns) === 1
-            && isset($withinColumns[0])
-            && is_array($withinColumns[0])
-        ) {
-            $this->uniqueContraintAdditonalColumns = $withinColumns[0];
-        } else {
-            $this->uniqueContraintAdditonalColumns = $withinColumns;
-        }
-        return $this;
+        return [];
     }
 
     public function doesNotExistInDb(): static
@@ -271,27 +164,18 @@ abstract class TableColumnAbstract implements TableColumnInterface
         return $this->isReal;
     }
 
-    public function valueCannotBeSetOrChanged(): static
+    public function valuesAreReadOnly(): static
     {
-        $this->isValueCanBeSetOrChanged = false;
-        return $this;
-    }
-
-    public function setIsValueCanBeSetOrChanged(bool $can): static
-    {
-        $this->isValueCanBeSetOrChanged = $can;
+        $this->isReadonly = false;
         return $this;
     }
 
     public function isReadonly(): bool
     {
-        return !$this->isValueCanBeSetOrChanged;
+        return $this->isReadonly;
     }
 
-    /**
-     * Value contains a lot of data and should not be fetched by '*' selects
-     */
-    public function valueIsHeavy(): static
+    public function valuesAreHeavy(): static
     {
         $this->isHeavy = true;
         return $this;
@@ -300,6 +184,44 @@ abstract class TableColumnAbstract implements TableColumnInterface
     public function isHeavyValues(): bool
     {
         return $this->isHeavy;
+    }
+
+    public function isFile(): bool
+    {
+        return false;
+    }
+
+    public function isPrivateValues(): bool
+    {
+        return $this->isPrivate;
+    }
+
+    public function valuesArePrivate(): static
+    {
+        $this->isPrivate = true;
+        return $this;
+    }
+
+    /**
+     * @param \Closure $valueGenerator - function (array|RecordInterface $record): mixed { return 'value' }
+     */
+    public function setValueAutoUpdater(\Closure $valueGenerator): static
+    {
+        $this->valueAutoUpdater = $valueGenerator;
+        return $this;
+    }
+
+    public function getAutoUpdateForAValue(RecordInterface|array $record): mixed
+    {
+        if (empty($this->valueAutoUpdater)) {
+            throw new \BadMethodCallException('Value auto updater function is not set');
+        }
+        return call_user_func($this->valueAutoUpdater, $record);
+    }
+
+    public function isAutoUpdatingValues(): bool
+    {
+        return !empty($this->valueAutoUpdater);
     }
 
     public function addRelation(RelationInterface $relation): static
@@ -354,85 +276,24 @@ abstract class TableColumnAbstract implements TableColumnInterface
     protected function setForeignKeyRelation(RelationInterface $relation): static
     {
         if ($this->foreignKeyRelation) {
-            throw new \InvalidArgumentException(
+            throw new TableColumnConfigException(
                 'Conflict detected for column ' . $this->getName() . ': relation '
                 . $relation->getName() . ' pretends to be the source of '
                 . 'values for this foreign key but there is already another relation for this: '
-                . $this->foreignKeyRelation->getName()
+                . $this->foreignKeyRelation->getName(),
+                $this
             );
         }
         $this->foreignKeyRelation = $relation;
         return $this;
     }
 
-    public function isFile(): bool
-    {
-        return $this->isFile;
-    }
-
-    protected function itIsFile(): static
-    {
-        $this->isFile = true;
-        return $this;
-    }
-
-    public function isPrivateValues(): bool
-    {
-        return $this->isPrivate;
-    }
-
-    /**
-     * Value will not appear in Record->toArray() results and in iteration
-     */
-    public function privateValue(): static
-    {
-        $this->isPrivate = true;
-        return $this;
-    }
-
-    /**
-     * @param \Closure $valueGenerator - function (array|RecordInterface $record): mixed { return 'value' }
-     */
-    public function autoUpdateValueOnEachSaveWith(\Closure $valueGenerator): static
-    {
-        $this->valueAutoUpdater = $valueGenerator;
-        return $this;
-    }
-
-    /**
-     * @throws \UnexpectedValueException
-     */
-    public function getAutoUpdateForAValue(RecordInterface|array $record): mixed
-    {
-        if (empty($this->valueAutoUpdater)) {
-            throw new \UnexpectedValueException('Value auto updater function is not set');
-        }
-        return call_user_func($this->valueAutoUpdater, $record);
-    }
-
-    public function isAutoUpdatingValues(): bool
-    {
-        return !empty($this->valueAutoUpdater);
-    }
-
-    public function getPossibleColumnNames(): array
-    {
-        // todo: implement this
-        $name = $this->getName();
-        $ret = [
-            $name,
-        ];
-//        foreach ($this->getValueFormattersNames() as $formatterName) {
-//            $ret[] = $name . '_as_' . $formatterName;
-//        }
-        return $ret;
-    }
-
     public function getDefaultValue(): mixed
     {
         if (!$this->hasDefaultValue()) {
-            throw new \BadMethodCallException(
-                "Default value for column '{$this->getColumnNameForException()}' is not set."
+            throw new TableColumnConfigException(
+                "Default value for column '{$this->getNameForException()}' is not set.",
+                $this
             );
         }
         return $this->defaultValue;
@@ -486,9 +347,10 @@ abstract class TableColumnAbstract implements TableColumnInterface
         $normalizedValue = $this->normalizeValueForValidation($defaultValue, false);
         $errors = $this->validateNormalizedValue($normalizedValue, false, false);
         if (count($errors) > 0) {
-            throw new \UnexpectedValueException(
-                "Default value for column {$this->getColumnNameForException()} is not valid. Errors: "
-                . implode(', ', $errors)
+            throw new TableColumnConfigException(
+                "Default value for column {$this->getNameForException()} is not valid. Errors: "
+                . implode(', ', $errors),
+                $this
             );
         }
 
@@ -497,6 +359,9 @@ abstract class TableColumnAbstract implements TableColumnInterface
 
     public function hasDefaultValue(): bool
     {
+        if ($this->isPrimaryKey()) {
+            return false;
+        }
         return $this->hasDefaultValue;
     }
 
@@ -505,11 +370,36 @@ abstract class TableColumnAbstract implements TableColumnInterface
      */
     public function setDefaultValue(mixed $defaultValue): static
     {
+        if ($this->isPrimaryKey()) {
+            throw new TableColumnConfigException(
+                'Primary key column ' . $this->getNameForException()
+                . ' is not allowed to have default value.',
+                $this
+            );
+        }
         $this->defaultValue = $defaultValue;
         $this->hasDefaultValue = true;
         $this->isDefaultValueValidated = false;
         return $this;
     }
+
+    public function getPossibleColumnNames(): array
+    {
+        // todo: implement this
+        $name = $this->getName();
+        return [
+            $name
+        ];
+//        $ret = [
+//            $name,
+//        ];
+//        foreach ($this->getValueFormattersNames() as $formatterName) {
+//            $ret[] = $name . '_as_' . $formatterName;
+//        }
+//        return $ret;
+    }
+
+    // values management
 
     public function validateValue(
         mixed $value,
@@ -555,7 +445,10 @@ abstract class TableColumnAbstract implements TableColumnInterface
      */
     protected function shouldNormalizeValidatedValue(mixed $value): bool
     {
-        return $this->shouldValidateValue($value);
+        return !(
+            $value instanceof DbExpr
+            || $value instanceof SelectQueryBuilderInterface
+        );
     }
 
     /**
@@ -617,31 +510,6 @@ abstract class TableColumnAbstract implements TableColumnInterface
         if ($value instanceof RecordsSet) {
             return $value->getOrmSelect();
         }
-        if (is_string($value)) {
-            return $this->normalizeStringValue($value, $isFromDb);
-        }
-        return $value;
-    }
-
-    /**
-     * Apply string value normalizations based on Column options like
-     * shouldTrimValues(), shouldConvertEmptyStringToNull(), shouldLowercaseValues()
-     */
-    protected function normalizeStringValue(string $value, bool $isFromDb): ?string
-    {
-        if ($isFromDb) {
-            // do not modify DB value to avoid unintended changes
-            return $value;
-        }
-        if ($this->shouldTrimValues()) {
-            $value = trim($value);
-        }
-        if ($value === '' && $this->shouldConvertEmptyStringToNull()) {
-            return null;
-        }
-        if ($this->shouldLowercaseValues()) {
-            $value = mb_strtolower($value);
-        }
         return $value;
     }
 
@@ -665,7 +533,7 @@ abstract class TableColumnAbstract implements TableColumnInterface
             return $validatedValue;
         }
 
-        return $this->normalizeValueType($validatedValue);
+        return $this->normalizeValidatedValueType($validatedValue);
     }
 
     /**
@@ -674,28 +542,62 @@ abstract class TableColumnAbstract implements TableColumnInterface
      * @see self::normalizeValidatedValue()
      * @see self::shouldNormalizeValidatedValue()
      */
-    protected function normalizeValueType(mixed $validatedValue): mixed
-    {
-        return $validatedValue;
-    }
+    abstract protected function normalizeValidatedValueType(mixed $validatedValue): mixed;
 
     public function setValue(
-        RecordInterface $record,
+        RecordValueContainerInterface $currentValueContainer,
         mixed $newValue,
-        bool $isFromDb
+        bool $isFromDb,
+        bool $trustDataReceivedFromDb
     ): RecordValueContainerInterface {
-        // todo: review this
-        $normalizedValue = $this->normalizeValueForValidation($newValue, $isFromDb);
-        $errors = $this->validateNormalizedValue($normalizedValue, $isFromDb, false);
-        if (!empty($errors)) {
-            throw new InvalidDataException(
-                [$this->getName() => $errors],
-                $record,
-                $this,
-                $newValue
+        if (!$isFromDb && $this->isReadonly()) {
+            throw new TableColumnConfigException(
+                "Column {$this->getNameForException()} is readonly.",
+                $this
             );
         }
-        $valueContainer = $this->getRecordValueContainer($record);
+        // Handle same value
+        if (
+            $currentValueContainer->hasValue()
+            && $newValue === $currentValueContainer->getRawValue()
+        ) {
+            // Received same value as current one
+            // Warning: if value in $currentValueContainer was already from DB
+            // it should not change its status
+            if ($isFromDb) {
+                // Maybe value has changed its satatus to 'received from db'
+                $currentValueContainer->setIsFromDb(true);
+            }
+            return $currentValueContainer;
+        }
+        // Normalize and validate value
+        if ($isFromDb && $trustDataReceivedFromDb) {
+            $normalizedValue = $newValue;
+        } else {
+            $normalizedValue = $this->normalizeValueForValidation($newValue, $isFromDb);
+            if ($this->shouldUseDefaultValueInsteadOfNormalizedValue($currentValueContainer, $normalizedValue, $isFromDb)) {
+                $normalizedValue = $this->getValidDefaultValue();
+            } else {
+                $errors = $this->validateNormalizedValue($normalizedValue, $isFromDb, false);
+                if (!empty($errors)) {
+                    throw new InvalidDataException(
+                        [$this->getName() => $errors],
+                        $currentValueContainer->getRecord(),
+                        $this,
+                        $newValue
+                    );
+                }
+            }
+        }
+        if ($currentValueContainer->hasValue()) {
+            // Create new value container.
+            // Each container is allowed to set value only once.
+            $valueContainer = $this->getNewRecordValueContainer(
+                $currentValueContainer->getRecord()
+            );
+        } else {
+            $valueContainer = $currentValueContainer;
+        }
         $valueContainer->setValue(
             $newValue,
             $this->normalizeValidatedValue($normalizedValue),
@@ -704,9 +606,70 @@ abstract class TableColumnAbstract implements TableColumnInterface
         return $valueContainer;
     }
 
-    public function getRecordValueContainer(
+    protected function assertValueContainerIsValid(
+        RecordValueContainerInterface $valueContainer
+    ): void {
+        if ($valueContainer->getColumn() !== $this) {
+            throw new \UnexpectedValueException(
+                get_class($valueContainer) . ' class instance belongs to different column: '
+                . $this->getNameForException($valueContainer->getColumn()).
+                '. Expected column: ' . $this->getNameForException()
+            );
+        }
+    }
+
+    /**
+     * Check if default value should be used instead of $normalizedValue.
+     * Ususally default value should be used when $normalizedValue === null
+     * and Column configured with default value.
+     * Also, it is reasonable to not use default value if $isFromDb === true
+     * and when Record exists in DB to avoid unxepected overrides.
+     */
+    protected function shouldUseDefaultValueInsteadOfNormalizedValue(
+        RecordValueContainerInterface $valueContainer,
+        mixed $normalizedValue,
+        bool $isFromDb
+    ): bool {
+        return (
+            $normalizedValue === null
+            && !$isFromDb
+            && $this->hasDefaultValue()
+            && !$this->isPrimaryKey()
+            && !$valueContainer->getRecord()->existsInDb()
+        );
+    }
+
+    protected function getRecordInfoForException(
+        RecordValueContainerInterface $valueContainer
+    ): string {
+        $record = $valueContainer->getRecord();
+        $pk = 'undefined';
+        if (!$this->isPrimaryKey()) {
+            try {
+                $pk = $record->existsInDb()
+                    ? $record->getPrimaryKeyValue()
+                    : 'null';
+            } catch (\Throwable) {
+            }
+        }
+        return get_class($record) . '(#' . $pk . ')->' . $this->getName();
+    }
+
+    protected function canUseDefaultValueInSetter(
+        RecordValueContainerInterface $valueContainer
+    ): bool {
+        // Usage of default value in value setter is possible only
+        // if Record does not exist in DB, in other case it might be
+        return (
+            $this->hasDefaultValue()
+            && !$valueContainer->getRecord()->existsInDb()
+        );
+    }
+
+    public function getNewRecordValueContainer(
         RecordInterface $record
     ): RecordValueContainerInterface {
+        // todo: use in Record
         return new RecordValue($this, $record);
     }
 }

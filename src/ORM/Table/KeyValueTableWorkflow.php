@@ -264,7 +264,7 @@ trait KeyValueTableWorkflow
             $record = $table->newRecord()->updateValues($data, true, false);
             foreach ($columns as $columnName => $column) {
                 if (!$column->isReal()) {
-                    $isJson = in_array($column->getType(), [$column::TYPE_JSON, $column::TYPE_JSONB], true);
+                    $isJson = in_array($column->getDataType(), [$column::TYPE_JSON, $column::TYPE_JSONB], true);
                     if (
                         (
                             array_key_exists($columnName, $data)

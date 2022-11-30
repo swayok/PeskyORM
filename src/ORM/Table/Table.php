@@ -406,7 +406,7 @@ abstract class Table implements TableInterface
         }
         foreach ($columns as $columnName) {
             $columnInfo = static::getStructure()->getColumn($columnName);
-            $pdoDataTypes[$columnInfo->getName()] = match ($columnInfo->getType()) {
+            $pdoDataTypes[$columnInfo->getName()] = match ($columnInfo->getDataType()) {
                 $columnInfo::TYPE_BOOL => \PDO::PARAM_BOOL,
                 $columnInfo::TYPE_INT => \PDO::PARAM_INT,
                 $columnInfo::TYPE_BLOB => \PDO::PARAM_LOB,

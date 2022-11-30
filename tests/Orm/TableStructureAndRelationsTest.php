@@ -6,6 +6,7 @@ namespace PeskyORM\Tests\Orm;
 
 use PeskyORM\DbExpr;
 use PeskyORM\Exception\OrmException;
+use PeskyORM\Exception\TableColumnConfigException;
 use PeskyORM\ORM\TableStructure\Relation;
 use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
@@ -110,7 +111,7 @@ class TableStructureAndRelationsTest extends BaseTestCase
     
     public function testInvalidTableStructure1(): void
     {
-        $this->expectException(OrmException::class);
+        $this->expectException(TableColumnConfigException::class);
         $this->expectExceptionMessageMatches(
             "%Method .*?->invalid\(\) must return an instance of class that implements .*?TableColumnInterface%"
         );
@@ -341,82 +342,82 @@ class TableStructureAndRelationsTest extends BaseTestCase
         static::assertEquals(
             TableColumn::TYPE_BOOL,
             $structure::getColumn('is_active')
-                ->getType()
+                ->getDataType()
         );
         static::assertEquals(
             TableColumn::TYPE_BOOL,
             $structure::getColumn('is_superadmin')
-                ->getType()
+                ->getDataType()
         );
         static::assertEquals(
             TableColumn::TYPE_STRING,
             $structure::getColumn('ip')
-                ->getType()
+                ->getDataType()
         );
         static::assertEquals(
             TableColumn::TYPE_INT,
             $structure::getColumn('id')
-                ->getType()
+                ->getDataType()
         );
         static::assertEquals(
             TableColumn::TYPE_INT,
             $structure::getColumn('parent_id')
-                ->getType()
+                ->getDataType()
         );
         static::assertEquals(
             TableColumn::TYPE_TIMESTAMP_WITH_TZ,
             $structure::getColumn('created_at')
-                ->getType()
+                ->getDataType()
         );
         static::assertEquals(
             TableColumn::TYPE_TIMESTAMP,
             $structure::getColumn('updated_at')
-                ->getType()
+                ->getDataType()
         );
         static::assertEquals(
             TableColumn::TYPE_STRING,
             $structure::getColumn('language')
-                ->getType()
+                ->getDataType()
         );
         static::assertEquals(
             TableColumn::TYPE_STRING,
             $structure::getColumn('login')
-                ->getType()
+                ->getDataType()
         );
         static::assertEquals(
             \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_STRING,
             $structure::getColumn('password')
-                ->getType()
+                ->getDataType()
         );
         static::assertEquals(
             \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_STRING,
             $structure::getColumn('remember_token')
-                ->getType()
+                ->getDataType()
         );
         static::assertEquals(
             \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_STRING,
             $structure::getColumn('role')
-                ->getType()
+                ->getDataType()
         );
         static::assertEquals(
             TableColumn::TYPE_STRING,
             $structure::getColumn('name')
-                ->getType()
+                ->getDataType()
         );
         static::assertEquals(
             \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_STRING,
             $structure::getColumn('email')
-                ->getType()
+                ->getDataType()
         );
         static::assertEquals(
             \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_STRING,
             $structure::getColumn('timezone')
-                ->getType()
+                ->getDataType()
         );
         static::assertEquals(
             TableColumn::TYPE_STRING,
             $structure::getColumn('not_changeable_column')
-                ->getType()
+                ->getDataType()
         );
     }
     

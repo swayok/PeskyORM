@@ -6,7 +6,6 @@ namespace PeskyORM\Exception;
 
 class OrmException extends \Exception
 {
-    
     public const CODE_INVALID_TABLE_SCHEMA = 50001;
     public const CODE_INVALID_TABLE_COLUMN_CONFIG = 50002;
     public const CODE_INVALID_TABLE_RELATION_CONFIG = 50003;

@@ -10,7 +10,6 @@ use PeskyORM\ORM\Record\RecordValue;
 use PeskyORM\ORM\TableStructure\Relation;
 use PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\ORM\TableStructure\TableStructure;
 
 class TestingAdminsTableStructure extends TableStructure
@@ -31,8 +30,7 @@ class TestingAdminsTableStructure extends TableStructure
         return TableColumn::create(TableColumn::TYPE_INT)
             ->primaryKey()
             ->convertsEmptyStringToNull()
-            ->disallowsNullValues()
-            ->setDefaultValue(TestingAdminsTable::getExpressionToSetDefaultValueForAColumn());
+            ->disallowsNullValues();
     }
     
     private function parent_id(): TableColumn
@@ -56,7 +54,7 @@ class TestingAdminsTableStructure extends TableStructure
             ->convertsEmptyStringToNull()
             ->disallowsNullValues()
             ->trimsValue()
-            ->setValuePreprocessor(function ($value, $isDbValue, $isForValidation, TableColumnInterface $column) {
+            ->setValuePreprocessor(function ($value, $isDbValue, $isForValidation, TableColumn $column) {
                 $value = DefaultColumnClosures::valuePreprocessor($value, $isDbValue, $isForValidation, $column);
                 if (!$isDbValue && !empty($value)) {
                     return password_hash($value, PASSWORD_BCRYPT);

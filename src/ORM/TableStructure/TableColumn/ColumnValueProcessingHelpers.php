@@ -39,7 +39,7 @@ abstract class ColumnValueProcessingHelpers
             return [static::getErrorMessage($errorMessages, $column::VALUE_CANNOT_BE_NULL)];
         }
         // data type validation
-        $errors = static::isValueFitsDataType($preprocessedValue, $column->getType(), $isForCondition, $errorMessages);
+        $errors = static::isValueFitsDataType($preprocessedValue, $column->getDataType(), $isForCondition, $errorMessages);
         if (!empty($errors)) {
             return $errors;
         }

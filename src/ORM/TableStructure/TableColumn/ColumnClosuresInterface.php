@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\TableStructure\TableColumn;
 
-use PeskyORM\ORM\Record\RecordValue;
+use PeskyORM\ORM\Record\RecordValueContainerInterface;
 
 interface ColumnClosuresInterface
 {
@@ -16,7 +16,7 @@ interface ColumnClosuresInterface
      * $trustDataReceivedFromDb = true tells setter that $newValue is trusted when $isFromDb === true.
      * This usually means that normalization and validation of $newValue is not needed.
      */
-    public static function valueSetter(mixed $newValue, bool $isFromDb, RecordValue $valueContainer, bool $trustDataReceivedFromDb): RecordValue;
+    public static function valueSetter(mixed $newValue, bool $isFromDb, RecordValueContainerInterface $valueContainer, bool $trustDataReceivedFromDb): RecordValueContainerInterface;
     
     /**
      * Slightly modify value before validation and value setter.
@@ -25,18 +25,18 @@ interface ColumnClosuresInterface
      * Uses $column->isEmptyStringMustBeConvertedToNull(), $column->isValueLowercasingRequired()
      * and $column->isValueTrimmingRequired().
      */
-    public static function valuePreprocessor(mixed $value, bool $isFromDb, bool $isForValidation, TableColumnInterface $column): mixed;
+    public static function valuePreprocessor(mixed $value, bool $isFromDb, bool $isForValidation, TableColumn $column): mixed;
     
     /**
      * Get value.
      * Uses valueFormatter if $format is not null.
      */
-    public static function valueGetter(RecordValue $valueContainer, ?string $format = null): mixed;
+    public static function valueGetter(RecordValueContainerInterface $valueContainer, ?string $format = null): mixed;
     
     /**
      * Tests if value is set.
      */
-    public static function valueExistenceChecker(RecordValue $valueContainer, bool $checkDefaultValue = false): bool;
+    public static function valueExistenceChecker(RecordValueContainerInterface $valueContainer, bool $checkDefaultValue = false): bool;
     
     /**
      * Validates value. Uses valueValidatorExtender and valueExistenceChecker.
@@ -62,16 +62,16 @@ interface ColumnClosuresInterface
     /**
      * Additional actions after value saving to DB (or instead of saving if column does not exist in DB).
      */
-    public static function valueSavingExtender(RecordValue $valueContainer, bool $isUpdate, array $savedData): void;
+    public static function valueSavingExtender(RecordValueContainerInterface $valueContainer, bool $isUpdate, array $savedData): void;
     
     /**
      * Additional actions after record deleted from DB.
      */
-    public static function valueDeleteExtender(RecordValue $valueContainer, bool $deleteFiles): void;
+    public static function valueDeleteExtender(RecordValueContainerInterface $valueContainer, bool $deleteFiles): void;
     
     /**
      * Formats value according to required $format.
      */
-    public static function valueFormatter(RecordValue $valueContainer, string $format): mixed;
+    public static function valueFormatter(RecordValueContainerInterface $valueContainer, string $format): mixed;
     
 }
