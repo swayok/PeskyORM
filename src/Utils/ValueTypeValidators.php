@@ -6,6 +6,7 @@ namespace PeskyORM\Utils;
 
 abstract class ValueTypeValidators
 {
+    // '123.00' string can be converted to integer
     public const INTEGER_REGEXP = '%^-?\d+(\.0+)?$%';
 
     public static function isInteger(mixed $value): bool
@@ -15,7 +16,7 @@ abstract class ValueTypeValidators
         }
 
         if (
-            (is_string($value) || is_numeric($value))
+            is_numeric($value)
             && preg_match(self::INTEGER_REGEXP, (string)$value)
         ) {
             return true;

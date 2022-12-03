@@ -168,8 +168,55 @@ interface TableColumnInterface
         RecordInterface $record
     ): RecordValueContainerInterface;
 
+    public function setValue(
+        RecordValueContainerInterface $currentValueContainer,
+        mixed $newValue,
+        bool $isFromDb,
+        bool $trustDataReceivedFromDb
+    ): RecordValueContainerInterface;
 
-    //public function getValue(RecordValueContainerInterface $valueContainer): void;
+    public function getValue(
+        RecordValueContainerInterface $valueContainer,
+        ?string $format
+    ): mixed;
 
-    //public function setValue(RecordValueContainerInterface $valueContainer): void;
+    public function hasValue(
+        RecordValueContainerInterface $valueContainer,
+        bool $allowDefaultValue
+    ): bool;
+
+    /**
+     * Called for each column with updated value after
+     * data was saved to DB.
+     * Here you can do some additional/delayed actions with already saved data.
+     * Example: save uploaded files to FS after files metadata successfully saved to DB.
+     * You can store some data in $valueContainer during setValue() and
+     * access that data in this method. Make sure to remove used data after processing.
+     * @see RecordValueContainerInterface::pullPayload()
+     * @see RecordValueContainerInterface::addPayload()
+     * Note: for a virtual column this method will be triggered on each save.
+     * This will allow for virtual colums to manage complex data of a real column
+     * and then perform some actions after real column value is saved to DB.
+     */
+    public function afterSave(
+        RecordValueContainerInterface $valueContainer,
+        bool $isUpdate,
+    ): void;
+
+    /**
+     * Called after Record was deleted from DB.
+     * Here you can do a cleanup for resources linked to Record.
+     * Example: delete files attched to Record.
+     * $valueContainer holds last column value.
+     * Record attached to $valueContainer has all its values before it was deleted.
+     * This way you can use any values deleted Record had before it was deleted.
+     * @param bool $shouldDeleteFiles
+     *      - true: delete files attached to Record by this column;
+     *      - false: do not delete files attached to Record by this column.
+     * Note: this method is called for all real and virtual columns.
+     */
+    public function afterDelete(
+        RecordValueContainerInterface $valueContainer,
+        bool $shouldDeleteFiles
+    ): void;
 }

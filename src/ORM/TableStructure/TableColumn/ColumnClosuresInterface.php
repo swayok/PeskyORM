@@ -62,7 +62,7 @@ interface ColumnClosuresInterface
     /**
      * Additional actions after value saving to DB (or instead of saving if column does not exist in DB).
      */
-    public static function valueSavingExtender(RecordValueContainerInterface $valueContainer, bool $isUpdate, array $savedData): void;
+    public static function valueSavingExtender(RecordValueContainerInterface $valueContainer, bool $isUpdate): void;
     
     /**
      * Additional actions after record deleted from DB.

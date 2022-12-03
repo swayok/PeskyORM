@@ -167,10 +167,10 @@ class RecordTest extends BaseTestCase
         static::assertCount(1, $this->getObjectPropertyValue($rec, 'relatedRecords'));
         /** @var RecordValue $valId1 */
         $valId1 = $this->callObjectMethod($rec, 'getValueContainer', 'id');
-        static::assertFalse($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
+        static::assertFalse($rec->isCollectingUpdates());
         $rec->begin()
             ->updateValue('parent_id', 3, false);
-        static::assertTrue($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
+        static::assertTrue($rec->isCollectingUpdates());
         static::assertCount(1, $this->getObjectPropertyValue($rec, 'valuesBackup'));
         $rec->rollback();
         $rec->reset();
@@ -179,7 +179,7 @@ class RecordTest extends BaseTestCase
         static::assertEquals(1, $valId1->getValue());
         static::assertEquals(0, $this->getObjectPropertyValue($rec, 'iteratorIdx'));
         static::assertCount(0, $this->getObjectPropertyValue($rec, 'relatedRecords'));
-        static::assertFalse($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
+        static::assertFalse($rec->isCollectingUpdates());
         static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
         /** @var RecordValue $valId2 */
         $valId2 = $this->callObjectMethod($rec, 'getValueContainer', 'id');
@@ -265,8 +265,8 @@ class RecordTest extends BaseTestCase
             'not_existing_column_with_default_value',
             'not_existing_column_with_calculated_value',
         ];
-        static::assertEquals($expectedNotExistingColumnsList, array_keys(TestingAdmin::getColumnsThatDoNotExistInDb()));
-        static::assertEquals([], array_keys(TestingSetting::getColumnsThatDoNotExistInDb()));
+        static::assertEquals($expectedNotExistingColumnsList, array_keys(TestingAdmin::getVirtualColumns()));
+        static::assertEquals([], array_keys(TestingSetting::getVirtualColumns()));
         static::assertEquals(
             [
                 'id',
@@ -319,10 +319,10 @@ class RecordTest extends BaseTestCase
         $rec->updateValue('id', 1, true)
             ->begin()
             ->updateValue('parent_id', 2, false);
-        static::assertTrue($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
+        static::assertTrue($rec->isCollectingUpdates());
         static::assertCount(1, $this->getObjectPropertyValue($rec, 'valuesBackup'));
         $this->callObjectMethod($rec, 'cleanUpdates');
-        static::assertFalse($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
+        static::assertFalse($rec->isCollectingUpdates());
         static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
     }
     
@@ -403,17 +403,17 @@ class RecordTest extends BaseTestCase
     
     public function testInvalidSetValue1(): void
     {
-        $this->expectExceptionMessage("It is forbidden to modify or set value of a 'not_changeable_column' column");
         $this->expectException(\BadMethodCallException::class);
+        $this->expectExceptionMessage("Column 'not_changeable_column' is read only");
         $rec = new TestingAdmin();
         $rec->updateValue('not_changeable_column', 1, false);
     }
     
     public function testInvalidSetValue2(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage(
-            "Attempt to set a value for column [parent_id] with flag \$isFromDb === true while record does not exist in DB"
+            'It is forbidden to set a value for column \'parent_id\' with flag $isFromDb === true while Record does not have a primary key value'
         );
         $rec = new TestingAdmin();
         $rec->updateValue('parent_id', 1, true);
@@ -421,9 +421,9 @@ class RecordTest extends BaseTestCase
     
     public function testInvalidSetValue3(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage(
-            "Attempt to set a value for column [parent_id] with flag \$isFromDb === true while record does not exist in DB"
+            'It is forbidden to set a value for column \'parent_id\' with flag $isFromDb === true while Record does not have a primary key value'
         );
         $rec = new TestingAdmin();
         $rec->updateValue('parent_id', 1, true);
@@ -432,7 +432,9 @@ class RecordTest extends BaseTestCase
     public function testInvalidSetValue4(): void
     {
         $this->expectException(\BadMethodCallException::class);
-        $this->expectExceptionMessage("It is forbidden to set value with \$isFromDb === true after begin()");
+        $this->expectExceptionMessage(
+            "It is forbidden to set value with flag \$isFromDb === true after Record->begin()"
+        );
         $rec = new TestingAdmin();
         $rec->updateValue('id', 1, true);
         $rec->begin()
@@ -441,8 +443,10 @@ class RecordTest extends BaseTestCase
     
     public function testInvalidSetPkValue(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("It is forbidden to change primary key value when \$isFromDb === false");
+        $this->expectException(\BadMethodCallException::class);
+        $this->expectExceptionMessage(
+            "It is forbidden to change primary key value with flag \$isFromDb === false"
+        );
         $rec = new TestingAdmin();
         $rec->updateValue('id', 1, false);
     }
@@ -475,7 +479,7 @@ class RecordTest extends BaseTestCase
         $rec->updateValue('id', 4, true)
             ->begin()
             ->updateValue('parent_id', 3, false);
-        static::assertTrue($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
+        static::assertTrue($rec->isCollectingUpdates());
         static::assertCount(1, $this->getObjectPropertyValue($rec, 'valuesBackup'));
         static::assertArrayHasKey('parent_id', $this->getObjectPropertyValue($rec, 'valuesBackup'));
         static::assertNotEquals(
@@ -1583,8 +1587,10 @@ class RecordTest extends BaseTestCase
     
     public function testInvalidUpdateValuesData6(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("It is forbidden to change primary key value when \$isFromDb === false");
+        $this->expectException(\BadMethodCallException::class);
+        $this->expectExceptionMessage(
+            "It is forbidden to change primary key value with flag \$isFromDb === false"
+        );
         TestingAdmin::newEmptyRecord()
             ->updateValues(['id' => 1], false);
     }
@@ -1814,7 +1820,7 @@ class RecordTest extends BaseTestCase
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Trying to begin collecting changes on not existing record");
         $rec = TestingAdmin3::newEmptyRecord();
-        $rec->runColumnSavingExtenders(['id'], ['id' => 1], ['id' => 1], true);
+        $rec->runColumnSavingExtenders(['id' => 1], true);
     }
     
     public function testColumnSavingExtenders1(): void
@@ -1823,7 +1829,7 @@ class RecordTest extends BaseTestCase
         $this->expectExceptionMessage("login: update!");
         $data = ['id' => 1, 'parent_id' => null, 'login' => 'test'];
         $rec = TestingAdmin3::fromArray($data, true);
-        $rec->runColumnSavingExtenders(['id', 'parent_id', 'login'], $data, $data, true);
+        $rec->runColumnSavingExtenders($data, true);
     }
     
     public function testColumnSavingExtenders2(): void
@@ -1831,7 +1837,7 @@ class RecordTest extends BaseTestCase
         $dataSaved = ['parent_id' => null, 'login' => 'test'];
         $dataReceivedAfterUpdate = ['id' => 1, 'parent_id' => null, 'login' => 'test'];
         $rec = TestingAdmin3::fromArray($dataReceivedAfterUpdate, true);
-        $rec->runColumnSavingExtenders(['parent_id', 'login'], $dataSaved, $dataSaved, false);
+        $rec->runColumnSavingExtenders($dataSaved, false);
         static::assertTrue(true); //< no exception expected here
     }
     
@@ -1847,7 +1853,7 @@ class RecordTest extends BaseTestCase
             'size' => filesize(__DIR__ . '/files/test_file.jpg'),
             'error' => 0,
         ], false);
-        $rec->runColumnSavingExtenders(['parent_id', 'some_file'], ['parent_id' => null, 'some_file' => 'qqq'], ['id' => 1, 'parent_id' => null], true);
+        $rec->runColumnSavingExtenders(['parent_id' => null, 'some_file' => 'qqq'], true);
     }
     
     public function testColumnSavingExtenders4(): void
@@ -1862,14 +1868,14 @@ class RecordTest extends BaseTestCase
             'size' => filesize(__DIR__ . '/files/test_file.jpg'),
             'error' => 0,
         ], true);
-        $rec->runColumnSavingExtenders(['parent_id', 'some_file'], ['parent_id' => null, 'some_file' => 'qqq'], ['id' => 1, 'parent_id' => null], true);
+        $rec->runColumnSavingExtenders(['parent_id' => null, 'some_file' => 'qqq'], true);
     }
     
     public function testColumnSavingExtenders5(): void
     {
         // this one should not call any extenders that throw exceptions
         $rec = TestingAdmin3::fromArray(['id' => 1, 'parent_id' => null, 'login' => 'test'], true);
-        $rec->runColumnSavingExtenders(['parent_id', 'some_file'], ['parent_id' => null], ['id' => 1, 'parent_id' => null], true);
+        $rec->runColumnSavingExtenders(['parent_id' => null], true);
         static::assertTrue(true);
     }
     
@@ -2051,10 +2057,10 @@ class RecordTest extends BaseTestCase
     {
         $rec = TestingAdmin::fromArray(['id' => 1], true);
         $rec->begin();
-        static::assertTrue($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
+        static::assertTrue($rec->isCollectingUpdates());
         static::assertEquals([], $this->getObjectPropertyValue($rec, 'valuesBackup'));
         $rec->rollback();
-        static::assertFalse($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
+        static::assertFalse($rec->isCollectingUpdates());
         static::assertEquals([], $this->getObjectPropertyValue($rec, 'valuesBackup'));
         $rec->begin();
         $rec->updateValue('email', 'email.was@changed.hehe', false);
@@ -2064,7 +2070,7 @@ class RecordTest extends BaseTestCase
         static::assertFalse($this->getObjectPropertyValue($rec, 'valuesBackup')['email']->hasValue());
         static::assertEquals('email.was@changed.hehe', $rec->getValue('email'));
         $rec->rollback();
-        static::assertFalse($this->getObjectPropertyValue($rec, 'isCollectingUpdates'));
+        static::assertFalse($rec->isCollectingUpdates());
         static::assertCount(0, $this->getObjectPropertyValue($rec, 'valuesBackup'));
         static::assertFalse($rec->hasValue('email'));
 

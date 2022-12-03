@@ -111,4 +111,9 @@ class OtherAdapterTesting2 extends DbAdapterAbstract
     ): array {
         return [];
     }
+
+    public function setCharacterSet(string $charset): static
+    {
+        return $this;
+    }
 }

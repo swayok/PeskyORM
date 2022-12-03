@@ -693,7 +693,7 @@ abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTrac
     }
 
     /**
-     * @{inheritDoc}
+     * {@inheritDoc}
      * @throws \InvalidArgumentException
      */
     public function quoteDbEntityName(string $name): string

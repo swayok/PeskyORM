@@ -25,7 +25,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
         $column = $valueContainer->getColumn();
         if (!$isFromDb && $column->isReadonly()) {
             throw new \BadMethodCallException(
-                "TableColumn '{$column->getName()}' restricts value modification"
+                "Column '{$column->getName()}' is read only."
             );
         }
         if ($isFromDb && $trustDataReceivedFromDb) {
@@ -203,7 +203,7 @@ class DefaultColumnClosures implements ColumnClosuresInterface
             : ColumnValueProcessingHelpers::normalizeValue($value, $column->getDataType());
     }
 
-    public static function valueSavingExtender(RecordValueContainerInterface $valueContainer, bool $isUpdate, array $savedData): void
+    public static function valueSavingExtender(RecordValueContainerInterface $valueContainer, bool $isUpdate): void
     {
     }
 

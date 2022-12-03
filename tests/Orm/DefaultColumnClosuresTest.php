@@ -112,7 +112,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
     public function testValueSetIsForbidden(): void
     {
         $this->expectException(\BadMethodCallException::class);
-        $this->expectExceptionMessage("TableColumn 'test2' restricts value modification");
+        $this->expectExceptionMessage("Column 'test2' is read only");
         $column = TableColumn::create(TableColumn::TYPE_STRING, 'test1')
             ->valueCannotBeSetOrChanged();
         $valueObj = new RecordValue($column, TestingAdmin::_());

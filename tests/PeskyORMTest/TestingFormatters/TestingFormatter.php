@@ -56,8 +56,8 @@ class TestingFormatter extends Record
         return TestingFormattersTable::getInstance();
     }
 
-    public function getValueContainer(TableColumnInterface|string $colNameOrConfig): RecordValue
+    public function getValueContainer(TableColumnInterface|string $column): RecordValue
     {
-        return parent::getValueContainer($colNameOrConfig);
+        return parent::getValueContainer($column);
     }
 }

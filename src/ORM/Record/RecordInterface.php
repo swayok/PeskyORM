@@ -8,6 +8,7 @@ use PeskyORM\ORM\RecordsCollection\RecordsArray;
 use PeskyORM\ORM\RecordsCollection\RecordsSet;
 use PeskyORM\ORM\Table\TableInterface;
 use PeskyORM\ORM\TableStructure\RelationInterface;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 
 interface RecordInterface extends \ArrayAccess
@@ -46,31 +47,51 @@ interface RecordInterface extends \ArrayAccess
     public function reset(): static;
     
     /**
-     * Get a value from specific $columnName with optional $format
+     * Get original or formatted value for a column.
      * @param string|TableColumnInterface $column
-     * @param null|string $format - change value format (list of formats depend on TableColumn type and config)
+     * @param null|string $format - change value format
+     * @see TableColumnInterface::getValue()
+     * @see TableColumnAbstract::getFormattedValue()
      */
-    public function getValue(string|TableColumnInterface $column, ?string $format = null): mixed;
+    public function getValue(
+        string|TableColumnInterface $column,
+        ?string $format = null
+    ): mixed;
     
     /**
-     * Check if there is a value for $columnName
+     * Check if there is a value for a column
      * @param string|TableColumnInterface $column
      * @param bool $trueIfThereIsDefaultValue - true: returns true if there is no value set but column has default value
+     * @see TableColumnInterface::hasValue()
      */
-    public function hasValue(string|TableColumnInterface $column, bool $trueIfThereIsDefaultValue = false): bool;
+    public function hasValue(
+        string|TableColumnInterface $column,
+        bool $trueIfThereIsDefaultValue = false
+    ): bool;
+
+    /**
+     * Check if a column value is set and its value is received from DB
+     * @see RecordValueContainerInterface::isItFromDb()
+     */
+    public function isValueFromDb(TableColumnInterface|string $column): bool;
+
+    /**
+     * Set a value for a column
+     * @see TableColumnInterface::setValue()
+     */
+    public function updateValue(
+        string|TableColumnInterface $column,
+        mixed $value,
+        bool $isFromDb
+    ): static;
     
     /**
-     * Set a $value for $columnName
-     */
-    public function updateValue(string|TableColumnInterface $column, mixed $value, bool $isFromDb): static;
-    
-    /**
-     * Get a value of the primary key column
+     * Get a value of a primary key column
      */
     public function getPrimaryKeyValue(): int|float|string|null;
     
     /**
-     * Check if there is a value for primary key column
+     * Check if there is a value for a primary key column
      */
     public function hasPrimaryKeyValue(): bool;
     
@@ -85,24 +106,28 @@ interface RecordInterface extends \ArrayAccess
      * @param string $relationName
      * @param bool $loadIfNotSet - true: read relation data if it is not set
      */
-    public function getRelatedRecord(string $relationName, bool $loadIfNotSet = false): RecordsSet|RecordsArray|RecordInterface;
+    public function getRelatedRecord(
+        string $relationName,
+        bool $loadIfNotSet = false
+    ): RecordsSet|RecordsArray|RecordInterface;
     
     /**
-     * Read related object(s). If there are already loaded object(s) - they will be overwritten
-     * @param string $relationName - name of relation defined in TableStructure
+     * Read related object(s).
+     * If there are already loaded object(s) - they will be overwritten.
+     * @param string $relationName
      */
     public function readRelatedRecord(string $relationName): static;
     
     /**
-     * Check if related object(s) are stored in this Record
+     * Check if Record has data for related object(s).
      */
     public function isRelatedRecordAttached(string $relationName): bool;
     
     /**
      * @param string|RelationInterface $relationName
      * @param array|RecordInterface|RecordsArray|RecordsSet $relatedRecord
-     * @param bool|null $isFromDb - true: marks values as loaded from DB | null: autodetect
-     * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
+     * @param bool|null $isFromDb - true: marks values as received from DB | null: autodetect
+     * @param bool $haltOnUnknownColumnNames - exception will be thrown is there are unknown column names in $data
      */
     public function updateRelatedRecord(
         string|RelationInterface $relationName,
@@ -123,7 +148,11 @@ interface RecordInterface extends \ArrayAccess
      * @param bool $isFromDb - true: marks values as loaded from DB
      * @param bool $haltOnUnknownColumnNames - exception will be thrown if there are unknown column names in $data
      */
-    public function fromData(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true): static;
+    public function fromData(
+        array $data,
+        bool $isFromDb = false,
+        bool $haltOnUnknownColumnNames = true
+    ): static;
     
     /**
      * Fill record values from passed $data.
@@ -134,19 +163,30 @@ interface RecordInterface extends \ArrayAccess
     /**
      * Fill record values with data fetched from DB by primary key value ($pkValue)
      */
-    public function fetchByPrimaryKey(int|float|string $pkValue, array $columns = [], array $readRelatedRecords = []): static;
+    public function fetchByPrimaryKey(
+        int|float|string $pkValue,
+        array $columns = [],
+        array $readRelatedRecords = []
+    ): static;
     
     /**
      * Fill record values with data fetched from DB by $conditionsAndOptions
      * Note: relations can be loaded via 'CONTAIN' key in $conditionsAndOptions
      */
-    public function fetch(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = []): static;
+    public function fetch(
+        array $conditionsAndOptions,
+        array $columns = [],
+        array $readRelatedRecords = []
+    ): static;
     
     /**
      * Reload data for current record.
      * Note: record must exist in DB
      */
-    public function reload(array $columns = [], array $readRelatedRecords = []): static;
+    public function reload(
+        array $columns = [],
+        array $readRelatedRecords = []
+    ): static;
     
     /**
      * Read values for specific columns
@@ -160,7 +200,11 @@ interface RecordInterface extends \ArrayAccess
      * @param bool $isFromDb - true: marks values as loaded from DB
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
      */
-    public function updateValues(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true): static;
+    public function updateValues(
+        array $data,
+        bool $isFromDb = false,
+        bool $haltOnUnknownColumnNames = true
+    ): static;
     
     /**
      * Start collecting column updates
@@ -193,7 +237,10 @@ interface RecordInterface extends \ArrayAccess
      *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
      *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      */
-    public function commit(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false): static;
+    public function commit(
+        array $relationsToSave = [],
+        bool $deleteNotListedRelatedRecords = false
+    ): static;
     
     /**
      * Save all values and requested relations to Db
@@ -205,7 +252,10 @@ interface RecordInterface extends \ArrayAccess
      *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
      *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      */
-    public function save(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false): static;
+    public function save(
+        array $relationsToSave = [],
+        bool $deleteNotListedRelatedRecords = false
+    ): static;
 
     /**
      * Save requested relations to DB
@@ -216,7 +266,10 @@ interface RecordInterface extends \ArrayAccess
      *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
      *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      */
-    public function saveRelations(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false): void;
+    public function saveRelations(
+        array $relationsToSave = [],
+        bool $deleteNotListedRelatedRecords = false
+    ): void;
 
     /**
      * Delete current Record from DB
@@ -224,7 +277,10 @@ interface RecordInterface extends \ArrayAccess
      * @param bool $resetAllValuesAfterDelete - true: will reset Record (default) | false: only primary key value will be reset
      * @param bool $deleteFiles - true: delete all attached files | false: do not delete attached files
      */
-    public function delete(bool $resetAllValuesAfterDelete = true, bool $deleteFiles = true): static;
+    public function delete(
+        bool $resetAllValuesAfterDelete = true,
+        bool $deleteFiles = true
+    ): static;
 
     /**
      * Get normalized values for specified columns for insert query.
@@ -269,7 +325,11 @@ interface RecordInterface extends \ArrayAccess
      * @param bool $ignoreColumnsThatCannotBeSetManually - true: if column does not exist in DB - its value will not be returned
      * @param bool $nullifyDbExprValues - true: if default value is DbExpr - replace it by null
      */
-    public function getDefaults(array $columns = [], bool $ignoreColumnsThatCannotBeSetManually = true, bool $nullifyDbExprValues = true): array;
+    public function getDefaults(
+        array $columns = [],
+        bool $ignoreColumnsThatCannotBeSetManually = true,
+        bool $nullifyDbExprValues = true
+    ): array;
     
     /**
      * Enable read only mode. In this mode incoming data is not processed in any way and Record works like an array

@@ -20,6 +20,8 @@ use PeskyORM\Utils\ArgumentValidators;
 
 abstract class TableColumnAbstract implements TableColumnInterface
 {
+    protected const AFTER_SAVE_PAYLOAD_KEY = '_for_after_save';
+
     protected ?string $name = null;
     protected ?TableStructureInterface $tableStructure = null;
 
@@ -388,15 +390,15 @@ abstract class TableColumnAbstract implements TableColumnInterface
         // todo: implement this
         $name = $this->getName();
         return [
-            $name
+            $name,
         ];
-//        $ret = [
-//            $name,
-//        ];
-//        foreach ($this->getValueFormattersNames() as $formatterName) {
-//            $ret[] = $name . '_as_' . $formatterName;
-//        }
-//        return $ret;
+        //        $ret = [
+        //            $name,
+        //        ];
+        //        foreach ($this->getValueFormattersNames() as $formatterName) {
+        //            $ret[] = $name . '_as_' . $formatterName;
+        //        }
+        //        return $ret;
     }
 
     // values management
@@ -552,7 +554,7 @@ abstract class TableColumnAbstract implements TableColumnInterface
     ): RecordValueContainerInterface {
         if (!$isFromDb && $this->isReadonly()) {
             throw new TableColumnConfigException(
-                "Column {$this->getNameForException()} is readonly.",
+                "Column {$this->getNameForException()} is read only.",
                 $this
             );
         }
@@ -612,7 +614,7 @@ abstract class TableColumnAbstract implements TableColumnInterface
         if ($valueContainer->getColumn() !== $this) {
             throw new \UnexpectedValueException(
                 get_class($valueContainer) . ' class instance belongs to different column: '
-                . $this->getNameForException($valueContainer->getColumn()).
+                . $this->getNameForException($valueContainer->getColumn()) .
                 '. Expected column: ' . $this->getNameForException()
             );
         }
@@ -633,9 +635,7 @@ abstract class TableColumnAbstract implements TableColumnInterface
         return (
             $normalizedValue === null
             && !$isFromDb
-            && $this->hasDefaultValue()
-            && !$this->isPrimaryKey()
-            && !$valueContainer->getRecord()->existsInDb()
+            && $this->canUseDefaultValue($valueContainer)
         );
     }
 
@@ -655,13 +655,12 @@ abstract class TableColumnAbstract implements TableColumnInterface
         return get_class($record) . '(#' . $pk . ')->' . $this->getName();
     }
 
-    protected function canUseDefaultValueInSetter(
+    protected function canUseDefaultValue(
         RecordValueContainerInterface $valueContainer
     ): bool {
-        // Usage of default value in value setter is possible only
-        // if Record does not exist in DB, in other case it might be
         return (
             $this->hasDefaultValue()
+            && !$this->isPrimaryKey()
             && !$valueContainer->getRecord()->existsInDb()
         );
     }
@@ -669,7 +668,71 @@ abstract class TableColumnAbstract implements TableColumnInterface
     public function getNewRecordValueContainer(
         RecordInterface $record
     ): RecordValueContainerInterface {
-        // todo: use in Record
         return new RecordValue($this, $record);
     }
+
+    public function getValue(
+        RecordValueContainerInterface $valueContainer,
+        ?string $format
+    ): mixed {
+        if ($format) {
+            return $this->getFormattedValue($valueContainer, $format);
+        }
+
+        if ($valueContainer->hasValue()) {
+            return $valueContainer->getValue();
+        }
+
+        if ($this->canUseDefaultValue($valueContainer)) {
+            return $this->getValidDefaultValue();
+        }
+
+        $columnInfo = $this->getRecordInfoForException($valueContainer);
+        $defaultValueRestriction = $this->hasDefaultValue()
+            ? 'is not provided.'
+            : 'cannot be used.';
+        throw new \BadMethodCallException(
+            "Value for {$columnInfo} is not set and default value "
+            . $defaultValueRestriction
+        );
+    }
+
+    protected function getFormattedValue(
+        RecordValueContainerInterface $valueContainer,
+        string $format
+    ): mixed {
+        // todo: implement new way to define default formatters and use them
+        return $valueContainer->getValue();
+    }
+
+    public function hasValue(
+        RecordValueContainerInterface $valueContainer,
+        bool $allowDefaultValue
+    ): bool {
+        if ($valueContainer->hasValue()) {
+            return true;
+        }
+        if (
+            $allowDefaultValue
+            && $this->canUseDefaultValue($valueContainer)
+        ) {
+            return $valueContainer->getColumn()->hasDefaultValue();
+        }
+        return false;
+    }
+
+    public function afterSave(
+        RecordValueContainerInterface $valueContainer,
+        bool $isUpdate,
+    ): void {
+        $valueContainer->pullPayload(static::AFTER_SAVE_PAYLOAD_KEY);
+    }
+
+    public function afterDelete(
+        RecordValueContainerInterface $valueContainer,
+        bool $shouldDeleteFiles
+    ): void {
+    }
+
+
 }

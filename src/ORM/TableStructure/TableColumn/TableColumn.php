@@ -293,19 +293,16 @@ class TableColumn implements TableColumnInterface
                     $class = $column->getClosuresClass();
                     return $class::valuePreprocessor($newValue, $isFromDb, $isForValidation, $column);
                 },
-                'valueSavingExtender' => function (RecordValue $valueContainer, $isUpdate, array $savedData) {
-                    $class = $valueContainer->getColumn()
-                        ->getClosuresClass();
-                    $class::valueSavingExtender($valueContainer, $isUpdate, $savedData);
+                'valueSavingExtender' => function (RecordValue $valueContainer, $isUpdate) {
+                    $class = $valueContainer->getColumn()->getClosuresClass();
+                    $class::valueSavingExtender($valueContainer, $isUpdate);
                 },
                 'valueDeleteExtender' => function (RecordValue $valueContainer, $deleteFiles) {
-                    $class = $valueContainer->getColumn()
-                        ->getClosuresClass();
+                    $class = $valueContainer->getColumn()->getClosuresClass();
                     $class::valueDeleteExtender($valueContainer, $deleteFiles);
                 },
                 'valueFormatter' => function (RecordValue $valueContainer, $format) {
-                    $class = $valueContainer->getColumn()
-                        ->getClosuresClass();
+                    $class = $valueContainer->getColumn()->getClosuresClass();
                     return $class::valueFormatter($valueContainer, $format);
                 },
             ];
@@ -1091,5 +1088,66 @@ class TableColumn implements TableColumnInterface
         RecordInterface $record
     ): RecordValueContainerInterface {
         return new RecordValue($this, $record);
+    }
+
+    public function setValue(
+        RecordValueContainerInterface $currentValueContainer,
+        mixed $newValue,
+        bool $isFromDb,
+        bool $trustDataReceivedFromDb
+    ): RecordValueContainerInterface {
+        return call_user_func(
+            $this->getValueSetter(),
+            $newValue,
+            $isFromDb,
+            $currentValueContainer,
+            $trustDataReceivedFromDb
+        );
+    }
+
+    public function getValue(
+        RecordValueContainerInterface $valueContainer,
+        ?string $format
+    ): mixed {
+        return call_user_func(
+            $this->getValueGetter(),
+            $valueContainer,
+            $format
+        );
+    }
+
+    public function hasValue(
+        RecordValueContainerInterface $valueContainer,
+        bool $allowDefaultValue
+    ): bool {
+        return call_user_func(
+            $this->getValueExistenceChecker(),
+            $valueContainer,
+            $allowDefaultValue
+        );
+    }
+
+    public function afterSave(
+        RecordValueContainerInterface $valueContainer,
+        bool $isUpdate,
+    ): void {
+        if ($valueContainer->hasValue()) {
+            call_user_func(
+                $this->getValueSavingExtender(),
+                $valueContainer,
+                $isUpdate,
+            );
+        }
+    }
+
+    public function afterDelete(
+        RecordValueContainerInterface $valueContainer,
+        bool $shouldDeleteFiles,
+    ): void {
+        call_user_func(
+            $this->getValueDeleteExtender(),
+            $valueContainer,
+            $shouldDeleteFiles
+        );
     }
 }
