@@ -10,6 +10,7 @@ return [
         'port' => null,
         'username' => 'pesky_orm_test',
         'password' => '1111111',
+        'timezone' => 'UTC'
     ],
     
     'mysql' => [
@@ -18,6 +19,7 @@ return [
         'port' => null,
         'username' => 'pesky_orm_test',
         'password' => '1111111',
+        'timezone' => 'UTC'
     ],
 
 ];

@@ -83,6 +83,11 @@ class Mysql extends DbAdapterAbstract
         return null;
     }
 
+    public function setCharacterSet(string $charset): static {
+        $this->exec(new DbExpr("SET CHARSET ``$charset``"));
+        return $this;
+    }
+
     public function setTimezone(string $timezone): static
     {
         $this->exec(DbExpr::create("SET time_zone = ``$timezone``"));
@@ -91,7 +96,7 @@ class Mysql extends DbAdapterAbstract
 
     public function setSearchPath(string $newSearchPath): static
     {
-        // todo: find out if there is something similar in mysql
+        $this->exec(DbExpr::create("USE {$newSearchPath}"));
         return $this;
     }
 

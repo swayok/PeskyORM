@@ -48,6 +48,9 @@ class MysqlAdapterConnectionTest extends BaseTestCase
     public function testConnectionWithInvalidDbName(): void
     {
         $this->expectException(\PDOException::class);
+        // Note: if you get error
+        // SQLSTATE[HY000] [1049] Unknown database 'totally_not_existing_db'
+        // then mysql user has too many server-wide privelegies. Revoke those.
         $this->expectExceptionMessage("Access denied for user");
         $config = MysqlConfig::fromArray([
             'database' => 'totally_not_existing_db',

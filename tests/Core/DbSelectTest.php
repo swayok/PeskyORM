@@ -100,7 +100,7 @@ class DbSelectTest extends BaseTestCase
         }
         return $data;
     }
-    
+
     public function testInvalidTableNameInConstructor1(): void
     {
         $this->expectException(\InvalidArgumentException::class);

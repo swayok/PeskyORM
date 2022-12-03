@@ -102,6 +102,11 @@ class Postgres extends DbAdapterAbstract
             ->getDefaultSchemaName();
     }
 
+    public function setCharacterSet(string $charset): static {
+        $this->exec(DbExpr::create("SET NAMES ``$charset``"));
+        return $this;
+    }
+
     public function setTimezone(string $timezone): static
     {
         $this->exec(DbExpr::create("SET SESSION TIME ZONE ``$timezone``"));

@@ -86,7 +86,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
     public function testInvalidData2(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage('Argument #1 ($data) must be of type array, string given');
+        $this->expectExceptionMessage('Argument #2 ($data) must be of type array, string given');
         /** @noinspection PhpParamsInspection */
         DbAdapterMethodArgumentUtils::guardDataArg('$data', 'test');
     }

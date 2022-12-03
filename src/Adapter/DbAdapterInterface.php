@@ -89,12 +89,22 @@ interface DbAdapterInterface
     ): void;
 
     /**
+     * Set DB charset
+     * Example: UTF8
+     */
+    public function setCharacterSet(string $charset): static;
+
+    /**
      * Set DB timezone for current session
      */
     public function setTimezone(string $timezone): static;
 
     /**
-     * @param string $newSearchPath - coma-separated list of DB schemas
+     * Set primary database or schema for all queries
+     * For PostgreSQL: coma-separated list of DB schema names
+     * @link https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATH
+     * For MySQL: database name
+     * @link https://dev.mysql.com/doc/refman/5.7/en/use.html
      */
     public function setSearchPath(string $newSearchPath): static;
 

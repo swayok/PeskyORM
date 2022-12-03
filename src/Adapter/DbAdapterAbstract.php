@@ -84,7 +84,6 @@ abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTrac
             $this->pdo = $this->makePdo();
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->wrapConnection($this->pdo);
-            $this->getConnectionConfig()->onConnect($this->wrappedPdo ?? $this->pdo);
             $this->runOnConnectCallbacks($this->onConnectCallbacks);
         }
         return $this->wrappedPdo ?? $this->pdo;
@@ -153,6 +152,7 @@ abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTrac
 
     protected function runOnConnectCallbacks(array $callbacks): void
     {
+        $this->getConnectionConfig()->onConnect($this);
         foreach ($callbacks as $callback) {
             $callback($this);
         }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\Config\Connection;
 
 use PDO;
+use PeskyORM\Adapter\DbAdapterInterface;
 
 class PostgresConfig implements DbConnectionConfigInterface
 {
@@ -224,17 +225,14 @@ class PostgresConfig implements DbConnectionConfigInterface
     }
     
     /**
-     * Do some action on connect (set charset, default db schema, etc)
+     * Configure character set, search path and time zone (if provided)
      */
-    public function onConnect(PDO $connection): PostgresConfig
+    public function onConnect(DbAdapterInterface $connection): PostgresConfig
     {
-        $connection->prepare("SET NAMES '{$this->charset}'")
-            ->execute();
-        $connection->prepare("SET search_path TO {$this->searchPath}")
-            ->execute();
+        $connection->setCharacterSet($this->charset);
+        $connection->setSearchPath($this->searchPath);
         if (isset($this->timezone)) {
-            $connection->prepare("SET TIME ZONE '{$this->timezone}'")
-                ->execute();
+            $connection->setTimezone($this->timezone);
         }
         return $this;
     }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PeskyORM\Config\Connection;
 
+use PeskyORM\Adapter\DbAdapterInterface;
+
 class MysqlConfig implements DbConnectionConfigInterface
 {
     protected string $dbName;
@@ -207,16 +209,16 @@ class MysqlConfig implements DbConnectionConfigInterface
         $this->timezone = $timezone;
         return $this;
     }
-    
+
     /**
-     * Do some action on connect (set charset, default db schema, etc)
+     * Configure time zone for DB connection if provided.
+     * Note: charset configured in connection string
+     * @see self::getPdoConnectionString()
      */
-    public function onConnect(\PDO $connection): MysqlConfig
+    public function onConnect(DbAdapterInterface $connection): MysqlConfig
     {
         if ($this->timezone) {
-            $connection
-                ->prepare('set time_zone="' . $this->timezone . '"')
-                ->execute();
+            $connection->setTimezone($this->timezone);
         }
         return $this;
     }

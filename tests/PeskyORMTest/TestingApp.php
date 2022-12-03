@@ -67,8 +67,8 @@ class TestingApp
                 MysqlConfig::fromArray(static::getGlobalConfigs()['mysql'])
             );
             if (!static::$mysqlConnectionInitiated) {
-                static::$mysqlConnection->exec(file_get_contents(__DIR__ . '/../configs/db_schema_mysql.sql'));
                 date_default_timezone_set('UTC');
+                static::$mysqlConnection->exec(file_get_contents(__DIR__ . '/../configs/db_schema_mysql.sql'));
                 static::$mysqlConnectionInitiated = true;
             }
         }
@@ -91,10 +91,10 @@ class TestingApp
             static::$pgsqlConnection = new PostgresTesting(
                 PostgresConfig::fromArray(static::getGlobalConfigs()['pgsql'])
             );
-            static::$pgsqlConnection->query('SET LOCAL TIME ZONE "UTC"');
+            static::$pgsqlConnection->setTimezone('UTC');
             if (!static::$pgsqlConnectionInitiated) {
-                static::$pgsqlConnection->exec(file_get_contents(__DIR__ . '/../configs/db_schema_pgsql.sql'));
                 date_default_timezone_set('UTC');
+                static::$pgsqlConnection->exec(file_get_contents(__DIR__ . '/../configs/db_schema_pgsql.sql'));
                 // for ORM tests
                 static::$pgsqlConnectionInitiated = true;
             }

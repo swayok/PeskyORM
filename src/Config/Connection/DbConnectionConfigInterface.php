@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PeskyORM\Config\Connection;
 
+use PeskyORM\Adapter\DbAdapterInterface;
+
 interface DbConnectionConfigInterface
 {
     
@@ -50,6 +52,6 @@ interface DbConnectionConfigInterface
     /**
      * Do some action on connect (set charset, default db schema, etc)
      */
-    public function onConnect(\PDO $connection): DbConnectionConfigInterface;
+    public function onConnect(DbAdapterInterface $connection): DbConnectionConfigInterface;
     
 }
