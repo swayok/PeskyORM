@@ -6,10 +6,12 @@ namespace PeskyORM\ORM\TableStructure\TableColumn;
 
 use Carbon\CarbonImmutable;
 use PeskyORM\DbExpr;
-use PeskyORM\ORM\Record\RecordValue;
+use PeskyORM\ORM\Record\RecordValueContainerInterface;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\DateColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\TimeColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\TimestampColumn;
 use PeskyORM\Select\SelectQueryBuilderInterface;
-use Swayok\Utils\NormalizeValue;
-use Swayok\Utils\ValidateValue;
+use PeskyORM\Utils\ValueTypeValidators;
 
 abstract class ColumnValueFormatters
 {
@@ -19,6 +21,7 @@ abstract class ColumnValueFormatters
     public const FORMAT_UNIX_TS = 'unix_ts';
     public const FORMAT_CARBON = 'carbon';
     public const FORMAT_ARRAY = 'array';
+    public const FORMAT_DECODED = 'decoded';
     public const FORMAT_OBJECT = 'object';
 
     public static function getFormattersForColumnType(string $columnType): array
@@ -76,7 +79,8 @@ abstract class ColumnValueFormatters
     public static function getJsonFormatters(): array
     {
         return [
-            static::FORMAT_ARRAY => static::getJsonToArrayFormatter(),
+            static::FORMAT_ARRAY => static::getJsonToDecodedValueFormatter(),
+            static::FORMAT_DECODED => static::getJsonToDecodedValueFormatter(),
             static::FORMAT_OBJECT => static::getJsonToObjectFormatter(),
         ];
     }
@@ -87,13 +91,19 @@ abstract class ColumnValueFormatters
         if (!$formatter) {
             $formatter = static::wrapGetterIntoFormatter(
                 static::FORMAT_DATE,
-                static function (RecordValue $valueContainer): string {
+                static function (RecordValueContainerInterface $valueContainer): string {
                     $value = static::getSimpleValueFromContainer($valueContainer);
-                    if (ValidateValue::isDateTime($value, true)) {
-                        // $value converted to unix timestamp in ValidateValue::isDateTime()
-                        return date(NormalizeValue::DATE_FORMAT, $value);
+                    if (!ValueTypeValidators::isTimestamp($value, true)) {
+                        throw static::getInvalidValueException(
+                            $valueContainer,
+                            'date-time',
+                            $value
+                        );
                     }
-                    static::throwInvalidValueException($valueContainer, 'date-time', $value);
+                    if (!is_numeric($value)) {
+                        $value = strtotime($value);
+                    }
+                    return date(DateColumn::FORMAT, $value);
                 }
             );
         }
@@ -106,13 +116,19 @@ abstract class ColumnValueFormatters
         if (!$formatter) {
             $formatter = static::wrapGetterIntoFormatter(
                 static::FORMAT_TIME,
-                static function (RecordValue $valueContainer): string {
+                static function (RecordValueContainerInterface $valueContainer): string {
                     $value = static::getSimpleValueFromContainer($valueContainer);
-                    if (ValidateValue::isDateTime($value, true)) {
-                        // $value converted to unix timestamp in ValidateValue::isDateTime()
-                        return date(NormalizeValue::TIME_FORMAT, $value);
+                    if (!ValueTypeValidators::isTimestamp($value, true)) {
+                        throw static::getInvalidValueException(
+                            $valueContainer,
+                            'date-time',
+                            $value
+                        );
                     }
-                    static::throwInvalidValueException($valueContainer, 'date-time', $value);
+                    if (!is_numeric($value)) {
+                        $value = strtotime($value);
+                    }
+                    return date(TimeColumn::FORMAT, $value);
                 }
             );
         }
@@ -125,13 +141,16 @@ abstract class ColumnValueFormatters
         if (!$formatter) {
             $formatter = static::wrapGetterIntoFormatter(
                 static::FORMAT_UNIX_TS,
-                static function (RecordValue $valueContainer): int {
+                static function (RecordValueContainerInterface $valueContainer): int {
                     $value = static::getSimpleValueFromContainer($valueContainer);
-                    if (ValidateValue::isDateTime($value, true)) {
-                        // $value converted to unix timestamp in ValidateValue::isDateTime()
-                        return $value;
+                    if (!ValueTypeValidators::isTimestamp($value)) {
+                        throw static::getInvalidValueException(
+                            $valueContainer,
+                            'date-time',
+                            $value
+                        );
                     }
-                    static::throwInvalidValueException($valueContainer, 'date-time', $value);
+                    return is_numeric($value) ? $value : strtotime($value);
                 }
             );
         }
@@ -144,12 +163,16 @@ abstract class ColumnValueFormatters
         if (!$formatter) {
             $formatter = static::wrapGetterIntoFormatter(
                 static::FORMAT_DATE_TIME,
-                static function (RecordValue $valueContainer): string {
+                static function (RecordValueContainerInterface $valueContainer): string {
                     $value = static::getSimpleValueFromContainer($valueContainer);
-                    if (is_numeric($value) && $value > 0) {
-                        return date('Y-m-d H:i:s', $value);
+                    if (!is_numeric($value) || $value <= 0) {
+                        throw static::getInvalidValueException(
+                            $valueContainer,
+                            'unix timestamp',
+                            $value
+                        );
                     }
-                    static::throwInvalidValueException($valueContainer, 'unix timestamp', $value);
+                    return date(TimestampColumn::FORMAT, $value);
                 }
             );
         }
@@ -162,17 +185,21 @@ abstract class ColumnValueFormatters
         if (!$formatter) {
             $formatter = static::wrapGetterIntoFormatter(
                 static::FORMAT_CARBON,
-                static function (RecordValue $valueContainer): CarbonImmutable {
+                static function (RecordValueContainerInterface $valueContainer): CarbonImmutable {
                     $value = static::getSimpleValueFromContainer($valueContainer);
                     if (is_numeric($value)) {
                         $carbon = CarbonImmutable::createFromTimestampUTC($value);
                     } else {
                         $carbon = CarbonImmutable::parse($value);
                     }
-                    if ($carbon->isValid()) {
-                        return $carbon;
+                    if (!$carbon->isValid()) {
+                        throw static::getInvalidValueException(
+                            $valueContainer,
+                            'date-time',
+                            $value
+                        );
                     }
-                    static::throwInvalidValueException($valueContainer, 'date-time', $value);
+                    return $carbon;
                 }
             );
         }
@@ -185,33 +212,41 @@ abstract class ColumnValueFormatters
         if (!$formatter) {
             $formatter = static::wrapGetterIntoFormatter(
                 static::FORMAT_CARBON,
-                static function (RecordValue $valueContainer): CarbonImmutable {
+                static function (RecordValueContainerInterface $valueContainer): CarbonImmutable {
                     $value = static::getSimpleValueFromContainer($valueContainer);
-                    $carbon = CarbonImmutable::parse($value)
-                        ->startOfDay();
-                    if ($carbon->isValid()) {
-                        return $carbon;
+                    $carbon = CarbonImmutable::parse($value)->startOfDay();
+                    if (!$carbon->isValid()) {
+                        throw static::getInvalidValueException(
+                            $valueContainer,
+                            'date',
+                            $value
+                        );
                     }
-                    static::throwInvalidValueException($valueContainer, 'date', $value);
+                    return $carbon;
                 }
             );
         }
         return $formatter;
     }
 
-    public static function getJsonToArrayFormatter(): \Closure
+    public static function getJsonToDecodedValueFormatter(): \Closure
     {
         static $formatter = null;
         if (!$formatter) {
             $formatter = static::wrapGetterIntoFormatter(
-                static::FORMAT_ARRAY,
-                static function (RecordValue $valueContainer): array|string|bool|null|int|float {
+                static::FORMAT_DECODED,
+                static function (RecordValueContainerInterface $valueContainer): array|string|bool|null|int|float {
                     $value = static::getSimpleValueFromContainer($valueContainer);
-                    if (ValidateValue::isJson($value, true)) {
-                        return $value;
+                    if (!ValueTypeValidators::isJson($value)) {
+                        throw static::getInvalidValueException(
+                            $valueContainer,
+                            'json',
+                            $value
+                        );
                     }
-                    // value conditionally decoded in ValidateValue::isJson()
-                    static::throwInvalidValueException($valueContainer, 'json', $value);
+                    return is_array($value)
+                        ? $value
+                        : json_decode((string)$value, true, JSON_THROW_ON_ERROR);
                 }
             );
         }
@@ -224,27 +259,50 @@ abstract class ColumnValueFormatters
         if (!$formatter) {
             $formatter = static::wrapGetterIntoFormatter(
                 static::FORMAT_OBJECT,
-                static function (RecordValue $valueContainer) {
+                static function (RecordValueContainerInterface $valueContainer) {
                     $value = static::getSimpleValueFromContainer($valueContainer);
-                    if (ValidateValue::isJson($value, true)) {
-                        $targetClassName = $valueContainer->getColumn()
-                            ->getObjectClassNameForValueToObjectFormatter();
-                        // value conditionally decoded in ValidateValue::isJson()
-                        if (is_array($value)) {
-                            // value is array and can be converted to $targetClassName object or \stdClass object
-                            return $targetClassName
-                                ? $targetClassName::createObjectFromArray($value)
-                                : json_decode(json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE), false, 512, JSON_THROW_ON_ERROR);
-                            // encode-decode needed to be sure all nested arrays will also be encoded as \stdClass - not effective
-                        }
-
-                        if ($targetClassName) {
-                            throw new \UnexpectedValueException('Record value must be a json string, array, or object');
-                        }
-
-                        return $value;
+                    if (!ValueTypeValidators::isJson($value)) {
+                        throw static::getInvalidValueException(
+                            $valueContainer,
+                            'json',
+                            $value
+                        );
                     }
-                    static::throwInvalidValueException($valueContainer, 'json', $value);
+                    $targetClassName = null;
+                    $column = $valueContainer->getColumn();
+                    if ($column instanceof ConvertsValueToClassInstanceInterface) {
+                        $targetClassName = $column->getClassNameForValueToClassInstanceConverter();
+                    }
+                    if (!is_array($value)) {
+                        $value = json_decode((string)$value, true, JSON_THROW_ON_ERROR);
+                    }
+                    if (is_array($value)) {
+                        if ($targetClassName) {
+                            // Convert to $targetClassName object
+                            return $targetClassName::createObjectFromArray($value);
+                        }
+                        // Convert to \stdClass object.
+                        // Encode needed to be sure all nested arrays
+                        // will also be encoded as \stdClass. Not effective.
+                        $value = json_encode(
+                            $value,
+                            JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE
+                        );
+                        return json_decode(
+                            $value,
+                            false,
+                            512,
+                            JSON_THROW_ON_ERROR
+                        );
+                    }
+
+                    if ($targetClassName) {
+                        throw new \UnexpectedValueException(
+                            'Record value must be a json string, array, or object'
+                        );
+                    }
+
+                    return $value;
                 }
             );
         }
@@ -254,8 +312,9 @@ abstract class ColumnValueFormatters
     /**
      * @throws \UnexpectedValueException
      */
-    public static function getSimpleValueFromContainer(RecordValue $valueContainer): mixed
-    {
+    public static function getSimpleValueFromContainer(
+        RecordValueContainerInterface $valueContainer
+    ): mixed {
         $value = $valueContainer->getValue();
         if ($value instanceof DbExpr || $value instanceof SelectQueryBuilderInterface) {
             throw new \UnexpectedValueException(
@@ -267,16 +326,16 @@ abstract class ColumnValueFormatters
 
     public static function wrapGetterIntoFormatter(string $format, \Closure $getter): \Closure
     {
-        return static function (RecordValue $valueContainer) use ($getter, $format) {
+        return static function (RecordValueContainerInterface $valueContainer) use ($getter, $format) {
             return $valueContainer->rememberPayload('format:' . $format, $getter);
         };
     }
 
-    private static function throwInvalidValueException(
-        RecordValue $valueContainer,
+    private static function getInvalidValueException(
+        RecordValueContainerInterface $valueContainer,
         string $expectedValueType,
         $value
-    ): void {
+    ): \UnexpectedValueException {
         if (!is_scalar($value)) {
             $value = json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
         }
@@ -291,6 +350,6 @@ abstract class ColumnValueFormatters
         }
         $message = get_class($record) . $recordId . '->' . $valueContainer->getColumn()->getName()
             . ' contains invalid ' . $expectedValueType . ' value: [' . $value . ']';
-        throw new \UnexpectedValueException($message, 0, $prevException);
+        return new \UnexpectedValueException($message, 0, $prevException);
     }
 }

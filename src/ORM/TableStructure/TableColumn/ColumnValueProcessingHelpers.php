@@ -127,7 +127,7 @@ abstract class ColumnValueProcessingHelpers
                 }
 
                 if (!$isForCondition && !ValidateValue::isJson($value)) {
-                    return [static::getErrorMessage($errorMessages, ColumnValueValidationMessagesInterface::VALUE_MUST_BE_JSON)];
+                    return [static::getErrorMessage($errorMessages, ColumnValueValidationMessagesInterface::VALUE_MUST_BE_JSON_OR_ARRAY)];
                 }
                 break;
             case TableColumn::TYPE_FILE:

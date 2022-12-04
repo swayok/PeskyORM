@@ -13,7 +13,7 @@ interface ColumnValueValidationMessagesInterface
     public const VALUE_MUST_BE_FLOAT = 'value_must_be_float';
     public const VALUE_MUST_BE_IMAGE = 'value_must_be_image';
     public const VALUE_MUST_BE_FILE = 'value_must_be_file';
-    public const VALUE_MUST_BE_JSON = 'value_must_be_json';
+    public const VALUE_MUST_BE_JSON_OR_ARRAY = 'value_must_be_json';
     public const VALUE_MUST_BE_IPV4_ADDRESS = 'value_must_be_ipv4_address';
     public const VALUE_MUST_BE_EMAIL = 'value_must_be_email';
     public const VALUE_MUST_BE_TIMEZONE_OFFSET = 'value_must_be_timezone_offset';
@@ -22,6 +22,7 @@ interface ColumnValueValidationMessagesInterface
     public const VALUE_MUST_BE_DATE = 'value_must_be_date';
     public const VALUE_MUST_BE_STRING = 'value_must_be_string';
     public const VALUE_MUST_BE_ARRAY = 'value_must_be_array';
+    public const VALUE_MUST_BE_RESOURCE = 'value_must_be_resource';
 
     public function getMessage(string $messageId): string;
 }

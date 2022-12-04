@@ -219,7 +219,8 @@ class RecordValueFormattersTest extends BaseTestCase
 
         static::assertSame(
             [
-                ColumnValueFormatters::FORMAT_ARRAY => ColumnValueFormatters::getJsonToArrayFormatter(),
+                ColumnValueFormatters::FORMAT_ARRAY => ColumnValueFormatters::getJsonToDecodedValueFormatter(),
+                ColumnValueFormatters::FORMAT_DECODED => ColumnValueFormatters::getJsonToDecodedValueFormatter(),
                 ColumnValueFormatters::FORMAT_OBJECT => ColumnValueFormatters::getJsonToObjectFormatter(),
             ],
             $formatters
@@ -255,7 +256,7 @@ class RecordValueFormattersTest extends BaseTestCase
 
         // array formatter
         static::assertEquals($data, $record->json_data1_as_array);
-        static::assertEquals($data, ColumnValueFormatters::getJsonToArrayFormatter()($valueContainerAlt));
+        static::assertEquals($data, ColumnValueFormatters::getJsonToDecodedValueFormatter()($valueContainerAlt));
         // object formatter
         static::assertInstanceOf(\stdClass::class, $record->json_data1_as_object);
         $object = (object)$data;
@@ -281,7 +282,8 @@ class RecordValueFormattersTest extends BaseTestCase
 
         static::assertSame(
             [
-                ColumnValueFormatters::FORMAT_ARRAY => ColumnValueFormatters::getJsonToArrayFormatter(),
+                ColumnValueFormatters::FORMAT_ARRAY => ColumnValueFormatters::getJsonToDecodedValueFormatter(),
+                ColumnValueFormatters::FORMAT_DECODED => ColumnValueFormatters::getJsonToDecodedValueFormatter(),
                 ColumnValueFormatters::FORMAT_OBJECT => ColumnValueFormatters::getJsonToObjectFormatter(),
             ],
             $formatters
@@ -317,7 +319,7 @@ class RecordValueFormattersTest extends BaseTestCase
 
         // array formatter
         static::assertEquals($data, $record->json_data2_as_array);
-        static::assertEquals($data, ColumnValueFormatters::getJsonToArrayFormatter()($valueContainerAlt));
+        static::assertEquals($data, ColumnValueFormatters::getJsonToDecodedValueFormatter()($valueContainerAlt));
         // object formatter
         static::assertInstanceOf(TestingFormatterJsonObject::class, $record->json_data2_as_object);
         $object = new TestingFormatterJsonObject();

@@ -27,7 +27,7 @@ use PeskyORM\Utils\ArgumentValidators;
  * Value getter workflow:
  * $this->valueGetter closure is called, and it will possibly call $this->valueFormatter closure
  */
-class TableColumn implements TableColumnInterface
+class TableColumn implements TableColumnInterface, ConvertsValueToClassInstanceInterface
 {
 
     public const TYPE_INT = 'integer';
@@ -1050,7 +1050,7 @@ class TableColumn implements TableColumnInterface
      * @return string|null|ValueToObjectConverterInterface
      * @noinspection PhpDocSignatureInspection
      */
-    public function getObjectClassNameForValueToObjectFormatter(): ?string
+    public function getClassNameForValueToClassInstanceConverter(): ?string
     {
         return $this->classNameForValueToObjectFormatter;
     }

@@ -487,10 +487,9 @@ abstract class TableColumnAbstract implements TableColumnInterface
     }
 
     /**
-     * Validate if
-     * At this point value cannot be null.
-     * Returns array of errors ot empty array if no errors
-     * @param bool $isFromDb
+     * Validate if normalized value fits Column's data type.
+     * Note: At this point value cannot be null.
+     * Returns array of errors ot empty array if no errors.
      */
     abstract protected function validateValueDataType(
         mixed $normalizedValue,
@@ -524,7 +523,7 @@ abstract class TableColumnAbstract implements TableColumnInterface
         if ($value instanceof RecordValueContainerInterface) {
             $value = $value->getValue();
         }
-        if ($value instanceof RecordsSet) {
+        if (!$isFromDb && $value instanceof RecordsSet) {
             return $value->getOrmSelect();
         }
         return $value;
@@ -555,7 +554,7 @@ abstract class TableColumnAbstract implements TableColumnInterface
 
     /**
      * Normalize value according to column type.
-     * Value cannot be null, DbExpr or SelectQueryBuilderInterface.
+     * Note: value cannot be null, DbExpr or SelectQueryBuilderInterface.
      * @see self::normalizeValidatedValue()
      * @see self::shouldNormalizeValidatedValue()
      */

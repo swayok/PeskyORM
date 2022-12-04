@@ -17,7 +17,6 @@ use PeskyORM\ORM\TableStructure\TableColumn\UniqueTableColumnInterface;
  * This column should be a base for all columns that
  * store values that are based on strings in DB:
  * - text
- * - password
  * - email
  * - other string-based types
  */

@@ -14,7 +14,7 @@ class ColumnValueValidationMessagesEn implements ColumnValueValidationMessagesIn
         self::VALUE_MUST_BE_FLOAT => 'Value must be of a numeric data type.',
         self::VALUE_MUST_BE_IMAGE => 'Value must be an uploaded image info.',
         self::VALUE_MUST_BE_FILE => 'Value must be an uploaded file info.',
-        self::VALUE_MUST_BE_JSON => 'Value must be a json-encoded string or array.',
+        self::VALUE_MUST_BE_JSON_OR_ARRAY => 'Value must be a json-encoded string or array.',
         self::VALUE_MUST_BE_IPV4_ADDRESS => 'Value must be an IPv4 address.',
         self::VALUE_MUST_BE_EMAIL => 'Value must be an email.',
         self::VALUE_MUST_BE_TIMEZONE_OFFSET => 'Value must be a valid timezone offset.',
@@ -23,6 +23,7 @@ class ColumnValueValidationMessagesEn implements ColumnValueValidationMessagesIn
         self::VALUE_MUST_BE_DATE => 'Value must be a valid date.',
         self::VALUE_MUST_BE_STRING => 'Value must be a string.',
         self::VALUE_MUST_BE_ARRAY => 'Value must be an array.',
+        self::VALUE_MUST_BE_RESOURCE => 'Value must be a resource.',
     ];
 
     public function getMessage(string $messageId): string

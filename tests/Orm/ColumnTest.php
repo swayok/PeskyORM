@@ -380,11 +380,11 @@ class ColumnTest extends BaseTestCase
         $obj = TableColumn::create(TableColumn::TYPE_STRING)
             ->setClassNameForValueToObjectFormatter(TestingValueToObjectConverter::class);
         
-        static::assertEquals(TestingValueToObjectConverter::class, $obj->getObjectClassNameForValueToObjectFormatter());
+        static::assertEquals(TestingValueToObjectConverter::class, $obj->getClassNameForValueToClassInstanceConverter());
     
         $obj = TableColumn::create(TableColumn::TYPE_STRING)
             ->setClassNameForValueToObjectFormatter(null);
-        static::assertNull($obj->getObjectClassNameForValueToObjectFormatter());
+        static::assertNull($obj->getClassNameForValueToClassInstanceConverter());
     }
     
 }
