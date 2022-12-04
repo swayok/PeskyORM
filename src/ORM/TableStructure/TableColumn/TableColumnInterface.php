@@ -36,16 +36,6 @@ interface TableColumnInterface
     public function isValueMustBeUnique(): bool;
 
     /**
-     * Should return true if uniqueness validation should perform
-     * case sensitive validation.
-     * Default: true
-     * Case sensitive validation is faster
-     */
-    public function isUniqueContraintCaseSensitive(): bool;
-
-    public function getUniqueContraintAdditonalColumns(): array;
-
-    /**
      * Should return true if column really exists in DB.
      * Any column that does not exist in DB should return false.
      * In this case ORM will not try to save its value to DB.
@@ -146,7 +136,7 @@ interface TableColumnInterface
      * Get list of column names including formatters.
      * Example for column 'created_at':
      * ['created_at', 'created_at_as_date', 'created_at_as_carbon', ...]
-     * Column values will be accessible through Record by any returned name
+     * Column's values will be accessible through Record by any returned name
      */
     public function getPossibleColumnNames(): array;
 

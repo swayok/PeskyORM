@@ -7,22 +7,26 @@ namespace PeskyORM\ORM\TableStructure\TableColumn\Column;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
+use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeNullable;
+use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBePrivate;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeUnique;
+use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeVirtual;
+use PeskyORM\ORM\TableStructure\TableColumn\UniqueTableColumnInterface;
 
 /**
  * This column should be a base for all columns that
  * store values that are based on strings in DB:
  * - text
- * - date, time, timestamps (except unix timestamp which is integer)
- * - timezone offset
- * - ip address
+ * - password
+ * - email
  * - other string-based types
- * All these columns represented as strings, some in specific format,
- * but in PHP all values will be strings.
  */
-class StringColumn extends TableColumnAbstract
+class StringColumn extends TableColumnAbstract implements UniqueTableColumnInterface
 {
+    use CanBeNullable;
     use CanBeUnique;
+    use CanBePrivate;
+    use CanBeVirtual;
 
     protected bool $trimValues = false;
     protected bool $lowercaseValues = false;
@@ -52,12 +56,6 @@ class StringColumn extends TableColumnAbstract
         return $this->trimValues;
     }
 
-    protected function allowsNullValues(): static
-    {
-        $this->valueCanBeNull = true;
-        return $this;
-    }
-
     public function lowercasesValues(): static
     {
         $this->lowercaseValues = true;
@@ -80,22 +78,13 @@ class StringColumn extends TableColumnAbstract
         return $this;
     }
 
-    protected function validateValueDataType(mixed $normalizedValue, bool $isForCondition): array
+    protected function normalizeValueForValidation(mixed $value, bool $isFromDb): mixed
     {
-        if (!is_string($normalizedValue)) {
-            return [
-                $this->getValueValidationMessage(
-                    ColumnValueValidationMessagesInterface::VALUE_MUST_BE_INTEGER
-                )
-            ];
-        }
-        return [];
-    }
-
-    protected function normalizeValueForValidation(mixed $value, bool $isFromDb): mixed {
         $value = parent::normalizeValueForValidation($value, $isFromDb);
-        if (is_string($value)) {
-            return $this->normalizeStringValue($value, $isFromDb);
+        if (is_object($value) && method_exists($value, '__toString')) {
+            $value = $value->__toString();
+        } elseif (is_string($value) || is_numeric($value)) {
+            return $this->normalizeStringValue((string)$value, $isFromDb);
         }
         return $value;
     }
@@ -122,8 +111,25 @@ class StringColumn extends TableColumnAbstract
         return $value;
     }
 
-    protected function normalizeValidatedValueType(mixed $validatedValue): string
-    {
+    protected function validateValueDataType(
+        mixed $normalizedValue,
+        bool $isForCondition,
+        bool $isFromDb
+    ): array {
+        if (!is_string($normalizedValue)) {
+            return [
+                $this->getValueValidationMessage(
+                    ColumnValueValidationMessagesInterface::VALUE_MUST_BE_STRING
+                ),
+            ];
+        }
+        return [];
+    }
+
+    protected function normalizeValidatedValueType(
+        mixed $validatedValue,
+        bool $isFromDb
+    ): string {
         return (string)$validatedValue;
     }
 }

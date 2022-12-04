@@ -522,7 +522,7 @@ class RecordValueHelpersTest extends BaseTestCase
     
     public function testIsValueFitsDataTypeTimestampWithTz(): void
     {
-        $message = ['value_must_be_timestamp_with_tz'];
+        $message = ['value_must_be_timestamp'];
         static::assertEquals([], ColumnValueProcessingHelpers::isValueFitsDataType('+1 hour', TableColumn::TYPE_TIMESTAMP_WITH_TZ, false));
         static::assertEquals([], ColumnValueProcessingHelpers::isValueFitsDataType('now', TableColumn::TYPE_TIMESTAMP_WITH_TZ, false));
         static::assertEquals([], ColumnValueProcessingHelpers::isValueFitsDataType('2016-09-01', TableColumn::TYPE_TIMESTAMP_WITH_TZ, false));

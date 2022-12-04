@@ -64,7 +64,6 @@ class TableColumn implements TableColumnInterface
     public const VALUE_MUST_BE_EMAIL = 'value_must_be_email';
     public const VALUE_MUST_BE_TIMEZONE_OFFSET = 'value_must_be_timezone_offset';
     public const VALUE_MUST_BE_TIMESTAMP = 'value_must_be_timestamp';
-    public const VALUE_MUST_BE_TIMESTAMP_WITH_TZ = 'value_must_be_timestamp_with_tz';
     public const VALUE_MUST_BE_TIME = 'value_must_be_time';
     public const VALUE_MUST_BE_DATE = 'value_must_be_date';
     public const VALUE_MUST_BE_STRING = 'value_must_be_string';

@@ -107,7 +107,7 @@ abstract class ColumnValueProcessingHelpers
                 break;
             case TableColumn::TYPE_TIMESTAMP_WITH_TZ:
                 if (!ValidateValue::isDateTimeWithTz($value)) {
-                    return [static::getErrorMessage($errorMessages, ColumnValueValidationMessagesInterface::VALUE_MUST_BE_TIMESTAMP_WITH_TZ)];
+                    return [static::getErrorMessage($errorMessages, ColumnValueValidationMessagesInterface::VALUE_MUST_BE_TIMESTAMP)];
                 }
                 break;
             case TableColumn::TYPE_TIMEZONE_OFFSET:

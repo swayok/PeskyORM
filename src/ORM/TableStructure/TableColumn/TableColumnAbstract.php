@@ -25,28 +25,11 @@ abstract class TableColumnAbstract implements TableColumnInterface
     protected ?string $name = null;
     protected ?TableStructureInterface $tableStructure = null;
 
-    protected bool $valueCanBeNull = false;
-
-    /**
-     * This column is private for the object and will be excluded from iteration, toArray(), etc.
-     * Access to this column's value can be done only directly. For example $user->password
-     */
-    protected bool $isPrivate = false;
-    /**
-     * Is this column exists in DB or not.
-     * If not - column valueGetter() must be provided to return a value of this column
-     * Record will not save columns that does not exist in DB
-     */
-    protected bool $isReal = true;
     /**
      * Allow/disallow value setting and modification
      * Record will not save columns that are read only
      */
     protected bool $isReadonly = true;
-    /**
-     * Then true - value contains a lot of data and should not be fetched by '*' selects
-     */
-    protected bool $isHeavy = false;
 
     /**
      * @var mixed|\Closure
@@ -57,22 +40,26 @@ abstract class TableColumnAbstract implements TableColumnInterface
     protected mixed $validDefaultValue = null;
 
     /**
-     * @var RelationInterface[]
-     */
-    protected array $relations = [];
-    protected ?RelationInterface $foreignKeyRelation = null;
-
-    /**
      * Function that generates new value for a column for each save operation
      * Usage example: updated_at column
      */
     protected ?\Closure $valueAutoUpdater = null;
 
+    /**
+     * @var RelationInterface[]
+     */
+    protected array $relations = [];
+    protected ?RelationInterface $foreignKeyRelation = null;
+
     protected ?ColumnValueValidationMessagesInterface $valueValidationMessages = null;
+
+    protected array $formatters = [];
+    protected string $columnNameWithFormatGlue = '_as_';
 
     public function __construct(string $name)
     {
         $this->setName($name);
+        $this->registerDefaultValueFormatters();
     }
 
     /**
@@ -129,7 +116,7 @@ abstract class TableColumnAbstract implements TableColumnInterface
 
     public function isNullableValues(): bool
     {
-        return $this->valueCanBeNull;
+        return false;
     }
 
     public function isPrimaryKey(): bool
@@ -152,18 +139,12 @@ abstract class TableColumnAbstract implements TableColumnInterface
         return [];
     }
 
-    public function doesNotExistInDb(): static
-    {
-        $this->isReal = false;
-        return $this;
-    }
-
     /**
      * Is this column exists in DB?
      */
     public function isReal(): bool
     {
-        return $this->isReal;
+        return true;
     }
 
     public function valuesAreReadOnly(): static
@@ -177,15 +158,9 @@ abstract class TableColumnAbstract implements TableColumnInterface
         return $this->isReadonly;
     }
 
-    public function valuesAreHeavy(): static
-    {
-        $this->isHeavy = true;
-        return $this;
-    }
-
     public function isHeavyValues(): bool
     {
-        return $this->isHeavy;
+        return false;
     }
 
     public function isFile(): bool
@@ -195,13 +170,7 @@ abstract class TableColumnAbstract implements TableColumnInterface
 
     public function isPrivateValues(): bool
     {
-        return $this->isPrivate;
-    }
-
-    public function valuesArePrivate(): static
-    {
-        $this->isPrivate = true;
-        return $this;
+        return false;
     }
 
     /**
@@ -356,7 +325,7 @@ abstract class TableColumnAbstract implements TableColumnInterface
             );
         }
 
-        return $this->normalizeValidatedValue($defaultValue);
+        return $this->normalizeValidatedValue($defaultValue, false);
     }
 
     public function hasDefaultValue(): bool
@@ -385,20 +354,58 @@ abstract class TableColumnAbstract implements TableColumnInterface
         return $this;
     }
 
+    /**
+     * @throws TableColumnConfigException
+     */
+    protected function getValueFormatter(string $name): \Closure
+    {
+        if (!isset($this->formatters[$name])) {
+            throw new TableColumnConfigException(
+                "There is no formatter '{$name}' for column {$this->getNameForException()}",
+                $this
+            );
+        }
+        return $this->formatters[$name];
+    }
+
+    /**
+     * Register default formatters for this Column
+     * @see self::addValueFormatter()
+     * @see ColumnValueFormatters
+     */
+    protected function registerDefaultValueFormatters(): void
+    {
+        // use $this->addValueFormatter($name, )
+    }
+
+    /**
+     * Add a value formatter.
+     * Example: formatter name is 'timestamp'.
+     * If column name is 'datetime' then you can use
+     * RecordInterface->datetime_as_timestamp to get formatted value.
+     * Formatter \Closure signature:
+     * function(RecordValueContainerInterface $valueContainer): mixed;
+     * @see RecordInterface::getValue()
+     */
+    public function addValueFormatter(string $name, \Closure $formatter): static
+    {
+        $this->formatters[$name] = $formatter;
+        return $this;
+    }
+
     public function getPossibleColumnNames(): array
     {
-        // todo: implement this
         $name = $this->getName();
-        return [
+        $ret = [
             $name,
         ];
-        //        $ret = [
-        //            $name,
-        //        ];
-        //        foreach ($this->getValueFormattersNames() as $formatterName) {
-        //            $ret[] = $name . '_as_' . $formatterName;
-        //        }
-        //        return $ret;
+        // Add alternative column name for each value format.
+        // Should look like: 'name_as_timestamp', 'name_as_date', ...
+        $glue = $this->columnNameWithFormatGlue;
+        foreach ($this->formatters as $format => $formatter) {
+            $ret[] = $name . $glue . $format;
+        }
+        return $ret;
     }
 
     // values management
@@ -435,7 +442,11 @@ abstract class TableColumnAbstract implements TableColumnInterface
                 ),
             ];
         }
-        return $this->validateValueDataType($normalizedValue, $isForCondition);
+        return $this->validateValueDataType(
+            $normalizedValue,
+            $isForCondition,
+            $isFromDb
+        );
     }
 
     /**
@@ -468,7 +479,6 @@ abstract class TableColumnAbstract implements TableColumnInterface
         );
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
     protected function validateIfNullValueIsAllowed(
         bool $isFromDb,
         bool $isForCondition
@@ -480,8 +490,13 @@ abstract class TableColumnAbstract implements TableColumnInterface
      * Validate if
      * At this point value cannot be null.
      * Returns array of errors ot empty array if no errors
+     * @param bool $isFromDb
      */
-    abstract protected function validateValueDataType(mixed $normalizedValue, bool $isForCondition): array;
+    abstract protected function validateValueDataType(
+        mixed $normalizedValue,
+        bool $isForCondition,
+        bool $isFromDb
+    ): array;
 
     protected function getValueValidationMessages(): ColumnValueValidationMessagesInterface
     {
@@ -525,7 +540,7 @@ abstract class TableColumnAbstract implements TableColumnInterface
      * @see self::setValue()
      * Returned value is final. No more modifications expected.
      */
-    protected function normalizeValidatedValue(mixed $validatedValue): mixed
+    protected function normalizeValidatedValue(mixed $validatedValue, bool $isFromDb): mixed
     {
         if ($validatedValue === null) {
             return null;
@@ -535,7 +550,7 @@ abstract class TableColumnAbstract implements TableColumnInterface
             return $validatedValue;
         }
 
-        return $this->normalizeValidatedValueType($validatedValue);
+        return $this->normalizeValidatedValueType($validatedValue, $isFromDb);
     }
 
     /**
@@ -544,7 +559,10 @@ abstract class TableColumnAbstract implements TableColumnInterface
      * @see self::normalizeValidatedValue()
      * @see self::shouldNormalizeValidatedValue()
      */
-    abstract protected function normalizeValidatedValueType(mixed $validatedValue): mixed;
+    abstract protected function normalizeValidatedValueType(
+        mixed $validatedValue,
+        bool $isFromDb
+    ): mixed;
 
     public function setValue(
         RecordValueContainerInterface $currentValueContainer,
@@ -602,7 +620,7 @@ abstract class TableColumnAbstract implements TableColumnInterface
         }
         $valueContainer->setValue(
             $newValue,
-            $this->normalizeValidatedValue($normalizedValue),
+            $this->normalizeValidatedValue($normalizedValue, $isFromDb),
             $isFromDb
         );
         return $valueContainer;
@@ -701,8 +719,8 @@ abstract class TableColumnAbstract implements TableColumnInterface
         RecordValueContainerInterface $valueContainer,
         string $format
     ): mixed {
-        // todo: implement new way to define default formatters and use them
-        return $valueContainer->getValue();
+        $formatter = $this->getValueFormatter($format);
+        return $formatter($valueContainer);
     }
 
     public function hasValue(
