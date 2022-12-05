@@ -3,6 +3,7 @@
 namespace PeskyORM\ORM;
 
 use PeskyORM\Core\AbstractJoinInfo;
+use PeskyORM\Core\DbExpr;
 
 class OrmJoinInfo extends AbstractJoinInfo
 {
@@ -25,10 +26,10 @@ class OrmJoinInfo extends AbstractJoinInfo
     static public function create(
         string $joinName,
         TableInterface $localTable,
-        string $localColumnName,
+        string|DbExpr $localColumnName,
         string $joinType,
         TableInterface $foreignTable,
-        string $foreignColumnName
+        string|DbExpr $foreignColumnName
     ) {
         return new static(
             $joinName,
@@ -52,10 +53,10 @@ class OrmJoinInfo extends AbstractJoinInfo
     public function __construct(
         string $joinName,
         TableInterface $localTable,
-        string $localColumnName,
+        string|DbExpr $localColumnName,
         string $joinType,
         TableInterface $foreignTable,
-        string $foreignColumnName
+        string|DbExpr $foreignColumnName
     ) {
         parent::__construct($joinName);
         $this
@@ -66,11 +67,11 @@ class OrmJoinInfo extends AbstractJoinInfo
     
     /**
      * @param TableInterface $table
-     * @param string $columnName
+     * @param string|DbExpr $columnName
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setConfigForLocalTable(TableInterface $table, string $columnName)
+    public function setConfigForLocalTable(TableInterface $table, string|DbExpr $columnName)
     {
         return $this
             ->setDbTable($table)
@@ -79,11 +80,11 @@ class OrmJoinInfo extends AbstractJoinInfo
     
     /**
      * @param TableInterface $foreignTable
-     * @param string $foreignColumnName
+     * @param string|DbExpr $foreignColumnName
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setConfigForForeignTable(TableInterface $foreignTable, string $foreignColumnName)
+    public function setConfigForForeignTable(TableInterface $foreignTable, string|DbExpr $foreignColumnName)
     {
         return $this
             ->setForeignDbTable($foreignTable)

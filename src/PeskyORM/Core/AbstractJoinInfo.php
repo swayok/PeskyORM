@@ -19,7 +19,7 @@ abstract class AbstractJoinInfo
     protected $tableSchema;
     /** @var string|null */
     protected $tableAlias;
-    /** @var string */
+    /** @var string|DbExpr */
     protected $columnName;
     /** @var string */
     protected $joinType;
@@ -27,7 +27,7 @@ abstract class AbstractJoinInfo
     protected $foreignTableName;
     /** @var string|null */
     protected $foreignTableSchema;
-    /** @var string */
+    /** @var string|DbExpr */
     protected $foreignColumnName;
     /** @var array */
     protected $additionalJoinConditions = [];
@@ -43,17 +43,17 @@ abstract class AbstractJoinInfo
         $this->setJoinName($joinName);
     }
     
-    public function getColumnName(): ?string
+    public function getColumnName(): null|string|DbExpr
     {
         return $this->columnName;
     }
     
     /**
-     * @param string $columnName
+     * @param string|DbExpr $columnName
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setColumnName(string $columnName)
+    public function setColumnName(string|DbExpr $columnName)
     {
         if (empty($columnName)) {
             throw new \InvalidArgumentException('$columnName argument must be a not-empty string');
@@ -62,17 +62,17 @@ abstract class AbstractJoinInfo
         return $this;
     }
     
-    public function getForeignColumnName(): ?string
+    public function getForeignColumnName(): null|string|DbExpr
     {
         return $this->foreignColumnName;
     }
     
     /**
-     * @param string $foreignColumnName
+     * @param string|DbExpr $foreignColumnName
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setForeignColumnName(string $foreignColumnName)
+    public function setForeignColumnName(string|DbExpr $foreignColumnName)
     {
         if (empty($foreignColumnName)) {
             throw new \InvalidArgumentException('$foreignColumnName argument must be a not-empty string');
@@ -81,7 +81,7 @@ abstract class AbstractJoinInfo
         return $this;
     }
     
-    public function getForeignTableName(): ?string
+    public function getForeignTableName(): null|string|DbExpr
     {
         return $this->foreignTableName;
     }

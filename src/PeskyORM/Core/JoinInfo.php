@@ -22,10 +22,10 @@ class JoinInfo extends AbstractJoinInfo
     public static function create(
         string $joinName,
         string $localTableName,
-        string $localColumnName,
+        string|DbExpr $localColumnName,
         string $joinType,
         string $foreignTableName,
-        string $foreignColumnName,
+        string|DbExpr $foreignColumnName,
         ?string $localTableSchema = null,
         ?string $foreignTableSchema = null
     ) {
@@ -55,10 +55,10 @@ class JoinInfo extends AbstractJoinInfo
     public function __construct(
         string $joinName,
         string $localTableName,
-        string $localColumnName,
+        string|DbExpr $localColumnName,
         string $joinType,
         string $foreignTableName,
-        string $foreignColumnName,
+        string|DbExpr $foreignColumnName,
         ?string $localTableSchema = null,
         ?string $foreignTableSchema = null
     ) {
@@ -76,7 +76,7 @@ class JoinInfo extends AbstractJoinInfo
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setConfigForLocalTable(string $tableName, string $columnName, ?string $tableSchema = null)
+    public function setConfigForLocalTable(string $tableName, string|DbExpr $columnName, ?string $tableSchema = null)
     {
         $this
             ->setTableName($tableName)
@@ -94,7 +94,7 @@ class JoinInfo extends AbstractJoinInfo
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function setConfigForForeignTable(string $foreignTableName, string $foreignColumnName, ?string $foreignTableSchema = null)
+    public function setConfigForForeignTable(string $foreignTableName, string|DbExpr $foreignColumnName, ?string $foreignTableSchema = null)
     {
         $this
             ->setForeignTableName($foreignTableName)

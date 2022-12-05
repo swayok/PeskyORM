@@ -1377,11 +1377,22 @@ abstract class AbstractSelect
     protected function makeJoinConditions(AbstractJoinInfo $joinConfig): string
     {
         $shortJoinName = $this->getShortJoinAlias($joinConfig->getJoinName());
+        $localColumnName = $joinConfig->getColumnName();
+        if ($localColumnName instanceof DbExpr) {
+            $left = $localColumnName->setWrapInBrackets(true);
+        } else {
+            $left = $joinConfig->getTableAlias() . '.' . $joinConfig->getColumnName();
+        }
+        $foreignColumnName = $joinConfig->getForeignColumnName();
+        if ($foreignColumnName instanceof DbExpr) {
+            $right = $foreignColumnName->setWrapInBrackets(true);
+        } else {
+            $right = DbExpr::create("`{$shortJoinName}`.`{$joinConfig->getForeignColumnName()}`", false);
+        }
         $conditions = array_merge(
-            [
-                $this->getShortJoinAlias($joinConfig->getTableAlias()) . '.' . $joinConfig->getColumnName()
-                => DbExpr::create("`{$shortJoinName}`.`{$joinConfig->getForeignColumnName()}`", false),
-            ],
+            $left instanceof DbExpr
+                ? [new DbExpr($left->get() . ' = ' . $right->get())]
+                : [$left => $right],
             $joinConfig->getAdditionalJoinConditions()
         );
         return trim($this->makeConditions($conditions, '', $joinConfig->getJoinName()));
