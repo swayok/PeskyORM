@@ -11,7 +11,6 @@ use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeNullable;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBePrivate;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeUnique;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeVirtual;
-use PeskyORM\Utils\ValueTypeValidators;
 
 class FloatColumn extends TableColumnAbstract
 {
@@ -39,7 +38,8 @@ class FloatColumn extends TableColumnAbstract
         bool $isForCondition,
         bool $isFromDb
     ): array {
-        if (!ValueTypeValidators::isFloat($normalizedValue)) {
+        // any numeric value can be converted to float
+        if (!is_numeric($normalizedValue)) {
             return [
                 $this->getValueValidationMessage(
                     ColumnValueValidationMessagesInterface::VALUE_MUST_BE_FLOAT

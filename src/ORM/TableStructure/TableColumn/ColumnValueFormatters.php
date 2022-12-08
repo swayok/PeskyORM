@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\ORM\TableStructure\TableColumn;
 
 use Carbon\CarbonImmutable;
+use Carbon\CarbonTimeZone;
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\Record\RecordValueContainerInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\Column\DateColumn;
@@ -76,11 +77,35 @@ abstract class ColumnValueFormatters
         ];
     }
 
+    public static function getTimeZoneFormatters(): array
+    {
+        return [
+            static::FORMAT_CARBON => static::getTimeZoneToCarbonFormatter(),
+        ];
+    }
+
     public static function getJsonFormatters(): array
     {
         return [
             static::FORMAT_ARRAY => static::getJsonToDecodedValueFormatter(),
             static::FORMAT_DECODED => static::getJsonToDecodedValueFormatter(),
+            static::FORMAT_OBJECT => static::getJsonToObjectFormatter(),
+        ];
+    }
+
+    public static function getJsonArrayFormatters(): array
+    {
+        return [
+            static::FORMAT_ARRAY => static::getJsonToDecodedValueFormatter(),
+            // todo: add format 'as_instances' to convert array values to objects
+            // like 'as_object' formatter does when ConvertsValueToClassInstanceInterface used
+        ];
+    }
+
+    public static function getJsonObjectFormatters(): array
+    {
+        return [
+            static::FORMAT_ARRAY => static::getJsonToDecodedValueFormatter(),
             static::FORMAT_OBJECT => static::getJsonToObjectFormatter(),
         ];
     }
@@ -151,6 +176,21 @@ abstract class ColumnValueFormatters
                         );
                     }
                     return is_numeric($value) ? $value : strtotime($value);
+                }
+            );
+        }
+        return $formatter;
+    }
+
+    public static function getTimeZoneToCarbonFormatter(): \Closure
+    {
+        static $formatter = null;
+        if (!$formatter) {
+            $formatter = static::wrapGetterIntoFormatter(
+                static::FORMAT_CARBON,
+                static function (RecordValueContainerInterface $valueContainer): CarbonTimeZone {
+                    $value = static::getSimpleValueFromContainer($valueContainer);
+                    return CarbonTimeZone::create($value);
                 }
             );
         }
@@ -237,7 +277,7 @@ abstract class ColumnValueFormatters
                 static::FORMAT_DECODED,
                 static function (RecordValueContainerInterface $valueContainer): array|string|bool|null|int|float {
                     $value = static::getSimpleValueFromContainer($valueContainer);
-                    if (!ValueTypeValidators::isJson($value)) {
+                    if (!ValueTypeValidators::isJsonEncodedString($value)) {
                         throw static::getInvalidValueException(
                             $valueContainer,
                             'json',
@@ -261,7 +301,7 @@ abstract class ColumnValueFormatters
                 static::FORMAT_OBJECT,
                 static function (RecordValueContainerInterface $valueContainer) {
                     $value = static::getSimpleValueFromContainer($valueContainer);
-                    if (!ValueTypeValidators::isJson($value)) {
+                    if (!ValueTypeValidators::isJsonEncodedString($value)) {
                         throw static::getInvalidValueException(
                             $valueContainer,
                             'json',

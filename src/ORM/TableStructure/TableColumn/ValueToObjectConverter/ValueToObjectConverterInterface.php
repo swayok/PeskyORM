@@ -6,7 +6,7 @@ namespace PeskyORM\ORM\TableStructure\TableColumn\ValueToObjectConverter;
 
 interface ValueToObjectConverterInterface
 {
-    
     public static function createObjectFromArray(array $data): static;
-    
+
+    public function toArray(): array;
 }

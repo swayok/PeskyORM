@@ -10,11 +10,9 @@ use PeskyORM\Tests\PeskyORMTest\TestingSettings\TestingSettingsTable;
 
 class StaticPropertiesAndMethodsTest extends BaseTestCase
 {
-    
     public function testStaticMethodsInDbTables(): void
     {
         static::assertInstanceOf(TestingSettingsTable::class, TestingSettingsTable::getInstance());
         static::assertInstanceOf(TestingAdminsTable::class, TestingAdminsTable::getInstance());
     }
-    
 }

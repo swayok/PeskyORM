@@ -14,5 +14,16 @@ abstract class ValueToObjectConverter implements ValueToObjectConverterInterface
     {
         $this->other = $unknownProperties;
     }
-    
+
+    /**
+     * Return data similar to incoming data.
+     * $this->other removed from returned array having its values merged into it
+     * @return array
+     */
+    public function toArray(): array
+    {
+        $data = get_object_vars($this);
+        unset($data['other']);
+        return array_merge($data, $this->other);
+    }
 }
