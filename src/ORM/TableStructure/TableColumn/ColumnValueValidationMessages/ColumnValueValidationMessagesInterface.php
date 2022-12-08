@@ -13,7 +13,10 @@ interface ColumnValueValidationMessagesInterface
     public const VALUE_MUST_BE_FLOAT = 'value_must_be_float';
     public const VALUE_MUST_BE_IMAGE = 'value_must_be_image';
     public const VALUE_MUST_BE_FILE = 'value_must_be_file';
-    public const VALUE_MUST_BE_JSON_OR_ARRAY = 'value_must_be_json';
+    public const VALUE_MUST_BE_JSON_OR_JSONABLE = 'value_must_be_json_or_jsonable';
+    public const VALUE_MUST_BE_JSON_ARRAY_OR_OBJECT = 'value_must_be_json_array_or_object';
+    public const VALUE_MUST_BE_JSON_ARRAY = 'value_must_be_json_array';
+    public const VALUE_MUST_BE_JSON_OBJECT = 'value_must_be_json_object';
     public const VALUE_MUST_BE_IPV4_ADDRESS = 'value_must_be_ipv4_address';
     public const VALUE_MUST_BE_EMAIL = 'value_must_be_email';
     public const VALUE_MUST_BE_TIMEZONE_OFFSET = 'value_must_be_timezone_offset';

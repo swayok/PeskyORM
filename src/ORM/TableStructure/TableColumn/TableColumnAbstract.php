@@ -520,9 +520,6 @@ abstract class TableColumnAbstract implements TableColumnInterface
      */
     protected function normalizeValueForValidation(mixed $value, bool $isFromDb): mixed
     {
-        if ($value instanceof RecordValueContainerInterface) {
-            $value = $value->getValue();
-        }
         if (!$isFromDb && $value instanceof RecordsSet) {
             return $value->getOrmSelect();
         }
@@ -617,12 +614,32 @@ abstract class TableColumnAbstract implements TableColumnInterface
         } else {
             $valueContainer = $currentValueContainer;
         }
-        $valueContainer->setValue(
+
+        $this->setValidatedValueToValueContainer(
+            $valueContainer,
             $newValue,
-            $this->normalizeValidatedValue($normalizedValue, $isFromDb),
+            $normalizedValue,
             $isFromDb
         );
+
         return $valueContainer;
+    }
+
+    /**
+     * Child columns may override this method to store some payload
+     * in $valueContainer.
+     */
+    protected function setValidatedValueToValueContainer(
+        RecordValueContainerInterface $valueContainer,
+        mixed $originalValue,
+        mixed $validatedValue,
+        bool $isFromDb
+    ): void {
+        $valueContainer->setValue(
+            $originalValue,
+            $this->normalizeValidatedValue($validatedValue, $isFromDb),
+            $isFromDb
+        );
     }
 
     protected function assertValueContainerIsValid(

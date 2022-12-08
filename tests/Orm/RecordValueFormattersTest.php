@@ -440,7 +440,7 @@ class RecordValueFormattersTest extends BaseTestCase
     public function testInvalidJson3(): void
     {
         $this->expectException(InvalidDataException::class);
-        $this->expectExceptionMessage("Validation errors: [json_data1] Value must be a json-encoded string or array.");
+        $this->expectExceptionMessage("Validation errors: [json_data1] Value must be a json-encoded string or have jsonable type.");
         TestingFormatter::newEmptyRecord()
             ->setJsonData1(json_decode(json_encode(['test' => 1]), false)); //< \stdObject
     }

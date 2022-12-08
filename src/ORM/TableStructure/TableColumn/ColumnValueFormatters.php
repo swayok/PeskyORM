@@ -98,7 +98,7 @@ abstract class ColumnValueFormatters
         return [
             static::FORMAT_ARRAY => static::getJsonToDecodedValueFormatter(),
             // todo: add format 'as_instances' to convert array values to objects
-            // like 'as_object' formatter does when ConvertsValueToClassInstanceInterface used
+            //  like 'as_object' formatter does when ConvertsValueToClassInstanceInterface used
         ];
     }
 
@@ -367,8 +367,27 @@ abstract class ColumnValueFormatters
     public static function wrapGetterIntoFormatter(string $format, \Closure $getter): \Closure
     {
         return static function (RecordValueContainerInterface $valueContainer) use ($getter, $format) {
-            return $valueContainer->rememberPayload('format:' . $format, $getter);
+            return $valueContainer->rememberPayload(
+                static::getPayloadKeyForFormat($format),
+                $getter
+            );
         };
+    }
+
+    protected static function getPayloadKeyForFormat(string $format): string
+    {
+        return 'format:' . $format;
+    }
+
+    public static function rememberFormattedValueInValueContainer(
+        RecordValueContainerInterface $valueContainer,
+        string $format,
+        mixed $value
+    ): void {
+        $valueContainer->addPayload(
+            static::getPayloadKeyForFormat($format),
+            $value
+        );
     }
 
     private static function getInvalidValueException(

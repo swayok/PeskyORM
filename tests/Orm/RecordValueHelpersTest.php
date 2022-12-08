@@ -640,7 +640,7 @@ class RecordValueHelpersTest extends BaseTestCase
     
     public function testIsValueFitsDataTypeJson(): void
     {
-        $message = ['value_must_be_json'];
+        $message = ['value_must_be_json_or_jsonable'];
         static::assertEquals([], ColumnValueProcessingHelpers::isValueFitsDataType([], TableColumn::TYPE_JSON, false));
         static::assertEquals([], ColumnValueProcessingHelpers::isValueFitsDataType(['a' => 'b'], TableColumn::TYPE_JSON, false));
         static::assertEquals([], ColumnValueProcessingHelpers::isValueFitsDataType(true, TableColumn::TYPE_JSON, false));

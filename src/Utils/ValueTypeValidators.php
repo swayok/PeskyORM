@@ -195,7 +195,8 @@ abstract class ValueTypeValidators
 
     /**
      * Check if value is json-encoded array (no decode, only regexp check)
-     * or indexed/empty array. Other values are not allowed.
+     * or indexed/empty array.
+     * Other values are not allowed.
      * Note: it does not check values of PHP array.
      */
     public static function isJsonArray(mixed $value): bool
@@ -211,7 +212,8 @@ abstract class ValueTypeValidators
 
     /**
      * Check if value is json-encoded object (no decode, only regexp check)
-     * or associative/empty array. Other values are not allowed.
+     * or associative/empty array.
+     * Other values are not allowed.
      * Note: object must be converted to array before calling this function.
      */
     public static function isJsonObject(mixed $value): bool
@@ -251,7 +253,7 @@ abstract class ValueTypeValidators
     }
 
     /**
-     * Check if all keys are integers.
+     * Check if array is associative.
      * Returns true if at least 1 key in array is not integer.
      */
     public static function isAssociativeArray(mixed $value): bool
