@@ -11,6 +11,9 @@ use Swayok\Utils\NormalizeValue;
 use Swayok\Utils\ValidateValue;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
+/**
+ * @deprecated
+ */
 abstract class ColumnValueProcessingHelpers
 {
 

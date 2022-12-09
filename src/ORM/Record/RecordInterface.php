@@ -8,7 +8,7 @@ use PeskyORM\ORM\RecordsCollection\RecordsArray;
 use PeskyORM\ORM\RecordsCollection\RecordsSet;
 use PeskyORM\ORM\Table\TableInterface;
 use PeskyORM\ORM\TableStructure\RelationInterface;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumnAbstract;
+use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 
 interface RecordInterface extends \ArrayAccess
@@ -51,7 +51,7 @@ interface RecordInterface extends \ArrayAccess
      * @param string|TableColumnInterface $column
      * @param null|string $format - change value format
      * @see TableColumnInterface::getValue()
-     * @see TableColumnAbstract::getFormattedValue()
+     * @see RealTableColumnAbstract::getFormattedValue()
      */
     public function getValue(
         string|TableColumnInterface $column,

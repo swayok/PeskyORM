@@ -590,7 +590,7 @@ class OrmSelect extends SelectQueryBuilderAbstract
             $isValid = $this->getTableStructure()->hasColumn($columnInfo['name']);
             if (!$isValid) {
                 throw new \UnexpectedValueException(
-                    "{$subject}: TableColumn with name [{$columnInfo['name']}] not found in "
+                    "{$subject}: Column with name [{$columnInfo['name']}] not found in "
                     . get_class($this->getTableStructure())
                 );
             }
@@ -601,7 +601,7 @@ class OrmSelect extends SelectQueryBuilderAbstract
                 $isValid = $columnInfo['name'] === '*' || $foreignTableStructure::hasColumn($columnInfo['name']);
                 if (!$isValid) {
                     throw new \UnexpectedValueException(
-                        "{$subject}: TableColumn with name [{$columnInfo['join_name']}.{$columnInfo['name']}] not found in "
+                        "{$subject}: Column with name [{$columnInfo['join_name']}.{$columnInfo['name']}] not found in "
                         . get_class($foreignTableStructure)
                     );
                 }

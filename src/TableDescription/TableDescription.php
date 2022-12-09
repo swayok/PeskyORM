@@ -53,7 +53,7 @@ class TableDescription implements TableDescriptionInterface
     public function getColumn($name): ColumnDescriptionInterface
     {
         if (!array_key_exists($name, $this->columns)) {
-            throw new \InvalidArgumentException("TableColumn '{$name}' does not exist");
+            throw new \InvalidArgumentException("Column '{$name}' does not exist");
         }
         return $this->columns[$name];
     }

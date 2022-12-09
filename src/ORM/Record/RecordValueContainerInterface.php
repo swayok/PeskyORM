@@ -90,7 +90,7 @@ interface RecordValueContainerInterface
 
     /**
      * Collects all value-related properties.
-     * You should exclude objects like TableColumn and Record from result.
+     * You should exclude objects like TableColumnInterface and RecordInterface from result.
      * May be used to serialize RecordInterface instance.
      */
     public function toArray(): array;

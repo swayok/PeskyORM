@@ -7,16 +7,14 @@ namespace PeskyORM\ORM\TableStructure\TableColumn\Column;
 use Carbon\CarbonTimeZone;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumnAbstract;
+use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeNullable;
-use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeVirtual;
 use PeskyORM\Utils\ValueTypeValidators;
 
-class TimezoneOffsetColumn extends TableColumnAbstract
+class TimezoneOffsetColumn extends RealTableColumnAbstract
 {
     use CanBeNullable;
-    use CanBeVirtual;
 
     protected bool $convertToInteger = false;
 

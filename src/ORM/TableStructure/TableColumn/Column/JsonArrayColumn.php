@@ -8,22 +8,20 @@ use PeskyORM\ORM\Record\RecordValueContainerInterface;
 use PeskyORM\ORM\RecordsCollection\RecordsArray;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumnAbstract;
+use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeHeavy;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeNullable;
-use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeVirtual;
 use PeskyORM\Utils\ValueTypeValidators;
 
 /**
  * This column allows only indexed arrays.
  * Example: '["value1", "value2", {"key1": ""}, ...]'.
  */
-class JsonArrayColumn extends TableColumnAbstract
+class JsonArrayColumn extends RealTableColumnAbstract
 {
     use CanBeNullable;
     use CanBeHeavy;
-    use CanBeVirtual;
 
     public function getDataType(): string
     {

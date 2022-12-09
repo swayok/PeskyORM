@@ -5,27 +5,18 @@ declare(strict_types=1);
 namespace PeskyORM\ORM\TableStructure\TableColumn\Column;
 
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumnAbstract;
+use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeNullable;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBePrivate;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeUnique;
-use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeVirtual;
 use PeskyORM\ORM\TableStructure\TableColumn\UniqueTableColumnInterface;
 
-/**
- * This column should be a base for all columns that
- * store values that are based on strings in DB:
- * - text
- * - email
- * - other string-based types
- */
-class StringColumn extends TableColumnAbstract implements UniqueTableColumnInterface
+class StringColumn extends RealTableColumnAbstract implements UniqueTableColumnInterface
 {
     use CanBeNullable;
     use CanBeUnique;
     use CanBePrivate;
-    use CanBeVirtual;
 
     protected bool $trimValues = false;
     protected bool $lowercaseValues = false;

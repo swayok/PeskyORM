@@ -9,18 +9,17 @@ use Carbon\CarbonInterface;
 use DateTimeInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumnAbstract;
+use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeNullable;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeUnique;
-use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeVirtual;
+use PeskyORM\ORM\TableStructure\TableColumn\UniqueTableColumnInterface;
 use PeskyORM\Utils\ValueTypeValidators;
 
-class DateColumn extends TableColumnAbstract
+class DateColumn extends RealTableColumnAbstract implements UniqueTableColumnInterface
 {
     use CanBeUnique;
     use CanBeNullable;
-    use CanBeVirtual;
 
     public const FORMAT = 'Y-m-d';
 

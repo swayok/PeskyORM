@@ -23,4 +23,5 @@ abstract class TableColumnDataType
     public const FILE = 'file';
     public const IMAGE = 'image';
     public const BLOB = 'blob';
+    public const VIRTUAL = 'virtual';
 }

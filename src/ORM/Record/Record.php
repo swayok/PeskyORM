@@ -254,8 +254,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
 
     public static function getPrimaryKeyColumnName(): string
     {
-        return static::getPrimaryKeyColumn()
-            ->getName();
+        return static::getPrimaryKeyColumn()->getName();
     }
 
     /**

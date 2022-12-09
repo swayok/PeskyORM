@@ -10,11 +10,10 @@ use PeskyORM\ORM\RecordsCollection\RecordsArray;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\ConvertsValueToClassInstanceInterface;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumnAbstract;
+use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeHeavy;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeNullable;
-use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeVirtual;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanConvertValueToClassInstance;
 use PeskyORM\Utils\ValueTypeValidators;
 
@@ -25,11 +24,10 @@ use PeskyORM\Utils\ValueTypeValidators;
  * @see JsonArrayColumn
  * @see JsonObjectColumn
  */
-class MixedJsonColumn extends TableColumnAbstract implements ConvertsValueToClassInstanceInterface
+class MixedJsonColumn extends RealTableColumnAbstract implements ConvertsValueToClassInstanceInterface
 {
     use CanBeNullable;
     use CanBeHeavy;
-    use CanBeVirtual;
     use CanConvertValueToClassInstance;
 
     protected bool $allowsOnlyJsonArraysAndObjects = false;

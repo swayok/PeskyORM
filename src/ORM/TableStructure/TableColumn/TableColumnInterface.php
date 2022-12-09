@@ -133,12 +133,13 @@ interface TableColumnInterface
     // TableStructure utils
 
     /**
-     * Get list of column names including formatters.
+     * Get list of column names aliases (formatters).
      * Example for column 'created_at':
-     * ['created_at', 'created_at_as_date', 'created_at_as_carbon', ...]
-     * Column's values will be accessible through Record by any returned name
+     * ['created_at_as_date' => 'date', 'created_at_as_carbon' => 'carbon', ...]
+     * Column's values will be accessible through Record by any returned name (key).
+     * Value formatter will be determined by value.
      */
-    public function getPossibleColumnNames(): array;
+    public function getColumnNameAliases(): array;
 
     // Values handling
 

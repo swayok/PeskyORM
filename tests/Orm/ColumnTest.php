@@ -179,7 +179,7 @@ class ColumnTest extends BaseTestCase
     public function testDoubleNameSetter(): void
     {
         $this->expectException(\BadMethodCallException::class);
-        $this->expectExceptionMessage("TableColumn name changing is forbidden");
+        $this->expectExceptionMessage("Column name changing is forbidden");
         $obj = TableColumn::create(TableColumn::TYPE_STRING)->setName('test');
         $obj->setName('test');
     }

@@ -31,6 +31,7 @@ class Relation implements RelationInterface
         string $relationType,
         TableInterface $foreignTable,
         string $foreignColumnName,
+        ?string $name = null
     ) {
         $this
             ->setLocalColumnName($localColumnName)
@@ -38,6 +39,9 @@ class Relation implements RelationInterface
             ->setType($relationType)
             ->setForeignTable($foreignTable)
             ->setForeignColumnName($foreignColumnName);
+        if ($name) {
+            $this->setName($name);
+        }
     }
 
     public function getJoinType(): string

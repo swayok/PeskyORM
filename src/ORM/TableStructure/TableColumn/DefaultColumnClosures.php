@@ -10,6 +10,9 @@ use PeskyORM\ORM\Record\RecordValueContainerInterface;
 use PeskyORM\ORM\RecordsCollection\RecordsSet;
 use PeskyORM\Select\SelectQueryBuilderInterface;
 
+/**
+ * @deprecated
+ */
 class DefaultColumnClosures implements ColumnClosuresInterface
 {
 

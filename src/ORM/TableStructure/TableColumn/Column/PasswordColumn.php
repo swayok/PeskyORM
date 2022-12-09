@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace PeskyORM\ORM\TableStructure\TableColumn\Column;
 
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumnAbstract;
+use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeNullable;
 
-class PasswordColumn extends TableColumnAbstract
+class PasswordColumn extends RealTableColumnAbstract
 {
     use CanBeNullable;
 

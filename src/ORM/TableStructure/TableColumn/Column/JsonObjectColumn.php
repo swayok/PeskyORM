@@ -9,11 +9,10 @@ use PeskyORM\ORM\Record\RecordValueContainerInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\ConvertsValueToClassInstanceInterface;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumnAbstract;
+use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeHeavy;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeNullable;
-use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeVirtual;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanConvertValueToClassInstance;
 use PeskyORM\Utils\ValueTypeValidators;
 
@@ -22,11 +21,10 @@ use PeskyORM\Utils\ValueTypeValidators;
  * Example: '{"key1": "value", "key2": ["v1", "v2"], "key3": {"k1": ""}, "0": "", ...}'.
  * Note: value '[]' (empty array) is allowed and handled like empty object: '{}'.
  */
-class JsonObjectColumn extends TableColumnAbstract implements ConvertsValueToClassInstanceInterface
+class JsonObjectColumn extends RealTableColumnAbstract implements ConvertsValueToClassInstanceInterface
 {
     use CanBeNullable;
     use CanBeHeavy;
-    use CanBeVirtual;
     use CanConvertValueToClassInstance;
 
     public function getDataType(): string

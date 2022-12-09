@@ -39,7 +39,7 @@ abstract class TableStructure implements TableStructureInterface
 
     /**
      * It contains only ReflectionMethod objects after class instance created
-     * Later it converts ReflectionMethod to TableColumn objects on demand
+     * Later it converts ReflectionMethod to TableColumnInterface instances on demand
      * @var TableColumnInterface[]
      */
     protected array $columns = [];
@@ -211,10 +211,10 @@ abstract class TableStructure implements TableStructureInterface
 
     /**
      * Collects column configs from private methods where method name is column name or relation name.
-     * TableColumn name must be a lowercased string starting from letter: private function parent_id() {}
+     * Column name must be a lowercased string starting from letter: private function parent_id() {}
      * Relation name must start from upper case letter: private function RelationName() {}
-     * TableColumn method must return TableColumn object
-     * Relation method must return Relation object
+     * Column method must return TableColumnInterface object
+     * Relation method must return RelationInterface object
      */
     protected function loadColumnsAndRelationsFromPrivateMethods(): void
     {

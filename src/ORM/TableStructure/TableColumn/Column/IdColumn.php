@@ -6,12 +6,12 @@ namespace PeskyORM\ORM\TableStructure\TableColumn\Column;
 
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumnAbstract;
+use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\Utils\ArgumentValidators;
 use PeskyORM\Utils\ValueTypeValidators;
 
-class IdColumn extends TableColumnAbstract
+class IdColumn extends RealTableColumnAbstract
 {
     public function __construct(string $name = 'id')
     {
@@ -29,11 +29,6 @@ class IdColumn extends TableColumnAbstract
     }
 
     public function isPrimaryKey(): bool
-    {
-        return true;
-    }
-
-    public function isReal(): bool
     {
         return true;
     }

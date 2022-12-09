@@ -397,7 +397,7 @@ class TableColumn implements TableColumnInterface, ConvertsValueToClassInstanceI
     public function setName(string $name): static
     {
         if ($this->hasName()) {
-            throw new \BadMethodCallException('TableColumn name changing is forbidden');
+            throw new \BadMethodCallException('Column name changing is forbidden');
         }
         ArgumentValidators::assertNotEmpty('$name', $name);
         ArgumentValidators::assertSnakeCase('$name', $name);
@@ -1055,7 +1055,7 @@ class TableColumn implements TableColumnInterface, ConvertsValueToClassInstanceI
         return $this->classNameForValueToObjectFormatter;
     }
 
-    public function getPossibleColumnNames(): array
+    public function getColumnNameAliases(): array
     {
         $name = $this->getName();
         $ret = [
