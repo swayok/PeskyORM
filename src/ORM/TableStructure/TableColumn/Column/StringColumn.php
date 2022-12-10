@@ -41,7 +41,7 @@ class StringColumn extends RealTableColumnAbstract implements UniqueTableColumnI
         return $this;
     }
 
-    protected function shouldTrimStringValues(): bool
+    protected function shouldTrimStringValues(bool $isFromDb): bool
     {
         return $this->trimValues;
     }
@@ -52,14 +52,9 @@ class StringColumn extends RealTableColumnAbstract implements UniqueTableColumnI
         return $this;
     }
 
-    protected function shouldLowercaseValues(): bool
+    protected function shouldLowercaseValues(bool $isFromDb): bool
     {
         return $this->lowercaseValues;
-    }
-
-    protected function shouldConvertEmptyStringToNull(): bool
-    {
-        return $this->convertEmptyStringValueToNull ?? $this->isNullableValues();
     }
 
     public function convertsEmptyStringValuesToNull(): static
@@ -68,13 +63,19 @@ class StringColumn extends RealTableColumnAbstract implements UniqueTableColumnI
         return $this;
     }
 
+    protected function shouldConvertEmptyStringToNull(bool $isFromDb): bool
+    {
+        return $this->convertEmptyStringValueToNull ?? $this->isNullableValues();
+    }
+
     protected function normalizeValueForValidation(mixed $value, bool $isFromDb): mixed
     {
         $value = parent::normalizeValueForValidation($value, $isFromDb);
         if (is_object($value) && method_exists($value, '__toString')) {
             $value = $value->__toString();
-        } elseif (is_string($value) || is_numeric($value)) {
-            return $this->normalizeStringValue((string)$value, $isFromDb);
+        }
+        if (is_string($value)) {
+            return $this->normalizeStringValue($value, $isFromDb);
         }
         return $value;
     }
@@ -85,17 +86,13 @@ class StringColumn extends RealTableColumnAbstract implements UniqueTableColumnI
      */
     protected function normalizeStringValue(string $value, bool $isFromDb): ?string
     {
-        if ($isFromDb) {
-            // do not modify DB value to avoid unintended changes
-            return $value;
-        }
-        if ($this->shouldTrimStringValues()) {
+        if ($this->shouldTrimStringValues($isFromDb)) {
             $value = trim($value);
         }
-        if ($value === '' && $this->shouldConvertEmptyStringToNull()) {
+        if ($value === '' && $this->shouldConvertEmptyStringToNull($isFromDb)) {
             return null;
         }
-        if ($this->shouldLowercaseValues()) {
+        if ($this->shouldLowercaseValues($isFromDb)) {
             $value = mb_strtolower($value);
         }
         return $value;

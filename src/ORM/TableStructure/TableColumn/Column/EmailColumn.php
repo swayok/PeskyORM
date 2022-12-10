@@ -9,9 +9,14 @@ use PeskyORM\Utils\ValueTypeValidators;
 
 class EmailColumn extends StringColumn
 {
-    protected bool $trimValues = true;
-    protected bool $lowercaseValues = true;
-    protected ?bool $convertEmptyStringValueToNull = true;
+    public function __construct(string $name)
+    {
+        parent::__construct($name);
+        $this
+            ->trimsValues()
+            ->lowercasesValues()
+            ->convertsEmptyStringValuesToNull();
+    }
 
     protected function validateValueDataType(
         mixed $normalizedValue,

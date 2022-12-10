@@ -35,10 +35,10 @@ class JsonArrayColumn extends RealTableColumnAbstract
         //  similar to 'object' formatter
     }
 
-    protected function shouldValidateValue(mixed $value): bool
+    protected function shouldValidateValue(mixed $value, bool $isFromDb): bool
     {
         return (
-            parent::shouldValidateValue($value)
+            parent::shouldValidateValue($value, $isFromDb)
             && !($value instanceof RecordsArray)
         );
     }

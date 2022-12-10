@@ -160,7 +160,7 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
         if (!$this->isDefaultValueValidated) {
             $this->isDefaultValueValidated = true;
             $defaultValue = $this->getDefaultValue();
-            if (!$this->shouldValidateValue($defaultValue)) {
+            if (!$this->shouldValidateValue($defaultValue, false)) {
                 // validation is not possible and value is expected to be valid
                 $this->validDefaultValue = $defaultValue;
                 return $defaultValue;
@@ -195,7 +195,7 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
         if ($defaultValue instanceof \Closure) {
             $this->validDefaultValue = $defaultValue;
             $defaultValue = $defaultValue();
-            if (!$this->shouldValidateValue($defaultValue)) {
+            if (!$this->shouldValidateValue($defaultValue, false)) {
                 return $defaultValue;
             }
         }
@@ -210,7 +210,7 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
             );
         }
 
-        return $this->normalizeValidatedValue($defaultValue, false);
+        return $this->normalizeValidatedValue($normalizedValue, false);
     }
 
     public function hasDefaultValue(): bool
@@ -236,6 +236,7 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
         $this->defaultValue = $defaultValue;
         $this->hasDefaultValue = true;
         $this->isDefaultValueValidated = false;
+        $this->validDefaultValue = null;
         return $this;
     }
 
@@ -258,15 +259,23 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
         bool $isFromDb,
         bool $isForCondition
     ): array {
-        if (!$this->shouldValidateValue($normalizedValue)) {
+        if (!$this->shouldValidateValue($normalizedValue, $isFromDb)) {
             // validation is not possible
             return [];
         }
+        if ($isFromDb && !$isForCondition) {
+            $errors = $this->validateIfValueReceivedFromDbIsNotAForbiddenObject(
+                $normalizedValue
+            );
+            if (!empty($errors)) {
+                return $errors;
+            }
+        }
         // null value?
-        if (
-            $normalizedValue === null
-            && !$this->validateIfNullValueIsAllowed($isFromDb, $isForCondition)
-        ) {
+        if ($normalizedValue === null) {
+            if ($this->validateIfNullValueIsAllowed($isFromDb, $isForCondition)) {
+                return [];
+            }
             return [
                 $this->getValueValidationMessage(
                     ColumnValueValidationMessagesInterface::VALUE_CANNOT_BE_NULL
@@ -278,6 +287,27 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
             $isForCondition,
             $isFromDb
         );
+    }
+
+    protected function validateIfValueReceivedFromDbIsNotAForbiddenObject(
+        mixed $normalizedValue,
+    ): array {
+        // DbExpr and SelectQueryBuilderInterface is not allowed if $isFromDb === true
+        if ($normalizedValue instanceof DbExpr) {
+            return [
+                $this->getValueValidationMessage(
+                    ColumnValueValidationMessagesInterface::VALUE_FROM_DB_CANNOT_BE_DB_EXPRESSION
+                ),
+            ];
+        }
+        if ($normalizedValue instanceof SelectQueryBuilderInterface) {
+            return [
+                $this->getValueValidationMessage(
+                    ColumnValueValidationMessagesInterface::VALUE_FROM_DB_CANNOT_BE_QUERY_BUILDER
+                ),
+            ];
+        }
+        return [];
     }
 
     /**
@@ -302,8 +332,11 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
      * - DbExpr
      * - SelectQueryBuilderInterface
      */
-    protected function shouldValidateValue(mixed $value): bool
+    protected function shouldValidateValue(mixed $value, bool $isFromDb): bool
     {
+        if ($isFromDb) {
+            return true;
+        }
         return !(
             $value instanceof DbExpr
             || $value instanceof SelectQueryBuilderInterface
@@ -406,21 +439,28 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
         // Normalize and validate value
         if ($isFromDb && $trustDataReceivedFromDb) {
             $normalizedValue = $newValue;
+            // make sure there are no objects that cannot be used as value from DB
+            $errors = $this->validateIfValueReceivedFromDbIsNotAForbiddenObject($normalizedValue);
         } else {
             $normalizedValue = $this->normalizeValueForValidation($newValue, $isFromDb);
-            if ($this->shouldUseDefaultValueInsteadOfNormalizedValue($currentValueContainer, $normalizedValue, $isFromDb)) {
+            $shouldUseDefaultValue = $this->shouldUseDefaultValueInsteadOfNormalizedValue(
+                $currentValueContainer,
+                $normalizedValue,
+                $isFromDb
+            );
+            if ($shouldUseDefaultValue) {
                 $normalizedValue = $this->getValidDefaultValue();
             } else {
                 $errors = $this->validateNormalizedValue($normalizedValue, $isFromDb, false);
-                if (!empty($errors)) {
-                    throw new InvalidDataException(
-                        [$this->getName() => $errors],
-                        $currentValueContainer->getRecord(),
-                        $this,
-                        $newValue
-                    );
-                }
             }
+        }
+        if (!empty($errors)) {
+            throw new InvalidDataException(
+                [$this->getName() => $errors],
+                $currentValueContainer->getRecord(),
+                $this,
+                $newValue
+            );
         }
         if ($currentValueContainer->hasValue()) {
             // Create new value container.

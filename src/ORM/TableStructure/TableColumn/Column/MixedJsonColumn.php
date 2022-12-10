@@ -58,10 +58,10 @@ class MixedJsonColumn extends RealTableColumnAbstract implements ConvertsValueTo
         $this->formatters = ColumnValueFormatters::getJsonFormatters();
     }
 
-    protected function shouldValidateValue(mixed $value): bool
+    protected function shouldValidateValue(mixed $value, bool $isFromDb): bool
     {
         return (
-            parent::shouldValidateValue($value)
+            parent::shouldValidateValue($value, $isFromDb)
             && !($value instanceof RecordInterface)
             && !($value instanceof RecordsArray)
         );

@@ -13,7 +13,7 @@ trait CanBeNullable
 {
     protected bool $valueCanBeNull = false;
 
-    protected function allowsNullValues(): static
+    public function allowsNullValues(): static
     {
         $this->valueCanBeNull = true;
         return $this;

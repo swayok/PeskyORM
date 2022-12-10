@@ -27,6 +27,8 @@ class ColumnValueValidationMessagesEn implements ColumnValueValidationMessagesIn
         self::VALUE_MUST_BE_STRING => 'Value must be a string.',
         self::VALUE_MUST_BE_ARRAY => 'Value must be an array.',
         self::VALUE_MUST_BE_RESOURCE => 'Value must be a resource.',
+        self::VALUE_FROM_DB_CANNOT_BE_DB_EXPRESSION => 'Value received from DB cannot be instance of DbExpr.',
+        self::VALUE_FROM_DB_CANNOT_BE_QUERY_BUILDER => 'Value received from DB cannot be instance of SelectQueryBuilderInterface.',
     ];
 
     public function getMessage(string $messageId): string
