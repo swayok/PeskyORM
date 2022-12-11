@@ -13,6 +13,7 @@ use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeNullable;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeUnique;
+use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanHaveTimeZone;
 use PeskyORM\ORM\TableStructure\TableColumn\UniqueTableColumnInterface;
 use PeskyORM\Utils\ValueTypeValidators;
 
@@ -20,26 +21,14 @@ class TimeColumn extends RealTableColumnAbstract implements UniqueTableColumnInt
 {
     use CanBeUnique;
     use CanBeNullable;
+    use CanHaveTimeZone;
 
     public const FORMAT = 'H:i:s';
     public const FORMAT_WITH_TZ = 'H:i:sP';
 
-    protected bool $hasTimezone = false;
-
     public function getDataType(): string
     {
         return TableColumnDataType::TIME;
-    }
-
-    public function withTimezone(): static
-    {
-        $this->hasTimezone = true;
-        return $this;
-    }
-
-    public function hasTimezone(): bool
-    {
-        return $this->hasTimezone;
     }
 
     protected function registerDefaultValueFormatters(): void
@@ -55,7 +44,7 @@ class TimeColumn extends RealTableColumnAbstract implements UniqueTableColumnInt
         if (!ValueTypeValidators::isTimestamp($normalizedValue)) {
             return [
                 $this->getValueValidationMessage(
-                    ColumnValueValidationMessagesInterface::VALUE_MUST_BE_TIMESTAMP
+                    ColumnValueValidationMessagesInterface::VALUE_MUST_BE_TIME
                 ),
             ];
         }
@@ -69,7 +58,7 @@ class TimeColumn extends RealTableColumnAbstract implements UniqueTableColumnInt
         mixed $validatedValue,
         bool $isFromDb
     ): string {
-        if ($isFromDb && is_string($validatedValue)) {
+        if ($isFromDb && is_string($validatedValue) && !is_numeric($validatedValue)) {
             return $validatedValue;
         }
 
@@ -80,7 +69,7 @@ class TimeColumn extends RealTableColumnAbstract implements UniqueTableColumnInt
             $validatedValue = CarbonImmutable::parse($validatedValue);
         }
         return $validatedValue->format(
-            $this->hasTimezone() ? static::FORMAT_WITH_TZ : static::FORMAT
+            $this->isTimezoneExpected() ? static::FORMAT_WITH_TZ : static::FORMAT
         );
     }
 }

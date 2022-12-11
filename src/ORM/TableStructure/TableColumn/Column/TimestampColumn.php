@@ -13,6 +13,7 @@ use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeNullable;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeUnique;
+use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanHaveTimeZone;
 use PeskyORM\ORM\TableStructure\TableColumn\UniqueTableColumnInterface;
 use PeskyORM\Utils\ValueTypeValidators;
 
@@ -20,6 +21,7 @@ class TimestampColumn extends RealTableColumnAbstract implements UniqueTableColu
 {
     use CanBeUnique;
     use CanBeNullable;
+    use CanHaveTimeZone;
 
     public const FORMAT = 'Y-m-d H:i:s';
     public const FORMAT_WITH_TZ = 'Y-m-d H:i:sP';
@@ -29,17 +31,6 @@ class TimestampColumn extends RealTableColumnAbstract implements UniqueTableColu
     public function getDataType(): string
     {
         return TableColumnDataType::TIMESTAMP;
-    }
-
-    public function withTimezone(): static
-    {
-        $this->hasTimezone = true;
-        return $this;
-    }
-
-    public function hasTimezone(): bool
-    {
-        return $this->hasTimezone;
     }
 
     protected function registerDefaultValueFormatters(): void
@@ -69,18 +60,21 @@ class TimestampColumn extends RealTableColumnAbstract implements UniqueTableColu
         mixed $validatedValue,
         bool $isFromDb
     ): string {
-        if ($isFromDb && is_string($validatedValue)) {
+        if ($isFromDb && is_string($validatedValue) && !is_numeric($validatedValue)) {
             return $validatedValue;
         }
 
         if (is_numeric($validatedValue)) {
             $validatedValue = CarbonImmutable::createFromTimestampUTC($validatedValue);
+            if ($this->isTimezoneExpected()) {
+                $validatedValue->setTimezone(null);
+            }
         } else {
             // string or DateTimeInterface
             $validatedValue = CarbonImmutable::parse($validatedValue);
         }
         return $validatedValue->format(
-            $this->hasTimezone() ? static::FORMAT_WITH_TZ : static::FORMAT
+            $this->isTimezoneExpected() ? static::FORMAT_WITH_TZ : static::FORMAT
         );
     }
 }

@@ -43,7 +43,7 @@ class DateColumn extends RealTableColumnAbstract implements UniqueTableColumnInt
         if (!ValueTypeValidators::isTimestamp($normalizedValue)) {
             return [
                 $this->getValueValidationMessage(
-                    ColumnValueValidationMessagesInterface::VALUE_MUST_BE_TIME
+                    ColumnValueValidationMessagesInterface::VALUE_MUST_BE_DATE
                 ),
             ];
         }
@@ -57,7 +57,7 @@ class DateColumn extends RealTableColumnAbstract implements UniqueTableColumnInt
         mixed $validatedValue,
         bool $isFromDb
     ): string {
-        if ($isFromDb && is_string($validatedValue)) {
+        if ($isFromDb && is_string($validatedValue) && !is_numeric($validatedValue)) {
             return $validatedValue;
         }
 
