@@ -22,6 +22,7 @@ class ColumnValueValidationMessagesEn implements ColumnValueValidationMessagesIn
         self::VALUE_MUST_BE_EMAIL => 'Value must be an email.',
         self::VALUE_MUST_BE_TIMEZONE_OFFSET => 'Value must be a valid UTC timezone offset from -12:00 to +14:00.',
         self::VALUE_MUST_BE_TIMESTAMP => 'Value must be a valid timestamp.',
+        self::VALUE_MUST_BE_TIMESTAMP_OR_INTEGER => 'Value must be a valid timestamp or positive integer.',
         self::VALUE_MUST_BE_TIME => 'Value must be a valid time.',
         self::VALUE_MUST_BE_DATE => 'Value must be a valid date.',
         self::VALUE_MUST_BE_STRING => 'Value must be a string.',

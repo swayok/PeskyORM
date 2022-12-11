@@ -26,8 +26,6 @@ class TimestampColumn extends RealTableColumnAbstract implements UniqueTableColu
     public const FORMAT = 'Y-m-d H:i:s';
     public const FORMAT_WITH_TZ = 'Y-m-d H:i:sP';
 
-    protected bool $hasTimezone = false;
-
     public function getDataType(): string
     {
         return TableColumnDataType::TIMESTAMP;
@@ -69,7 +67,7 @@ class TimestampColumn extends RealTableColumnAbstract implements UniqueTableColu
             if ($this->isTimezoneExpected()) {
                 $validatedValue->setTimezone(null);
             }
-        } else {
+        } elseif (!($validatedValue instanceof CarbonInterface)) {
             // string or DateTimeInterface
             $validatedValue = CarbonImmutable::parse($validatedValue);
         }

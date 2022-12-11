@@ -12,6 +12,7 @@ use PeskyORM\ORM\Record\RecordValueContainerInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\Column\DateColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\Column\TimeColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\Column\TimestampColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\UnixTimestampColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\Select\OrmSelect;
@@ -55,7 +56,6 @@ class DateTimeColumnsTest extends BaseTestCase
         );
 
         foreach ($this->getValuesForTesting() as $testValue) {
-            $testValue = $this->getTestValueClosure($testValue);
             $this->testValidateGoodValue($column, $testValue);
             $this->testValidateGoodValue($columnTz, $testValue);
             $this->testDefaultValues($column, $testValue);
@@ -64,6 +64,29 @@ class DateTimeColumnsTest extends BaseTestCase
             $this->testNonDbValues($columnTz, $testValue);
             $this->testDbValues($column, $testValue);
             $this->testDbValues($columnTz, $testValue);
+        }
+    }
+
+    public function testUnixTimestampColumn(): void
+    {
+        $column = new UnixTimestampColumn('unixtimestamp');
+        $this->testCommonProperties($column, TableColumnDataType::UNIX_TIMESTAMP);
+        $this->testValidateValueCommon($column, 'timestamp or positive integer');
+        static::assertEquals(
+            [
+                $column->getName() . '_as_date' => 'date',
+                $column->getName() . '_as_time' => 'time',
+                $column->getName() . '_as_carbon' => 'carbon',
+                $column->getName() . '_as_date_time' => 'date_time',
+            ],
+            $column->getColumnNameAliases()
+        );
+
+        foreach ($this->getValuesForTesting() as $testValue) {
+            $this->testValidateGoodValue($column, $testValue);
+            $this->testDefaultValues($column, $testValue);
+            $this->testNonDbValues($column, $testValue);
+            $this->testDbValues($column, $testValue);
         }
     }
 
@@ -86,7 +109,6 @@ class DateTimeColumnsTest extends BaseTestCase
         );
 
         foreach ($this->getValuesForTesting() as $testValue) {
-            $testValue = $this->getTestValueClosure($testValue);
             $this->testValidateGoodValue($column, $testValue);
             $this->testDefaultValues($column, $testValue);
             $this->testNonDbValues($column, $testValue);
@@ -122,7 +144,6 @@ class DateTimeColumnsTest extends BaseTestCase
         );
 
         foreach ($this->getValuesForTesting() as $testValue) {
-            $testValue = $this->getTestValueClosure($testValue);
             $this->testValidateGoodValue($column, $testValue);
             $this->testValidateGoodValue($columnTz, $testValue);
             $this->testDefaultValues($column, $testValue);
@@ -184,12 +205,8 @@ class DateTimeColumnsTest extends BaseTestCase
             '2018-12-25 23:50:55.999',
             '2018-12-25 23:50:55.999 +0530',
             '2018-12-25 23:50:55.999 GMT+05:30',
-            function () {
-                return '+1 day';
-            },
-            function () {
-                return 'now';
-            },
+            '+1 day',
+            'now',
             1670764507,
             1,
             '1',
@@ -203,7 +220,7 @@ class DateTimeColumnsTest extends BaseTestCase
     }
 
     private function testCommonProperties(
-        TimestampColumn|TimeColumn|DateColumn $column,
+        UnixTimestampColumn|TimestampColumn|TimeColumn|DateColumn $column,
         string $type,
     ): void {
         $column = $this->newColumn($column);
@@ -215,56 +232,60 @@ class DateTimeColumnsTest extends BaseTestCase
     }
 
     private function testDefaultValues(
-        TimestampColumn|TimeColumn|DateColumn $column,
-        \Closure $testValueClosure
+        UnixTimestampColumn|TimestampColumn|TimeColumn|DateColumn $column,
+        mixed $testValue
     ): void {
-        $normalizedValueClosure = $this->getNormalizedValueClosure($column, $testValueClosure);
-        $message = $this->getAssertMessageForValue($column, $testValueClosure);
+        $message = $this->getAssertMessageForValue($column, $testValue);
         // default value
         $column = $this->newColumn($column);
-        $column->setDefaultValue($testValueClosure());
+        $column->setDefaultValue($testValue);
         $valueContainer = $this->newRecordValueContainer($column);
         static::assertFalse($column->hasValue($valueContainer, false), $message);
         static::assertTrue($column->hasValue($valueContainer, true), $message);
-        static::assertEquals($testValueClosure(), $column->getDefaultValue(), $message);
-        static::assertEquals($normalizedValueClosure(), $column->getValidDefaultValue(), $message);
+        $normalizedValue = $this->getNormalizedValue($column, $testValue);
+        static::assertEquals($testValue, $column->getDefaultValue(), $message);
+        static::assertEquals($normalizedValue, $column->getValidDefaultValue(), $message);
         $column->setValue($valueContainer, null, false, false);
-        static::assertEquals($normalizedValueClosure(), $column->getValue($valueContainer, null), $message);
+        static::assertEquals($normalizedValue, $column->getValue($valueContainer, null), $message);
         $valueContainer = $this->newRecordValueContainer($column);
-        static::assertEquals($normalizedValueClosure(), $column->getValue($valueContainer, null), $message);
+        static::assertEquals($normalizedValue, $column->getValue($valueContainer, null), $message);
         // default value with value modifiers
         $column = $this->newColumn($column);
-        $column->setDefaultValue($testValueClosure());
+        $normalizedValue = $this->getNormalizedValue($column, $testValue);
+        $column->setDefaultValue($testValue);
         $valueContainer = $this->newRecordValueContainer($column);
-        static::assertEquals($normalizedValueClosure(), $column->getValidDefaultValue(), $message);
+        static::assertEquals($normalizedValue, $column->getValidDefaultValue(), $message);
         $column->setValue($valueContainer, null, false, false);
-        static::assertEquals($normalizedValueClosure(), $column->getValue($valueContainer, null), $message);
+        static::assertEquals($normalizedValue, $column->getValue($valueContainer, null), $message);
         $valueContainer = $this->newRecordValueContainer($column);
-        static::assertEquals($normalizedValueClosure(), $column->getValue($valueContainer, null), $message);
+        static::assertEquals($normalizedValue, $column->getValue($valueContainer, null), $message);
         // default value as closure
         $column = $this->newColumn($column);
-        $column->setDefaultValue($testValueClosure);
+        $normalizedValue = $this->getNormalizedValue($column, $testValue);
+        $column->setDefaultValue(function () use ($testValue) {
+            return $testValue;
+        });
         $valueContainer = $this->newRecordValueContainer($column);
         static::assertFalse($column->hasValue($valueContainer, false), $message);
         static::assertTrue($column->hasValue($valueContainer, true), $message);
-        static::assertEquals($normalizedValueClosure(), $column->getValidDefaultValue(), $message);
+        static::assertEquals($normalizedValue, $column->getValidDefaultValue(), $message);
         $column->setValue($valueContainer, null, false, false);
-        static::assertEquals($normalizedValueClosure(), $column->getValue($valueContainer, null), $message);
+        static::assertEquals($normalizedValue, $column->getValue($valueContainer, null), $message);
     }
 
     private function testNonDbValues(
-        TimestampColumn|TimeColumn|DateColumn $column,
-        \Closure $testValueClosure
+        UnixTimestampColumn|TimestampColumn|TimeColumn|DateColumn $column,
+        mixed $testValue
     ): void {
-        $normalizedValueClosure = $this->getNormalizedValueClosure($column, $testValueClosure);
-        $message = $this->getAssertMessageForValue($column, $testValueClosure);
+        $message = $this->getAssertMessageForValue($column, $testValue);
         $column = $this->newColumn($column);
         // setter & getter
         $valueContainer = $this->newRecordValueContainer($column);
-        $column->setValue($valueContainer, $testValueClosure(), false, false);
+        $column->setValue($valueContainer, $testValue, false, false);
         static::assertTrue($valueContainer->hasValue(), $message);
-        static::assertEquals($normalizedValueClosure(), $valueContainer->getValue(), $message);
-        static::assertEquals($normalizedValueClosure(), $column->getValue($valueContainer, null), $message);
+        $normalizedValue = $this->getNormalizedValue($column, $testValue);
+        static::assertEquals($normalizedValue, $valueContainer->getValue(), $message);
+        static::assertEquals($normalizedValue, $column->getValue($valueContainer, null), $message);
         // null
         $column->allowsNullValues();
         $valueContainer = $this->newRecordValueContainer($column);
@@ -284,29 +305,40 @@ class DateTimeColumnsTest extends BaseTestCase
     }
 
     private function testDbValues(
-        TimestampColumn|TimeColumn|DateColumn $column,
-        \Closure $testValueClosure
+        UnixTimestampColumn|TimestampColumn|TimeColumn|DateColumn $column,
+        mixed $testValue
     ): void {
-        $message = $this->getAssertMessageForValue($column, $testValueClosure);
-        $normalizedValueClosure = $this->getNormalizedValueClosure($column, $testValueClosure);
+        $message = $this->getAssertMessageForValue($column, $testValue);
         // not trusted DB value
         $column = $this->newColumn($column);
         $column->setDefaultValue('default');
         $valueContainer = $this->newRecordValueContainer($column);
-        $column->setValue($valueContainer, $testValueClosure(), true, false);
+        $column->setValue($valueContainer, $testValue, true, false);
 
-        $expectedValue = $testValueClosure();
-        if (is_numeric($expectedValue) || is_object($expectedValue)) {
-            $expectedValue = $normalizedValueClosure();
+        $expectedValue = $testValue;
+        if ($column instanceof UnixTimestampColumn) {
+            if (is_numeric($expectedValue)) {
+                $expectedValue = (int)$expectedValue;
+            } else {
+                $expectedValue = $this->getNormalizedValue($column, $testValue);
+            }
+        } elseif (is_numeric($expectedValue) || is_object($expectedValue)) {
+            $expectedValue = $this->getNormalizedValue($column, $testValue);
         }
         static::assertEquals($expectedValue, $column->getValue($valueContainer, null), $message);
         // it will not add time zone offset to timestamp without tz
         // trusted DB value
         $valueContainer = $this->newRecordValueContainer($column);
-        $column->setValue($valueContainer, $testValueClosure(), true, true);
-        $expectedValue = $testValueClosure();
-        if (is_numeric($expectedValue) || is_object($expectedValue)) {
-            $expectedValue = $normalizedValueClosure();
+        $column->setValue($valueContainer, $testValue, true, true);
+        $expectedValue = $testValue;
+        if ($column instanceof UnixTimestampColumn) {
+            if (is_numeric($expectedValue)) {
+                $expectedValue = (int)$expectedValue;
+            } else {
+                $expectedValue = $this->getNormalizedValue($column, $testValue);
+            }
+        } elseif (is_numeric($expectedValue) || is_object($expectedValue)) {
+            $expectedValue = $this->getNormalizedValue($column, $testValue);
         }
         static::assertEquals($expectedValue, $column->getValue($valueContainer, null), $message);
         // Note: DbExpr and SelectQueryBuilderInterface not allowed
@@ -314,19 +346,19 @@ class DateTimeColumnsTest extends BaseTestCase
     }
 
     private function testValidateGoodValue(
-        TimestampColumn|TimeColumn|DateColumn $column,
-        \Closure $testValueClosure
+        UnixTimestampColumn|TimestampColumn|TimeColumn|DateColumn $column,
+        mixed $testValue
     ): void {
         $column = $this->newColumn($column);
-        $message = $this->getAssertMessageForValue($column, $testValueClosure);
+        $message = $this->getAssertMessageForValue($column, $testValue);
         // good value
-        static::assertEquals([], $column->validateValue($testValueClosure(), false, false), $message);
-        static::assertEquals([], $column->validateValue($testValueClosure(), false, true), $message);
-        static::assertEquals([], $column->validateValue($testValueClosure(), true, true), $message);
+        static::assertEquals([], $column->validateValue($testValue, false, false), $message);
+        static::assertEquals([], $column->validateValue($testValue, false, true), $message);
+        static::assertEquals([], $column->validateValue($testValue, true, true), $message);
     }
 
     private function testValidateValueCommon(
-        TimestampColumn|TimeColumn|DateColumn $column,
+        UnixTimestampColumn|TimestampColumn|TimeColumn|DateColumn $column,
         string $typeForError,
     ): void {
         // empty string
@@ -374,69 +406,75 @@ class DateTimeColumnsTest extends BaseTestCase
     }
 
     private function newColumn(
-        TimestampColumn|DateColumn|TimeColumn $column
-    ): TimestampColumn|DateColumn|TimeColumn {
+        UnixTimestampColumn|TimestampColumn|TimeColumn|DateColumn $column
+    ): UnixTimestampColumn|TimestampColumn|TimeColumn|DateColumn {
         $class = $column::class;
-        /** @var TimestampColumn|DateColumn|TimeColumn $ret */
+        /** @var UnixTimestampColumn|TimestampColumn|TimeColumn|DateColumn $ret */
         $ret = new $class($column->getName());
-        if (!($column instanceof DateColumn) && $column->isTimezoneExpected()) {
+        if ($this->isTimezoneExpected($column)) {
             $ret->withTimezone();
         }
         return $ret;
     }
 
-    private function newRecordValueContainer(RealTableColumnAbstract $column): RecordValueContainerInterface
+    private function isTimezoneExpected(RealTableColumnAbstract $column): ?bool
     {
+        if (
+            $column instanceof DateColumn
+            || $column instanceof UnixTimestampColumn
+        ) {
+            return null;
+        }
+        /** @var TimestampColumn|TimeColumn $column */
+        return $column->isTimezoneExpected();
+    }
+
+    private function newRecordValueContainer(RealTableColumnAbstract $column
+    ): RecordValueContainerInterface {
         return $column->getNewRecordValueContainer(new TestingAdmin());
     }
 
-    private function getNormalizedValueClosure(
-        TimestampColumn|DateColumn|TimeColumn $column,
-        \Closure $testValueClosure
-    ): \Closure {
-        $withTimezone = $column instanceof DateColumn ? false : $column->isTimezoneExpected();
-        $format = $withTimezone ? $column::FORMAT_WITH_TZ : $column::FORMAT;
-        return static function () use ($withTimezone, $format, $testValueClosure) {
-            $testValue = $testValueClosure();
-            if (is_object($testValue)) {
-                /** @var \DateTimeInterface $testValue */
-                return $testValue->format($format);
-            }
+    private function getNormalizedValue(
+        UnixTimestampColumn|TimestampColumn|TimeColumn|DateColumn $column,
+        mixed $testValue
+    ): string|int {
+        $withTimezone = $this->isTimezoneExpected($column);
+        if ($column instanceof UnixTimestampColumn) {
             if (is_numeric($testValue)) {
-                $testValue = CarbonImmutable::createFromTimestampUTC($testValue);
-                if ($withTimezone) {
-                    $testValue->timezone(null);
-                }
-                return $testValue->format($format);
+                return (int)$testValue;
             }
-            return Carbon::parse($testValue)->format($format);
-        };
+            return Carbon::parse($testValue)->unix();
+        }
+        $format = $withTimezone ? $column::FORMAT_WITH_TZ : $column::FORMAT;
+        if (is_object($testValue)) {
+            /** @var \DateTimeInterface $testValue */
+            return $testValue->format($format);
+        }
+        if (is_numeric($testValue)) {
+            $testValue = CarbonImmutable::createFromTimestampUTC($testValue);
+            if ($withTimezone) {
+                $testValue->timezone(null);
+            }
+            return $testValue->format($format);
+        }
+        return Carbon::parse($testValue)->format($format);
     }
 
     private function getAssertMessageForValue(
-        TimestampColumn|DateColumn|TimeColumn $column,
-        \Closure $testValueClosure
+        UnixTimestampColumn|TimestampColumn|TimeColumn|DateColumn $column,
+        mixed $testValue
     ): string {
-        $testValue = $testValueClosure();
+        $testValue = $testValue instanceof \Closure ? $testValue() : $testValue;
         $value = is_object($testValue) ? 'DateTime(' . $testValue->format('Y-m-d H:i:s Z') . ')' : (string)$testValue;
         $suffix = '';
-        if (!($column instanceof DateColumn)) {
+        $timezoneExpected = $this->isTimezoneExpected($column);
+        if ($timezoneExpected !== null) {
             $suffix .= ' / ';
             $suffix .= $column->isTimezoneExpected()
                 ? 'Expected with time zone'
                 : 'Expected without time zone';
         }
         return $value . $suffix;
-    }
-
-    private function getTestValueClosure(mixed $testValue): \Closure
-    {
-        if ($testValue instanceof \Closure) {
-            return $testValue;
-        }
-        return static function () use ($testValue) {
-            return $testValue;
-        };
     }
 
     public function testEmptyStringValueExceptionForTimestampColumn(): void
