@@ -59,28 +59,25 @@ abstract class ValueTypeValidators
      * Allowed values are from -12:00 to +14:00 (without any prefixes like UTC, GMT, etc.).
      * \DateTimeZone instances also allowed.
      * @see DateTimeZone
+     * @see CarbonTimeZone
      */
     public static function isTimezoneOffset(mixed $value): bool
     {
+        $isObject = false;
+        if ($value instanceof CarbonTimeZone) {
+            $value = $value->toOffsetName();
+            $isObject = true;
+        } elseif ($value instanceof DateTimeZone) {
+            $value = $value->getName();
+            $isObject = true;
+        }
         if (
             !is_int($value)
             && !is_string($value)
-            && (
-                !is_object($value)
-                || !($value instanceof DateTimeZone)
-            )
         ) {
             return false;
         }
-        $isCarbon = $value instanceof CarbonTimeZone;
-        if (!$isCarbon && $value instanceof DateTimeZone) {
-            $value = CarbonTimeZone::create($value);
-            $isCarbon = true;
-        }
-        if ($isCarbon) {
-            // convert to '+dd:dd'/'-dd:dd'
-            $value = $value->toOffsetName();
-        } elseif (static::isInteger($value)) {
+        if (!$isObject && static::isInteger($value)) {
             $value = (int)$value;
         }
         if (is_string($value)) {
@@ -95,8 +92,45 @@ abstract class ValueTypeValidators
                 $value *= -1;
             }
         }
-        // check if from -12:00 to +14:00
-        return (int)$value >= -43200 && (int)$value <= 50400;
+        // check if value is in minutes and in range from -12:00 to +14:00
+        return (
+            abs($value) % 60 === 0
+            && (int)$value >= -43200
+            && (int)$value <= 50400
+        );
+    }
+
+    /**
+     * Check if value is valid timezone name (like: "Continent/City").
+     * \DateTimeZone instances allowed.
+     * @see DateTimeZone
+     * @see CarbonTimeZone
+     */
+    public static function isTimezoneName(mixed $value): bool
+    {
+        if ($value instanceof DateTimeZone) {
+            $value = $value->getName();
+        }
+        if (!is_string($value)) {
+            return false;
+        }
+        return in_array($value, DateTimeZone::listIdentifiers(), true);
+    }
+
+    /**
+     * Check if value is valid timezone name or timezone offset related to UTC.
+     * \DateTimeZone instances allowed.
+     * @see DateTimeZone
+     * @see CarbonTimeZone
+     * @see self::isTimezoneOffset()
+     * @see self::isTimezoneName()
+     */
+    public static function isTimezone(mixed $value): bool
+    {
+        return (
+            static::isTimezoneOffset($value)
+            || static::isTimezoneName($value)
+        );
     }
 
     public static function isTimestamp(mixed $value): bool

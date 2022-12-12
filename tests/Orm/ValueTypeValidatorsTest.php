@@ -110,30 +110,33 @@ class ValueTypeValidatorsTest extends BaseTestCase
             '+12:00',
             '-12:00',
             '-01:00',
-            '-12:00',
             '+14:00',
-            new \DateTimeZone('Europe/London'),
-            new \DateTimeZone('CEST'),
             new \DateTimeZone('-12:00'),
             new \DateTimeZone('+14:00'),
-            new \DateTimeZone('GMT+04:45'),
+            new \DateTimeZone('GMT+04:45'), //< converted to +04:45
             new CarbonTimeZone(),
-            new CarbonTimeZone('Europe/London'),
+            new CarbonTimeZone('Europe/Amsterdam'),
             new CarbonTimeZone('CEST'),
+            new CarbonTimeZone('UTC'),
             new CarbonTimeZone('-12:00'),
             new CarbonTimeZone('+14:00'),
             new CarbonTimeZone('GMT+04:45'),
             0,
-            -1,
-            1,
+            '0',
+            60,
+            '60',
+            -60,
+            '-60',
             50400, //< +14:00
+            '50400',
             50400 / 2,
+            '-43200',
             -43200, //> -12:00
             -43200 / 2,
         ];
         foreach ($positive as $index => $value) {
             $json = is_object($value)
-                ? get_class($value) . '(' .  json_encode($value) .')'
+                ? get_class($value) . '(' . json_encode($value) . ')'
                 : json_encode($value);
             static::assertTrue(
                 ValueTypeValidators::isTimezoneOffset($value),
@@ -153,17 +156,236 @@ class ValueTypeValidatorsTest extends BaseTestCase
             '',
             '-12:01',
             '+14:01',
-            50401, //< +14:01
-            -43201, //> -12:01
+            '+1:01',
+            '+01:1',
+            '01:00',
+            50460, //< +14:01
+            '50460', //< +14:01
+            -43260, //> -12:01
+            '-43260', //> -12:01
+            // not a minutes (value % 60 !== 0)
+            -1,
+            '-1',
+            -119,
+            '-119',
+            1,
+            '1',
+            119,
+            '119',
+            // out of range
             new \DateTimeZone('-12:01'),
             new \DateTimeZone('+14:01'),
             new CarbonTimeZone('-12:01'),
             new CarbonTimeZone('+14:01'),
+            // timezone name
+            new \DateTimeZone('Europe/Amsterdam'),
+            new \DateTimeZone('CEST'),
+            new \DateTimeZone('UTC'),
         ];
         foreach ($negative as $index => $value) {
-            $json = is_object($value) ? get_class($value) : json_encode($value);
+            $json = is_object($value)
+                ? get_class($value) . '(' . json_encode($value) . ')'
+                : json_encode($value);
             static::assertFalse(
                 ValueTypeValidators::isTimezoneOffset($value),
+                "\$negative[{$index}]: " . $json
+            );
+        }
+    }
+
+    public function testIsTimezoneName(): void
+    {
+        date_default_timezone_set('America/New_York');
+        $positive = [
+            'Europe/Amsterdam',
+            'Europe/Andorra',
+            'UTC',
+            'Africa/Tripoli',
+            new \DateTimeZone('Europe/Amsterdam'),
+            new CarbonTimeZone('Europe/Andorra'),
+            new \DateTimeZone('UTC'),
+            new \DateTimeZone('Africa/Tripoli'),
+            new CarbonTimeZone(),
+            new CarbonTimeZone('Pacific/Kwajalein'),
+            new CarbonTimeZone('America/Los_Angeles'),
+            new CarbonTimeZone('UTC'),
+            new CarbonTimeZone('Asia/Tokyo'),
+        ];
+        foreach ($positive as $index => $value) {
+            $json = is_object($value)
+                ? get_class($value) . '(' . json_encode($value) . ')'
+                : json_encode($value);
+            static::assertTrue(
+                ValueTypeValidators::isTimezoneName($value),
+                "\$positive[{$index}]: " . $json
+            );
+        }
+
+        $negative = [
+            null,
+            1.1,
+            0,
+            -1,
+            1,
+            true,
+            false,
+            'str',
+            $this,
+            [],
+            [''],
+            '',
+            '-12:01',
+            '+14:01',
+            '+1:01',
+            '+01:1',
+            '01:00',
+            '+00:00',
+            '+01:00',
+            '+12:00',
+            '-12:00',
+            '-01:00',
+            '+14:00',
+            'Invalid/Invalid',
+            'Europe',
+            'Europe/',
+            'Europe/Invalid',
+            new \DateTimeZone('-12:00'),
+            new \DateTimeZone('+14:00'),
+            new \DateTimeZone('GMT+04:45'),
+            new CarbonTimeZone('-12:00'),
+            new CarbonTimeZone('+14:00'),
+            new CarbonTimeZone('GMT+04:45'),
+            // not present in DateTimeZone::listIdentifiers()
+            'CEST',
+            'GMT',
+            new \DateTimeZone('CEST'),
+            new \DateTimeZone('GMT'),
+            new CarbonTimeZone('CEST'),
+            new CarbonTimeZone('GMT'),
+            // shortcuts are not allowed too
+            'Israel',
+            'Japan',
+            new \DateTimeZone('Israel'),
+            new CarbonTimeZone('Japan'),
+        ];
+        foreach ($negative as $index => $value) {
+            $json = is_object($value)
+                ? get_class($value) . '(' . json_encode($value) . ')'
+                : json_encode($value);
+            static::assertFalse(
+                ValueTypeValidators::isTimezoneName($value),
+                "\$negative[{$index}]: " . $json
+            );
+        }
+    }
+
+    public function testIsTimezone(): void
+    {
+        $positive = [
+            '+00:00',
+            '+01:00',
+            '+12:00',
+            '-12:00',
+            '-01:00',
+            '+14:00',
+            new \DateTimeZone('-12:00'),
+            new \DateTimeZone('+14:00'),
+            new \DateTimeZone('GMT+04:45'), //< converted to +04:45
+            new CarbonTimeZone(),
+            new CarbonTimeZone('-12:00'),
+            new CarbonTimeZone('+14:00'),
+            new CarbonTimeZone('GMT+04:45'),
+            0,
+            '0',
+            -60,
+            '-60',
+            60,
+            '60',
+            50400, //< +14:00
+            '50400', //< +14:00
+            50400 / 2,
+            -43200, //> -12:00
+            '-43200', //> -12:00
+            -43200 / 2,
+            // names
+            'Europe/Amsterdam',
+            'Europe/Andorra',
+            'UTC',
+            'Africa/Tripoli',
+            new \DateTimeZone('Europe/Amsterdam'),
+            new CarbonTimeZone('Europe/Andorra'),
+            new \DateTimeZone('UTC'),
+            new \DateTimeZone('Africa/Tripoli'),
+            new CarbonTimeZone(),
+            new CarbonTimeZone('Pacific/Kwajalein'),
+            new CarbonTimeZone('America/Los_Angeles'),
+            new CarbonTimeZone('UTC'),
+            new CarbonTimeZone('Asia/Tokyo'),
+            //< Carbon converts these to offset
+            new CarbonTimeZone('CEST'),
+            new CarbonTimeZone('GMT'),
+            new CarbonTimeZone('Japan'),
+        ];
+        foreach ($positive as $index => $value) {
+            $json = is_object($value)
+                ? get_class($value) . '(' . json_encode($value) . ')'
+                : json_encode($value);
+            static::assertTrue(
+                ValueTypeValidators::isTimezone($value),
+                "\$positive[{$index}]: " . $json
+            );
+        }
+
+        $negative = [
+            null,
+            1.1,
+            true,
+            false,
+            'str',
+            $this,
+            [],
+            [''],
+            '',
+            // invalid format
+            '+1:01',
+            '+01:1',
+            '01:00',
+            // not a minutes
+            -1,
+            '-1',
+            -119,
+            '-119',
+            1,
+            '1',
+            119,
+            '119',
+            // out of range
+            '-12:01',
+            '+14:01',
+            50460, //< +14:01
+            -43260, //> -12:01
+            new CarbonTimeZone('+14:01'),
+            // invalid names
+            'Europe/Invalid',
+            'Invalid/Invalid',
+            'Invalid/',
+            'Invalid',
+            // not present in DateTimeZone::listIdentifiers()
+            'CEST',
+            'GMT',
+            new \DateTimeZone('CEST'),
+            new \DateTimeZone('GMT'),
+            // shortcuts are not allowed too
+            'Israel',
+            'Japan',
+            new \DateTimeZone('Israel'),
+        ];
+        foreach ($negative as $index => $value) {
+            $json = is_object($value)
+                ? get_class($value) . '(' . json_encode($value) . ')'
+                : json_encode($value);
+            static::assertFalse(
+                ValueTypeValidators::isTimezone($value),
                 "\$negative[{$index}]: " . $json
             );
         }
@@ -229,11 +451,11 @@ class ValueTypeValidatorsTest extends BaseTestCase
             '1.1',
             time(),
             Carbon::now(),
-            new \DateTime()
+            new \DateTime(),
         ];
         foreach ($positive as $index => $value) {
             $json = is_object($value)
-                ? get_class($value) . '(' .  json_encode($value) .')'
+                ? get_class($value) . '(' . json_encode($value) . ')'
                 : json_encode($value);
             static::assertTrue(
                 ValueTypeValidators::isTimestamp($value),
@@ -295,7 +517,7 @@ class ValueTypeValidatorsTest extends BaseTestCase
         ];
         foreach ($positive as $index => $value) {
             $json = is_object($value)
-                ? get_class($value) . '(' .  json_encode($value) .')'
+                ? get_class($value) . '(' . json_encode($value) . ')'
                 : json_encode($value);
             static::assertTrue(
                 ValueTypeValidators::isIpV4Address($value),
@@ -612,7 +834,7 @@ class ValueTypeValidatorsTest extends BaseTestCase
             ['0' => 1, 2 => 5, '4' => 8],
             [2 => 1, 5, 8],
             ['2' => 1, 5, 8],
-            ['a', 'b', 'c' , 1],
+            ['a', 'b', 'c', 1],
             [2 => 'a', 'b', 'c', 1 => []],
             ['2' => 'a', 'b', 'c', 1, []],
         ];
@@ -640,15 +862,15 @@ class ValueTypeValidatorsTest extends BaseTestCase
             [' 1 ' => 1, 5],
             ['00001' => 1],
             ['00001' => 1, 2],
-            ['2' => 1, 'b' => 5, 'a' => 8 , 10],
+            ['2' => 1, 'b' => 5, 'a' => 8, 10],
             [1, 5, 'a' => 8],
             [0 => 1, 1 => 5, 'a' => 8],
             [0 => 1, 2 => 5, 'a' => 8],
             [2 => 1, 4 => 5, 'a' => 8],
             [2 => 1, 'b' => 5, 'a' => 8],
             ['2' => 1, 'b' => 5, 'a' => 8],
-            ['2' => 1, 'b' => 5, 'a' => 8 , 5 => 10],
-            [2 => 1, 'b' => 5, 'a' => 8 , 5 => 10],
+            ['2' => 1, 'b' => 5, 'a' => 8, 5 => 10],
+            [2 => 1, 'b' => 5, 'a' => 8, 5 => 10],
         ];
         foreach ($negative as $index => $value) {
             $json = is_object($value) ? get_class($value) : json_encode($value);
@@ -672,15 +894,15 @@ class ValueTypeValidatorsTest extends BaseTestCase
             [' 1 ' => 1, 5],
             ['00001' => 1],
             ['00001' => 1, 2],
-            ['2' => 1, 'b' => 5, 'a' => 8 , 10],
+            ['2' => 1, 'b' => 5, 'a' => 8, 10],
             [1, 5, 'a' => 8],
             [0 => 1, 1 => 5, 'a' => 8],
             [0 => 1, 2 => 5, 'a' => 8],
             [2 => 1, 4 => 5, 'a' => 8],
             [2 => 1, 'b' => 5, 'a' => 8],
             ['2' => 1, 'b' => 5, 'a' => 8],
-            ['2' => 1, 'b' => 5, 'a' => 8 , 5 => 10],
-            [2 => 1, 'b' => 5, 'a' => 8 , 5 => 10],
+            ['2' => 1, 'b' => 5, 'a' => 8, 5 => 10],
+            [2 => 1, 'b' => 5, 'a' => 8, 5 => 10],
         ];
         foreach ($positive as $index => $value) {
             static::assertTrue(
@@ -705,7 +927,7 @@ class ValueTypeValidatorsTest extends BaseTestCase
             ['0' => 1, 2 => 5, '4' => 8],
             [2 => 1, 5, 8],
             ['2' => 1, 5, 8],
-            ['a', 'b', 'c' , 1],
+            ['a', 'b', 'c', 1],
             [2 => 'a', 'b', 'c', 1 => []],
             ['2' => 'a', 'b', 'c', 1, []],
         ];
@@ -717,5 +939,5 @@ class ValueTypeValidatorsTest extends BaseTestCase
             );
         }
     }
-    
+
 }

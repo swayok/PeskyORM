@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\TableStructure\TableColumn\Column;
 
+use Carbon\Carbon;
 use Carbon\CarbonTimeZone;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
@@ -12,6 +13,11 @@ use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeNullable;
 use PeskyORM\Utils\ValueTypeValidators;
 
+/**
+ * It accepts both timezone names and offsets.
+ * @see ValueTypeValidators::isTimezone()
+ * Valid values are converted to timezone offset: '+dd:dd' or '-dd:dd'.
+ */
 class TimezoneOffsetColumn extends RealTableColumnAbstract
 {
     use CanBeNullable;
@@ -29,7 +35,7 @@ class TimezoneOffsetColumn extends RealTableColumnAbstract
         return $this;
     }
 
-    public function isIntegerValues(): bool
+    public function shouldConvertToIntegerValues(): bool
     {
         return $this->convertToInteger;
     }
@@ -44,10 +50,10 @@ class TimezoneOffsetColumn extends RealTableColumnAbstract
         bool $isForCondition,
         bool $isFromDb
     ): array {
-        if (!ValueTypeValidators::isTimezoneOffset($normalizedValue)) {
+        if (!ValueTypeValidators::isTimezone($normalizedValue)) {
             return [
                 $this->getValueValidationMessage(
-                    ColumnValueValidationMessagesInterface::VALUE_MUST_BE_TIMEZONE_OFFSET
+                    ColumnValueValidationMessagesInterface::VALUE_MUST_BE_TIMEZONE
                 ),
             ];
         }
@@ -60,39 +66,46 @@ class TimezoneOffsetColumn extends RealTableColumnAbstract
     ): string|int {
         $isCarbon = $validatedValue instanceof CarbonTimeZone;
         if (!$isCarbon && $validatedValue instanceof \DateTimeZone) {
-            $validatedValue = new CarbonTimeZone($validatedValue);
+            $validatedValue = CarbonTimeZone::create($validatedValue);
             $isCarbon = true;
         }
         if ($isCarbon) {
             // convert to format: "+HH:MM" / "-HH:MM"
-            $validatedValue = $validatedValue->toOffsetName();
-            if (!$this->isIntegerValues()) {
-                // "+HH:MM" / "-HH:MM"
-                return $validatedValue;
-            }
-        }
-        if ($this->isIntegerValues()) {
-            if (is_numeric($validatedValue)) {
-                return (int)$validatedValue;
-            }
-            // convert to integer
-            preg_match(
-                ValueTypeValidators::TIMEZONE_FORMAT_REGEXP,
-                $validatedValue,
-                $matches
-            );
-            // earlier we already validated format so it should not crash
-            [, $sign, $hours, $minutes] = $matches;
-            $validatedValue = (int)$hours * 3600 + (int)$minutes * 60;
-            return $sign === '-' ? -$validatedValue : $validatedValue;
+            return $this->convertToIntegerIfNeeded($validatedValue->toOffsetName());
         }
         if (is_numeric($validatedValue)) {
             // from -86400 to +86400
+            if ($this->shouldConvertToIntegerValues()) {
+                return (int)$validatedValue;
+            }
             // convert to format: "+HH:MM" / "-HH:MM"
             $validatedValue = (int)$validatedValue;
-            return ($validatedValue >= 0 ? '+' : '-') . date('H:i', $validatedValue);
+            $carbon = Carbon::createFromTimestampUTC(abs($validatedValue));
+            return ($validatedValue >= 0 ? '+' : '-') . $carbon->format('H:i');
         }
-        // "+HH:MM" / "-HH:MM" and $this->isIntegerValues() === false
-        return $validatedValue;
+        // string (not empty)
+        if (in_array($validatedValue[0], ['+', '-'])) {
+            // "+HH:MM" / "-HH:MM"
+            return $this->convertToIntegerIfNeeded($validatedValue);
+        }
+        // timezone name or shortcut: "Continent/City", "UTC"
+        $carbon = new CarbonTimeZone($validatedValue);
+        return $this->convertToIntegerIfNeeded($carbon->toOffsetName());
+    }
+
+    protected function convertToIntegerIfNeeded(string|int $validatedValue): int|string
+    {
+        if (!$this->shouldConvertToIntegerValues()) {
+            return $validatedValue;
+        }
+        if (is_numeric($validatedValue)) {
+            return (int)$validatedValue;
+        }
+        // Earlier we already validated format, so it should not crash
+        // Get sign, hours and minutes
+        preg_match('%^([-+])(\d\d):(\d\d)$%', $validatedValue, $matches);
+        [, $sign, $hours, $minutes] = $matches;
+        $validatedValue = (int)$hours * 3600 + (int)$minutes * 60;
+        return $sign === '-' ? -$validatedValue : $validatedValue;
     }
 }

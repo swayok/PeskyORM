@@ -20,7 +20,7 @@ class ColumnValueValidationMessagesEn implements ColumnValueValidationMessagesIn
         self::VALUE_MUST_BE_JSON_OBJECT => 'Value must be a json-encoded key-value object or associative PHP array.',
         self::VALUE_MUST_BE_IPV4_ADDRESS => 'Value must be an IPv4 address.',
         self::VALUE_MUST_BE_EMAIL => 'Value must be an email.',
-        self::VALUE_MUST_BE_TIMEZONE_OFFSET => 'Value must be a valid UTC timezone offset from -12:00 to +14:00.',
+        self::VALUE_MUST_BE_TIMEZONE => 'Value must be a valid timezone name or UTC timezone offset from -12:00 to +14:00.',
         self::VALUE_MUST_BE_TIMESTAMP => 'Value must be a valid timestamp.',
         self::VALUE_MUST_BE_TIMESTAMP_OR_INTEGER => 'Value must be a valid timestamp or positive integer.',
         self::VALUE_MUST_BE_TIME => 'Value must be a valid time.',

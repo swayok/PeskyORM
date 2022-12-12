@@ -429,7 +429,8 @@ class DateTimeColumnsTest extends BaseTestCase
         return $column->isTimezoneExpected();
     }
 
-    private function newRecordValueContainer(RealTableColumnAbstract $column
+    private function newRecordValueContainer(
+        RealTableColumnAbstract $column
     ): RecordValueContainerInterface {
         return $column->getNewRecordValueContainer(new TestingAdmin());
     }
@@ -464,7 +465,6 @@ class DateTimeColumnsTest extends BaseTestCase
         UnixTimestampColumn|TimestampColumn|TimeColumn|DateColumn $column,
         mixed $testValue
     ): string {
-        $testValue = $testValue instanceof \Closure ? $testValue() : $testValue;
         $value = is_object($testValue) ? 'DateTime(' . $testValue->format('Y-m-d H:i:s Z') . ')' : (string)$testValue;
         $suffix = '';
         $timezoneExpected = $this->isTimezoneExpected($column);

@@ -115,7 +115,7 @@ abstract class ColumnValueProcessingHelpers
                 break;
             case TableColumn::TYPE_TIMEZONE_OFFSET:
                 if (!ValidateValue::isTimezoneOffset($value)) {
-                    return [static::getErrorMessage($errorMessages, ColumnValueValidationMessagesInterface::VALUE_MUST_BE_TIMEZONE_OFFSET)];
+                    return [static::getErrorMessage($errorMessages, ColumnValueValidationMessagesInterface::VALUE_MUST_BE_TIMEZONE)];
                 }
                 break;
             case TableColumn::TYPE_IPV4_ADDRESS:
