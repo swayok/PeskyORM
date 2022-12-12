@@ -16,7 +16,7 @@ use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 
-class TimeZoneOffsetColumnTest extends BaseTestCase
+class BlobColumnTest extends BaseTestCase
 {
     public function testTimezoneOffsetColumn(): void
     {
@@ -52,35 +52,6 @@ class TimeZoneOffsetColumnTest extends BaseTestCase
             $this->testNonDbValues($columnInt, $values['test'], $values['expected']);
             $this->testDbValues($columnInt, $values['test'], $values['expected']);
         }
-
-    }
-
-    public function testTimezoneOffsetColumnFormatters(): void
-    {
-        $value = '+12:00';
-        // string offset column
-        $column = new TimezoneOffsetColumn('tz_offset');
-        $container = $column->setValue(
-            $this->newRecordValueContainer($column),
-            $value,
-            false,
-            false
-        );
-        $carbon = $column->getValue($container, 'carbon');
-        static::assertInstanceOf(CarbonTimeZone::class, $carbon);
-        static::assertEquals($value, $carbon->toOffsetName());
-        // int offset column
-        $column = new TimezoneOffsetColumn('tz_offset_int');
-        $column->convertsStringOffsetToInteger();
-        $container = $column->setValue(
-            $this->newRecordValueContainer($column),
-            $value,
-            false,
-            false
-        );
-        $carbon = $column->getValue($container, 'carbon');
-        static::assertInstanceOf(CarbonTimeZone::class, $carbon);
-        static::assertEquals($value, $carbon->toOffsetName());
     }
 
     private function getValuesForTesting(): array

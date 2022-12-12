@@ -43,10 +43,10 @@ class BlobColumn extends RealTableColumnAbstract
             }
             return [];
         }
-        if (!is_string($normalizedValue)) {
+        if (!is_resource($normalizedValue) && !is_string($normalizedValue)) {
             return [
                 $this->getValueValidationMessage(
-                    ColumnValueValidationMessagesInterface::VALUE_MUST_BE_STRING
+                    ColumnValueValidationMessagesInterface::VALUE_MUST_BE_STRING_OR_RESOURCE
                 ),
             ];
         }
@@ -60,6 +60,9 @@ class BlobColumn extends RealTableColumnAbstract
         mixed $validatedValue,
         bool $isFromDb
     ): mixed {
-        return $validatedValue;
+        if ($isFromDb || !is_resource($validatedValue)) {
+            return $validatedValue;
+        }
+        return stream_get_contents($validatedValue);
     }
 }

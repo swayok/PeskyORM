@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\TableStructure\TableColumn\Column;
 
-use Carbon\CarbonImmutable;
+use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
@@ -56,7 +56,8 @@ class UnixTimestampColumn extends RealTableColumnAbstract
         }
         if (!($validatedValue instanceof CarbonInterface)) {
             // string or DateTimeInterface
-            $validatedValue = CarbonImmutable::parse($validatedValue);
+            $validatedValue = Carbon::parse($validatedValue)
+                ->setTimezone('UTC');
         }
         return $validatedValue->unix();
     }

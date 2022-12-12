@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\TableStructure\TableColumn\Column;
 
-use Carbon\CarbonImmutable;
+use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters;
@@ -62,10 +62,17 @@ class DateColumn extends RealTableColumnAbstract implements UniqueTableColumnInt
         }
 
         if (is_numeric($validatedValue)) {
-            $validatedValue = CarbonImmutable::createFromTimestampUTC($validatedValue);
+            $validatedValue = Carbon::createFromTimestampUTC($validatedValue);
         } else {
             // string or DateTimeInterface
-            $validatedValue = CarbonImmutable::parse($validatedValue);
+            $validatedValue = Carbon::parse($validatedValue);
+            if (!$validatedValue->isLocal()) {
+                // Column does not support timezones but received
+                // a string with timezone (like '2022-12-07 15:00:00+01:00')
+                // and timezone in string differs from local timezone.
+                // To preserve corret time we need to convert it to local timezone.
+                $validatedValue->setTimezone(null);
+            }
         }
         return $validatedValue->format(static::FORMAT);
     }

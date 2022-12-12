@@ -27,6 +27,7 @@ interface ColumnValueValidationMessagesInterface
     public const VALUE_MUST_BE_STRING = 'value_must_be_string';
     public const VALUE_MUST_BE_ARRAY = 'value_must_be_array';
     public const VALUE_MUST_BE_RESOURCE = 'value_must_be_resource';
+    public const VALUE_MUST_BE_STRING_OR_RESOURCE = 'value_must_be_string_or_resource';
     public const VALUE_FROM_DB_CANNOT_BE_DB_EXPRESSION = 'value_from_db_cannot_be_db_expression';
     public const VALUE_FROM_DB_CANNOT_BE_QUERY_BUILDER = 'value_from_db_cannot_be_query_builder';
 

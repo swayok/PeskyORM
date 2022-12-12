@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\TableStructure\TableColumn;
 
+use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonTimeZone;
 use PeskyORM\DbExpr;
@@ -118,17 +119,19 @@ abstract class ColumnValueFormatters
                 static::FORMAT_DATE,
                 static function (RecordValueContainerInterface $valueContainer): string {
                     $value = static::getSimpleValueFromContainer($valueContainer);
-                    if (!ValueTypeValidators::isTimestamp($value, true)) {
+                    if (!ValueTypeValidators::isTimestamp($value)) {
                         throw static::getInvalidValueException(
                             $valueContainer,
                             'date-time',
                             $value
                         );
                     }
-                    if (!is_numeric($value)) {
-                        $value = strtotime($value);
+                    if (is_numeric($value)) {
+                        $value = Carbon::createFromTimestampUTC($value);
+                    } else {
+                        $value = Carbon::parse($value);
                     }
-                    return date(DateColumn::FORMAT, $value);
+                    return $value->format(DateColumn::FORMAT);
                 }
             );
         }
@@ -143,17 +146,19 @@ abstract class ColumnValueFormatters
                 static::FORMAT_TIME,
                 static function (RecordValueContainerInterface $valueContainer): string {
                     $value = static::getSimpleValueFromContainer($valueContainer);
-                    if (!ValueTypeValidators::isTimestamp($value, true)) {
+                    if (!ValueTypeValidators::isTimestamp($value)) {
                         throw static::getInvalidValueException(
                             $valueContainer,
                             'date-time',
                             $value
                         );
                     }
-                    if (!is_numeric($value)) {
-                        $value = strtotime($value);
+                    if (is_numeric($value)) {
+                        $value = Carbon::createFromTimestampUTC($value);
+                    } else {
+                        $value = Carbon::parse($value);
                     }
-                    return date(TimeColumn::FORMAT, $value);
+                    return $value->format(TimeColumn::FORMAT);
                 }
             );
         }
@@ -175,7 +180,9 @@ abstract class ColumnValueFormatters
                             $value
                         );
                     }
-                    return is_numeric($value) ? $value : strtotime($value);
+                    return is_numeric($value)
+                        ? $value
+                        : Carbon::parse($value)->unix();
                 }
             );
         }
@@ -190,6 +197,10 @@ abstract class ColumnValueFormatters
                 static::FORMAT_CARBON,
                 static function (RecordValueContainerInterface $valueContainer): CarbonTimeZone {
                     $value = static::getSimpleValueFromContainer($valueContainer);
+                    if (is_numeric($value)) {
+                        // offset in seconds
+                        return CarbonTimeZone::createFromMinuteOffset((int)($value / 60));
+                    }
                     return CarbonTimeZone::create($value);
                 }
             );
@@ -212,7 +223,8 @@ abstract class ColumnValueFormatters
                             $value
                         );
                     }
-                    return date(TimestampColumn::FORMAT, $value);
+                    return Carbon::createFromTimestampUTC($value)
+                        ->format(TimestampColumn::FORMAT);
                 }
             );
         }

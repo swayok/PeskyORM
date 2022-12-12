@@ -67,6 +67,48 @@ class DateTimeColumnsTest extends BaseTestCase
         }
     }
 
+    public function testTimestampFormatters(): void
+    {
+        date_default_timezone_set('Europe/Amsterdam');
+        $value = '2022-11-20 12:38:50+10:00';
+        $expectedValueNoTz = '2022-11-20 03:38:50';
+        $expectedDate = '2022-11-20';
+        $expectedTime = '03:38:50';
+        $expectedTimeTz = '12:38:50';
+        $expectedUnixTs = Carbon::parse($value)->unix();
+        // column without timezone
+        $column = new TimestampColumn('timestamp');
+        $container = $column->setValue(
+            $this->newRecordValueContainer($column),
+            $value,
+            false,
+            false
+        );
+        static::assertEquals($expectedValueNoTz, $column->getValue($container, null));
+        $carbon = $column->getValue($container, 'carbon');
+        static::assertInstanceOf(CarbonImmutable::class, $carbon);
+        static::assertEquals($expectedValueNoTz, $carbon->format(TimestampColumn::FORMAT));
+        static::assertEquals($expectedDate, $column->getValue($container, 'date'));
+        static::assertEquals($expectedTime, $column->getValue($container, 'time'));
+        static::assertEquals($expectedUnixTs, $column->getValue($container, 'unix_ts'));
+        // column with timezone
+        $column = new TimestampColumn('timestamptz');
+        $column->withTimezone();
+        $container = $column->setValue(
+            $this->newRecordValueContainer($column),
+            $value,
+            false,
+            false
+        );
+        static::assertEquals($value, $column->getValue($container, null));
+        $carbon = $column->getValue($container, 'carbon');
+        static::assertInstanceOf(CarbonImmutable::class, $carbon);
+        static::assertEquals($value, $carbon->format(TimestampColumn::FORMAT_WITH_TZ));
+        static::assertEquals($expectedDate, $column->getValue($container, 'date'));
+        static::assertEquals($expectedTimeTz, $column->getValue($container, 'time'));
+        static::assertEquals($expectedUnixTs, $column->getValue($container, 'unix_ts'));
+    }
+
     public function testUnixTimestampColumn(): void
     {
         $column = new UnixTimestampColumn('unixtimestamp');
@@ -88,6 +130,31 @@ class DateTimeColumnsTest extends BaseTestCase
             $this->testNonDbValues($column, $testValue);
             $this->testDbValues($column, $testValue);
         }
+    }
+
+    public function testUnixTimestampFormatters(): void
+    {
+        date_default_timezone_set('Europe/Amsterdam');
+        $value = '2022-11-20 12:38:50+10:00';
+        $expectedUnixTs = Carbon::parse($value)->unix();
+        $expectedDate = '2022-11-20';
+        $expectedTime = '02:38:50'; // it will be converted to UTC timezone
+        $expectedDateTime = "{$expectedDate} {$expectedTime}";
+
+        $column = new UnixTimestampColumn('timestamp');
+        $container = $column->setValue(
+            $this->newRecordValueContainer($column),
+            $value,
+            false,
+            false
+        );
+        static::assertEquals($expectedUnixTs, $column->getValue($container, null));
+        $carbon = $column->getValue($container, 'carbon');
+        static::assertInstanceOf(CarbonImmutable::class, $carbon);
+        static::assertEquals($expectedDateTime, $carbon->format(TimestampColumn::FORMAT));
+        static::assertEquals($expectedDate, $column->getValue($container, 'date'));
+        static::assertEquals($expectedTime, $column->getValue($container, 'time'));
+        static::assertEquals($expectedDateTime, $column->getValue($container, 'date_time'));
     }
 
     public function testDateColumn(): void
@@ -114,6 +181,27 @@ class DateTimeColumnsTest extends BaseTestCase
             $this->testNonDbValues($column, $testValue);
             $this->testDbValues($column, $testValue);
         }
+    }
+
+    public function testDateFormatters(): void
+    {
+        date_default_timezone_set('Europe/Amsterdam');
+        $value = '2022-11-20 12:38:50+10:00';
+        $expectedDate = '2022-11-20';
+        $expectedUnixTs = Carbon::parse($expectedDate)->unix();
+
+        $column = new DateColumn('timestamp');
+        $container = $column->setValue(
+            $this->newRecordValueContainer($column),
+            $value,
+            false,
+            false
+        );
+        static::assertEquals($expectedDate, $column->getValue($container, null));
+        $carbon = $column->getValue($container, 'carbon');
+        static::assertInstanceOf(CarbonImmutable::class, $carbon);
+        static::assertEquals($expectedDate, $carbon->format(DateColumn::FORMAT));
+        static::assertEquals($expectedUnixTs, $column->getValue($container, 'unix_ts'));
     }
 
     public function testTimeColumn(): void
@@ -153,6 +241,36 @@ class DateTimeColumnsTest extends BaseTestCase
             $this->testDbValues($column, $testValue);
             $this->testDbValues($columnTz, $testValue);
         }
+    }
+
+    public function testTimeFormatters(): void
+    {
+        date_default_timezone_set('Europe/Amsterdam');
+        $value = '2022-11-20 12:38:50+10:00';
+        $expectedTimeTz = '12:38:50+10:00';
+        $expectedTimeNoTz = '03:38:50';
+        $expectedUnixTs = Carbon::parse($expectedTimeTz)->unix();
+        // column without timezone
+        $column = new TimeColumn('timestamp');
+        $container = $column->setValue(
+            $this->newRecordValueContainer($column),
+            $value,
+            false,
+            false
+        );
+        static::assertEquals($expectedTimeNoTz, $column->getValue($container, null));
+        static::assertEquals($expectedUnixTs, $column->getValue($container, 'unix_ts'));
+        // column with timezone
+        $column = new TimeColumn('timestamp');
+        $column->withTimezone();
+        $container = $column->setValue(
+            $this->newRecordValueContainer($column),
+            $value,
+            false,
+            false
+        );
+        static::assertEquals($expectedTimeTz, $column->getValue($container, null));
+        static::assertEquals($expectedUnixTs, $column->getValue($container, 'unix_ts'));
     }
 
     private function getValuesForTesting(): array
@@ -453,12 +571,16 @@ class DateTimeColumnsTest extends BaseTestCase
         }
         if (is_numeric($testValue)) {
             $testValue = CarbonImmutable::createFromTimestampUTC($testValue);
-            if ($withTimezone) {
+            if (!$withTimezone) {
                 $testValue->timezone(null);
             }
             return $testValue->format($format);
         }
-        return Carbon::parse($testValue)->format($format);
+        $carbon = Carbon::parse($testValue);
+        if (!$withTimezone && !$carbon->isLocal()) {
+            $carbon->setTimezone(null);
+        }
+        return $carbon->format($format);
     }
 
     private function getAssertMessageForValue(
