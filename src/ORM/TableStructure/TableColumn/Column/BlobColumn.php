@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\TableStructure\TableColumn\Column;
 
+use PeskyORM\Exception\TableColumnConfigException;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
@@ -16,6 +17,29 @@ class BlobColumn extends RealTableColumnAbstract
     public function getDataType(): string
     {
         return TableColumnDataType::BLOB;
+    }
+
+    public function hasDefaultValue(): bool
+    {
+        return false;
+    }
+
+    public function getDefaultValue(): mixed
+    {
+        return null;
+    }
+
+    public function getValidDefaultValue(): mixed
+    {
+        return null;
+    }
+
+    public function setDefaultValue(mixed $defaultValue): static
+    {
+        throw new TableColumnConfigException(
+            "Blob column {$this->getNameForException()} does not allow default values.",
+            $this
+        );
     }
 
     protected function normalizeValueForValidation(mixed $value, bool $isFromDb): mixed

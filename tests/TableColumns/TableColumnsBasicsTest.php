@@ -119,6 +119,10 @@ class TableColumnsBasicsTest extends BaseTestCase
         foreach ($columns as $class) {
             /** @var RealTableColumnAbstract $column */
             $column = new $class($columnName);
+            $isDefaultValueCanBeSet = (
+                !($column instanceof BlobColumn)
+                && !$column->isPrimaryKey()
+            );
             static::assertEquals($columnName, $column->getName(), $class);
             static::assertNotEmpty($column->getDataType(), $class);
             static::assertTrue($column->isReal(), $class);
@@ -165,7 +169,7 @@ class TableColumnsBasicsTest extends BaseTestCase
             static::assertCount(3, $column->getRelations(), $class);
             // default value existence
             static::assertFalse($column->hasDefaultValue(), $class);
-            if (!$column->isPrimaryKey()) {
+            if ($isDefaultValueCanBeSet) {
                 $column->setDefaultValue("test");
                 static::assertTrue($column->hasDefaultValue(), $class);
             }
@@ -183,7 +187,7 @@ class TableColumnsBasicsTest extends BaseTestCase
             // default value as DbExpr
             /** @var RealTableColumnAbstract $column */
             $column = new $class($columnName);
-            if (!$column->isPrimaryKey()) {
+            if ($isDefaultValueCanBeSet) {
                 $dbExpr = new DbExpr('Test dbexpr');
                 $column->setDefaultValue($dbExpr);
                 static::assertTrue($column->hasDefaultValue(), $class);
@@ -196,7 +200,73 @@ class TableColumnsBasicsTest extends BaseTestCase
                 static::assertEquals($dbExpr, $container->getValue(), $class);
                 static::assertEquals($dbExpr, $column->getValue($container, null), $class);
             }
+            // validate value
+            // DbExpr
+            $expectedErrors = [
+                'Value received from DB cannot be instance of DbExpr.'
+            ];
+            $dbExpr = new DbExpr('test');
+            static::assertEquals([], $column->validateValue($dbExpr, false, false));
+            static::assertEquals([], $column->validateValue($dbExpr, false, true));
+            static::assertEquals($expectedErrors, $column->validateValue($dbExpr, true, false));
+            // SelectQueryBuilderInterface
+            if (!$column->isPrimaryKey()) {
+                $expectedErrors = [
+                    'Value received from DB cannot be instance of SelectQueryBuilderInterface.'
+                ];
+                $select = new OrmSelect(TestingAdminsTable::getInstance());
+                static::assertEquals([], $column->validateValue($select, false, false));
+                static::assertEquals([], $column->validateValue($select, false, true));
+                static::assertEquals($expectedErrors, $column->validateValue($select, true, false));
+            }
         }
+    }
+
+    public function testPrimaryKeyColumnException1(): void
+    {
+        $column = new IdColumn('pk');
+        static::assertTrue($column->isPrimaryKey());
+        $this->expectException(TableColumnConfigException::class);
+        $this->expectExceptionMessageMatches(
+            "%Primary key column .*'pk'.* is not allowed to have default value%"
+        );
+        $column->setDefaultValue('test');
+    }
+
+    public function testPrimaryKeyColumnException2(): void
+    {
+        $column = new IdColumn('pk');
+        static::assertTrue($column->isPrimaryKey());
+        $select = new OrmSelect(TestingAdminsTable::getInstance());
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessageMatches(
+            "%Value for primary key column .*'pk'.* can be an integer or instance of .*DbExpr%"
+        );
+        $column->validateValue($select, false, false);
+    }
+
+    public function testPrimaryKeyColumnException3(): void
+    {
+        $column = new IdColumn('pk');
+        static::assertTrue($column->isPrimaryKey());
+        $select = new OrmSelect(TestingAdminsTable::getInstance());
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessageMatches(
+            "%Value for primary key column .*'pk'.* can be an integer or instance of .*DbExpr%"
+        );
+        $column->validateValue($select, false, true);
+    }
+
+    public function testPrimaryKeyColumnException4(): void
+    {
+        $column = new IdColumn('pk');
+        static::assertTrue($column->isPrimaryKey());
+        $select = new OrmSelect(TestingAdminsTable::getInstance());
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessageMatches(
+            "%Value for primary key column .*'pk'.* can be an integer or instance of .*DbExpr%"
+        );
+        $column->validateValue($select, true, false);
     }
 
     public function testNullValueForNotNullColumn(): void
@@ -242,7 +312,9 @@ class TableColumnsBasicsTest extends BaseTestCase
             try {
                 $column = new $columnClass('column_name');
                 // set default value to make use it will not be used instead of null
-                $column->setDefaultValue(new DbExpr('test'));
+                if (!($column instanceof BlobColumn)) {
+                    $column->setDefaultValue(new DbExpr('test'));
+                }
                 static::assertFalse($column->isNullableValues(), $columnClass);
                 $valueContainer = $column->getNewRecordValueContainer($record);
                 $column->setValue($valueContainer, null, true, false);
@@ -256,11 +328,13 @@ class TableColumnsBasicsTest extends BaseTestCase
             }
             // value is from DB (trusted)
             $column = new $columnClass('column_name');
-            // set default value to make use it will not be used instead of null
-            $column->setDefaultValue(new DbExpr('test'));
-            $valueContainer = $column->getNewRecordValueContainer($record);
-            $column->setValue($valueContainer, null, true, true);
-            static::assertNull($column->getValue($valueContainer, null));
+            // set default value to make sure it will not be used instead of null
+            if (!($column instanceof BlobColumn)) {
+                $column->setDefaultValue(new DbExpr('test'));
+                $valueContainer = $column->getNewRecordValueContainer($record);
+                $column->setValue($valueContainer, null, true, true);
+                static::assertNull($column->getValue($valueContainer, null));
+            }
         }
     }
 
@@ -361,5 +435,15 @@ class TableColumnsBasicsTest extends BaseTestCase
         $column = new IdColumn('id');
         static::assertTrue($column->isPrimaryKey());
         $column->setDefaultValue('qqq');
+    }
+
+    public function testInvalidValidateValueArgsCombination(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage(
+            'Arguments $isFromDb and $isForCondition cannot both have true value.'
+        );
+        $column = new StringColumn('id');
+        $column->validateValue('test', true, true);
     }
 }

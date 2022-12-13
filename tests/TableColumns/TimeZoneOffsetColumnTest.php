@@ -303,7 +303,7 @@ class TimeZoneOffsetColumnTest extends BaseTestCase
         // good value
         static::assertEquals([], $column->validateValue($testValue, false, false), $message);
         static::assertEquals([], $column->validateValue($testValue, false, true), $message);
-        static::assertEquals([], $column->validateValue($testValue, true, true), $message);
+        static::assertEquals([], $column->validateValue($testValue, true, false), $message);
     }
 
     private function testValidateValueCommon(TimezoneOffsetColumn $column): void {
@@ -313,45 +313,36 @@ class TimeZoneOffsetColumnTest extends BaseTestCase
         ];
         static::assertEquals($expectedErrors, $column->validateValue('', false, false));
         static::assertEquals($expectedErrors, $column->validateValue('', false, true));
-        static::assertEquals($expectedErrors, $column->validateValue('', true, true));
+        static::assertEquals($expectedErrors, $column->validateValue('', true, false));
         // null
         $expectedErrors = [
             'Null value is not allowed.',
         ];
         static::assertEquals($expectedErrors, $column->validateValue(null, false, false));
         static::assertEquals([], $column->validateValue(null, false, true));
-        static::assertEquals([], $column->validateValue(null, true, true));
+        static::assertEquals($expectedErrors, $column->validateValue(null, true, false));
         // random object
         $expectedErrors = [
             'Value must be a valid timezone name or UTC timezone offset from -12:00 to +14:00.'
         ];
         static::assertEquals($expectedErrors, $column->validateValue($this, false, false));
         static::assertEquals($expectedErrors, $column->validateValue($this, false, true));
-        static::assertEquals($expectedErrors, $column->validateValue($this, true, true));
+        static::assertEquals($expectedErrors, $column->validateValue($this, true, false));
         // bool
         static::assertEquals($expectedErrors, $column->validateValue(true, false, false));
         static::assertEquals($expectedErrors, $column->validateValue(true, false, true));
-        static::assertEquals($expectedErrors, $column->validateValue(true, true, true));
+        static::assertEquals($expectedErrors, $column->validateValue(true, true, false));
         static::assertEquals($expectedErrors, $column->validateValue(false, false, false));
         static::assertEquals($expectedErrors, $column->validateValue(false, false, true));
-        static::assertEquals($expectedErrors, $column->validateValue(false, true, true));
+        static::assertEquals($expectedErrors, $column->validateValue(false, true, false));
         // too large
         static::assertEquals($expectedErrors, $column->validateValue(100000, false, false));
         static::assertEquals($expectedErrors, $column->validateValue(100000, false, true));
-        static::assertEquals($expectedErrors, $column->validateValue(100000, true, true));
+        static::assertEquals($expectedErrors, $column->validateValue(100000, true, false));
         static::assertEquals($expectedErrors, $column->validateValue(-100000, false, false));
         static::assertEquals($expectedErrors, $column->validateValue(-100000, false, true));
-        static::assertEquals($expectedErrors, $column->validateValue(-100000, true, true));
-        // DbExpr
-        $dbExpr = new DbExpr('test');
-        static::assertEquals([], $column->validateValue($dbExpr, false, false));
-        static::assertEquals([], $column->validateValue($dbExpr, false, true));
-        static::assertEquals($expectedErrors, $column->validateValue($dbExpr, true, true));
-        // SelectQueryBuilderInterface
-        $select = new OrmSelect(TestingAdminsTable::getInstance());
-        static::assertEquals([], $column->validateValue($select, false, false));
-        static::assertEquals([], $column->validateValue($select, false, true));
-        static::assertEquals($expectedErrors, $column->validateValue($select, true, true));
+        static::assertEquals($expectedErrors, $column->validateValue(-100000, true, false));
+        // DbExpr and SelectQueryBuilderInterface tested in TableColumnsBasicsTest
     }
 
     private function newColumn(TimezoneOffsetColumn $column): TimezoneOffsetColumn {

@@ -148,7 +148,7 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
     {
         if (!$this->hasDefaultValue()) {
             throw new TableColumnConfigException(
-                "Default value for column '{$this->getNameForException()}' is not set.",
+                "Default value for column {$this->getNameForException()} is not set.",
                 $this
             );
         }
@@ -247,6 +247,11 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
         bool $isFromDb = false,
         bool $isForCondition = false
     ): array {
+        if ($isFromDb && $isForCondition) {
+            throw new \InvalidArgumentException(
+                'Arguments $isFromDb and $isForCondition cannot both have true value.'
+            );
+        }
         return $this->validateNormalizedValue(
             $this->normalizeValueForValidation($value, $isFromDb),
             $isFromDb,

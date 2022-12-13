@@ -217,12 +217,12 @@ class StringTextEmailTableColumnsTest extends BaseTestCase
         // good value
         static::assertEquals([], $column->validateValue($testValue, false, false));
         static::assertEquals([], $column->validateValue($testValue, false, true));
-        static::assertEquals([], $column->validateValue($testValue, true, true));
+        static::assertEquals([], $column->validateValue($testValue, true, false));
         // empty string
         if ($allowsEmptyStringsByDefault) {
             static::assertEquals([], $column->validateValue('', false, false));
             static::assertEquals([], $column->validateValue('', false, true));
-            static::assertEquals([], $column->validateValue('', true, true));
+            static::assertEquals([], $column->validateValue('', true, false));
         }
         // null
         $expectedErrors = [
@@ -230,7 +230,7 @@ class StringTextEmailTableColumnsTest extends BaseTestCase
         ];
         static::assertEquals($expectedErrors, $column->validateValue(null, false, false));
         static::assertEquals([], $column->validateValue(null, false, true));
-        static::assertEquals([], $column->validateValue(null, true, true));
+        static::assertEquals($expectedErrors, $column->validateValue(null, true, false));
         // random object
         $expectedErrors = [
             $column instanceof EmailColumn
@@ -239,24 +239,15 @@ class StringTextEmailTableColumnsTest extends BaseTestCase
         ];
         static::assertEquals($expectedErrors, $column->validateValue($this, false, false));
         static::assertEquals($expectedErrors, $column->validateValue($this, false, true));
-        static::assertEquals($expectedErrors, $column->validateValue($this, true, true));
+        static::assertEquals($expectedErrors, $column->validateValue($this, true, false));
         // bool
         static::assertEquals($expectedErrors, $column->validateValue(true, false, false));
         static::assertEquals($expectedErrors, $column->validateValue(true, false, true));
-        static::assertEquals($expectedErrors, $column->validateValue(true, true, true));
+        static::assertEquals($expectedErrors, $column->validateValue(true, true, false));
         static::assertEquals($expectedErrors, $column->validateValue(false, false, false));
         static::assertEquals($expectedErrors, $column->validateValue(false, false, true));
-        static::assertEquals($expectedErrors, $column->validateValue(false, true, true));
-        // DbExpr
-        $dbExpr = new DbExpr('test');
-        static::assertEquals([], $column->validateValue($dbExpr, false, false));
-        static::assertEquals([], $column->validateValue($dbExpr, false, true));
-        static::assertEquals($expectedErrors, $column->validateValue($dbExpr, true, true));
-        // SelectQueryBuilderInterface
-        $select = new OrmSelect(TestingAdminsTable::getInstance());
-        static::assertEquals([], $column->validateValue($select, false, false));
-        static::assertEquals([], $column->validateValue($select, false, true));
-        static::assertEquals($expectedErrors, $column->validateValue($select, true, true));
+        static::assertEquals($expectedErrors, $column->validateValue(false, true, false));
+        // DbExpr and SelectQueryBuilderInterface tested in TableColumnsBasicsTest
     }
 
     private function newColumn(StringColumn $column): StringColumn
