@@ -25,6 +25,8 @@ interface ColumnValueValidationMessagesInterface
     public const VALUE_MUST_BE_TIME = 'value_must_be_time';
     public const VALUE_MUST_BE_DATE = 'value_must_be_date';
     public const VALUE_MUST_BE_STRING = 'value_must_be_string';
+    public const VALUE_MUST_BE_PASSWORD_HASH = 'value_must_be_password_hash';
+    public const VALUE_MUST_BE_PLAIN_PASSWORD = 'value_must_be_plain_password';
     public const VALUE_MUST_BE_ARRAY = 'value_must_be_array';
     public const VALUE_MUST_BE_RESOURCE = 'value_must_be_resource';
     public const VALUE_MUST_BE_STRING_OR_RESOURCE = 'value_must_be_string_or_resource';

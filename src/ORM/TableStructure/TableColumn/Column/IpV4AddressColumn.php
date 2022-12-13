@@ -21,24 +21,6 @@ class IpV4AddressColumn extends RealTableColumnAbstract
         return TableColumnDataType::IPV4_ADDRESS;
     }
 
-    protected function normalizeValueForValidation(mixed $value, bool $isFromDb): mixed
-    {
-        $value = parent::normalizeValueForValidation($value, $isFromDb);
-        if (is_string($value)) {
-            return $this->normalizeStringValue($value, $isFromDb);
-        }
-        return $value;
-    }
-
-    protected function normalizeStringValue(string $value, bool $isFromDb): ?string
-    {
-        if ($isFromDb) {
-            return $value;
-        }
-        $value = trim($value);
-        return $value === '' ? null : $value;
-    }
-
     protected function validateValueDataType(
         mixed $normalizedValue,
         bool $isForCondition,

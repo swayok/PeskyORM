@@ -26,6 +26,8 @@ class ColumnValueValidationMessagesEn implements ColumnValueValidationMessagesIn
         self::VALUE_MUST_BE_TIME => 'Value must be a valid time.',
         self::VALUE_MUST_BE_DATE => 'Value must be a valid date.',
         self::VALUE_MUST_BE_STRING => 'String value expected.',
+        self::VALUE_MUST_BE_PASSWORD_HASH => 'Value must be a password hash.',
+        self::VALUE_MUST_BE_PLAIN_PASSWORD => 'Value must be a plain password (password hash detected).',
         self::VALUE_MUST_BE_ARRAY => 'Array expected.',
         self::VALUE_MUST_BE_RESOURCE => 'Resource value expected.',
         self::VALUE_MUST_BE_STRING_OR_RESOURCE => 'String or resource value expected.',
