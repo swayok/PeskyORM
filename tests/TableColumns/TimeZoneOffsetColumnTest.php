@@ -377,7 +377,6 @@ class TimeZoneOffsetColumnTest extends BaseTestCase
         $this->expectExceptionMessage(
             'Validation errors: [tz_offset] Value must be a valid timezone name or UTC timezone offset from -12:00 to +14:00.'
         );
-        // empty string
         $column = new TimezoneOffsetColumn('tz_offset');
         $valueContainer = $this->newRecordValueContainer($column);
         $column->setValue($valueContainer, '', false, false);
@@ -389,7 +388,6 @@ class TimeZoneOffsetColumnTest extends BaseTestCase
         $this->expectExceptionMessage(
             'Validation errors: [tz_offset] Value must be a valid timezone name or UTC timezone offset from -12:00 to +14:00.'
         );
-        // empty string
         $column = new TimezoneOffsetColumn('tz_offset');
         $valueContainer = $this->newRecordValueContainer($column);
         $column->setValue($valueContainer, 'qweqwe', false, false);
@@ -401,7 +399,6 @@ class TimeZoneOffsetColumnTest extends BaseTestCase
         $this->expectExceptionMessage(
             'Validation errors: [tz_offset] Value must be a valid timezone name or UTC timezone offset from -12:00 to +14:00.'
         );
-        // empty string
         $column = new TimezoneOffsetColumn('tz_offset');
         $valueContainer = $this->newRecordValueContainer($column);
         $column->setValue($valueContainer, true, false, false);
@@ -413,7 +410,6 @@ class TimeZoneOffsetColumnTest extends BaseTestCase
         $this->expectExceptionMessage(
             'Validation errors: [tz_offset] Value must be a valid timezone name or UTC timezone offset from -12:00 to +14:00.'
         );
-        // empty string
         $column = new TimezoneOffsetColumn('tz_offset');
         $valueContainer = $this->newRecordValueContainer($column);
         $column->setValue($valueContainer, '+18:00', false, false);
@@ -425,7 +421,6 @@ class TimeZoneOffsetColumnTest extends BaseTestCase
         $this->expectExceptionMessage(
             'Validation errors: [tz_offset] Value must be a valid timezone name or UTC timezone offset from -12:00 to +14:00.'
         );
-        // empty string
         $column = new TimezoneOffsetColumn('tz_offset');
         $valueContainer = $this->newRecordValueContainer($column);
         $column->setValue($valueContainer, 59, false, false);
@@ -437,7 +432,6 @@ class TimeZoneOffsetColumnTest extends BaseTestCase
         $this->expectExceptionMessage(
             'Validation errors: [tz_offset] Value must be a valid timezone name or UTC timezone offset from -12:00 to +14:00.'
         );
-        // empty string
         $column = new TimezoneOffsetColumn('tz_offset');
         $valueContainer = $this->newRecordValueContainer($column);
         $column->setValue($valueContainer, -590, false, false);

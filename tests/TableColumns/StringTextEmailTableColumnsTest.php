@@ -235,7 +235,7 @@ class StringTextEmailTableColumnsTest extends BaseTestCase
         $expectedErrors = [
             $column instanceof EmailColumn
                 ? 'Value must be an email.'
-                : 'Value must be a string.'
+                : 'String value expected.'
         ];
         static::assertEquals($expectedErrors, $column->validateValue($this, false, false));
         static::assertEquals($expectedErrors, $column->validateValue($this, false, true));

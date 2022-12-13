@@ -67,7 +67,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
                 return $value === 'a' ? ['extender!!!'] : [];
             });
         static::assertEquals(
-            ['Value must be a string.'],
+            ['String value expected.'],
             DefaultColumnClosures::valueValidator(true, false, false, $column)
         );
         static::assertEquals(
@@ -149,7 +149,7 @@ class DefaultColumnClosuresTest extends BaseTestCase
     public function testValueSetterWithInvalidValue(): void
     {
         $this->expectException(InvalidDataException::class);
-        $this->expectExceptionMessage('Validation errors: [parent_id] Value must be of an integer data type.');
+        $this->expectExceptionMessage('Validation errors: [parent_id] Integer value expected.');
         $valueObj = new RecordValue(TestingAdminsTableStructure::getColumn('parent_id'), TestingAdmin::_());
         // invalid value
         $valueObj = DefaultColumnClosures::valueSetter(false, true, $valueObj, false);

@@ -245,7 +245,7 @@ class ColumnTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessageMatches(
-            "%Default value for column .*?'name'.*? is not valid\. Errors: Value must be of a boolean data type\.%"
+            "%Default value for column .*?'name'.*? is not valid\. Errors: Boolean value expected\.%"
         );
         TableColumn::create(TableColumn::TYPE_BOOL, 'name')
             ->setDefaultValue(-1)
@@ -266,7 +266,7 @@ class ColumnTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessageMatches(
-            "%Default value received from validDefaultValueGetter Closure for column .*?'name'.*? is not valid\. Errors: Value must be of a boolean data type\.%"
+            "%Default value received from validDefaultValueGetter Closure for column .*?'name'.*? is not valid\. Errors: Boolean value expected\.%"
         );
         TableColumn::create(TableColumn::TYPE_BOOL, 'name')
             ->setValidDefaultValueGetter(function () {

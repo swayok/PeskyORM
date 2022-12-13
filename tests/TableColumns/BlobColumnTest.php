@@ -120,10 +120,10 @@ class BlobColumnTest extends BaseTestCase
         static::assertEquals($expectedErrors, $column->validateValue(null, true, false));
         // random object
         $expectedErrors = [
-            'Value must be a string or resource.'
+            'String or resource value expected.'
         ];
         $expectedErrorsIfFromDb = [
-            'Value must be a resource.'
+            'Resource value expected.'
         ];
         static::assertEquals($expectedErrors, $column->validateValue($this, false, false));
         static::assertEquals($expectedErrors, $column->validateValue($this, false, true));
@@ -168,7 +168,7 @@ class BlobColumnTest extends BaseTestCase
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage(
-            'Validation errors: [blob] Value must be a string or resource.'
+            'Validation errors: [blob] String or resource value expected.'
         );
         // empty string
         $column = new BlobColumn('blob');
@@ -180,7 +180,7 @@ class BlobColumnTest extends BaseTestCase
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage(
-            'Validation errors: [blob] Value must be a string or resource.'
+            'Validation errors: [blob] String or resource value expected.'
         );
         // empty string
         $column = new BlobColumn('blob');
@@ -192,7 +192,7 @@ class BlobColumnTest extends BaseTestCase
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage(
-            'Validation errors: [blob] Value must be a string or resource.'
+            'Validation errors: [blob] String or resource value expected.'
         );
         // empty string
         $column = new BlobColumn('blob');
@@ -204,7 +204,7 @@ class BlobColumnTest extends BaseTestCase
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage(
-            'Validation errors: [blob] Value must be a resource.'
+            'Validation errors: [blob] Resource value expected.'
         );
         // empty string
         $column = new BlobColumn('blob');

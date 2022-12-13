@@ -560,7 +560,7 @@ class RecordValueHelpersTest extends BaseTestCase
     
     public function testIsValueFitsDataTypeTimezoneOffset(): void
     {
-        $message = ['value_must_be_timezone_offset'];
+        $message = ['value_must_be_timezone'];
         static::assertEquals([], ColumnValueProcessingHelpers::isValueFitsDataType('11:22:33', TableColumn::TYPE_TIMEZONE_OFFSET, false));
         static::assertEquals([], ColumnValueProcessingHelpers::isValueFitsDataType('11:22', TableColumn::TYPE_TIMEZONE_OFFSET, false));
         static::assertEquals([], ColumnValueProcessingHelpers::isValueFitsDataType('+18:00', TableColumn::TYPE_TIMEZONE_OFFSET, false));

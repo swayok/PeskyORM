@@ -23,15 +23,6 @@ class FloatColumn extends RealTableColumnAbstract implements UniqueTableColumnIn
         return TableColumnDataType::FLOAT;
     }
 
-    protected function normalizeValueForValidation(mixed $value, bool $isFromDb): mixed
-    {
-        $value = parent::normalizeValueForValidation($value, $isFromDb);
-        if (is_string($value) && trim($value) === '') {
-            return null;
-        }
-        return $value;
-    }
-
     protected function validateValueDataType(
         mixed $normalizedValue,
         bool $isForCondition,

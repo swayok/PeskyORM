@@ -233,42 +233,6 @@ class TableColumnsBasicsTest extends BaseTestCase
         $column->setDefaultValue('test');
     }
 
-    public function testPrimaryKeyColumnException2(): void
-    {
-        $column = new IdColumn('pk');
-        static::assertTrue($column->isPrimaryKey());
-        $select = new OrmSelect(TestingAdminsTable::getInstance());
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessageMatches(
-            "%Value for primary key column .*'pk'.* can be an integer or instance of .*DbExpr%"
-        );
-        $column->validateValue($select, false, false);
-    }
-
-    public function testPrimaryKeyColumnException3(): void
-    {
-        $column = new IdColumn('pk');
-        static::assertTrue($column->isPrimaryKey());
-        $select = new OrmSelect(TestingAdminsTable::getInstance());
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessageMatches(
-            "%Value for primary key column .*'pk'.* can be an integer or instance of .*DbExpr%"
-        );
-        $column->validateValue($select, false, true);
-    }
-
-    public function testPrimaryKeyColumnException4(): void
-    {
-        $column = new IdColumn('pk');
-        static::assertTrue($column->isPrimaryKey());
-        $select = new OrmSelect(TestingAdminsTable::getInstance());
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessageMatches(
-            "%Value for primary key column .*'pk'.* can be an integer or instance of .*DbExpr%"
-        );
-        $column->validateValue($select, true, false);
-    }
-
     public function testNullValueForNotNullColumn(): void
     {
         $columns = [

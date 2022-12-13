@@ -988,7 +988,7 @@ class RecordTest extends BaseTestCase
     public function testInvalidFromData3(): void
     {
         $this->expectException(InvalidDataException::class);
-        $this->expectExceptionMessage("Validation errors: [id] Value must be of an integer data type");
+        $this->expectExceptionMessage("Validation errors: [id] Integer value expected");
         TestingAdmin::fromArray(['id' => 'qqqq'], true);
     }
     
