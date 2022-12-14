@@ -206,4 +206,20 @@ abstract class TableColumnAbstract implements TableColumnInterface
         bool $shouldDeleteFiles
     ): void {
     }
+
+    protected function getRecordInfoForException(
+        RecordValueContainerInterface $valueContainer
+    ): string {
+        $record = $valueContainer->getRecord();
+        $pk = 'undefined';
+        if (!$this->isPrimaryKey()) {
+            try {
+                $pk = $record->existsInDb()
+                    ? $record->getPrimaryKeyValue()
+                    : 'null';
+            } catch (\Throwable) {
+            }
+        }
+        return get_class($record) . '(#' . $pk . ')->' . $this->getName();
+    }
 }

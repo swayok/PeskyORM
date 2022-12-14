@@ -21,6 +21,12 @@ abstract class VirtualTableColumnAbstract extends TableColumnAbstract
         return false;
     }
 
+    /** @noinspection SenselessMethodDuplicationInspection */
+    final public function isPrimaryKey(): bool
+    {
+        return false;
+    }
+
     public function isNullableValues(): bool
     {
         return true;
@@ -66,30 +72,35 @@ abstract class VirtualTableColumnAbstract extends TableColumnAbstract
     protected function getIsVirtualException(): TableColumnConfigException
     {
         return new TableColumnConfigException(
-            "Column {$this->getNameForException()} is virtual",
+            "Column {$this->getNameForException()} is virtual.",
             $this
         );
     }
 
-    final public function isForeignKey(): bool {
+    final public function isForeignKey(): bool
+    {
         return false;
     }
 
-    final public function getForeignKeyRelation(): ?RelationInterface {
+    final public function getForeignKeyRelation(): ?RelationInterface
+    {
         return null;
     }
 
-    final public function getDefaultValue(): mixed {
+    final public function getDefaultValue(): mixed
+    {
         // virtual column cannot have a default value
         return null;
     }
 
-    final public function getValidDefaultValue(): mixed {
+    final public function getValidDefaultValue(): mixed
+    {
         // virtual column cannot have a default value
         return null;
     }
 
-    final public function hasDefaultValue(): bool {
+    final public function hasDefaultValue(): bool
+    {
         return false;
     }
 

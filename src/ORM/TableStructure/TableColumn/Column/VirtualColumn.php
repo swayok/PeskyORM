@@ -18,10 +18,12 @@ class VirtualColumn extends VirtualTableColumnAbstract
     protected \Closure $valueGetter;
 
     /**
+     * $hasValue signature:
+     *   function (RecordValueContainerInterface $valueContainer, bool $allowDefaultValue): bool
      * $getValue signature:
      *   function (RecordValueContainerInterface $valueContainer, ?string $format): mixed
-     * $hasValue signature:
-     *   function (RecordValueContainerInterface $valueContainer): bool
+     * Note: $hasValue will be called before $getValue, so you do not need
+     * to call $hasValue again in $getValue
      */
     public function __construct(
         string $name,
@@ -37,13 +39,28 @@ class VirtualColumn extends VirtualTableColumnAbstract
         RecordValueContainerInterface $valueContainer,
         ?string $format
     ): mixed {
-        return call_user_func($this->valueGetter, $valueContainer, $format);
+        $record = $valueContainer->getRecord();
+        if (!$this->hasValue($valueContainer, !$record->existsInDb())) {
+            $columnInfo = $this->getRecordInfoForException($valueContainer);
+            throw new \BadMethodCallException(
+                "Value for virtual column {$columnInfo} cannot be generated."
+            );
+        }
+        return call_user_func(
+            $this->valueGetter,
+            $valueContainer,
+            $format
+        );
     }
 
     public function hasValue(
         RecordValueContainerInterface $valueContainer,
         bool $allowDefaultValue
     ): bool {
-        return call_user_func($this->valueChecker, $valueContainer);
+        return (bool)call_user_func(
+            $this->valueChecker,
+            $valueContainer,
+            $allowDefaultValue
+        );
     }
 }

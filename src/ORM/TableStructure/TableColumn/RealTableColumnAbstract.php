@@ -546,22 +546,6 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
         );
     }
 
-    protected function getRecordInfoForException(
-        RecordValueContainerInterface $valueContainer
-    ): string {
-        $record = $valueContainer->getRecord();
-        $pk = 'undefined';
-        if (!$this->isPrimaryKey()) {
-            try {
-                $pk = $record->existsInDb()
-                    ? $record->getPrimaryKeyValue()
-                    : 'null';
-            } catch (\Throwable) {
-            }
-        }
-        return get_class($record) . '(#' . $pk . ')->' . $this->getName();
-    }
-
     protected function canUseDefaultValue(
         RecordValueContainerInterface $valueContainer
     ): bool {
