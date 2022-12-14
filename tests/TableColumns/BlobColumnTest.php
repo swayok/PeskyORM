@@ -157,7 +157,7 @@ class BlobColumnTest extends BaseTestCase
     {
         $this->expectException(TableColumnConfigException::class);
         $this->expectExceptionMessageMatches(
-            "%Blob column .*?'blob'.* does not allow default values%"
+            "%Column .*?'blob'.* is not allowed to have default value%"
         );
         // empty string
         $column = new BlobColumn('blob');

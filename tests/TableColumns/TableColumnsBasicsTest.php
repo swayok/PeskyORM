@@ -28,11 +28,13 @@ use PeskyORM\ORM\TableStructure\TableColumn\Column\TimestampColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\Column\TimezoneOffsetColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\Column\UnixTimestampColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\Select\OrmSelect;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
+use PeskyORM\Utils\StringUtils;
 
 class TableColumnsBasicsTest extends BaseTestCase
 {
@@ -107,22 +109,15 @@ class TableColumnsBasicsTest extends BaseTestCase
             UnixTimestampColumn::class,
         ];
 
-        $columnName = 'some_name';
         $relationName = 'Admin';
         $adminsTable = TestingAdminsTable::getInstance();
         $adminsTableStructure = TestingAdminsTableStructure::getInstance();
-        $relationHasOne = new Relation($columnName, Relation::HAS_ONE, $adminsTable, 'id', $relationName . 'One');
-        $relationBelongsTo = new Relation($columnName, Relation::BELONGS_TO, $adminsTable, 'id', $relationName . 'Foreign');
-        $relationHasMany = new Relation($columnName, Relation::HAS_MANY, $adminsTable, 'parent_id', $relationName . 'Many');
         $adminRecord = new TestingAdmin();
 
         foreach ($columns as $class) {
+            $columnName = $this->getColumnNameFromClass($class);
             /** @var RealTableColumnAbstract $column */
             $column = new $class($columnName);
-            $isDefaultValueCanBeSet = (
-                !($column instanceof BlobColumn)
-                && !$column->isPrimaryKey()
-            );
             static::assertEquals($columnName, $column->getName(), $class);
             static::assertNotEmpty($column->getDataType(), $class);
             static::assertTrue($column->isReal(), $class);
@@ -144,6 +139,9 @@ class TableColumnsBasicsTest extends BaseTestCase
                 static::assertFalse($column->isNullableValues(), $class);
             }
             // relations
+            $relationHasOne = new Relation($columnName, Relation::HAS_ONE, $adminsTable, 'id', $relationName . 'One');
+            $relationBelongsTo = new Relation($columnName, Relation::BELONGS_TO, $adminsTable, 'id', $relationName . 'Foreign');
+            $relationHasMany = new Relation($columnName, Relation::HAS_MANY, $adminsTable, 'parent_id', $relationName . 'Many');
             static::assertFalse($column->isForeignKey(), $class);
             static::assertEmpty($column->getRelations(), $class);
             static::assertFalse($column->hasRelation($relationName), $class);
@@ -169,7 +167,7 @@ class TableColumnsBasicsTest extends BaseTestCase
             static::assertCount(3, $column->getRelations(), $class);
             // default value existence
             static::assertFalse($column->hasDefaultValue(), $class);
-            if ($isDefaultValueCanBeSet) {
+            if ($this->isDefaultValueAllowedForColumn($column)) {
                 $column->setDefaultValue("test");
                 static::assertTrue($column->hasDefaultValue(), $class);
             }
@@ -187,7 +185,7 @@ class TableColumnsBasicsTest extends BaseTestCase
             // default value as DbExpr
             /** @var RealTableColumnAbstract $column */
             $column = new $class($columnName);
-            if ($isDefaultValueCanBeSet) {
+            if ($this->isDefaultValueAllowedForColumn($column)) {
                 $dbExpr = new DbExpr('Test dbexpr');
                 $column->setDefaultValue($dbExpr);
                 static::assertTrue($column->hasDefaultValue(), $class);
@@ -203,7 +201,7 @@ class TableColumnsBasicsTest extends BaseTestCase
             // validate value
             // DbExpr
             $expectedErrors = [
-                'Value received from DB cannot be instance of DbExpr.'
+                'Value received from DB cannot be instance of DbExpr.',
             ];
             $dbExpr = new DbExpr('test');
             static::assertEquals([], $column->validateValue($dbExpr, false, false));
@@ -212,7 +210,7 @@ class TableColumnsBasicsTest extends BaseTestCase
             // SelectQueryBuilderInterface
             if (!$column->isPrimaryKey()) {
                 $expectedErrors = [
-                    'Value received from DB cannot be instance of SelectQueryBuilderInterface.'
+                    'Value received from DB cannot be instance of SelectQueryBuilderInterface.',
                 ];
                 $select = new OrmSelect(TestingAdminsTable::getInstance());
                 static::assertEquals([], $column->validateValue($select, false, false));
@@ -220,6 +218,21 @@ class TableColumnsBasicsTest extends BaseTestCase
                 static::assertEquals($expectedErrors, $column->validateValue($select, true, false));
             }
         }
+    }
+
+    private function getColumnNameFromClass(string $class): string
+    {
+        return StringUtils::toSnakeCase(preg_replace('%^.*\\\(.*)$%', '$1', $class));
+    }
+
+    private function isDefaultValueAllowedForColumn(TableColumnInterface $column): bool
+    {
+        return (
+            !($column instanceof BlobColumn)
+            && !($column instanceof PasswordColumn)
+            && !($column instanceof EmailColumn)
+            && !$column->isPrimaryKey()
+        );
     }
 
     public function testPrimaryKeyColumnException1(): void
@@ -255,45 +268,46 @@ class TableColumnsBasicsTest extends BaseTestCase
             TimezoneOffsetColumn::class,
             UnixTimestampColumn::class,
         ];
-        /** @var RealTableColumnAbstract $columnClass */
+        /** @var RealTableColumnAbstract $class */
         $record = new TestingAdmin();
-        foreach ($columns as $columnClass) {
+        foreach ($columns as $class) {
+            $columnName = $this->getColumnNameFromClass($class);
             // value is not from DB
             try {
-                $column = new $columnClass('column_name');
+                $column = new $class($columnName);
                 $valueContainer = $column->getNewRecordValueContainer($record);
-                static::assertFalse($column->isNullableValues(), $columnClass);
+                static::assertFalse($column->isNullableValues(), $class);
                 $column->setValue($valueContainer, null, false, false);
                 static::fail('Exception should be thrown');
             } catch (InvalidDataException $exception) {
                 static::assertEquals(
-                    'Validation errors: [column_name] Null value is not allowed.',
+                    "Validation errors: [{$columnName}] Null value is not allowed.",
                     $exception->getMessage(),
-                    $columnClass
+                    $class
                 );
             }
             // value is from DB (not trusted)
             try {
-                $column = new $columnClass('column_name');
+                $column = new $class($columnName);
                 // set default value to make use it will not be used instead of null
-                if (!($column instanceof BlobColumn)) {
+                if ($this->isDefaultValueAllowedForColumn($column)) {
                     $column->setDefaultValue(new DbExpr('test'));
                 }
-                static::assertFalse($column->isNullableValues(), $columnClass);
+                static::assertFalse($column->isNullableValues(), $class);
                 $valueContainer = $column->getNewRecordValueContainer($record);
                 $column->setValue($valueContainer, null, true, false);
                 static::fail('Exception should be thrown');
             } catch (InvalidDataException $exception) {
                 static::assertEquals(
-                    'Validation errors: [column_name] Null value is not allowed.',
+                    "Validation errors: [{$columnName}] Null value is not allowed.",
                     $exception->getMessage(),
-                    $columnClass
+                    $class
                 );
             }
             // value is from DB (trusted)
-            $column = new $columnClass('column_name');
+            $column = new $class($columnName);
             // set default value to make sure it will not be used instead of null
-            if (!($column instanceof BlobColumn)) {
+            if ($this->isDefaultValueAllowedForColumn($column)) {
                 $column->setDefaultValue(new DbExpr('test'));
                 $valueContainer = $column->getNewRecordValueContainer($record);
                 $column->setValue($valueContainer, null, true, true);

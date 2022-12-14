@@ -6,9 +6,7 @@ namespace PeskyORM\Tests\TableColumns;
 
 use PeskyORM\DbExpr;
 use PeskyORM\Exception\InvalidDataException;
-use PeskyORM\Exception\TableColumnConfigException;
 use PeskyORM\ORM\Record\RecordValueContainerInterface;
-use PeskyORM\ORM\TableStructure\TableColumn\Column\EmailColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\Column\StringColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\Column\TextColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
@@ -17,7 +15,7 @@ use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 
-class StringTextEmailTableColumnsTest extends BaseTestCase
+class StringAndTextColumnsTest extends BaseTestCase
 {
     public function testStringColumn(): void
     {
@@ -41,39 +39,8 @@ class StringTextEmailTableColumnsTest extends BaseTestCase
         $this->testValidateValue($column, $testValue);
     }
 
-    public function testEmailColumn(): void
-    {
-        $testValue = ' Test@tEst.com ';
-        $normalizedValue = 'test@test.com';
-        // $normalizedValue is correct!
-        $column = new EmailColumn('email');
-        $this->testCommonProperties($column, TableColumnDataType::STRING);
-        $this->testDefaultValues($column, $normalizedValue);
-        $this->testNonDbValues($column, $normalizedValue, false);
-        $this->testDbValues($column, $normalizedValue);
-        $this->testValidateValue($column, $normalizedValue, false);
-        // test lowercase and trim (value not from DB)
-        $column = $this->newColumn($column);
-        $valueContainer = $this->newRecordValueContainer($column);
-        $column->setValue($valueContainer, $testValue, false, false);
-        static::assertNotEquals($testValue, $valueContainer->getValue());
-        static::assertEquals($normalizedValue, $valueContainer->getValue());
-        static::assertEquals($normalizedValue, $column->getValue($valueContainer, null));
-        // test lowercase and trim (value from DB and not trusted)
-        $valueContainer = $this->newRecordValueContainer($column);
-        $column->setValue($valueContainer, $testValue, true, false);
-        static::assertNotEquals($testValue, $valueContainer->getValue());
-        static::assertEquals($normalizedValue, $valueContainer->getValue());
-        static::assertEquals($normalizedValue, $column->getValue($valueContainer, null));
-        // test lowercase and trim (value from DB and trusted)
-        $valueContainer = $this->newRecordValueContainer($column);
-        $column->setValue($valueContainer, $testValue, true, true);
-        static::assertEquals($testValue, $valueContainer->getValue());
-        static::assertEquals($testValue, $column->getValue($valueContainer, null));
-    }
-
     private function testCommonProperties(
-        StringColumn $column,
+        StringColumn|TextColumn $column,
         string $type,
     ): void {
         $column = $this->newColumn($column);
@@ -86,7 +53,7 @@ class StringTextEmailTableColumnsTest extends BaseTestCase
     }
 
     private function testDefaultValues(
-        StringColumn $column,
+        StringColumn|TextColumn $column,
         string $testValue
     ): void {
         $normalizedValue = mb_strtolower(trim($testValue));
@@ -131,9 +98,8 @@ class StringTextEmailTableColumnsTest extends BaseTestCase
     }
 
     private function testNonDbValues(
-        StringColumn $column,
+        StringColumn|TextColumn $column,
         string $testValue,
-        bool $allowsEmptyStringsByDefault = true
     ): void {
         $normalizedValue = mb_strtolower(trim($testValue));
         // setter & getter
@@ -156,12 +122,10 @@ class StringTextEmailTableColumnsTest extends BaseTestCase
         static::assertEquals($normalizedValue, $valueContainer->getValue());
         static::assertEquals($normalizedValue, $column->getValue($valueContainer, null));
         // empty string
-        if ($allowsEmptyStringsByDefault) {
-            $valueContainer = $this->newRecordValueContainer($column);
-            $column->setValue($valueContainer, '', false, false);
-            static::assertEquals('', $valueContainer->getValue());
-            static::assertEquals('', $column->getValue($valueContainer, null));
-        }
+        $valueContainer = $this->newRecordValueContainer($column);
+        $column->setValue($valueContainer, '', false, false);
+        static::assertEquals('', $valueContainer->getValue());
+        static::assertEquals('', $column->getValue($valueContainer, null));
         // null
         $column->allowsNullValues();
         $valueContainer = $this->newRecordValueContainer($column);
@@ -187,7 +151,7 @@ class StringTextEmailTableColumnsTest extends BaseTestCase
     }
 
     private function testDbValues(
-        StringColumn $column,
+        StringColumn|TextColumn $column,
         string $testValue
     ): void {
         $normalizedValue = mb_strtolower(trim($testValue));
@@ -209,9 +173,8 @@ class StringTextEmailTableColumnsTest extends BaseTestCase
     }
 
     private function testValidateValue(
-        StringColumn $column,
+        StringColumn|TextColumn $column,
         string $testValue,
-        bool $allowsEmptyStringsByDefault = true
     ): void {
         $column = $this->newColumn($column);
         // good value
@@ -219,11 +182,9 @@ class StringTextEmailTableColumnsTest extends BaseTestCase
         static::assertEquals([], $column->validateValue($testValue, false, true));
         static::assertEquals([], $column->validateValue($testValue, true, false));
         // empty string
-        if ($allowsEmptyStringsByDefault) {
-            static::assertEquals([], $column->validateValue('', false, false));
-            static::assertEquals([], $column->validateValue('', false, true));
-            static::assertEquals([], $column->validateValue('', true, false));
-        }
+        static::assertEquals([], $column->validateValue('', false, false));
+        static::assertEquals([], $column->validateValue('', false, true));
+        static::assertEquals([], $column->validateValue('', true, false));
         // null
         $expectedErrors = [
             'Null value is not allowed.',
@@ -233,9 +194,7 @@ class StringTextEmailTableColumnsTest extends BaseTestCase
         static::assertEquals($expectedErrors, $column->validateValue(null, true, false));
         // random object
         $expectedErrors = [
-            $column instanceof EmailColumn
-                ? 'Value must be an email.'
-                : 'String value expected.'
+            'String value expected.'
         ];
         static::assertEquals($expectedErrors, $column->validateValue($this, false, false));
         static::assertEquals($expectedErrors, $column->validateValue($this, false, true));
@@ -250,15 +209,13 @@ class StringTextEmailTableColumnsTest extends BaseTestCase
         // DbExpr and SelectQueryBuilderInterface tested in TableColumnsBasicsTest
     }
 
-    private function newColumn(StringColumn $column): StringColumn
+    private function newColumn(StringColumn|TextColumn $column): StringColumn|TextColumn
     {
         $class = $column::class;
-        /** @var StringColumn $ret */
-        $ret = new $class($column->getName());
-        return $ret;
+        return new $class($column->getName());
     }
 
-    private function newRecordValueContainer(StringColumn $column): RecordValueContainerInterface
+    private function newRecordValueContainer(StringColumn|TextColumn $column): RecordValueContainerInterface
     {
         return $column->getNewRecordValueContainer(new TestingAdmin());
     }
@@ -266,7 +223,6 @@ class StringTextEmailTableColumnsTest extends BaseTestCase
     public function testEmptyStringConverstionToNullWhenColumnNotNullable(): void
     {
         $columns = [
-            EmailColumn::class,
             StringColumn::class,
             TextColumn::class,
         ];
@@ -306,50 +262,5 @@ class StringTextEmailTableColumnsTest extends BaseTestCase
                 );
             }
         }
-    }
-
-    public function testEmailColumnInvalidNonDbValue(): void
-    {
-        $this->expectException(InvalidDataException::class);
-        $this->expectExceptionMessage(
-            'Validation errors: [email] Value must be an email.'
-        );
-        $column = new EmailColumn('email');
-        $valueContainer = $this->newRecordValueContainer($column);
-        $column->setValue($valueContainer, 'qqq', false, false);
-    }
-
-    public function testEmailColumnInvalidDbValue1(): void
-    {
-        $this->expectException(InvalidDataException::class);
-        $this->expectExceptionMessage(
-            'Validation errors: [email] Value must be an email.'
-        );
-        $column = new EmailColumn('email');
-        $valueContainer = $this->newRecordValueContainer($column);
-        $column->setValue($valueContainer, 'qqq', true, false);
-    }
-
-    public function testEmailColumnInvalidDbValue2(): void
-    {
-        $this->expectException(InvalidDataException::class);
-        $this->expectExceptionMessage(
-            'Validation errors: [email] Null value is not allowed.'
-        );
-        $column = new EmailColumn('email');
-        $valueContainer = $this->newRecordValueContainer($column);
-        $column->setValue($valueContainer, '', true, false);
-    }
-
-    public function testEmailColumnInvalidDefaultValue(): void
-    {
-        $this->expectException(TableColumnConfigException::class);
-        $this->expectExceptionMessageMatches(
-            "%Default value for column.*'email'.* is not valid\. Errors: Value must be an email\.%"
-        );
-        $column = new EmailColumn('email');
-        $column->setDefaultValue('qqq');
-        static::assertEquals('qqq', $column->getDefaultValue());
-        $column->getValidDefaultValue();
     }
 }

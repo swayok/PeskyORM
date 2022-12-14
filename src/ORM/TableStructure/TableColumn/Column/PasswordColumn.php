@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\TableStructure\TableColumn\Column;
 
-use PeskyORM\Exception\TableColumnConfigException;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
+use PeskyORM\ORM\TableStructure\TableColumn\PasswordColumnInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeNullable;
+use PeskyORM\ORM\TableStructure\TableColumn\Traits\CannotHaveDefaultValue;
 
-class PasswordColumn extends RealTableColumnAbstract
+class PasswordColumn extends RealTableColumnAbstract implements PasswordColumnInterface
 {
     use CanBeNullable;
+    use CannotHaveDefaultValue;
 
     protected \Closure $passwordHasher;
     protected \Closure $passwordChecker;
@@ -47,20 +49,6 @@ class PasswordColumn extends RealTableColumnAbstract
         return false;
     }
 
-    public function hasDefaultValue(): bool
-    {
-        return false;
-    }
-
-    public function setDefaultValue(mixed $defaultValue): static
-    {
-        throw new TableColumnConfigException(
-            'Column ' . $this->getNameForException()
-            . ' is not allowed to have default value.',
-            $this
-        );
-    }
-
     public function hashPassword(string $value): string
     {
         return call_user_func($this->passwordHasher, $value);
@@ -87,12 +75,12 @@ class PasswordColumn extends RealTableColumnAbstract
     {
         $value = parent::normalizeValueForValidation($value, $isFromDb);
         if (is_string($value)) {
-            return $this->normalizeStringValue($value, $isFromDb);
+            return $this->normalizePasswordString($value, $isFromDb);
         }
         return $value;
     }
 
-    protected function normalizeStringValue(string $value, bool $isFromDb): ?string
+    public function normalizePasswordString(string $value, bool $isFromDb): ?string
     {
         if ($isFromDb) {
             // do not modify DB value to avoid unintended changes

@@ -8,6 +8,7 @@ use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 
 /**
  * Note: there is no automatic uniqueness validation in ORM!
+ * @see TableColumnInterface::isValueMustBeUnique()
  */
 trait CanBeUnique
 {

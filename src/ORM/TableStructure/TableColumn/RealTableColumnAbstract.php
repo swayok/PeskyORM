@@ -428,10 +428,7 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
             );
         }
         // Handle same value
-        if (
-            $currentValueContainer->hasValue()
-            && $newValue === $currentValueContainer->getRawValue()
-        ) {
+        if ($this->isSameValue($currentValueContainer, $newValue)) {
             // Received same value as current one
             // Warning: if value in $currentValueContainer was already from DB
             // it should not change its status
@@ -485,6 +482,16 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
         );
 
         return $valueContainer;
+    }
+
+    protected function isSameValue(
+        RecordValueContainerInterface $currentValueContainer,
+        mixed $newValue,
+    ): bool {
+        return (
+            $currentValueContainer->hasValue()
+            && $newValue === $currentValueContainer->getRawValue()
+        );
     }
 
     /**

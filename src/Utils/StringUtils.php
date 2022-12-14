@@ -183,6 +183,9 @@ abstract class StringUtils
     public const PASCAL_CASE_VALIDATION_REGEXP = '%^[A-Z][a-zA-Z0-9]*$%'; // PascalCase
     public const SNAKE_CASE_VALIDATION_REGEXP = '%^[a-z][a-z0-9_]*$%';    // snake_case
 
+    /**
+     * Convert snake_case, dashed-string, any#delimiter to PascalCase
+     */
     public static function toPascalCase(string $underscoredString): string
     {
         return str_replace(' ', '', ucwords(preg_replace('%[^a-z\d]+%i', ' ', $underscoredString)));
@@ -266,6 +269,9 @@ abstract class StringUtils
         return $plural;
     }
 
+    /**
+     * Convert PascalCase or camelCase to snake_case
+     */
     public static function toSnakeCase(string $pascalOrSnakeCaseString): string
     {
         return strtolower(
