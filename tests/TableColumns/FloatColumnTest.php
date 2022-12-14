@@ -222,6 +222,10 @@ class FloatColumnTest extends BaseTestCase
         static::assertEquals($expectedErrors, $column->validateValue(false, false, false));
         static::assertEquals($expectedErrors, $column->validateValue(false, false, true));
         static::assertEquals($expectedErrors, $column->validateValue(false, true, false));
+        // array
+        static::assertEquals($expectedErrors, $column->validateValue([], false, false));
+        static::assertEquals($expectedErrors, $column->validateValue([], false, true));
+        static::assertEquals($expectedErrors, $column->validateValue([], true, false));
         // DbExpr and SelectQueryBuilderInterface tested in TableColumnsBasicsTest
     }
 

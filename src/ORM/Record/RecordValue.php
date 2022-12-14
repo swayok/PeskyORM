@@ -71,7 +71,8 @@ class RecordValue implements RecordValueContainerInterface
     public function setValue(
         mixed $rawValue,
         mixed $processedValue,
-        bool $isFromDb
+        bool $isFromDb,
+        ?bool $storeRawValue = null
     ): void {
         if ($this->hasValue()) {
             throw new \BadMethodCallException(
@@ -83,10 +84,23 @@ class RecordValue implements RecordValueContainerInterface
         $this->value = $processedValue;
         $this->isFromDb = $isFromDb;
         $this->hasValue = true;
-        if ($rawValue === $processedValue) {
-            $this->ignoreRawValue = true;
-        } else {
+        $this->setRawValue($rawValue, $processedValue, $isFromDb, $storeRawValue);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    protected function setRawValue(
+        mixed $rawValue,
+        mixed $processedValue,
+        bool $isFromDb,
+        ?bool $storeRawValue = null
+    ): void {
+        if ($storeRawValue === null) {
+            $storeRawValue = $rawValue !== $processedValue;
+        }
+        if ($storeRawValue) {
             $this->rawValue = $rawValue;
+        } else {
+            $this->ignoreRawValue = true;
         }
     }
 

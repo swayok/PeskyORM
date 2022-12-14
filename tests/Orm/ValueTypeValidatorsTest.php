@@ -624,9 +624,11 @@ class ValueTypeValidatorsTest extends BaseTestCase
             '["qqq","www"]',
             '{}',
             '{"key":"value"}',
-            '{"key"}', //< contents are not validated
-            '{key}', //< contents are not validated
-            '[key]', //< contents are not validated
+            // contents are not validated
+            '{"key"}',
+            '{key}',
+            '[key]',
+            '"str"str"',
         ];
         foreach ($positive as $index => $value) {
             static::assertTrue(
@@ -640,7 +642,6 @@ class ValueTypeValidatorsTest extends BaseTestCase
             1.1,
             true,
             false,
-            'str',
             $this,
             [],
             ['qq'],
@@ -671,6 +672,7 @@ class ValueTypeValidatorsTest extends BaseTestCase
             1,
             2.2,
             'str',
+            'str"str',
             [],
             ['qq'],
             ['qq' => 'ww'],

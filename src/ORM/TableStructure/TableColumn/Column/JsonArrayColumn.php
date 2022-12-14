@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\TableStructure\TableColumn\Column;
 
+use PeskyORM\DbExpr;
 use PeskyORM\ORM\Record\RecordValueContainerInterface;
 use PeskyORM\ORM\RecordsCollection\RecordsArray;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters;
@@ -12,6 +13,7 @@ use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeHeavy;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeNullable;
+use PeskyORM\Select\SelectQueryBuilderInterface;
 use PeskyORM\Utils\ValueTypeValidators;
 
 /**
@@ -61,12 +63,20 @@ class JsonArrayColumn extends RealTableColumnAbstract
         bool $isForCondition,
         bool $isFromDb
     ): array {
-        if ($isForCondition) {
-            // there can be anything, so it is hard to validate it
+        if (
+            $isForCondition
+            && (
+                !is_object($normalizedValue)
+                || $normalizedValue instanceof DbExpr
+                || $normalizedValue instanceof SelectQueryBuilderInterface
+            )
+        ) {
+            // There can be anything, so it is hard to validate it,
+            // but most objects are not allowed
             return [];
         }
 
-        if (!ValueTypeValidators::isJsonArray($normalizedValue)) {
+        if ($normalizedValue !== '{}' && !ValueTypeValidators::isJsonArray($normalizedValue)) {
             return [
                 $this->getValueValidationMessage(
                     ColumnValueValidationMessagesInterface::VALUE_MUST_BE_JSON_ARRAY
@@ -81,15 +91,21 @@ class JsonArrayColumn extends RealTableColumnAbstract
         mixed $validatedValue,
         bool $isFromDb
     ): mixed {
-        if ($isFromDb) {
-            return is_array($validatedValue)
-                ? $this->encodeToJson($validatedValue)
-                : $validatedValue;
+        if ($validatedValue === '{}') {
+            return '[]';
         }
 
         if ($validatedValue instanceof RecordsArray) {
             return $this->encodeToJson($validatedValue->toArrays());
         }
+
+        if ($isFromDb) {
+            if (is_array($validatedValue)) {
+                return $this->encodeToJson($validatedValue);
+            }
+            return $validatedValue;
+        }
+
         if (ValueTypeValidators::isJsonEncodedString($validatedValue)) {
             return $validatedValue;
         }
@@ -115,11 +131,11 @@ class JsonArrayColumn extends RealTableColumnAbstract
         mixed $validatedValue,
         bool $isFromDb
     ): void {
-        parent::setValidatedValueToValueContainer(
-            $valueContainer,
+        $valueContainer->setValue(
             $originalValue,
-            $validatedValue,
-            $isFromDb
+            $this->normalizeValidatedValue($validatedValue, $isFromDb),
+            $isFromDb,
+            false
         );
         // if $validatedValue is array or can be converted - store it in
         // $valueContainer so that 'array' formatter won't need to decode json

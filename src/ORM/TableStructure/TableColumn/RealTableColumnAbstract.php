@@ -451,9 +451,13 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
                 $isFromDb
             );
             if ($shouldUseDefaultValue) {
-                $normalizedValue = $this->getValidDefaultValue();
+                $newValue = $normalizedValue = $this->getValidDefaultValue();
             } else {
-                $errors = $this->validateNormalizedValue($normalizedValue, $isFromDb, false);
+                $errors = $this->validateNormalizedValue(
+                    $normalizedValue,
+                    $isFromDb,
+                    false
+                );
             }
         }
         if (!empty($errors)) {
@@ -589,7 +593,10 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
         }
 
         if ($this->canUseDefaultValue($valueContainer)) {
-            return $this->getValidDefaultValue();
+            return $this->normalizeValidatedValue(
+                $this->getValidDefaultValue(),
+                false
+            );
         }
 
         $columnInfo = $this->getRecordInfoForException($valueContainer);

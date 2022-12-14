@@ -333,6 +333,9 @@ abstract class ColumnValueFormatters
                             // Convert to $targetClassName object
                             return $targetClassName::createObjectFromArray($value);
                         }
+                        if (empty($value)) {
+                            return new \stdClass();
+                        }
                         // Convert to \stdClass object.
                         // Encode needed to be sure all nested arrays
                         // will also be encoded as \stdClass. Not effective.

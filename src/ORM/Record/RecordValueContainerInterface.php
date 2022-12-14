@@ -31,11 +31,16 @@ interface RecordValueContainerInterface
      * @param mixed $rawValue - value as is
      * @param mixed $processedValue - value processed using TableColumnInterface options
      * @param bool $isFromDb - is value received from DB or not
+     * @param bool|null $storeRawValue -
+     *      true: store raw value;
+     *      false: do not store raw value;
+     *      null: store raw value if $rawValue === $processedValue
      */
     public function setValue(
         mixed $rawValue,
         mixed $processedValue,
-        bool $isFromDb
+        bool $isFromDb,
+        ?bool $storeRawValue = null
     ): void;
 
     /**

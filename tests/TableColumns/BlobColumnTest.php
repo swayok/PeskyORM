@@ -118,13 +118,14 @@ class BlobColumnTest extends BaseTestCase
         static::assertEquals($expectedErrors, $column->validateValue(null, false, false));
         static::assertEquals([], $column->validateValue(null, false, true));
         static::assertEquals($expectedErrors, $column->validateValue(null, true, false));
-        // random object
+
         $expectedErrors = [
             'String or resource value expected.'
         ];
         $expectedErrorsIfFromDb = [
             'Resource value expected.'
         ];
+        // random object
         static::assertEquals($expectedErrors, $column->validateValue($this, false, false));
         static::assertEquals($expectedErrors, $column->validateValue($this, false, true));
         static::assertEquals($expectedErrorsIfFromDb, $column->validateValue($this, true, false));
@@ -135,6 +136,18 @@ class BlobColumnTest extends BaseTestCase
         static::assertEquals($expectedErrors, $column->validateValue(false, false, false));
         static::assertEquals($expectedErrors, $column->validateValue(false, false, true));
         static::assertEquals($expectedErrorsIfFromDb, $column->validateValue(false, true, false));
+        // int
+        static::assertEquals($expectedErrors, $column->validateValue(1, false, false));
+        static::assertEquals($expectedErrors, $column->validateValue(1, false, true));
+        static::assertEquals($expectedErrorsIfFromDb, $column->validateValue(1, true, false));
+        // float
+        static::assertEquals($expectedErrors, $column->validateValue(1.1, false, false));
+        static::assertEquals($expectedErrors, $column->validateValue(1.1, false, true));
+        static::assertEquals($expectedErrorsIfFromDb, $column->validateValue(1.1, true, false));
+        // array
+        static::assertEquals($expectedErrors, $column->validateValue([], false, false));
+        static::assertEquals($expectedErrors, $column->validateValue([], false, true));
+        static::assertEquals($expectedErrorsIfFromDb, $column->validateValue([], true, false));
         // DbExpr and SelectQueryBuilderInterface tested in TableColumnsBasicsTest
     }
 

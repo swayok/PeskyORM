@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\TableStructure\TableColumn\Column;
 
+use PeskyORM\DbExpr;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\Record\RecordValueContainerInterface;
 use PeskyORM\ORM\RecordsCollection\RecordsArray;
@@ -15,6 +16,7 @@ use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeHeavy;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeNullable;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanConvertValueToClassInstance;
+use PeskyORM\Select\SelectQueryBuilderInterface;
 use PeskyORM\Utils\ValueTypeValidators;
 
 /**
@@ -92,22 +94,34 @@ class MixedJsonColumn extends RealTableColumnAbstract implements ConvertsValueTo
         bool $isForCondition,
         bool $isFromDb
     ): array {
-        if ($isForCondition) {
-            // there can be anything, so it is hard to validate it
-            return [];
-        }
-
-        $isString = is_string($normalizedValue);
-        if ($isFromDb && $isString) {
-            return [];
-        }
-
-        /** @noinspection NotOptimalIfConditionsInspection */
         if (
-            $this->isOnlyJsonArraysAndObjectsAllowed()
-            && !$isString
-            && !is_array($normalizedValue)
+            $isForCondition
+            && (
+                !is_object($normalizedValue)
+                || $normalizedValue instanceof DbExpr
+                || $normalizedValue instanceof SelectQueryBuilderInterface
+            )
         ) {
+            // There can be anything, so it is hard to validate it,
+            // but most objects are not allowed
+            return [];
+        }
+
+
+        if ($this->isOnlyJsonArraysAndObjectsAllowed()) {
+            if (is_array($normalizedValue)) {
+                return [];
+            }
+            if (
+                is_string($normalizedValue)
+                && (
+                    ValueTypeValidators::isJsonArray($normalizedValue)
+                    || ValueTypeValidators::isJsonObject($normalizedValue)
+                )
+            ) {
+                return [];
+            }
+
             return [
                 $this->getValueValidationMessage(
                     ColumnValueValidationMessagesInterface::VALUE_MUST_BE_JSON_ARRAY_OR_OBJECT
@@ -117,7 +131,7 @@ class MixedJsonColumn extends RealTableColumnAbstract implements ConvertsValueTo
 
         if (
             !ValueTypeValidators::isJsonEncodedString($normalizedValue)
-            && !ValueTypeValidators::isJsonable($normalizedValue, !$isFromDb)
+            && !ValueTypeValidators::isJsonable($normalizedValue, false)
         ) {
             return [
                 $this->getValueValidationMessage(
@@ -133,12 +147,6 @@ class MixedJsonColumn extends RealTableColumnAbstract implements ConvertsValueTo
         mixed $validatedValue,
         bool $isFromDb
     ): mixed {
-        if ($isFromDb) {
-            return is_array($validatedValue)
-                ? $this->encodeToJson($validatedValue)
-                : $validatedValue;
-        }
-
         if ($validatedValue instanceof RecordInterface) {
             return $this->encodeToJson($validatedValue->toArray());
         }
@@ -155,6 +163,15 @@ class MixedJsonColumn extends RealTableColumnAbstract implements ConvertsValueTo
 
     private function encodeToJson(mixed $value): string
     {
+        // convert inner objects to arrays if object have toArray() method
+        if (is_array($value)) {
+            foreach ($value as &$arrayValue) {
+                if (is_object($arrayValue) && method_exists($arrayValue, 'toArray')) {
+                    $arrayValue = $arrayValue->toArray();
+                }
+            }
+            unset($arrayValue);
+        }
         return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     }
 

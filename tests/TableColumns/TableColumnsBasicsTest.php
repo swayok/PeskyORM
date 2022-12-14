@@ -86,9 +86,9 @@ class TableColumnsBasicsTest extends BaseTestCase
         $column->setDefaultValue(1);
     }
 
-    public function testCommonMethods(): void
+    private function getColumnsClasses(): array
     {
-        $columns = [
+        return [
             BlobColumn::class,
             BooleanColumn::class,
             DateColumn::class,
@@ -108,6 +108,11 @@ class TableColumnsBasicsTest extends BaseTestCase
             TimezoneOffsetColumn::class,
             UnixTimestampColumn::class,
         ];
+    }
+
+    public function testCommonMethods(): void
+    {
+        $columns = $this->getColumnsClasses();
 
         $relationName = 'Admin';
         $adminsTable = TestingAdminsTable::getInstance();
@@ -248,29 +253,14 @@ class TableColumnsBasicsTest extends BaseTestCase
 
     public function testNullValueForNotNullColumn(): void
     {
-        $columns = [
-            BlobColumn::class,
-            BooleanColumn::class,
-            DateColumn::class,
-            EmailColumn::class,
-            FloatColumn::class,
-            // IdColumn is nullable by default
-            IntegerColumn::class,
-            IpV4AddressColumn::class,
-            JsonArrayColumn::class,
-            JsonObjectColumn::class,
-            MixedJsonColumn::class,
-            PasswordColumn::class,
-            StringColumn::class,
-            TextColumn::class,
-            TimeColumn::class,
-            TimestampColumn::class,
-            TimezoneOffsetColumn::class,
-            UnixTimestampColumn::class,
-        ];
+        $columns = $this->getColumnsClasses();
         /** @var RealTableColumnAbstract $class */
         $record = new TestingAdmin();
         foreach ($columns as $class) {
+            if ($class === IdColumn::class) {
+                // IdColumn is nullable by default
+                continue;
+            }
             $columnName = $this->getColumnNameFromClass($class);
             // value is not from DB
             try {
@@ -318,26 +308,7 @@ class TableColumnsBasicsTest extends BaseTestCase
 
     public function testObjectsAsValueFromDb(): void
     {
-        $columns = [
-            BlobColumn::class,
-            BooleanColumn::class,
-            DateColumn::class,
-            EmailColumn::class,
-            FloatColumn::class,
-            IdColumn::class,
-            IntegerColumn::class,
-            IpV4AddressColumn::class,
-            JsonArrayColumn::class,
-            JsonObjectColumn::class,
-            MixedJsonColumn::class,
-            PasswordColumn::class,
-            StringColumn::class,
-            TextColumn::class,
-            TimeColumn::class,
-            TimestampColumn::class,
-            TimezoneOffsetColumn::class,
-            UnixTimestampColumn::class,
-        ];
+        $columns = $this->getColumnsClasses();
         /** @var RealTableColumnAbstract $columnClass */
         $record = new TestingAdmin();
         $dbExpr = new DbExpr('test');

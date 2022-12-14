@@ -188,6 +188,10 @@ class BooleanColumnTest extends BaseTestCase
         static::assertEquals($expectedErrors, $column->validateValue(1.1, false, false));
         static::assertEquals($expectedErrors, $column->validateValue(1.1, false, true));
         static::assertEquals($expectedErrors, $column->validateValue(1.1, true, false));
+        // array
+        static::assertEquals($expectedErrors, $column->validateValue([], false, false));
+        static::assertEquals($expectedErrors, $column->validateValue([], false, true));
+        static::assertEquals($expectedErrors, $column->validateValue([], true, false));
         // DbExpr and SelectQueryBuilderInterface tested in TableColumnsBasicsTest
     }
 

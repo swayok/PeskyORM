@@ -342,6 +342,10 @@ class TimeZoneOffsetColumnTest extends BaseTestCase
         static::assertEquals($expectedErrors, $column->validateValue(-100000, false, false));
         static::assertEquals($expectedErrors, $column->validateValue(-100000, false, true));
         static::assertEquals($expectedErrors, $column->validateValue(-100000, true, false));
+        // array
+        static::assertEquals($expectedErrors, $column->validateValue([], false, false));
+        static::assertEquals($expectedErrors, $column->validateValue([], false, true));
+        static::assertEquals($expectedErrors, $column->validateValue([], true, false));
         // DbExpr and SelectQueryBuilderInterface tested in TableColumnsBasicsTest
     }
 

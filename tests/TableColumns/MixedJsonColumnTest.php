@@ -6,25 +6,29 @@ namespace PeskyORM\Tests\TableColumns;
 
 use PeskyORM\DbExpr;
 use PeskyORM\Exception\InvalidDataException;
+use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\Record\RecordValueContainerInterface;
 use PeskyORM\ORM\RecordsCollection\RecordsArray;
-use PeskyORM\ORM\TableStructure\TableColumn\Column\JsonArrayColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\MixedJsonColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\Select\OrmSelect;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
+use PeskyORM\Tests\PeskyORMTest\TestingValueToObjectConverter;
 
-class JsonArrayColumnTest extends BaseTestCase
+class MixedJsonColumnTest extends BaseTestCase
 {
-    public function testJsonArrayColumn(): void
+    public function testMixedJsonColumn(): void
     {
-        $column = new JsonArrayColumn('json_array');
+        $column = new MixedJsonColumn('mixed_json');
         static::assertEquals(TableColumnDataType::JSON, $column->getDataType());
         static::assertEquals(
             [
-                $column->getName() . '_as_array' => 'array'
+                $column->getName() . '_as_array' => 'array',
+                $column->getName() . '_as_object' => 'object',
+                $column->getName() . '_as_decoded' => 'decoded',
             ],
             $column->getColumnNameAliases()
         );
@@ -34,7 +38,7 @@ class JsonArrayColumnTest extends BaseTestCase
         static::assertFalse($column->hasValue($valueContainer, true));
         $this->testValidateValueCommon($column);
 
-        foreach ($this->getValuesForTesting() as $values) {
+        foreach ($this->getValuesForTesting($column) as $values) {
             $this->testValidateGoodValue($column, $values['test']);
             $this->testDefaultValues($column, $values['test'], $values['expected']);
             $this->testNonDbValues($column, $values['test'], $values['expected']);
@@ -42,9 +46,32 @@ class JsonArrayColumnTest extends BaseTestCase
         }
     }
 
-    public function testJsonArrayColumnFormatters(): void
+    public function testMixedJsonColumnWithArrayOrObjectRestriction(): void
     {
-        $column = new JsonArrayColumn('json_array');
+        $column = new MixedJsonColumn('mixed_json_limited');
+        $column->allowsOnlyJsonArraysAndObjects();
+        static::assertEquals(TableColumnDataType::JSON, $column->getDataType());
+        static::assertEquals(
+            [
+                $column->getName() . '_as_array' => 'array',
+                $column->getName() . '_as_object' => 'object',
+                $column->getName() . '_as_decoded' => 'decoded',
+            ],
+            $column->getColumnNameAliases()
+        );
+        $this->testValidateValueCommon($column);
+
+        foreach ($this->getValuesForTesting($column) as $values) {
+            $this->testValidateGoodValue($column, $values['test']);
+            $this->testDefaultValues($column, $values['test'], $values['expected']);
+            $this->testNonDbValues($column, $values['test'], $values['expected']);
+            $this->testDbValues($column, $values['test'], $values['expected']);
+        }
+    }
+
+    public function testMixedJsonColumnFormatters(): void
+    {
+        $column = new MixedJsonColumn('mixed_json');
 
         $container = $column->setValue(
             $this->newRecordValueContainer($column),
@@ -53,6 +80,7 @@ class JsonArrayColumnTest extends BaseTestCase
             false
         );
         static::assertEquals([], $column->getValue($container, 'array'));
+        static::assertEquals(new \stdClass(), $column->getValue($container, 'object'));
 
         $container = $column->setValue(
             $this->newRecordValueContainer($column),
@@ -61,32 +89,62 @@ class JsonArrayColumnTest extends BaseTestCase
             false
         );
         static::assertEquals([], $column->getValue($container, 'array'));
+        static::assertEquals(new \stdClass(), $column->getValue($container, 'object'));
 
+        $json = '{"key1":"value","key2":["a",1],"key3":{"b":2.1}}';
+        $array = ['key1' => 'value', 'key2' => ['a', 1], 'key3' => ['b' => 2.1]];
+        $object = json_decode($json, false);
         $container = $column->setValue(
             $this->newRecordValueContainer($column),
-            '[1,2.1,"3","a",[],["test"],{"key":"value"}]',
+            '{"key1":"value","key2":["a",1],"key3":{"b":2.1}}',
             true,
             false
         );
-        static::assertEquals(
-            [1, 2.1, '3', 'a', [], ['test'], ['key' => 'value']],
-            $column->getValue($container, 'array')
-        );
+        static::assertEquals($array, $column->getValue($container, 'array'));
+        static::assertEquals($object, $column->getValue($container, 'object'));
 
         $container = $column->setValue(
             $this->newRecordValueContainer($column),
-            [1, 2.1, '3', 'a', [], ['test'], ['key' => 'value']],
+            $array,
             true,
             false
         );
-        static::assertEquals(
-            [1, 2.1, '3', 'a', [], ['test'], ['key' => 'value']],
-            $column->getValue($container, 'array')
-        );
+        static::assertEquals($array, $column->getValue($container, 'array'));
+        static::assertEquals($object, $column->getValue($container, 'object'));
     }
 
-    private function getValuesForTesting(): array
+    public function testMixedJsonColumnToClassInstanceFormatter(): void {
+        $column = new MixedJsonColumn('mixed_json');
+        $column->setClassNameForValueToClassInstanceConverter(
+            TestingValueToObjectConverter::class
+        );
+        $array = [
+            'key1' => 1,
+            'key2' => 'a',
+            'key3' => [2, 'b'],
+            'key4' => ['c' => 'd']
+        ];
+        $expectedObject = TestingValueToObjectConverter::createObjectFromArray($array);
+        static::assertInstanceOf(TestingValueToObjectConverter::class, $expectedObject);
+        static::assertEquals($array, $expectedObject->other);
+        static::assertEquals($array, $expectedObject->toArray());
+
+        $container = $column->setValue(
+            $this->newRecordValueContainer($column),
+            $array,
+            true,
+            false
+        );
+        static::assertEquals($array, $column->getValue($container, 'array'));
+        /** @var TestingValueToObjectConverter $actualObject */
+        $actualObject = $column->getValue($container, 'object');
+        static::assertEquals($expectedObject, $actualObject);
+        static::assertEquals($expectedObject->toArray(), $actualObject->toArray());
+    }
+
+    private function getValuesForTesting(MixedJsonColumn $column): array
     {
+        $recordObject = new TestingAdmin();
         $recordsArray = new RecordsArray(
             TestingAdminsTable::getInstance(),
             [
@@ -95,7 +153,7 @@ class JsonArrayColumnTest extends BaseTestCase
             ],
             false
         );
-        return [
+        $ret = [
             [
                 'test' => [],
                 'expected' => '[]',
@@ -106,7 +164,19 @@ class JsonArrayColumnTest extends BaseTestCase
             ],
             [
                 'test' => '{}',
-                'expected' => '[]',
+                'expected' => '{}',
+            ],
+            [
+                'test' => ['key1' => 'value', 'key2' => ['a', 1], 'key3' => ['b' => 2.1]],
+                'expected' => '{"key1":"value","key2":["a",1],"key3":{"b":2.1}}',
+            ],
+            [
+                'test' => '{"key1":"value","key2":["a",1],"key3":{"b":2.1}}',
+                'expected' => '{"key1":"value","key2":["a",1],"key3":{"b":2.1}}',
+            ],
+            [
+                'test' => $recordObject,
+                'expected' => json_encode($recordObject->toArray())
             ],
             [
                 'test' => [1, 2.1, '3', 'a', [], ['test'], ['key' => 'value']],
@@ -125,17 +195,71 @@ class JsonArrayColumnTest extends BaseTestCase
                 'expected' => json_encode($recordsArray->toArrays())
             ]
         ];
+        if (!$column->isOnlyJsonArraysAndObjectsAllowed()) {
+            $ret += [
+                [
+                    'test' => null,
+                    'expected' => 'null'
+                ],
+                [
+                    'test' => 'null',
+                    'expected' => 'null'
+                ],
+                [
+                    'test' => 111,
+                    'expected' => '111'
+                ],
+                [
+                    'test' => 111.11,
+                    'expected' => '111.11'
+                ],
+                [
+                    'test' => '111',
+                    'expected' => '"111"'
+                ],
+                [
+                    'test' => '111.11',
+                    'expected' => '"111.11"'
+                ],
+                [
+                    'test' => true,
+                    'expected' => 'true'
+                ],
+                [
+                    'test' => false,
+                    'expected' => 'false'
+                ],
+                [
+                    'test' => 'true',
+                    'expected' => 'true'
+                ],
+                [
+                    'test' => 'false',
+                    'expected' => 'false'
+                ],
+                [
+                    'test' => '"some string"',
+                    'expected' => '"some string"'
+                ],
+                [
+                    'test' => 'some"string',
+                    'expected' => '"some\"string"'
+                ],
+            ];
+        }
+        return $ret;
     }
 
     private function testDefaultValues(
-        JsonArrayColumn $column,
-        string|array|RecordsArray $testValue,
+        MixedJsonColumn $column,
+        string|array|RecordInterface|RecordsArray $testValue,
         string $normalizedValue
     ): void {
         $message = $this->getAssertMessageForValue($testValue);
-        $normalizedDefaultValue = $testValue instanceof RecordsArray
-            ? $testValue
-            : $normalizedValue;
+        $normalizedDefaultValue = $normalizedValue;
+        if ($testValue instanceof RecordInterface || $testValue instanceof RecordsArray) {
+            $normalizedDefaultValue = $testValue;
+        }
         // default value
         $column = $this->newColumn($column);
         $column->setDefaultValue($testValue);
@@ -164,8 +288,8 @@ class JsonArrayColumnTest extends BaseTestCase
     }
 
     private function testNonDbValues(
-        JsonArrayColumn $column,
-        string|array|RecordsArray $testValue,
+        MixedJsonColumn $column,
+        string|array|RecordInterface|RecordsArray $testValue,
         string $normalizedValue
     ): void {
         $message = $this->getAssertMessageForValue($testValue);
@@ -195,8 +319,8 @@ class JsonArrayColumnTest extends BaseTestCase
     }
 
     private function testDbValues(
-        JsonArrayColumn $column,
-        string|array|RecordsArray $testValue,
+        MixedJsonColumn $column,
+        string|array|RecordInterface|RecordsArray $testValue,
         string $normalizedValue
     ): void {
         $message = $this->getAssertMessageForValue($testValue);
@@ -215,8 +339,8 @@ class JsonArrayColumnTest extends BaseTestCase
     }
 
     private function testValidateGoodValue(
-        JsonArrayColumn $column,
-        string|array|RecordsArray $testValue,
+        MixedJsonColumn $column,
+        string|array|RecordInterface|RecordsArray $testValue,
     ): void {
         $column = $this->newColumn($column);
         $message = $this->getAssertMessageForValue($testValue);
@@ -226,7 +350,7 @@ class JsonArrayColumnTest extends BaseTestCase
         static::assertEquals([], $column->validateValue($testValue, true, false), $message);
     }
 
-    private function testValidateValueCommon(JsonArrayColumn $column): void
+    private function testValidateValueCommon(MixedJsonColumn $column): void
     {
         // empty string
         $expectedErrors = [
@@ -239,62 +363,57 @@ class JsonArrayColumnTest extends BaseTestCase
         static::assertEquals($expectedErrors, $column->validateValue(null, false, false));
         static::assertEquals([], $column->validateValue(null, false, true));
         static::assertEquals($expectedErrors, $column->validateValue(null, true, false));
+        // indexed array
+        static::assertEquals([], $column->validateValue(['a', 'b'], false, false));
+        static::assertEquals([], $column->validateValue(['a', 'b'], false, true));
+        static::assertEquals([], $column->validateValue(['a', 'b'], true, false));
+        // json encoded array
+        static::assertEquals([], $column->validateValue('["a","b"]', false, false));
+        static::assertEquals([], $column->validateValue('["a","b"]', false, true));
+        static::assertEquals([], $column->validateValue('["a","b"]', true, false));
 
-        $expectedErrors = [
-            'Value must be a json-encoded indexed array or indexed PHP array.',
-        ];
-        // random object
-        static::assertEquals($expectedErrors, $column->validateValue($this, false, false));
-        static::assertEquals($expectedErrors, $column->validateValue($this, false, true));
-        static::assertEquals($expectedErrors, $column->validateValue($this, true, false));
+
+        $expectedErrors = $column->isOnlyJsonArraysAndObjectsAllowed()
+            ? ['Value must be a json-encoded array, json-encoded object or PHP array.']
+            : [];
         // bool
         static::assertEquals($expectedErrors, $column->validateValue(true, false, false));
         static::assertEquals([], $column->validateValue(true, false, true));
         static::assertEquals($expectedErrors, $column->validateValue(true, true, false));
+        static::assertEquals($expectedErrors, $column->validateValue('true', true, false));
         static::assertEquals($expectedErrors, $column->validateValue(false, false, false));
         static::assertEquals([], $column->validateValue(false, false, true));
         static::assertEquals($expectedErrors, $column->validateValue(false, true, false));
+        static::assertEquals($expectedErrors, $column->validateValue('false', true, false));
         // float
         static::assertEquals($expectedErrors, $column->validateValue(1.1, false, false));
         static::assertEquals([], $column->validateValue(1.1, false, true));
         static::assertEquals($expectedErrors, $column->validateValue(1.1, true, false));
+        static::assertEquals($expectedErrors, $column->validateValue('1.1', true, false));
         // int
         static::assertEquals($expectedErrors, $column->validateValue(1, false, false));
         static::assertEquals([], $column->validateValue(1, false, true));
         static::assertEquals($expectedErrors, $column->validateValue(1, true, false));
-        // assoc array
-        static::assertEquals(
-            $expectedErrors,
-            $column->validateValue(['key' => 'value'], false, false)
-        );
-        static::assertEquals(
-            [],
-            $column->validateValue(['key' => 'value'], false, true)
-        );
-        static::assertEquals(
-            $expectedErrors,
-            $column->validateValue(['key' => 'value'], true, false)
-        );
-        // json encoded object
-        static::assertEquals(
-            $expectedErrors,
-            $column->validateValue('{"key":"value"}', false, false)
-        );
-        static::assertEquals(
-            [],
-            $column->validateValue('{"key":"value"}', false, true)
-        );
-        static::assertEquals(
-            $expectedErrors,
-            $column->validateValue('{"key":"value"}', true, false)
-        );
+        static::assertEquals($expectedErrors, $column->validateValue('1', true, false));
+
+        $jsonableExpected = $column->isOnlyJsonArraysAndObjectsAllowed()
+            ? ['Value must be a json-encoded array, json-encoded object or PHP array.']
+            : ['Value must be a json-encoded string or have jsonable type.'];
+        // random object
+        static::assertEquals($jsonableExpected, $column->validateValue($this, false, false));
+        static::assertEquals($jsonableExpected, $column->validateValue($this, false, true));
+        static::assertEquals($jsonableExpected, $column->validateValue($this, true, false));
         // DbExpr and SelectQueryBuilderInterface tested in TableColumnsBasicsTest
     }
 
-    private function newColumn(JsonArrayColumn $column): JsonArrayColumn
+    private function newColumn(MixedJsonColumn $column): MixedJsonColumn
     {
         $class = $column::class;
-        return new $class($column->getName());
+        $ret = new $class($column->getName());
+        if ($column->isOnlyJsonArraysAndObjectsAllowed()) {
+            $ret->allowsOnlyJsonArraysAndObjects();
+        }
+        return $ret;
     }
 
     private function newRecordValueContainer(
@@ -305,130 +424,129 @@ class JsonArrayColumnTest extends BaseTestCase
 
     private function getAssertMessageForValue(mixed $testValue): string
     {
+        if ($testValue instanceof RecordInterface) {
+            return 'RecordInterface(' . json_encode($testValue->toArray()) . ')';
+        }
         if ($testValue instanceof RecordsArray) {
             return 'RecordsArray(' . json_encode($testValue->toArrays()) . ')';
         }
         return is_array($testValue) ? json_encode($testValue) : $testValue;
     }
 
-    public function testEmptyStringValueExceptionForJsonArrayColumn(): void
+    public function testEmptyStringValueExceptionForMixedJsonColumn(): void
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage(
-            'Validation errors: [json_array] Null value is not allowed.'
+            'Validation errors: [mixed_json] Null value is not allowed.'
         );
-        $column = new JsonArrayColumn('json_array');
+        $column = new MixedJsonColumn('mixed_json');
         $valueContainer = $this->newRecordValueContainer($column);
         $column->setValue($valueContainer, '', false, false);
     }
 
-    public function testInvalidValueExceptionForJsonArrayColumn1(): void
+    public function testInvalidValueExceptionForMixedJsonColumn1(): void
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage(
-            'Validation errors: [json_array] Value must be a json-encoded indexed array or indexed PHP array.'
+            'Validation errors: [mixed_json] Value must be a json-encoded array, json-encoded object or PHP array.'
         );
-        $column = new JsonArrayColumn('json_array');
+        $column = new MixedJsonColumn('mixed_json');
+        $column->allowsOnlyJsonArraysAndObjects();
         $valueContainer = $this->newRecordValueContainer($column);
         $column->setValue($valueContainer, 'qweqwe', false, false);
     }
 
-    public function testInvalidValueExceptionForJsonArrayColumn2(): void
+    public function testInvalidValueExceptionForMixedJsonColumn2(): void
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage(
-            'Validation errors: [json_array] Value must be a json-encoded indexed array or indexed PHP array.'
+            'Validation errors: [mixed_json] Value must be a json-encoded array, json-encoded object or PHP array.'
         );
-        $column = new JsonArrayColumn('json_array');
+        $column = new MixedJsonColumn('mixed_json');
+        $column->allowsOnlyJsonArraysAndObjects();
         $valueContainer = $this->newRecordValueContainer($column);
         $column->setValue($valueContainer, 'true', false, false);
     }
 
-    public function testInvalidValueExceptionForJsonArrayColumn3(): void
+    public function testInvalidValueExceptionForMixedJsonColumn3(): void
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage(
-            'Validation errors: [json_array] Value must be a json-encoded indexed array or indexed PHP array.'
+            'Validation errors: [mixed_json] Value must be a json-encoded array, json-encoded object or PHP array.'
         );
-        $column = new JsonArrayColumn('json_array');
+        $column = new MixedJsonColumn('mixed_json');
+        $column->allowsOnlyJsonArraysAndObjects();
         $valueContainer = $this->newRecordValueContainer($column);
         $column->setValue($valueContainer, true, false, false);
     }
 
-    public function testInvalidValueExceptionForJsonArrayColumn4(): void
+    public function testInvalidValueExceptionForMixedJsonColumn4(): void
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage(
-            'Validation errors: [json_array] Value must be a json-encoded indexed array or indexed PHP array.'
+            'Validation errors: [mixed_json] Value must be a json-encoded array, json-encoded object or PHP array.'
         );
-        $column = new JsonArrayColumn('json_array');
+        $column = new MixedJsonColumn('mixed_json');
+        $column->allowsOnlyJsonArraysAndObjects();
         $valueContainer = $this->newRecordValueContainer($column);
         $column->setValue($valueContainer, false, false, false);
     }
 
-    public function testInvalidValueExceptionForJsonArrayColumn5(): void
+    public function testInvalidValueExceptionForMixedJsonColumn5(): void
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage(
-            'Validation errors: [json_array] Value must be a json-encoded indexed array or indexed PHP array.'
+            'Validation errors: [mixed_json] Value must be a json-encoded string or have jsonable type.'
         );
-        $column = new JsonArrayColumn('json_array');
+        $column = new MixedJsonColumn('mixed_json');
         $valueContainer = $this->newRecordValueContainer($column);
         $column->setValue($valueContainer, $this, false, false);
     }
 
-    public function testInvalidValueExceptionForJsonArrayColumn6(): void
+    public function testInvalidValueExceptionForMixedJsonColumn6(): void
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage(
-            'Validation errors: [json_array] Null value is not allowed.'
+            'Validation errors: [mixed_json] Null value is not allowed.'
         );
-        $column = new JsonArrayColumn('json_array');
+        $column = new MixedJsonColumn('mixed_json');
         $valueContainer = $this->newRecordValueContainer($column);
         $column->setValue($valueContainer, null, false, false);
     }
 
-    public function testInvalidValueExceptionForJsonArrayColumn7(): void
+    public function testInvalidValueExceptionForMixedJsonColumn7(): void
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage(
-            'Validation errors: [json_array] Value must be a json-encoded indexed array or indexed PHP array.'
+            'Validation errors: [mixed_json] Value must be a json-encoded array, json-encoded object or PHP array.'
         );
-        $column = new JsonArrayColumn('json_array');
+        $column = new MixedJsonColumn('mixed_json');
+        $column->allowsOnlyJsonArraysAndObjects();
         $valueContainer = $this->newRecordValueContainer($column);
         $column->setValue($valueContainer, 1.00001, false, false);
     }
 
-    public function testInvalidValueExceptionForJsonArrayColumn8(): void
+    public function testInvalidValueExceptionForMixedJsonColumn8(): void
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage(
-            'Validation errors: [json_array] Value must be a json-encoded indexed array or indexed PHP array.'
+            'Validation errors: [mixed_json] Value must be a json-encoded array, json-encoded object or PHP array.'
         );
-        $column = new JsonArrayColumn('json_array');
+        $column = new MixedJsonColumn('mixed_json');
+        $column->allowsOnlyJsonArraysAndObjects();
         $valueContainer = $this->newRecordValueContainer($column);
         $column->setValue($valueContainer, '1.00001', false, false);
     }
 
-    public function testInvalidValueExceptionForJsonArrayColumn9(): void
+    public function testInvalidValueExceptionForMixedJsonColumn9(): void
     {
         $this->expectException(InvalidDataException::class);
         $this->expectExceptionMessage(
-            'Validation errors: [json_array] Value must be a json-encoded indexed array or indexed PHP array.'
+            'Validation errors: [mixed_json] Value must be a json-encoded array, json-encoded object or PHP array.'
         );
-        $column = new JsonArrayColumn('json_array');
+        $column = new MixedJsonColumn('mixed_json');
+        $column->allowsOnlyJsonArraysAndObjects();
         $valueContainer = $this->newRecordValueContainer($column);
         $column->setValue($valueContainer, 1, true, false);
-    }
-
-    public function testInvalidValueExceptionForJsonArrayColumn10(): void
-    {
-        $this->expectException(InvalidDataException::class);
-        $this->expectExceptionMessage(
-            'Validation errors: [json_array] Value must be a json-encoded indexed array or indexed PHP array.'
-        );
-        $column = new JsonArrayColumn('json_array');
-        $valueContainer = $this->newRecordValueContainer($column);
-        $column->setValue($valueContainer, '{"key":"value"}', true, false);
     }
 }

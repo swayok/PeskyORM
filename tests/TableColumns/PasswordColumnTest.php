@@ -136,27 +136,31 @@ class PasswordColumnTest extends BaseTestCase
         static::assertEquals([], $column->validateValue(null, false, true));
         static::assertEquals($expectedNullErrors, $column->validateValue(null, true, false));
         // random object
-        $expectedNullErrors = [
+        $expectedErrors = [
             'String value expected.'
         ];
-        static::assertEquals($expectedNullErrors, $column->validateValue($this, false, false));
-        static::assertEquals($expectedNullErrors, $column->validateValue($this, false, true));
-        static::assertEquals($expectedNullErrors, $column->validateValue($this, true, false));
+        static::assertEquals($expectedErrors, $column->validateValue($this, false, false));
+        static::assertEquals($expectedErrors, $column->validateValue($this, false, true));
+        static::assertEquals($expectedErrors, $column->validateValue($this, true, false));
         // bool
-        static::assertEquals($expectedNullErrors, $column->validateValue(true, false, false));
-        static::assertEquals($expectedNullErrors, $column->validateValue(true, false, true));
-        static::assertEquals($expectedNullErrors, $column->validateValue(true, true, false));
-        static::assertEquals($expectedNullErrors, $column->validateValue(false, false, false));
-        static::assertEquals($expectedNullErrors, $column->validateValue(false, false, true));
-        static::assertEquals($expectedNullErrors, $column->validateValue(false, true, false));
+        static::assertEquals($expectedErrors, $column->validateValue(true, false, false));
+        static::assertEquals($expectedErrors, $column->validateValue(true, false, true));
+        static::assertEquals($expectedErrors, $column->validateValue(true, true, false));
+        static::assertEquals($expectedErrors, $column->validateValue(false, false, false));
+        static::assertEquals($expectedErrors, $column->validateValue(false, false, true));
+        static::assertEquals($expectedErrors, $column->validateValue(false, true, false));
         // int
-        static::assertEquals($expectedNullErrors, $column->validateValue(100, false, false));
-        static::assertEquals($expectedNullErrors, $column->validateValue(100, false, true));
-        static::assertEquals($expectedNullErrors, $column->validateValue(100, true, false));
+        static::assertEquals($expectedErrors, $column->validateValue(100, false, false));
+        static::assertEquals($expectedErrors, $column->validateValue(100, false, true));
+        static::assertEquals($expectedErrors, $column->validateValue(100, true, false));
         // float
-        static::assertEquals($expectedNullErrors, $column->validateValue(1.1, false, false));
-        static::assertEquals($expectedNullErrors, $column->validateValue(1.1, false, true));
-        static::assertEquals($expectedNullErrors, $column->validateValue(1.1, true, false));
+        static::assertEquals($expectedErrors, $column->validateValue(1.1, false, false));
+        static::assertEquals($expectedErrors, $column->validateValue(1.1, false, true));
+        static::assertEquals($expectedErrors, $column->validateValue(1.1, true, false));
+        // array
+        static::assertEquals($expectedErrors, $column->validateValue([], false, false));
+        static::assertEquals($expectedErrors, $column->validateValue([], false, true));
+        static::assertEquals($expectedErrors, $column->validateValue([], true, false));
         // plain password
         static::assertEquals([], $column->validateValue('qqqq', false, false));
         static::assertEquals([], $column->validateValue('qqqq', false, true));
