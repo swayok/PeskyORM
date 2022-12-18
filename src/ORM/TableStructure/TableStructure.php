@@ -74,6 +74,7 @@ abstract class TableStructure implements TableStructureInterface
     protected array $columnsAliases = [];
 
     protected ?TableDescriptionInterface $tableDescription = null;
+    private ?TableColumnFactoryInterface $columnsFactory = null;
 
     public function __construct(
         protected ?CacheItemPoolInterface $cachePool = null,
@@ -266,11 +267,21 @@ abstract class TableStructure implements TableStructureInterface
         }
     }
 
+    protected function getColumnsFactory(): TableColumnFactoryInterface
+    {
+        if (!$this->columnsFactory) {
+            // todo: get instance from classes container
+            $this->columnsFactory = new TableColumnFactory();
+        }
+        return $this->columnsFactory;
+    }
+
     protected function addColumnFromColumnDescription(
         ColumnDescriptionInterface $columnDescription
     ): void {
         $this->addColumn(
-            TableColumnFactory::createFromDescription($columnDescription)
+            $this->getColumnsFactory()
+                ->createFromDescription($columnDescription)
         );
     }
 
@@ -356,7 +367,7 @@ abstract class TableStructure implements TableStructureInterface
         foreach ($column->getValueFormatersNames() as $columnNameAlias => $format) {
             $this->columnsAliases[$columnNameAlias] = [
                 'column' => $column,
-                'format' => $format
+                'format' => $format,
             ];
         }
     }

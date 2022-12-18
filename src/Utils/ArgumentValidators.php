@@ -9,8 +9,11 @@ use PeskyORM\DbExpr;
 
 abstract class ArgumentValidators
 {
-    public static function assertNotEmpty(string $argName, mixed $value, string $messageSuffix = ''): void
-    {
+    public static function assertNotEmpty(
+        string $argName,
+        mixed $value,
+        string $messageSuffix = ''
+    ): void {
         if (empty($value)) {
             throw new \InvalidArgumentException(
                 "{$argName} argument value cannot be empty.{$messageSuffix}"
@@ -18,8 +21,11 @@ abstract class ArgumentValidators
         }
     }
 
-    public static function assertNotEmptyString(string $argName, mixed $value, bool $trim): void
-    {
+    public static function assertNotEmptyString(
+        string $argName,
+        mixed $value,
+        bool $trim
+    ): void {
         if (!is_string($value) || ($trim ? trim($value) : $value) === '') {
             throw new \InvalidArgumentException(
                 "{$argName} argument value must be a not-empty string."
@@ -28,8 +34,10 @@ abstract class ArgumentValidators
         }
     }
 
-    public static function assertNullOrNotEmptyString(string $argName, mixed $value): void
-    {
+    public static function assertNullOrNotEmptyString(
+        string $argName,
+        mixed $value
+    ): void {
         if ($value === null) {
             return;
         }
@@ -48,8 +56,10 @@ abstract class ArgumentValidators
         }
     }
 
-    public static function assertArrayKeyValueIsNotEmpty(string $arrayKeyPath, mixed $value): void
-    {
+    public static function assertArrayKeyValueIsNotEmpty(
+        string $arrayKeyPath,
+        mixed $value
+    ): void {
         if (empty($value)) {
             throw new \InvalidArgumentException(
                 "$arrayKeyPath: value cannot be empty."
@@ -70,8 +80,10 @@ abstract class ArgumentValidators
         }
     }
 
-    public static function assertArrayKeyValueIsArray(string $arrayKeyPath, mixed $value): void
-    {
+    public static function assertArrayKeyValueIsArray(
+        string $arrayKeyPath,
+        mixed $value
+    ): void {
         if (!is_array($value)) {
             throw new \InvalidArgumentException(
                 "$arrayKeyPath: value must be an array. "
@@ -80,8 +92,10 @@ abstract class ArgumentValidators
         }
     }
 
-    public static function assertArrayKeyValueIsStringOrArray(string $arrayKeyPath, mixed $value): void
-    {
+    public static function assertArrayKeyValueIsStringOrArray(
+        string $arrayKeyPath,
+        mixed $value
+    ): void {
         if (!is_string($value) && !is_array($value)) {
             throw new \InvalidArgumentException(
                 "$arrayKeyPath: value must be a string or array. "
@@ -90,8 +104,10 @@ abstract class ArgumentValidators
         }
     }
 
-    public static function assertArrayKeyValueIsString(string $arrayKeyPath, mixed $value): void
-    {
+    public static function assertArrayKeyValueIsString(
+        string $arrayKeyPath,
+        mixed $value
+    ): void {
         if (!is_string($value)) {
             throw new \InvalidArgumentException(
                 "$arrayKeyPath: value must be a string. "
@@ -100,8 +116,10 @@ abstract class ArgumentValidators
         }
     }
 
-    public static function assertArrayKeyValueIsStringOrDbExpr(string $arrayKeyPath, mixed $value): void
-    {
+    public static function assertArrayKeyValueIsStringOrDbExpr(
+        string $arrayKeyPath,
+        mixed $value
+    ): void {
         if (!is_string($value) && !($value instanceof DbExpr)) {
             throw new \InvalidArgumentException(
                 "$arrayKeyPath: value must be a string or instance of " . DbExpr::class
@@ -110,8 +128,11 @@ abstract class ArgumentValidators
         }
     }
 
-    public static function assertPositiveInteger(string $argName, int $value, bool $allowZero): void
-    {
+    public static function assertPositiveInteger(
+        string $argName,
+        int $value,
+        bool $allowZero
+    ): void {
         $minValue = $allowZero ? 0 : 1;
         if ($value < $minValue) {
             throw new \InvalidArgumentException(
@@ -143,8 +164,11 @@ abstract class ArgumentValidators
         }
     }
 
-    public static function assertInArray(string $argName, string $value, array $allowedValues): void
-    {
+    public static function assertInArray(
+        string $argName,
+        string $value,
+        array $allowedValues
+    ): void {
         if (!in_array($value, $allowedValues, true)) {
             throw new \InvalidArgumentException(
                 "{$argName} argument value ({$value}) must be one of: "
@@ -188,6 +212,19 @@ abstract class ArgumentValidators
         }
     }
 
+    public static function assertClassImplementsInterface(
+        string $argName,
+        string|object $classOrInstance,
+        string $interfaceClass
+    ): void {
+        if (!is_subclass_of($classOrInstance, $interfaceClass)) {
+            throw new \InvalidArgumentException(
+                "{$argName} argument value must be a class or instance that implements "
+                . $interfaceClass
+            );
+        }
+    }
+
     private static function isValidDbEntityName(string $value, ?DbAdapterInterface $adapter): bool
     {
         return $adapter
@@ -203,8 +240,15 @@ abstract class ArgumentValidators
         $type = gettype($value);
         $message = "Value of $type type received";
         if (!is_resource($value) && !in_array($type, ['NULL', 'unknown type', 'boolean'], true)) {
-            $message .= ': ' . (is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : $value);
+            $message .= ': ';
+            if (is_array($value)) {
+                $message .= json_encode($value, JSON_UNESCAPED_UNICODE);
+            } else {
+                $message .= $value;
+            }
         }
         return $message . '.';
     }
+
+
 }

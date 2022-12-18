@@ -52,12 +52,11 @@ abstract class Table implements TableInterface, TableStructureInterface
         ?string $tableAlias = null
     ) {
         $this->tableStructure = $tableStructure;
-        if (!is_subclass_of($recordClass, RecordInterface::class)) {
-            throw new \InvalidArgumentException(
-                '$recordClass argument value must be a class that implements '
-                . RecordInterface::class
-            );
-        }
+        ArgumentValidators::assertClassImplementsInterface(
+            '$recordClass',
+            $recordClass,
+            RecordInterface::class
+        );
         $this->recordFactory = function () use ($recordClass) {
             return new $recordClass($this);
         };

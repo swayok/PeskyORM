@@ -4,96 +4,73 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\ClassBuilder;
 
-use PeskyORM\Adapter\DbAdapterInterface;
+use Carbon\CarbonImmutable;
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\Record\Record;
 use PeskyORM\ORM\Table\Table;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
+use PeskyORM\ORM\TableStructure\TableColumnFactoryInterface;
 use PeskyORM\ORM\TableStructure\TableStructure;
 use PeskyORM\TableDescription\ColumnDescriptionDataType;
 use PeskyORM\TableDescription\ColumnDescriptionInterface;
-use PeskyORM\TableDescription\TableDescribersRegistry;
 use PeskyORM\TableDescription\TableDescriptionInterface;
 use PeskyORM\Utils\StringUtils;
 
 class ClassBuilder
 {
-    
-    protected string $tableName;
-    protected DbAdapterInterface $connection;
-    
-    protected ?string $dbSchemaName = null;
-    protected ?TableDescriptionInterface $tableDescription = null;
-    
-    private ?array $typeValueToTypeConstantName = null;
-    
-    public function __construct(string $tableName, DbAdapterInterface $connection)
-    {
-        $this->tableName = $tableName;
-        $this->connection = $connection;
-    }
-    
-    public function setDbSchemaName(string $schema): ClassBuilder
-    {
-        $this->dbSchemaName = $schema;
-        return $this;
-    }
-    
-    public function buildTableClass(string $namespace, ?string $parentClass = null): string
-    {
-        if ($parentClass === null) {
-            $parentClass = Table::class;
-        }
-        $alias = StringUtils::toPascalCase($this->tableName);
-        return <<<VIEW
-<?php
+    public const TEMPLATE_TABLE = 'table';
+    public const TEMPLATE_TABLE_STRUCTURE = 'table_structure';
+    public const TEMPLATE_RECORD = 'record';
 
-namespace {$namespace};
-
-use {$parentClass};
-
-class {$this::makeTableClassName($this->tableName)} extends {$this->getShortClassName($parentClass)}
-{
-
-    public function getTableStructure(): {$this::makeTableStructureClassName($this->tableName)}
-    {
-        return {$this::makeTableStructureClassName($this->tableName)}::getInstance();
+    public function __construct(
+        protected TableDescriptionInterface $tableDescription,
+        protected TableColumnFactoryInterface $columnFactory,
+        protected string $namespace,
+    ) {
     }
 
-    public function newRecord(): {$this::makeRecordClassName($this->tableName)}
+    public function buildTableClass(?string $parentClass = null): string
     {
-        return new {$this::makeRecordClassName($this->tableName)}();
+        $parentClass = $this->getParentClass(static::TEMPLATE_TABLE, $parentClass);
+        $namespace = $this->namespace;
+        $tableAlias = $this->getTableAlias();
+        $className = $this->getClassName(static::TEMPLATE_TABLE);
+        $tableStructureClassName = $this->getClassName(static::TEMPLATE_TABLE_STRUCTURE);
+        $recordClassName = $this->getClassName(static::TEMPLATE_RECORD);
+
+        ob_start();
+        include $this->getTemplate(static::TEMPLATE_TABLE);
+        return ob_get_clean();
     }
 
-    public function getTableAlias(): string
+    public function buildRecordClass(?string $parentClass = null): string
     {
-        return '{$alias}';
+        $parentClass = $this->getParentClass(static::TEMPLATE_RECORD, $parentClass);
+        $namespace = $this->namespace;
+        $className = $this->getClassName(static::TEMPLATE_RECORD);
+        $tableClassName = $this->getClassName(static::TEMPLATE_TABLE);
+        $includes = [];
+        $properties = $this->getRecordProperties();
+        $setters = $this->getRecordSetterMethods();
+        ob_start();
+        include $this->getTemplate(static::TEMPLATE_RECORD);
+        return ob_get_clean();
     }
 
-}
-
-VIEW;
-    }
-    
-    /**
-     * @param string $namespace
-     * @param null|string $parentClass
-     * @param array $traitsForColumns = [NameOfTrait1::class, NameOfTrait2::class]
-     * @return string
-     */
-    public function buildStructureClass(string $namespace, ?string $parentClass = null, array $traitsForColumns = []): string
+    public function buildStructureClass(?string $parentClass = null): string
     {
-        if ($parentClass === null) {
-            $parentClass = TableStructure::class;
-        }
+        $parentClass = $this->getParentClass(static::TEMPLATE_TABLE_STRUCTURE, $parentClass);
+        $namespace = $this->namespace;
         [$traits, $includes, $usedColumns] = $this->makeTraitsForTableStructure($traitsForColumns);
         $getSchemaMethod = '';
-        if ($this->dbSchemaName && $this->dbSchemaName !== $this->connection->getDefaultTableSchema()) {
+        if ($this->tableSchema && $this->tableSchema !== $this->connection->getDefaultTableSchema()) {
             $getSchemaMethod = <<<VIEW
         
     public static function getSchema(): ?string
     {
-        return '{$this->dbSchemaName}';
+        return '{$this->tableSchema}';
     }
     
 VIEW;
@@ -124,72 +101,45 @@ $getSchemaMethod
 
 VIEW;
     }
-    
-    public function buildRecordClass(string $namespace, ?string $parentClass = null): string
+
+    protected function getTemplate(string $type): string
     {
-        if ($parentClass === null) {
-            $parentClass = Record::class;
+        return match ($type) {
+            static::TEMPLATE_TABLE => __DIR__ . '/templates/table.php',
+            static::TEMPLATE_TABLE_STRUCTURE => __DIR__ . '/templates/table_structure.php',
+            static::TEMPLATE_RECORD => __DIR__ . '/templates/record.php',
+            default => throw new \InvalidArgumentException('Unknown template type: ' . $type),
+        };
+    }
+
+    protected function getParentClass(string $type, ?string $parentClass): string
+    {
+        if ($parentClass) {
+            return $parentClass;
         }
-        $includes = '';
-        if ($this->hasDateOrTimestampColumns()) {
-            $includes .= "\nuse Carbon\Carbon;";
-        }
-        return <<<VIEW
-<?php
-
-namespace {$namespace};
-
-use {$parentClass};$includes
-
-/**
-{$this->makePhpDocForRecord()}
- */
-class {$this::makeRecordClassName($this->tableName)} extends {$this->getShortClassName($parentClass)}
-{
-
-    public static function getTable(): {$this::makeTableClassName($this->tableName)}
-    {
-        return {$this::makeTableClassName($this->tableName)}::getInstance();
+        return match ($type) {
+            static::TEMPLATE_TABLE => Table::class,
+            static::TEMPLATE_TABLE_STRUCTURE => TableStructure::class,
+            static::TEMPLATE_RECORD => Record::class,
+            default => throw new \InvalidArgumentException('Unknown template type: ' . $type),
+        };
     }
 
-}
+    protected function getClassName(string $type): string
+    {
+        $tableName = $this->tableDescription->getTableName();
+        return match ($type) {
+            static::TEMPLATE_TABLE =>
+                StringUtils::toPascalCase($tableName) . 'Table',
+            static::TEMPLATE_TABLE_STRUCTURE =>
+                StringUtils::toPascalCase($tableName) . 'TableStructure',
+            static::TEMPLATE_RECORD =>
+            StringUtils::toSingularPascalCase($tableName),
+            default =>
+            throw new \InvalidArgumentException('Unknown template type: ' . $type),
+        };
+    }
 
-VIEW;
-    }
-    
-    protected function getTableDescription(): TableDescriptionInterface
-    {
-        if (!$this->tableDescription) {
-            $this->tableDescription = TableDescribersRegistry::describeTable($this->connection, $this->tableName, $this->dbSchemaName);
-        }
-        return $this->tableDescription;
-    }
-    
-    public static function convertTableNameToClassName(string $tableName): string
-    {
-        return StringUtils::toPascalCase($tableName);
-    }
-    
-    public static function makeTableClassName(string $tableName): string
-    {
-        return static::convertTableNameToClassName($tableName) . 'Table';
-    }
-    
-    public static function makeTableStructureClassName(string $tableName): string
-    {
-        return static::convertTableNameToClassName($tableName) . 'TableStructureOld';
-    }
-    
-    public static function makeRecordClassName(string $tableName): string
-    {
-        return StringUtils::toSingularPascalCase($tableName);
-    }
-    
-    protected function getShortClassName(string $fullClassName): string
-    {
-        return basename(str_replace('\\', '/', $fullClassName));
-    }
-    
     /**
      * @param array $traitsForColumns
      * @return array = [traits:string, class_includes:string, used_columns:array]
@@ -203,7 +153,7 @@ VIEW;
         $traits = [];
         $classesToInclude = [];
         $usedColumns = [];
-        $columnsNames = array_keys($this->getTableDescription()->getColumns());
+        $columnsNames = array_keys($this->tableDescription->getColumns());
         foreach ($traitsForColumns as $traitClass) {
             $traitMethods = (new \ReflectionClass($traitClass))->getMethods(\ReflectionMethod::IS_PRIVATE);
             if (empty($traitMethods)) {
@@ -234,7 +184,7 @@ VIEW;
             $usedColumns,
         ];
     }
-    
+
     /**
      * @param array $excludeColumns - columns to exclude (already included via traits)
      * @return string
@@ -255,7 +205,7 @@ VIEW;
         }
         return implode("\n\n", $columns);
     }
-    
+
     protected function makeColumnConfig(ColumnDescriptionInterface $columnDescription): string
     {
         $ret = "TableColumn::create({$this->getConstantNameForColumnType($columnDescription->getOrmType())})";
@@ -285,100 +235,74 @@ VIEW;
         }
         return $ret;
     }
-    
-    /**
-     * @param string $columnTypeValue - like 'string', 'integer', etc..
-     * @return string like TableColumn::TYPE_*
-     */
-    protected function getConstantNameForColumnType(string $columnTypeValue): string
+
+    protected function getRecordProperties(): array
     {
-        // todo: refactor this
-//        if ($this->typeValueToTypeConstantName === null) {
-//            $this->typeValueToTypeConstantName = array_flip(
-//                array_filter(
-//                    (new \ReflectionClass(TableColumn::class))->getConstants(),
-//                    static function ($key) {
-//                        return str_starts_with($key, 'TYPE_');
-//                    },
-//                    ARRAY_FILTER_USE_KEY
-//                )
-//            );
-//        }
-        return 'TableColumn::' . $this->typeValueToTypeConstantName[$columnTypeValue];
-    }
-    
-    protected function makePhpDocForRecord(): string
-    {
-        $description = $this->getTableDescription();
-        $getters = [];
-        $setters = [];
-        foreach ($description->getColumns() as $columnDescription) {
-            $phpTypes = str_pad($this->getPhpTypeByColumnDescription($columnDescription), 11, ' ', STR_PAD_RIGHT);
-            $getters[] = " * @property-read {$phpTypes} \${$columnDescription->getName()}";
-            foreach ($this->getFormattersForOrmType($columnDescription->getOrmType()) as $formaterName => $phpType) {
-                $phpType = str_pad($phpType, 11, ' ', STR_PAD_RIGHT);
-                $getters[] = " * @property-read {$phpType} \${$columnDescription->getName()}_as_{$formaterName}";
+        $ret = [];
+        foreach ($this->tableDescription->getColumns() as $columnDescription) {
+            $column = $this->columnFactory->createFromDescription($columnDescription);
+            $ret[$column->getName()] = $this->getPhpTypeForColumn($column);
+            $formatters = $column->getValueFormatersNames();
+            foreach ($formatters as $columnName => $format) {
+                $ret[$columnName] = $this->getPhpTypeByFormatterName($format);
             }
-            $setter = 'set' . StringUtils::toPascalCase($columnDescription->getName());
-            $setters[] = " * @method \$this    {$setter}(\$value, \$isFromDb = false)";
         }
-        return implode("\n", $getters) . "\n *\n" . implode("\n", $setters);
+        return $ret;
     }
-    
-    protected function hasDateOrTimestampColumns(): bool
+
+    private function getRecordSetterMethods(): array
     {
-        $description = $this->getTableDescription();
+        $ret = [];
+        foreach ($this->tableDescription->getColumns() as $columnDescription) {
+            $ret[] = 'set' . StringUtils::toPascalCase($columnDescription->getName());
+        }
+        return $ret;
+    }
+
+    protected function hasDateTimeColumns(): bool
+    {
         $types = [
             ColumnDescriptionDataType::TIMESTAMP,
             ColumnDescriptionDataType::TIMESTAMP_WITH_TZ,
             ColumnDescriptionDataType::DATE,
+            ColumnDescriptionDataType::TIME,
+            ColumnDescriptionDataType::TIME_TZ,
         ];
-        foreach ($description->getColumns() as $columnDescription) {
+        foreach ($this->tableDescription->getColumns() as $columnDescription) {
             if (in_array($columnDescription->getOrmType(), $types, true)) {
                 return true;
             }
         }
         return false;
     }
-    
-    protected function getPhpTypeByColumnDescription(ColumnDescriptionInterface $columnDescription): string
+
+    protected function getPhpTypeForColumn(TableColumnInterface $column): string
     {
-        $type = match ($columnDescription->getOrmType()) {
-            ColumnDescriptionDataType::INT => 'int',
-            ColumnDescriptionDataType::FLOAT => 'float',
-            ColumnDescriptionDataType::BOOL => 'bool',
+        $type = match ($column->getDataType()) {
+            TableColumnDataType::INT,
+            TableColumnDataType::UNIX_TIMESTAMP => 'int',
+            TableColumnDataType::FLOAT => 'float',
+            TableColumnDataType::BOOL => 'bool',
+            TableColumnDataType::BLOB => 'resource',
             default => 'string',
         };
-        return ($columnDescription->isNullable() ? 'null|' : '') . $type;
+        return ($column->isNullableValues() ? 'null|' : '') . $type;
     }
-    
-    /**
-     * @return array - key: format name; value: php type
-     */
-    protected function getFormattersForOrmType(string $ormType): array
+
+    protected function getPhpTypeByFormatterName(string $format): string
     {
-        $formats = ColumnValueFormatters::getFormattersForColumnType($ormType);
-        $formatToPhpType = [];
-        foreach ($formats as $formatName => $formatterClosure) {
-            $formatToPhpType[$formatName] = match ($formatName) {
-                'unix_ts' => 'int',
-                'array' => 'array',
-                'object' => \stdClass::class,
-                'carbon' => 'Carbon',
-                default => 'string',
-            };
-        }
-        return $formatToPhpType;
+        return match ($format) {
+            ColumnValueFormatters::FORMAT_ARRAY => 'array',
+            ColumnValueFormatters::FORMAT_DECODED => 'mixed',
+            ColumnValueFormatters::FORMAT_OBJECT => '\\' . \stdClass::class,
+            ColumnValueFormatters::FORMAT_CARBON => '\\' . CarbonImmutable::class,
+            ColumnValueFormatters::FORMAT_UNIX_TS => 'int',
+            default => 'string',
+        };
     }
-    
-    protected function makePhpDocForTableStructure(): string
+
+    protected function getTableAlias(): string
     {
-        $description = $this->getTableDescription();
-        $getters = [];
-        foreach ($description->getColumns() as $columnDescription) {
-            $getters[] = " * @property-read TableColumn    \${$columnDescription->getName()}";
-        }
-        return implode("\n", $getters);
+        return StringUtils::toPascalCase($this->tableDescription->getTableName());
     }
-    
 }

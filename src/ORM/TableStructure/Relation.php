@@ -110,12 +110,11 @@ class Relation implements RelationInterface
 
     protected function setForeignTableClass(string $foreignTableClass): static
     {
-        if (!is_subclass_of($foreignTableClass, TableInterface::class)) {
-            throw new \InvalidArgumentException(
-                '$foreignTableClass argument must be a class that implements '
-                . TableInterface::class
-            );
-        }
+        ArgumentValidators::assertClassImplementsInterface(
+            '$foreignTableClass',
+            $foreignTableClass,
+            TableInterface::class
+        );
         $this->foreignTableClass = $foreignTableClass;
         return $this;
     }

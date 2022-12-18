@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Orm;
 
-use PeskyORM\DbExpr;
-use PeskyORM\ORM\ClassBuilder\ClassBuilder;
-use PeskyORM\TableDescription\ColumnDescription;
-use PeskyORM\TableDescription\ColumnDescriptionDataType;
+use PeskyORM\ORM\TableStructure\TableColumnFactory;
+use PeskyORM\TableDescription\TableDescribersRegistry;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
+use PeskyORM\Tests\PeskyORMTest\ClassBuilderTestingClasses\TestingClassBuilder;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
@@ -16,163 +15,101 @@ use PeskyORM\Tests\PeskyORMTest\TestingBaseTable;
 
 class ClassBuilderTest extends BaseTestCase
 {
-    
-    protected function getBuilder(string $tableName = 'admins'): ClassBuilder
+    protected function getBuilder(string $tableName = 'admins'): TestingClassBuilder
     {
-        return new ClassBuilder($tableName, TestingApp::getPgsqlConnection());
-    }
-    
-    public function testBuilderServiceMethods(): void
-    {
-        static::assertEquals('Admins', ClassBuilder::convertTableNameToClassName('admins'));
-        static::assertEquals('SomeTables', ClassBuilder::convertTableNameToClassName('some_tables'));
-        static::assertEquals('AdminsTable', ClassBuilder::makeTableClassName('admins'));
-        static::assertEquals('SomeTablesTable', ClassBuilder::makeTableClassName('some_tables'));
-        static::assertEquals('AdminsTableStructure', ClassBuilder::makeTableStructureClassName('admins'));
-        static::assertEquals('SomeTablesTableStructure', ClassBuilder::makeTableStructureClassName('some_tables'));
-        static::assertEquals('Admin', ClassBuilder::makeRecordClassName('admins'));
-        static::assertEquals('Company', ClassBuilder::makeRecordClassName('companies'));
-        static::assertEquals('Cookie', ClassBuilder::makeRecordClassName('cookies'));
-        static::assertEquals('SomeTable', ClassBuilder::makeRecordClassName('some_tables'));
-        static::assertEquals('Log', ClassBuilder::makeRecordClassName('logs'));
-        static::assertEquals('Shoe', ClassBuilder::makeRecordClassName('shoes'));
-        static::assertEquals('Bush', ClassBuilder::makeRecordClassName('bushes'));
-        $builder = $this->getBuilder();
-        static::assertEquals(
-            'TestingAdmin',
-            $this->callObjectMethod($builder, 'getShortClassName', TestingAdmin::class)
+        $tableDescription = TableDescribersRegistry::describeTable(
+            TestingApp::getPgsqlConnection(),
+            $tableName
         );
-        static::assertEquals(
-            'TableColumn::TYPE_STRING',
-            $this->callObjectMethod($builder, 'getConstantNameForColumnType', 'string')
-        );
-        static::assertEquals(
-            'TableColumn::TYPE_INT',
-            $this->callObjectMethod($builder, 'getConstantNameForColumnType', 'integer')
+        return new TestingClassBuilder(
+            $tableDescription,
+            new TableColumnFactory(),
+            'PeskyORM\\Tests\\PeskyORMTest\\ClassBuilderTestingClasses',
         );
     }
     
-    public function testTableAndRecordClassBuilding(): void
+    public function testTableClassBuilding(): void
     {
         $builder = $this->getBuilder();
-        static::assertEquals(
-            preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/table_class1.txt')),
-            preg_replace("%[\r\n\t]+%", '', $builder->buildTableClass('App\\Db'))
+
+        $expected = file_get_contents(
+            __DIR__ . '/../PeskyORMTest/ClassBuilderTestingClasses/BuilderTesting1AdminsTable.php'
         );
+        $builder->setClassesPrefix('BuilderTesting1');
+        $actual = $builder->buildTableClass();
         static::assertEquals(
-            preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/table_class2.txt')),
-            preg_replace("%[\r\n\t]+%", '', $builder->buildTableClass('App\\Db', TestingBaseTable::class))
+            $this->cleanFileContents($expected),
+            $this->cleanFileContents($actual),
+            $actual
         );
-        static::assertEquals(
-            preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/record_class1.txt')),
-            preg_replace("%[\r\n\t]+%", '', $builder->buildRecordClass('App\\Db'))
+        $expected = file_get_contents(
+            __DIR__ . '/../PeskyORMTest/ClassBuilderTestingClasses/BuilderTesting2AdminsTable.php'
         );
+        $builder->setClassesPrefix('BuilderTesting2');
+        $actual = $builder->buildTableClass(TestingBaseTable::class);
         static::assertEquals(
-            preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/record_class2.txt')),
-            preg_replace("%[\r\n\t]+%", '', $builder->buildRecordClass('App\\Db', TestingAdmin::class))
+            $this->cleanFileContents($expected),
+            $this->cleanFileContents($actual),
+            $actual
         );
     }
-    
-    public function testMakeColumnConfig(): void
+
+    public function testRecordableClassBuilding(): void
     {
         $builder = $this->getBuilder();
-        $columnDescr = new ColumnDescription('test', 'integer', ColumnDescriptionDataType::INT);
-        $columnDescr->setIsPrimaryKey(true);
-        static::assertEquals(
-            'TableColumn::create(TableColumn::TYPE_INT)->primaryKey()',
-            preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
+
+        $expected = file_get_contents(
+            __DIR__ . '/../PeskyORMTest/ClassBuilderTestingClasses/BuilderTesting1Admin.php'
         );
-        $columnDescr
-            ->setIsPrimaryKey(false)
-            ->setIsUnique(true);
+        $builder->setClassesPrefix('BuilderTesting1');
+        $actual = $builder->buildRecordClass();
         static::assertEquals(
-            'TableColumn::create(TableColumn::TYPE_INT)->uniqueValues()',
-            preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
+            $this->cleanFileContents($expected),
+            $this->cleanFileContents($actual),
+            $actual
         );
-        $columnDescr
-            ->setIsUnique(false)
-            ->setIsNullable(false);
-        static::assertEquals(
-            'TableColumn::create(TableColumn::TYPE_INT)->disallowsNullValues()->convertsEmptyStringToNull()',
-            preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
+        $expected = file_get_contents(
+            __DIR__ . '/../PeskyORMTest/ClassBuilderTestingClasses/BuilderTesting2Admin.php'
         );
-        $columnDescr
-            ->setIsNullable(true);
+        $builder->setClassesPrefix('BuilderTesting2');
+        $actual = $builder->buildRecordClass(TestingAdmin::class);
         static::assertEquals(
-            'TableColumn::create(TableColumn::TYPE_INT)',
-            preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
-        );
-        $columnDescr
-            ->setDefault('string with \' quotes " `');
-        static::assertEquals(
-            "TableColumn::create(TableColumn::TYPE_INT)->setDefaultValue('string with \\' quotes \\\" `')",
-            preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
-        );
-        $columnDescr
-            ->setDefault(true);
-        static::assertEquals(
-            'TableColumn::create(TableColumn::TYPE_INT)->setDefaultValue(true)',
-            preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
-        );
-        $columnDescr
-            ->setDefault(false);
-        static::assertEquals(
-            'TableColumn::create(TableColumn::TYPE_INT)->setDefaultValue(false)',
-            preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
-        );
-        $columnDescr
-            ->setDefault(null);
-        static::assertEquals(
-            'TableColumn::create(TableColumn::TYPE_INT)',
-            preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
-        );
-        $columnDescr
-            ->setDefault(111);
-        static::assertEquals(
-            'TableColumn::create(TableColumn::TYPE_INT)->setDefaultValue(111)',
-            preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
-        );
-        $columnDescr
-            ->setDefault(111.11);
-        static::assertEquals(
-            'TableColumn::create(TableColumn::TYPE_INT)->setDefaultValue(111.11)',
-            preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
-        );
-        $columnDescr
-            ->setDefault(DbExpr::create("string with ' quotes \" `"));
-        static::assertEquals(
-            "TableColumn::create(TableColumn::TYPE_INT)->setDefaultValue(DbExpr::create('string with \' quotes \\\" `'))",
-            preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
-        );
-        $columnDescr
-            ->setDefault(DbExpr::create("string with ' quotes \" `"))
-            ->setIsPrimaryKey(true);
-        static::assertEquals(
-            'TableColumn::create(TableColumn::TYPE_INT)->primaryKey()',
-            preg_replace("%\n| {12}%m", '', $this->callObjectMethod($builder, 'makeColumnConfig', $columnDescr))
+            $this->cleanFileContents($expected),
+            $this->cleanFileContents($actual),
+            $actual
         );
     }
-    
+
     public function testDbStructureClassBuilder(): void
     {
         $builder = $this->getBuilder();
-        static::assertEquals(
-            preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/structure_class1.txt')),
-            preg_replace("%[\r\n\t]+%", '', $builder->buildStructureClass('App\\Db'))
+
+        $expected = file_get_contents(
+            __DIR__ . '/../PeskyORMTest/ClassBuilderTestingClasses/BuilderTesting1AdminsTableStructure.php'
         );
-        $builder->setDbSchemaName('public');
+        $actual = $builder->buildStructureClass();
         static::assertEquals(
-            preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/structure_class2.txt')),
-            preg_replace("%[\r\n\t]+%", '', $builder->buildStructureClass('App\\Db', TestingAdminsTableStructure::class))
+            $this->cleanFileContents($expected),
+            $this->cleanFileContents($actual),
+            $actual
         );
-        $traits = [
-            TestingIdColumnTrait::class,
-            TestingTimestampColumnsTrait::class,
-            TestingCreatedAtColumnTrait::class,
-        ];
+        $expected = file_get_contents(
+            __DIR__ . '/../PeskyORMTest/ClassBuilderTestingClasses/BuilderTesting2AdminsTableStructure.php'
+        );
+        $actual = $builder->buildStructureClass(TestingAdminsTableStructure::class);
         static::assertEquals(
-            preg_replace("%[\r\n\t]+%", '', file_get_contents(__DIR__ . '/classes_to_test_builder/structure_class3.txt')),
-            preg_replace("%[\r\n\t]+%", '', $builder->buildStructureClass('App\\Db', TestingAdminsTableStructure::class, $traits))
+            $this->cleanFileContents($expected),
+            $this->cleanFileContents($actual),
+            $actual
+        );
+    }
+
+    private function cleanFileContents(string $text): string
+    {
+        return preg_replace(
+            ["%<\?php\s*/\*\* @noinspection ALL \*/%s", "%[\r\n\t]+%"],
+            ['<?php', ''],
+            $text
         );
     }
 }
