@@ -8,15 +8,12 @@ use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Config\Connection\DbConnectionsManager;
 use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Config\Connection\PostgresConfig;
-use PeskyORM\ORM\Record\Record;
 use PeskyORM\ORM\Table\Table;
-use PeskyORM\ORM\TableStructure\TableStructure;
 use PeskyORM\Tests\PeskyORMTest\Adapter\MysqlTesting;
 use PeskyORM\Tests\PeskyORMTest\Adapter\PostgresTesting;
 
 class TestingApp
 {
-
     protected static bool $connectionsManageConfigured = false;
     public static ?PostgresTesting $pgsqlConnection = null;
     public static bool $pgsqlConnectionInitiated = false;
@@ -152,18 +149,6 @@ class TestingApp
     {
         $class = new \ReflectionClass(Table::class);
         $method = $class->getMethod('resetInstances');
-        $method->setAccessible(true);
-        $method->invoke(null);
-        $method->setAccessible(false);
-
-        $class = new \ReflectionClass(TableStructure::class);
-        $method = $class->getMethod('resetInstances');
-        $method->setAccessible(true);
-        $method->invoke(null);
-        $method->setAccessible(false);
-
-        $class = new \ReflectionClass(Record::class);
-        $method = $class->getMethod('resetColumnsCache');
         $method->setAccessible(true);
         $method->invoke(null);
         $method->setAccessible(false);

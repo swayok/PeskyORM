@@ -1,30 +1,27 @@
 <?php
-/** @noinspection PhpUnusedPrivateMethodInspection */
 
 declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses;
 
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\IdColumn;
 use PeskyORM\ORM\TableStructure\TableStructure;
 
 class TestingTwoPrimaryKeysColumnsTableStructure extends TableStructure
 {
-    
-    public static function getTableName(): string
+    public function getTableName(): string
     {
         return 'invalid';
     }
-    
-    private function pk1(): TableColumn
+
+    protected function registerColumns(): void
     {
-        return TableColumn::create(TableColumn::TYPE_INT)
-            ->primaryKey();
+        $this->addColumn(new IdColumn('pk1'));
+        $this->addColumn(new IdColumn('pk2'));
     }
-    
-    private function pk2(): TableColumn
+
+    protected function registerRelations(): void
     {
-        return TableColumn::create(TableColumn::TYPE_INT)
-            ->primaryKey();
+
     }
 }

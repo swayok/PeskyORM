@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace PeskyORM\TableDescription;
 
 use PeskyORM\DbExpr;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 
 class ColumnDescription implements ColumnDescriptionInterface
 {
     protected string $name;
     protected string $dbType;
+    /** @see ColumnDescriptionDataType */
     protected string $ormType;
     
     protected ?int $limit = null;
@@ -46,7 +46,7 @@ class ColumnDescription implements ColumnDescriptionInterface
     public function setLimitAndPrecision(?int $limit, ?int $numberPrecision = null): static
     {
         $this->limit = $limit;
-        if ($this->getOrmType() === TableColumn::TYPE_FLOAT) {
+        if ($this->getOrmType() === ColumnDescriptionDataType::FLOAT) {
             $this->numberPrecision = $numberPrecision;
         }
         return $this;
@@ -143,7 +143,9 @@ class ColumnDescription implements ColumnDescriptionInterface
     {
         $data = json_decode($serialized, true);
         if (!is_array($data)) {
-            throw new \InvalidArgumentException('$serialized argument must be a json-encoded array');
+            throw new \InvalidArgumentException(
+                '$serialized argument must be a json-encoded array'
+            );
         }
         foreach ($data as $propertyName => $value) {
             $this->$propertyName = $value;

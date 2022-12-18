@@ -107,7 +107,7 @@ abstract class TableColumnAbstract implements TableColumnInterface
         return $formatter($valueContainer);
     }
 
-    public function getColumnNameAliases(): array
+    public function getValueFormatersNames(): array
     {
         $name = $this->getName();
         $ret = [];

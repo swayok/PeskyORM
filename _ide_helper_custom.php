@@ -1,41 +1,52 @@
 <?php
 /** @noinspection PhpFullyQualifiedNameUsageInspection */
+
 /** @noinspection AutoloadingIssuesInspection */
 /** @noinspection PhpUnused */
 declare(strict_types=1);
 
+use JetBrains\PhpStorm\ArrayShape;
+use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
+
 abstract class PeskyORMIdeHelperRecord extends \PeskyORM\ORM\Record\Record
 {
-    
     use \PeskyORM\ORM\Record\DbViewRecordProtection;
-    use \PeskyORM\ORM\Record\GettersForKeyValueRecordValues;
 }
 
 class PeskyORMIdeHelperTableStructure extends \PeskyORM\ORM\TableStructure\TableStructure
 {
-    
-    private function id(): \PeskyORM\ORM\TableStructure\TableColumn\TableColumn {
-        return \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::create(\PeskyORM\ORM\TableStructure\TableColumn\TableColumn::TYPE_INT);
-    }
-    
-    public static function getTableName(): string
+    public function getTableName(): string
     {
         return '???';
     }
+
+    #[ArrayShape([
+        'column' => TableColumnInterface::class,
+        'format' => 'null|string',
+    ])]
+    public function getColumnAndFormat(string $columnNameOrAlias): array
+    {
+        return [];
+    }
+
+    protected function registerColumns(): void
+    {
+    }
+
+    protected function registerRelations(): void
+    {
+    }
 }
 
-class PeskyORMIdeHelperTable extends \PeskyORM\ORM\Table\Table implements \PeskyORM\ORM\Table\KeyValueTableInterface
+class PeskyORMIdeHelperTable extends \PeskyORM\ORM\Table\Table
 {
-    
-    use \PeskyORM\ORM\Table\KeyValueTableWorkflow;
-    
     public function newRecord(): \PeskyORM\ORM\Record\RecordInterface
     {
         return PeskyORMIdeHelperRecord::newEmptyRecord();
     }
-    
+
     public function getTableStructure(): \PeskyORM\ORM\TableStructure\TableStructureInterface
     {
-        return PeskyORMIdeHelperTableStructure::getInstance();
+        return new PeskyORMIdeHelperTableStructure();
     }
 }

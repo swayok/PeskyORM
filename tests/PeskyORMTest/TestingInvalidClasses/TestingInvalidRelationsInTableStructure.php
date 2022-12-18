@@ -1,36 +1,27 @@
 <?php
-/** @noinspection PhpUnusedPrivateMethodInspection */
 
 declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingInvalidClasses;
 
-use PeskyORM\ORM\TableStructure\RelationInterface;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\IdColumn;
 use PeskyORM\ORM\TableStructure\TableStructure;
 
 class TestingInvalidRelationsInTableStructure extends TableStructure
 {
-    
-    public static function getTableName(): string
+    public function getTableName(): string
     {
         return 'some_table';
     }
-    
-    private function valid(): TableColumn
+
+    protected function registerColumns(): void
     {
-        return TableColumn::create(TableColumn::TYPE_INT)
-            ->primaryKey();
+        $this->addColumn(new IdColumn('valid'));
     }
 
-    public function addRelation(RelationInterface $relation): void
+    protected function registerRelations(): void
     {
-        parent::addRelation($relation);
+        /** @noinspection PhpParamsInspection */
+        $this->addRelation($this);
     }
-
-    private function InvalidClass(): TestingInvalidRelationsInTableStructure
-    {
-        return $this;
-    }
-    
 }

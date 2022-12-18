@@ -21,7 +21,7 @@ class IpV4AddressColumnTest extends BaseTestCase
     {
         $column = new IpV4AddressColumn('ipv4');
         static::assertEquals(TableColumnDataType::IPV4_ADDRESS, $column->getDataType());
-        static::assertEquals([], $column->getColumnNameAliases());
+        static::assertEquals([], $column->getValueFormatersNames());
         // has value
         $valueContainer = $this->newRecordValueContainer($column);
         static::assertFalse($column->hasValue($valueContainer, false));

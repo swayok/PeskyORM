@@ -8,7 +8,7 @@ use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\DbExpr;
 use PeskyORM\Join\NormalJoinConfigInterface;
 use PeskyORM\ORM\Record\RecordInterface;
-use PeskyORM\ORM\RecordsCollection\RecordsSet;
+use PeskyORM\ORM\RecordsCollection\RecordsCollectionInterface;
 use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\ORM\TableStructure\TableStructureInterface;
@@ -22,44 +22,40 @@ interface TableInterface
     /**
      * Get table name
      */
-    public static function getName(): string;
+    public function getTableName(): string;
 
     /**
      * Table alias.
      * For example: if table name is 'user_actions' the alias might be 'UserActions'
      */
-    public static function getAlias(): string;
+    public function getTableAlias(): string;
 
     /**
      * @param bool $writable - true: connection must have access to write data into DB
      */
-    public static function getConnection(bool $writable = false): DbAdapterInterface;
+    public function getConnection(bool $writable = false): DbAdapterInterface;
 
     /**
      * Table schema description
      */
-    public static function getStructure(): TableStructureInterface;
-    
-    /**
-     * Table schema description
-     */
     public function getTableStructure(): TableStructureInterface;
-    
+
     /**
+     * Get OrmJoinConfig for required relation
      * @param string|RelationInterface $relation
      * @param string|null $alterLocalTableAlias - alter this table's alias in join config
      * @param string|null $joinName - string: specific join name; null: $relationName is used
      */
-    public static function getJoinConfigForRelation(
+    public function getJoinConfigForRelation(
         string|RelationInterface $relation,
         string $alterLocalTableAlias = null,
         string $joinName = null
     ): NormalJoinConfigInterface;
-    
-    public static function getPkColumn(): TableColumnInterface;
-    
-    public static function getPkColumnName(): string;
-    
+
+    public function getPkColumnName(): ?string;
+
+    public function getPkColumn(): ?TableColumnInterface;
+
     public function newRecord(): RecordInterface;
 
     /**
@@ -71,7 +67,7 @@ interface TableInterface
      * @see DbAdapterInterface::exec()
      */
     public static function exec(string|DbExpr $query): int;
-    
+
     /**
      * @see DbAdapterInterface::query()
      */
@@ -79,7 +75,7 @@ interface TableInterface
         string|DbExpr $query,
         string $fetchData = PdoUtils::FETCH_STATEMENT
     ): mixed;
-    
+
     /**
      * @see self::makeQueryBuilder()
      */
@@ -87,8 +83,8 @@ interface TableInterface
         string|array $columns = '*',
         array $conditions = [],
         ?\Closure $configurator = null
-    ): RecordsSet|array;
-    
+    ): RecordsCollectionInterface|array;
+
     /**
      * Selects values from specified column
      * @see self::makeQueryBuilder()
@@ -98,7 +94,7 @@ interface TableInterface
         array $conditions = [],
         ?\Closure $configurator = null
     ): array;
-    
+
     /**
      * Select associative array
      * @see self::makeQueryBuilder()
@@ -109,7 +105,7 @@ interface TableInterface
         array $conditions = [],
         ?\Closure $configurator = null
     ): array;
-    
+
     /**
      * Get 1 record from DB as array
      * @see self::makeQueryBuilder()
@@ -119,7 +115,7 @@ interface TableInterface
         array $conditions,
         ?\Closure $configurator = null
     ): array;
-    
+
     /**
      * Get 1 row from DB and convert its data to RecordInterface
      * @see self::makeQueryBuilder()
@@ -130,7 +126,7 @@ interface TableInterface
         array $conditions,
         ?\Closure $configurator = null
     ): RecordInterface;
-    
+
     /**
      * Make a query that returns only 1 value defined by $expression
      * Examples for $expression: DbExpr::create('COUNT(*)'), DbExpr::create('SUM(`field`)')
@@ -151,13 +147,13 @@ interface TableInterface
         array $conditions = [],
         ?\Closure $configurator = null
     ): mixed;
-    
+
     /**
      * Check if table contains a record matching provided conditions
      * @see self::makeQueryBuilder()
      */
     public static function hasMatchingRecord(array $conditions, ?\Closure $configurator = null): bool;
-    
+
     /**
      * Using $removeNotInnerJoins = true will ignore all not INNER JOINs to build a count query.
      * This will improve query performance. But in some cases it may cause errors,
@@ -209,7 +205,7 @@ interface TableInterface
      * @see DbAdapterInterface::rollBack()
      */
     public static function rollBackTransaction(bool $onlyIfExists = false): void;
-    
+
     /**
      * @param bool $valuesAreProcessed - should values be processed via
      *      - true: values are ready to be inserted;
@@ -222,7 +218,7 @@ interface TableInterface
         array|bool $returning = false,
         bool $valuesAreProcessed = true
     ): ?array;
-    
+
     /**
      * @param bool $valuesAreProcessed - should values be processed via
      *      - true: values are ready to be inserted;
@@ -246,22 +242,22 @@ interface TableInterface
      * @see self::newRecord()
      */
     public static function upsert(array $data, array $uniqueColumnNames): RecordInterface;
-    
+
     /**
      * @see DbAdapterInterface::update()
      */
     public static function update(array $data, array $conditions, array|bool $returning = false): array|int;
-    
+
     /**
      * @see DbAdapterInterface::delete()
      */
     public static function delete(array $conditions = [], array|bool $returning = false): array|int;
-    
+
     /**
      * Return DbExpr to set default value for a column.
      * Example for MySQL and PostgreSQL: DbExpr::create('DEFAULT')
      * @see DbAdapterInterface::getExpressionToSetDefaultValueForAColumn()
      */
-    public static function getExpressionToSetDefaultValueForAColumn(): DbExpr;
-    
+    public function getExpressionToSetDefaultValueForAColumn(): DbExpr;
+
 }

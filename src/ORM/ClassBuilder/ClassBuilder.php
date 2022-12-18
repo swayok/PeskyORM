@@ -9,8 +9,8 @@ use PeskyORM\DbExpr;
 use PeskyORM\ORM\Record\Record;
 use PeskyORM\ORM\Table\Table;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\ORM\TableStructure\TableStructure;
+use PeskyORM\TableDescription\ColumnDescriptionDataType;
 use PeskyORM\TableDescription\ColumnDescriptionInterface;
 use PeskyORM\TableDescription\TableDescribersRegistry;
 use PeskyORM\TableDescription\TableDescriptionInterface;
@@ -177,7 +177,7 @@ VIEW;
     
     public static function makeTableStructureClassName(string $tableName): string
     {
-        return static::convertTableNameToClassName($tableName) . 'TableStructure';
+        return static::convertTableNameToClassName($tableName) . 'TableStructureOld';
     }
     
     public static function makeRecordClassName(string $tableName): string
@@ -293,17 +293,17 @@ VIEW;
     protected function getConstantNameForColumnType(string $columnTypeValue): string
     {
         // todo: refactor this
-        if ($this->typeValueToTypeConstantName === null) {
-            $this->typeValueToTypeConstantName = array_flip(
-                array_filter(
-                    (new \ReflectionClass(TableColumn::class))->getConstants(),
-                    static function ($key) {
-                        return str_starts_with($key, 'TYPE_');
-                    },
-                    ARRAY_FILTER_USE_KEY
-                )
-            );
-        }
+//        if ($this->typeValueToTypeConstantName === null) {
+//            $this->typeValueToTypeConstantName = array_flip(
+//                array_filter(
+//                    (new \ReflectionClass(TableColumn::class))->getConstants(),
+//                    static function ($key) {
+//                        return str_starts_with($key, 'TYPE_');
+//                    },
+//                    ARRAY_FILTER_USE_KEY
+//                )
+//            );
+//        }
         return 'TableColumn::' . $this->typeValueToTypeConstantName[$columnTypeValue];
     }
     
@@ -329,10 +329,9 @@ VIEW;
     {
         $description = $this->getTableDescription();
         $types = [
-            TableColumn::TYPE_TIMESTAMP,
-            TableColumn::TYPE_TIMESTAMP_WITH_TZ,
-            TableColumn::TYPE_UNIX_TIMESTAMP,
-            TableColumn::TYPE_DATE,
+            ColumnDescriptionDataType::TIMESTAMP,
+            ColumnDescriptionDataType::TIMESTAMP_WITH_TZ,
+            ColumnDescriptionDataType::DATE,
         ];
         foreach ($description->getColumns() as $columnDescription) {
             if (in_array($columnDescription->getOrmType(), $types, true)) {
@@ -345,9 +344,9 @@ VIEW;
     protected function getPhpTypeByColumnDescription(ColumnDescriptionInterface $columnDescription): string
     {
         $type = match ($columnDescription->getOrmType()) {
-            TableColumn::TYPE_INT => 'int',
-            TableColumn::TYPE_FLOAT => 'float',
-            TableColumn::TYPE_BOOL => 'bool',
+            ColumnDescriptionDataType::INT => 'int',
+            ColumnDescriptionDataType::FLOAT => 'float',
+            ColumnDescriptionDataType::BOOL => 'bool',
             default => 'string',
         };
         return ($columnDescription->isNullable() ? 'null|' : '') . $type;

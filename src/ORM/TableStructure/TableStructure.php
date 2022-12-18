@@ -4,84 +4,81 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\TableStructure;
 
+use JetBrains\PhpStorm\ArrayShape;
+use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Config\Connection\DbConnectionsManager;
-use PeskyORM\Exception\OrmException;
-use PeskyORM\Exception\TableColumnConfigException;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
+use PeskyORM\Exception\TableStructureConfigException;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\TableDescription\ColumnDescriptionInterface;
 use PeskyORM\TableDescription\TableDescribersRegistry;
 use PeskyORM\TableDescription\TableDescriptionInterface;
-use PeskyORM\Utils\StringUtils;
+use Psr\Cache\CacheItemPoolInterface;
 
 abstract class TableStructure implements TableStructureInterface
 {
+    protected const CACHE_SUBJECT_DESCRIPTION = 'description';
+
     /**
-     * Use table description from DB to automatically create missing column configs
-     * @see TableDescribersRegistry::describeTable()
+     * @var TableColumnInterface[]
      */
-    protected bool $autodetectColumns = false;
+    protected array $columns = [];
+
     /**
-     * Loads columns and relations configs from private methods of child class
-     * Disable if you do not use private methods to define columns and relations
+     * @var RelationInterface[]
      */
-    protected bool $autoloadConfigsFromPrivateMethods = true;
+    protected array $relations = [];
 
     protected ?TableColumnInterface $pk = null;
+
     /**
      * @var TableColumnInterface[]
      */
     protected array $realColumns = [];
+
     /**
      * @var TableColumnInterface[]
      */
     protected array $virtualColumns = [];
 
     /**
-     * It contains only ReflectionMethod objects after class instance created
-     * Later it converts ReflectionMethod to TableColumnInterface instances on demand
      * @var TableColumnInterface[]
      */
-    protected array $columns = [];
+    protected array $notPrivateColumns = [];
 
     /**
-     * Behaves like $columns
-     * @var RelationInterface[]
+     * @var TableColumnInterface[]
      */
-    protected array $relations = [];
-
-    /** @var TableStructureInterface[] */
-    private static array $instances = [];
-
-    final public static function getInstance(): TableStructureInterface
-    {
-        if (!isset(self::$instances[static::class])) {
-            new static();
-        }
-        return self::$instances[static::class];
-    }
+    protected array $notHeavyColumns = [];
 
     /**
-     * Resets class instances (used for testing only, that's why it is private)
-     * @noinspection PhpUnusedPrivateMethodInspection
-     * todo: move to instances container
+     * @var TableColumnInterface[]
      */
-    private static function resetInstances(): void
-    {
-        self::$instances = [];
-    }
+    protected array $realAutoupdatingColumns = [];
 
     /**
-     * @throws \BadMethodCallException
+     * @var TableColumnInterface[]
      */
-    final private function __construct()
-    {
-        if (isset(self::$instances[static::class])) {
-            throw new \BadMethodCallException(
-                'Attempt to create 2nd instance of class ' . static::class
-            );
-        }
-        self::$instances[static::class] = $this;
+    protected array $realColumnsWhichValuesCanBeSavedToDb = [];
+
+    /**
+     * Contains all aliases for columns.
+     * @see TableColumnInterface::getValueFormatersNames()
+     * Structure: [
+     *  'column_alias' => [
+     *      'column' => TableColumnInterface,
+     *      'format' => string
+     *  ],
+     *  ...
+     * ]
+     */
+    protected array $columnsAliases = [];
+
+    protected ?TableDescriptionInterface $tableDescription = null;
+
+    public function __construct(
+        protected ?CacheItemPoolInterface $cachePool = null,
+        protected int $cacheDuration = 86400
+    ) {
         $this->loadColumnsAndRelations();
     }
 
@@ -90,39 +87,28 @@ abstract class TableStructure implements TableStructureInterface
      */
     protected function loadColumnsAndRelations(): void
     {
-        $this->loadColumnsAndRelationsFromPrivateMethods();
         $this->registerColumns();
-        $this->createMissingColumnsConfigsFromDbTableDescription();
         $this->registerRelations();
-        $this->registerVirtualColumns(); // virtual columns may use real columns
         $this->analyze();
         $this->validate();
     }
 
     /**
      * Register real columns that are not loaded from private methods
-     * Use $this->addColumn() to add column
+     * Use $this->addColumn() to add column.
+     * Use $this->importMissingColumnsConfigsFromDbTableDescription() to
+     * import columns based on table schema received from DB.
+     * @see self::addColumn()
+     * @see self::importMissingColumnsConfigsFromDbTableDescription()
      */
-    protected function registerColumns(): void
-    {
-    }
-
-    /**
-     * Register columns that do not exist in DB (virtual columns)
-     * and are not loaded from private methods
-     * Use $this->addColumn() to add column
-     */
-    protected function registerVirtualColumns(): void
-    {
-    }
+    abstract protected function registerColumns(): void;
 
     /**
      * Register relations that are not loaded from private methods
-     * Use $this->addRelation() to add relation
+     * Use $this->addRelation() to add relation.
+     * @see self::addRelation()
      */
-    protected function registerRelations(): void
-    {
-    }
+    abstract protected function registerRelations(): void;
 
     /**
      * Analyze configs to collect some useful data
@@ -133,149 +119,159 @@ abstract class TableStructure implements TableStructureInterface
 
     /**
      * Validate consistency of table structure
-     * @throws OrmException
+     * @throws TableStructureConfigException
      */
     protected function validate(): void
     {
         if ($this->pk === null) {
             $class = static::class;
-            throw new OrmException(
-                "TableStructure {$class} must contain primary key",
-                OrmException::CODE_INVALID_TABLE_SCHEMA
+            throw new TableStructureConfigException(
+                "TableStructureOld {$class} must contain primary key",
+                $this
             );
         }
     }
 
-    /**
-     * @param bool $writable - true: connection must have access to write data into DB
-     */
-    public static function getConnectionName(bool $writable): string
+    protected function getConnectionName(bool $writable): string
     {
         return 'default';
     }
 
-    public static function getSchema(): ?string
+    public function getConnection(bool $writable = false): DbAdapterInterface
+    {
+        return DbConnectionsManager::getConnection(
+            $this->getConnectionName($writable)
+        );
+    }
+
+    public function getSchema(): ?string
     {
         return null;
     }
 
-    public static function hasColumn(string $columnName): bool
+    public function hasColumn(string $columnNameOrAlias): bool
     {
-        return static::getInstance()->_hasColumn($columnName);
-    }
-
-    public static function getColumn(string $columnName): TableColumnInterface
-    {
-        return static::getInstance()->_getColumn($columnName);
-    }
-
-    public static function getColumns(): array
-    {
-        return static::getInstance()->columns;
-    }
-
-    public static function getPkColumnName(): ?string
-    {
-        return static::getPkColumn()?->getName();
-    }
-
-    public static function getPkColumn(): ?TableColumnInterface
-    {
-        return static::getInstance()->pk;
-    }
-
-    public static function getRealColumns(): array
-    {
-        return static::getInstance()->realColumns;
-    }
-
-    public static function getVirtualColumns(): array
-    {
-        return static::getInstance()->virtualColumns;
-    }
-
-    public static function hasRelation(string $relationName): bool
-    {
-        return static::getInstance()->_hasRelation($relationName);
-    }
-
-    public static function getRelation(string $relationName): RelationInterface
-    {
-        return static::getInstance()->_getRelation($relationName);
-    }
-
-    public static function getRelations(): array
-    {
-        return static::getInstance()->relations;
+        return (
+            isset($this->columns[$columnNameOrAlias])
+            || isset($this->columnsAliases[$columnNameOrAlias])
+        );
     }
 
     /**
-     * Collects column configs from private methods where method name is column name or relation name.
-     * Column name must be a lowercased string starting from letter: private function parent_id() {}
-     * Relation name must start from upper case letter: private function RelationName() {}
-     * Column method must return TableColumnInterface object
-     * Relation method must return RelationInterface object
+     * @throws \InvalidArgumentException
      */
-    protected function loadColumnsAndRelationsFromPrivateMethods(): void
+    public function getColumn(string $columnNameOrAlias): TableColumnInterface
     {
-        if (!$this->autoloadConfigsFromPrivateMethods) {
-            return;
+        if (!$this->hasColumn($columnNameOrAlias)) {
+            throw new \InvalidArgumentException(
+                static::class . " does not know about column named '{$columnNameOrAlias}'"
+            );
         }
-        $objectReflection = new \ReflectionObject($this);
-        $methods = $objectReflection->getMethods(\ReflectionMethod::IS_PRIVATE);
-        $relationsMethods = [];
-        foreach ($methods as $method) {
-            if ($method->isStatic()) {
-                continue;
-            }
-            $methodName = $method->getName();
-            if (StringUtils::isSnakeCase($methodName)) {
-                $this->loadColumnConfigFromMethodReflection($method);
-            } elseif (StringUtils::isPascalCase($methodName)) {
-                $relationsMethods[] = $method;
-            }
+        return $this->columns[$columnNameOrAlias]
+            ?? $this->columnsAliases[$columnNameOrAlias]['column'];
+    }
+
+    #[ArrayShape([
+        'column' => TableColumnInterface::class,
+        'format' => 'null|string',
+    ])]
+    public function getColumnAndFormat(string $columnNameOrAlias): array
+    {
+        return [
+            'column' => $this->getColumn($columnNameOrAlias),
+            'format' => isset($this->columnsAliases[$columnNameOrAlias])
+                ? $this->columnsAliases[$columnNameOrAlias]['format']
+                : null,
+        ];
+    }
+
+    public function getColumns(): array
+    {
+        return $this->columns;
+    }
+
+    public function getPkColumnName(): string
+    {
+        return $this->pk->getName();
+    }
+
+    public function getPkColumn(): TableColumnInterface
+    {
+        return $this->pk;
+    }
+
+    public function getRealColumns(): array
+    {
+        return $this->realColumns;
+    }
+
+    public function getVirtualColumns(): array
+    {
+        return $this->virtualColumns;
+    }
+
+    public function getNotPrivateColumns(): array
+    {
+        return $this->notPrivateColumns;
+    }
+
+    public function getNotHeavyColumns(): array
+    {
+        return $this->notHeavyColumns;
+    }
+
+    public function getRealAutoupdatingColumns(): array
+    {
+        return $this->realAutoupdatingColumns;
+    }
+
+    public function getColumnsWhichValuesCanBeSavedToDb(): array
+    {
+        return $this->realColumnsWhichValuesCanBeSavedToDb;
+    }
+
+    public function hasRelation(string $relationName): bool
+    {
+        return isset($this->relations[$relationName]);
+    }
+
+    /**
+     * @throws \InvalidArgumentException
+     */
+    public function getRelation(string $relationName): RelationInterface
+    {
+        if (!$this->hasRelation($relationName)) {
+            throw new \InvalidArgumentException(
+                static::class . " does not know about relation named '{$relationName}'"
+            );
         }
-        $this->createMissingColumnsConfigsFromDbTableDescription();
-        // relations must be loaded last to prevent possible issues when Relation requests column which id not loaded yet
-        foreach ($relationsMethods as $method) {
-            $this->loadRelationConfigFromMethodReflection($method);
-        }
-        $this->autoloadConfigsFromPrivateMethods = false;
+        return $this->relations[$relationName];
+    }
+
+    public function getRelations(): array
+    {
+        return $this->relations;
     }
 
     /**
      * Use table description received from DB to automatically create column configs
+     * Note: make sure to use it only once
      */
-    protected function createMissingColumnsConfigsFromDbTableDescription(): void
+    protected function importMissingColumnsConfigsFromDbTableDescription(): void
     {
-        if (!$this->autodetectColumns) {
-            return;
-        }
-        $description = $this->getTableDescription();
-        foreach ($description->getColumns() as $columnName => $columnDescription) {
-            if (!$this->_hasColumn($columnName)) {
-                $this->addColumnFromColumnDescription($columnName, $columnDescription);
+        foreach ($this->getTableDescription()->getColumns() as $columnDescription) {
+            if (!$this->hasColumn($columnDescription->getName())) {
+                $this->addColumnFromColumnDescription($columnDescription);
             }
         }
-        $this->autodetectColumns = false;
     }
 
     protected function addColumnFromColumnDescription(
-        string $columnName,
         ColumnDescriptionInterface $columnDescription
     ): void {
-        $column = TableColumn::create($columnDescription->getOrmType(), $columnName)
-            ->setIsNullableValue($columnDescription->isNullable());
-        if ($columnDescription->isPrimaryKey()) {
-            $column->primaryKey();
-        }
-        if ($columnDescription->isUnique()) {
-            $column->uniqueValues();
-        }
-        if ($columnDescription->getDefault() !== null) {
-            $column->setDefaultValue($columnDescription->getDefault());
-        }
-        $this->addColumn($column);
+        $this->addColumn(
+            TableColumnFactory::createFromDescription($columnDescription)
+        );
     }
 
     /**
@@ -285,52 +281,45 @@ abstract class TableStructure implements TableStructureInterface
      */
     protected function getTableDescription(): TableDescriptionInterface
     {
-        return TableDescribersRegistry::describeTable(
-            DbConnectionsManager::getConnection(static::getConnectionName(false)),
-            static::getTableName(),
-            static::getSchema()
+        if (!$this->tableDescription) {
+            $cacheKey = $this->getCacheKey(static::CACHE_SUBJECT_DESCRIPTION);
+            $cacheItem = null;
+            if ($this->cachePool) {
+                $cacheItem = $this->cachePool->getItem($cacheKey);
+                if ($cacheItem->isHit()) {
+                    $this->tableDescription = unserialize(
+                        $this->cachePool->getItem($cacheKey)->get(),
+                        [TableDescriptionInterface::class]
+                    );
+                    return $this->tableDescription;
+                }
+            }
+            $this->tableDescription = TableDescribersRegistry::describeTable(
+                $this->getConnection(false),
+                $this->getTableName(),
+                $this->getSchema()
+            );
+            $cacheItem?->expiresAfter($this->cacheDuration)
+                ->set(serialize($this->tableDescription));
+        }
+
+        return $this->tableDescription;
+    }
+
+    protected function getCacheKey(string $subject): string
+    {
+        return 'db/table/' . $this->getTableName() . '/' . $subject;
+    }
+
+    public function cleanCache(): void
+    {
+        $this->cachePool?->deleteItem(
+            $this->getCacheKey(static::CACHE_SUBJECT_DESCRIPTION)
         );
     }
 
     /**
-     * @throws \InvalidArgumentException
-     */
-    protected function _getColumn(string $columnName): TableColumnInterface
-    {
-        if (!$this->_hasColumn($columnName)) {
-            throw new \InvalidArgumentException(
-                static::class . " does not know about column named '{$columnName}'"
-            );
-        }
-        return $this->columns[$columnName];
-    }
-
-    /**
-     * Make TableColumn object for private method (if not made yet) and return it
-     * @throws OrmException
-     */
-    protected function loadColumnConfigFromMethodReflection(\ReflectionMethod $method): void
-    {
-        $method->setAccessible(true);
-        /** @var TableColumnInterface $column */
-        $column = $method->invoke($this);
-        $method->setAccessible(false);
-        if (!($column instanceof TableColumn)) {
-            $class = static::class;
-            throw new TableColumnConfigException(
-                "Method {$class}->{$method->getName()}() must return an instance of class that implements "
-                . TableColumnInterface::class,
-                null
-            );
-        }
-        if (!$column->hasName()) {
-            $column->setName($method->getName());
-        }
-        $this->addColumn($column);
-    }
-
-    /**
-     * @throws OrmException
+     * @throws TableStructureConfigException
      */
     protected function addColumn(TableColumnInterface $column): void
     {
@@ -338,94 +327,45 @@ abstract class TableStructure implements TableStructureInterface
         if ($column->isPrimaryKey()) {
             if (!empty($this->pk)) {
                 $class = static::class;
-                throw new TableColumnConfigException(
+                throw new TableStructureConfigException(
                     '2 primary keys in one table is forbidden:'
                     . " '{$this->pk->getName()}' and '{$column->getName()}' (class: {$class})",
-                    $column
+                    $this
                 );
             }
             $this->pk = $column;
         }
         if ($column->isReal()) {
             $this->realColumns[$column->getName()] = $column;
+            if ($column->isAutoUpdatingValues()) {
+                $this->realAutoupdatingColumns[$column->getName()] = $column;
+            }
+            if (!$column->isReadonly()) {
+                $this->realColumnsWhichValuesCanBeSavedToDb[$column->getName()] = $column;
+            }
         } else {
             $this->virtualColumns[$column->getName()] = $column;
         }
-    }
-
-    protected function _hasColumn(string $columnName): bool
-    {
-        return isset($this->columns[$columnName]);
-    }
-
-    /**
-     * @throws \InvalidArgumentException
-     */
-    protected function _getRelation(string $relationName): RelationInterface
-    {
-        if (!$this->_hasRelation($relationName)) {
-            throw new \InvalidArgumentException(
-                static::class . " does not know about relation named '{$relationName}'"
-            );
+        if (!$column->isPrivateValues()) {
+            $this->notPrivateColumns[$column->getName()] = $column;
         }
-        return $this->relations[$relationName];
-    }
-
-    protected function _hasRelation(string $relationName): bool
-    {
-        return isset($this->relations[$relationName]);
-    }
-
-    /**
-     * Make Relation object for private method (if not made yet) and return it
-     * @throws OrmException
-     */
-    protected function loadRelationConfigFromMethodReflection(\ReflectionMethod $method): void
-    {
-        $method->setAccessible(true);
-        /** @var RelationInterface $config */
-        $config = $method->invoke($this);
-        $method->setAccessible(false);
-        if (!($config instanceof RelationInterface)) {
-            $class = static::class;
-            throw new OrmException(
-                "Method {$class}->{$method->getName()}() must return an instance of class that implements "
-                . RelationInterface::class,
-                OrmException::CODE_INVALID_TABLE_RELATION_CONFIG
-            );
+        if (!$column->isHeavyValues()) {
+            $this->notHeavyColumns[$column->getName()] = $column;
         }
-        $config->setName($method->getName());
-        $this->addRelation($config);
+
+        foreach ($column->getValueFormatersNames() as $columnNameAlias => $format) {
+            $this->columnsAliases[$columnNameAlias] = [
+                'column' => $column,
+                'format' => $format
+            ];
+        }
     }
 
     protected function addRelation(RelationInterface $relation): void
     {
         // validate local column existance and attach relation to it
-        $column = $this->_getColumn($relation->getLocalColumnName());
+        $column = $this->getColumn($relation->getLocalColumnName());
         $column->addRelation($relation);
         $this->relations[$relation->getName()] = $relation;
     }
-
-    public function __get(string $name): TableColumnInterface|RelationInterface
-    {
-        if ($this->_hasRelation($name)) {
-            return static::getRelation($name);
-        }
-
-        return static::getColumn($name);
-    }
-
-    /**
-     * @throws \BadMethodCallException
-     */
-    public function __set(string $name, mixed $value)
-    {
-        throw new \BadMethodCallException('You need to use private methods to setup columns');
-    }
-
-    public function __isset(string $name): bool
-    {
-        return $this->_hasColumn($name) || $this->_hasRelation($name);
-    }
-
 }

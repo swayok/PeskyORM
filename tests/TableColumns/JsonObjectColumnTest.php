@@ -28,7 +28,7 @@ class JsonObjectColumnTest extends BaseTestCase
                 $column->getName() . '_as_array' => 'array',
                 $column->getName() . '_as_object' => 'object'
             ],
-            $column->getColumnNameAliases()
+            $column->getValueFormatersNames()
         );
         // has value
         $valueContainer = $this->newRecordValueContainer($column);

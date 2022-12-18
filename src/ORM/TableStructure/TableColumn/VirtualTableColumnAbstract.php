@@ -120,4 +120,11 @@ abstract class VirtualTableColumnAbstract extends TableColumnAbstract
     ): RecordValueContainerInterface {
         throw $this->getIsVirtualException();
     }
+
+    public function normalizeValidatedValue(
+        mixed $validatedValue,
+        bool $isFromDb
+    ): mixed {
+        throw $this->getIsVirtualException();
+    }
 }

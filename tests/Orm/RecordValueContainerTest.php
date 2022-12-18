@@ -4,23 +4,17 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Orm;
 
-use PeskyORM\ORM\Record\RecordValue;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
-use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 
-class RecordValueTest extends BaseTestCase
+class RecordValueContainerTest extends BaseTestCase
 {
-    
-    protected function getClonedColumn(string $columnName): TableColumnInterface
-    {
-        return clone TestingAdminsTableStructure::getColumn($columnName);
-    }
     
     public function testConstructAndClone(): void
     {
-        $valueObj = new RecordValue(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
+        $record = new TestingAdmin();
+        $column = $record->getTable()->getPkColumn();
+        $valueObj = $column->getNewRecordValueContainer($record);
         $clone = clone $valueObj;
         
         static::assertNull($this->getObjectPropertyValue($valueObj, 'value'));
@@ -44,7 +38,9 @@ class RecordValueTest extends BaseTestCase
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Argument #1 ($key) must be of type ?string');
-        $valueObj = new RecordValue(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
+        $record = new TestingAdmin();
+        $column = $record->getTable()->getPkColumn();
+        $valueObj = $column->getNewRecordValueContainer($record);
         /** @noinspection PhpStrictTypeCheckingInspection */
         /** @noinspection PhpParamsInspection */
         $valueObj->getPayload($this);
@@ -54,7 +50,9 @@ class RecordValueTest extends BaseTestCase
     {
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Argument #1 ($key) must be of type ?string');
-        $valueObj = new RecordValue(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
+        $record = new TestingAdmin();
+        $column = $record->getTable()->getPkColumn();
+        $valueObj = $column->getNewRecordValueContainer($record);
         /** @noinspection PhpStrictTypeCheckingInspection */
         /** @noinspection PhpParamsInspection */
         $valueObj->removePayload($this);
@@ -66,7 +64,9 @@ class RecordValueTest extends BaseTestCase
         $this->expectExceptionMessage(
             'Adding payload to RecordValue before value is provided is not allowed. Detected in:'
         );
-        $valueObj = new RecordValue(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
+        $record = new TestingAdmin();
+        $column = $record->getTable()->getPkColumn();
+        $valueObj = $column->getNewRecordValueContainer($record);
         /** @noinspection PhpStrictTypeCheckingInspection */
         /** @noinspection PhpParamsInspection */
         $valueObj->addPayload('test', 'test');
@@ -78,7 +78,9 @@ class RecordValueTest extends BaseTestCase
         $this->expectExceptionMessage(
             'Adding payload to RecordValue before value is provided is not allowed. Detected in:'
         );
-        $valueObj = new RecordValue(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
+        $record = new TestingAdmin();
+        $column = $record->getTable()->getPkColumn();
+        $valueObj = $column->getNewRecordValueContainer($record);
         /** @noinspection PhpStrictTypeCheckingInspection */
         /** @noinspection PhpParamsInspection */
         $valueObj->rememberPayload('test', function () {
@@ -88,7 +90,9 @@ class RecordValueTest extends BaseTestCase
     
     public function testPayload(): void
     {
-        $valueObj = new RecordValue(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
+        $record = new TestingAdmin();
+        $column = $record->getTable()->getPkColumn();
+        $valueObj = $column->getNewRecordValueContainer($record);
         $valueObj->setValue('test', 'test', false);
         $valueObj->addPayload('test2', '2');
         $valueObj->addPayload('test', '1');
@@ -117,7 +121,9 @@ class RecordValueTest extends BaseTestCase
     
     public function testIsFromDb(): void
     {
-        $valueObj = new RecordValue(TestingAdminsTableStructure::getPkColumn(), TestingAdmin::_());
+        $record = new TestingAdmin();
+        $column = $record->getTable()->getPkColumn();
+        $valueObj = $column->getNewRecordValueContainer($record);
         static::assertFalse($valueObj->isItFromDb());
         $valueObj->setIsFromDb(true);
         static::assertTrue($valueObj->isItFromDb());
@@ -127,11 +133,9 @@ class RecordValueTest extends BaseTestCase
     {
         $this->expectException(\BadMethodCallException::class);
         $this->expectExceptionMessage("Value for PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin(#null)->parent_id is not set");
-        $valueObj = new RecordValue(
-            TestingAdminsTableStructure::getColumn('parent_id'),
-            TestingAdmin::newEmptyRecord()
-        );
-        $valueObj->getValue();
+        $record = new TestingAdmin();
+        $column = $record->getTable()->getColumn('parent_id');
+        $column->getNewRecordValueContainer($record)->getValue();
     }
 
     public function testDuplicateSetValueMethodCall(): void {
@@ -140,7 +144,7 @@ class RecordValueTest extends BaseTestCase
             "%Value for .*?->parent_id aready set\. You need to create a new instance .*?%"
         );
         $record = TestingAdmin::newEmptyRecord();
-        $column = TestingAdminsTableStructure::getColumn('parent_id');
+        $column = $record->getTable()->getColumn('parent_id');
         $valueObj = $column->getNewRecordValueContainer($record);
         $valueObj->setValue('1', '1', true);
         $valueObj->setValue('2', '2', false);
@@ -149,7 +153,7 @@ class RecordValueTest extends BaseTestCase
     public function testRawValue(): void
     {
         $record = TestingAdmin::newEmptyRecord();
-        $column = TestingAdminsTableStructure::getColumn('parent_id');
+        $column = $record->getTable()->getColumn('parent_id');
 
         $valueObj = $column->getNewRecordValueContainer($record);
         $valueObj->setValue('1', '1', true);

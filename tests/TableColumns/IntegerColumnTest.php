@@ -21,7 +21,7 @@ class IntegerColumnTest extends BaseTestCase
     {
         $column = new IntegerColumn('integer');
         static::assertEquals(TableColumnDataType::INT, $column->getDataType());
-        static::assertEquals([], $column->getColumnNameAliases());
+        static::assertEquals([], $column->getValueFormatersNames());
         // has value
         $valueContainer = $this->newRecordValueContainer($column);
         static::assertFalse($column->hasValue($valueContainer, false));

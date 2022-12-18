@@ -6,7 +6,7 @@ namespace PeskyORM\ORM\TableStructure\TableColumn\Column;
 
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\Record\RecordValueContainerInterface;
-use PeskyORM\ORM\RecordsCollection\RecordsArray;
+use PeskyORM\ORM\RecordsCollection\RecordsCollectionInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
@@ -41,14 +41,14 @@ class JsonArrayColumn extends RealTableColumnAbstract
     {
         return (
             parent::shouldValidateValue($value, $isFromDb)
-            && !($value instanceof RecordsArray)
+            && !($value instanceof RecordsCollectionInterface)
         );
     }
 
     protected function normalizeValueForValidation(mixed $value, bool $isFromDb): mixed
     {
         // don't call parent: RecordsSet is can't be passed here
-        // because RecordsArray should not be validated
+        // because RecordsCollectionInterface should not be validated
         if (
             is_string($value)
             && ($value === 'null' || trim($value) === '')
@@ -95,7 +95,7 @@ class JsonArrayColumn extends RealTableColumnAbstract
             return '[]';
         }
 
-        if ($validatedValue instanceof RecordsArray) {
+        if ($validatedValue instanceof RecordsCollectionInterface) {
             return $this->encodeToJson($validatedValue->toArrays());
         }
 
@@ -140,7 +140,7 @@ class JsonArrayColumn extends RealTableColumnAbstract
         // if $validatedValue is array or can be converted - store it in
         // $valueContainer so that 'array' formatter won't need to decode json
         if (isset($this->formatters[ColumnValueFormatters::FORMAT_ARRAY])) {
-            if ($validatedValue instanceof RecordsArray) {
+            if ($validatedValue instanceof RecordsCollectionInterface) {
                 $validatedValue = $validatedValue->toArrays();
             }
             if (is_array($validatedValue)) {

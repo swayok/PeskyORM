@@ -1008,6 +1008,25 @@ class DbSelectTest extends BaseTestCase
             . ' AND "tbl_VrLngJnNmSItMstBShrtenedButWeNeedMoreThen60Characters_1"."parentId" IS NULL)',
             static::getNewSelect()->join($joinConfig)->getQuery()
         );
+
+        // test DbExpr as columns names
+        $joinConfig = new JoinConfig(
+            'Test',
+            JoinConfig::JOIN_INNER,
+            'Admins',
+            DbExpr::create('`Admins`.`id`'),
+            'settings',
+            DbExpr::create('`Test`.`id`'),
+        );
+        $joinConfig->setForeignColumnsToSelect(['key', 'value']);
+        static::assertEquals(
+            'SELECT "tbl_Admins_0".*,'
+            . ' "tbl_Test_1"."key" AS "col_Test__key_1",'
+            . ' "tbl_Test_1"."value" AS "col_Test__value_2"'
+            . ' FROM "admins" AS "tbl_Admins_0"'
+            . ' INNER JOIN "settings" AS "tbl_Test_1" ON (("tbl_Test_1"."id") = ("tbl_Admins_0"."id"))',
+            static::getNewSelect()->join($joinConfig)->getQuery()
+        );
     }
     
     public function testInvalidWith2(): void

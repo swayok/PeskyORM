@@ -9,6 +9,7 @@ use PeskyORM\Exception\InvalidDataException;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\Record\RecordValueContainerInterface;
 use PeskyORM\ORM\RecordsCollection\RecordsArray;
+use PeskyORM\ORM\RecordsCollection\RecordsCollectionInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\Column\MixedJsonColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
@@ -30,7 +31,7 @@ class MixedJsonColumnTest extends BaseTestCase
                 $column->getName() . '_as_object' => 'object',
                 $column->getName() . '_as_decoded' => 'decoded',
             ],
-            $column->getColumnNameAliases()
+            $column->getValueFormatersNames()
         );
         // has value
         $valueContainer = $this->newRecordValueContainer($column);
@@ -57,7 +58,7 @@ class MixedJsonColumnTest extends BaseTestCase
                 $column->getName() . '_as_object' => 'object',
                 $column->getName() . '_as_decoded' => 'decoded',
             ],
-            $column->getColumnNameAliases()
+            $column->getValueFormatersNames()
         );
         $this->testValidateValueCommon($column);
 
@@ -252,12 +253,15 @@ class MixedJsonColumnTest extends BaseTestCase
 
     private function testDefaultValues(
         MixedJsonColumn $column,
-        string|array|RecordInterface|RecordsArray $testValue,
+        string|array|RecordInterface|RecordsCollectionInterface $testValue,
         string $normalizedValue
     ): void {
         $message = $this->getAssertMessageForValue($testValue);
         $normalizedDefaultValue = $normalizedValue;
-        if ($testValue instanceof RecordInterface || $testValue instanceof RecordsArray) {
+        if (
+            $testValue instanceof RecordInterface
+            || $testValue instanceof RecordsCollectionInterface
+        ) {
             $normalizedDefaultValue = $testValue;
         }
         // default value
@@ -289,7 +293,7 @@ class MixedJsonColumnTest extends BaseTestCase
 
     private function testNonDbValues(
         MixedJsonColumn $column,
-        string|array|RecordInterface|RecordsArray $testValue,
+        string|array|RecordInterface|RecordsCollectionInterface $testValue,
         string $normalizedValue
     ): void {
         $message = $this->getAssertMessageForValue($testValue);
@@ -320,7 +324,7 @@ class MixedJsonColumnTest extends BaseTestCase
 
     private function testDbValues(
         MixedJsonColumn $column,
-        string|array|RecordInterface|RecordsArray $testValue,
+        string|array|RecordInterface|RecordsCollectionInterface $testValue,
         string $normalizedValue
     ): void {
         $message = $this->getAssertMessageForValue($testValue);
@@ -340,7 +344,7 @@ class MixedJsonColumnTest extends BaseTestCase
 
     private function testValidateGoodValue(
         MixedJsonColumn $column,
-        string|array|RecordInterface|RecordsArray $testValue,
+        string|array|RecordInterface|RecordsCollectionInterface $testValue,
     ): void {
         $column = $this->newColumn($column);
         $message = $this->getAssertMessageForValue($testValue);
@@ -427,7 +431,7 @@ class MixedJsonColumnTest extends BaseTestCase
         if ($testValue instanceof RecordInterface) {
             return 'RecordInterface(' . json_encode($testValue->toArray()) . ')';
         }
-        if ($testValue instanceof RecordsArray) {
+        if ($testValue instanceof RecordsCollectionInterface) {
             return 'RecordsArray(' . json_encode($testValue->toArrays()) . ')';
         }
         return is_array($testValue) ? json_encode($testValue) : $testValue;
@@ -548,5 +552,15 @@ class MixedJsonColumnTest extends BaseTestCase
         $column->allowsOnlyJsonArraysAndObjects();
         $valueContainer = $this->newRecordValueContainer($column);
         $column->setValue($valueContainer, 1, true, false);
+    }
+
+    public function testInvalidSetClassNameForValueToObjectFormatter(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches(
+            '%\$className argument must be a string and contain a full name of a class that implements .*ValueToObjectConverterInterface%'
+        );
+        $column = new MixedJsonColumn('mixed_json');
+        $column->setClassNameForValueToClassInstanceConverter(MixedJsonColumn::class);
     }
 }

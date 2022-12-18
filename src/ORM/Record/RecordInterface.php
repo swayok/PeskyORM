@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\Record;
 
-use PeskyORM\ORM\RecordsCollection\RecordsArray;
-use PeskyORM\ORM\RecordsCollection\RecordsSet;
+use PeskyORM\ORM\RecordsCollection\RecordsCollectionInterface;
 use PeskyORM\ORM\Table\TableInterface;
 use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 
-interface RecordInterface extends \ArrayAccess
+interface RecordInterface extends \ArrayAccess, \Serializable
 {
     
     /**
@@ -19,27 +18,9 @@ interface RecordInterface extends \ArrayAccess
      */
     public static function newEmptyRecord(): static;
     
-    public static function getTable(): TableInterface;
+    public function getTable(): TableInterface;
     
-    public static function hasColumn(string $name): bool;
-    
-    /**
-     * @param string $name
-     * @param string|null $format - filled when $name is something like 'timestamp_as_date' (returns 'date')
-     */
-    public static function getColumn(string $name, string &$format = null): TableColumnInterface;
-    
-    public static function getPrimaryKeyColumnName(): string;
-    
-    public static function hasPrimaryKeyColumn(): bool;
-    
-    public static function getPrimaryKeyColumn(): TableColumnInterface;
-    
-    public static function getRelations(): array;
-    
-    public static function hasRelation(string $name): bool;
-    
-    public static function getRelation(string $name): RelationInterface;
+    public function getPrimaryKeyColumnName(): string;
     
     /**
      * Resets all values and related records
@@ -109,7 +90,7 @@ interface RecordInterface extends \ArrayAccess
     public function getRelatedRecord(
         string $relationName,
         bool $loadIfNotSet = false
-    ): RecordsSet|RecordsArray|RecordInterface;
+    ): RecordsCollectionInterface|RecordInterface;
     
     /**
      * Read related object(s).
@@ -121,17 +102,17 @@ interface RecordInterface extends \ArrayAccess
     /**
      * Check if Record has data for related object(s).
      */
-    public function isRelatedRecordAttached(string $relationName): bool;
+    public function hasRelatedRecord(string $relationName): bool;
     
     /**
      * @param string|RelationInterface $relationName
-     * @param array|RecordInterface|RecordsArray|RecordsSet $relatedRecord
+     * @param array|RecordInterface|RecordsCollectionInterface $relatedRecord
      * @param bool|null $isFromDb - true: marks values as received from DB | null: autodetect
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there are unknown column names in $data
      */
     public function updateRelatedRecord(
         string|RelationInterface $relationName,
-        array|RecordInterface|RecordsArray|RecordsSet $relatedRecord,
+        array|RecordInterface|RecordsCollectionInterface $relatedRecord,
         ?bool $isFromDb = null,
         bool $haltOnUnknownColumnNames = true
     ): static;
@@ -322,12 +303,12 @@ interface RecordInterface extends \ArrayAccess
      * Collect default values for the columns
      * Note: if there is no default value for a column - null will be returned
      * @param array $columns - empty: return values for all columns
-     * @param bool $ignoreColumnsThatCannotBeSetManually - true: if column does not exist in DB - its value will not be returned
+     * @param bool $ignoreReadonlyAndVirtualAndAutoupdatingColumns - true: if column does not exist in DB - its value will not be returned
      * @param bool $nullifyDbExprValues - true: if default value is DbExpr - replace it by null
      */
     public function getDefaults(
         array $columns = [],
-        bool $ignoreColumnsThatCannotBeSetManually = true,
+        bool $ignoreReadonlyAndVirtualAndAutoupdatingColumns = true,
         bool $nullifyDbExprValues = true
     ): array;
     

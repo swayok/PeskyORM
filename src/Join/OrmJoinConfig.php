@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Join;
 
+use PeskyORM\DbExpr;
 use PeskyORM\ORM\Table\TableInterface;
 
 class OrmJoinConfig extends NormalJoinConfigAbstract implements OrmJoinConfigInterface
@@ -18,9 +19,9 @@ class OrmJoinConfig extends NormalJoinConfigAbstract implements OrmJoinConfigInt
         string $joinName,
         string $joinType,
         string $localTableAlias,
-        string $localColumnName,
+        string|DbExpr $localColumnName,
         TableInterface $foreignTable,
-        string $foreignColumnName
+        string|DbExpr $foreignColumnName
     ) {
         parent::__construct($joinName, $joinType);
         $this->setLocalTableAlias($localTableAlias)
@@ -32,7 +33,7 @@ class OrmJoinConfig extends NormalJoinConfigAbstract implements OrmJoinConfigInt
     protected function setForeignTable(TableInterface $foreignDbTable): static
     {
         $this->foreignTable = $foreignDbTable;
-        $this->foreignTableName = $foreignDbTable->getName();
+        $this->foreignTableName = $foreignDbTable->getTableName();
         $this->foreignTableSchema = $foreignDbTable->getTableStructure()->getSchema();
         return $this;
     }
@@ -58,7 +59,7 @@ class OrmJoinConfig extends NormalJoinConfigAbstract implements OrmJoinConfigInt
                     );
                 }
 
-                if (!$tableStructure::hasColumn($columnName)) {
+                if (!$tableStructure->hasColumn($columnName)) {
                     throw new \InvalidArgumentException(
                         "Column with name [{$this->getJoinName()}.{$columnName}]"
                         . (is_int($columnAlias) ? '' : " and alias [{$columnAlias}]")

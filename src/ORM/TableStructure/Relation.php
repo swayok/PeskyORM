@@ -20,24 +20,33 @@ class Relation implements RelationInterface
 
     protected string $localColumnName;
 
-    protected TableInterface $foreignTable;
-    protected TableColumnInterface $foreignColumn;
+    protected string $foreignTableClass;
+    protected string $foreignColumnName;
+    protected ?TableInterface $foreignTable = null;
+    protected ?TableColumnInterface $foreignColumn = null;
 
     protected string|\Closure|null $displayColumnName = null;
     protected \Closure|array $additionalJoinConditions = [];
 
+    /**
+     * $foreignTableClass instead of TableInterface instance used here to
+     * avoid problems with TableInterface class instantiation and to
+     * reduce amount of instantiated classes.
+     * TableInterface instance will be instantiated only when it is
+     * actually will be used.
+     */
     public function __construct(
         string $localColumnName,
         string $relationType,
-        TableInterface $foreignTable,
+        string $foreignTableClass,
         string $foreignColumnName,
-        ?string $name = null
+        string $name
     ) {
         $this
             ->setLocalColumnName($localColumnName)
             ->setDisplayColumnName($foreignColumnName)
             ->setType($relationType)
-            ->setForeignTable($foreignTable)
+            ->setForeignTableClass($foreignTableClass)
             ->setForeignColumnName($foreignColumnName);
         if ($name) {
             $this->setName($name);
@@ -99,24 +108,54 @@ class Relation implements RelationInterface
         return $this;
     }
 
-    protected function setForeignTable(TableInterface $foreignTable): static
+    protected function setForeignTableClass(string $foreignTableClass): static
     {
-        $this->foreignTable = $foreignTable;
+        if (!is_subclass_of($foreignTableClass, TableInterface::class)) {
+            throw new \InvalidArgumentException(
+                '$foreignTableClass argument must be a class that implements '
+                . TableInterface::class
+            );
+        }
+        $this->foreignTableClass = $foreignTableClass;
         return $this;
     }
 
     public function getForeignTable(): TableInterface
     {
+        if (!$this->foreignTable) {
+            // todo: use classes container to get instance by class name
+            /** @var TableInterface $class */
+            $class = $this->foreignTableClass;
+            $this->foreignTable = $class::getInstance();
+        }
         return $this->foreignTable;
     }
 
     public function getForeignColumnName(): string
     {
-        return $this->foreignColumn->getName();
+        // Do not use $this->foreignColumnName directly
+        // to validate column existence in $this->getForeignColumn()
+        return $this->getForeignColumn()->getName();
     }
 
     public function getForeignColumn(): TableColumnInterface
     {
+        if (!$this->foreignColumn) {
+            // check if column exists in foreign table
+            $foreignColumn = $this->getForeignTable()
+                ->getTableStructure()
+                ->getColumn($this->foreignColumnName);
+            // Check if foreign column name is not a primary key in HAS MANY relation.
+            // Otherwise, it is a mistake.
+            if ($this->getType() === static::HAS_MANY && $foreignColumn->isPrimaryKey()) {
+                throw new \InvalidArgumentException(
+                    "\$foreignColumnName argument value ('{$this->foreignColumnName}') refers to"
+                    . " a primary key column. It makes no sense for HAS MANY relation."
+                );
+            }
+
+            $this->foreignColumn = $foreignColumn;
+        }
         return $this->foreignColumn;
     }
 
@@ -126,20 +165,7 @@ class Relation implements RelationInterface
     protected function setForeignColumnName(string $foreignColumnName): static
     {
         ArgumentValidators::assertNotEmpty('$foreignColumnName', $foreignColumnName);
-        // check if column exists in foreign table
-        $foreignColumn = $this->getForeignTable()
-            ->getTableStructure()
-            ::getColumn($foreignColumnName);
-        // Check if foreign column name is not a primary key in HAS MANY relation.
-        // Otherwise, it is a mistake.
-        if ($this->getType() === static::HAS_MANY && $foreignColumn->isPrimaryKey()) {
-            throw new \InvalidArgumentException(
-                "\$foreignColumnName argument value ('{$foreignColumnName}') refers to"
-                . " a primary key column. It makes no sense for HAS MANY relation."
-            );
-        }
-
-        $this->foreignColumn = $foreignColumn;
+        $this->foreignColumnName = $foreignColumnName;
         return $this;
     }
 
@@ -176,7 +202,7 @@ class Relation implements RelationInterface
      *      Relation $relation,
      *      string $localTableAlias,
      *      bool $forStandaloneSelect,
-     *      ?Record $localRecord = null
+     *      ?RecordInterface $localRecord = null
      * ): array
      */
     public function setAdditionalJoinConditions(array|\Closure $additionalJoinConditions): static

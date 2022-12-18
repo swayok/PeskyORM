@@ -21,7 +21,7 @@ class BooleanColumnTest extends BaseTestCase
     {
         $column = new BooleanColumn('bool');
         static::assertEquals(TableColumnDataType::BOOL, $column->getDataType());
-        static::assertEquals([], $column->getColumnNameAliases());
+        static::assertEquals([], $column->getValueFormatersNames());
         // has value
         $valueContainer = $this->newRecordValueContainer($column);
         static::assertFalse($column->hasValue($valueContainer, false));

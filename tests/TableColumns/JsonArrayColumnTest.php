@@ -8,6 +8,7 @@ use PeskyORM\DbExpr;
 use PeskyORM\Exception\InvalidDataException;
 use PeskyORM\ORM\Record\RecordValueContainerInterface;
 use PeskyORM\ORM\RecordsCollection\RecordsArray;
+use PeskyORM\ORM\RecordsCollection\RecordsCollectionInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\Column\JsonArrayColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
@@ -26,7 +27,7 @@ class JsonArrayColumnTest extends BaseTestCase
             [
                 $column->getName() . '_as_array' => 'array'
             ],
-            $column->getColumnNameAliases()
+            $column->getValueFormatersNames()
         );
         // has value
         $valueContainer = $this->newRecordValueContainer($column);
@@ -129,11 +130,11 @@ class JsonArrayColumnTest extends BaseTestCase
 
     private function testDefaultValues(
         JsonArrayColumn $column,
-        string|array|RecordsArray $testValue,
+        string|array|RecordsCollectionInterface $testValue,
         string $normalizedValue
     ): void {
         $message = $this->getAssertMessageForValue($testValue);
-        $normalizedDefaultValue = $testValue instanceof RecordsArray
+        $normalizedDefaultValue = $testValue instanceof RecordsCollectionInterface
             ? $testValue
             : $normalizedValue;
         // default value
@@ -165,7 +166,7 @@ class JsonArrayColumnTest extends BaseTestCase
 
     private function testNonDbValues(
         JsonArrayColumn $column,
-        string|array|RecordsArray $testValue,
+        string|array|RecordsCollectionInterface $testValue,
         string $normalizedValue
     ): void {
         $message = $this->getAssertMessageForValue($testValue);
@@ -196,7 +197,7 @@ class JsonArrayColumnTest extends BaseTestCase
 
     private function testDbValues(
         JsonArrayColumn $column,
-        string|array|RecordsArray $testValue,
+        string|array|RecordsCollectionInterface $testValue,
         string $normalizedValue
     ): void {
         $message = $this->getAssertMessageForValue($testValue);
@@ -216,7 +217,7 @@ class JsonArrayColumnTest extends BaseTestCase
 
     private function testValidateGoodValue(
         JsonArrayColumn $column,
-        string|array|RecordsArray $testValue,
+        string|array|RecordsCollectionInterface $testValue,
     ): void {
         $column = $this->newColumn($column);
         $message = $this->getAssertMessageForValue($testValue);
@@ -305,7 +306,7 @@ class JsonArrayColumnTest extends BaseTestCase
 
     private function getAssertMessageForValue(mixed $testValue): string
     {
-        if ($testValue instanceof RecordsArray) {
+        if ($testValue instanceof RecordsCollectionInterface) {
             return 'RecordsArray(' . json_encode($testValue->toArrays()) . ')';
         }
         return is_array($testValue) ? json_encode($testValue) : $testValue;

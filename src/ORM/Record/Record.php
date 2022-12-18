@@ -4,26 +4,23 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\Record;
 
+use JetBrains\PhpStorm\ArrayShape;
 use PeskyORM\DbExpr;
 use PeskyORM\Exception\InvalidDataException;
 use PeskyORM\Exception\RecordNotFoundException;
 use PeskyORM\ORM\RecordsCollection\KeyValuePair;
 use PeskyORM\ORM\RecordsCollection\RecordsArray;
-use PeskyORM\ORM\RecordsCollection\RecordsSet;
+use PeskyORM\ORM\RecordsCollection\RecordsCollectionInterface;
+use PeskyORM\ORM\Table\TableInterface;
 use PeskyORM\ORM\TableStructure\RelationInterface;
-use PeskyORM\ORM\TableStructure\TableColumn\ColumnClosuresInterface;
-use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueProcessingHelpers;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\ORM\TableStructure\TableStructureInterface;
 use PeskyORM\Select\OrmSelect;
 use PeskyORM\Utils\StringUtils;
 
-abstract class Record implements RecordInterface, \Iterator, \Serializable
+class Record implements RecordInterface
 {
-    /**
-     * @var TableColumnInterface[]
-     */
-    private static array $columns = [];
+    protected TableInterface $table;
 
     /**
      * @var RecordValue[]
@@ -31,7 +28,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     protected array $values = [];
 
     /**
-     * @var Record[]|RecordInterface[]|RecordsSet[]
+     * @var Record[]|RecordInterface[]|RecordsCollectionInterface
      */
     protected array $relatedRecords = [];
 
@@ -60,8 +57,11 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     /**
      * Create new record with values from $data array
      */
-    public static function fromArray(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true): static
-    {
+    public static function fromArray(
+        array $data,
+        bool $isFromDb = false,
+        bool $haltOnUnknownColumnNames = true
+    ): static {
         return static::newEmptyRecord()
             ->fromData($data, $isFromDb, $haltOnUnknownColumnNames);
     }
@@ -69,11 +69,14 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     /**
      * Create new record and load values from DB using $pkValue
      * Warning: if $columns argument value is empty - even heavy valued columns
-     * will be selected (see \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::valueIsHeavy()). To select all columns
+     * will be selected (see \PeskyORM\ORM\TableStructureOld\TableColumn\TableColumn::valueIsHeavy()). To select all columns
      * excluding heavy ones use ['*'] as value for $columns argument
      */
-    public static function read(mixed $pkValue, array $columns = [], array $readRelatedRecords = []): static
-    {
+    public static function read(
+        mixed $pkValue,
+        array $columns = [],
+        array $readRelatedRecords = []
+    ): static {
         return static::newEmptyRecord()
             ->fetchByPrimaryKey($pkValue, $columns, $readRelatedRecords);
     }
@@ -81,7 +84,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     /**
      * Create new record and find values in DB using $conditionsAndOptions
      * Warning: if $columns argument value is empty - even heavy valued columns
-     * will be selected (see \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::valueIsHeavy()). To select all columns
+     * will be selected (see \PeskyORM\ORM\TableStructureOld\TableColumn\TableColumn::valueIsHeavy()). To select all columns
      * excluding heavy ones use ['*'] as value for $columns argument
      */
     public static function find(
@@ -98,192 +101,101 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         return new static();
     }
 
-    /**
-     * Create new empty record with enabled TrustModeForDbData
-     */
-    public static function newEmptyRecordForTrustedDbData(): static
+    public function __construct(TableInterface $table)
     {
-        $record = static::newEmptyRecord();
-        $record->enableTrustModeForDbData();
-        return $record;
+        $this->table = $table;
     }
 
-    /**
-     * Create new empty record (shortcut)
-     */
-    public static function _(): static
+    public function getTable(): TableInterface
     {
-        return static::newEmptyRecord();
+        return $this->table;
     }
 
-    /**
-     * Create new empty record (shortcut)
-     */
-    public static function new1(): static
+    public function getTableStructure(): TableStructureInterface
     {
-        return static::newEmptyRecord();
-    }
-
-    public function __construct()
-    {
-    }
-
-    public static function getTableStructure(): TableStructureInterface
-    {
-        return static::getTable()->getStructure();
-    }
-
-    /**
-     * Resets cached columns instances (used for testing only, that's why it is private)
-     * @noinspection PhpUnusedPrivateMethodInspection
-     */
-    private static function resetColumnsCache(): void
-    {
-        self::$columns = [];
-    }
-
-    /**
-     * @param bool $includeFormats - include columns formats ({column}_as_array, etc.)
-     * @return TableColumnInterface[] - key = column name
-     */
-    public static function getColumns(bool $includeFormats = false): array
-    {
-        return self::getCachedColumnsOrRelations($includeFormats ? 'columns_and_formats' : 'columns');
+        return $this->table->getTableStructure();
     }
 
     /**
      * @return TableColumnInterface[] - key = column name
      */
-    public static function getNotPrivateColumns(): array
+    protected function getColumns(): array
     {
-        return self::getCachedColumnsOrRelations('not_private_columns');
+        return $this->getTableStructure()->getColumns();
     }
 
     /**
      * @return TableColumnInterface[] - key = column name
      */
-    public static function getColumnsThatExistInDb(): array
+    protected function getNotPrivateColumns(): array
     {
-        return self::getCachedColumnsOrRelations('db_columns');
+        return $this->getTableStructure()->getNotPrivateColumns();
     }
 
     /**
      * @return TableColumnInterface[] - key = column name
      */
-    public static function getVirtualColumns(): array
+    protected function getColumnsThatExistInDb(): array
     {
-        return self::getCachedColumnsOrRelations('not_db_columns');
-    }
-
-    private static function getCachedColumnsOrRelations(string $key = 'columns'): array|TableColumnInterface
-    {
-        // significantly decreases execution time on heavy ORM usage (proved by profilig with xdebug)
-        if (!isset(self::$columns[static::class])) {
-            $tableStructure = static::getTableStructure();
-            $columns = $tableStructure::getColumns();
-            self::$columns[static::class] = [
-                'columns' => $columns,
-                'columns_and_formats' => [],
-                'not_private_columns' => array_filter($columns, static function (TableColumnInterface $column) {
-                    return !$column->isPrivateValues();
-                }),
-                'db_columns' => $tableStructure::getRealColumns(),
-                'not_db_columns' => $tableStructure::getVirtualColumns(),
-                'pk_column' => $tableStructure::getPkColumn(),
-                'relations' => $tableStructure::getRelations(),
-            ];
-            foreach ($columns as $columnName => $column) {
-                self::$columns[static::class]['columns_and_formats'][$columnName] = [
-                    'format' => null,
-                    'column' => $column,
-                ];
-                /** @var ColumnClosuresInterface $closuresClass */
-                foreach ($column->getValueFormattersNames() as $format) {
-                    self::$columns[static::class]['columns_and_formats'][$columnName . '_as_' . $format] = [
-                        'format' => $format,
-                        'column' => $column,
-                    ];
-                }
-            }
-        }
-        return self::$columns[static::class][$key];
+        return $this->getTableStructure()->getRealColumns();
     }
 
     /**
-     * {@inheritDoc}
+     * @return TableColumnInterface[] - key = column name
+     */
+    protected function getVirtualColumns(): array
+    {
+        return $this->getTableStructure()->getVirtualColumns();
+    }
+
+    /**
      * @throws \InvalidArgumentException
      */
-    public static function getColumn(string $name, string &$format = null): TableColumnInterface
+    protected function getColumn(string $name): TableColumnInterface
     {
-        $columns = static::getColumns(true);
-        if (!isset($columns[$name])) {
-            throw new \InvalidArgumentException(
-                "There is no column '$name' in " . get_class(static::getTableStructure())
-            );
-        }
-        $format = $columns[$name]['format'];
-        return $columns[$name]['column'];
+        return $this->getTableStructure()->getColumn($name);
     }
 
-    public static function hasColumn(string $name): bool
+    #[ArrayShape([
+        'column' => TableColumnInterface::class,
+        'format' => 'string|null',
+    ])]
+    protected function getColumnAndFormat(string $name): array
     {
-        return static::_hasColumn($name, true);
+        return $this->getTableStructure()->getColumnAndFormat($name);
     }
 
-    protected static function _hasColumn(string $name, bool $includeFormatters): bool
+    protected function hasColumn(string $name): bool
     {
-        return isset(static::getColumns($includeFormatters)[$name]);
+        return $this->getTableStructure()->hasColumn($name);
     }
 
-    /**
-     * @throws \BadMethodCallException
-     */
-    public static function getPrimaryKeyColumn(): TableColumnInterface
+    protected function getPrimaryKeyColumn(): TableColumnInterface
     {
-        $column = static::getCachedColumnsOrRelations('pk_column');
-        if (!$column) {
-            throw new \BadMethodCallException('There is no primary key column in ' . get_class(static::getTableStructure()));
-        }
-        return $column;
+        return $this->getTableStructure()->getPkColumn();
     }
 
-    public static function hasPrimaryKeyColumn(): bool
+    public function getPrimaryKeyColumnName(): string
     {
-        return (bool)static::getCachedColumnsOrRelations('pk_column');
-    }
-
-    public static function getPrimaryKeyColumnName(): string
-    {
-        return static::getPrimaryKeyColumn()->getName();
+        return $this->getTableStructure()->getPkColumnName();
     }
 
     /**
      * @return RelationInterface[]
      */
-    public static function getRelations(): array
+    protected function getRelations(): array
     {
-        return static::getCachedColumnsOrRelations('relations');
+        return $this->getTableStructure()->getRelations();
     }
 
-    /**
-     * @param string $name
-     * @return RelationInterface
-     * @throws \InvalidArgumentException
-     */
-    public static function getRelation(string $name): RelationInterface
+    protected function getRelation(string $name): RelationInterface
     {
-        $relations = static::getRelations();
-        if (!isset($relations[$name])) {
-            throw new \InvalidArgumentException(
-                "There is no relation '$name' in " . get_class(static::getTableStructure())
-            );
-        }
-        return $relations[$name];
+        return $this->getTableStructure()->getRelation($name);
     }
 
-    public static function hasRelation(string $name): bool
+    protected function hasRelation(string $name): bool
     {
-        return isset(static::getRelations()[$name]);
+        return $this->getTableStructure()->hasRelation($name);
     }
 
     public function enableTrustModeForDbData(): static
@@ -325,7 +237,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         return $this;
     }
 
-    protected function createValueObject(TableColumnInterface $column): RecordValue
+    protected function createValueContainer(TableColumnInterface $column): RecordValue
     {
         return $column->getNewRecordValueContainer($this);
     }
@@ -351,13 +263,11 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     protected function getValueContainer(
         TableColumnInterface|string $column
     ): RecordValue {
-        if ($this->isReadOnly()) {
-            throw new \BadMethodCallException('Record is in read only mode.');
-        }
+        $this->assertNotReadOnlyMode();
         $columnName = is_string($column) ? $column : $column->getName();
         if (!isset($this->values[$columnName])) {
-            $this->values[$columnName] = $this->createValueObject(
-                is_string($column) ? static::getColumn($column) : $column
+            $this->values[$columnName] = $this->createValueContainer(
+                is_string($column) ? $this->getColumn($column) : $column
             );
         }
         return $this->values[$columnName];
@@ -374,9 +284,11 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         ?string $format = null
     ): mixed {
         if (is_string($column)) {
-            $column = static::getColumn($column, $maybeFormat);
-            if ($maybeFormat && !$format) {
-                $format = $maybeFormat;
+            $columnAndFormat = $this->getColumnAndFormat($column);
+            $column = $columnAndFormat['column'];
+            if (!$format) {
+                /** @noinspection CallableParameterUseCaseInTypeContextInspection */
+                $format = $columnAndFormat['format'];
             }
         }
         if ($this->isReadOnly()) {
@@ -386,7 +298,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
                 return $value;
             }
 
-            $valueContainer = $this->createValueObject($column);
+            $valueContainer = $this->createValueContainer($column);
             $valueContainer->setValue($value, $value, true);
         } else {
             $valueContainer = $this->getValueContainer($column);
@@ -400,7 +312,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         bool $trueIfThereIsDefaultValue = false
     ): bool {
         if (is_string($column)) {
-            $column = static::getColumn($column);
+            $column = $this->getColumn($column);
         }
         if ($this->isReadOnly()) {
             return array_key_exists($column->getName(), $this->readOnlyData);
@@ -427,12 +339,10 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         bool $isFromDb
     ): static {
         if (is_string($column)) {
-            $column = static::getColumn($column);
+            $column = $this->getColumn($column);
         }
-        if (!$isFromDb && $this->isReadOnly()) {
-            throw new \BadMethodCallException(
-                'Record is in read only mode. Updates not allowed.'
-            );
+        if (!$isFromDb) {
+            $this->assertNotReadOnlyMode();
         }
         if ($this->isCollectingUpdates && $isFromDb) {
             throw new \BadMethodCallException(
@@ -510,7 +420,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
             $finalValue = $this->getValue($column);
             // unset relation if relation's linking column value differs from current one
             foreach ($column->getRelations() as $relation) {
-                if ($this->isRelatedRecordAttached($relation->getName())) {
+                if ($this->hasRelatedRecord($relation->getName())) {
                     $relatedRecord = $this->getRelatedRecord($relation->getName(), false);
                     $relatedColumnName = $relation->getForeignColumnName();
                     switch ($relation->getType()) {
@@ -524,8 +434,8 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
                             }
                             break;
                         case RelationInterface::HAS_MANY:
-                            /** @var RecordsSet $relatedRecord */
-                            if (!$relatedRecord->areRecordsFetchedFromDb()) {
+                            /** @var RecordsCollectionInterface $relatedRecord */
+                            if (!$relatedRecord->isDbQueryAlreadyExecuted()) {
                                 // not fetched yet - remove without counting and other testing to prevent
                                 // unnecessary DB queries
                                 $this->unsetRelatedRecord($relation->getName());
@@ -550,7 +460,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         $oldValueObject = $this->getValueContainer($column);
         if ($oldValueObject->hasValue()) {
             $column = $oldValueObject->getColumn();
-            $this->values[$column->getName()] = $this->createValueObject($column);
+            $this->values[$column->getName()] = $this->createValueContainer($column);
             if ($column->isPrimaryKey()) {
                 $this->onPrimaryKeyChangeForRecordReceivedFromDb(
                     $oldValueObject->getValue()
@@ -567,7 +477,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     {
         $this->existsInDb = false;
         $this->existsInDbReally = false;
-        return $this->unsetValue(static::getPrimaryKeyColumn());
+        return $this->unsetValue($this->getPrimaryKeyColumn());
     }
 
     /**
@@ -580,7 +490,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         $this->relatedRecords = [];
         $this->existsInDb = null;
         $this->existsInDbReally = null;
-        $pkColName = static::getPrimaryKeyColumnName();
+        $pkColName = $this->getPrimaryKeyColumnName();
         foreach ($this->values as $colName => $valueContainer) {
             if ($colName !== $pkColName && $valueContainer->hasValue()) {
                 $valueContainer->setIsFromDb(false);
@@ -590,12 +500,12 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
 
     public function getPrimaryKeyValue(): int|float|string|null
     {
-        return $this->getValue(static::getPrimaryKeyColumn(), null);
+        return $this->getValue($this->getPrimaryKeyColumn(), null);
     }
 
     public function hasPrimaryKeyValue(): bool
     {
-        return $this->hasValue(static::getPrimaryKeyColumn(), false);
+        return $this->hasValue($this->getPrimaryKeyColumn(), false);
     }
 
     public function existsInDb(bool $useDbQuery = false): bool
@@ -603,7 +513,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         if ($useDbQuery) {
             if ($this->existsInDbReally === null) {
                 $this->existsInDb = $this->existsInDbReally = (
-                    $this->hasValue(static::getPrimaryKeyColumn(), false)
+                    $this->hasValue($this->getPrimaryKeyColumn(), false)
                     && $this->_existsInDbViaQuery()
                 );
             }
@@ -612,8 +522,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
 
         if ($this->existsInDb === null) {
             $this->existsInDb = (
-                $this->hasValue(static::getPrimaryKeyColumn(), false)
-                //            && $this->getValueContainerByColumnConfig($pkColumn)->isItFromDb() //< pk cannot be not from db
+                $this->hasValue($this->getPrimaryKeyColumn(), false)
                 && (!$useDbQuery || $this->_existsInDbViaQuery())
             );
         }
@@ -625,9 +534,9 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
      */
     protected function _existsInDbViaQuery(): bool
     {
-        return static::getTable()
+        return $this->getTable()
             ->hasMatchingRecord([
-                static::getPrimaryKeyColumnName() => $this->getPrimaryKeyValue(),
+                $this->getPrimaryKeyColumnName() => $this->getPrimaryKeyValue(),
             ]);
     }
 
@@ -637,27 +546,38 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
      */
     public function updateRelatedRecord(
         string|RelationInterface $relationName,
-        array|RecordInterface|RecordsArray|RecordsSet $relatedRecord,
+        array|RecordInterface|RecordsCollectionInterface $relatedRecord,
         ?bool $isFromDb = null,
         bool $haltOnUnknownColumnNames = true
     ): static {
-        $relation = is_string($relationName) ? static::getRelation($relationName) : $relationName;
+        $relation = is_string($relationName)
+            ? $this->getRelation($relationName)
+            : $relationName;
         $relationTable = $relation->getForeignTable();
         if ($relation->getType() === RelationInterface::HAS_MANY) {
             if (is_array($relatedRecord)) {
-                $relatedRecord = RecordsSet::createFromArray($relationTable, $relatedRecord, $isFromDb, $this->isTrustDbDataMode());
+                $relatedRecord = $this->arrayToRecordsCollection(
+                    $relationTable,
+                    $relatedRecord,
+                    $isFromDb,
+                    $this->isTrustDbDataMode()
+                );
                 if ($this->isReadOnly()) {
                     $relatedRecord->enableReadOnlyMode();
                 }
-            } elseif (!($relatedRecord instanceof RecordsArray)) {
+            } elseif (!($relatedRecord instanceof RecordsCollectionInterface)) {
                 throw new \InvalidArgumentException(
-                    '$relatedRecord argument for HAS MANY relation must be array or instance of ' . RecordsArray::class
+                    '$relatedRecord argument for HAS MANY relation must be array'
+                    . ' or an instance of ' . RecordsCollectionInterface::class
                 );
             }
         } elseif (is_array($relatedRecord)) {
             if ($isFromDb === null) {
-                $pkName = $relationTable::getPkColumnName();
-                $isFromDb = array_key_exists($pkName, $relatedRecord) && $relatedRecord[$pkName] !== null;
+                $pkName = $relationTable->getPkColumnName();
+                $isFromDb = (
+                    array_key_exists($pkName, $relatedRecord)
+                    && $relatedRecord[$pkName] !== null
+                );
             }
             $data = $relatedRecord;
             $relatedRecord = $relationTable->newRecord();
@@ -671,19 +591,36 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
                 $relatedRecord->fromData($data, $isFromDb, $haltOnUnknownColumnNames);
             }
         } elseif ($relatedRecord instanceof self) {
-            if ($relatedRecord::getTable()
-                    ->getName() !== $relationTable::getName()) {
+            if ($relatedRecord->getTable()->getTableName() !== $relationTable->getTableName()) {
                 throw new \InvalidArgumentException(
-                    "\$relatedRecord argument must be an instance of Record class for the '{$relationTable::getName()}' DB table"
+                    "\$relatedRecord argument must be an instance of "
+                    . RecordInterface::class
+                    . " class for the '{$relationTable->getTableName()}' DB table"
                 );
             }
         } else {
             throw new \InvalidArgumentException(
-                "\$relatedRecord argument must be an array or instance of Record class for the '{$relationTable::getName()}' DB table"
+                "\$relatedRecord argument must be an array or an instance of "
+                . RecordInterface::class
+                . " class for the '{$relationTable->getTableName()}' DB table"
             );
         }
         $this->relatedRecords[$relation->getName()] = $relatedRecord;
         return $this;
+    }
+
+    protected function arrayToRecordsCollection(
+        TableInterface $table,
+        array $records,
+        ?bool $isFromDb = null,
+        bool $disableDbRecordDataValidation = false
+    ): RecordsCollectionInterface {
+        return new RecordsArray(
+            $table,
+            $records,
+            $isFromDb,
+            $disableDbRecordDataValidation
+        );
     }
 
     public function unsetRelatedRecord(string $relationName): static
@@ -700,8 +637,8 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     public function getRelatedRecord(
         string $relationName,
         bool $loadIfNotSet = false
-    ): RecordsSet|RecordsArray|RecordInterface {
-        if (!$this->isRelatedRecordAttached($relationName)) {
+    ): RecordsCollectionInterface|RecordInterface {
+        if (!$this->hasRelatedRecord($relationName)) {
             if ($loadIfNotSet) {
                 $this->readRelatedRecord($relationName);
             } else {
@@ -721,7 +658,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
      */
     public function readRelatedRecord(string $relationName): static
     {
-        $relation = static::getRelation($relationName);
+        $relation = $this->getRelation($relationName);
         if (!$this->isRelatedRecordCanBeRead($relation)) {
             throw new \BadMethodCallException(
                 'Record ' . get_class($this) . " has not enough data to read related record '{$relationName}'. "
@@ -736,9 +673,14 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
                 $relatedRecord->enableReadOnlyMode();
             }
         } else {
+            $value = $this->getValue($relation->getLocalColumnName());
             $conditions = array_merge(
-                [$relation->getForeignColumnName() => $this->getValue($relation->getLocalColumnName())],
-                $relation->getAdditionalJoinConditions(true, static::getTable()::getAlias(), $this)
+                [$relation->getForeignColumnName() => $value],
+                $relation->getAdditionalJoinConditions(
+                    true,
+                    $this->getTable()->getTableAlias(),
+                    $this
+                )
             );
             if ($relation->getType() === RelationInterface::HAS_MANY) {
                 $relatedRecord = $relatedTable::select(
@@ -746,7 +688,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
                     $conditions,
                     static function (OrmSelect $select) use ($relationName, $relatedTable) {
                         $select
-                            ->orderBy($relatedTable::getPkColumnName(), true)
+                            ->orderBy($relatedTable->getPkColumnName(), true)
                             ->setTableAlias($relationName);
                     }
                 );
@@ -781,14 +723,14 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     {
         $relation = $relation instanceof RelationInterface
             ? $relation
-            : static::getRelation($relation);
+            : $this->getRelation($relation);
         return $this->hasValue($relation->getLocalColumnName());
     }
 
-    public function isRelatedRecordAttached(string $relationName): bool
+    public function hasRelatedRecord(string $relationName): bool
     {
         // check if there is a Relation with this name
-        static::getRelation($relationName);
+        $this->getRelation($relationName);
         /** @noinspection NotOptimalIfConditionsInspection */
         if ($this->isReadOnly() && isset($this->readOnlyData[$relationName])) {
             return true;
@@ -819,7 +761,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     /**
      * Fill record values with data fetched from DB by primary key value ($pkValue)
      * Warning: if $columns argument value is empty - even heavy valued columns
-     * will be selected (see \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::valueIsHeavy()). To select all columns
+     * will be selected (see \PeskyORM\ORM\TableStructureOld\TableColumn\TableColumn::valueIsHeavy()). To select all columns
      * excluding heavy ones use ['*'] as value for $columns argument
      */
     public function fetchByPrimaryKey(
@@ -827,7 +769,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         array $columns = [],
         array $readRelatedRecords = []
     ): static {
-        return $this->fetch([static::getPrimaryKeyColumnName() => $pkValue], $columns, $readRelatedRecords);
+        return $this->fetch([$this->getPrimaryKeyColumnName() => $pkValue], $columns, $readRelatedRecords);
     }
 
     /**
@@ -841,7 +783,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     /**
      * Fill record values with data fetched from DB by $conditionsAndOptions
      * Warning: if $columns argument value is empty - even heavy valued columns
-     * will be selected (see \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::valueIsHeavy()). To select all columns
+     * will be selected (see \PeskyORM\ORM\TableStructureOld\TableColumn\TableColumn::valueIsHeavy()). To select all columns
      * excluding heavy ones use ['*'] as value for $columns argument
      * Note: relations can be loaded via 'CONTAIN' key in $conditionsAndOptions
      * @throws \InvalidArgumentException
@@ -849,9 +791,9 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     public function fetch(array $conditionsAndOptions, array $columns = [], array $readRelatedRecords = []): static
     {
         if (empty($columns)) {
-            $columns = array_keys(static::getColumnsThatExistInDb());
+            $columns = array_keys($this->getColumnsThatExistInDb());
         } else {
-            $columns[] = static::getPrimaryKeyColumnName();
+            $columns[] = $this->getPrimaryKeyColumnName();
         }
         $columnsFromRelations = [];
         $hasManyRelations = [];
@@ -862,8 +804,8 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
                 $relationName = $realtionColumns;
                 $realtionColumns = ['*'];
             }
-            $relations[$relationName] = static::getRelation($relationName);
-            if (static::getRelation($relationName)->getType() === RelationInterface::HAS_MANY) {
+            $relations[$relationName] = $this->getRelation($relationName);
+            if ($this->getRelation($relationName)->getType() === RelationInterface::HAS_MANY) {
                 $hasManyRelations[] = $relationName;
             } else {
                 $columnsFromRelations[$relationName] = (array)$realtionColumns;
@@ -881,7 +823,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
 
             throw $exception;
         }
-        $record = static::getTable()
+        $record = $this->getTable()
             ->selectOne(array_merge($columnsToSelectFromMainTable, $columnsFromRelations), $conditionsAndOptions);
         if (empty($record)) {
             $this->reset();
@@ -909,7 +851,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
      * Reload data for current record.
      * Note: record must exist in DB
      * Warning: if $columns argument value is empty - even heavy valued columns
-     * will be selected (see \PeskyORM\ORM\TableStructure\TableColumn\TableColumn::valueIsHeavy()). To select all columns
+     * will be selected (see \PeskyORM\ORM\TableStructureOld\TableColumn\TableColumn::valueIsHeavy()). To select all columns
      * excluding heavy ones use ['*'] as value for $columns argument
      * @throws RecordNotFoundException
      */
@@ -926,10 +868,10 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         if (!$this->existsInDb()) {
             throw new RecordNotFoundException('Record must exist in DB');
         }
-        $data = static::getTable()
+        $data = $this->getTable()
             ->selectOne(
                 empty($columns) ? '*' : $columns,
-                [static::getPrimaryKeyColumnName() => $this->getPrimaryKeyValue()]
+                [$this->getPrimaryKeyColumnName() => $this->getPrimaryKeyValue()]
             );
         if (empty($data)) {
             throw new RecordNotFoundException(
@@ -947,18 +889,16 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
      */
     public function updateValues(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true): static
     {
-        if ($this->isReadOnly()) {
-            if (!$isFromDb) {
-                throw new \BadMethodCallException(
-                    'Record is in read only mode. Updates not allowed.'
-                );
-            }
+        if (!$isFromDb) {
+            $this->assertNotReadOnlyMode();
+        }
 
-            $this->readOnlyData = static::normalizeReadOnlyData($data);
+        if ($this->isReadOnly()) {
+            $this->readOnlyData = $this->normalizeReadOnlyData($data);
             return $this;
         }
 
-        $pkColumn = static::getPrimaryKeyColumn();
+        $pkColumn = $this->getPrimaryKeyColumn();
         if ($isFromDb && !$this->existsInDb()) {
             // first set pk column value
             if (array_key_exists($pkColumn->getName(), $data)) {
@@ -972,8 +912,8 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
                 );
             }
         }
-        $columns = static::getColumns();
-        $relations = static::getRelations();
+        $columns = $this->getColumns();
+        $relations = $this->getRelations();
         foreach ($data as $columnNameOrRelationName => $value) {
             if (isset($columns[$columnNameOrRelationName])) {
                 $this->updateValue($columns[$columnNameOrRelationName], $value, $isFromDb);
@@ -986,12 +926,15 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
                 );
             } elseif ($haltOnUnknownColumnNames) {
                 $recordClass = static::class;
-                $tableStructureClass = get_class(static::getTableStructure());
-                throw new \InvalidArgumentException(
-                    "\$data argument contains unknown column name or relation name {$recordClass}->{$columnNameOrRelationName}"
-                    . ' ($isFromDb: ' . ($isFromDb ? 'true' : 'false') . ').'
-                    . ($isFromDb ? " Possibly column '{$columnNameOrRelationName}' exists in DB but not defined in {$tableStructureClass}" : '')
-                );
+                $tableStructureClass = get_class($this->getTableStructure());
+                $message = "\$data argument contains unknown column name or"
+                    . " relation name {$recordClass}->{$columnNameOrRelationName}"
+                    . ' ($isFromDb: ' . ($isFromDb ? 'true' : 'false') . ').';
+                if ($isFromDb) {
+                    $message .= " Possibly column '{$columnNameOrRelationName}'"
+                        . " exists in DB but not registered in {$tableStructureClass}";
+                }
+                throw new \InvalidArgumentException($message);
             }
         }
         return $this;
@@ -1021,16 +964,18 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
      */
     public function begin(): static
     {
-        if ($this->isReadOnly()) {
-            throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
-        }
+        $this->assertNotReadOnlyMode();
 
         if ($this->isCollectingUpdates) {
-            throw new \BadMethodCallException('Attempt to begin collecting changes when already collecting changes');
+            throw new \BadMethodCallException(
+                'Attempt to begin collecting changes when already collecting changes'
+            );
         }
 
         if (!$this->existsInDb()) {
-            throw new \BadMethodCallException('Trying to begin collecting changes on not existing record');
+            throw new \BadMethodCallException(
+                'Trying to begin collecting changes on not existing record'
+            );
         }
 
         $this->valuesBackup = [];
@@ -1060,16 +1005,21 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
      * {@inheritDoc}
      * @throws \BadMethodCallException
      */
-    public function commit(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false): static
-    {
+    public function commit(
+        array $relationsToSave = [],
+        bool $deleteNotListedRelatedRecords = false
+    ): static {
         if (!$this->isCollectingUpdates) {
             throw new \BadMethodCallException(
                 'It is impossible to commit changed values: changes collecting was not started'
             );
         }
-        $columnsToSave = array_keys($this->valuesBackup);
+        $columnsToSave = array_intersect_key(
+            $this->getColumnsWithUpdatableValues(),
+            $this->valuesBackup
+        );
         $this->cleanUpdates();
-        $this->saveToDb(array_intersect($columnsToSave, $this->getColumnsNamesWithUpdatableValues()));
+        $this->saveToDb($columnsToSave);
         if (!empty($relationsToSave)) {
             $this->saveRelations($relationsToSave, $deleteNotListedRelatedRecords);
         }
@@ -1077,46 +1027,37 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     }
 
     /**
-     * Get names of all columns that can be saved to db
+     * Get columns that can be saved to db (real + not readonly)
+     * @return TableColumnInterface[]
      */
-    protected function getColumnsNamesWithUpdatableValues(): array
+    protected function getColumnsWithUpdatableValues(): array
     {
-        $columnsNames = [];
-        foreach (static::getColumns() as $columnName => $column) {
-            if ($column->isReal() && !$column->isReadonly()) {
-                $columnsNames[] = $columnName;
-            }
-        }
-        return $columnsNames;
+        return $this->getTableStructure()->getColumnsWhichValuesCanBeSavedToDb();
     }
 
     /**
-     * Get names of all columns that should automatically update values on each save
-     * Note: throws exception if used without begin()
+     * Get columns that should automatically update values on each save
+     * @return TableColumnInterface[]
      */
-    protected function getAllColumnsWithAutoUpdatingValues(): array
+    protected function getColumnsWithAutoUpdatingValues(): array
     {
-        $columnsNames = [];
-        foreach (static::getColumns() as $columnName => $column) {
-            if ($column->isAutoUpdatingValues() && $column->isReal()) {
-                $columnsNames[] = $columnName;
-            }
-        }
-        return $columnsNames;
+        return $this->getTableStructure()->getRealAutoupdatingColumns();
     }
 
     /**
      * {@inheritDoc}
      * @throws \BadMethodCallException
      */
-    public function save(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false): static
-    {
+    public function save(
+        array $relationsToSave = [],
+        bool $deleteNotListedRelatedRecords = false
+    ): static {
         if ($this->isCollectingUpdates) {
             throw new \BadMethodCallException(
                 'Attempt to save data after begin(). You must call commit() or rollback()'
             );
         }
-        $this->saveToDb($this->getColumnsNamesWithUpdatableValues());
+        $this->saveToDb($this->getColumnsWithUpdatableValues());
         if (!empty($relationsToSave)) {
             $this->saveRelations($relationsToSave, $deleteNotListedRelatedRecords);
         }
@@ -1124,6 +1065,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     }
 
     /**
+     * @param TableColumnInterface[] $columnsToSave - key = name, value = TableColumnInterface
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws InvalidDataException
@@ -1131,42 +1073,34 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     protected function saveToDb(array $columnsToSave = []): void
     {
         if ($this->isSavingAllowed()) {
-            throw new \BadMethodCallException('Record saving was forbidden.');
+            throw new \BadMethodCallException(
+                'Record saving was forbidden.'
+            );
         }
 
-        if ($this->isReadOnly()) {
-            throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
-        }
+        $this->assertNotReadOnlyMode();
 
         if ($this->isTrustDbDataMode()) {
-            throw new \BadMethodCallException('Saving is not alowed when trusted mode for DB data is enabled');
+            throw new \BadMethodCallException(
+                'Saving is not alowed when trusted mode for DB data is enabled'
+            );
         }
 
         $isUpdate = $this->existsInDb();
         if (empty($columnsToSave)) {
             return;
         }
-        try {
-            $diff = array_diff($columnsToSave, array_keys(static::getColumns()));
-        } catch (\Throwable $exception) {
-            if (stripos($exception->getMessage(), 'Array to string conversion') !== false) {
-                throw new \InvalidArgumentException(
-                    '$columnsToSave argument contains invalid list of columns. Each value can only be a string. $columns = '
-                    . json_encode($columnsToSave, JSON_UNESCAPED_UNICODE)
-                );
-            }
 
-            throw $exception;
-        }
+        $diff = array_diff_key($columnsToSave, $this->getColumnsWithUpdatableValues());
         if (count($diff)) {
+            $list = [];
+            /** @var TableColumnInterface $value */
+            foreach ($diff as $key => $value) {
+                $list[] = "'{$key}' => " . get_class($value) . "('{$value->getName()}')";
+            }
             throw new \InvalidArgumentException(
-                '$columnsToSave argument contains unknown columns: ' . implode(', ', $diff)
-            );
-        }
-        $diff = array_diff($columnsToSave, $this->getColumnsNamesWithUpdatableValues());
-        if (count($diff)) {
-            throw new \InvalidArgumentException(
-                '$columnsToSave argument contains columns that cannot be saved to DB: ' . implode(', ', $diff)
+                '$columnsToSave argument contains columns that cannot be saved to DB: '
+                . implode(', ', $list)
             );
         }
         $dataToSave = $this->collectValuesForSave($columnsToSave, $isUpdate);
@@ -1186,7 +1120,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
             $this->cleanCacheAfterSave(!$isUpdate);
             $this->afterSave(!$isUpdate, $columnsToSave);
         } catch (\Throwable $exc) {
-            static::getTable()::rollBackTransaction(true);
+            $this->getTable()::rollBackTransaction(true);
             throw $exc;
         }
     }
@@ -1196,7 +1130,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
      */
     protected function performDataSave(bool $isUpdate, array $data): bool
     {
-        $table = static::getTable();
+        $table = $this->getTable();
         $alreadyInTransaction = $table::inTransaction();
         if (!$alreadyInTransaction) {
             $table::beginTransaction();
@@ -1204,21 +1138,23 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         $success = true;
         try {
             if ($isUpdate) {
-                unset($data[static::getPrimaryKeyColumnName()]);
+                $pkColumn = $this->getPrimaryKeyColumn();
+                unset($data[$pkColumn->getName()]);
                 $updatedData = (array)$table::update(
                     $data,
-                    [static::getPrimaryKeyColumnName() => $this->getPrimaryKeyValue()],
+                    [$pkColumn->getName() => $this->getValue($pkColumn)],
                     true
                 );
                 if (count($updatedData)) {
                     $updatedData = $updatedData[0];
-                    $unknownColumns = array_diff_key($updatedData, static::getColumns());
+                    $unknownColumns = array_diff_key($updatedData, $this->getColumns());
                     if (count($unknownColumns) > 0) {
+                        $unknownColumnsStr = implode("', '", array_keys($unknownColumns));
                         throw new \UnexpectedValueException(
-                            'Database table "' . static::getTableStructure()
-                                ->getTableName()
-                            . '" contains columns that are not described in ' . get_class(static::getTableStructure())
-                            . '. Unknown columns: "' . implode('", "', array_keys($unknownColumns)) . '"'
+                            "Database table '{$this->getTableStructure()->getTableName()}'"
+                            . ' contains columns that are not described in '
+                            . get_class($this->getTableStructure())
+                            . ". Unknown columns: '$unknownColumnsStr'"
                         );
                     }
                     $this->updateValues($updatedData, true);
@@ -1242,14 +1178,17 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     }
 
     /**
-     * $columnsToSave passed by reference to be able to add some columns for saving in child classes
+     * @param TableColumnInterface[] $columnsToSave
+     * $columnsToSave passed by reference to be able to add some columns
+     * for saving (by overriding this method in child classes)
      */
-    protected function collectValuesForSave(array &$columnsToSave, bool $isUpdate): array
-    {
+    protected function collectValuesForSave(
+        array &$columnsToSave,
+        bool $isUpdate
+    ): array {
         $data = [];
         // collect values that are not from DB
-        foreach ($columnsToSave as $columnName) {
-            $column = static::getColumn($columnName);
+        foreach ($columnsToSave as $column) {
             $valueContainer = $this->getValueContainer($column);
             if (
                 $column->isReal()
@@ -1257,24 +1196,23 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
                 && $this->hasValue($column, true)
                 && !$valueContainer->isItFromDb()
             ) {
-                $data[$columnName] = $this->getValue($column, null);
+                $data[$column->getName()] = $this->getValue($column, null);
             }
         }
         if (count($data) === 0) {
             return [];
         }
         // collect auto updates
-        $autoUpdatingColumns = $this->getAllColumnsWithAutoUpdatingValues();
-        foreach ($autoUpdatingColumns as $columnName) {
-            if (!isset($data[$columnName])) {
-                $data[$columnName] = static::getColumn($columnName)
-                    ->getAutoUpdateForAValue($this);
+        $autoUpdatingColumns = $this->getColumnsWithAutoUpdatingValues();
+        foreach ($autoUpdatingColumns as $column) {
+            if (!isset($data[$column->getName()])) {
+                $data[$column->getName()] = $column->getAutoUpdateForAValue($this);
             }
         }
         // set pk value
-        $data[static::getPrimaryKeyColumnName()] = $isUpdate
+        $data[$this->getPrimaryKeyColumnName()] = $isUpdate
             ? $this->getPrimaryKeyValue()
-            : static::getTable()->getExpressionToSetDefaultValueForAColumn();
+            : $this->getTable()->getExpressionToSetDefaultValueForAColumn();
         return $data;
     }
 
@@ -1283,7 +1221,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         $ret = [];
         $existsInDb = $this->existsInDb();
         foreach ($columnsToSave as $columnName) {
-            $column = static::getColumn($columnName);
+            $column = $this->getColumn($columnName);
             if (!$column->isReal()) {
                 continue;
             }
@@ -1298,7 +1236,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
             } elseif ($column->hasDefaultValue()) {
                 $value = $column->getValidDefaultValue();
             } else {
-                $value = static::getTable()->getExpressionToSetDefaultValueForAColumn();
+                $value = $this->getTable()->getExpressionToSetDefaultValueForAColumn();
             }
             $ret[$columnName] = $value;
         }
@@ -1311,7 +1249,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     ): void {
         $this->begin();
         foreach ($dataSavedToDb as $column => $value) {
-            $column = static::getColumn($column);
+            $column = $this->getColumn($column);
             $valueContainer = $this->getValueContainer($column);
             $column->afterSave($valueContainer, $isUpdate);
         }
@@ -1323,7 +1261,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         // This also solves problem with files saving for new
         // records that were not saved to DB. Delayed files saving
         // makes it possible to use primary key value to make path to file.
-        foreach (static::getVirtualColumns() as $column) {
+        foreach ($this->getVirtualColumns() as $column) {
             $valueContainer = $this->getValueContainer($column);
             $column->afterSave($valueContainer, $isUpdate);
         }
@@ -1341,6 +1279,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
      * Warning: $data is not modifiable here! Use $this->collectValuesForSave() if you need to modify it.
      * Returns array with errors or empty array when there are no errors
      * @noinspection PhpUnusedParameterInspection
+     * @param TableColumnInterface[] $columnsToSave
      */
     protected function beforeSave(array $columnsToSave, array $data, bool $isUpdate): array
     {
@@ -1350,7 +1289,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     /**
      * Called after successful save() and commit() even if nothing was really saved to database
      * @param bool $isCreated - true: new record was created; false: old record was updated
-     * @param array $updatedColumns - list of updated columns
+     * @param TableColumnInterface[] $updatedColumns - list of updated columns
      */
     protected function afterSave(bool $isCreated, array $updatedColumns = []): void
     {
@@ -1365,30 +1304,20 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     }
 
     /**
-     * Validate a value.
-     * Returns array with errors or empty array when there are no errors.
-     */
-    public static function validateValue(TableColumnInterface|string $column, $value, bool $isFromDb = false): array
-    {
-        if (is_string($column)) {
-            $column = static::getColumn($column);
-        }
-        return $column->validateValue($value, $isFromDb, false);
-    }
-
-    /**
      * {@inheritDoc}
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      */
-    public function saveRelations(array $relationsToSave = [], bool $deleteNotListedRelatedRecords = false): void
-    {
+    public function saveRelations(
+        array $relationsToSave = [],
+        bool $deleteNotListedRelatedRecords = false
+    ): void {
         if (!$this->existsInDb()) {
             throw new \BadMethodCallException(
                 'It is impossible to save related objects of a record that does not exist in DB'
             );
         }
-        $relations = static::getRelations();
+        $relations = $this->getRelations();
         if (count($relationsToSave) === 1 && $relationsToSave[0] === '*') {
             $relationsToSave = array_keys($relations);
         } else {
@@ -1411,7 +1340,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
             }
         }
         foreach ($relationsToSave as $relationName) {
-            if ($this->isRelatedRecordAttached($relationName)) {
+            if ($this->hasRelatedRecord($relationName)) {
                 $relatedRecord = $this->getRelatedRecord($relationName);
                 if ($relations[$relationName]->getType() === $relations[$relationName]::HAS_ONE) {
                     $relatedRecord->updateValue(
@@ -1427,7 +1356,8 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
                         $relatedRecord->getValue($relations[$relationName]->getForeignColumnName()),
                         false
                     );
-                    $this->saveToDb([$relations[$relationName]->getLocalColumnName()]);
+                    $localColumnName = $relations[$relationName]->getLocalColumnName();
+                    $this->saveToDb([$localColumnName => $this->getColumn($localColumnName)]);
                 } else {
                     $fkColName = $relations[$relationName]->getForeignColumnName();
                     $fkValue = $this->getValue($relations[$relationName]->getLocalColumnName());
@@ -1464,25 +1394,27 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
      * {@inheritDoc}
      * @throws \BadMethodCallException
      */
-    public function delete(bool $resetAllValuesAfterDelete = true, bool $deleteFiles = true): static
-    {
-        if ($this->isReadOnly()) {
-            throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
-        }
+    public function delete(
+        bool $resetAllValuesAfterDelete = true,
+        bool $deleteFiles = true
+    ): static {
+        $this->assertNotReadOnlyMode();
 
         if (!$this->hasPrimaryKeyValue()) {
-            throw new \BadMethodCallException('It is impossible to delete record has no primary key value');
+            throw new \BadMethodCallException(
+                'It is impossible to delete record has no primary key value'
+            );
         }
 
         $this->beforeDelete();
-        $table = static::getTable();
+        $table = $this->getTable();
         $alreadyInTransaction = $table::inTransaction();
         if (!$alreadyInTransaction) {
             $table::beginTransaction();
         }
         try {
             $deletedData = $table::delete(
-                [static::getPrimaryKeyColumnName() => $this->getPrimaryKeyValue()],
+                [$this->getPrimaryKeyColumnName() => $this->getPrimaryKeyValue()],
                 true
             );
             if (count($deletedData) > 0) {
@@ -1499,7 +1431,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         if (!$alreadyInTransaction && $table::inTransaction()) {
             $table::commitTransaction();
         }
-        foreach (static::getColumns() as $column) {
+        foreach ($this->getColumns() as $column) {
             $column->afterDelete(
                 $this->getValueContainer($column),
                 $deleteFiles
@@ -1509,7 +1441,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         if ($resetAllValuesAfterDelete) {
             $this->reset();
         } else {
-            $this->resetValue(static::getPrimaryKeyColumn());
+            $this->resetValue($this->getPrimaryKeyColumn());
         }
         return $this;
     }
@@ -1582,7 +1514,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     ): array {
         // normalize column names
         if (empty($columnsNames) || (count($columnsNames) === 1 && isset($columnsNames[0]) && $columnsNames[0] === '*')) {
-            $columnsNames = array_keys(static::getNotPrivateColumns());
+            $columnsNames = array_keys($this->getNotPrivateColumns());
         } elseif (in_array('*', $columnsNames, true)) {
             $excludeDuplicatesFromWildcard = [];
             foreach ($columnsNames as $index => $columnName) {
@@ -1595,12 +1527,12 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
                     }
                 }
             }
-            $wildcardColumns = array_diff(array_keys(static::getNotPrivateColumns()), $excludeDuplicatesFromWildcard);
+            $wildcardColumns = array_diff(array_keys($this->getNotPrivateColumns()), $excludeDuplicatesFromWildcard);
             $columnsNames = array_merge($wildcardColumns, $columnsNames);
         } elseif (isset($columnsNames['*'])) {
             // exclude some columns from wildcard
             $columnsNames = array_merge(
-                array_diff(array_keys(static::getNotPrivateColumns()), (array)$columnsNames['*']),
+                array_diff(array_keys($this->getNotPrivateColumns()), (array)$columnsNames['*']),
                 $columnsNames
             );
             unset($columnsNames['*']);
@@ -1612,8 +1544,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
             && $relatedRecordsNames[0] === '*'
         ) {
             $relatedRecordsNames = array_keys(
-                static::getTableStructure()
-                    ->getRelations()
+                $this->getTableStructure()->getRelations()
             );
             if (!$loadRelatedRecordsIfNotSet) {
                 if ($this->isReadOnly()) {
@@ -1632,8 +1563,8 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
             $columnAlias = null; //< to be safe
             $isset = null; //< to be safe
             if (
-                (!is_int($index) && (is_array($columnName) || $columnName === '*' || static::hasRelation($index)))
-                || (is_string($columnName) && static::hasRelation($columnName))
+                (!is_int($index) && (is_array($columnName) || $columnName === '*' || $this->hasRelation($index)))
+                || (is_string($columnName) && $this->hasRelation($columnName))
             ) {
                 // it is actually relation
                 if (is_int($index)) {
@@ -1654,7 +1585,10 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
                     }
                     $valueModifier = null;
                 }
-                if (!static::hasColumn($columnName) && count($parts = explode('.', $columnName)) > 1) {
+                if (
+                    !$this->hasColumn($columnName)
+                    && count($parts = explode('.', $columnName)) > 1
+                ) {
                     // $columnName = 'Relaion.column' or 'Relation.Subrelation.column'
                     $value = $this->getNestedValueForToArray(
                         $parts,
@@ -1706,7 +1640,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
                     $data[$relatedRecordName] = $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
                 }
             } else {
-                /** @var RecordsSet $relatedRecord */
+                /** @var RecordsCollectionInterface $relatedRecord */
                 $relatedRecord->enableDbRecordInstanceReuseDuringIteration();
                 if ($this->isTrustDbDataMode()) {
                     $relatedRecord->disableDbRecordDataValidation();
@@ -1725,7 +1659,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
 
     protected function hasAnyNonDefaultValues(): bool
     {
-        $columnsNames = static::getColumns();
+        $columnsNames = $this->getColumns();
         foreach ($columnsNames as $column) {
             if ($column->isReal() && $this->hasValue($column, false)) {
                 return true;
@@ -1734,9 +1668,9 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         return false;
     }
 
-    public function getAllNonDefaultValues(): array
+    protected function getAllNonDefaultValues(): array
     {
-        $columnsNames = static::getColumns();
+        $columnsNames = $this->getColumns();
         $ret = [];
         foreach ($columnsNames as $columnName => $column) {
             if ($column->isReal() && $this->hasValue($column, false)) {
@@ -1765,10 +1699,12 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         bool $skipPrivateValueCheck = false
     ): mixed {
         $isset = false;
-        if ($valueModifier && !static::hasColumn($columnName)) {
+        if ($valueModifier && !$this->hasColumn($columnName)) {
             return $this->modifyValueForToArray(null, $columnAlias, null, $valueModifier, $isset);
         }
-        $column = static::getColumn($columnName, $format);
+        $columnAndFormat = $this->getColumnAndFormat($columnName);
+        $column = $columnAndFormat['column'];
+        $format = $columnAndFormat['format'];
         if (!$skipPrivateValueCheck && $column->isPrivateValues()) {
             return null;
         }
@@ -1784,7 +1720,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
             }
 
             if ($format) {
-                $valueContainer = $this->createValueObject($column);
+                $valueContainer = $this->createValueContainer($column);
                 $isset = true;
                 if (array_key_exists($column->getName(), $this->readOnlyData)) {
                     $value = $this->readOnlyData[$column->getName()];
@@ -1792,7 +1728,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
                     return $this->modifyValueForToArray(
                         $columnName,
                         $columnAlias,
-                        call_user_func($column->getValueFormatter(), $valueContainer, $format),
+                        $column->getValue($valueContainer, $format),
                         $valueModifier
                     );
                 }
@@ -1943,27 +1879,29 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
      * Collect default values for the columns
      * Note: if there is no default value for a column - null will be returned
      * Note: this method is not used by ORM
-     * @param array $columns - empty: return values for all columns
-     * @param bool $ignoreColumnsThatCannotBeSetManually - true: value will not be returned for columns that
-     *      - autoupdatable ($column->isAutoUpdatingValue())
-     *      - does not exist in DB (!$column->isItExistsInDb())
-     *      - value cannot be set or changed (!$column->isValueCanBeSetOrChanged())
-     * @param bool $nullifyDbExprValues - true: if default value is DbExpr - replace it by null
+     * @param array $columns - empty: return default values for all columns
+     * @param bool $ignoreReadonlyAndVirtualAndAutoupdatingColumns -
+     *      When true: value will not be returned for columns that
+     *      - readonly (!$column->isReadOnly())
+     *      - virtual (!$column->isReal())
+     *      - autoupdatable ($column->isAutoUpdatingValues())
+     * @param bool $nullifyDbExprValues
+     *      When true: if default value is DbExpr - it will be replaced by null
      * @return array
      */
     public function getDefaults(
         array $columns = [],
-        bool $ignoreColumnsThatCannotBeSetManually = true,
+        bool $ignoreReadonlyAndVirtualAndAutoupdatingColumns = true,
         bool $nullifyDbExprValues = true
     ): array {
         if (count($columns) === 0) {
-            $columns = array_keys(static::getColumns());
+            $columns = array_keys($this->getColumns());
         }
         $values = [];
         foreach ($columns as $columnName) {
-            $column = static::getColumn($columnName);
+            $column = $this->getColumn($columnName);
             if (
-                $ignoreColumnsThatCannotBeSetManually
+                $ignoreReadonlyAndVirtualAndAutoupdatingColumns
                 && (
                     !$column->isReal()
                     || $column->isAutoUpdatingValues()
@@ -1985,52 +1923,6 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     }
 
     /**
-     * Return the current element
-     */
-    public function current(): mixed
-    {
-        $key = $this->key();
-        return $key !== null ? $this->getColumnValueForToArray($key) : null;
-    }
-
-    /**
-     * Move forward to next element
-     */
-    public function next(): void
-    {
-        $this->iteratorIdx++;
-    }
-
-    /**
-     * Return the key of the current element
-     * Returns null on failure.
-     */
-    public function key(): string|null
-    {
-        if ($this->valid()) {
-            return array_keys(static::getNotPrivateColumns())[$this->iteratorIdx];
-        }
-
-        return null;
-    }
-
-    /**
-     * Checks if current position is valid
-     */
-    public function valid(): bool
-    {
-        return array_key_exists($this->iteratorIdx, array_keys(static::getNotPrivateColumns()));
-    }
-
-    /**
-     * Rewind the Iterator to the first element
-     */
-    public function rewind(): void
-    {
-        $this->iteratorIdx = 0;
-    }
-
-    /**
      * Proxy to hasValue() or isRelatedRecordCanBeRead();
      * NOTE: same as isset() when calling isset($record[$columnName]) and also used by empty($record[$columnName])
      * @param string $key - column name or relation name
@@ -2040,22 +1932,27 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
      */
     public function offsetExists(mixed $key): bool
     {
-        if (static::hasColumn($key)) {
+        if ($this->hasColumn($key)) {
             // also handles 'column_as_format'
-            $column = static::getColumn($key, $format);
-            if (!$this->hasValue($column, false)) {
+            $columnAndFormat = $this->getColumnAndFormat($key);
+            if (!$this->hasValue($columnAndFormat['column'], false)) {
                 return false;
             }
-
-            return $this->getValue($column, $format) !== null;
+            $value = $this->getValue(
+                $columnAndFormat['column'],
+                $columnAndFormat['format']
+            );
+            return $value !== null;
         }
 
-        if (static::hasRelation($key)) {
+        if ($this->hasRelation($key)) {
             if (!$this->isRelatedRecordCanBeRead($key)) {
                 return false;
             }
             $record = $this->getRelatedRecord($key, true);
-            return $record instanceof RecordInterface ? $record->existsInDb() : ($record->count() > 0);
+            return $record instanceof RecordInterface
+                ? $record->existsInDb()
+                : ($record->count() > 0);
         }
 
         $this->throwInvalidColumnOrRelationException($key);
@@ -2069,12 +1966,15 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
      */
     public function offsetGet(mixed $key): mixed
     {
-        if (static::hasColumn($key)) {
-            $column = static::getColumn($key, $format);
-            return $this->getValue($column, $format);
+        if ($this->hasColumn($key)) {
+            $columnAndFormat = $this->getColumnAndFormat($key);
+            return $this->getValue(
+                $columnAndFormat['column'],
+                $columnAndFormat['format']
+            );
         }
 
-        if (static::hasRelation($key)) {
+        if ($this->hasRelation($key)) {
             return $this->getRelatedRecord($key, true);
         }
 
@@ -2084,7 +1984,8 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     protected function throwInvalidColumnOrRelationException(string $name): void
     {
         throw new \InvalidArgumentException(
-            'There is no column or relation with name [' . $name . '] in ' . static::class
+            "There is no column or relation with name [{$name}] in "
+            . static::class
         );
     }
 
@@ -2097,16 +1998,27 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
      */
     public function offsetSet(mixed $key, mixed $value): void
     {
-        if ($this->isReadOnly()) {
-            throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
-        }
+        $this->assertNotReadOnlyMode();
 
-        if (static::_hasColumn($key, false)) {
-            $this->updateValue(static::getColumn($key), $value, $key === static::getPrimaryKeyColumnName());
-        } elseif (static::hasRelation($key)) {
+        if ($this->hasColumn($key)) {
+            $this->updateValue(
+                $this->getColumn($key),
+                $value,
+                $key === $this->getPrimaryKeyColumnName()
+            );
+        } elseif ($this->hasRelation($key)) {
             $this->updateRelatedRecord($key, $value, null);
         } else {
             $this->throwInvalidColumnOrRelationException($key);
+        }
+    }
+
+    protected function assertNotReadOnlyMode(): void
+    {
+        if ($this->isReadOnly()) {
+            throw new \BadMethodCallException(
+                'Record is in read only mode. Updates not allowed.'
+            );
         }
     }
 
@@ -2118,13 +2030,11 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
      */
     public function offsetUnset(mixed $key): void
     {
-        if ($this->isReadOnly()) {
-            throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
-        }
+        $this->assertNotReadOnlyMode();
 
-        if (static::_hasColumn($key, false)) {
+        if ($this->hasColumn($key)) {
             $this->unsetValue($key);
-        } elseif (static::hasRelation($key)) {
+        } elseif ($this->hasRelation($key)) {
             $this->unsetRelatedRecord($key);
         } else {
             $this->throwInvalidColumnOrRelationException($key);
@@ -2197,7 +2107,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         }
 
         $value = $arguments[0];
-        if (static::hasRelation($nameParts[1])) {
+        if ($this->hasRelation($nameParts[1])) {
             if (
                 (
                     !is_array($value)
@@ -2205,27 +2115,32 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
                 )
                 || (
                     is_object($value)
-                    && !($value instanceof self)
-                    && !($value instanceof RecordsSet)
+                    && !($value instanceof RecordInterface)
+                    && !($value instanceof RecordsCollectionInterface)
                 )
             ) {
                 throw new \InvalidArgumentException(
-                    "1st argument for magic method '{$name}(\$value, \$isFromDb = false)' must be an array or instance of Record class or RecordsSet class"
+                    '1st argument for magic method'
+                    . " '{$name}(\$value, \$isFromDb = false)' must be an array"
+                    . ' or an instance of ' . RecordInterface::class
+                    . ' or ' . RecordsCollectionInterface::class . ' class'
                 );
             }
             $isFromDb = $arguments[1] ?? null;
             $this->updateRelatedRecord($nameParts[1], $value, $isFromDb);
         } else {
             $columnName = StringUtils::toSnakeCase($nameParts[1]);
-            if (!static::_hasColumn($columnName, false)) {
+            if (!$this->hasColumn($columnName)) {
                 throw new \BadMethodCallException(
-                    "Magic method '{$name}(\$value, \$isFromDb = false)' is not linked with any column or relation"
+                    "Magic method '{$name}(\$value, \$isFromDb = false)'"
+                    . " is not linked with any column or relation"
                 );
             }
-            $column = static::getColumn($columnName);
+            $column = $this->getColumn($columnName);
+            // make pk key be "from DB" by default, or it will crash
             $isFromDb = array_key_exists(1, $arguments)
                 ? $arguments[1]
-                : $column->isPrimaryKey(); //< make pk key be "from DB" by default, or it will crash
+                : $column->isPrimaryKey();
             $this->updateValue($column, $value, $isFromDb);
         }
         return $this;
@@ -2241,6 +2156,7 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
             'props' => [
                 'existsInDb' => $this->existsInDb,
             ],
+            'table_class' => get_class($this->getTable()),
             'values' => [],
         ];
         foreach ($this->values as $name => $value) {
@@ -2260,6 +2176,9 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
             throw new \InvalidArgumentException('$serialized argument must be a json-encoded array');
         }
         $this->reset();
+        /** @var TableInterface $tableClass */
+        $tableClass = $data['table_class'];
+        $this->table = $tableClass::getInstance();
         foreach ($data['props'] as $name => $value) {
             $this->$name = $value;
         }
@@ -2287,7 +2206,10 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
             $this->isReadOnly = false;
             $this->reset();
             if (!empty($this->readOnlyData)) {
-                $this->updateValues($this->readOnlyData, !empty($this->readOnlyData[static::getPrimaryKeyColumnName()]));
+                $this->updateValues(
+                    $this->readOnlyData,
+                    !empty($this->readOnlyData[$this->getPrimaryKeyColumnName()])
+                );
             }
             $this->readOnlyData = [];
         }
@@ -2319,16 +2241,14 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
     /**
      * Normalizes readonly data so that numeric and bool values will not be strings
      */
-    public static function normalizeReadOnlyData(array $data): array
+    protected function normalizeReadOnlyData(array $data): array
     {
-        $columns = static::getColumns();
-        $relations = static::getRelations();
+        $columns = $this->getColumns();
+        $relations = $this->getRelations();
         foreach ($data as $key => $value) {
             if (isset($columns[$key])) {
-                $data[$key] = ColumnValueProcessingHelpers::normalizeValueReceivedFromDb(
-                    $value,
-                    static::getColumn($key)->getDataType()
-                );
+                $column = $this->getColumn($key);
+                $data[$key] = $column->normalizeValidatedValue($value, true);
             } elseif (isset($relations[$key])) {
                 if (!is_array($value)) {
                     $data[$key] = $value;
@@ -2341,5 +2261,6 @@ abstract class Record implements RecordInterface, \Iterator, \Serializable
         }
         return $data;
     }
+
 
 }

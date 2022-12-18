@@ -22,8 +22,8 @@ trait CanConvertValueToClassInstance
     /**
      * Used in 'object' formatter for columns with JSON values and also can be used in custom formatters
      * @param string|null $className - string: custom class name | null: \stdClass
-     * Custom class name must implement PeskyORM\ORM\TableStructure\TableColumn\ValueToObjectConverter\ValueToObjectConverterInterface or extend PeskyORM\ORM\TableStructure\TableColumn\ValueToObjectConverter\ValueToObjectConverter class
-     * Note: you can use PeskyORM\ORM\TableStructure\TableColumn\ValueToObjectConverter\ConvertsArrayToObject trait for simple situations
+     * Custom class name must implement PeskyORM\ORM\TableStructureOld\TableColumn\ValueToObjectConverter\ValueToObjectConverterInterface or extend PeskyORM\ORM\TableStructureOld\TableColumn\ValueToObjectConverter\ValueToObjectConverter class
+     * Note: you can use PeskyORM\ORM\TableStructureOld\TableColumn\ValueToObjectConverter\ConvertsArrayToObject trait for simple situations
      * @see
      */
     public function setClassNameForValueToClassInstanceConverter(?string $className): static

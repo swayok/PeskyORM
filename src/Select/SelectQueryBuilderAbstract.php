@@ -1201,22 +1201,32 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
         }
         foreach ($this->crossJoins as $joinConfig) {
             $joinQuery = $this->quoteDbExpr($joinConfig->getJoinQuery());
-            $joins[] = "CROSS JOIN {$joinQuery} AS " . $this->quoteDbEntityName($this->getShortTableAlias($joinConfig->getJoinName()));
+            $shortAlias = $this->getShortTableAlias($joinConfig->getJoinName());
+            $joins[] = "CROSS JOIN {$joinQuery} AS " . $this->quoteDbEntityName($shortAlias);
         }
         return count($joins) ? ' ' . implode(' ', $joins) : '';
     }
 
-    protected function isJoinUsedInWhereOrHavingConditions(NormalJoinConfigInterface $joinConfig): bool
-    {
+    protected function isJoinUsedInWhereOrHavingConditions(
+        NormalJoinConfigInterface $joinConfig
+    ): bool {
+        $joinName = $joinConfig->getJoinName();
+        $shortAlias = $this->getShortTableAlias($joinName);
         return (
-            in_array($this->getShortTableAlias($joinConfig->getJoinName()), $this->joinsUsedInWhereAndHavingConditions, true)
-            || in_array($joinConfig->getJoinName(), $this->joinsUsedInWhereAndHavingConditions, true)
+            in_array($shortAlias, $this->joinsUsedInWhereAndHavingConditions, true)
+            || in_array($joinName, $this->joinsUsedInWhereAndHavingConditions, true)
         );
     }
 
     protected function makeJoinConditions(NormalJoinConfigInterface $joinConfig): string
     {
-        return trim($this->makeConditions($joinConfig->getJoinConditions(), '', $joinConfig->getJoinName()));
+        return trim(
+            $this->makeConditions(
+                $joinConfig->getJoinConditions(),
+                '',
+                $joinConfig->getJoinName()
+            )
+        );
     }
 
     protected function makeWithQueries(): string

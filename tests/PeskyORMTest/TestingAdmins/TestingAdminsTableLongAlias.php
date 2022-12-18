@@ -4,25 +4,16 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
-use PeskyORM\ORM\Record\RecordInterface;
-use PeskyORM\ORM\TableStructure\TableStructureInterface;
-use PeskyORM\Tests\PeskyORMTest\TestingBaseTable;
+use PeskyORM\ORM\Table\Table;
 
-class TestingAdminsTableLongAlias extends TestingBaseTable
+class TestingAdminsTableLongAlias extends Table
 {
-    
-    public function getTableAlias(): string
+    protected function __construct()
     {
-        return 'TestingAdminsTableLongAliasReallyLongButWeNeedAtLeast60Characters';
-    }
-    
-    public function getTableStructure(): TableStructureInterface
-    {
-        return TestingAdminsTableStructure::getInstance();
-    }
-    
-    public function newRecord(): RecordInterface
-    {
-        return TestingAdmin::newEmptyRecord();
+        parent::__construct(
+            new TestingAdminsTableStructure(),
+            TestingAdmin::class,
+            'TestingAdminsTableLongAliasReallyLongButWeNeedAtLeast60Characters'
+        );
     }
 }

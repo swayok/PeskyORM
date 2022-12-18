@@ -1,41 +1,37 @@
 <?php
-/** @noinspection PhpUnusedPrivateMethodInspection */
 
 declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingSettings;
 
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\IdColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\MixedJsonColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\StringColumn;
 use PeskyORM\ORM\TableStructure\TableStructure;
 
 class TestingSettingsTableStructure extends TableStructure
 {
-    
-    public static function getTableName(): string
+    public function getTableName(): string
     {
         return 'settings';
     }
-    
-    private function id(): TableColumn
+
+    protected function registerColumns(): void
     {
-        return TableColumn::create(TableColumn::TYPE_INT)
-            ->primaryKey()
-            ->convertsEmptyStringToNull()
-            ->disallowsNullValues();
+        $this->addColumn(
+            new IdColumn()
+        );
+        $this->addColumn(
+            (new StringColumn('key'))
+                ->convertsEmptyStringValuesToNull()
+        );
+        $this->addColumn(
+            (new MixedJsonColumn('value'))
+                ->setDefaultValue('{}')
+        );
     }
-    
-    private function key(): TableColumn
+
+    protected function registerRelations(): void
     {
-        return TableColumn::create(TableColumn::TYPE_STRING)
-            ->convertsEmptyStringToNull()
-            ->disallowsNullValues();
-    }
-    
-    private function value(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_JSONB)
-            ->convertsEmptyStringToNull()
-            ->disallowsNullValues()
-            ->setDefaultValue('{}');
     }
 }

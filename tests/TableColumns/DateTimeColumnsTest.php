@@ -43,7 +43,7 @@ class DateTimeColumnsTest extends BaseTestCase
                 $column->getName() . '_as_unix_ts' => 'unix_ts',
                 $column->getName() . '_as_carbon' => 'carbon',
             ],
-            $column->getColumnNameAliases()
+            $column->getValueFormatersNames()
         );
         static::assertEquals(
             [
@@ -52,7 +52,7 @@ class DateTimeColumnsTest extends BaseTestCase
                 $columnTz->getName() . '_as_unix_ts' => 'unix_ts',
                 $columnTz->getName() . '_as_carbon' => 'carbon',
             ],
-            $columnTz->getColumnNameAliases()
+            $columnTz->getValueFormatersNames()
         );
 
         foreach ($this->getValuesForTesting() as $testValue) {
@@ -163,7 +163,7 @@ class DateTimeColumnsTest extends BaseTestCase
                 $column->getName() . '_as_carbon' => 'carbon',
                 $column->getName() . '_as_date_time' => 'date_time',
             ],
-            $column->getColumnNameAliases()
+            $column->getValueFormatersNames()
         );
 
         foreach ($this->getValuesForTesting() as $testValue) {
@@ -239,7 +239,7 @@ class DateTimeColumnsTest extends BaseTestCase
                 $column->getName() . '_as_unix_ts' => 'unix_ts',
                 $column->getName() . '_as_carbon' => 'carbon',
             ],
-            $column->getColumnNameAliases()
+            $column->getValueFormatersNames()
         );
 
         foreach ($this->getValuesForTesting() as $testValue) {
@@ -310,13 +310,13 @@ class DateTimeColumnsTest extends BaseTestCase
             [
                 $column->getName() . '_as_unix_ts' => 'unix_ts',
             ],
-            $column->getColumnNameAliases()
+            $column->getValueFormatersNames()
         );
         static::assertEquals(
             [
                 $columnTz->getName() . '_as_unix_ts' => 'unix_ts',
             ],
-            $columnTz->getColumnNameAliases()
+            $columnTz->getValueFormatersNames()
         );
 
         foreach ($this->getValuesForTesting() as $testValue) {

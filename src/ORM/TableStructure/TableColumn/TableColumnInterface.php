@@ -130,16 +130,17 @@ interface TableColumnInterface
 
     public function getForeignKeyRelation(): ?RelationInterface;
 
-    // TableStructure utils
+    // TableStructureOld utils
 
     /**
-     * Get list of column names aliases (formatters).
+     * Get list of column name aliases for each formatter.
      * Example for column 'created_at':
      * ['created_at_as_date' => 'date', 'created_at_as_carbon' => 'carbon', ...]
      * Column's values will be accessible through Record by any returned name (key).
-     * Value formatter will be determined by value.
+     * Array value must contain formatter name to be passed to $this->getValue().
+     * @see self::getValue()
      */
-    public function getColumnNameAliases(): array;
+    public function getValueFormatersNames(): array;
 
     // Values handling
 
@@ -166,6 +167,11 @@ interface TableColumnInterface
         bool $trustDataReceivedFromDb
     ): RecordValueContainerInterface;
 
+    public function normalizeValidatedValue(
+        mixed $validatedValue,
+        bool $isFromDb
+    ): mixed;
+
     public function getValue(
         RecordValueContainerInterface $valueContainer,
         ?string $format
@@ -191,7 +197,7 @@ interface TableColumnInterface
      */
     public function afterSave(
         RecordValueContainerInterface $valueContainer,
-        bool $isUpdate,
+        bool $isUpdate
     ): void;
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Join;
 
+use PeskyORM\DbExpr;
 use PeskyORM\Utils\DbQuoter;
 use PeskyORM\Utils\QueryBuilderUtils;
 
@@ -34,12 +35,12 @@ interface NormalJoinConfigInterface extends JoinConfigInterface
     /**
      * Get local table column name.
      */
-    public function getLocalColumnName(): string;
+    public function getLocalColumnName(): string|DbExpr;
 
     /**
      * Get foreign table column name
      */
-    public function getForeignColumnName(): string;
+    public function getForeignColumnName(): string|DbExpr;
 
     /**
      * Get foreign table name

@@ -7,7 +7,7 @@ namespace PeskyORM\ORM\TableStructure\TableColumn\Column;
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\Record\RecordValueContainerInterface;
-use PeskyORM\ORM\RecordsCollection\RecordsArray;
+use PeskyORM\ORM\RecordsCollection\RecordsCollectionInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\ConvertsValueToClassInstanceInterface;
@@ -65,7 +65,7 @@ class MixedJsonColumn extends RealTableColumnAbstract implements ConvertsValueTo
         return (
             parent::shouldValidateValue($value, $isFromDb)
             && !($value instanceof RecordInterface)
-            && !($value instanceof RecordsArray)
+            && !($value instanceof RecordsCollectionInterface)
         );
     }
 
@@ -150,7 +150,7 @@ class MixedJsonColumn extends RealTableColumnAbstract implements ConvertsValueTo
         if ($validatedValue instanceof RecordInterface) {
             return $this->encodeToJson($validatedValue->toArray());
         }
-        if ($validatedValue instanceof RecordsArray) {
+        if ($validatedValue instanceof RecordsCollectionInterface) {
             return $this->encodeToJson($validatedValue->toArrays());
         }
 
@@ -190,7 +190,7 @@ class MixedJsonColumn extends RealTableColumnAbstract implements ConvertsValueTo
         // if $validatedValue is array or can be converted - store it in
         // $valueContainer so that 'array' formatter won't need to decode json
         if (isset($this->formatters[ColumnValueFormatters::FORMAT_ARRAY])) {
-            if ($validatedValue instanceof RecordsArray) {
+            if ($validatedValue instanceof RecordsCollectionInterface) {
                 $validatedValue = $validatedValue->toArrays();
             }
             if (is_array($validatedValue)) {

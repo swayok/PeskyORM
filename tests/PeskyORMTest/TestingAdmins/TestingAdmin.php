@@ -6,7 +6,6 @@ namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
 use PeskyORM\ORM\Record\Record;
 use PeskyORM\ORM\RecordsCollection\RecordsSet;
-use PeskyORM\ORM\Table\TableInterface;
 
 /**
  * @property int $id
@@ -29,15 +28,14 @@ use PeskyORM\ORM\Table\TableInterface;
  */
 class TestingAdmin extends Record
 {
-    
-    public static function getTable(): TableInterface
+    public function __construct()
     {
-        return TestingAdminsTable::getInstance();
+        parent::__construct(TestingAdminsTable::getInstance());
     }
 
-    public function getColumnsNamesWithUpdatableValues(): array
+    public function getColumnsWithUpdatableValues(): array
     {
-        return parent::getColumnsNamesWithUpdatableValues();
+        return parent::getColumnsWithUpdatableValues();
     }
     
     public function collectValuesForSave(array &$columnsToSave, bool $isUpdate): array

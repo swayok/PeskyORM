@@ -9,7 +9,7 @@ use PeskyORM\Exception\InvalidDataException;
 use PeskyORM\Exception\TableColumnConfigException;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\Record\RecordValueContainerInterface;
-use PeskyORM\ORM\RecordsCollection\RecordsSet;
+use PeskyORM\ORM\RecordsCollection\SelectedRecordsCollectionInterface;
 use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
 use PeskyORM\Select\SelectQueryBuilderInterface;
@@ -375,8 +375,8 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
      */
     protected function normalizeValueForValidation(mixed $value, bool $isFromDb): mixed
     {
-        if (!$isFromDb && $value instanceof RecordsSet) {
-            return $value->getOrmSelect();
+        if (!$isFromDb && $value instanceof SelectedRecordsCollectionInterface) {
+            return $value->getSelect();
         }
         return $value;
     }
@@ -391,7 +391,7 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
      * @see self::setValue()
      * Returned value is final. No more modifications expected.
      */
-    protected function normalizeValidatedValue(mixed $validatedValue, bool $isFromDb): mixed
+    public function normalizeValidatedValue(mixed $validatedValue, bool $isFromDb): mixed
     {
         if ($validatedValue === null) {
             return null;
@@ -422,9 +422,8 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
         bool $trustDataReceivedFromDb
     ): RecordValueContainerInterface {
         if (!$isFromDb && $this->isReadonly()) {
-            throw new TableColumnConfigException(
+            throw new \BadMethodCallException(
                 "Column {$this->getNameForException()} is read only.",
-                $this
             );
         }
         // Handle same value
@@ -576,7 +575,7 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
             return $valueContainer->getValue();
         }
 
-        if ($this->canUseDefaultValue($valueContainer)) {
+        if ( $this->canUseDefaultValue($valueContainer)) {
             return $this->normalizeValidatedValue(
                 $this->getValidDefaultValue(),
                 false
@@ -585,8 +584,8 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
 
         $columnInfo = $this->getRecordInfoForException($valueContainer);
         $defaultValueRestriction = $this->hasDefaultValue()
-            ? 'is not provided.'
-            : 'cannot be used.';
+            ? 'cannot be used.'
+            : 'is not provided.';
         throw new \BadMethodCallException(
             "Value for {$columnInfo} is not set and default value "
             . $defaultValueRestriction

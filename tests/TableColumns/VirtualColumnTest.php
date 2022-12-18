@@ -120,7 +120,7 @@ class VirtualColumnTest extends BaseTestCase
             new Relation(
                 'id',
                 Relation::HAS_MANY,
-                TestingAdminsTable::getInstance(),
+                TestingAdminsTable::class,
                 'parent_id',
                 'Test'
             )

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Join;
 
+use PeskyORM\DbExpr;
 use PeskyORM\Utils\ArgumentValidators;
 
 class JoinConfig extends NormalJoinConfigAbstract
@@ -15,9 +16,9 @@ class JoinConfig extends NormalJoinConfigAbstract
         string $joinName,
         string $joinType,
         string $localTableAlias,
-        string $localColumnName,
+        string|DbExpr $localColumnName,
         string $foreignTableName,
-        string $foreignColumnName,
+        string|DbExpr $foreignColumnName,
         ?string $foreignTableSchema = null
     ) {
         parent::__construct($joinName, $joinType);

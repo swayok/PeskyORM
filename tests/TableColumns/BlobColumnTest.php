@@ -22,7 +22,7 @@ class BlobColumnTest extends BaseTestCase
     {
         $column = new BlobColumn('blob');
         static::assertEquals(TableColumnDataType::BLOB, $column->getDataType());
-        static::assertEquals([], $column->getColumnNameAliases());
+        static::assertEquals([], $column->getValueFormatersNames());
         // has value
         $valueContainer = $this->newRecordValueContainer($column);
         static::assertFalse($column->hasValue($valueContainer, false));

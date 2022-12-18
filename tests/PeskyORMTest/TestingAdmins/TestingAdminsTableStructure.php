@@ -1,241 +1,186 @@
 <?php
-/** @noinspection PhpUnusedPrivateMethodInspection */
 
 declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
 use PeskyORM\DbExpr;
-use PeskyORM\ORM\Record\RecordValue;
+use PeskyORM\ORM\Record\RecordValueContainerInterface;
 use PeskyORM\ORM\TableStructure\Relation;
-use PeskyORM\ORM\TableStructure\TableColumn\DefaultColumnClosures;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\BooleanColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\EmailColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\IdColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\IntegerColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\IpV4AddressColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\PasswordColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\StringColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\TextColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\TimestampColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\VirtualColumn;
 use PeskyORM\ORM\TableStructure\TableStructure;
+use PeskyORM\Tests\PeskyORMTest\TableColumn\TestFileColumn;
+use PeskyORM\Tests\PeskyORMTest\TableColumn\TestImageColumn;
 
 class TestingAdminsTableStructure extends TableStructure
 {
-    
-    public static function getTableName(): string
+    public function getTableName(): string
     {
         return 'admins';
     }
     
-    public static function getConnectionName(bool $writable): string
+    public function getConnectionName(bool $writable): string
     {
         return $writable ? 'writable' : parent::getConnectionName(false);
     }
-    
-    private function id(): TableColumn
+
+    protected function registerColumns(): void
     {
-        return TableColumn::create(TableColumn::TYPE_INT)
-            ->primaryKey()
-            ->convertsEmptyStringToNull()
-            ->disallowsNullValues();
-    }
-    
-    private function parent_id(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_INT)
-            ->convertsEmptyStringToNull()
-            ->allowsNullValues();
-    }
-    
-    private function login(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_STRING)
-            ->convertsEmptyStringToNull()
-            ->disallowsNullValues()
-            ->trimsValue();
-    }
-    
-    private function password(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_PASSWORD)
-            ->convertsEmptyStringToNull()
-            ->disallowsNullValues()
-            ->trimsValue()
-            ->setValuePreprocessor(function ($value, $isDbValue, $isForValidation, TableColumn $column) {
-                $value = DefaultColumnClosures::valuePreprocessor($value, $isDbValue, $isForValidation, $column);
-                if (!$isDbValue && !empty($value)) {
-                    return password_hash($value, PASSWORD_BCRYPT);
+        $this->addColumn(
+            new IdColumn()
+        );
+        $this->addColumn(
+            (new IntegerColumn('parent_id'))
+                ->allowsNullValues()
+        );
+        $this->addColumn(
+            (new StringColumn('login'))
+                ->trimsValues()
+                ->convertsEmptyStringValuesToNull()
+        );
+        $this->addColumn(
+            new PasswordColumn('password')
+        );
+        $this->addColumn(
+            (new TimestampColumn('created_at'))
+                ->setDefaultValue(DbExpr::create('NOW()'))
+        );
+        $this->addColumn(
+            (new TimestampColumn('updated_at'))
+                ->setValueAutoUpdater(function () {
+                    return DbExpr::create('NOW()');
+                })
+        );
+        $this->addColumn(
+            (new StringColumn('remember_token'))
+                ->allowsNullValues()
+                ->trimsValues()
+                ->convertsEmptyStringValuesToNull()
+        );
+        $this->addColumn(
+            (new BooleanColumn('is_superadmin'))
+                ->setDefaultValue(false)
+        );
+        $this->addColumn(
+            (new StringColumn('language'))
+                ->convertsEmptyStringValuesToNull()
+                ->setDefaultValue('en')
+        );
+        $this->addColumn(
+            (new IpV4AddressColumn('ip'))
+                ->allowsNullValues()
+        );
+        $this->addColumn(
+            (new StringColumn('role'))
+                ->convertsEmptyStringValuesToNull()
+                ->setDefaultValue('guest')
+        );
+        $this->addColumn(
+            (new BooleanColumn('is_active'))
+                ->setDefaultValue(true)
+        );
+        $this->addColumn(
+            (new StringColumn('name'))
+                ->setDefaultValue('')
+        );
+        $this->addColumn(
+            (new EmailColumn('email'))
+                ->allowsNullValues()
+        );
+        $this->addColumn(
+            (new StringColumn('timezone'))
+                ->convertsEmptyStringValuesToNull()
+                ->setDefaultValue('UTC')
+        );
+        $this->addColumn(
+            new TestImageColumn('avatar')
+        );
+        $this->addColumn(
+            new TestFileColumn('some_file')
+        );
+        $this->addColumn(
+            (new StringColumn('not_changeable_column'))
+                ->valuesAreReadOnly()
+        );
+        $this->addColumn(
+            new VirtualColumn(
+                'not_existing_column',
+                function () {
+                    return false;
+                },
+                function () {
+                    return null;
                 }
-                return $value;
-            })
-            ->extendValueValidator(function ($value) {
-                if (mb_strlen($value) !== 60) {
-                    return ['Password hash length does not match bcrypt hash length'];
+            )
+        );
+        $this->addColumn(
+            new VirtualColumn(
+                'not_existing_column_with_calculated_value',
+                function () {
+                    return true;
+                },
+                function (RecordValueContainerInterface $valueContainer) {
+                    $record = $valueContainer->getRecord();
+                    $pk = $record->existsInDb()
+                        ? $record->getPrimaryKeyValue()
+                        : '';
+                    return 'calculated-' . $pk;
                 }
-                return [];
-            })
-            ->privateValue();
+            )
+        );
+        $this->addColumn(
+            (new TextColumn('big_data'))
+                ->valuesAreHeavy()
+                ->setDefaultValue('this is big data value! really! I\'m not joking!')
+        );
     }
-    
-    private function created_at(): TableColumn
+
+    protected function registerRelations(): void
     {
-        return TableColumn::create(TableColumn::TYPE_TIMESTAMP)
-            ->disallowsNullValues()
-            ->setDefaultValue(DbExpr::create('NOW()'));
+        $this->addRelation(
+            new Relation(
+                'parent_id',
+                Relation::BELONGS_TO,
+                TestingAdminsTable::class,
+                'id',
+                'Parent'
+            )
+        );
+        $this->addRelation(
+            new Relation(
+                'id',
+                Relation::HAS_ONE,
+                TestingAdminsTable::class,
+                'parent_id',
+                'HasOne'
+            )
+        );
+        $this->addRelation(
+            new Relation(
+                'id',
+                Relation::HAS_MANY,
+                TestingAdminsTable::class,
+                'parent_id',
+                'Children'
+            )
+        );
+        $this->addRelation(
+            new Relation(
+                'login',
+                Relation::BELONGS_TO,
+                TestingAdminsTable::class,
+                'id',
+                'VeryLongRelationNameSoItMustBeShortenedButWeNeedAtLeast60Characters'
+            )
+        );
     }
-    
-    private function updated_at(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_TIMESTAMP)
-            ->disallowsNullValues()
-            ->autoUpdateValueOnEachSaveWith(function () {
-                return DbExpr::create('NOW()');
-            });
-    }
-    
-    private function remember_token(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_STRING)
-            ->convertsEmptyStringToNull()
-            ->allowsNullValues()
-            ->trimsValue();
-    }
-    
-    private function is_superadmin(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_BOOL)
-            ->convertsEmptyStringToNull()
-            ->disallowsNullValues()
-            ->setDefaultValue(false);
-    }
-    
-    private function language(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_STRING)
-            ->convertsEmptyStringToNull()
-            ->disallowsNullValues()
-            ->setDefaultValue('en');
-    }
-    
-    private function ip(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_IPV4_ADDRESS)
-            ->allowsNullValues()
-            ->convertsEmptyStringToNull();
-    }
-    
-    private function role(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_STRING)
-            ->convertsEmptyStringToNull()
-            ->disallowsNullValues()
-            ->setDefaultValue('guest');
-    }
-    
-    private function is_active(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_BOOL)
-            ->convertsEmptyStringToNull()
-            ->disallowsNullValues()
-            ->setDefaultValue(true);
-    }
-    
-    private function name(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_STRING)
-            ->disallowsNullValues()
-            ->setDefaultValue('');
-    }
-    
-    private function email(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_EMAIL)
-            ->allowsNullValues();
-    }
-    
-    private function timezone(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_STRING)
-            ->convertsEmptyStringToNull()
-            ->disallowsNullValues()
-            ->setDefaultValue('UTC');
-    }
-    
-    private function avatar(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_IMAGE)
-            ->doesNotExistInDb()
-            ->allowsNullValues()
-            ->setValueFormatter(function () {
-                return 'not implemented';
-            });
-    }
-    
-    private function some_file(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_FILE)
-            ->doesNotExistInDb()
-            ->allowsNullValues()
-            ->setValueFormatter(function () {
-                return 'not implemented';
-            });
-    }
-    
-    private function not_changeable_column(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_STRING)
-            ->valueCannotBeSetOrChanged();
-    }
-    
-    private function not_existing_column(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_STRING)
-            ->doesNotExistInDb();
-    }
-    
-    private function not_existing_column_with_default_value(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_STRING)
-            ->doesNotExistInDb()
-            ->disallowsNullValues()
-            ->setDefaultValue('default');
-    }
-    
-    private function not_existing_column_with_calculated_value(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_STRING)
-            ->doesNotExistInDb()
-            ->valueCannotBeSetOrChanged()
-            ->disallowsNullValues()
-            ->setValueGetter(function (RecordValue $value) {
-                $record = $value->getRecord();
-                return 'calculated-' . ($record->existsInDb() ? $value->getRecord()->getPrimaryKeyValue() : '');
-            })
-            ->setValueExistenceChecker(function () {
-                return true;
-            });
-    }
-    
-    private function big_data(): TableColumn
-    {
-        return TableColumn::create(TableColumn::TYPE_TEXT)
-            ->disallowsNullValues()
-            ->setDefaultValue('this is big data value! really! I\'m not joking!')
-            ->valueIsHeavy();
-    }
-    
-    private function Parent(): Relation
-    {
-        return new Relation('parent_id', Relation::BELONGS_TO, TestingAdminsTable::getInstance(), 'id');
-    }
-    
-    private function HasOne(): Relation
-    {
-        return new Relation('id', Relation::HAS_ONE, TestingAdminsTable::getInstance(), 'parent_id');
-    }
-    
-    private function Children(): Relation
-    {
-        return new Relation('id', Relation::HAS_MANY, TestingAdminsTable::getInstance(), 'parent_id');
-    }
-    
-    private function VeryLongRelationNameSoItMustBeShortenedButWeNeedAtLeast60Characters(): Relation
-    {
-        return new Relation('login', Relation::BELONGS_TO, TestingAdminsTable::getInstance(), 'id');
-    }
-    
-    
 }

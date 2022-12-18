@@ -6,15 +6,13 @@ namespace PeskyORM\ORM\RecordsCollection;
 
 use Closure;
 use PeskyORM\DbExpr;
-use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\Table\TableInterface;
 use PeskyORM\ORM\TableStructure\RelationInterface;
-use PeskyORM\Select\OrmSelect;
+use PeskyORM\Select\SelectQueryBuilderInterface;
 
-class RecordsSet extends RecordsArray
+class RecordsSet extends RecordsArray implements SelectedRecordsCollectionInterface
 {
-    
-    protected OrmSelect $select;
+    protected SelectQueryBuilderInterface $select;
     /**
      * Count of records affected by LIMIT and OFFSET
      * null - not counted
@@ -29,67 +27,32 @@ class RecordsSet extends RecordsArray
      * @var array[] - keys: relation names; values: arrays ['relation' => Relation; 'columns' => array]
      */
     protected array $hasManyRelationsToInject = [];
-    
+
     protected bool $ignoreLeftJoinsForCount = false;
-    
+
     /**
-     * @param TableInterface $table
-     * @param array $records
-     * @param boolean|null $isFromDb - null: autodetect by primary key value existence
-     * @param bool $trustDataReceivedFromDb
-     * @return RecordsArray
+     * $dbSelect will be cloned to avoid possible problems when original
+     * SelectQueryBuilderInterface instance is changed outside RecordsSet.
+     * It will also allow optimised iteration using pagination.
      */
-    public static function createFromArray(
+    public function __construct(
         TableInterface $table,
-        array $records,
-        ?bool $isFromDb = null,
-        bool $trustDataReceivedFromDb = false
-    ): RecordsArray {
-        return new RecordsArray($table, $records, $isFromDb, $trustDataReceivedFromDb);
+        SelectQueryBuilderInterface $dbSelect,
+        bool $disableDbRecordDataValidation = false
+    ) {
+        parent::__construct(
+            $table,
+            [],
+            true,
+            $disableDbRecordDataValidation
+        );
+        $this->setSelect($dbSelect);
     }
-    
-    /**
-     * @param OrmSelect $dbSelect - it will be cloned to avoid possible problems when original object
-     *      is changed outside RecordsSet + to allow optimised iteration via pagination
-     * @return RecordsSet
-     */
-    public static function createFromOrmSelect(OrmSelect $dbSelect): RecordsSet
-    {
-        return new self($dbSelect);
-    }
-    
-    /**
-     * @param OrmSelect $dbSelect - it will be cloned to avoid possible problems when original object
-     *      is changed outside RecordsSet + to allow optimised iteration via pagination
-     * @param bool $disableDbRecordDataValidation
-     */
-    public function __construct(OrmSelect $dbSelect, bool $disableDbRecordDataValidation = false)
-    {
-        parent::__construct($dbSelect->getTable(), [], true, $disableDbRecordDataValidation);
-        $this->setOrmSelect($dbSelect);
-    }
-    
-    public function setRecordClass(?string $class): static
-    {
-        $this->getOrmSelect()
-            ->setRecordClass($class);
-        $this->dbRecords = [];
-        $this->dbRecordForIteration = null;
-        return $this;
-    }
-    
-    protected function getNewRecord(): RecordInterface
-    {
-        return $this->getOrmSelect()
-            ->getNewRecord();
-    }
-    
-    /**
-     * @param \PeskyORM\ORM\TableStructure\RelationInterface $relation
-     * @param array $columnsToSelect
-     */
-    protected function injectHasManyRelationDataIntoRecords(RelationInterface $relation, array $columnsToSelect = ['*']): void
-    {
+
+    protected function injectHasManyRelationDataIntoRecords(
+        RelationInterface $relation,
+        array $columnsToSelect = ['*']
+    ): void {
         $this->hasManyRelationsToInject[$relation->getName()] = [
             'relation' => $relation,
             'columns' => $columnsToSelect,
@@ -98,38 +61,44 @@ class RecordsSet extends RecordsArray
             parent::injectHasManyRelationDataIntoRecords($relation, $columnsToSelect);
         }
     }
-    
+
     /**
      * For internal use only!
      */
-    protected function setOrmSelect(OrmSelect $dbSelect): static
+    protected function setSelect(SelectQueryBuilderInterface $dbSelect): static
     {
         $this->resetRecords();
-        $this->select = $dbSelect;
+        $this->select = clone $dbSelect;
         return $this;
     }
-    
-    public function getOrmSelect(): OrmSelect
+
+    public function getSelect(): SelectQueryBuilderInterface
     {
         return $this->select;
     }
-    
+
     /**
-     * Append conditions
+     * Append more conditions to OrmSelect.
      * @param array $conditions
      * @param bool $returnNewRecordSet
-     *      - true: will return new RecordSet with new OrmSelect instead of changing current RecordSet
-     *      - false: append conditions to current RecordSet; this will reset current state of RecordSet (count, records)
-     * @param bool $resetOriginalRecordSet - true: used only when $returnNewRecordSet is true and will reset
-     *      Current RecordSet (count, records)
+     *      - true: will return new RecordSet with new OrmSelect
+     *          instead of changing current RecordSet
+     *      - false: append conditions to current RecordSet;
+     *          this will reset current state of RecordSet (count, records)
+     * @param bool $resetOriginalRecordSet
+     *      - true: used only when $returnNewRecordSet is true and
+     *          will reset current RecordSet (count, records)
      * @return static
      */
-    public function appendConditions(array $conditions, bool $returnNewRecordSet, bool $resetOriginalRecordSet = false): static
-    {
+    public function appendConditions(
+        array $conditions,
+        bool $returnNewRecordSet,
+        bool $resetOriginalRecordSet = false
+    ): static {
         if ($returnNewRecordSet) {
             $newSelect = clone $this->select;
             $newSelect->where($conditions, true);
-            $newSet = static::createFromOrmSelect($newSelect);
+            $newSet = new static($this->table, $newSelect);
             if ($resetOriginalRecordSet) {
                 $this->resetRecords();
             }
@@ -137,16 +106,18 @@ class RecordsSet extends RecordsArray
         }
 
         // update OrmSelect and reset RecordSet
-        $this->setOrmSelect($this->select->where($conditions, true));
+        $this->setSelect($this->select->where($conditions, true));
         return $this;
     }
-    
+
     /**
-     * Replace records ordering
-     * Note: deletes already selected records and selects new
+     * Replace records ordering in OrmSelect.
+     * Note: deletes already selected records and selects new.
      */
-    public function replaceOrdering(DbExpr|array|string $column, bool $orderAscending = true): static
-    {
+    public function replaceOrdering(
+        DbExpr|array|string $column,
+        bool $orderAscending = true
+    ): static {
         if (is_array($column)) {
             $this->select->removeOrdering();
             foreach ($column as $colName => $direction) {
@@ -164,7 +135,7 @@ class RecordsSet extends RecordsArray
         $this->resetRecords();
         return $this;
     }
-    
+
     /**
      * Reset already fetched data
      */
@@ -174,21 +145,21 @@ class RecordsSet extends RecordsArray
         $this->invalidateCount();
         return $this;
     }
-    
+
     public function nextPage(): static
     {
         $this->rewind();
         $this->setRecords($this->select->fetchNextPage());
         return $this;
     }
-    
+
     public function prevPage(): static
     {
         $this->rewind();
         $this->setRecords($this->select->fetchPrevPage());
         return $this;
     }
-    
+
     public function setOffset(int $newOffset): static
     {
         if ($newOffset < 0) {
@@ -199,13 +170,13 @@ class RecordsSet extends RecordsArray
         $this->records = [];
         return $this;
     }
-    
+
     protected function getRecords(bool $reload = false): array
     {
         $this->fetchRecords($reload);
         return $this->records;
     }
-    
+
     public function fetchRecords(bool $reload = false): static
     {
         if ($reload || $this->recordsCount === null) {
@@ -213,12 +184,12 @@ class RecordsSet extends RecordsArray
         }
         return $this;
     }
-    
-    public function areRecordsFetchedFromDb(): bool
+
+    public function isDbQueryAlreadyExecuted(): bool
     {
         return $this->recordsCount !== null;
     }
-    
+
     protected function setRecords(array $records): static
     {
         $this->records = $records;
@@ -229,32 +200,36 @@ class RecordsSet extends RecordsArray
         }
         return $this;
     }
-    
+
     public function toArrays(
-        string|array|Closure|null $closureOrColumnsListOrMethodName = null,
-        array $argumentsForMethod = [],
+        array|Closure|null $closureOrColumnsList = null,
         bool $enableReadOnlyMode = true
     ): array {
-        if ($closureOrColumnsListOrMethodName) {
-            return $this->getDataFromEachObject($closureOrColumnsListOrMethodName, $argumentsForMethod, $enableReadOnlyMode);
+        if ($closureOrColumnsList) {
+            return $this->getDataFromEachObject(
+                $closureOrColumnsList,
+                $enableReadOnlyMode
+            );
         }
 
         return $this->getRecords();
     }
-    
+
     public function offsetExists(mixed $index): bool
     {
         return is_int($index) && $index >= 0 && $index < $this->count();
     }
-    
+
     protected function getRecordDataByIndex(int $index): array
     {
         if (!$this->offsetExists($index)) {
-            throw new \InvalidArgumentException("Array does not contain index '{$index}'");
+            throw new \InvalidArgumentException(
+                "Array does not contain index '{$index}'"
+            );
         }
         return $this->getRecords()[$index];
     }
-    
+
     /**
      * Count amount of DB records to be fetched
      * Note: not same as totalCount() - that one does not take in account LIMIT and OFFSET
@@ -278,23 +253,27 @@ class RecordsSet extends RecordsArray
         }
         return $this->recordsCount;
     }
-    
+
     /**
      * This can speed up a count query for simple cases when joins are not nested
+     * @see SelectQueryBuilderInterface::fetchCount()
      */
     public function setIgnoreLeftJoinsForCount(bool $ignoreLeftJoinsForCount): static
     {
         $this->ignoreLeftJoinsForCount = $ignoreLeftJoinsForCount;
         return $this;
     }
-    
+
     /**
      * Count DB records ignoring LIMIT and OFFSET options
      * @param bool|null $ignoreLeftJoins - null: use $this->ignoreLeftJoinsForCount | bool: change $this->ignoreLeftJoinsForCount
      */
     public function totalCount(?bool $ignoreLeftJoins = null): int
     {
-        if ($ignoreLeftJoins !== null && $this->ignoreLeftJoinsForCount !== $ignoreLeftJoins) {
+        if (
+            $ignoreLeftJoins !== null
+            && $this->ignoreLeftJoinsForCount !== $ignoreLeftJoins
+        ) {
             // $this->ignoreLeftJoinsForCount differs from previous one - reset total records count
             $this->recordsCountTotal = null;
             $this->ignoreLeftJoinsForCount = $ignoreLeftJoins;
@@ -304,7 +283,7 @@ class RecordsSet extends RecordsArray
         }
         return $this->recordsCountTotal;
     }
-    
+
     /**
      * Invalidate counts
      */

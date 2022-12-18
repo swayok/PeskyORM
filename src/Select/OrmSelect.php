@@ -43,8 +43,8 @@ class OrmSelect extends SelectQueryBuilderAbstract
     public function __construct(TableInterface $table, ?string $tableAlias = null)
     {
         $this->table = $table;
-        $this->tableStructure = $table::getStructure();
-        $this->setTableAlias($tableAlias ?: $this->getTable()->getAlias());
+        $this->tableStructure = $table->getTableStructure();
+        $this->setTableAlias($tableAlias ?: $this->getTable()->getTableAlias());
     }
 
     protected function getListOfFrobiddenOptionsInConditionsAndOptionsArray(): array
@@ -180,7 +180,7 @@ class OrmSelect extends SelectQueryBuilderAbstract
     public function getCountQuery(bool $ignoreLeftJoins = true): string
     {
         if ($this->distinct) {
-            $pkColumnName = $this->tableStructure::getPkColumnName();
+            $pkColumnName = $this->tableStructure->getPkColumnName();
             if (empty($this->distinctColumns) || in_array($pkColumnName, $this->distinctColumns, true)) {
                 $columnInfo = $this->analyzeColumnName($pkColumnName);
             } else {
@@ -290,7 +290,7 @@ class OrmSelect extends SelectQueryBuilderAbstract
             if ($join instanceof OrmJoinConfigInterface) {
                 $tableStructure = $join->getForeignTable()->getTableStructure();
             } else {
-                // we have no access to TableStructure for this join
+                // we have no access to TableStructureOld for this join
                 return [
                     $this->analyzeColumnName('*', null, $joinName, 'SELECT')
                 ];
@@ -300,7 +300,7 @@ class OrmSelect extends SelectQueryBuilderAbstract
         if ($excludeColumns === null) {
             $excludeColumns = [];
         }
-        $existingColumns = $tableStructure::getRealColumns();
+        $existingColumns = $tableStructure->getRealColumns();
         if (empty($existingColumns)) {
             throw new \UnexpectedValueException(
                 __METHOD__ . '(): ' . get_class($tableStructure) . ' has no columns that exist in DB'
@@ -427,7 +427,7 @@ class OrmSelect extends SelectQueryBuilderAbstract
                         . 'Select that records outside of OrmSelect.'
                     );
                 }
-                $joinConfig = $this->getTable()::getJoinConfigForRelation(
+                $joinConfig = $this->getTable()->getJoinConfigForRelation(
                     $relation,
                     $this->getTableAlias(),
                     $joinName
@@ -444,7 +444,7 @@ class OrmSelect extends SelectQueryBuilderAbstract
                         . 'Select that records outside of OrmSelect.'
                     );
                 }
-                $joinConfig = $foreignTable::getJoinConfigForRelation(
+                $joinConfig = $foreignTable->getJoinConfigForRelation(
                     $relation,
                     $parentJoin->getJoinName(),
                     $joinName
@@ -518,7 +518,7 @@ class OrmSelect extends SelectQueryBuilderAbstract
             $join = $this->getJoin($columnInfo['join_name']);
             if ($join instanceof OrmJoinConfigInterface) {
                 $column = $join->getForeignTable()
-                    ->getStructure()
+                    ->getTableStructure()
                     ->getColumn($columnInfo['name']);
             } else {
                 // join has no link to Table, so we cannot get $column and validate value
@@ -598,7 +598,10 @@ class OrmSelect extends SelectQueryBuilderAbstract
             $join = $this->getJoin($columnInfo['join_name']);
             if ($join instanceof OrmJoinConfigInterface) {
                 $foreignTableStructure = $join->getForeignTable()->getTableStructure();
-                $isValid = $columnInfo['name'] === '*' || $foreignTableStructure::hasColumn($columnInfo['name']);
+                $isValid = (
+                    $columnInfo['name'] === '*'
+                    || $foreignTableStructure->hasColumn($columnInfo['name'])
+                );
                 if (!$isValid) {
                     throw new \UnexpectedValueException(
                         "{$subject}: Column with name [{$columnInfo['join_name']}.{$columnInfo['name']}] not found in "

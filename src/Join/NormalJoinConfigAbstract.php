@@ -13,10 +13,10 @@ abstract class NormalJoinConfigAbstract implements NormalJoinConfigInterface
     protected string $joinName;
     protected string $joinType;
     protected ?string $localTableAlias = null;
-    protected ?string $localColumnName = null;
+    protected null|string|DbExpr $localColumnName = null;
     protected ?string $foreignTableName = null;
     protected ?string $foreignTableSchema = null;
-    protected ?string $foreignColumnName = null;
+    protected null|string|DbExpr $foreignColumnName = null;
     protected array $additionalJoinConditions = [];
     protected array $foreignColumnsToSelect = ['*'];
 
@@ -82,7 +82,7 @@ abstract class NormalJoinConfigAbstract implements NormalJoinConfigInterface
         return $this;
     }
 
-    public function getLocalColumnName(): string
+    public function getLocalColumnName(): string|DbExpr
     {
         return $this->localColumnName;
     }
@@ -90,7 +90,7 @@ abstract class NormalJoinConfigAbstract implements NormalJoinConfigInterface
     /**
      * @throws \InvalidArgumentException
      */
-    protected function setLocalColumnName(string $columnName): static
+    protected function setLocalColumnName(string|DbExpr $columnName): static
     {
         ArgumentValidators::assertNotEmpty('$columnName', $columnName);
         $this->localColumnName = $columnName;
@@ -102,7 +102,7 @@ abstract class NormalJoinConfigAbstract implements NormalJoinConfigInterface
         return $this->foreignTableName;
     }
 
-    public function getForeignColumnName(): string
+    public function getForeignColumnName(): string|DbExpr
     {
         return $this->foreignColumnName;
     }
@@ -110,7 +110,7 @@ abstract class NormalJoinConfigAbstract implements NormalJoinConfigInterface
     /**
      * @throws \InvalidArgumentException
      */
-    protected function setForeignColumnName(string $foreignColumnName): static
+    protected function setForeignColumnName(string|DbExpr $foreignColumnName): static
     {
         ArgumentValidators::assertNotEmpty('$foreignColumnName', $foreignColumnName);
         $this->foreignColumnName = $foreignColumnName;
@@ -147,13 +147,25 @@ abstract class NormalJoinConfigAbstract implements NormalJoinConfigInterface
 
     public function getJoinConditions(): array
     {
+        $foreignColumnName = $this->getForeignColumnName();
+        if ($foreignColumnName instanceof DbExpr) {
+            $left = $foreignColumnName->setWrapInBrackets(true);
+        } else {
+            $left = $this->getJoinName() . '.' . $this->getForeignColumnName();
+        }
+        $localColumnName = $this->getLocalColumnName();
+        if ($localColumnName instanceof DbExpr) {
+            $right = $localColumnName->setWrapInBrackets(true);
+        } else {
+            $right = DbExpr::create(
+                "`{$this->getLocalTableAlias()}`.`{$localColumnName}`",
+                false
+            );
+        }
         return array_merge(
-            [
-                $this->getJoinName() . '.' . $this->getForeignColumnName() => DbExpr::create(
-                    "`{$this->getLocalTableAlias()}`.`{$this->getLocalColumnName()}`",
-                    false
-                )
-            ],
+            $left instanceof DbExpr
+                ? [new DbExpr($left->get() . ' = ' . $right->get(), false)]
+                : [$left => $right],
             $this->getAdditionalJoinConditions()
         );
     }

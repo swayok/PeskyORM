@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
-use PeskyORM\ORM\TableStructure\TableStructureInterface;
-use PeskyORM\Tests\PeskyORMTest\TestingBaseTable;
+use PeskyORM\ORM\Table\Table;
 
-class TestingAdmins3Table extends TestingBaseTable
+class TestingAdmins3Table extends Table
 {
-    
-    public function getTableStructure(): TableStructureInterface
+    protected function __construct()
     {
-        return TestingAdmins3TableStructure::getInstance();
+        parent::__construct(
+            new TestingAdmins3TableStructure(),
+            TestingAdmin::class
+        );
     }
-    
-    
 }

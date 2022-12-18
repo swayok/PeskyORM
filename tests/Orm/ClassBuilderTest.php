@@ -6,16 +6,13 @@ namespace PeskyORM\Tests\Orm;
 
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\ClassBuilder\ClassBuilder;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\TableDescription\ColumnDescription;
+use PeskyORM\TableDescription\ColumnDescriptionDataType;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 use PeskyORM\Tests\PeskyORMTest\TestingBaseTable;
-use PeskyORM\Tests\PeskyORMTest\Traits\TestingCreatedAtColumnTrait;
-use PeskyORM\Tests\PeskyORMTest\Traits\TestingIdColumnTrait;
-use PeskyORM\Tests\PeskyORMTest\Traits\TestingTimestampColumnsTrait;
 
 class ClassBuilderTest extends BaseTestCase
 {
@@ -79,7 +76,7 @@ class ClassBuilderTest extends BaseTestCase
     public function testMakeColumnConfig(): void
     {
         $builder = $this->getBuilder();
-        $columnDescr = new ColumnDescription('test', 'integer', TableColumn::TYPE_INT);
+        $columnDescr = new ColumnDescription('test', 'integer', ColumnDescriptionDataType::INT);
         $columnDescr->setIsPrimaryKey(true);
         static::assertEquals(
             'TableColumn::create(TableColumn::TYPE_INT)->primaryKey()',

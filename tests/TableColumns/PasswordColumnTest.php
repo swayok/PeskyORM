@@ -22,7 +22,7 @@ class PasswordColumnTest extends BaseTestCase
     {
         $column = new PasswordColumn('password');
         static::assertEquals(TableColumnDataType::STRING, $column->getDataType());
-        static::assertEquals([], $column->getColumnNameAliases());
+        static::assertEquals([], $column->getValueFormatersNames());
         // has value
         $valueContainer = $this->newRecordValueContainer($column);
         static::assertFalse($column->hasValue($valueContainer, false));

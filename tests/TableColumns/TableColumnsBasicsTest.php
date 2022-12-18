@@ -33,7 +33,6 @@ use PeskyORM\Select\OrmSelect;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
-use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use PeskyORM\Utils\StringUtils;
 
 class TableColumnsBasicsTest extends BaseTestCase
@@ -115,8 +114,7 @@ class TableColumnsBasicsTest extends BaseTestCase
         $columns = $this->getColumnsClasses();
 
         $relationName = 'Admin';
-        $adminsTable = TestingAdminsTable::getInstance();
-        $adminsTableStructure = TestingAdminsTableStructure::getInstance();
+        $adminsTableStructure = TestingAdminsTable::getInstance()->getTableStructure();
         $adminRecord = new TestingAdmin();
 
         foreach ($columns as $class) {
@@ -144,9 +142,27 @@ class TableColumnsBasicsTest extends BaseTestCase
                 static::assertFalse($column->isNullableValues(), $class);
             }
             // relations
-            $relationHasOne = new Relation($columnName, Relation::HAS_ONE, $adminsTable, 'id', $relationName . 'One');
-            $relationBelongsTo = new Relation($columnName, Relation::BELONGS_TO, $adminsTable, 'id', $relationName . 'Foreign');
-            $relationHasMany = new Relation($columnName, Relation::HAS_MANY, $adminsTable, 'parent_id', $relationName . 'Many');
+            $relationHasOne = new Relation(
+                $columnName,
+                Relation::HAS_ONE,
+                TestingAdminsTable::class,
+                'id',
+                $relationName . 'One'
+            );
+            $relationBelongsTo = new Relation(
+                $columnName,
+                Relation::BELONGS_TO,
+                TestingAdminsTable::class,
+                'id',
+                $relationName . 'Foreign'
+            );
+            $relationHasMany = new Relation(
+                $columnName,
+                Relation::HAS_MANY,
+                TestingAdminsTable::class,
+                'parent_id',
+                $relationName . 'Many'
+            );
             static::assertFalse($column->isForeignKey(), $class);
             static::assertEmpty($column->getRelations(), $class);
             static::assertFalse($column->hasRelation($relationName), $class);
@@ -154,19 +170,31 @@ class TableColumnsBasicsTest extends BaseTestCase
             static::assertCount(0, $column->getRelations(), $class);
             $column->addRelation($relationHasOne);
             static::assertTrue($column->hasRelation($relationHasOne->getName()), $class);
-            static::assertEquals($relationHasOne, $column->getRelation($relationHasOne->getName()), $class);
+            static::assertEquals(
+                $relationHasOne,
+                $column->getRelation($relationHasOne->getName()),
+                $class
+            );
             static::assertFalse($column->isForeignKey(), $class);
             static::assertNull($column->getForeignKeyRelation(), $class);
             static::assertCount(1, $column->getRelations(), $class);
             $column->addRelation($relationHasMany);
             static::assertTrue($column->hasRelation($relationHasMany->getName()), $class);
-            static::assertEquals($relationHasMany, $column->getRelation($relationHasMany->getName()), $class);
+            static::assertEquals(
+                $relationHasMany,
+                $column->getRelation($relationHasMany->getName()),
+                $class
+            );
             static::assertFalse($column->isForeignKey(), $class);
             static::assertNull($column->getForeignKeyRelation(), $class);
             static::assertCount(2, $column->getRelations(), $class);
             $column->addRelation($relationBelongsTo);
             static::assertTrue($column->hasRelation($relationBelongsTo->getName()), $class);
-            static::assertEquals($relationBelongsTo, $column->getRelation($relationBelongsTo->getName()), $class);
+            static::assertEquals(
+                $relationBelongsTo,
+                $column->getRelation($relationBelongsTo->getName()),
+                $class
+            );
             static::assertTrue($column->isForeignKey(), $class);
             static::assertEquals($relationBelongsTo, $column->getForeignKeyRelation(), $class);
             static::assertCount(3, $column->getRelations(), $class);
@@ -395,4 +423,58 @@ class TableColumnsBasicsTest extends BaseTestCase
         $column = new StringColumn('id');
         $column->validateValue('test', true, true);
     }
+
+    public function testInvalidName1(): void
+    {
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage(
+            'Argument #1 ($name) must be of type string, null given'
+        );
+        /** @noinspection PhpStrictTypeCheckingInspection */
+        new StringColumn(null);
+    }
+
+    public function testInvalidName2(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage(
+            '$name argument value (two words) has invalid format.'
+        );
+        new StringColumn('two words');
+    }
+
+    public function testInvalidName3(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage(
+            '$name argument value (camelCase) has invalid format.'
+        );
+        new StringColumn('camelCase');
+    }
+
+    public function testInvalidName4(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage(
+            '$name argument value (UpperCase) has invalid format.'
+        );
+        new StringColumn('UpperCase');
+    }
+
+    public function testUnknownFormat(): void
+    {
+        $this->expectException(TableColumnConfigException::class);
+        $this->expectExceptionMessageMatches(
+            "%There is no formatter 'unknown' for column .*'name'%"
+        );
+        $column = new StringColumn('name');
+        $container = $column->setValue(
+            $column->getNewRecordValueContainer(new TestingAdmin()),
+            'test',
+            false,
+            false
+        );
+        $column->getValue($container, 'unknown');
+    }
+
 }

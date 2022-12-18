@@ -10,7 +10,6 @@ use PeskyORM\Adapter\Postgres;
 use PeskyORM\DbExpr;
 use PeskyORM\Join\JoinConfigInterface;
 use PeskyORM\Join\OrmJoinConfig;
-use PeskyORM\ORM\Fakes\FakeTable;
 use PeskyORM\Select\OrmSelect;
 use PeskyORM\Select\Select;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
@@ -19,37 +18,38 @@ use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableLongAlias;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
-use PeskyORM\Tests\PeskyORMTest\TestingSettings\TestingSettingsTable;
-use PeskyORM\Tests\PeskyORMTest\TestingSettings\TestingSettingsTableStructure;
 use Swayok\Utils\Set;
 
 class OrmSelectTest extends BaseTestCase
 {
-
     use TestDataForAdminsTable;
 
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
-        TestingApp::clearTables(TestingAdminsTable::getConnection(true));
+        TestingApp::clearTables(TestingAdminsTable::getInstance()->getConnection(true));
     }
 
     public static function tearDownAfterClass(): void
     {
         parent::tearDownAfterClass();
-        TestingApp::clearTables(TestingAdminsTable::getConnection(true));
+        TestingApp::clearTables(TestingAdminsTable::getInstance()->getConnection(true));
     }
 
     protected static function getConnection(): DbAdapterInterface
     {
-        return TestingAdminsTable::getConnection(true);
+        return TestingAdminsTable::getInstance()->getConnection(true);
     }
 
     public static function fillAdminsTable(int $limit = 0): array
     {
-        TestingAdminsTable::getConnection(true)->exec('TRUNCATE TABLE admins');
+        TestingAdminsTable::getInstance()
+            ->getConnection(true)
+            ->exec('TRUNCATE TABLE admins');
         $data = TestingApp::getRecordsForDb('admins', $limit);
-        TestingAdminsTable::getConnection(true)->insertMany('admins', array_keys($data[0]), $data);
+        TestingAdminsTable::getInstance()
+            ->getConnection(true)
+            ->insertMany('admins', array_keys($data[0]), $data);
         return $data;
     }
 
@@ -86,7 +86,11 @@ class OrmSelectTest extends BaseTestCase
         static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
 
         $insertedData = static::fillAdminsTable(2);
-        $testData = $this->convertTestDataForAdminsTableAssert($insertedData, true, TestingAdminsTable::getConnection());
+        $testData = $this->convertTestDataForAdminsTableAssert(
+            $insertedData,
+            true,
+            TestingAdminsTable::getInstance()->getConnection()
+        );
         unset($testData[0]['big_data'], $testData[1]['big_data']);
         $dbSelect->columns('*');
         $count = $dbSelect->fetchCount();
@@ -1002,16 +1006,17 @@ class OrmSelectTest extends BaseTestCase
 
     public function testWith(): void
     {
+        $connection = TestingAdminsTable::getInstance()->getConnection();
         $dbSelect = static::getNewSelect()
             ->columns('id')
-            ->with(Select::from('admins', TestingAdminsTable::getConnection()), 'subselect');
+            ->with(Select::from('admins', $connection), 'subselect');
         static::assertEquals(
             'WITH "subselect" AS (SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0")'
             . ' SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0"',
             $dbSelect->getQuery()
         );
         $dbSelect->where([
-            'id IN' => Select::from('subselect', TestingAdminsTable::getConnection()),
+            'id IN' => Select::from('subselect', $connection),
         ]);
         static::assertEquals(
             'WITH "subselect" AS (SELECT "tbl_Admins_1".* FROM "admins" AS "tbl_Admins_1")'
@@ -1019,10 +1024,9 @@ class OrmSelectTest extends BaseTestCase
             . ' WHERE "tbl_Admins_1"."id" IN (SELECT "tbl_Subselect_0".* FROM "subselect" AS "tbl_Subselect_0")',
             $dbSelect->getQuery()
         );
-        $fakeTable = FakeTable::makeNewFakeTable('subselect');
-        $dbSelect = OrmSelect::from($fakeTable)
+        $dbSelect = Select::from('subselect', $connection)
             ->columns(['id'])
-            ->with(Select::from('admins', TestingAdminsTable::getConnection()), 'subselect')
+            ->with(Select::from('admins', $connection), 'subselect')
             ->where(['created_at > ' => '2016-01-01']);
         static::assertEquals(
             'WITH "subselect" AS (SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0") '
@@ -1031,11 +1035,9 @@ class OrmSelectTest extends BaseTestCase
             . ' WHERE "tbl_Subselect_0"."created_at" > \'2016-01-01\'',
             $dbSelect->getQuery()
         );
-        $fakeTable = FakeTable::makeNewFakeTable('subselect2');
-        $fakeTable->getTableStructure()->mimicTableStructure(TestingSettingsTableStructure::getInstance());
-        $dbSelect = OrmSelect::from($fakeTable)
+        $dbSelect = Select::from('subselect2', $connection)
             ->columns(['id', 'key', 'value'])
-            ->with(Select::from('settings', TestingSettingsTable::getConnection()), 'subselect2')
+            ->with(Select::from('settings', $connection), 'subselect2')
             ->where(['key' => 'test']);
         static::assertEquals(
             'WITH "subselect2" AS (SELECT "tbl_Settings_0".* FROM "settings" AS "tbl_Settings_0")'
@@ -1046,27 +1048,25 @@ class OrmSelectTest extends BaseTestCase
             $dbSelect->getQuery()
         );
 
-        $fakeTable2 = FakeTable::makeNewFakeTable('subselect3');
-        $fakeTable2->getTableStructure()->mimicTableStructure(TestingSettingsTableStructure::getInstance());
-        $subselect2 = Select::from('settings', TestingSettingsTable::getConnection())->columns(['*']);
+        $subselect2 = Select::from('settings', $connection)->columns(['*']);
         static::assertEquals(
             'SELECT "tbl_Settings_0".* FROM "settings" AS "tbl_Settings_0"',
             $subselect2->buildQueryToBeUsedInWith()
         );
-        $subselect3 = OrmSelect::from($fakeTable)->columns('*');
+        $subselect3 = Select::from('subselect2', $connection)
+            ->columns('*');
         static::assertEquals(
-            'SELECT "tbl_Subselect2_0"."id", "tbl_Subselect2_0"."key", "tbl_Subselect2_0"."value"'
-            . ' FROM "subselect2" AS "tbl_Subselect2_0"',
+            'SELECT "tbl_Subselect2_0".* FROM "subselect2" AS "tbl_Subselect2_0"',
             $subselect3->buildQueryToBeUsedInWith()
         );
-        $dbSelect2 = OrmSelect::from($fakeTable2)
+        $dbSelect2 = Select::from('subselect3', $connection)
             ->columns('id', 'key', 'value')
             ->with($subselect2, 'subselect2')
             ->with($subselect3, 'subselect3')
             ->where(['key' => 'test2']);
         static::assertEquals(
             'WITH "subselect2" AS (SELECT "tbl_Settings_1".* FROM "settings" AS "tbl_Settings_1"),'
-            . ' "subselect3" AS (SELECT "tbl_Subselect2_1"."id", "tbl_Subselect2_1"."key", "tbl_Subselect2_1"."value"'
+            . ' "subselect3" AS (SELECT "tbl_Subselect2_1".*'
             . ' FROM "subselect2" AS "tbl_Subselect2_1")'
             . ' SELECT "tbl_Subselect3_0"."id" AS "col_Subselect3__id_0",'
             . ' "tbl_Subselect3_0"."key" AS "col_Subselect3__key_1",'
@@ -1077,21 +1077,21 @@ class OrmSelectTest extends BaseTestCase
 
         $dbSelect = static::getNewSelect()
             ->columns('id')
-            ->with(Select::from('settings', TestingSettingsTable::getConnection()), 'subselect2')
+            ->with(Select::from('settings', $connection), 'subselect2')
             ->with(
-                OrmSelect::from($fakeTable)
+                Select::from('subselect2', $connection)
                     ->where(['key' => 'test']),
                 'subselect3'
             )
             ->where(
                 [
-                    'id IN' => Select::from('subselect3', TestingAdminsTable::getConnection())
+                    'id IN' => Select::from('subselect3', $connection)
                         ->where(['key' => 'test2']),
                 ]
             );
         static::assertEquals(
             'WITH "subselect2" AS (SELECT "tbl_Settings_0".* FROM "settings" AS "tbl_Settings_0"),'
-            . ' "subselect3" AS (SELECT "tbl_Subselect2_0"."id", "tbl_Subselect2_0"."key", "tbl_Subselect2_0"."value"'
+            . ' "subselect3" AS (SELECT "tbl_Subselect2_0".*'
             . ' FROM "subselect2" AS "tbl_Subselect2_0" WHERE "tbl_Subselect2_0"."key" = \'test\')'
             . ' SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0"'
             . ' WHERE "tbl_Admins_0"."id" IN'
@@ -1099,15 +1099,6 @@ class OrmSelectTest extends BaseTestCase
             . ' WHERE "tbl_Subselect3_0"."key" = \'test2\')',
             $dbSelect->getQuery()
         );
-    }
-
-    public function testNoColumnsForWildcardNormalization(): void
-    {
-        $this->expectException(\UnexpectedValueException::class);
-        $this->expectExceptionMessageMatches('%OrmSelect::normalizeWildcardColumn\(\): .*?FakeTableStructure\d+ForFake\d+ has no columns that exist in DB%');
-        $fakeTable = FakeTable::makeNewFakeTable('fake1');
-        $select = OrmSelect::from($fakeTable)->columns('*');
-        $select->buildQueryToBeUsedInWith();
     }
 
     public function testAnalyzeColumnNameForLongTableAlias(): void
@@ -1122,7 +1113,7 @@ class OrmSelectTest extends BaseTestCase
         );
         static::assertNotEquals(
             preg_replace('%^SELECT "(.+?)"."id",*$%', '$1', $select->getQuery()),
-            TestingAdminsTableLongAlias::getAlias()
+            TestingAdminsTableLongAlias::getInstance()->getTableAlias()
         );
     }
 
@@ -1135,7 +1126,6 @@ class OrmSelectTest extends BaseTestCase
                 $countWithParents++;
             }
         }
-        unset($record);
         static::assertGreaterThan(0, $countWithParents);
 
         $select = OrmSelect::from(TestingAdminsTable::getInstance())

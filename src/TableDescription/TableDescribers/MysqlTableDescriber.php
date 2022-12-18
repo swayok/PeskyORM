@@ -7,8 +7,8 @@ namespace PeskyORM\TableDescription\TableDescribers;
 use JetBrains\PhpStorm\ArrayShape;
 use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\DbExpr;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumn;
 use PeskyORM\TableDescription\ColumnDescription;
+use PeskyORM\TableDescription\ColumnDescriptionDataType;
 use PeskyORM\TableDescription\TableDescription;
 use PeskyORM\TableDescription\TableDescriptionInterface;
 use PeskyORM\Utils\PdoUtils;
@@ -18,38 +18,38 @@ class MysqlTableDescriber implements TableDescriberInterface
 {
 
     protected static array $dbTypeToOrmType = [
-        'bool' => TableColumn::TYPE_BOOL,
-        'blob' => TableColumn::TYPE_BLOB,
-        'tinyblob' => TableColumn::TYPE_BLOB,
-        'mediumblob' => TableColumn::TYPE_BLOB,
-        'longblob' => TableColumn::TYPE_BLOB,
-        'tinyint' => TableColumn::TYPE_INT,
-        'smallint' => TableColumn::TYPE_INT,
-        'mediumint' => TableColumn::TYPE_INT,
-        'bigint' => TableColumn::TYPE_INT,
-        'int' => TableColumn::TYPE_INT,
-        'integer' => TableColumn::TYPE_INT,
-        'decimal' => TableColumn::TYPE_FLOAT,
-        'dec' => TableColumn::TYPE_FLOAT,
-        'float' => TableColumn::TYPE_FLOAT,
-        'double' => TableColumn::TYPE_FLOAT,
-        'double precision' => TableColumn::TYPE_FLOAT,
-        'char' => TableColumn::TYPE_STRING,
-        'binary' => TableColumn::TYPE_STRING,
-        'varchar' => TableColumn::TYPE_STRING,
-        'varbinary' => TableColumn::TYPE_STRING,
-        'enum' => TableColumn::TYPE_STRING,
-        'set' => TableColumn::TYPE_STRING,
-        'text' => TableColumn::TYPE_TEXT,
-        'tinytext' => TableColumn::TYPE_TEXT,
-        'mediumtext' => TableColumn::TYPE_TEXT,
-        'longtext' => TableColumn::TYPE_TEXT,
-        'json' => TableColumn::TYPE_JSON,
-        'date' => TableColumn::TYPE_DATE,
-        'time' => TableColumn::TYPE_TIME,
-        'datetime' => TableColumn::TYPE_TIMESTAMP,
-        'timestamp' => TableColumn::TYPE_TIMESTAMP,
-        'year' => TableColumn::TYPE_INT,
+        'bool' => ColumnDescriptionDataType::BOOL,
+        'blob' => ColumnDescriptionDataType::BLOB,
+        'tinyblob' => ColumnDescriptionDataType::BLOB,
+        'mediumblob' => ColumnDescriptionDataType::BLOB,
+        'longblob' => ColumnDescriptionDataType::BLOB,
+        'tinyint' => ColumnDescriptionDataType::INT,
+        'smallint' => ColumnDescriptionDataType::INT,
+        'mediumint' => ColumnDescriptionDataType::INT,
+        'bigint' => ColumnDescriptionDataType::INT,
+        'int' => ColumnDescriptionDataType::INT,
+        'integer' => ColumnDescriptionDataType::INT,
+        'decimal' => ColumnDescriptionDataType::FLOAT,
+        'dec' => ColumnDescriptionDataType::FLOAT,
+        'float' => ColumnDescriptionDataType::FLOAT,
+        'double' => ColumnDescriptionDataType::FLOAT,
+        'double precision' => ColumnDescriptionDataType::FLOAT,
+        'char' => ColumnDescriptionDataType::STRING,
+        'binary' => ColumnDescriptionDataType::STRING,
+        'varchar' => ColumnDescriptionDataType::STRING,
+        'varbinary' => ColumnDescriptionDataType::STRING,
+        'enum' => ColumnDescriptionDataType::STRING,
+        'set' => ColumnDescriptionDataType::STRING,
+        'text' => ColumnDescriptionDataType::TEXT,
+        'tinytext' => ColumnDescriptionDataType::TEXT,
+        'mediumtext' => ColumnDescriptionDataType::TEXT,
+        'longtext' => ColumnDescriptionDataType::TEXT,
+        'json' => ColumnDescriptionDataType::JSON,
+        'date' => ColumnDescriptionDataType::DATE,
+        'time' => ColumnDescriptionDataType::TIME,
+        'datetime' => ColumnDescriptionDataType::TIMESTAMP,
+        'timestamp' => ColumnDescriptionDataType::TIMESTAMP,
+        'year' => ColumnDescriptionDataType::INT,
     ];
 
     public function __construct(private DbAdapterInterface $adapter)
@@ -84,7 +84,7 @@ class MysqlTableDescriber implements TableDescriberInterface
         $dbType = strtolower(preg_replace(['%\s*unsigned$%i', '%\([^)]+\)$%'], ['', ''], $dbType));
         return array_key_exists($dbType, static::$dbTypeToOrmType)
             ? static::$dbTypeToOrmType[$dbType]
-            : TableColumn::TYPE_STRING;
+            : ColumnDescriptionDataType::STRING;
     }
 
     protected function cleanDefaultValueForColumnDescription(

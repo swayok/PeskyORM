@@ -5,17 +5,13 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
 use PeskyORM\ORM\Record\Record;
-use PeskyORM\ORM\Table\TableInterface;
 
 class TestingAdmin2 extends Record
 {
-    
-    /**
-     * @return \PeskyORM\ORM\Table\TableInterface
-     */
-    public static function getTable(): TableInterface
+
+    public function __construct()
     {
-        return TestingAdminsTable::getInstance();
+        parent::__construct(TestingAdminsTable::getInstance());
     }
     
     protected function beforeSave(array $columnsToSave, array $data, bool $isUpdate): array
@@ -33,7 +29,7 @@ class TestingAdmin2 extends Record
     
     protected function beforeDelete(): void
     {
-        if ($this->getPrimaryKeyValue() !== 0) {
+        if ($this->getPrimaryKeyValue() < 10000) {
             throw new \BadMethodCallException('before delete: no-no-no!');
         }
     }

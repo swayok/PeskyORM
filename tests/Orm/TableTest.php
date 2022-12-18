@@ -16,22 +16,26 @@ class TableTest extends BaseTestCase
 
     public static function tearDownAfterClass(): void
     {
-        TestingApp::clearTables(TestingAdminsTable::getConnection());
+        TestingApp::clearTables(TestingAdminsTable::getInstance()->getConnection());
         parent::tearDownAfterClass();
     }
 
     protected function setUp(): void
     {
-        TestingApp::clearTables(TestingAdminsTable::getConnection());
+        TestingApp::clearTables(TestingAdminsTable::getInstance()->getConnection());
     }
 
     public static function fillAdminsTable(int $limit = 0): array
     {
-        TestingAdminsTable::getConnection(true)->exec('TRUNCATE TABLE admins');
+        TestingAdminsTable::getInstance()
+            ->getConnection(true)
+            ->exec('TRUNCATE TABLE admins');
         $data = TestingApp::getRecordsForDb('admins', $limit);
         // avoid using TestingAdminsTable::insertMany()
         // to avoid autoupdatable columns usage *updated_at for example
-        TestingAdminsTable::getConnection()->insertMany('admins', array_keys($data[0]), $data);
+        TestingAdminsTable::getInstance()
+            ->getConnection()
+            ->insertMany('admins', array_keys($data[0]), $data);
         return $data;
     }
 
@@ -102,7 +106,7 @@ class TableTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('$valuesAssoc array does not contain key [id]');
-        $columns = array_keys(TestingAdminsTableStructure::getRealColumns());
+        $columns = array_keys((new TestingAdminsTableStructure())->getRealColumns());
         TestingAdminsTable::insertMany($columns, [['is_active' => true]], true);
     }
 
@@ -110,7 +114,7 @@ class TableTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('$rows[is_active]: value must be an array.');
-        $columns = array_keys(TestingAdminsTableStructure::getRealColumns());
+        $columns = array_keys((new TestingAdminsTableStructure())->getRealColumns());
         TestingAdminsTable::insertMany($columns, ['is_active' => true], true);
     }
 
@@ -118,14 +122,14 @@ class TableTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('$rows[0]: value must be an array.');
-        $columns = array_keys(TestingAdminsTableStructure::getRealColumns());
+        $columns = array_keys((new TestingAdminsTableStructure())->getRealColumns());
         TestingAdminsTable::insertMany($columns, [null], true);
     }
 
     public function testInsertMany1(): void
     {
         $data = TestingApp::getRecordsForDb('admins', 4);
-        $columns = array_keys(TestingAdminsTableStructure::getRealColumns());
+        $columns = array_keys((new TestingAdminsTableStructure())->getRealColumns());
         $insertedRows = TestingAdminsTable::insertMany($columns, [$data[0], $data[1]], true, false);
         $expectedData = [
             TestingAdmin::fromArray($data[0], true)
@@ -140,7 +144,7 @@ class TableTest extends BaseTestCase
         static::assertEquals($expectedData[0], $insertedRows[0]);
         static::assertEquals($expectedData[1], $insertedRows[1]);
 
-        $columns = array_keys(TestingAdminsTableStructure::getRealColumns());
+        $columns = array_keys((new TestingAdminsTableStructure())->getRealColumns());
         $insertedRows = TestingAdminsTable::insertMany($columns, [$data[2], $data[3]], true, true);
         $expectedData = [
             TestingAdmin::fromArray($data[2], true)
@@ -205,7 +209,7 @@ class TableTest extends BaseTestCase
         $newAdmins = [
             [
                 'login' => '2AE351AF',
-                'password' => '$2y$10$9KOltdqg053WgkQoQT6cU.JkI92qwdRuD1h4E99.zCy1OicQDd.da',
+                'password' => 'F7A124FE',
                 'remember_token' => '6A758CB2-234F-F7A1-24FE-4FE263E6FF81',
                 'ip' => '192.168.0.1',
                 'name' => 'Lionel Freeman',
@@ -214,7 +218,7 @@ class TableTest extends BaseTestCase
             ],
             [
                 'login' => '4FE263E6FF81',
-                'password' => '$2y$10$9KOltdqg053WgkQoQT6cU.JkI92qwdRuD1h4E99.zCy1OicQDd.da',
+                'password' => '63E6FF',
                 'remember_token' => '6A758CB2-234F-F7A1-24FE-4FE263E6FF81',
                 'ip' => '192.168.0.1',
                 'name' => 'Lionel Freeman',
@@ -222,7 +226,10 @@ class TableTest extends BaseTestCase
                 'big_data' => 'biiiiiiig data'
             ]
         ];
-        $columns = array_diff(array_keys(TestingAdminsTableStructure::getRealColumns()), ['id']);
+        $columns = array_diff(
+            array_keys((new TestingAdminsTableStructure())->getRealColumns()),
+            ['id']
+        );
         $insertedRows = TestingAdminsTable::insertMany($columns, $newAdmins, true, false);
         $expectedData = [];
         foreach ($insertedRows as $index => $insertedRow) {

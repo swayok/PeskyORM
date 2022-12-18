@@ -26,7 +26,7 @@ class TimeZoneOffsetColumnTest extends BaseTestCase
             [
                 $columnStr->getName() . '_as_carbon' => 'carbon'
             ],
-            $columnStr->getColumnNameAliases()
+            $columnStr->getValueFormatersNames()
         );
         // has value
         $valueContainer = $this->newRecordValueContainer($columnStr);

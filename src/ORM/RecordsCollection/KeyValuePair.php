@@ -6,14 +6,8 @@ namespace PeskyORM\ORM\RecordsCollection;
 
 class KeyValuePair
 {
-    
     protected string|int|bool|float $key;
     protected mixed $value;
-    
-    public static function create(float|bool|int|string $key, mixed $value): static
-    {
-        return new static($key, $value);
-    }
     
     public function __construct(float|bool|int|string $key, mixed $value)
     {

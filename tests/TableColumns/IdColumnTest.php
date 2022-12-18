@@ -25,7 +25,7 @@ class IdColumnTest extends BaseTestCase
         static::assertTrue($column->isPrimaryKey());
         static::assertTrue($column->isNullableValues());
         static::assertFalse($column->isAutoUpdatingValues());
-        static::assertEquals([], $column->getColumnNameAliases());
+        static::assertEquals([], $column->getValueFormatersNames());
         // has value
         $valueContainer = $this->newRecordValueContainer($column);
         static::assertFalse($column->hasValue($valueContainer, false));

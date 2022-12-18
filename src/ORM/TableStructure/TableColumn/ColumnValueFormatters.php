@@ -31,14 +31,12 @@ abstract class ColumnValueFormatters
         static $map = null;
         if ($map === null) {
             $map = [
-                TableColumn::TYPE_TIMESTAMP => static::getTimestampFormatters(),
-                TableColumn::TYPE_DATE => static::getDateFormatters(),
-                TableColumn::TYPE_TIME => static::getTimeFormatters(),
-                TableColumn::TYPE_UNIX_TIMESTAMP => static::getUnixTimestampFormatters(),
-                TableColumn::TYPE_JSON => static::getJsonFormatters(),
+                TableColumnDataType::TIMESTAMP => static::getTimestampFormatters(),
+                TableColumnDataType::DATE => static::getDateFormatters(),
+                TableColumnDataType::TIME => static::getTimeFormatters(),
+                TableColumnDataType::UNIX_TIMESTAMP => static::getUnixTimestampFormatters(),
+                TableColumnDataType::JSON => static::getJsonFormatters(),
             ];
-            $map[TableColumn::TYPE_TIMESTAMP_WITH_TZ] = $map[TableColumn::TYPE_TIMESTAMP];
-            $map[TableColumn::TYPE_JSONB] = $map[TableColumn::TYPE_JSON];
         }
         return $map[$columnType] ?? [];
     }

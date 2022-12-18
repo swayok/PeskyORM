@@ -12,9 +12,10 @@ use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeNullable;
 use PeskyORM\ORM\TableStructure\TableColumn\Traits\CanBeUnique;
+use PeskyORM\ORM\TableStructure\TableColumn\UniqueTableColumnInterface;
 use PeskyORM\Utils\ValueTypeValidators;
 
-class UnixTimestampColumn extends RealTableColumnAbstract
+class UnixTimestampColumn extends RealTableColumnAbstract implements UniqueTableColumnInterface
 {
     use CanBeUnique;
     use CanBeNullable;

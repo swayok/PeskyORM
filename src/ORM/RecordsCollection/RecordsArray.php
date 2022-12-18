@@ -9,23 +9,21 @@ use PeskyORM\ORM\Table\TableInterface;
 use PeskyORM\ORM\TableStructure\RelationInterface;
 use Swayok\Utils\Set;
 
-class RecordsArray implements \ArrayAccess, \Iterator, \Countable
-{
-    
+class RecordsArray implements RecordsCollectionInterface {
     protected TableInterface $table;
     /**
-     * @var array[]|\PeskyORM\ORM\Record\RecordInterface[]
+     * @var array[]|RecordInterface[]
      */
     protected array $records = [];
     protected ?bool $isFromDb = null;
-    
+
     protected bool $isRecordsContainObjects = false;
     protected int $iteratorPosition = 0;
     /**
      * @var RecordInterface[]
      */
     protected array $dbRecords = [];
-    
+
     protected bool $isDbRecordInstanceReuseEnabled = false;
     protected bool $isDbRecordDataValidationDisabled = false;
     protected ?RecordInterface $dbRecordForIteration = null;
@@ -35,10 +33,10 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * @var string[] - relation names
      */
     protected array $hasManyRelationsInjected = [];
-    
+
     /**
-     * @param \PeskyORM\ORM\Table\TableInterface $table
-     * @param array|\PeskyORM\ORM\Record\RecordInterface[] $records
+     * @param TableInterface $table
+     * @param array|RecordInterface[] $records
      * @param bool|null $isFromDb - true: records are from db | null - autodetect
      * @param bool $disableDbRecordDataValidation
      * @throws \InvalidArgumentException
@@ -59,7 +57,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
                 if (is_array($record)) {
                     $this->records[$index] = $record;
                 } elseif ($record instanceof $recordClass) {
-                    /** @var \PeskyORM\ORM\Record\RecordInterface $record */
+                    /** @var RecordInterface $record */
                     if ($this->isDbRecordDataValidationDisabled()) {
                         $record->enableTrustModeForDbData();
                     } else {
@@ -76,26 +74,25 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         }
         $this->isFromDb = $isFromDb;
     }
-    
+
     protected function getNewRecord(): RecordInterface
     {
         return $this->table->newRecord();
     }
-    
+
     /**
-     * Inject data from HAS MANY relation into records
-     * @param string $relationName
-     * @param array $columnsToSelect - see \PeskyORM\Core\AbstractSelect::columns()
-     * @return static
+     * {@inheritDoc}
      * @throws \InvalidArgumentException
      */
-    public function injectHasManyRelationData(string $relationName, array $columnsToSelect = ['*']): static
-    {
-        $relation = $this->table->getTableStructure()
-            ->getRelation($relationName);
+    public function injectHasManyRelationData(
+        string $relationName,
+        array $columnsToSelect = ['*']
+    ): static {
+        $relation = $this->table->getTableStructure()->getRelation($relationName);
         if ($relation->getType() !== $relation::HAS_MANY) {
+            $type = mb_strtoupper($relation->getType());
             throw new \InvalidArgumentException(
-                'Relation must be of a \'' . $relation::HAS_MANY . "' type but relation '$relationName' is of type '{$relation->getType()}'"
+                "Relation '{$relationName}' is expected to be HAS_MANY  but it is {$type}."
             );
         }
         if (!in_array($relationName, $this->hasManyRelationsInjected, true)) {
@@ -103,15 +100,18 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         }
         return $this;
     }
-    
-    protected function injectHasManyRelationDataIntoRecords(RelationInterface $relation, array $columnsToSelect = ['*']): void
-    {
+
+    protected function injectHasManyRelationDataIntoRecords(
+        RelationInterface $relation,
+        array $columnsToSelect = ['*']
+    ): void {
         $relationName = $relation->getName();
         $localColumnName = $relation->getLocalColumnName();
         $ids = $this->getValuesForColumn($localColumnName, null, function ($value) {
             return !empty($value);
         });
         if (count($ids)) {
+            // todo: replace Set::combine usage by simple iteration for better performance
             $relatedRecordsGrouped = Set::combine(
                 $relation->getForeignTable()
                     ->select($columnsToSelect, [$relation->getForeignColumnName() => $ids])
@@ -122,14 +122,17 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
             );
             foreach ($this->getRecords() as $index => $record) {
                 $relatedRecords = [];
+                $localColumnValue = $record[$localColumnName] ?? null;
                 if (
-                    isset($record[$localColumnName], $relatedRecordsGrouped[$record[$localColumnName]])
-                    && is_array($relatedRecordsGrouped[$record[$localColumnName]])
+                    $localColumnValue
+                    && isset($relatedRecordsGrouped[$localColumnValue])
+                    && is_array($relatedRecordsGrouped[$localColumnValue])
                 ) {
-                    $relatedRecords = $relatedRecordsGrouped[$record[$localColumnName]];
+                    $relatedRecords = $relatedRecordsGrouped[$localColumnValue];
                 }
                 if ($record instanceof RecordInterface) {
-                    $this->records[$index] = $this->records[$index]->toArray([], ['*'], false);
+                    $this->records[$index] = $this->records[$index]
+                        ->toArray([], ['*'], false);
                     unset($this->dbRecords[$index]);
                 }
                 $this->records[$index][$relationName] = array_values($relatedRecords);
@@ -137,7 +140,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         }
         $this->hasManyRelationsInjected[] = $relationName;
     }
-    
+
     protected function getDbRecordObjectForIteration(): RecordInterface
     {
         if ($this->dbRecordForIteration === null) {
@@ -155,11 +158,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         }
         return $this->dbRecordForIteration;
     }
-    
-    /**
-     * Reset stored data
-     * Note: RecordsArray instance won't be usable after this while RecordsSet can fetch data again
-     */
+
     public function resetRecords(): static
     {
         $this->records = [];
@@ -168,17 +167,17 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         $this->currentDbRecordIndex = -1;
         return $this;
     }
-    
+
     protected function getRecords(): array
     {
         return $this->records;
     }
-    
-    public function areRecordsFetchedFromDb(): bool
+
+    public function isDbQueryAlreadyExecuted(): bool
     {
         return true;
     }
-    
+
     /**
      * @throws \InvalidArgumentException
      */
@@ -192,47 +191,44 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         }
         return $this->records[$index];
     }
-    
-    /**
-     * Optimize iteration to reuse Db\Record instance and disable validation for data received from DB
-     */
+
     public function optimizeIteration(): static
     {
         $this->enableDbRecordInstanceReuseDuringIteration();
         $this->disableDbRecordDataValidation();
         return $this;
     }
-    
+
     public function enableDbRecordInstanceReuseDuringIteration(): static
     {
         $this->isDbRecordInstanceReuseEnabled = true;
         return $this;
     }
-    
+
     public function disableDbRecordInstanceReuseDuringIteration(): static
     {
         $this->isDbRecordInstanceReuseEnabled = false;
         $this->dbRecordForIteration = null;
         return $this;
     }
-    
-    public function isDbRecordInstanceReuseDuringIterationEnabled(): bool
+
+    protected function isDbRecordInstanceReuseDuringIterationEnabled(): bool
     {
         return $this->isDbRecordInstanceReuseEnabled;
     }
-    
+
     public function enableDbRecordDataValidation(): static
     {
         $this->setIsDbRecordDataValidationDisabled(false);
         return $this;
     }
-    
+
     public function disableDbRecordDataValidation(): static
     {
         $this->setIsDbRecordDataValidationDisabled(true);
         return $this;
     }
-    
+
     protected function setIsDbRecordDataValidationDisabled(bool $isDisabled): static
     {
         $this->isDbRecordDataValidationDisabled = $isDisabled;
@@ -245,43 +241,36 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         }
         return $this;
     }
-    
-    public function isDbRecordDataValidationDisabled(): bool
+
+    protected function isDbRecordDataValidationDisabled(): bool
     {
         return $this->isDbRecordDataValidationDisabled;
     }
-    
+
     /**
-     * @return bool|null - null: mixed, will be autodetected based on primary key value existence
+     * null: mixed, will be autodetected based on primary key value existence
      */
-    public function isRecordsFromDb(): ?bool
+    protected function isRecordsFromDb(): ?bool
     {
         return $this->isFromDb;
     }
-    
+
     protected function autodetectIfRecordIsFromDb(array $data): bool
     {
         $pkName = $this->table->getTableStructure()
             ->getPkColumnName();
         return array_key_exists($pkName, $data) && $data[$pkName] !== null;
     }
-    
-    /**
-     * @param string|array|\Closure|null $closureOrColumnsListOrMethodName
-     *      - null: return all fetched records as not modified arrays
-     *      - other options and arguments described in RecordsArray::getDataFromEachObject()
-     * @param array $argumentsForMethod
-     * @param bool $enableReadOnlyMode
-     * @return array[]
-     * @see RecordsArray::getDataFromEachObject()
-     */
+
     public function toArrays(
-        string|array|\Closure|null $closureOrColumnsListOrMethodName = null,
-        array $argumentsForMethod = [],
+        array|\Closure|null $closureOrColumnsList = null,
         bool $enableReadOnlyMode = true
     ): array {
-        if ($closureOrColumnsListOrMethodName) {
-            return $this->getDataFromEachObject($closureOrColumnsListOrMethodName, $argumentsForMethod, $enableReadOnlyMode);
+        if ($closureOrColumnsList) {
+            return $this->getDataFromEachObject(
+                $closureOrColumnsList,
+                $enableReadOnlyMode
+            );
         }
 
         if ($this->isRecordsContainObjects) {
@@ -294,10 +283,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         }
         return $this->getRecords();
     }
-    
-    /**
-     * @return \PeskyORM\ORM\Record\RecordInterface[]
-     */
+
     public function toObjects(): array
     {
         $count = $this->count();
@@ -308,49 +294,25 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         }
         return $this->dbRecords;
     }
-    
-    /**
-     * Get some specific data from each object
-     * @param array|\Closure|string $closureOrColumnsListOrMethodName
-     *      - string: get record data processed by ORM Record's method name. You can provide additional args via $argumentsForMethod
-     *      - array: list of columns compatible with RecordInterface->toArray($columnsNames)
-     *      - \Closure: function (RecordInterface $record) { return $record->toArray(); }
-     *      - \Closure: function (RecordInterface $record) { return \PeskyORM\ORM\RecordsCollection\KeyValuePair::create($record->id, $record->toArray()); }
-     * @param array $argumentsForMethod - pass these arguments to ORM Record's method.
-     *      Not used if $argumentsForMethod is Closure.
-     *      If $closureOrColumnsListOrMethodName is array - 1st argument is $closureOrColumnsListOrMethodName.
-     * @param bool $enableReadOnlyMode - true: disable all processing of Record's data during Record object creations so
-     *      it will work much faster on large sets of Records and allow using Record's methods but will disable
-     *      Record's data modification
-     * @throws \InvalidArgumentException
-     * @see \PeskyORM\ORM\Record\RecordInterface::toArray()
-     * @see \PeskyORM\ORM\RecordsCollection\KeyValuePair::create()
-     */
+
     public function getDataFromEachObject(
-        array|\Closure|string $closureOrColumnsListOrMethodName,
-        array $argumentsForMethod = [],
+        array|\Closure $closureOrColumnsList,
         bool $enableReadOnlyMode = true
     ): array {
-        if ($closureOrColumnsListOrMethodName instanceof \Closure) {
-            $closure = $closureOrColumnsListOrMethodName;
+        if (is_array($closureOrColumnsList)) {
+            // columns list
+            $closure = static function (
+                RecordInterface $record
+            ) use ($closureOrColumnsList) {
+                return $record->toArray($closureOrColumnsList);
+            };
         } else {
-            if (is_array($closureOrColumnsListOrMethodName)) {
-                // columns list
-                $argumentsForMethod = array_merge([$closureOrColumnsListOrMethodName], $argumentsForMethod);
-                $closureOrColumnsListOrMethodName = 'toArray';
-            }
-            if (is_string($closureOrColumnsListOrMethodName)) {
-                // Record's method and arguments
-                $closure = static function (RecordInterface $record) use ($closureOrColumnsListOrMethodName, $argumentsForMethod) {
-                    return call_user_func_array([$record, $closureOrColumnsListOrMethodName], $argumentsForMethod);
-                };
-            } else {
-                throw new \InvalidArgumentException('$callback argument must be a string (method name), array (columns list) or closure');
-            }
+            $closure = $closureOrColumnsList;
         }
         $data = [];
-        $backupReuse = $this->isDbRecordInstanceReuseEnabled;
-        $backupValidation = $this->isDbRecordDataValidationDisabled;
+        $backupReuse = $this->isDbRecordInstanceReuseDuringIterationEnabled();
+        $backupValidation = $this->isDbRecordDataValidationDisabled();
+        $backupReadonly = $this->isReadOnlyModeEnabled();
         $this->enableDbRecordInstanceReuseDuringIteration();
         if ($enableReadOnlyMode) {
             $this->enableReadOnlyMode();
@@ -376,20 +338,23 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
                 $data[] = $value;
             }
         }
-        $this->isDbRecordInstanceReuseEnabled = $backupReuse;
-        $this->isDbRecordDataValidationDisabled = $backupValidation;
+        $backupReuse
+            ? $this->enableDbRecordInstanceReuseDuringIteration()
+            : $this->disableDbRecordInstanceReuseDuringIteration();
+        $backupValidation
+            ? $this->enableDbRecordDataValidation()
+            : $this->disableDbRecordDataValidation();
+        $backupReadonly
+            ? $this->enableReadOnlyMode()
+            : $this->disableReadOnlyMode();
         return $data;
     }
-    
-    /**
-     * Get $columnName values from all records
-     * @param string $columnName
-     * @param mixed|null $defaultValue
-     * @param null|\Closure $filter - \Closure compatible with array_filter()
-     * @return array
-     */
-    public function getValuesForColumn(string $columnName, mixed $defaultValue = null, \Closure $filter = null): array
-    {
+
+    public function getValuesForColumn(
+        string $columnName,
+        mixed $defaultValue = null,
+        \Closure $filter = null
+    ): array {
         $records = $this->toArrays();
         $ret = [];
         foreach ($records as $data) {
@@ -401,22 +366,22 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         }
         return $filter ? array_filter($ret, $filter) : $ret;
     }
-    
-    /**
-     * Filter records and create new RecordsArray from remaining records
-     * @param \Closure $filter - closure compatible with array_filter()
-     * @param bool $resetOriginalRecordsArray
-     * @return RecordsArray - new RecordsArray (not RecordsSet!)
-     */
-    public function filterRecords(\Closure $filter, bool $resetOriginalRecordsArray = false): RecordsArray
-    {
-        $newArray = new self($this->table, array_filter($this->toObjects(), $filter), $this->isFromDb);
+
+    public function filterRecords(
+        \Closure $filter,
+        bool $resetOriginalRecordsArray = false
+    ): RecordsArray {
+        $newArray = new self(
+            $this->table,
+            array_filter($this->toObjects(), $filter),
+            $this->isFromDb
+        );
         if ($resetOriginalRecordsArray) {
             $this->resetRecords();
         }
         return $newArray;
     }
-    
+
     protected function convertToObject(int $recordIndex): RecordInterface
     {
         if (empty($this->dbRecords[$recordIndex])) {
@@ -449,7 +414,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         }
         return $this->dbRecords[$recordIndex];
     }
-    
+
     protected function getStandaloneObject(RecordInterface|array $data, bool $withOptimizations): RecordInterface
     {
         $dataIsRecord = $data instanceof RecordInterface;
@@ -470,7 +435,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
             ? $record
             : $record->fromData($data, $this->isRecordsFromDb());
     }
-    
+
     /**
      * Return the current element
      */
@@ -481,7 +446,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         }
         return $this->offsetGet($this->iteratorPosition);
     }
-    
+
     /**
      * Move forward to next element
      */
@@ -489,7 +454,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     {
         $this->iteratorPosition++;
     }
-    
+
     /**
      * Return the key of the current element
      */
@@ -497,7 +462,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     {
         return $this->iteratorPosition;
     }
-    
+
     /**
      * Checks if current position is valid
      * @return boolean - true on success or false on failure.
@@ -506,7 +471,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     {
         return $this->offsetExists($this->iteratorPosition);
     }
-    
+
     /**
      * Rewind the Iterator to the first element
      */
@@ -514,40 +479,31 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     {
         $this->iteratorPosition = 0;
     }
-    
+
     /**
-     * Get first record
-     * @param string|null $columnName - null: return record; string - return value for the key from record
-     * @return RecordInterface|mixed
+     * {@inheritDoc}
      * @throws \BadMethodCallException
      */
-    public function first(?string $columnName = null): mixed
+    public function first(): RecordInterface
     {
         if ($this->count() === 0) {
-            throw new \BadMethodCallException('There is no records');
+            throw new \BadMethodCallException('There are no records');
         }
-        $record = $this->offsetGet(0);
-        return $columnName === null ? $record : $record[$columnName];
+        return $this->offsetGet(0);
     }
-    
+
     /**
-     * Get last record
-     * @param string|null $columnName - null: return record; string - return value for the key from record
-     * @return \PeskyORM\ORM\Record\RecordInterface|mixed
+     * {@inheritDoc}
      * @throws \BadMethodCallException
      */
-    public function last(?string $columnName = null): mixed
+    public function last(): RecordInterface
     {
         if ($this->count() === 0) {
-            throw new \BadMethodCallException('There is no records');
+            throw new \BadMethodCallException('There are no records');
         }
-        $record = $this->offsetGet(count($this->getRecords()) - 1);
-        return $columnName === null ? $record : $record[$columnName];
+        return $this->offsetGet(count($this->getRecords()) - 1);
     }
-    
-    /**
-     * Find single record by $columnName and $expectedValue within selected records
-     */
+
     public function findOne(string $columnName, mixed $expectedValue, bool $asObject): RecordInterface|array|null
     {
         foreach ($this->getRecords() as $record) {
@@ -557,7 +513,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
         }
         return null;
     }
-    
+
     /**
      * Whether a record with specified index exists
      * @noinspection PhpParameterNameChangedDuringInheritanceInspection
@@ -566,7 +522,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     {
         return array_key_exists($index, $this->getRecords());
     }
-    
+
     /**
      * Get record by its index
      * @noinspection PhpParameterNameChangedDuringInheritanceInspection
@@ -591,7 +547,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
 
         return $this->convertToObject($index);
     }
-    
+
     /**
      * Add record to index
      * @throws \BadMethodCallException
@@ -601,7 +557,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     {
         throw new \BadMethodCallException('DbRecordSet cannot be modified');
     }
-    
+
     /**
      * Delete record by its index
      * @noinspection PhpParameterNameChangedDuringInheritanceInspection
@@ -610,37 +566,31 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     {
         throw new \BadMethodCallException('DbRecordSet cannot be modified');
     }
-    
-    /**
-     * Count fetched records
-     */
+
     public function count(): int
     {
         return count($this->getRecords());
     }
-    
-    /**
-     * Count total records in DB
-     */
+
     public function totalCount(): int
     {
         return $this->count();
     }
-    
+
     public function enableReadOnlyMode(): static
     {
         $this->readOnlyMode = true;
         return $this;
     }
-    
+
     public function disableReadOnlyMode(): static
     {
         $this->readOnlyMode = false;
         $this->dbRecordForIteration = null;
         return $this;
     }
-    
-    public function isReadOnlyModeEnabled(): bool
+
+    protected function isReadOnlyModeEnabled(): bool
     {
         return $this->readOnlyMode;
     }

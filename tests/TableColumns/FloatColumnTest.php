@@ -21,7 +21,7 @@ class FloatColumnTest extends BaseTestCase
     {
         $column = new FloatColumn('float');
         static::assertEquals(TableColumnDataType::FLOAT, $column->getDataType());
-        static::assertEquals([], $column->getColumnNameAliases());
+        static::assertEquals([], $column->getValueFormatersNames());
         // has value
         $valueContainer = $this->newRecordValueContainer($column);
         static::assertFalse($column->hasValue($valueContainer, false));

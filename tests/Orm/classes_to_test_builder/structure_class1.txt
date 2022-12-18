@@ -2,8 +2,8 @@
 
 namespace App\Db;
 
-use PeskyORM\ORM\TableStructure\TableStructure;
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
+use PeskyORM\ORM\TableStructureOld\TableStructureOld;
+use PeskyORM\ORM\TableStructureOld\TableColumn\TableColumnInterface;
 use PeskyORM\DbExpr;
 
 /**
@@ -25,7 +25,7 @@ use PeskyORM\DbExpr;
  * @property-read TableColumn    $not_changeable_column
  * @property-read TableColumn    $big_data
  */
-class AdminsTableStructure extends TableStructure
+class AdminsTableStructure extends TableStructureOld
 {
 
     public static function getTableName(): string
