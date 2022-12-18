@@ -136,6 +136,11 @@ class TableColumnFactory implements TableColumnFactoryInterface
             return $this->nameToClass[$name];
         }
 
+        $dbType = $description->getDbType();
+        if (isset($this->typeToClass[$dbType])) {
+            return $this->typeToClass[$dbType];
+        }
+
         $ormType = $description->getOrmType();
         if (isset($this->typeToClass[$ormType])) {
             return $this->typeToClass[$ormType];
