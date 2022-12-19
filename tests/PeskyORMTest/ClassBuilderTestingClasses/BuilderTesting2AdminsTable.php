@@ -1,9 +1,11 @@
-<?php /** @noinspection ALL */
+<?php
 declare(strict_types=1);
 
 namespace PeskyORM\Tests\PeskyORMTest\ClassBuilderTestingClasses;
 
-class BuilderTesting2AdminsTable extends \PeskyORM\Tests\PeskyORMTest\TestingBaseTable
+use PeskyORM\Tests\PeskyORMTest\TestingBaseTable;
+
+class BuilderTesting2AdminsTable extends TestingBaseTable
 {
     protected function __construct()
     {

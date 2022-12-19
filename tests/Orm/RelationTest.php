@@ -15,7 +15,7 @@ class RelationTest extends BaseTestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessageMatches(
-            '%\$foreignTableClass argument must be a class that implements .*TableInterface%'
+            '%\$foreignTableClass argument value must be a class that implements .*TableInterface%'
         );
         new Relation('valid', Relation::HAS_MANY, static::class, 'id', 'Relation');
     }

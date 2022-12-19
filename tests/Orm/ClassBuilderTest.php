@@ -27,7 +27,7 @@ class ClassBuilderTest extends BaseTestCase
             'PeskyORM\\Tests\\PeskyORMTest\\ClassBuilderTestingClasses',
         );
     }
-    
+
     public function testTableClassBuilding(): void
     {
         $builder = $this->getBuilder();
@@ -54,7 +54,7 @@ class ClassBuilderTest extends BaseTestCase
         );
     }
 
-    public function testRecordableClassBuilding(): void
+    public function testRecordClassBuilding(): void
     {
         $builder = $this->getBuilder();
 
@@ -87,6 +87,7 @@ class ClassBuilderTest extends BaseTestCase
         $expected = file_get_contents(
             __DIR__ . '/../PeskyORMTest/ClassBuilderTestingClasses/BuilderTesting1AdminsTableStructure.php'
         );
+        $builder->setClassesPrefix('BuilderTesting1');
         $actual = $builder->buildStructureClass();
         static::assertEquals(
             $this->cleanFileContents($expected),
@@ -96,6 +97,7 @@ class ClassBuilderTest extends BaseTestCase
         $expected = file_get_contents(
             __DIR__ . '/../PeskyORMTest/ClassBuilderTestingClasses/BuilderTesting2AdminsTableStructure.php'
         );
+        $builder->setClassesPrefix('BuilderTesting2');
         $actual = $builder->buildStructureClass(TestingAdminsTableStructure::class);
         static::assertEquals(
             $this->cleanFileContents($expected),
@@ -107,7 +109,7 @@ class ClassBuilderTest extends BaseTestCase
     private function cleanFileContents(string $text): string
     {
         return preg_replace(
-            ["%<\?php\s*/\*\* @noinspection ALL \*/%s", "%[\r\n\t]+%"],
+            ["%<\?php\s*/\*\* @noinspection .*? \*/\s*%s", "%[\r\n\t]+%"],
             ['<?php', ''],
             $text
         );

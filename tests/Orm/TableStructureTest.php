@@ -242,7 +242,7 @@ class TableStructureTest extends BaseTestCase
                 ->hasDefaultValue()
         );
         static::assertEquals(
-            DbExpr::create('now()'),
+            DbExpr::create('NOW()'),
             $structure->getColumn('created_at')
                 ->getDefaultValue()
         );

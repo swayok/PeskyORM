@@ -4,6 +4,7 @@ echo '<?php';
 /**
  * @var string $namespace
  * @var string $parentClass
+ * @var string $parentClassName
  * @var string $className
  * @var string $tableStructureClassName
  * @var string $recordClassName
@@ -15,7 +16,9 @@ declare(strict_types=1);
 
 namespace <?php echo $namespace ?>;
 
-class <?php echo $className ?> extends \<?php echo $parentClass . "\n" ?>
+use <?php echo $parentClass ?>;
+
+class <?php echo $className ?> extends <?php echo $parentClassName . "\n" ?>
 {
     protected function __construct()
     {

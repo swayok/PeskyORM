@@ -8,9 +8,12 @@ use Carbon\CarbonImmutable;
 use PeskyORM\DbExpr;
 use PeskyORM\ORM\Record\Record;
 use PeskyORM\ORM\Table\Table;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\TimeColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\TimestampColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueFormatters;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
+use PeskyORM\ORM\TableStructure\TableColumn\UniqueTableColumnInterface;
 use PeskyORM\ORM\TableStructure\TableColumnFactoryInterface;
 use PeskyORM\ORM\TableStructure\TableStructure;
 use PeskyORM\TableDescription\ColumnDescriptionDataType;
@@ -24,6 +27,11 @@ class ClassBuilder
     public const TEMPLATE_TABLE_STRUCTURE = 'table_structure';
     public const TEMPLATE_RECORD = 'record';
 
+    protected array $timezoneTypes = [
+        ColumnDescriptionDataType::TIME_TZ,
+        ColumnDescriptionDataType::TIMESTAMP_WITH_TZ,
+    ];
+
     public function __construct(
         protected TableDescriptionInterface $tableDescription,
         protected TableColumnFactoryInterface $columnFactory,
@@ -33,73 +41,77 @@ class ClassBuilder
 
     public function buildTableClass(?string $parentClass = null): string
     {
-        $parentClass = $this->getParentClass(static::TEMPLATE_TABLE, $parentClass);
         $namespace = $this->namespace;
-        $tableAlias = $this->getTableAlias();
+        $parentClass = $this->getParentClass(static::TEMPLATE_TABLE, $parentClass);
+        $parentClassName = $this->extractClassNameFromFQN($parentClass);
         $className = $this->getClassName(static::TEMPLATE_TABLE);
         $tableStructureClassName = $this->getClassName(static::TEMPLATE_TABLE_STRUCTURE);
         $recordClassName = $this->getClassName(static::TEMPLATE_RECORD);
-
-        ob_start();
-        include $this->getTemplate(static::TEMPLATE_TABLE);
-        return ob_get_clean();
+        $tableAlias = $this->getTableAlias();
+        try {
+            ob_start();
+            include $this->getTemplate(static::TEMPLATE_TABLE);
+            return ob_get_clean();
+        } catch (\Throwable $exception) {
+            ob_clean();
+            throw $exception;
+        }
     }
 
     public function buildRecordClass(?string $parentClass = null): string
     {
-        $parentClass = $this->getParentClass(static::TEMPLATE_RECORD, $parentClass);
         $namespace = $this->namespace;
+        $parentClass = $this->getParentClass(static::TEMPLATE_RECORD, $parentClass);
+        $parentClassName = $this->extractClassNameFromFQN($parentClass);
         $className = $this->getClassName(static::TEMPLATE_RECORD);
         $tableClassName = $this->getClassName(static::TEMPLATE_TABLE);
-        $includes = [];
         $properties = $this->getRecordProperties();
         $setters = $this->getRecordSetterMethods();
-        ob_start();
-        include $this->getTemplate(static::TEMPLATE_RECORD);
-        return ob_get_clean();
+        $includes = [];
+        foreach ($properties as $name => &$type) {
+            if (str_contains($type, '\\')) {
+                $includes[] = $type;
+                $type = $this->extractClassNameFromFQN($type);
+            }
+        }
+        unset($type);
+        $includes = array_unique($includes);
+        try {
+            ob_start();
+            include $this->getTemplate(static::TEMPLATE_RECORD);
+            return ob_get_clean();
+        } catch (\Throwable $exception) {
+            ob_clean();
+            throw $exception;
+        }
     }
 
     public function buildStructureClass(?string $parentClass = null): string
     {
-        $parentClass = $this->getParentClass(static::TEMPLATE_TABLE_STRUCTURE, $parentClass);
         $namespace = $this->namespace;
-        [$traits, $includes, $usedColumns] = $this->makeTraitsForTableStructure($traitsForColumns);
-        $getSchemaMethod = '';
-        if ($this->tableSchema && $this->tableSchema !== $this->connection->getDefaultTableSchema()) {
-            $getSchemaMethod = <<<VIEW
-        
-    public static function getSchema(): ?string
-    {
-        return '{$this->tableSchema}';
-    }
-    
-VIEW;
+        $parentClass = $this->getParentClass(static::TEMPLATE_TABLE_STRUCTURE, $parentClass);
+        $parentClassName = $this->extractClassNameFromFQN($parentClass);
+        $className = $this->getClassName(static::TEMPLATE_TABLE_STRUCTURE);
+        $tableName = $this->tableDescription->getTableName();
+        $tableSchema = $this->tableDescription->getDbSchema();
+        $includes = [];
+        $columns = $this->getColumnsDetailsForStructure();
+        foreach ($columns as &$details) {
+            if (str_contains($details['class'], '\\')) {
+                $includes[] = $details['class'];
+                $details['class'] = $this->extractClassNameFromFQN($details['class']);
+            }
         }
-        return <<<VIEW
-<?php
-
-namespace {$namespace};
-
-use {$parentClass};
-use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
-use PeskyORM\DbExpr;$includes
-
-/**
-{$this->makePhpDocForTableStructure()}
- */
-class {$this::makeTableStructureClassName($this->tableName)} extends {$this->getShortClassName($parentClass)}
-{
-{$traits}
-    public static function getTableName(): string
-    {
-        return '{$this->tableName}';
-    }
-$getSchemaMethod
-{$this->makeColumnsMethodsForTableStructure($usedColumns)}
-
-}
-
-VIEW;
+        unset($details);
+        $includes = array_unique($includes);
+        try {
+            ob_start();
+            include $this->getTemplate(static::TEMPLATE_TABLE_STRUCTURE);
+            return ob_get_clean();
+        } catch (\Throwable $exception) {
+            ob_clean();
+            throw $exception;
+        }
     }
 
     protected function getTemplate(string $type): string
@@ -138,102 +150,6 @@ VIEW;
             default =>
             throw new \InvalidArgumentException('Unknown template type: ' . $type),
         };
-    }
-
-    /**
-     * @param array $traitsForColumns
-     * @return array = [traits:string, class_includes:string, used_columns:array]
-     */
-    protected function makeTraitsForTableStructure(array $traitsForColumns): array
-    {
-        if (empty($traitsForColumns)) {
-            return ['', '', []];
-        }
-        $traitsForColumns = array_unique($traitsForColumns);
-        $traits = [];
-        $classesToInclude = [];
-        $usedColumns = [];
-        $columnsNames = array_keys($this->tableDescription->getColumns());
-        foreach ($traitsForColumns as $traitClass) {
-            $traitMethods = (new \ReflectionClass($traitClass))->getMethods(\ReflectionMethod::IS_PRIVATE);
-            if (empty($traitMethods)) {
-                continue;
-            }
-            $traitColumns = [];
-            foreach ($traitMethods as $reflectionMethod) {
-                if (StringUtils::isSnakeCase($reflectionMethod->getName())) {
-                    $traitColumns[] = $reflectionMethod->getName();
-                }
-            }
-            if (count(array_intersect($usedColumns, $traitColumns)) > 0) {
-                // at least one of $traitColumns already replaced by trait
-                continue;
-            }
-            if (!empty($traitColumns) && count(array_intersect($columnsNames, $traitColumns)) === count($traitColumns)) {
-                $classesToInclude[] = $traitClass;
-                $traits[] = $this->getShortClassName($traitClass);
-                foreach ($traitColumns as $traitColumnName) {
-                    $usedColumns[] = $traitColumnName;
-                }
-            }
-        }
-        $usedColumns = array_unique($usedColumns);
-        return [
-            count($usedColumns) ? "\n    use " . implode(",\n        ", $traits) . ";\n" : '',
-            count($usedColumns) ? "\nuse " . implode(";\nuse ", $classesToInclude) . ';' : '',
-            $usedColumns,
-        ];
-    }
-
-    /**
-     * @param array $excludeColumns - columns to exclude (already included via traits)
-     * @return string
-     */
-    protected function makeColumnsMethodsForTableStructure(array $excludeColumns = []): string
-    {
-        $columns = [];
-        foreach ($this->getTableDescription()->getColumns() as $columnDescription) {
-            if (in_array($columnDescription->getName(), $excludeColumns, true)) {
-                continue;
-            }
-            $columns[] = <<<VIEW
-    private function {$columnDescription->getName()}(): TableColumnInterface
-    {
-        return {$this->makeColumnConfig($columnDescription)};
-    }
-VIEW;
-        }
-        return implode("\n\n", $columns);
-    }
-
-    protected function makeColumnConfig(ColumnDescriptionInterface $columnDescription): string
-    {
-        $ret = "TableColumn::create({$this->getConstantNameForColumnType($columnDescription->getOrmType())})";
-        if ($columnDescription->isPrimaryKey()) {
-            $ret .= "\n            ->primaryKey()";
-        }
-        if ($columnDescription->isUnique()) {
-            $ret .= "\n            ->uniqueValues()";
-        }
-        if (!$columnDescription->isNullable()) {
-            $ret .= "\n            ->disallowsNullValues()";
-            $ret .= "\n            ->convertsEmptyStringToNull()";
-        }
-        $default = $columnDescription->getDefault();
-        if ($default !== null && !$columnDescription->isPrimaryKey()) {
-            if ($default instanceof DbExpr) {
-                $default = "DbExpr::create('" . addslashes(
-                        $default->setWrapInBrackets(false)
-                            ->get()
-                    ) . "')";
-            } elseif (is_string($default)) {
-                $default = "'" . addslashes($default) . "'";
-            } elseif (is_bool($default)) {
-                $default = $default ? 'true' : 'false';
-            }
-            $ret .= "\n            ->setDefaultValue({$default})";
-        }
-        return $ret;
     }
 
     protected function getRecordProperties(): array
@@ -294,8 +210,7 @@ VIEW;
         return match ($format) {
             ColumnValueFormatters::FORMAT_ARRAY => 'array',
             ColumnValueFormatters::FORMAT_DECODED => 'mixed',
-            ColumnValueFormatters::FORMAT_OBJECT => '\\' . \stdClass::class,
-            ColumnValueFormatters::FORMAT_CARBON => '\\' . CarbonImmutable::class,
+            ColumnValueFormatters::FORMAT_CARBON => CarbonImmutable::class,
             ColumnValueFormatters::FORMAT_UNIX_TS => 'int',
             default => 'string',
         };
@@ -305,4 +220,126 @@ VIEW;
     {
         return StringUtils::toPascalCase($this->tableDescription->getTableName());
     }
+
+    protected function extractClassNameFromFQN(string $class): string
+    {
+        return preg_replace('%^.*\\\([^\\\]+)$%', '$1', $class);
+    }
+
+    protected function getColumnsDetailsForStructure(): array
+    {
+        $columsDetails = [];
+        foreach ($this->tableDescription->getColumns() as $description) {
+            $className = $this->columnFactory->findClassNameForDescription($description);
+            $columsDetails[] = [
+                'name' => $description->getName(),
+                'class' => $className,
+                'addons' => $this->getAddonsForTableStructureColumn(
+                    $description,
+                    new $className($description->getName())
+                ),
+            ];
+        }
+        return $columsDetails;
+    }
+
+    protected function getAddonsForTableStructureColumn(
+        ColumnDescriptionInterface $description,
+        TableColumnInterface $column
+    ): array {
+        $addons = [];
+        $className = get_class($column);
+        // primary key
+        if ($description->isPrimaryKey() && !$column->isPrimaryKey()) {
+            if (method_exists($column, 'primaryKey')) {
+                $addons['primaryKey'] = ['name' => 'primaryKey'];
+            } else {
+                throw new \UnexpectedValueException(
+                    "Column '{$description->getName()}' is primary key"
+                    . " but column class {$className} has no method 'primaryKey'"
+                );
+            }
+        }
+        // nullable
+        if ($description->isNullable() && !$column->isNullableValues()) {
+            if (method_exists($column, 'allowsNullValues')) {
+                $addons['allowsNullValues'] = ['name' => 'allowsNullValues'];
+            } else {
+                throw new \UnexpectedValueException(
+                    "Column '{$description->getName()}' should be nullable"
+                    . " but column class {$className} has no method 'allowsNullValues'"
+                );
+            }
+        }
+        // default
+        $default = $description->getDefault();
+        if (
+            $default !== null
+            && !$column->hasDefaultValue()
+            && !$column->isPrimaryKey()
+        ) {
+            $addons['setDefaultValue'] = [
+                'name' => 'setDefaultValue',
+                'arguments' => [$this->prepareDefaultValueArgumentForColumnAddon($default)],
+            ];
+        }
+        // convert empty string to null if column has default value
+        if (
+            method_exists($column, 'convertsEmptyStringValuesToNull')
+            && (
+                $column->hasDefaultValue()
+                || $default
+            )
+        ) {
+            $addons['convertsEmptyStringValuesToNull'] = [
+                'name' => 'convertsEmptyStringValuesToNull',
+            ];
+        }
+        // unique
+        if ($description->isUnique() && !$column->isValueMustBeUnique()) {
+            if ($column instanceof UniqueTableColumnInterface) {
+                $addons['uniqueValues'] = ['name' => 'uniqueValues'];
+            } else {
+                throw new \UnexpectedValueException(
+                    "Column '{$description->getName()}' should be unique"
+                    . " but column class {$className} does not implement "
+                    . UniqueTableColumnInterface::class
+                );
+            }
+        }
+        // timezone
+        if (in_array($description->getOrmType(), $this->timezoneTypes, true)) {
+            /** @var TimestampColumn|TimeColumn $column */
+            if (method_exists($column, 'withTimezone')) {
+                $addons['withTimezone'] = ['name' => 'withTimezone'];
+            } elseif (
+                !method_exists($column, 'isTimezoneExpected')
+                || !$column->isTimezoneExpected()
+            ) {
+                throw new \UnexpectedValueException(
+                    "Column '{$description->getName()}' should have timezone"
+                    . " but column class {$className} has no method 'withTimezone'"
+                );
+            }
+        }
+        return $addons;
+    }
+
+    protected function prepareDefaultValueArgumentForColumnAddon(mixed $default): string
+    {
+        if ($default instanceof DbExpr) {
+            return "DbExpr::create('"
+                . addslashes($default->setWrapInBrackets(false)->get())
+                . "')";
+        }
+        if (is_string($default)) {
+            return "'" . addslashes($default) . "'";
+        }
+        if (is_bool($default)) {
+            return $default ? 'true' : 'false';
+        }
+        // number
+        return $default;
+    }
+
 }

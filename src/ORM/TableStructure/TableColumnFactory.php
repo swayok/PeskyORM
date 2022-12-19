@@ -12,6 +12,7 @@ use PeskyORM\ORM\TableStructure\TableColumn\Column\FloatColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\Column\IdColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\Column\IntegerColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\Column\MixedJsonColumn;
+use PeskyORM\ORM\TableStructure\TableColumn\Column\PasswordColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\Column\StringColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\Column\TextColumn;
 use PeskyORM\ORM\TableStructure\TableColumn\Column\TimeColumn;
@@ -46,8 +47,9 @@ class TableColumnFactory implements TableColumnFactoryInterface
 
     protected array $nameToClass = [
         'id' => IdColumn::class,
+        'password' => PasswordColumn::class,
         'created_at' => CreatedAtColumn::class,
-        'updated_at' => UpdatedAtColumn::class
+        'updated_at' => UpdatedAtColumn::class,
     ];
 
     protected array $timezoneTypes = [
@@ -55,7 +57,8 @@ class TableColumnFactory implements TableColumnFactoryInterface
         ColumnDescriptionDataType::TIMESTAMP_WITH_TZ,
     ];
 
-    public function __construct(array $typeToClass = [], array $nameToClass = []) {
+    public function __construct(array $typeToClass = [], array $nameToClass = [])
+    {
         foreach ($typeToClass as $type => $class) {
             $this->mapTypeToColumnClass($type, $class);
         }
@@ -95,7 +98,11 @@ class TableColumnFactory implements TableColumnFactoryInterface
         }
         // default
         $default = $description->getDefault();
-        if ($default !== null && !$column->isPrimaryKey()) {
+        if (
+            $default !== null
+            && !$column->hasDefaultValue()
+            && !$column->isPrimaryKey()
+        ) {
             $column->setDefaultValue($default);
         }
         // unique

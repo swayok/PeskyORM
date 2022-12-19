@@ -214,12 +214,12 @@ abstract class ArgumentValidators
 
     public static function assertClassImplementsInterface(
         string $argName,
-        string|object $classOrInstance,
+        string $classOrInstance,
         string $interfaceClass
     ): void {
         if (!is_subclass_of($classOrInstance, $interfaceClass)) {
             throw new \InvalidArgumentException(
-                "{$argName} argument value must be a class or instance that implements "
+                "{$argName} argument value must be a class that implements "
                 . $interfaceClass
             );
         }
