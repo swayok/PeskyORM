@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\Core;
 
 use PeskyORM\Adapter\DbAdapterInterface;
-use PeskyORM\Config\Connection\DbConnectionsManager;
+use PeskyORM\Config\Connection\DbConnectionsFacade;
 use PeskyORM\DbExpr;
 use PeskyORM\Join\JoinConfig;
 use PeskyORM\Profiling\PdoProfilingHelper;
@@ -955,7 +955,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         $pdo = $adapter->getConnection();
         static::assertEquals(\PDO::class, get_class($pdo)); //< exact match required here
         // wrap after connection established
-        DbConnectionsManager::startProfilingForConnection($adapter);
+        DbConnectionsFacade::startProfilingForConnection($adapter);
         $wrappedPdo = $adapter->getConnection();
         static::assertInstanceOf(TraceablePDO::class, $wrappedPdo);
         // unwrap
@@ -970,7 +970,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         TestingApp::resetConnections();
         $adapter = static::getValidAdapter();
         // wrap before connection established
-        DbConnectionsManager::startProfilingForConnection($adapter);
+        DbConnectionsFacade::startProfilingForConnection($adapter);
         $wrappedPdo = $adapter->getConnection();
         static::assertInstanceOf(TraceablePDO::class, $wrappedPdo);
         // unwrap
@@ -985,7 +985,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
         TestingApp::resetConnections();
         PdoProfilingHelper::forgetConnections();
         $adapter = static::getValidAdapter();
-        DbConnectionsManager::startProfilingForConnection($adapter);
+        DbConnectionsFacade::startProfilingForConnection($adapter);
         $wrappedPdo = $adapter->getConnection();
         static::assertInstanceOf(TraceablePDO::class, $wrappedPdo);
         static::assertCount(1, PdoProfilingHelper::getConnections());

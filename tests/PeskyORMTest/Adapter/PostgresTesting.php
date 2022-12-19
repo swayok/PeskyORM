@@ -12,7 +12,6 @@ use PeskyORM\Utils\DbAdapterMethodArgumentUtils;
 
 class PostgresTesting extends Postgres
 {
-
     public function guardPkNameArg(string $pkName): void
     {
         DbAdapterMethodArgumentUtils::guardPkNameArg($this, $pkName);

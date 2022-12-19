@@ -6,6 +6,7 @@ namespace PeskyORM\Adapter;
 
 use PDO;
 use PDOStatement;
+use PeskyORM\Config\Connection\DbConnectionConfigInterface;
 use PeskyORM\DbExpr;
 use PeskyORM\Exception\DbAdapterDoesNotSupportFeature;
 use PeskyORM\Exception\DbException;
@@ -63,6 +64,22 @@ abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTrac
      * Last executed query
      */
     protected ?string $lastQuery = null;
+
+    public function __construct(
+        protected DbConnectionConfigInterface $connectionConfig,
+        protected string $name
+    ) {
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getConnectionConfig(): DbConnectionConfigInterface
+    {
+        return $this->connectionConfig;
+    }
 
     public function setConnectionWrapper(?\Closure $wrapper): void
     {

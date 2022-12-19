@@ -5,25 +5,26 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\Orm;
 
 use PeskyORM\ORM\TableStructure\TableColumnFactory;
-use PeskyORM\TableDescription\TableDescribersRegistry;
+use PeskyORM\TableDescription\TableDescriptionFacade;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\ClassBuilderTestingClasses\TestingClassBuilder;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 use PeskyORM\Tests\PeskyORMTest\TestingBaseTable;
+use PeskyORM\Utils\ServiceContainer;
 
 class ClassBuilderTest extends BaseTestCase
 {
     protected function getBuilder(string $tableName = 'admins'): TestingClassBuilder
     {
-        $tableDescription = TableDescribersRegistry::describeTable(
+        $tableDescription = TableDescriptionFacade::describeTable(
             TestingApp::getPgsqlConnection(),
             $tableName
         );
         return new TestingClassBuilder(
             $tableDescription,
-            new TableColumnFactory(),
+            ServiceContainer::getInstance()->make(TableColumnFactory::class),
             'PeskyORM\\Tests\\PeskyORMTest\\ClassBuilderTestingClasses',
         );
     }

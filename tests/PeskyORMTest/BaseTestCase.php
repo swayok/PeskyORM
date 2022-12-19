@@ -14,10 +14,9 @@ use ReflectionMethod;
 
 class BaseTestCase extends TestCase
 {
-
     public static function setUpBeforeClass(): void
     {
-        TestingApp::configureConnectionsManager();
+        TestingApp::configureConnections();
         TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
     }
 

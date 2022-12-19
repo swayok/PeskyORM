@@ -6,12 +6,12 @@ namespace PeskyORM\ORM\TableStructure;
 
 use JetBrains\PhpStorm\ArrayShape;
 use PeskyORM\Adapter\DbAdapterInterface;
-use PeskyORM\Config\Connection\DbConnectionsManager;
+use PeskyORM\Config\Connection\DbConnectionsFacade;
 use PeskyORM\Exception\TableStructureConfigException;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
-use PeskyORM\TableDescription\ColumnDescriptionInterface;
-use PeskyORM\TableDescription\TableDescribersRegistry;
+use PeskyORM\TableDescription\TableDescriptionFacade;
 use PeskyORM\TableDescription\TableDescriptionInterface;
+use PeskyORM\Utils\ServiceContainer;
 use Psr\Cache\CacheItemPoolInterface;
 
 abstract class TableStructure implements TableStructureInterface
@@ -74,7 +74,6 @@ abstract class TableStructure implements TableStructureInterface
     protected array $columnsAliases = [];
 
     protected ?TableDescriptionInterface $tableDescription = null;
-    private ?TableColumnFactoryInterface $columnsFactory = null;
 
     public function __construct(
         protected ?CacheItemPoolInterface $cachePool = null,
@@ -140,7 +139,8 @@ abstract class TableStructure implements TableStructureInterface
 
     public function getConnection(bool $writable = false): DbAdapterInterface
     {
-        return DbConnectionsManager::getConnection(
+        // todo: use service container
+        return DbConnectionsFacade::getConnection(
             $this->getConnectionName($writable)
         );
     }
@@ -260,29 +260,15 @@ abstract class TableStructure implements TableStructureInterface
      */
     protected function importMissingColumnsConfigsFromDbTableDescription(): void
     {
+        $columnsFactory = ServiceContainer::getInstance()
+            ->make(TableColumnFactory::class);
         foreach ($this->getTableDescription()->getColumns() as $columnDescription) {
             if (!$this->hasColumn($columnDescription->getName())) {
-                $this->addColumnFromColumnDescription($columnDescription);
+                $this->addColumn(
+                    $columnsFactory->createFromDescription($columnDescription)
+                );
             }
         }
-    }
-
-    protected function getColumnsFactory(): TableColumnFactoryInterface
-    {
-        if (!$this->columnsFactory) {
-            // todo: get instance from classes container
-            $this->columnsFactory = new TableColumnFactory();
-        }
-        return $this->columnsFactory;
-    }
-
-    protected function addColumnFromColumnDescription(
-        ColumnDescriptionInterface $columnDescription
-    ): void {
-        $this->addColumn(
-            $this->getColumnsFactory()
-                ->createFromDescription($columnDescription)
-        );
     }
 
     /**
@@ -305,7 +291,7 @@ abstract class TableStructure implements TableStructureInterface
                     return $this->tableDescription;
                 }
             }
-            $this->tableDescription = TableDescribersRegistry::describeTable(
+            $this->tableDescription = TableDescriptionFacade::describeTable(
                 $this->getConnection(false),
                 $this->getTableName(),
                 $this->getSchema()
@@ -313,7 +299,6 @@ abstract class TableStructure implements TableStructureInterface
             $cacheItem?->expiresAfter($this->cacheDuration)
                 ->set(serialize($this->tableDescription));
         }
-
         return $this->tableDescription;
     }
 

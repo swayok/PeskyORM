@@ -11,9 +11,20 @@ use PeskyORM\DbExpr;
 use PeskyORM\Exception\DbAdapterDoesNotSupportFeature;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\Select\SelectQueryBuilderInterface;
+use PeskyORM\Utils\ServiceContainer;
 
 interface DbAdapterInterface
 {
+    public function __construct(DbConnectionConfigInterface $connectionConfig, string $name);
+
+    /**
+     * Name of DB adapter.
+     * Used in service container.
+     * Example: 'mysql', 'pgsql'
+     * @return string
+     * @see ServiceContainer
+     */
+    public function getName(): string;
 
     /**
      * Connect to DB once

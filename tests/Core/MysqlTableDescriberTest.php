@@ -10,7 +10,7 @@ use PeskyORM\DbExpr;
 use PeskyORM\TableDescription\ColumnDescriptionDataType;
 use PeskyORM\TableDescription\TableDescribers\MysqlTableDescriber;
 use PeskyORM\TableDescription\TableDescribers\PostgresTableDescriber;
-use PeskyORM\TableDescription\TableDescribersRegistry;
+use PeskyORM\TableDescription\TableDescriptionFacade;
 use PeskyORM\TableDescription\TableDescriptionInterface;
 use PeskyORM\Tests\PeskyORMTest\Adapter\MysqlTesting;
 use PeskyORM\Tests\PeskyORMTest\Adapter\OtherAdapterTesting;
@@ -18,7 +18,6 @@ use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 class MysqlTableDescriberTest extends PostgresTableDescriberTest
 {
-    
     /**
      * @return MysqlTesting
      */
@@ -30,13 +29,28 @@ class MysqlTableDescriberTest extends PostgresTableDescriberTest
     public function testDescribeTable(): void
     {
         $adapter = self::getValidAdapter();
-        static::assertInstanceOf(MysqlTableDescriber::class, TableDescribersRegistry::getDescriber($adapter));
+        static::assertInstanceOf(
+            MysqlTableDescriber::class,
+            TableDescriptionFacade::getDescriber($adapter)
+        );
         /** @noinspection UnnecessaryAssertionInspection */
-        static::assertInstanceOf(TableDescriptionInterface::class, TableDescribersRegistry::describeTable($adapter, 'settings'));
+        static::assertInstanceOf(
+            TableDescriptionInterface::class,
+            TableDescriptionFacade::describeTable($adapter, 'settings')
+        );
         // set custom describer
-        $otherAdapter = new OtherAdapterTesting(new PostgresConfig('test', 'test', 'test'));
-        TableDescribersRegistry::registerDescriber($otherAdapter::class, PostgresTableDescriber::class);
-        static::assertInstanceOf(PostgresTableDescriber::class, TableDescribersRegistry::getDescriber($otherAdapter));
+        $otherAdapter = new OtherAdapterTesting(
+            new PostgresConfig('test', 'test', 'test'),
+            'pgsql'
+        );
+        TableDescriptionFacade::registerDescriber(
+            $otherAdapter->getName(),
+            PostgresTableDescriber::class
+        );
+        static::assertInstanceOf(
+            PostgresTableDescriber::class,
+            TableDescriptionFacade::getDescriber($otherAdapter)
+        );
     }
 
     /**

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace PeskyORM\Adapter;
 
-use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\DbExpr;
 use PeskyORM\Exception\DbInsertQueryException;
 use PeskyORM\Select\SelectQueryBuilderInterface;
@@ -14,7 +13,6 @@ class Postgres extends DbAdapterAbstract
     protected string $quoteForDbEntityName = '"';
     protected string $trueValue = 'TRUE';
     protected string $falseValue = 'FALSE';
-    protected PostgresConfig $connectionConfig;
 
     public const TRANSACTION_TYPE_READ_COMMITTED = 'READ COMMITTED';
     public const TRANSACTION_TYPE_REPEATABLE_READ = 'REPEATABLE READ';
@@ -60,25 +58,6 @@ class Postgres extends DbAdapterAbstract
         static::$conditionAssemblerForOperator[$operator] = $assembler;
     }
 
-    protected function _isValidDbEntityName(string $name): bool
-    {
-        // $name can literally be anything when quoted, and it is always quoted unless developer skips quotes:
-        // https://www.postgresql.org/docs/10/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
-        // But ORM won't be able to work properly if there are spaces, tabs, new lines,
-        // so all spacing symbols are forbidden.
-        return preg_match('%^[a-zA-Z_]\S*$%', $name) > 0;
-    }
-
-    public function __construct(PostgresConfig $connectionConfig)
-    {
-        $this->connectionConfig = $connectionConfig;
-    }
-
-    public function getConnectionConfig(): PostgresConfig
-    {
-        return $this->connectionConfig;
-    }
-
     public function disconnect(): static
     {
         try {
@@ -117,6 +96,15 @@ class Postgres extends DbAdapterAbstract
     {
         $this->exec(DbExpr::create("SET search_path TO {$newSearchPath}"));
         return $this;
+    }
+
+    protected function _isValidDbEntityName(string $name): bool
+    {
+        // $name can literally be anything when quoted, and it is always quoted unless developer skips quotes:
+        // https://www.postgresql.org/docs/10/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
+        // But ORM won't be able to work properly if there are spaces, tabs, new lines,
+        // so all spacing symbols are forbidden.
+        return preg_match('%^[a-zA-Z_]\S*$%', $name) > 0;
     }
 
     public function addDataTypeCastToExpression(string $dataType, string $expression): string

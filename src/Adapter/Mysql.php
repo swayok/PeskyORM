@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace PeskyORM\Adapter;
 
 use PDOStatement;
-use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\DbExpr;
 use PeskyORM\Exception\DbAdapterDoesNotSupportFeature;
 use PeskyORM\Exception\DbQueryReturningValuesException;
@@ -13,9 +12,7 @@ use PeskyORM\Select\SelectQueryBuilderInterface;
 
 class Mysql extends DbAdapterAbstract
 {
-
     protected string $quoteForDbEntityName = '`';
-    protected MysqlConfig $connectionConfig;
 
     protected static array $dataTypesMap = [
         'bytea' => 'BINARY',
@@ -61,16 +58,6 @@ class Mysql extends DbAdapterAbstract
         \Closure $assembler
     ): void {
         static::$conditionAssemblerForOperator[$operator] = $assembler;
-    }
-
-    public function __construct(MysqlConfig $connectionConfig)
-    {
-        $this->connectionConfig = $connectionConfig;
-    }
-
-    public function getConnectionConfig(): MysqlConfig
-    {
-        return $this->connectionConfig;
     }
 
     public function isDbSupportsTableSchemas(): bool

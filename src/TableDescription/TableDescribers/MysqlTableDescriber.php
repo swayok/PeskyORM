@@ -16,7 +16,6 @@ use Swayok\Utils\ValidateValue;
 
 class MysqlTableDescriber implements TableDescriberInterface
 {
-
     protected static array $dbTypeToOrmType = [
         'bool' => ColumnDescriptionDataType::BOOL,
         'blob' => ColumnDescriptionDataType::BLOB,

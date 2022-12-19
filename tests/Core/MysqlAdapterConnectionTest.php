@@ -26,7 +26,7 @@ class MysqlAdapterConnectionTest extends BaseTestCase
             'username' => 'totally_not_existing_user',
             'password' => 'this_password_is_for_not_existing_user',
         ]);
-        $adapter = new Mysql($config);
+        $adapter = new Mysql($config, 'mysql');
         $adapter->getConnection();
     }
     
@@ -41,7 +41,7 @@ class MysqlAdapterConnectionTest extends BaseTestCase
                 ->getUserName(),
             'password' => 'this_password_is_for_not_existing_user',
         ]);
-        $adapter = new Mysql($config);
+        $adapter = new Mysql($config, 'mysql');
         $adapter->getConnection();
     }
     
@@ -61,7 +61,7 @@ class MysqlAdapterConnectionTest extends BaseTestCase
                 ->getConnectionConfig()
                 ->getUserPassword(),
         ]);
-        $adapter = new Mysql($config);
+        $adapter = new Mysql($config, 'mysql');
         $adapter->getConnection();
     }
     
@@ -78,7 +78,7 @@ class MysqlAdapterConnectionTest extends BaseTestCase
                 ->getUserName(),
             'password' => 'this_password_is_for_not_existing_user',
         ]);
-        $adapter = new Mysql($config);
+        $adapter = new Mysql($config, 'mysql');
         $adapter->getConnection();
     }
     

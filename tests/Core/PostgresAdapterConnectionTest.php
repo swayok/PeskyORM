@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\Core;
 
 use PeskyORM\Adapter\Postgres;
-use PeskyORM\Config\Connection\DbConnectionsManager;
+use PeskyORM\Config\Connection\DbConnectionsFacade;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
@@ -34,7 +34,7 @@ class PostgresAdapterConnectionTest extends BaseTestCase
             'username' => 'totally_not_existing_user',
             'password' => 'this_password_is_for_not_existing_user',
         ]);
-        $adapter = new Postgres($config);
+        $adapter = new Postgres($config, 'pgsql');
         $adapter->getConnection();
     }
     
@@ -49,7 +49,7 @@ class PostgresAdapterConnectionTest extends BaseTestCase
                 ->getUserName(),
             'password' => 'this_password_is_for_not_existing_user',
         ]);
-        $adapter = new Postgres($config);
+        $adapter = new Postgres($config, 'pgsql');
         $adapter->getConnection();
     }
     
@@ -66,7 +66,7 @@ class PostgresAdapterConnectionTest extends BaseTestCase
                 ->getConnectionConfig()
                 ->getUserPassword(),
         ]);
-        $adapter = new Postgres($config);
+        $adapter = new Postgres($config, 'pgsql');
         $adapter->getConnection();
     }
     
@@ -83,7 +83,7 @@ class PostgresAdapterConnectionTest extends BaseTestCase
                 ->getUserName(),
             'password' => 'this_password_is_for_not_existing_user',
         ]);
-        $adapter = new Postgres($config);
+        $adapter = new Postgres($config, 'pgsql');
         $adapter->getConnection();
     }
     
@@ -114,7 +114,7 @@ class PostgresAdapterConnectionTest extends BaseTestCase
     public function testDisconnect(): void
     {
         $adapter = static::getValidAdapter();
-        DbConnectionsManager::startProfilingForConnection($adapter);
+        DbConnectionsFacade::startProfilingForConnection($adapter);
         $adapter->getConnection();
         $adapter->disconnect();
         static::assertNull($this->getObjectPropertyValue($adapter, 'pdo'));

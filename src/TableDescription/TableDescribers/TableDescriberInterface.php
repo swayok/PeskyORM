@@ -9,9 +9,7 @@ use PeskyORM\TableDescription\TableDescriptionInterface;
 
 interface TableDescriberInterface
 {
-
     public function __construct(DbAdapterInterface $adapter);
 
     public function getTableDescription(string $tableName, ?string $schema = null): TableDescriptionInterface;
-
 }

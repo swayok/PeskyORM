@@ -5,16 +5,17 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\PeskyORMTest;
 
 use PeskyORM\Adapter\DbAdapterInterface;
-use PeskyORM\Config\Connection\DbConnectionsManager;
+use PeskyORM\Config\Connection\DbConnectionsFacade;
 use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\ORM\Table\Table;
 use PeskyORM\Tests\PeskyORMTest\Adapter\MysqlTesting;
 use PeskyORM\Tests\PeskyORMTest\Adapter\PostgresTesting;
+use PeskyORM\Utils\ServiceContainer;
 
 class TestingApp
 {
-    protected static bool $connectionsManageConfigured = false;
+    protected static bool $connectionsConfigured = false;
     public static ?PostgresTesting $pgsqlConnection = null;
     public static bool $pgsqlConnectionInitiated = false;
     public static ?MysqlTesting $mysqlConnection = null;
@@ -22,34 +23,40 @@ class TestingApp
     protected static ?array $dataForDb = null;
     protected static ?array $dataForDbMinimal = null;
 
-    public static function configureConnectionsManager(): void
+    public static function configureConnections(bool $force = false): void
     {
-        if (!static::$connectionsManageConfigured) {
-            DbConnectionsManager::addAdapter(
-                DbConnectionsManager::ADAPTER_MYSQL,
+        if (!static::$connectionsConfigured || $force) {
+            DbConnectionsFacade::registerAdapter(
+                ServiceContainer::MYSQL,
                 MysqlTesting::class,
+            );
+            DbConnectionsFacade::registerConnectionConfigClass(
+                ServiceContainer::MYSQL,
                 MysqlConfig::class
             );
-            DbConnectionsManager::createConnection(
+            DbConnectionsFacade::registerConnection(
                 'mysql',
-                DbConnectionsManager::ADAPTER_MYSQL,
+                ServiceContainer::MYSQL,
                 MysqlConfig::fromArray(static::getGlobalConfigs()['mysql'])
             );
 
-            DbConnectionsManager::addAdapter(
-                DbConnectionsManager::ADAPTER_POSTGRES,
+            DbConnectionsFacade::registerAdapter(
+                ServiceContainer::POSTGRES,
                 PostgresTesting::class,
+            );
+            DbConnectionsFacade::registerConnectionConfigClass(
+                ServiceContainer::POSTGRES,
                 PostgresConfig::class
             );
-            DbConnectionsManager::createConnection(
+            DbConnectionsFacade::registerConnection(
                 'default',
-                DbConnectionsManager::ADAPTER_POSTGRES,
+                ServiceContainer::POSTGRES,
                 PostgresConfig::fromArray(static::getGlobalConfigs()['pgsql'])
             );
-            DbConnectionsManager::addAlternativeNameForConnection('default', 'writable');
+            DbConnectionsFacade::registerAliasForConnection('default', 'writable');
 
             date_default_timezone_set('UTC');
-            static::$connectionsManageConfigured = true;
+            static::$connectionsConfigured = true;
         }
     }
 
@@ -61,7 +68,8 @@ class TestingApp
         }
         if (!static::$mysqlConnection) {
             static::$mysqlConnection = new MysqlTesting(
-                MysqlConfig::fromArray(static::getGlobalConfigs()['mysql'])
+                MysqlConfig::fromArray(static::getGlobalConfigs()['mysql']),
+                ServiceContainer::MYSQL
             );
             if (!static::$mysqlConnectionInitiated) {
                 date_default_timezone_set('UTC');
@@ -86,7 +94,8 @@ class TestingApp
         }
         if (!static::$pgsqlConnection) {
             static::$pgsqlConnection = new PostgresTesting(
-                PostgresConfig::fromArray(static::getGlobalConfigs()['pgsql'])
+                PostgresConfig::fromArray(static::getGlobalConfigs()['pgsql']),
+                ServiceContainer::POSTGRES
             );
             static::$pgsqlConnection->setTimezone('UTC');
             if (!static::$pgsqlConnectionInitiated) {
