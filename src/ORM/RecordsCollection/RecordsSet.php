@@ -215,9 +215,9 @@ class RecordsSet extends RecordsArray implements SelectedRecordsCollectionInterf
         return $this->getRecords();
     }
 
-    public function offsetExists(mixed $index): bool
+    public function offsetExists(mixed $offset): bool
     {
-        return is_int($index) && $index >= 0 && $index < $this->count();
+        return is_int($offset) && $offset >= 0 && $offset < $this->count();
     }
 
     protected function getRecordDataByIndex(int $index): array

@@ -196,13 +196,14 @@ abstract class ArgumentValidators
                     . ' DB entity naming rules (usually alphanumeric with underscores).'
                 );
             }
-            if (isset($parts[1])) {
-                if (!static::isValidDbEntityName($parts[0], $adapter)) {
-                    throw new \InvalidArgumentException(
-                        "{$argName}[alias] argument value ({$value}) must be a string that matches"
-                        . ' DB entity naming rules (usually alphanumeric with underscores).'
-                    );
-                }
+            if (
+                isset($parts[1])
+                && !static::isValidDbEntityName($parts[0], $adapter)
+            ) {
+                throw new \InvalidArgumentException(
+                    "{$argName}[alias] argument value ({$value}) must be a string that matches"
+                    . ' DB entity naming rules (usually alphanumeric with underscores).'
+                );
             }
         } elseif (!static::isValidDbEntityName($value, $adapter)) {
             throw new \InvalidArgumentException(

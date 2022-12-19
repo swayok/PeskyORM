@@ -245,7 +245,7 @@ interface DbAdapterInterface
 
     /**
      * Quote passed value
-     * @param string|int|float|bool|array|DbExpr|\PeskyORM\ORM\Record\RecordInterface|SelectQueryBuilderInterface|null $value
+     * @param string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderInterface|null $value
      * @param int|null $valueDataType - one of \PDO::PARAM_* or null for autodetection (detects bool, null, string only)
      */
     public function quoteValue(

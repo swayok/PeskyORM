@@ -30,6 +30,7 @@ trait CanNormalizeStringValue
 
     protected function normalizeValueForValidation(mixed $value, bool $isFromDb): mixed
     {
+        /** @noinspection PhpMultipleClassDeclarationsInspection */
         $value = parent::normalizeValueForValidation($value, $isFromDb);
         if (is_object($value) && method_exists($value, '__toString')) {
             $value = $value->__toString();

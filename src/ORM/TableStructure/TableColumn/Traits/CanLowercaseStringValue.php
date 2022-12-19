@@ -14,6 +14,7 @@ trait CanLowercaseStringValue
         return $this;
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     protected function shouldLowercaseValues(bool $isFromDb): bool
     {
         return $this->lowercaseValues;

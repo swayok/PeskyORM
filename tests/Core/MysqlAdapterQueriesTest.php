@@ -14,7 +14,6 @@ use PeskyORM\Utils\PdoUtils;
 
 class MysqlAdapterQueriesTest extends BaseTestCase
 {
-    
     public static function tearDownAfterClass(): void
     {
         TestingApp::clearTables(static::getValidAdapter());

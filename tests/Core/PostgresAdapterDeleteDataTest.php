@@ -12,12 +12,11 @@ use PeskyORM\Utils\PdoUtils;
 
 class PostgresAdapterDeleteDataTest extends BaseTestCase
 {
-    
     public static function setUpBeforeClass(): void
     {
         TestingApp::clearTables(static::getValidAdapter());
     }
-    
+
     public static function tearDownAfterClass(): void
     {
         TestingApp::clearTables(static::getValidAdapter());

@@ -518,9 +518,9 @@ class RecordsArray implements RecordsCollectionInterface {
      * Whether a record with specified index exists
      * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
-    public function offsetExists(mixed $index): bool
+    public function offsetExists(mixed $offset): bool
     {
-        return array_key_exists($index, $this->getRecords());
+        return array_key_exists($offset, $this->getRecords());
     }
 
     /**

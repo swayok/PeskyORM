@@ -43,11 +43,15 @@ class ClassBuilder
     {
         $namespace = $this->namespace;
         $parentClass = $this->getParentClass(static::TEMPLATE_TABLE, $parentClass);
-        $parentClassName = $this->extractClassNameFromFQN($parentClass);
         $className = $this->getClassName(static::TEMPLATE_TABLE);
         $tableStructureClassName = $this->getClassName(static::TEMPLATE_TABLE_STRUCTURE);
         $recordClassName = $this->getClassName(static::TEMPLATE_RECORD);
         $tableAlias = $this->getTableAlias();
+        $includes = [
+            $parentClass
+        ];
+        $parentClass = $this->extractClassNameFromFQN($parentClass);
+
         try {
             ob_start();
             include $this->getTemplate(static::TEMPLATE_TABLE);
@@ -62,12 +66,14 @@ class ClassBuilder
     {
         $namespace = $this->namespace;
         $parentClass = $this->getParentClass(static::TEMPLATE_RECORD, $parentClass);
-        $parentClassName = $this->extractClassNameFromFQN($parentClass);
         $className = $this->getClassName(static::TEMPLATE_RECORD);
         $tableClassName = $this->getClassName(static::TEMPLATE_TABLE);
         $properties = $this->getRecordProperties();
         $setters = $this->getRecordSetterMethods();
-        $includes = [];
+        $includes = [
+            $parentClass
+        ];
+        $parentClass = $this->extractClassNameFromFQN($parentClass);
         foreach ($properties as $name => &$type) {
             if (str_contains($type, '\\')) {
                 $includes[] = $type;
@@ -76,6 +82,8 @@ class ClassBuilder
         }
         unset($type);
         $includes = array_unique($includes);
+        sort($includes);
+
         try {
             ob_start();
             include $this->getTemplate(static::TEMPLATE_RECORD);
@@ -94,7 +102,11 @@ class ClassBuilder
         $className = $this->getClassName(static::TEMPLATE_TABLE_STRUCTURE);
         $tableName = $this->tableDescription->getTableName();
         $tableSchema = $this->tableDescription->getDbSchema();
-        $includes = [];
+        $includes = [
+            $parentClass,
+            DbExpr::class
+        ];
+        $parentClass = $this->extractClassNameFromFQN($parentClass);
         $columns = $this->getColumnsDetailsForStructure();
         foreach ($columns as &$details) {
             if (str_contains($details['class'], '\\')) {
@@ -104,6 +116,8 @@ class ClassBuilder
         }
         unset($details);
         $includes = array_unique($includes);
+        sort($includes);
+
         try {
             ob_start();
             include $this->getTemplate(static::TEMPLATE_TABLE_STRUCTURE);

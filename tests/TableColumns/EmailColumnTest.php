@@ -21,7 +21,7 @@ class EmailColumnTest extends BaseTestCase
     {
         $testValue = ' Test@tEst.com ';
         $column = new EmailColumn('email');
-        $this->testCommonProperties($column, TableColumnDataType::STRING);
+        $this->testCommonProperties($column);
         $this->testDefaultValues($column);
         $this->testNonDbValues($column, $testValue);
         $this->testDbValues($column, $testValue);
@@ -30,10 +30,9 @@ class EmailColumnTest extends BaseTestCase
 
     private function testCommonProperties(
         EmailColumn $column,
-        string $type,
     ): void {
         $column = $this->newColumn($column);
-        static::assertEquals($type, $column->getDataType());
+        static::assertEquals(TableColumnDataType::STRING, $column->getDataType());
         static::assertEquals([], $column->getValueFormatersNames());
         // has value
         $valueContainer = $this->newRecordValueContainer($column);

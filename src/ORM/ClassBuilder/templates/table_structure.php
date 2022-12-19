@@ -4,7 +4,6 @@ echo '<?php';
 /**
  * @var string $namespace
  * @var string $parentClass
- * @var string $parentClassName
  * @var string $className
  * @var string $tableSchema
  * @var string $tableName
@@ -17,13 +16,11 @@ declare(strict_types=1);
 
 namespace <?php echo $namespace ?>;
 
-use <?php echo $parentClass ?>;
-use <?php echo \PeskyORM\DbExpr::class ?>;
 <?php foreach ($includes as $includeClass): ?>
 use <?php echo $includeClass ?>;
 <?php endforeach; ?>
 
-class <?php echo $className ?> extends <?php echo $parentClassName . "\n" ?>
+class <?php echo $className ?> extends <?php echo $parentClass . "\n" ?>
 {
     public function getTableName(): string
     {

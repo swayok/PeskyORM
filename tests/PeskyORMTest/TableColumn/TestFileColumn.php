@@ -9,7 +9,7 @@ use PeskyORM\ORM\TableStructure\TableColumn\VirtualTableColumnAbstract;
 
 class TestFileColumn extends VirtualTableColumnAbstract
 {
-    public function getValue(RecordValueContainerInterface $valueContainer, ?string $format): mixed
+    public function getValue(RecordValueContainerInterface $valueContainer, ?string $format): string
     {
         return 'file';
     }

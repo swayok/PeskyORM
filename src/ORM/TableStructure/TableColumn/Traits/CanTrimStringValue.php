@@ -14,6 +14,7 @@ trait CanTrimStringValue
         return $this;
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     protected function shouldTrimStringValues(bool $isFromDb): bool
     {
         return $this->trimValues;
