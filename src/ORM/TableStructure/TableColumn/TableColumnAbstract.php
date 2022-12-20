@@ -6,12 +6,11 @@ namespace PeskyORM\ORM\TableStructure\TableColumn;
 
 use PeskyORM\Exception\TableColumnConfigException;
 use PeskyORM\ORM\Record\RecordInterface;
-use PeskyORM\ORM\Record\RecordValue;
 use PeskyORM\ORM\Record\RecordValueContainerInterface;
-use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesEn;
 use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
 use PeskyORM\ORM\TableStructure\TableStructureInterface;
 use PeskyORM\Utils\ArgumentValidators;
+use PeskyORM\Utils\ServiceContainer;
 
 abstract class TableColumnAbstract implements TableColumnInterface
 {
@@ -22,8 +21,6 @@ abstract class TableColumnAbstract implements TableColumnInterface
 
     protected array $formatters = [];
     protected string $columnNameWithFormatGlue = '_as_';
-
-    protected ?ColumnValueValidationMessagesInterface $valueValidationMessages = null;
 
     public function __construct(string $name)
     {
@@ -173,25 +170,28 @@ abstract class TableColumnAbstract implements TableColumnInterface
         return false;
     }
 
-    protected function getValueValidationMessages(): ColumnValueValidationMessagesInterface
+    protected function getValueValidationMessagesContainer(): ColumnValueValidationMessagesInterface
     {
-        if (!$this->valueValidationMessages) {
-            // todo: get ColumnValueValidationMessagesInterface instance from classes container
-            $this->valueValidationMessages = new ColumnValueValidationMessagesEn();
-        }
-        return $this->valueValidationMessages;
+        return ServiceContainer::getInstance()
+            ->make(ColumnValueValidationMessagesInterface::class);
     }
 
     protected function getValueValidationMessage(string $messageId): string
     {
-        return $this->getValueValidationMessages()->getMessage($messageId);
+        return $this->getValueValidationMessagesContainer()
+            ->getMessage($messageId);
     }
 
     public function getNewRecordValueContainer(
         RecordInterface $record
     ): RecordValueContainerInterface {
-        // todo: get RecordValueContainerInterface class from classes container
-        return new RecordValue($this, $record);
+        return ServiceContainer::getInstance()->make(
+            RecordValueContainerInterface::class,
+            [
+                $this,
+                $record
+            ]
+        );
     }
 
     public function afterSave(

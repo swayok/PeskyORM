@@ -10,7 +10,7 @@ use PeskyORM\Exception\RecordNotFoundException;
 use PeskyORM\ORM\Record\Record;
 use PeskyORM\ORM\Record\RecordValue;
 use PeskyORM\ORM\RecordsCollection\RecordsArray;
-use PeskyORM\ORM\RecordsCollection\RecordsSet;
+use PeskyORM\ORM\RecordsCollection\SelectedRecordsArray;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin2;
@@ -25,7 +25,6 @@ use Swayok\Utils\Set;
 
 class RecordTest extends BaseTestCase
 {
-
     public static function tearDownAfterClass(): void
     {
         TestingApp::clearTables(TestingAdminsTable::getInstance()->getConnection());
@@ -35,7 +34,7 @@ class RecordTest extends BaseTestCase
     protected function setUp(): void
     {
         TestingApp::clearTables(TestingAdminsTable::getInstance()->getConnection());
-        TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
+        TestingApp::resetServiceContainer();
     }
 
     /**
@@ -1604,8 +1603,8 @@ class RecordTest extends BaseTestCase
                 ->toArray($normalColumns)
         );
         $prevSqlQuery = TestingAdminsTable::getLastQuery(false);
-        static::assertInstanceOf(RecordsSet::class, $rec->getRelatedRecord('Children', true));
-        // RecordsSet is lazy - query is still the same
+        static::assertInstanceOf(SelectedRecordsArray::class, $rec->getRelatedRecord('Children', true));
+        // SelectedRecordsArray is lazy - query is still the same
         static::assertEquals($prevSqlQuery, TestingAdminsTable::getLastQuery(false));
         static::assertCount(2, $rec->getRelatedRecord('Children', true));
         // query was launched by getRelatedRecord()

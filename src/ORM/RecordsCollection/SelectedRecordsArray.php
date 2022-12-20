@@ -10,7 +10,7 @@ use PeskyORM\ORM\Table\TableInterface;
 use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\Select\SelectQueryBuilderInterface;
 
-class RecordsSet extends RecordsArray implements SelectedRecordsCollectionInterface
+class SelectedRecordsArray extends RecordsArray implements SelectedRecordsCollectionInterface
 {
     protected SelectQueryBuilderInterface $select;
     /**
@@ -32,7 +32,7 @@ class RecordsSet extends RecordsArray implements SelectedRecordsCollectionInterf
 
     /**
      * $dbSelect will be cloned to avoid possible problems when original
-     * SelectQueryBuilderInterface instance is changed outside RecordsSet.
+     * SelectQueryBuilderInterface instance is changed outside SelectedRecordsArray.
      * It will also allow optimised iteration using pagination.
      */
     public function __construct(

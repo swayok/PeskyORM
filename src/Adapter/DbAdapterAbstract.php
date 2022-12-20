@@ -16,7 +16,6 @@ use PeskyORM\Exception\DbTransactionException;
 use PeskyORM\Exception\DetailedPDOException;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\Profiling\TransactionsTracingInterface;
-use PeskyORM\Select\Select;
 use PeskyORM\Select\SelectQueryBuilderInterface;
 use PeskyORM\Utils\ArgumentValidators;
 use PeskyORM\Utils\BacktraceUtils;
@@ -24,6 +23,7 @@ use PeskyORM\Utils\DbAdapterMethodArgumentUtils;
 use PeskyORM\Utils\DbQuoter;
 use PeskyORM\Utils\PdoUtils;
 use PeskyORM\Utils\QueryBuilderUtils;
+use PeskyORM\Utils\ServiceContainer;
 
 abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTracingInterface
 {
@@ -1032,7 +1032,13 @@ abstract class DbAdapterAbstract implements DbAdapterInterface, TransactionsTrac
         DbExpr|array|null $conditionsAndOptions = null
     ): SelectQueryBuilderInterface {
         $this->guardTableNameArg($table);
-        $select = Select::from($table, $this);
+        $select = ServiceContainer::getInstance()->make(
+            SelectQueryBuilderInterface::class,
+            [
+                $table,
+                $this
+            ]
+        );
         if (is_array($conditionsAndOptions)) {
             $select->fromConfigsArray($conditionsAndOptions);
         } elseif ($conditionsAndOptions instanceof DbExpr) {

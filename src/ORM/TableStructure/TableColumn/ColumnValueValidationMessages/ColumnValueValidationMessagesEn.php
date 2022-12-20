@@ -7,6 +7,7 @@ namespace PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages;
 class ColumnValueValidationMessagesEn implements ColumnValueValidationMessagesInterface
 {
     protected array $messages = [
+        self::EXCEPTION_MESSAGE => 'Validation errors: %s.',
         self::VALUE_CANNOT_BE_NULL => 'Null value is not allowed.',
         self::VALUE_MUST_BE_BOOLEAN => 'Boolean value expected.',
         self::VALUE_MUST_BE_INTEGER => 'Integer value expected.',

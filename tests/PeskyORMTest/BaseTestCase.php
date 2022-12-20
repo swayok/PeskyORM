@@ -16,13 +16,12 @@ class BaseTestCase extends TestCase
 {
     public static function setUpBeforeClass(): void
     {
-        TestingApp::configureConnections();
-        TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
+        TestingApp::resetServiceContainer();
     }
 
     public static function tearDownAfterClass(): void
     {
-        TestingApp::cleanInstancesOfDbTablesAndRecordsAndStructures();
+        TestingApp::resetServiceContainer();
     }
 
     /**

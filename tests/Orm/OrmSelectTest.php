@@ -16,7 +16,6 @@ use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\Data\TestDataForAdminsTable;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableLongAlias;
-use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 use Swayok\Utils\Set;
 
@@ -65,7 +64,6 @@ class OrmSelectTest extends BaseTestCase
             ->columns('id');
         static::assertInstanceOf(OrmSelect::class, $dbSelect);
         static::assertInstanceOf(TestingAdminsTable::class, $dbSelect->getTable());
-        static::assertInstanceOf(TestingAdminsTableStructure::class, $dbSelect->getTableStructure());
         static::assertEquals('admins', $dbSelect->getTableName());
         static::assertEquals('Admins', $dbSelect->getTableAlias());
         static::assertCount(1, $this->getObjectPropertyValue($dbSelect, 'columnsRaw'));
@@ -111,7 +109,6 @@ class OrmSelectTest extends BaseTestCase
         static::assertInstanceOf(OrmSelect::class, $dbSelect);
         static::assertInstanceOf(Postgres::class, $dbSelect->getConnection());
         static::assertInstanceOf(TestingAdminsTable::class, $dbSelect->getTable());
-        static::assertInstanceOf(TestingAdminsTableStructure::class, $dbSelect->getTableStructure());
         static::assertEquals('admins', $dbSelect->getTableName());
         $data = $dbSelect->limit(1)
             ->fetchNextPage();

@@ -9,7 +9,8 @@ use PeskyORM\ORM\Table\TableInterface;
 use PeskyORM\ORM\TableStructure\RelationInterface;
 use Swayok\Utils\Set;
 
-class RecordsArray implements RecordsCollectionInterface {
+class RecordsArray implements RecordsCollectionInterface
+{
     protected TableInterface $table;
     /**
      * @var array[]|RecordInterface[]

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\PeskyORMTest\TestingAdmins;
 
 use PeskyORM\ORM\Record\Record;
-use PeskyORM\ORM\RecordsCollection\RecordsSet;
+use PeskyORM\ORM\RecordsCollection\SelectedRecordsArray;
 
 /**
  * @property int $id
@@ -18,7 +18,7 @@ use PeskyORM\ORM\RecordsCollection\RecordsSet;
  *
  * @property TestingAdmin $Parent
  * @property Record $HasOne
- * @property RecordsSet $Children
+ * @property SelectedRecordsArray $Children
  * @property Record $VeryLongRelationNameSoItMustBeShortened
  *
  * @method $this setId($value, $isFromDb = false)

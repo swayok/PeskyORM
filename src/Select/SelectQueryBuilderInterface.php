@@ -22,6 +22,8 @@ interface SelectQueryBuilderInterface
 
     public function getTableName(): string;
 
+    public function setTableAlias(string $tableAlias): static;
+
     public function getTableAlias(): string;
 
     public function getTableSchemaName(): ?string;

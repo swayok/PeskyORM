@@ -9,13 +9,13 @@ use PeskyORM\DbExpr;
 use PeskyORM\Exception\InvalidDataException;
 use PeskyORM\Exception\RecordNotFoundException;
 use PeskyORM\ORM\RecordsCollection\KeyValuePair;
-use PeskyORM\ORM\RecordsCollection\RecordsArray;
 use PeskyORM\ORM\RecordsCollection\RecordsCollectionInterface;
 use PeskyORM\ORM\Table\TableInterface;
 use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\ORM\TableStructure\TableStructureInterface;
-use PeskyORM\Select\OrmSelect;
+use PeskyORM\Select\SelectQueryBuilderInterface;
+use PeskyORM\Utils\ServiceContainer;
 use PeskyORM\Utils\StringUtils;
 
 class Record implements RecordInterface
@@ -101,6 +101,10 @@ class Record implements RecordInterface
         return new static();
     }
 
+    /**
+     * In child class you should override constructor to be without arguments for convenience.
+     * You can use this class instead of creating child class.
+     */
     public function __construct(TableInterface $table)
     {
         $this->table = $table;
@@ -615,11 +619,14 @@ class Record implements RecordInterface
         ?bool $isFromDb = null,
         bool $disableDbRecordDataValidation = false
     ): RecordsCollectionInterface {
-        return new RecordsArray(
-            $table,
-            $records,
-            $isFromDb,
-            $disableDbRecordDataValidation
+        return ServiceContainer::getInstance()->make(
+            RecordsCollectionInterface::class,
+            [
+                $table,
+                $records,
+                $isFromDb,
+                $disableDbRecordDataValidation
+            ]
         );
     }
 
@@ -686,7 +693,7 @@ class Record implements RecordInterface
                 $relatedRecord = $relatedTable::select(
                     '*',
                     $conditions,
-                    static function (OrmSelect $select) use ($relationName, $relatedTable) {
+                    static function (SelectQueryBuilderInterface $select) use ($relationName, $relatedTable) {
                         $select
                             ->orderBy($relatedTable->getPkColumnName(), true)
                             ->setTableAlias($relationName);
@@ -700,7 +707,7 @@ class Record implements RecordInterface
                 $data = $relatedTable::selectOne(
                     '*',
                     $conditions,
-                    static function (OrmSelect $select) use ($relationName) {
+                    static function (SelectQueryBuilderInterface $select) use ($relationName) {
                         $select->setTableAlias($relationName);
                     }
                 );

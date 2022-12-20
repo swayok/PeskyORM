@@ -10,6 +10,11 @@ interface RecordValueContainerInterface
 {
     public const PAYLOAD_KEY_FOR_VALUE_SAVING_EXTENDER = 'saving_extender';
 
+    public function __construct(
+        TableColumnInterface $column,
+        RecordInterface $record
+    );
+
     public function getColumn(): TableColumnInterface;
 
     public function getRecord(): RecordInterface;

@@ -49,7 +49,7 @@ class JsonObjectColumn extends RealTableColumnAbstract implements ConvertsValueT
 
     protected function normalizeValueForValidation(mixed $value, bool $isFromDb): mixed
     {
-        // don't call parent: RecordsSet is can't be passed here
+        // don't call parent: SelectedRecordsArray is can't be passed here
         // because RecordsArray should not be validated
         if (
             is_object($value)

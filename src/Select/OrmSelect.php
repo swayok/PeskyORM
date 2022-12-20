@@ -7,7 +7,6 @@ namespace PeskyORM\Select;
 use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\DbExpr;
 use PeskyORM\Join\CrossJoinConfigInterface;
-use PeskyORM\Join\JoinConfigInterface;
 use PeskyORM\Join\NormalJoinConfigInterface;
 use PeskyORM\Join\OrmJoinConfigInterface;
 use PeskyORM\ORM\Record\RecordInterface;
@@ -16,7 +15,7 @@ use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\ORM\TableStructure\TableStructureInterface;
 use PeskyORM\Utils\QueryBuilderUtils;
 
-class OrmSelect extends SelectQueryBuilderAbstract
+class OrmSelect extends SelectQueryBuilderAbstract implements OrmSelectQueryBuilderInterface
 {
     protected TableInterface $table;
     protected TableStructureInterface $tableStructure;
@@ -156,18 +155,12 @@ class OrmSelect extends SelectQueryBuilderAbstract
         return $this->table;
     }
 
-    public function setRecordClass(?string $class): static
+    protected function getNewRecord(): RecordInterface
     {
-        $this->recordClass = $class;
-        return $this;
+        return $this->table->newRecord();
     }
 
-    public function getNewRecord()
-    {
-        return $this->recordClass ? new $this->recordClass() : $this->table->newRecord();
-    }
-
-    public function getTableStructure(): TableStructureInterface
+    protected function getTableStructure(): TableStructureInterface
     {
         return $this->tableStructure;
     }
@@ -208,9 +201,12 @@ class OrmSelect extends SelectQueryBuilderAbstract
         return parent::getCountQuery($ignoreLeftJoins);
     }
 
-    /* ------------------------------------> SERVICE METHODS <-----------------------------------> */
+    /* --------------------------------> SERVICE METHODS <-------------------------------> */
 
-    protected function normalizeJoinDataForRecord(NormalJoinConfigInterface $joinConfig, array $data): array
+    protected function normalizeJoinDataForRecord(
+        NormalJoinConfigInterface $joinConfig,
+        array $data
+    ): array
     {
         $data = parent::normalizeJoinDataForRecord($joinConfig, $data);
         if ($joinConfig instanceof OrmJoinConfigInterface) {
@@ -616,21 +612,4 @@ class OrmSelect extends SelectQueryBuilderAbstract
     {
         $this->validateColumnInfo($columnInfo, $subject);
     }
-
-    protected function validateJoin(JoinConfigInterface $joinConfig): void
-    {
-        // todo: does this condition really needed?
-        if (
-            !($joinConfig instanceof OrmJoinConfigInterface)
-            && !($joinConfig instanceof CrossJoinConfigInterface)
-        ) {
-            throw new \UnexpectedValueException(
-                'Join config ' . $joinConfig->getJoinName() . ' must implement '
-                . OrmJoinConfigInterface::class . ' or ' . CrossJoinConfigInterface::class
-                . ' but it is an instance of ' . get_class($joinConfig) . ' class'
-            );
-        }
-        parent::validateJoin($joinConfig);
-    }
-
 }

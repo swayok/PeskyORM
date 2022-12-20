@@ -47,7 +47,7 @@ class JsonArrayColumn extends RealTableColumnAbstract
 
     protected function normalizeValueForValidation(mixed $value, bool $isFromDb): mixed
     {
-        // don't call parent: RecordsSet is can't be passed here
+        // don't call parent: SelectedRecordsArray is can't be passed here
         // because RecordsCollectionInterface should not be validated
         if (
             is_string($value)

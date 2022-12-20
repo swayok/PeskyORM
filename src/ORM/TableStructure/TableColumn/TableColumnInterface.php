@@ -102,7 +102,7 @@ interface TableColumnInterface
      *  - \Closure: function() { return 'default value'; }.
      *  - instance of DbExpr
      *  - instance of SelectQueryBuilderInterface
-     *  - instance of RecordsSet
+     *  - instance of SelectedRecordsArray
      * @throws TableColumnConfigException when default value is not set
      */
     public function getDefaultValue(): mixed;

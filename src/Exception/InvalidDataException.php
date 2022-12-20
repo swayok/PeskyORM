@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace PeskyORM\Exception;
 
 use PeskyORM\ORM\Record\RecordInterface;
+use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
+use PeskyORM\Utils\ServiceContainer;
 use Swayok\Utils\Set;
 
 class InvalidDataException extends OrmException
@@ -18,37 +20,74 @@ class InvalidDataException extends OrmException
         protected ?TableColumnInterface $column = null,
         protected mixed $invalidValue = null
     ) {
-        $message = [];
-        foreach ($errors as $key => $error) {
-            $errorMsg = '';
+        $this->errors = $errors;
+        parent::__construct(
+            $this->makeExceptionMessage(),
+            static::CODE_INVALID_DATA
+        );
+    }
+
+    protected function makeExceptionMessage(): string
+    {
+        /** @var ColumnValueValidationMessagesInterface $messagesContainer */
+        $messagesContainer = ServiceContainer::getInstance()
+            ->make(ColumnValueValidationMessagesInterface::class);
+        return sprintf(
+            $messagesContainer->getMessage(
+                ColumnValueValidationMessagesInterface::EXCEPTION_MESSAGE
+            ),
+            implode('; ', $this->normalizeErrorsForMessage($this->errors))
+        );
+    }
+
+    protected function normalizeErrorsForMessage(array $errors): array
+    {
+        foreach ($errors as $key => &$error) {
+            $prefix = '';
             if (!is_int($key)) {
-                $errorMsg = '[' . $key . '] ';
+                $prefix = '[' . $key . '] ';
             }
             if (is_array($error)) {
                 $error = implode(', ', Set::flatten($error));
             }
-            $errorMsg .= $error;
-            $message[] = $errorMsg;
+            $error = $prefix . rtrim($error, '.');
         }
-        // todo: use classes container to get translator to get static::MESSAGE_INVALID_DATA from it
-        parent::__construct(
-            static::MESSAGE_INVALID_DATA . implode('; ', $message),
-            static::CODE_INVALID_DATA
-        );
-        $this->errors = $errors;
+        unset($error);
+        return $errors;
     }
 
     /**
-     * @param bool $flatten - false: return errors as is; true: flatten errors (2 levels only)
-     * Example: $errors = ['images' => ['source.0' => ['error message1', 'error message 2'], 'source.1' => ['err']];
-     * returned array will be: ['images.source.0' => ['error message1', 'error message 2'], 'images.source.1' => ['err']]
-     * @return array
+     * Flattened errors has only 1 level of nesting (basically key-value array).
+     * Keys - error path: 'field', 'group.field'.
+     * Values - messages array.
+     * @see self::flattenErrors()
      */
     public function getErrors(bool $flatten = true): array
     {
-        if (!$flatten) {
-            return $this->errors;
+        if ($flatten) {
+            return $this->flattenErrors();
         }
+        return $this->errors;
+    }
+
+    /**
+     * Converts nested array (up to 2 levels):
+     * [
+     *      'field' => ['error message 1'],
+     *      'group' => [
+     *          'field1' => ['error message 2'],
+     *          'field2' => ['error message 3'],
+     *      ],
+     * ]
+     * to array with 1 level of nesting:
+     * [
+     *      'field' => ['error message 1']
+     *      'group.field1' => ['error message 2']
+     *      'group.field2' => ['error message 3']
+     * ]
+     */
+    protected function flattenErrors(): array
+    {
         $flatErrors = [];
         foreach ($this->errors as $columnName => $errors) {
             if (isset($errors[0])) {

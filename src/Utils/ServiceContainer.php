@@ -12,8 +12,20 @@ use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Config\Connection\PostgresConfig;
 use PeskyORM\Exception\ServiceContainerException;
 use PeskyORM\Exception\ServiceNotFoundException;
+use PeskyORM\ORM\Record\RecordValue;
+use PeskyORM\ORM\Record\RecordValueContainerInterface;
+use PeskyORM\ORM\RecordsCollection\RecordsArray;
+use PeskyORM\ORM\RecordsCollection\RecordsCollectionInterface;
+use PeskyORM\ORM\RecordsCollection\SelectedRecordsArray;
+use PeskyORM\ORM\RecordsCollection\SelectedRecordsCollectionInterface;
+use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesEn;
+use PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages\ColumnValueValidationMessagesInterface;
 use PeskyORM\ORM\TableStructure\TableColumnFactory;
 use PeskyORM\ORM\TableStructure\TableColumnFactoryInterface;
+use PeskyORM\Select\OrmSelect;
+use PeskyORM\Select\OrmSelectQueryBuilderInterface;
+use PeskyORM\Select\Select;
+use PeskyORM\Select\SelectQueryBuilderInterface;
 use PeskyORM\TableDescription\TableDescribers\MysqlTableDescriber;
 use PeskyORM\TableDescription\TableDescribers\PostgresTableDescriber;
 use PeskyORM\TableDescription\TableDescribers\TableDescriberInterface;
@@ -112,9 +124,19 @@ class ServiceContainer implements ServiceContainerInterface
                 false
             )
             // Table columns factory
+            ->bind(TableColumnFactoryInterface::class, TableColumnFactory::class, true)
+            // Selects
+            ->bind(SelectQueryBuilderInterface::class, Select::class, false)
+            ->bind(OrmSelectQueryBuilderInterface::class, OrmSelect::class, false)
+            // Records arrays
+            ->bind(RecordsCollectionInterface::class, RecordsArray::class, false)
+            ->bind(SelectedRecordsCollectionInterface::class, SelectedRecordsArray::class, false)
+            // Record value conatiner
+            ->bind(RecordValueContainerInterface::class, RecordValue::class, false)
+            // Column validation messages
             ->bind(
-                TableColumnFactoryInterface::class,
-                TableColumnFactory::class,
+                ColumnValueValidationMessagesInterface::class,
+                ColumnValueValidationMessagesEn::class,
                 true
             )
             ;
@@ -214,6 +236,12 @@ class ServiceContainer implements ServiceContainerInterface
         $concrete = $this->bindings[$abstract]['concrete'];
         $isSingleton = $this->bindings[$abstract]['singleton'];
 
+        // Class was already resolved earlier -> reuse reflector
+        if ($concrete instanceof \ReflectionClass) {
+            // Note: it cannot be a singleton
+            return $concrete->newInstanceArgs($parameters);
+        }
+
         if ($concrete instanceof \Closure) {
             $object = call_user_func_array($concrete, $parameters);
             if ($isSingleton) {
@@ -241,6 +269,9 @@ class ServiceContainer implements ServiceContainerInterface
         $object = $reflector->newInstanceArgs($parameters);
         if ($isSingleton) {
             $this->instances[$abstract] = $object;
+        } else {
+            // Save reflector instance for reuse
+            $this->bindings[$abstract]['concrete'] = $reflector;
         }
         return $object;
     }

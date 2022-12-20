@@ -6,6 +6,8 @@ namespace PeskyORM\ORM\TableStructure\TableColumn\ColumnValueValidationMessages;
 
 interface ColumnValueValidationMessagesInterface
 {
+    public const EXCEPTION_MESSAGE = 'exception_message';
+
     public const VALUE_CANNOT_BE_NULL = 'value_cannot_be_null';
     public const VALUE_MUST_BE_BOOLEAN = 'value_must_be_boolean';
     public const VALUE_MUST_BE_INTEGER = 'value_must_be_integer';

@@ -1379,10 +1379,4 @@ class DbSelectTest extends BaseTestCase
                 ->getQuery()
         );
     }
-    
-    public function testNormalizeRecord(): void
-    {
-        static::assertTrue(true);
-        // todo: add tests
-    }
 }

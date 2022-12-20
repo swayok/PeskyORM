@@ -369,7 +369,7 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
     /**
      * Value can be anything including instances of:
      * - RecordValueContainerInterface
-     * - RecordsSet
+     * - SelectedRecordsArray
      * - DbExpr
      * - SelectQueryBuilderInterface
      */

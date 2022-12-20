@@ -122,7 +122,6 @@ class Relation implements RelationInterface
     public function getForeignTable(): TableInterface
     {
         if (!$this->foreignTable) {
-            // todo: use classes container to get instance by class name
             /** @var TableInterface $class */
             $class = $this->foreignTableClass;
             $this->foreignTable = $class::getInstance();

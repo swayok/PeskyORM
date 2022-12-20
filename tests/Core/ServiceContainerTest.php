@@ -25,8 +25,7 @@ class ServiceContainerTest extends BaseTestCase
 {
     protected function tearDown(): void
     {
-        ServiceContainer::replaceContainer(null);
-        TestingApp::configureConnections(true);
+        TestingApp::resetServiceContainer();
     }
 
     public function testGetInstance(): void

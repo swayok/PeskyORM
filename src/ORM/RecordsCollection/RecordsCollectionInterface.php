@@ -22,7 +22,7 @@ interface RecordsCollectionInterface extends \Countable, \ArrayAccess, \Iterator
     /**
      * Reset stored data
      * Note: RecordsArray instance won't be usable after this
-     * while RecordsSet can fetch data again
+     * while SelectedRecordsArray can fetch data again
      */
     public function resetRecords(): static;
 

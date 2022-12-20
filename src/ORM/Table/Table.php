@@ -6,44 +6,38 @@ namespace PeskyORM\ORM\Table;
 
 use PeskyORM\DbExpr;
 use PeskyORM\Join\NormalJoinConfigInterface;
+use PeskyORM\ORM\Record\Record;
 use PeskyORM\ORM\Record\RecordInterface;
-use PeskyORM\ORM\RecordsCollection\RecordsSet;
 use PeskyORM\ORM\RecordsCollection\SelectedRecordsCollectionInterface;
 use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnDataType;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
 use PeskyORM\ORM\TableStructure\TableStructureInterface;
-use PeskyORM\Select\OrmSelect;
+use PeskyORM\Select\OrmSelectQueryBuilderInterface;
+use PeskyORM\Select\SelectQueryBuilderInterface;
 use PeskyORM\Utils\ArgumentValidators;
 use PeskyORM\Utils\PdoUtils;
+use PeskyORM\Utils\ServiceContainer;
 use PeskyORM\Utils\StringUtils;
 
 abstract class Table implements TableInterface, TableStructureInterface
 {
     use DelegateTableStructureMethods;
 
-    /** @var TableInterface[] */
-    private static array $instances = [];
     protected ?string $tableAlias = null;
 
     protected TableStructureInterface $tableStructure;
     protected \Closure $recordFactory;
 
-    final public static function getInstance(): static
+    public static function getInstance(): static
     {
-        if (!isset(self::$instances[static::class])) {
-            self::$instances[static::class] = new static();
+        $container = ServiceContainer::getInstance();
+        if (!$container->has(static::class)) {
+            $instance = new static();
+            $container->instance(static::class, $instance);
+            return $instance;
         }
-        return self::$instances[static::class];
-    }
-
-    /**
-     * Resets class instances (used for testing only, that's why it is private)
-     * @noinspection PhpUnusedPrivateMethodInspection
-     */
-    private static function resetInstances(): void
-    {
-        self::$instances = [];
+        return $container->make(static::class);
     }
 
     protected function __construct(
@@ -57,9 +51,18 @@ abstract class Table implements TableInterface, TableStructureInterface
             $recordClass,
             RecordInterface::class
         );
-        $this->recordFactory = function () use ($recordClass) {
-            return new $recordClass($this);
-        };
+        if ($recordClass === Record::class) {
+            // Record class constructor require table instance argument
+            $this->recordFactory = function () use ($recordClass): RecordInterface {
+                return ServiceContainer::getInstance()->make($recordClass, [$this]);
+            };
+        } else {
+            // Specific record class should override constructor to exclude
+            // table instance argument.
+            $this->recordFactory = static function () use ($recordClass): RecordInterface {
+                return ServiceContainer::getInstance()->make($recordClass);
+            };
+        }
         $this->tableAlias = $tableAlias ?? StringUtils::toPascalCase($this->getTableName());
     }
 
@@ -78,11 +81,13 @@ abstract class Table implements TableInterface, TableStructureInterface
         return $this->tableAlias;
     }
 
-    public function getPkColumnName(): string {
+    public function getPkColumnName(): string
+    {
         return $this->getTableStructure()->getPkColumnName();
     }
 
-    public function getPkColumn(): TableColumnInterface {
+    public function getPkColumn(): TableColumnInterface
+    {
         return $this->getTableStructure()->getPkColumn();
     }
 
@@ -107,9 +112,13 @@ abstract class Table implements TableInterface, TableStructureInterface
         array|string $columns,
         array $conditions = [],
         ?\Closure $configurator = null
-    ): OrmSelect {
-        $select = OrmSelect::from(static::getInstance())
-            ->fromConfigsArray($conditions);
+    ): OrmSelectQueryBuilderInterface {
+        /** @var OrmSelectQueryBuilderInterface $select */
+        $select = ServiceContainer::getInstance()->make(
+            OrmSelectQueryBuilderInterface::class,
+            [static::getInstance()]
+        );
+        $select->fromConfigsArray($conditions);
         if ($configurator !== null) {
             $configurator($select);
         }
@@ -122,9 +131,12 @@ abstract class Table implements TableInterface, TableStructureInterface
         array $conditions = [],
         ?\Closure $configurator = null
     ): SelectedRecordsCollectionInterface {
-        return new RecordsSet(
-            static::getInstance(),
-            static::makeQueryBuilder($columns, $conditions, $configurator)
+        return ServiceContainer::getInstance()->make(
+            SelectedRecordsCollectionInterface::class,
+            [
+                static::getInstance(),
+                static::makeQueryBuilder($columns, $conditions, $configurator),
+            ]
         );
     }
 
@@ -193,7 +205,9 @@ abstract class Table implements TableInterface, TableStructureInterface
         array $conditions,
         ?\Closure $configurator = null
     ): bool {
-        $callback = static function (OrmSelect $select) use ($configurator) {
+        $callback = static function (
+            SelectQueryBuilderInterface $select
+        ) use ($configurator) {
             if ($configurator) {
                 $configurator($select);
             }

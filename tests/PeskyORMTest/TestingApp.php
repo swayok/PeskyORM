@@ -8,7 +8,6 @@ use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Config\Connection\DbConnectionsFacade;
 use PeskyORM\Config\Connection\MysqlConfig;
 use PeskyORM\Config\Connection\PostgresConfig;
-use PeskyORM\ORM\Table\Table;
 use PeskyORM\Tests\PeskyORMTest\Adapter\MysqlTesting;
 use PeskyORM\Tests\PeskyORMTest\Adapter\PostgresTesting;
 use PeskyORM\Utils\ServiceContainer;
@@ -154,12 +153,9 @@ class TestingApp
         $adapter->exec('TRUNCATE TABLE admins');
     }
 
-    public static function cleanInstancesOfDbTablesAndRecordsAndStructures(): void
+    public static function resetServiceContainer(): void
     {
-        $class = new \ReflectionClass(Table::class);
-        $method = $class->getMethod('resetInstances');
-        $method->setAccessible(true);
-        $method->invoke(null);
-        $method->setAccessible(false);
+        ServiceContainer::replaceContainer(null);
+        static::configureConnections(true);
     }
 }

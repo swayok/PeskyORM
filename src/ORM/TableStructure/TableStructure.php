@@ -139,7 +139,6 @@ abstract class TableStructure implements TableStructureInterface
 
     public function getConnection(bool $writable = false): DbAdapterInterface
     {
-        // todo: use service container
         return DbConnectionsFacade::getConnection(
             $this->getConnectionName($writable)
         );
