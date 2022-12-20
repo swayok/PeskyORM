@@ -158,4 +158,23 @@ class TestingApp
         ServiceContainer::replaceContainer(null);
         static::configureConnections(true);
     }
+
+    public static function fillAdminsTable(
+        DbAdapterInterface $connection,
+        int $limit = 0,
+        ?array $records = null,
+    ): array {
+        static::clearTables($connection);
+        if (!$records) {
+            $records = static::getRecordsForDb('admins', $limit);
+        } else if ($limit > 0) {
+            $records = array_slice($records, 0, $limit);
+        }
+        $connection->insertMany(
+            'admins',
+            array_keys($records[0]),
+            $records
+        );
+        return $records;
+    }
 }

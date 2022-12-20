@@ -169,7 +169,7 @@ interface TableInterface
 
     /**
      * @param array|string $columns - columns to select
-     * @param array $conditions - Where conditions and options
+     * @param array $conditionsAndOptions - Where conditions and options
      * @param \Closure|null $configurator - closure to configure Select instance:
      *      function (SelectQueryBuilderInterface $select): void {}
      * @return SelectQueryBuilderInterface
@@ -179,7 +179,7 @@ interface TableInterface
      */
     public static function makeQueryBuilder(
         array|string $columns,
-        array $conditions = [],
+        array $conditionsAndOptions = [],
         ?\Closure $configurator = null
     ): SelectQueryBuilderInterface;
 

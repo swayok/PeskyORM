@@ -13,7 +13,6 @@ use PeskyORM\Tests\PeskyORMTest\TestingApp;
 
 class TableTest extends BaseTestCase
 {
-
     public static function tearDownAfterClass(): void
     {
         TestingApp::clearTables(TestingAdminsTable::getInstance()->getConnection());
@@ -23,20 +22,6 @@ class TableTest extends BaseTestCase
     protected function setUp(): void
     {
         TestingApp::clearTables(TestingAdminsTable::getInstance()->getConnection());
-    }
-
-    public static function fillAdminsTable(int $limit = 0): array
-    {
-        TestingAdminsTable::getInstance()
-            ->getConnection(true)
-            ->exec('TRUNCATE TABLE admins');
-        $data = TestingApp::getRecordsForDb('admins', $limit);
-        // avoid using TestingAdminsTable::insertMany()
-        // to avoid autoupdatable columns usage *updated_at for example
-        TestingAdminsTable::getInstance()
-            ->getConnection()
-            ->insertMany('admins', array_keys($data[0]), $data);
-        return $data;
     }
 
     public function testInsert(): void
@@ -253,7 +238,7 @@ class TableTest extends BaseTestCase
 
     public function testUpdate(): void
     {
-        $admins = static::fillAdminsTable(5);
+        $admins = $this->fillAdminsTable(5);
         $adminsCount = count($admins);
 
         $updatedRows = TestingAdminsTable::update(['is_active' => true], ['is_active' => false], true);
@@ -284,7 +269,7 @@ class TableTest extends BaseTestCase
 
     public function testDelete(): void
     {
-        $admins = static::fillAdminsTable(5);
+        $admins = $this->fillAdminsTable(5);
         $adminsCount = count($admins);
 
         $deletedAdmins = TestingAdminsTable::delete(['id' => $admins[1]['id']], true);

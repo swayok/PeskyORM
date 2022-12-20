@@ -12,7 +12,7 @@ use PeskyORM\TableDescription\ColumnDescriptionDataType;
 use PeskyORM\TableDescription\TableDescription;
 use PeskyORM\TableDescription\TableDescriptionInterface;
 use PeskyORM\Utils\PdoUtils;
-use Swayok\Utils\ValidateValue;
+use PeskyORM\Utils\ValueTypeValidators;
 
 class PostgresTableDescriber implements TableDescriberInterface
 {
@@ -164,11 +164,11 @@ class PostgresTableDescriber implements TableDescriberInterface
             return false;
         }
 
-        if (ValidateValue::isInteger($default)) {
+        if (ValueTypeValidators::isInteger($default)) {
             return (int)$default;
         }
 
-        if (($tmp = trim($default, "'")) !== '' && ValidateValue::isFloat($tmp)) {
+        if (($tmp = trim($default, "'")) !== '' && is_numeric($tmp)) {
             return (float)$tmp;
         }
 

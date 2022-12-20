@@ -11,12 +11,10 @@ use PeskyORM\Join\JoinConfig;
 use PeskyORM\Select\Select;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
-use Swayok\Utils\Set;
 use UnexpectedValueException;
 
 class DbSelectTest extends BaseTestCase
 {
-    
     public static function setUpBeforeClass(): void
     {
         TestingApp::clearTables(static::getValidAdapter());
@@ -27,13 +25,13 @@ class DbSelectTest extends BaseTestCase
         TestingApp::clearTables(static::getValidAdapter());
     }
     
-    protected static function fillAdminsTable(): array
+    protected function fillAdminsTable(int $limit = 0): array
     {
-        TestingApp::clearTables(static::getValidAdapter());
-        $data = static::getTestDataForAdminsTableInsert();
-        static::getValidAdapter()
-            ->insertMany('admins', array_keys($data[0]), $data);
-        return $data;
+        return TestingApp::fillAdminsTable(
+            static::getValidAdapter(),
+            $limit,
+            static::getTestDataForAdminsTableInsert()
+        );
     }
     
     protected static function getValidAdapter(): Postgres
@@ -138,7 +136,7 @@ class DbSelectTest extends BaseTestCase
         static::assertEquals('SELECT COUNT(*) FROM "admins" AS "tbl_Admins_1"', rtrim($dbSelect->getCountQuery()));
         static::assertEquals('SELECT 1 FROM "admins" AS "tbl_Admins_2" LIMIT 1', rtrim($dbSelect->getExistenceQuery()));
         
-        $insertedData = static::fillAdminsTable();
+        $insertedData = $this->fillAdminsTable();
         $testData = $this->convertTestDataForAdminsTableAssert($insertedData);
         static::assertEquals(2, $dbSelect->fetchCount());
         static::assertTrue($dbSelect->fetchExistence());
@@ -147,11 +145,17 @@ class DbSelectTest extends BaseTestCase
         $data = $dbSelect->fetchOne();
         static::assertEquals($testData[0], $data);
         $data = $dbSelect->fetchColumn('id');
-        static::assertEquals(Set::extract('/id', $testData), $data);
+        $expectedIds = [];
+        $expectedAssoc = [];
+        foreach ($testData as $record) {
+            $expectedIds[] = $record['id'];
+            $expectedAssoc[$record['id']] = $record['login'];
+        }
+        static::assertEquals($expectedIds, $data);
         $data = $dbSelect->fetchAssoc('id', 'login');
-        static::assertEquals(Set::combine($testData, '/id', '/login'), $data);
+        static::assertEquals($expectedAssoc, $data);
         $sum = $dbSelect->fetchValue(DbExpr::create('SUM(`id`)'));
-        static::assertEquals(array_sum(Set::extract('/id', $testData)), $sum);
+        static::assertEquals(array_sum($expectedIds), $sum);
         
         // via static
         $dbSelect = Select::from('admins', $adapter);
@@ -539,7 +543,7 @@ class DbSelectTest extends BaseTestCase
             'SELECT "tbl_Admins_0"."id" AS "col_Admns__VrLngClmnAlsSItMstBShrtndBtWNdMrThn60Caracters_0" FROM "admins" AS "tbl_Admins_0"',
             $dbSelect->getQuery()
         );
-        $insertedData = static::fillAdminsTable();
+        $insertedData = $this->fillAdminsTable();
         $expectedData = [];
         foreach ($insertedData as $data) {
             $expectedData[] = ['VeryLongColumnAliasSoItMustBeShortenedButWeNeedMoreThen60Caracters' => $data['id']];

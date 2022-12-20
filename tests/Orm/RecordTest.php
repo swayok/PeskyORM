@@ -20,8 +20,6 @@ use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 use PeskyORM\Tests\PeskyORMTest\TestingSettings\TestingSetting;
 use PeskyORM\Utils\StringUtils;
-use Swayok\Utils\NormalizeValue;
-use Swayok\Utils\Set;
 
 class RecordTest extends BaseTestCase
 {
@@ -35,23 +33,6 @@ class RecordTest extends BaseTestCase
     {
         TestingApp::clearTables(TestingAdminsTable::getInstance()->getConnection());
         TestingApp::resetServiceContainer();
-    }
-
-    /**
-     * @return array[]
-     */
-    public static function fillAdminsTable(int $limit = 0): array
-    {
-        TestingAdminsTable::getInstance()
-            ->getConnection(true)
-            ->exec('TRUNCATE TABLE admins');
-        $data = TestingApp::getRecordsForDb('admins', $limit);
-        // avoid using TestingAdminsTable::insertMany()
-        // to avoid autoupdatable columns usage *updated_at for example
-        TestingAdminsTable::getInstance()
-            ->getConnection()
-            ->insertMany('admins', array_keys($data[0]), $data);
-        return $data;
     }
 
     private function insertMinimalTestDataToAdminsTable(): void
@@ -123,13 +104,13 @@ class RecordTest extends BaseTestCase
         bool $addNotExistingCol = true,
         bool $allowFiles = true,
     ): array {
-        $adminData['is_superadmin'] = NormalizeValue::normalizeBoolean($adminData['is_superadmin']);
-        $adminData['is_active'] = NormalizeValue::normalizeBoolean($adminData['is_active']);
+        $adminData['is_superadmin'] = (bool)$adminData['is_superadmin'];
+        $adminData['is_active'] = (bool)$adminData['is_active'];
         if ($adminData['parent_id'] !== null) {
-            $adminData['parent_id'] = NormalizeValue::normalizeInteger($adminData['parent_id']);
+            $adminData['parent_id'] = (int)$adminData['parent_id'];
         }
         if (array_key_exists('id', $adminData)) {
-            $adminData['id'] = NormalizeValue::normalizeInteger($adminData['id']);
+            $adminData['id'] = (int)$adminData['id'];
         } else {
             $adminData['id'] = null;
         }
@@ -710,7 +691,7 @@ class RecordTest extends BaseTestCase
         static::assertEquals($expected, $toArrayRelation);
 
         // has one / belongs to relations (existing in db)
-        $insertedRecords = static::fillAdminsTable(10);
+        $insertedRecords = $this->fillAdminsTable(10);
         unset(
             $adminNoId['Parent'],
             $insertedRecords[0]['password'],
@@ -1053,7 +1034,7 @@ class RecordTest extends BaseTestCase
 
     public function testFromPrimaryKey(): void
     {
-        $recordsAdded = static::fillAdminsTable(10);
+        $recordsAdded = $this->fillAdminsTable(10);
         $example = $recordsAdded[1];
         unset($example['password'], $example['created_at'], $example['updated_at']);
         $normalColumns = array_diff(
@@ -1195,7 +1176,7 @@ class RecordTest extends BaseTestCase
 
     public function testFromDb(): void
     {
-        $recordsAdded = static::fillAdminsTable(10);
+        $recordsAdded = $this->fillAdminsTable(10);
         [$example, $exampleWithParent] = $recordsAdded;
         unset(
             $example['password'], $example['created_at'], $example['updated_at'],
@@ -1282,7 +1263,7 @@ class RecordTest extends BaseTestCase
         static::assertCount(2, $children->toArrays());
         static::assertEquals(
             [$recordsAdded[3]['id'], $recordsAdded[7]['id']],
-            Set::extract('/id', $children->toArrays())
+            $children->getValuesForColumn('id')
         );
 
         $rec = TestingAdmin::find(
@@ -1311,7 +1292,7 @@ class RecordTest extends BaseTestCase
 
     public function testReload(): void
     {
-        $recordsAdded = static::fillAdminsTable(10);
+        $recordsAdded = $this->fillAdminsTable(10);
         $example = $recordsAdded[0];
         $normalColumns = array_diff(
             array_keys(TestingAdminsTable::getInstance()->getRealColumns()),
@@ -1356,11 +1337,7 @@ class RecordTest extends BaseTestCase
         );
         static::assertEquals(
             [$recordsAdded[1]['id'], $recordsAdded[2]['id']],
-            Set::extract(
-                '/id',
-                $rec->getRelatedRecord('Children', false)
-                    ->toArrays()
-            )
+            $rec->getRelatedRecord('Children', false)->getValuesForColumn('id')
         );
     }
 
@@ -1390,7 +1367,7 @@ class RecordTest extends BaseTestCase
 
     public function testReadColumns(): void
     {
-        $recordsAdded = static::fillAdminsTable(1);
+        $recordsAdded = $this->fillAdminsTable(1);
         $example = $recordsAdded[0];
 
         $rec = TestingAdmin::read($example['id'], ['id']);
@@ -1578,7 +1555,7 @@ class RecordTest extends BaseTestCase
 
     public function testReadRelatedRecord(): void
     {
-        $recordsAdded = static::fillAdminsTable(10);
+        $recordsAdded = $this->fillAdminsTable(10);
         $parentData = $recordsAdded[0];
         $normalColumns = array_diff(
             array_keys(TestingAdminsTable::getInstance()->getRealColumns()),
@@ -1615,11 +1592,7 @@ class RecordTest extends BaseTestCase
         static::assertStringContainsString('SELECT (1) FROM', $prevSqlQuery);
         static::assertEquals(
             [$recordsAdded[3]['id'], $recordsAdded[7]['id']],
-            Set::extract(
-                '/id',
-                $rec->getRelatedRecord('Children', false)
-                    ->toArrays()
-            )
+            $rec->getRelatedRecord('Children', false)->getValuesForColumn('id')
         );
         // repeated calls to getRelatedRecord() should not do any DB queries
         static::assertEquals($prevSqlQuery, TestingAdminsTable::getLastQuery(false));
@@ -2003,7 +1976,7 @@ class RecordTest extends BaseTestCase
     {
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("login: update!");
-        static::fillAdminsTable(1);
+        $this->fillAdminsTable(1);
         $rec = TestingAdmin3::newEmptyRecord()
             ->fromData(['id' => 1], true)
             ->updateValues(['parent_id' => null, 'login' => 'test']);
@@ -2024,7 +1997,7 @@ class RecordTest extends BaseTestCase
         ];
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage(json_encode($fileData));
-        static::fillAdminsTable(1);
+        $this->fillAdminsTable(1);
         $rec = TestingAdmin3::newEmptyRecord()
             ->fromData(['id' => 1], true)
             ->updateValues([
@@ -2040,7 +2013,7 @@ class RecordTest extends BaseTestCase
      */
     public function testSaveAndSaveToDbAndBeforeAfterSave(): void
     {
-        $recordsAdded = static::fillAdminsTable(10);
+        $recordsAdded = $this->fillAdminsTable(10);
         static::assertEquals(10, TestingAdminsTable::count([]));
         $rec = TestingAdmin::newEmptyRecord();
         // insert
@@ -2086,7 +2059,7 @@ class RecordTest extends BaseTestCase
      */
     public function testSaveAndSaveToDbAndBeforeAfterSaveWithRelations(): void
     {
-        $recordsAdded = static::fillAdminsTable(10);
+        $recordsAdded = $this->fillAdminsTable(10);
         static::assertEquals(10, TestingAdminsTable::count([]));
 
         $newRec['email'] = $newRec['login'] = 'testemail3@mail.com';
@@ -2236,7 +2209,7 @@ class RecordTest extends BaseTestCase
 
     public function testBeginAndCommit(): void
     {
-        $recordsAdded = static::fillAdminsTable(10);
+        $recordsAdded = $this->fillAdminsTable(10);
         static::assertEquals(10, TestingAdminsTable::count([]));
         $rec = TestingAdmin::fromArray($recordsAdded[2], true);
         $expected = array_diff_key($recordsAdded[2], array_flip(['updated_at', 'password']));
@@ -2307,7 +2280,7 @@ class RecordTest extends BaseTestCase
 
     public function testSaveRelations(): void
     {
-        $recordsAdded = static::fillAdminsTable(10);
+        $recordsAdded = $this->fillAdminsTable(10);
         $parent = array_merge(
             $recordsAdded[2],
             ['parent_id' => null, 'id' => null, 'password' => 'test']
@@ -2358,7 +2331,7 @@ class RecordTest extends BaseTestCase
         static::assertFalse($rec->isValueFromDb('parent_id'));*/
 
         // has one
-        static::fillAdminsTable(1);
+        $this->fillAdminsTable(1);
         $rec = TestingAdmin::fromArray($recordsAdded[0], true);
         $rec->updateValues(['HasOne' => $parent], false);
         static::assertEquals(1, TestingAdminsTable::count());
@@ -2394,7 +2367,7 @@ class RecordTest extends BaseTestCase
         );
 
         // has many
-        static::fillAdminsTable(1);
+        $this->fillAdminsTable(1);
         $rec = TestingAdmin::fromArray($recordsAdded[0], true);
         $child1 = array_merge(
             $recordsAdded[1],
@@ -2487,7 +2460,7 @@ class RecordTest extends BaseTestCase
      */
     public function testDelete(): void
     {
-        $addedRecords = static::fillAdminsTable(10);
+        $addedRecords = $this->fillAdminsTable(10);
         static::assertEquals(10, TestingAdminsTable::count());
         $rec = TestingAdmin::fromArray($addedRecords[1], true);
         $rec->delete();
@@ -2670,7 +2643,7 @@ class RecordTest extends BaseTestCase
         static::assertFalse(isset($rec['Children']));
         static::assertEmpty($rec['Children']);
         // specific situations for relations and isset/empty
-        $recordsInserted = static::fillAdminsTable(10);
+        $recordsInserted = $this->fillAdminsTable(10);
         $rec->fetchByPrimaryKey($recordsInserted[1]['id']);
         static::assertTrue($rec->existsInDb());
         static::assertFalse($rec->hasRelatedRecord('Parent'));

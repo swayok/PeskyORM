@@ -11,7 +11,6 @@ use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
 use PeskyORM\Utils\PdoUtils;
 use PeskyORM\Utils\QueryBuilderUtils;
-use Swayok\Utils\Set;
 
 class UtilsTest extends BaseTestCase
 {
@@ -124,8 +123,12 @@ class UtilsTest extends BaseTestCase
         );
         $statement->closeCursor();
         $statement->execute();
+        $expectedIds = [];
+        foreach ($testData as $record) {
+            $expectedIds[] = $record['id'];
+        }
         static::assertEquals(
-            Set::extract('/id', $testData),
+            $expectedIds,
             PdoUtils::getDataFromStatement($statement, PdoUtils::FETCH_COLUMN)
         );
         $statement->closeCursor();

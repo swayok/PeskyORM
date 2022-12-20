@@ -12,7 +12,7 @@ use PeskyORM\TableDescription\ColumnDescriptionDataType;
 use PeskyORM\TableDescription\TableDescription;
 use PeskyORM\TableDescription\TableDescriptionInterface;
 use PeskyORM\Utils\PdoUtils;
-use Swayok\Utils\ValidateValue;
+use PeskyORM\Utils\ValueTypeValidators;
 
 class MysqlTableDescriber implements TableDescriberInterface
 {
@@ -105,15 +105,15 @@ class MysqlTableDescriber implements TableDescriberInterface
             return false;
         }
 
-        if (ValidateValue::isInteger($default)) {
+        if (ValueTypeValidators::isInteger($default)) {
             return (int)$default;
         }
 
-        if (ValidateValue::isFloat($default)) {
+        if (is_numeric($default)) {
             return (float)$default;
         }
 
-        return $default; //< it seems like there is still no possibility to use functions as default value
+        return $default;
     }
 
     #[ArrayShape([

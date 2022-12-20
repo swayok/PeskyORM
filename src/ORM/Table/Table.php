@@ -110,7 +110,7 @@ abstract class Table implements TableInterface, TableStructureInterface
 
     public static function makeQueryBuilder(
         array|string $columns,
-        array $conditions = [],
+        array $conditionsAndOptions = [],
         ?\Closure $configurator = null
     ): OrmSelectQueryBuilderInterface {
         /** @var OrmSelectQueryBuilderInterface $select */
@@ -118,7 +118,7 @@ abstract class Table implements TableInterface, TableStructureInterface
             OrmSelectQueryBuilderInterface::class,
             [static::getInstance()]
         );
-        $select->fromConfigsArray($conditions);
+        $select->fromConfigsArray($conditionsAndOptions);
         if ($configurator !== null) {
             $configurator($select);
         }

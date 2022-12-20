@@ -138,7 +138,7 @@ class PostgresAdapterGeneralFunctionalityTest extends BaseTestCase
         $this->expectException(\TypeError::class);
         $this->expectExceptionMessage('Argument #1 ($value) must be of type');
         $adapter = static::getValidAdapter();
-        $adapter->quoteValue(curl_init('http://test.url'), PDO::PARAM_INT);
+        $adapter->quoteValue(fopen(__FILE__, 'rb'), PDO::PARAM_INT);
     }
     
     public function testQuotingOfInvalidIntDbValue5(): void

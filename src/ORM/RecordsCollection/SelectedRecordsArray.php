@@ -51,14 +51,20 @@ class SelectedRecordsArray extends RecordsArray implements SelectedRecordsCollec
 
     protected function injectHasManyRelationDataIntoRecords(
         RelationInterface $relation,
-        array $columnsToSelect = ['*']
+        array $columnsToSelect = ['*'],
+        array $additionalConditionsAndOptions = []
     ): void {
         $this->hasManyRelationsToInject[$relation->getName()] = [
             'relation' => $relation,
             'columns' => $columnsToSelect,
+            'options' => $additionalConditionsAndOptions,
         ];
         if ($this->records) {
-            parent::injectHasManyRelationDataIntoRecords($relation, $columnsToSelect);
+            parent::injectHasManyRelationDataIntoRecords(
+                $relation,
+                $columnsToSelect,
+                $additionalConditionsAndOptions
+            );
         }
     }
 
@@ -196,7 +202,11 @@ class SelectedRecordsArray extends RecordsArray implements SelectedRecordsCollec
         $this->recordsCount = count($this->records);
         $this->hasManyRelationsInjected = [];
         foreach ($this->hasManyRelationsToInject as $injectionConfig) {
-            parent::injectHasManyRelationDataIntoRecords($injectionConfig['relation'], $injectionConfig['columns']);
+            parent::injectHasManyRelationDataIntoRecords(
+                $injectionConfig['relation'],
+                $injectionConfig['columns'],
+                $injectionConfig['options']
+            );
         }
         return $this;
     }

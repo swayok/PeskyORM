@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PeskyORM\Tests\PeskyORMTest;
 
 use ArrayAccess;
+use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 use PHPUnit\Framework\Exception;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\InvalidArgumentException;
@@ -77,5 +78,13 @@ class BaseTestCase extends TestCase
         $method = $reflection->getMethod($methodName);
         $method->setAccessible(true);
         return $method;
+    }
+
+    protected function fillAdminsTable(int $limit = 0): array
+    {
+        return TestingApp::fillAdminsTable(
+            TestingAdminsTable::getInstance()->getConnection(true),
+            $limit
+        );
     }
 }

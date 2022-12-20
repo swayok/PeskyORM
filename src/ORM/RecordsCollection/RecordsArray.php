@@ -7,7 +7,6 @@ namespace PeskyORM\ORM\RecordsCollection;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\Table\TableInterface;
 use PeskyORM\ORM\TableStructure\RelationInterface;
-use Swayok\Utils\Set;
 
 class RecordsArray implements RecordsCollectionInterface
 {
@@ -87,7 +86,8 @@ class RecordsArray implements RecordsCollectionInterface
      */
     public function injectHasManyRelationData(
         string $relationName,
-        array $columnsToSelect = ['*']
+        array $columnsToSelect = ['*'],
+        array $additionalConditionsAndOptions = []
     ): static {
         $relation = $this->table->getTableStructure()->getRelation($relationName);
         if ($relation->getType() !== $relation::HAS_MANY) {
@@ -97,14 +97,19 @@ class RecordsArray implements RecordsCollectionInterface
             );
         }
         if (!in_array($relationName, $this->hasManyRelationsInjected, true)) {
-            $this->injectHasManyRelationDataIntoRecords($relation, $columnsToSelect);
+            $this->injectHasManyRelationDataIntoRecords(
+                $relation,
+                $columnsToSelect,
+                $additionalConditionsAndOptions
+            );
         }
         return $this;
     }
 
     protected function injectHasManyRelationDataIntoRecords(
         RelationInterface $relation,
-        array $columnsToSelect = ['*']
+        array $columnsToSelect = ['*'],
+        array $additionalConditionsAndOptions = []
     ): void {
         $relationName = $relation->getName();
         $localColumnName = $relation->getLocalColumnName();
@@ -112,15 +117,20 @@ class RecordsArray implements RecordsCollectionInterface
             return !empty($value);
         });
         if (count($ids)) {
-            // todo: replace Set::combine usage by simple iteration for better performance
-            $relatedRecordsGrouped = Set::combine(
-                $relation->getForeignTable()
-                    ->select($columnsToSelect, [$relation->getForeignColumnName() => $ids])
-                    ->toArrays(),
-                '/@',
-                '/',
-                '/' . $relation->getForeignColumnName()
+            $foreignTable = $relation->getForeignTable();
+            $foreignColumnName = $relation->getForeignColumnName();
+            unset($additionalConditionsAndOptions[$foreignColumnName]);
+            $relatedRecords = $foreignTable::select(
+                $columnsToSelect,
+                array_merge(
+                    [$foreignColumnName => $ids],
+                    $additionalConditionsAndOptions,
+                )
             );
+            $relatedRecordsGrouped = [];
+            foreach ($relatedRecords->toArrays() as $relatedRecord) {
+                $relatedRecordsGrouped[$relatedRecord['parent_id']][] = $relatedRecord;
+            }
             foreach ($this->getRecords() as $index => $record) {
                 $relatedRecords = [];
                 $localColumnValue = $record[$localColumnName] ?? null;
@@ -132,8 +142,7 @@ class RecordsArray implements RecordsCollectionInterface
                     $relatedRecords = $relatedRecordsGrouped[$localColumnValue];
                 }
                 if ($record instanceof RecordInterface) {
-                    $this->records[$index] = $this->records[$index]
-                        ->toArray([], ['*'], false);
+                    $this->records[$index] = $this->records[$index]->toArray([], ['*'], false);
                     unset($this->dbRecords[$index]);
                 }
                 $this->records[$index][$relationName] = array_values($relatedRecords);

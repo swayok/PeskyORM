@@ -17,7 +17,6 @@ use PeskyORM\Tests\PeskyORMTest\Data\TestDataForAdminsTable;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTable;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableLongAlias;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
-use Swayok\Utils\Set;
 
 class OrmSelectTest extends BaseTestCase
 {
@@ -38,18 +37,6 @@ class OrmSelectTest extends BaseTestCase
     protected static function getConnection(): DbAdapterInterface
     {
         return TestingAdminsTable::getInstance()->getConnection(true);
-    }
-
-    public static function fillAdminsTable(int $limit = 0): array
-    {
-        TestingAdminsTable::getInstance()
-            ->getConnection(true)
-            ->exec('TRUNCATE TABLE admins');
-        $data = TestingApp::getRecordsForDb('admins', $limit);
-        TestingAdminsTable::getInstance()
-            ->getConnection(true)
-            ->insertMany('admins', array_keys($data[0]), $data);
-        return $data;
     }
 
     protected static function getNewSelect(): OrmSelect
@@ -83,7 +70,7 @@ class OrmSelectTest extends BaseTestCase
         ];
         static::assertEquals($expectedColsInfo, $this->getObjectPropertyValue($dbSelect, 'columns'));
 
-        $insertedData = static::fillAdminsTable(2);
+        $insertedData = $this->fillAdminsTable(2);
         $testData = $this->convertTestDataForAdminsTableAssert(
             $insertedData,
             true,
@@ -98,11 +85,18 @@ class OrmSelectTest extends BaseTestCase
         $data = $dbSelect->fetchOne();
         static::assertEquals($testData[0], $data);
         $data = $dbSelect->columns(['login'])->fetchColumn('id');
-        static::assertEquals(Set::extract('/id', $testData), $data);
+
+        $expectedIds = [];
+        $expectedAssoc = [];
+        foreach ($testData as $record) {
+            $expectedIds[] = $record['id'];
+            $expectedAssoc[$record['id']] = $record['login'];
+        }
+        static::assertEquals($expectedIds, $data);
         $data = $dbSelect->fetchAssoc('id', 'login');
-        static::assertEquals(Set::combine($testData, '/id', '/login'), $data);
+        static::assertEquals($expectedAssoc, $data);
         $sum = $dbSelect->fetchValue(DbExpr::create('SUM(`id`)'));
-        static::assertEquals(array_sum(Set::extract('/id', $testData)), $sum);
+        static::assertEquals(array_sum($expectedIds), $sum);
 
         // via static
         $dbSelect = OrmSelect::from(TestingAdminsTable::getInstance());
@@ -1116,7 +1110,7 @@ class OrmSelectTest extends BaseTestCase
 
     public function testContains(): void
     {
-        $insertedData = static::fillAdminsTable();
+        $insertedData = $this->fillAdminsTable();
         $countWithParents = 0;
         foreach ($insertedData as $record) {
             if (!empty($record['parent_id'])) {
@@ -1223,6 +1217,4 @@ class OrmSelectTest extends BaseTestCase
         // because there are records with is_active=false
         static::assertEmpty($records);
     }
-
-
 }

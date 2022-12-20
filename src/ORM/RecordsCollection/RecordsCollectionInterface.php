@@ -32,11 +32,13 @@ interface RecordsCollectionInterface extends \Countable, \ArrayAccess, \Iterator
      * all records.
      * This method addesses N+1 DB queries problem so that there
      * will be only 2 DB queries.
-     * @see SelectQueryBuilderInterface::columns() - $columnsToSelect
+     * @see SelectQueryBuilderInterface::columns() <- $columnsToSelect
+     * @see SelectQueryBuilderInterface::fromConfigsArray() <- $additionalConditionsAndOptions
      */
     public function injectHasManyRelationData(
         string $relationName,
-        array $columnsToSelect = ['*']
+        array $columnsToSelect = ['*'],
+        array $additionalConditionsAndOptions = []
     ): static;
 
     /**
