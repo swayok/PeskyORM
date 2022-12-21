@@ -270,8 +270,10 @@ class Record implements RecordInterface
         $this->assertNotReadOnlyMode();
         $columnName = is_string($column) ? $column : $column->getName();
         if (!isset($this->values[$columnName])) {
-            $this->values[$columnName] = $this->createValueContainer(
-                is_string($column) ? $this->getColumn($column) : $column
+            $this->replaceValueContainer(
+                $this->createValueContainer(
+                    is_string($column) ? $this->getColumn($column) : $column
+                )
             );
         }
         return $this->values[$columnName];
@@ -464,7 +466,9 @@ class Record implements RecordInterface
         $oldValueObject = $this->getValueContainer($column);
         if ($oldValueObject->hasValue()) {
             $column = $oldValueObject->getColumn();
-            $this->values[$column->getName()] = $this->createValueContainer($column);
+            $this->replaceValueContainer(
+                $this->createValueContainer($column)
+            );
             if ($column->isPrimaryKey()) {
                 $this->onPrimaryKeyChangeForRecordReceivedFromDb(
                     $oldValueObject->getValue()
@@ -625,7 +629,7 @@ class Record implements RecordInterface
                 $table,
                 $records,
                 $isFromDb,
-                $disableDbRecordDataValidation
+                $disableDbRecordDataValidation,
             ]
         );
     }
@@ -1255,10 +1259,14 @@ class Record implements RecordInterface
         bool $isUpdate
     ): void {
         $this->begin();
-        foreach ($dataSavedToDb as $column => $value) {
-            $column = $this->getColumn($column);
-            $valueContainer = $this->getValueContainer($column);
-            $column->afterSave($valueContainer, $isUpdate);
+        foreach ($dataSavedToDb as $columnName => $value) {
+            $column = $this->getColumn($columnName);
+            $this->replaceValueContainer(
+                $column->afterSave(
+                    $this->getValueContainer($column),
+                    $isUpdate
+                )
+            );
         }
         // Also run after save for virtual columns.
         // This will allow complex data processing like updating
@@ -1269,8 +1277,12 @@ class Record implements RecordInterface
         // records that were not saved to DB. Delayed files saving
         // makes it possible to use primary key value to make path to file.
         foreach ($this->getVirtualColumns() as $column) {
-            $valueContainer = $this->getValueContainer($column);
-            $column->afterSave($valueContainer, $isUpdate);
+            $this->replaceValueContainer(
+                $column->afterSave(
+                    $this->getValueContainer($column),
+                    $isUpdate
+                )
+            );
         }
         if (empty($this->valuesBackup)) {
             // needed to prevent infinite recursion caused by
@@ -1439,9 +1451,11 @@ class Record implements RecordInterface
             $table::commitTransaction();
         }
         foreach ($this->getColumns() as $column) {
-            $column->afterDelete(
-                $this->getValueContainer($column),
-                $deleteFiles
+            $this->replaceValueContainer(
+                $column->afterDelete(
+                    $this->getValueContainer($column),
+                    $deleteFiles
+                )
             );
         }
         // note: related objects delete must be managed only by database relations (foreign keys), not here

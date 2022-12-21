@@ -12,9 +12,10 @@ class TestColumnWithAfterSave extends StringColumn
     public function afterSave(
         RecordValueContainerInterface $valueContainer,
         bool $isUpdate
-    ): void {
+    ): RecordValueContainerInterface {
         if ($isUpdate) {
             throw new \UnexpectedValueException('login: update!');
         }
+        return $valueContainer;
     }
 }

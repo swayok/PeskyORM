@@ -198,7 +198,7 @@ interface TableColumnInterface
     public function afterSave(
         RecordValueContainerInterface $valueContainer,
         bool $isUpdate
-    ): void;
+    ): RecordValueContainerInterface;
 
     /**
      * Called after Record was deleted from DB.
@@ -215,5 +215,5 @@ interface TableColumnInterface
     public function afterDelete(
         RecordValueContainerInterface $valueContainer,
         bool $shouldDeleteFiles
-    ): void;
+    ): RecordValueContainerInterface;
 }

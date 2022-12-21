@@ -35,10 +35,11 @@ class TestVirtualColumnWithAfterSave extends VirtualTableColumnAbstract
     public function afterSave(
         RecordValueContainerInterface $valueContainer,
         bool $isUpdate,
-    ): void {
+    ): RecordValueContainerInterface {
         $payload = $valueContainer->pullPayload(static::AFTER_SAVE_PAYLOAD_KEY);
         if ($payload) {
             throw new \UnexpectedValueException(json_encode($payload));
         }
+        return $valueContainer;
     }
 }

@@ -196,15 +196,17 @@ abstract class TableColumnAbstract implements TableColumnInterface
 
     public function afterSave(
         RecordValueContainerInterface $valueContainer,
-        bool $isUpdate,
-    ): void {
+        bool $isUpdate
+    ): RecordValueContainerInterface {
         $valueContainer->pullPayload(static::AFTER_SAVE_PAYLOAD_KEY);
+        return $valueContainer;
     }
 
     public function afterDelete(
         RecordValueContainerInterface $valueContainer,
         bool $shouldDeleteFiles
-    ): void {
+    ): RecordValueContainerInterface {
+        return $valueContainer;
     }
 
     protected function getRecordInfoForException(

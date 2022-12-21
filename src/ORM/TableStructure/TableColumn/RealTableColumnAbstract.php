@@ -515,9 +515,13 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
         );
     }
 
-    protected function shouldStoreRawValueInValueContainer(): bool
+    /**
+     * @return bool|null
+     * @see RecordValueContainerInterface::setValue() $storeRawValue arg
+     */
+    protected function shouldStoreRawValueInValueContainer(): ?bool
     {
-        return true;
+        return null;
     }
 
     protected function assertValueContainerIsValid(

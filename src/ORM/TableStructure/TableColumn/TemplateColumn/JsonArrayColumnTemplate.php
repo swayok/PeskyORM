@@ -120,7 +120,7 @@ abstract class JsonArrayColumnTemplate extends RealTableColumnAbstract
         return json_encode($array, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     }
 
-    protected function shouldStoreRawValueInValueContainer(): bool
+    protected function shouldStoreRawValueInValueContainer(): ?bool
     {
         return false;
     }
