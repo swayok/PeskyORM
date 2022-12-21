@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace PeskyORM\Config\Connection;
 
-use JetBrains\PhpStorm\ArrayShape;
 use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Profiling\TraceablePDO;
 use PeskyORM\Utils\ArgumentValidators;
@@ -61,7 +60,8 @@ abstract class DbConnectionsFacade
     }
 
     /**
-     * Register new connection for adapter
+     * Register new connection for adapter.
+     * $connectionConfig closure signature: function(): DbConnectionConfigInterface
      * @see ServiceContainer::MYSQL for default adapter name for MySQL connections
      * @see ServiceContainer::POSTGRES for default adapter name for PostgreSQL connections
      * @see self::registerAdapter() for custom adapter name
@@ -69,11 +69,14 @@ abstract class DbConnectionsFacade
     public static function registerConnection(
         string $connectionName,
         string $adapterName,
-        DbConnectionConfigInterface $connectionConfig,
+        DbConnectionConfigInterface|\Closure $connectionConfig,
     ): void {
         ServiceContainer::getInstance()->bind(
             ServiceContainer::DB_CONNECTION . $connectionName,
             static function () use ($connectionConfig, $adapterName) {
+                if ($connectionConfig instanceof \Closure) {
+                    $connectionConfig = $connectionConfig();
+                }
                 return ServiceContainer::getInstance()->make(
                     ServiceContainer::DB_ADAPTER . $adapterName,
                     [
@@ -86,10 +89,6 @@ abstract class DbConnectionsFacade
         );
     }
 
-    #[ArrayShape([
-        'config' => DbConnectionConfigInterface::class,
-        'adapter_name' => 'string',
-    ])]
     /**
      * Required $connectionInfo keys:
      *      - 'driver' or 'adapter': 'mysql', 'pgsql', 'adapter name', ...
@@ -109,7 +108,7 @@ abstract class DbConnectionsFacade
     public static function createConnectionConfigFromArray(
         string $connectionName,
         array $connectionInfo,
-    ): array {
+    ): DbConnectionConfigInterface {
         if (empty($connectionInfo['driver']) && empty($connectionInfo['adapter'])) {
             throw new \InvalidArgumentException(
                 '$connectionInfo must contain a value for key \'driver\' or \'adapter\''
@@ -119,7 +118,7 @@ abstract class DbConnectionsFacade
             ? $connectionInfo['driver']
             : $connectionInfo['adapter'];
 
-        $connectionConfig = ServiceContainer::getInstance()->make(
+        return ServiceContainer::getInstance()->make(
             DbConnectionConfigInterface::class,
             [
                 $adapterName,
@@ -127,10 +126,6 @@ abstract class DbConnectionsFacade
                 $connectionName,
             ]
         );
-        return [
-            'config' => $connectionConfig,
-            'adapter_name' => $adapterName,
-        ];
     }
 
     /**
