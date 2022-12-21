@@ -20,7 +20,7 @@ use PeskyORM\Utils\PdoUtils;
 use PeskyORM\Utils\ServiceContainer;
 use PeskyORM\Utils\StringUtils;
 
-abstract class Table implements TableInterface, TableStructureInterface
+class Table implements TableInterface, TableStructureInterface
 {
     use DelegateTableStructureMethods;
 
@@ -40,7 +40,7 @@ abstract class Table implements TableInterface, TableStructureInterface
         return $container->make(static::class);
     }
 
-    protected function __construct(
+    public function __construct(
         TableStructureInterface $tableStructure,
         string $recordClass,
         ?string $tableAlias = null
@@ -63,7 +63,8 @@ abstract class Table implements TableInterface, TableStructureInterface
                 return ServiceContainer::getInstance()->make($recordClass);
             };
         }
-        $this->tableAlias = $tableAlias ?? StringUtils::toPascalCase($this->getTableName());
+        $this->tableAlias = $tableAlias
+            ?? StringUtils::toPascalCase($tableStructure->getTableName());
     }
 
     public function getTableStructure(): TableStructureInterface
