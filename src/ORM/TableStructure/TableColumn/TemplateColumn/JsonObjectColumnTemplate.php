@@ -121,6 +121,11 @@ abstract class JsonObjectColumnTemplate extends RealTableColumnAbstract
         return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     }
 
+    protected function shouldStoreRawValueInValueContainer(): bool
+    {
+        return false;
+    }
+
     protected function setValidatedValueToValueContainer(
         RecordValueContainerInterface $valueContainer,
         mixed $originalValue,
@@ -131,7 +136,7 @@ abstract class JsonObjectColumnTemplate extends RealTableColumnAbstract
             $originalValue,
             $this->normalizeValidatedValue($validatedValue, $isFromDb),
             $isFromDb,
-            false
+            $this->shouldStoreRawValueInValueContainer()
         );
         // if $validatedValue is array or can be converted - store it in
         // $valueContainer so that 'array' formatter won't need to decode json

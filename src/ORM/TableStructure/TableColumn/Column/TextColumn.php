@@ -22,4 +22,9 @@ class TextColumn extends StringColumnTemplate
     {
         return TableColumnDataType::TEXT;
     }
+
+    protected function shouldStoreRawValueInValueContainer(): bool
+    {
+        return false;
+    }
 }

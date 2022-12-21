@@ -510,8 +510,14 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
         $valueContainer->setValue(
             $originalValue,
             $this->normalizeValidatedValue($validatedValue, $isFromDb),
-            $isFromDb
+            $isFromDb,
+            $this->shouldStoreRawValueInValueContainer()
         );
+    }
+
+    protected function shouldStoreRawValueInValueContainer(): bool
+    {
+        return true;
     }
 
     protected function assertValueContainerIsValid(
