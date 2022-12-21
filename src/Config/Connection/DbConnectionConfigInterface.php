@@ -52,6 +52,15 @@ interface DbConnectionConfigInterface
     /**
      * Do some action on connect (set charset, default db schema, etc)
      */
-    public function onConnect(DbAdapterInterface $connection): DbConnectionConfigInterface;
-    
+    public function onConnect(DbAdapterInterface $connection): void;
+
+    /**
+     * Add some action to be performed when new PDO connection is being created.
+     * Signature: function(DbAdapterInterface $connection): void
+     */
+    public function addOnConnectCallback(
+        \Closure $onConnect,
+        string $uniqueName = null
+    ): static;
+
 }

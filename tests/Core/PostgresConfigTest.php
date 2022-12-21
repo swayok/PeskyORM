@@ -21,7 +21,7 @@ class PostgresConfigTest extends BaseTestCase
     public function testInvalidDbName2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('DB name argument cannot be empty');
+        $this->expectExceptionMessage('$dbName argument value cannot be empty.');
         /** @noinspection PhpStrictTypeCheckingInspection */
         new PostgresConfig('', 'test', 'test');
     }
@@ -62,7 +62,7 @@ class PostgresConfigTest extends BaseTestCase
     public function testInvalidDbUser2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("DB user argument cannot be empty");
+        $this->expectExceptionMessage('$user argument value cannot be empty');
         /** @noinspection PhpStrictTypeCheckingInspection */
         new PostgresConfig('test', '', 'test');
     }
@@ -103,7 +103,7 @@ class PostgresConfigTest extends BaseTestCase
     public function testInvalidDbPassword2(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("DB password argument cannot be empty");
+        $this->expectExceptionMessage('$password argument value cannot be empty.');
         new PostgresConfig('test', 'test', '');
     }
     
@@ -172,7 +172,7 @@ class PostgresConfigTest extends BaseTestCase
     public function testInvalidDbHost5(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('DB host argument cannot be empty');
+        $this->expectExceptionMessage('$dbHost argument value cannot be empty.');
         $config = new PostgresConfig('test', 'test', 'test');
         /** @noinspection PhpStrictTypeCheckingInspection */
         $config->setDbHost('');
@@ -181,7 +181,9 @@ class PostgresConfigTest extends BaseTestCase
     public function testInvalidDbPort1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("DB port argument must be a positive integer number or numeric string");
+        $this->expectExceptionMessage(
+            '$dbPort argument value (test) must be a positive integer'
+        );
         $config = new PostgresConfig('test', 'test', 'test');
         $config->setDbPort('test');
     }
@@ -208,7 +210,9 @@ class PostgresConfigTest extends BaseTestCase
     public function testInvalidDbPort4(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("DB port argument must be a positive integer number or numeric string");
+        $this->expectExceptionMessage(
+            '$dbPort argument value (123q) must be a positive integer'
+        );
         $config = new PostgresConfig('test', 'test', 'test');
         /** @noinspection PhpParamsInspection */
         /** @noinspection PhpStrictTypeCheckingInspection */
@@ -218,7 +222,9 @@ class PostgresConfigTest extends BaseTestCase
     public function testInvalidDbPort5(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("DB port argument must be a positive integer number or numeric string");
+        $this->expectExceptionMessage(
+            '$dbPort argument value (12 3) must be a positive integer'
+        );
         $config = new PostgresConfig('test', 'test', 'test');
         /** @noinspection PhpParamsInspection */
         /** @noinspection PhpStrictTypeCheckingInspection */
@@ -238,7 +244,9 @@ class PostgresConfigTest extends BaseTestCase
     public function testInvalidDbPort7(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('DB port argument must be a positive integer number or numeric string');
+        $this->expectExceptionMessage(
+            '$dbPort argument value (-123) must be a positive integer'
+        );
         $config = new PostgresConfig('test', 'test', 'test');
         /** @noinspection PhpParamsInspection */
         /** @noinspection PhpStrictTypeCheckingInspection */
@@ -248,7 +256,9 @@ class PostgresConfigTest extends BaseTestCase
     public function testInvalidDbPort8(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('DB port argument must be a positive integer number or numeric string');
+        $this->expectExceptionMessage(
+            '$dbPort argument value (-123) must be a positive integer'
+        );
         $config = new PostgresConfig('test', 'test', 'test');
         /** @noinspection PhpParamsInspection */
         /** @noinspection PhpStrictTypeCheckingInspection */
@@ -258,7 +268,7 @@ class PostgresConfigTest extends BaseTestCase
     public function testInvalidOptions(): void
     {
         $this->expectException(\TypeError::class);
-        $this->expectExceptionMessage("Argument #1 (\$options) must be of type array");
+        $this->expectExceptionMessage('Argument #1 ($options) must be of type array');
         $config = new PostgresConfig('test', 'test', 'test');
         /** @noinspection PhpParamsInspection */
         $config->setOptions(null);
@@ -364,7 +374,9 @@ class PostgresConfigTest extends BaseTestCase
     public function testInvalidDbPortFromArray(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage("DB port argument must be a positive integer number or numeric string");
+        $this->expectExceptionMessage(
+            '$dbPort argument value (test) must be a positive integer'
+        );
         PostgresConfig::fromArray([
             'database' => 'test',
             'username' => 'test',

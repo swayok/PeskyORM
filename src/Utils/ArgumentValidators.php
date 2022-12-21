@@ -130,11 +130,11 @@ abstract class ArgumentValidators
 
     public static function assertPositiveInteger(
         string $argName,
-        int $value,
+        int|string $value,
         bool $allowZero
     ): void {
         $minValue = $allowZero ? 0 : 1;
-        if ($value < $minValue) {
+        if (!is_numeric($value) || (int)$value < $minValue) {
             throw new \InvalidArgumentException(
                 "{$argName} argument value ({$value}) must be a positive integer"
                 . ($allowZero ? ' or 0' : '')

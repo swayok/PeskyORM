@@ -6,13 +6,10 @@ namespace PeskyORM\Config\Connection;
 
 use PDO;
 use PeskyORM\Adapter\DbAdapterInterface;
+use PeskyORM\Utils\ArgumentValidators;
 
-class PostgresConfig implements DbConnectionConfigInterface
+class PostgresConfig extends DbConnectionConfigAbstract
 {
-    protected string $dbName;
-    protected string $dbUser;
-    protected string $dbPassword;
-    protected ?string $configName = null;
     protected string $dbHost = 'localhost';
     protected string $dbPort = '5432';
     protected array $options = [
@@ -24,26 +21,31 @@ class PostgresConfig implements DbConnectionConfigInterface
     protected string $searchPath = 'public';
     protected string $defaultSchemaName = 'public';
     protected string $charset = 'UTF8';
-    protected ?string $timezone = null;
     protected array $sslConfigs = [];
-    
+
     /**
      * @throws \InvalidArgumentException
      * @noinspection DuplicatedCode
      */
-    public static function fromArray(array $config, ?string $name = null): PostgresConfig
+    public static function fromArray(array $config, ?string $name = null): static
     {
         $dbName = $config['database'] ?? null;
         $user = $config['username'] ?? null;
         $password = $config['password'] ?? null;
         if (empty($dbName)) {
-            throw new \InvalidArgumentException('$config argument must contain not empty \'database\' key value');
+            throw new \InvalidArgumentException(
+                '$config argument must contain not empty \'database\' key value'
+            );
         }
         if (empty($user)) {
-            throw new \InvalidArgumentException('$config argument must contain not empty \'username\' key value');
+            throw new \InvalidArgumentException(
+                '$config argument must contain not empty \'username\' key value'
+            );
         }
         if (empty($password)) {
-            throw new \InvalidArgumentException('$config argument must contain not empty \'password\' key value');
+            throw new \InvalidArgumentException(
+                '$config argument must contain not empty \'password\' key value'
+            );
         }
         $object = new static($dbName, $user, $password);
         if ($name) {
@@ -65,7 +67,9 @@ class PostgresConfig implements DbConnectionConfigInterface
             $object->setTimezone($config['timezone']);
         }
         if (!empty($config['charset']) || !empty($config['encoding'])) {
-            $object->setCharset(!empty($config['charset']) ? $config['charset'] : $config['encoding']);
+            $object->setCharset(
+                !empty($config['charset']) ? $config['charset'] : $config['encoding']
+            );
         }
         foreach (['sslmode', 'sslcert', 'sslkey', 'sslrootcert'] as $option) {
             if (isset($config[$option])) {
@@ -74,7 +78,7 @@ class PostgresConfig implements DbConnectionConfigInterface
         }
         return $object;
     }
-    
+
     /**
      * @throws \InvalidArgumentException
      * @noinspection DuplicatedCode
@@ -84,118 +88,36 @@ class PostgresConfig implements DbConnectionConfigInterface
         string $user,
         string $password
     ) {
-        if (empty($dbName)) {
-            throw new \InvalidArgumentException('DB name argument cannot be empty');
-        }
+        ArgumentValidators::assertNotEmpty('$dbName', $dbName);
+        ArgumentValidators::assertNotEmpty('$user', $user);
+        ArgumentValidators::assertNotEmpty('$password', $password);
         $this->dbName = $dbName;
-        
-        if (empty($user)) {
-            throw new \InvalidArgumentException('DB user argument cannot be empty');
-        }
         $this->dbUser = $user;
-        
-        if (empty($password)) {
-            throw new \InvalidArgumentException('DB password argument cannot be empty');
-        }
         $this->dbPassword = $password;
     }
-    
+
     /**
-     * Get PDO connection string (ex: pgsql:host=localhost;port=5432;dbname=testdb;user=bruce;password=mypass)
+     * Get PDO connection string
+     * Example: pgsql:host=localhost;port=5432;dbname=testdb;user=bruce;password=mypass
      * @return string
      */
     public function getPdoConnectionString(): string
     {
-        $dsn = 'pgsql:host=' . $this->dbHost . ';port=' . $this->dbPort . ';dbname=' . $this->dbName;
+        $dsn = 'pgsql:host=' . $this->dbHost
+            . ';port=' . $this->dbPort
+            . ';dbname=' . $this->dbName;
         foreach ($this->sslConfigs as $option => $value) {
             $dsn .= ";{$option}={$value}";
         }
         return $dsn;
     }
-    
-    public function getName(): string
-    {
-        return $this->configName ?: $this->dbName;
-    }
-    
-    public function setName(string $name): PostgresConfig
-    {
-        $this->configName = $name;
-        return $this;
-    }
-    
-    public function getUserName(): string
-    {
-        return $this->dbUser;
-    }
-    
-    public function getUserPassword(): string
-    {
-        return $this->dbPassword;
-    }
-    
-    public function getDbName(): string
-    {
-        return $this->dbName;
-    }
-    
-    /**
-     * @throws \InvalidArgumentException
-     */
-    public function setDbHost(string $dbHost): PostgresConfig
-    {
-        if (empty($dbHost)) {
-            throw new \InvalidArgumentException('DB host argument cannot be empty');
-        }
-        $this->dbHost = $dbHost;
-        return $this;
-    }
-    
-    public function getDbHost(): string
-    {
-        return $this->dbHost;
-    }
-    
-    /**
-     * @throws \InvalidArgumentException
-     */
-    public function setDbPort(int|string $dbPort): PostgresConfig
-    {
-        if (!is_numeric($dbPort) || !preg_match('%^\s*\d+\s*$%', (string)$dbPort)) {
-            throw new \InvalidArgumentException('DB port argument must be a positive integer number or numeric string');
-        }
-        $this->dbPort = trim((string)$dbPort);
-        return $this;
-    }
-    
-    public function getDbPort(): string
-    {
-        return $this->dbPort;
-    }
-    
-    /**
-     * Set options for PDO connection (key-value)
-     */
-    public function setOptions(array $options): PostgresConfig
-    {
-        $this->options = $options;
-        return $this;
-    }
-    
-    /**
-     * GET options for PDO connection
-     */
-    public function getOptions(): array
-    {
-        return $this->options;
-    }
-    
+
     public function getDefaultSchemaName(): string
     {
         return $this->defaultSchemaName;
     }
-    
-    public function setDefaultSchemaName(string|array $defaultSchemaName): PostgresConfig
+
+    public function setDefaultSchemaName(string|array $defaultSchemaName): static
     {
         if (is_array($defaultSchemaName)) {
             $this->defaultSchemaName = array_values($defaultSchemaName)[0];
@@ -203,37 +125,12 @@ class PostgresConfig implements DbConnectionConfigInterface
             $this->defaultSchemaName = $defaultSchemaName;
         }
         $this->searchPath = implode(',', (array)$defaultSchemaName);
-        return $this;
-    }
-    
-    /**
-     * @throws \InvalidArgumentException
-     */
-    public function setCharset(string $charset): PostgresConfig
-    {
-        if (empty($charset)) {
-            throw new \InvalidArgumentException('DB charset argument cannot be empty');
-        }
-        $this->charset = $charset;
-        return $this;
-    }
-    
-    public function setTimezone(?string $timezone): PostgresConfig
-    {
-        $this->timezone = $timezone;
-        return $this;
-    }
-    
-    /**
-     * Configure character set, search path and time zone (if provided)
-     */
-    public function onConnect(DbAdapterInterface $connection): PostgresConfig
-    {
-        $connection->setCharacterSet($this->charset);
-        $connection->setSearchPath($this->searchPath);
-        if (isset($this->timezone)) {
-            $connection->setTimezone($this->timezone);
-        }
+        $this->addOnConnectCallback(
+            function (DbAdapterInterface $connection) {
+                $connection->setSearchPath($this->searchPath);
+            },
+            'search_path'
+        );
         return $this;
     }
 }
