@@ -19,7 +19,7 @@ class PasswordColumn extends RealTableColumnAbstract implements PasswordColumnIn
     protected \Closure $passwordHasher;
     protected \Closure $passwordChecker;
 
-    public function __construct(string $name)
+    public function __construct(string $name = 'password')
     {
         parent::__construct($name);
         $this->setPasswordHasher(

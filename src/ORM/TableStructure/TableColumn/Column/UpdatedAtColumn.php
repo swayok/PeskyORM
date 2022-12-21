@@ -8,7 +8,7 @@ use PeskyORM\DbExpr;
 
 class UpdatedAtColumn extends TimestampColumn
 {
-    public function __construct(string $name)
+    public function __construct(string $name = 'updated_at')
     {
         parent::__construct($name);
         $this

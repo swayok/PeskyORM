@@ -32,6 +32,11 @@ class EmailColumn extends RealTableColumnAbstract implements
     use CanBePrimaryKey;
     use CannotHaveDefaultValue;
 
+    public function __construct(string $name = 'email')
+    {
+        parent::__construct($name);
+    }
+
     public function getDataType(): string
     {
         return TableColumnDataType::STRING;
