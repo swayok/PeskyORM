@@ -364,7 +364,7 @@ class ClassBuilder
             return $default ? 'true' : 'false';
         }
         // number
-        return $default;
+        return (string)$default;
     }
 
 }
