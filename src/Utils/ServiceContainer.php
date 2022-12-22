@@ -6,6 +6,7 @@ namespace PeskyORM\Utils;
 
 use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Adapter\Mysql;
+use PeskyORM\Adapter\Postgres;
 use PeskyORM\Config\Connection\DbConnectionConfigInterface;
 use PeskyORM\Config\Connection\DbConnectionsFacade;
 use PeskyORM\Config\Connection\MysqlConfig;
@@ -30,7 +31,6 @@ use PeskyORM\TableDescription\TableDescribers\MysqlTableDescriber;
 use PeskyORM\TableDescription\TableDescribers\PostgresTableDescriber;
 use PeskyORM\TableDescription\TableDescribers\TableDescriberInterface;
 use PeskyORM\TableDescription\TableDescriptionFacade;
-use PeskyORM\Tests\PeskyORMTest\Adapter\PostgresTesting;
 
 class ServiceContainer implements ServiceContainerInterface
 {
@@ -81,7 +81,7 @@ class ServiceContainer implements ServiceContainerInterface
         DbConnectionsFacade::registerConnectionConfigClass(static::MYSQL, MysqlConfig::class);
         TableDescriptionFacade::registerDescriber(static::MYSQL, MysqlTableDescriber::class);
         // PostgreSQL
-        DbConnectionsFacade::registerAdapter(static::POSTGRES, PostgresTesting::class);
+        DbConnectionsFacade::registerAdapter(static::POSTGRES, Postgres::class);
         DbConnectionsFacade::registerConnectionConfigClass(static::POSTGRES, PostgresConfig::class);
         TableDescriptionFacade::registerDescriber(static::POSTGRES, PostgresTableDescriber::class);
         // Common
