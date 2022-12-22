@@ -39,16 +39,22 @@ class ClassBuilder
     ) {
     }
 
-    public function buildTableClass(?string $parentClass = null): string
-    {
+    public function buildTableClass(
+        ?string $parentClass = null,
+        ?string $className = null,
+        ?string $tableStructureClassName = null,
+        ?string $recordClassName = null,
+        ?string $tableAlias = null
+    ): string {
         $namespace = $this->namespace;
         $parentClass = $this->getParentClass(static::TEMPLATE_TABLE, $parentClass);
-        $className = $this->getClassName(static::TEMPLATE_TABLE);
-        $tableStructureClassName = $this->getClassName(static::TEMPLATE_TABLE_STRUCTURE);
-        $recordClassName = $this->getClassName(static::TEMPLATE_RECORD);
-        $tableAlias = $this->getTableAlias();
+        $className = $className ?? $this->getClassName(static::TEMPLATE_TABLE);
+        $tableStructureClassName = $tableStructureClassName
+            ?? $this->getClassName(static::TEMPLATE_TABLE_STRUCTURE);
+        $recordClassName = $recordClassName ?? $this->getClassName(static::TEMPLATE_RECORD);
+        $tableAlias = $tableAlias ?? $this->getTableAlias();
         $includes = [
-            $parentClass
+            $parentClass,
         ];
         $parentClass = $this->extractClassNameFromFQN($parentClass);
 
@@ -62,16 +68,19 @@ class ClassBuilder
         }
     }
 
-    public function buildRecordClass(?string $parentClass = null): string
-    {
+    public function buildRecordClass(
+        ?string $parentClass = null,
+        ?string $className = null,
+        ?string $tableClassName = null
+    ): string {
         $namespace = $this->namespace;
         $parentClass = $this->getParentClass(static::TEMPLATE_RECORD, $parentClass);
-        $className = $this->getClassName(static::TEMPLATE_RECORD);
-        $tableClassName = $this->getClassName(static::TEMPLATE_TABLE);
+        $className = $className ?? $this->getClassName(static::TEMPLATE_RECORD);
+        $tableClassName = $tableClassName ?? $this->getClassName(static::TEMPLATE_TABLE);
         $properties = $this->getRecordProperties();
         $setters = $this->getRecordSetterMethods();
         $includes = [
-            $parentClass
+            $parentClass,
         ];
         $parentClass = $this->extractClassNameFromFQN($parentClass);
         foreach ($properties as $name => &$type) {
@@ -94,17 +103,19 @@ class ClassBuilder
         }
     }
 
-    public function buildStructureClass(?string $parentClass = null): string
-    {
+    public function buildStructureClass(
+        ?string $parentClass = null,
+        ?string $className = null
+    ): string {
         $namespace = $this->namespace;
         $parentClass = $this->getParentClass(static::TEMPLATE_TABLE_STRUCTURE, $parentClass);
         $parentClassName = $this->extractClassNameFromFQN($parentClass);
-        $className = $this->getClassName(static::TEMPLATE_TABLE_STRUCTURE);
+        $className = $className ?? $this->getClassName(static::TEMPLATE_TABLE_STRUCTURE);
         $tableName = $this->tableDescription->getTableName();
         $tableSchema = $this->tableDescription->getDbSchema();
         $includes = [
             $parentClass,
-            DbExpr::class
+            DbExpr::class,
         ];
         $parentClass = $this->extractClassNameFromFQN($parentClass);
         $columns = $this->getColumnsDetailsForStructure();
@@ -151,7 +162,7 @@ class ClassBuilder
         };
     }
 
-    protected function getClassName(string $type): string
+    public function getClassName(string $type): string
     {
         $tableName = $this->tableDescription->getTableName();
         return match ($type) {

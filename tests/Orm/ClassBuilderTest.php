@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace PeskyORM\Tests\Orm;
 
+use PeskyORM\ORM\ClassBuilder\ClassBuilder;
 use PeskyORM\ORM\TableStructure\TableColumnFactory;
 use PeskyORM\TableDescription\TableDescriptionFacade;
 use PeskyORM\Tests\PeskyORMTest\BaseTestCase;
-use PeskyORM\Tests\PeskyORMTest\ClassBuilderTestingClasses\TestingClassBuilder;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
 use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure;
 use PeskyORM\Tests\PeskyORMTest\TestingApp;
@@ -16,13 +16,13 @@ use PeskyORM\Utils\ServiceContainer;
 
 class ClassBuilderTest extends BaseTestCase
 {
-    protected function getBuilder(string $tableName = 'admins'): TestingClassBuilder
+    protected function getBuilder(string $tableName = 'admins'): ClassBuilder
     {
         $tableDescription = TableDescriptionFacade::describeTable(
             TestingApp::getPgsqlConnection(),
             $tableName
         );
-        return new TestingClassBuilder(
+        return new ClassBuilder(
             $tableDescription,
             ServiceContainer::getInstance()->make(TableColumnFactory::class),
             'PeskyORM\\Tests\\PeskyORMTest\\ClassBuilderTestingClasses',
@@ -36,8 +36,12 @@ class ClassBuilderTest extends BaseTestCase
         $expected = file_get_contents(
             __DIR__ . '/../PeskyORMTest/ClassBuilderTestingClasses/BuilderTesting1AdminsTable.php'
         );
-        $builder->setClassesPrefix('BuilderTesting1');
-        $actual = $builder->buildTableClass();
+        $actual = $builder->buildTableClass(
+            null,
+            'BuilderTesting1AdminsTable',
+            'BuilderTesting1AdminsTableStructure',
+            'BuilderTesting1Admin',
+        );
         static::assertEquals(
             $this->cleanFileContents($expected),
             $this->cleanFileContents($actual),
@@ -46,8 +50,12 @@ class ClassBuilderTest extends BaseTestCase
         $expected = file_get_contents(
             __DIR__ . '/../PeskyORMTest/ClassBuilderTestingClasses/BuilderTesting2AdminsTable.php'
         );
-        $builder->setClassesPrefix('BuilderTesting2');
-        $actual = $builder->buildTableClass(TestingBaseTable::class);
+        $actual = $builder->buildTableClass(
+            TestingBaseTable::class,
+            'BuilderTesting2AdminsTable',
+            'BuilderTesting2AdminsTableStructure',
+            'BuilderTesting2Admin',
+        );
         static::assertEquals(
             $this->cleanFileContents($expected),
             $this->cleanFileContents($actual),
@@ -62,8 +70,11 @@ class ClassBuilderTest extends BaseTestCase
         $expected = file_get_contents(
             __DIR__ . '/../PeskyORMTest/ClassBuilderTestingClasses/BuilderTesting1Admin.php'
         );
-        $builder->setClassesPrefix('BuilderTesting1');
-        $actual = $builder->buildRecordClass();
+        $actual = $builder->buildRecordClass(
+            null,
+            'BuilderTesting1Admin',
+            'BuilderTesting1AdminsTable',
+        );
         static::assertEquals(
             $this->cleanFileContents($expected),
             $this->cleanFileContents($actual),
@@ -72,8 +83,11 @@ class ClassBuilderTest extends BaseTestCase
         $expected = file_get_contents(
             __DIR__ . '/../PeskyORMTest/ClassBuilderTestingClasses/BuilderTesting2Admin.php'
         );
-        $builder->setClassesPrefix('BuilderTesting2');
-        $actual = $builder->buildRecordClass(TestingAdmin::class);
+        $actual = $builder->buildRecordClass(
+            TestingAdmin::class,
+            'BuilderTesting2Admin',
+            'BuilderTesting2AdminsTable',
+        );
         static::assertEquals(
             $this->cleanFileContents($expected),
             $this->cleanFileContents($actual),
@@ -88,8 +102,10 @@ class ClassBuilderTest extends BaseTestCase
         $expected = file_get_contents(
             __DIR__ . '/../PeskyORMTest/ClassBuilderTestingClasses/BuilderTesting1AdminsTableStructure.php'
         );
-        $builder->setClassesPrefix('BuilderTesting1');
-        $actual = $builder->buildStructureClass();
+        $actual = $builder->buildStructureClass(
+            null,
+            'BuilderTesting1AdminsTableStructure',
+        );
         static::assertEquals(
             $this->cleanFileContents($expected),
             $this->cleanFileContents($actual),
@@ -98,8 +114,10 @@ class ClassBuilderTest extends BaseTestCase
         $expected = file_get_contents(
             __DIR__ . '/../PeskyORMTest/ClassBuilderTestingClasses/BuilderTesting2AdminsTableStructure.php'
         );
-        $builder->setClassesPrefix('BuilderTesting2');
-        $actual = $builder->buildStructureClass(TestingAdminsTableStructure::class);
+        $actual = $builder->buildStructureClass(
+            TestingAdminsTableStructure::class,
+            'BuilderTesting2AdminsTableStructure',
+        );
         static::assertEquals(
             $this->cleanFileContents($expected),
             $this->cleanFileContents($actual),
