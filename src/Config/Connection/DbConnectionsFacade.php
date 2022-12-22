@@ -8,6 +8,7 @@ use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Profiling\TraceablePDO;
 use PeskyORM\Utils\ArgumentValidators;
 use PeskyORM\Utils\ServiceContainer;
+use Psr\Container\ContainerInterface;
 
 abstract class DbConnectionsFacade
 {
@@ -27,9 +28,12 @@ abstract class DbConnectionsFacade
             $adapterClass,
             DbAdapterInterface::class
         );
+        $reflector = new \ReflectionClass($adapterClass);
         ServiceContainer::getInstance()->bind(
             ServiceContainer::DB_ADAPTER . $adapterName,
-            $adapterClass,
+            function (ContainerInterface $container, array $args = []) use ($reflector) {
+                return $reflector->newInstanceArgs($args);
+            },
             false
         );
     }
@@ -51,7 +55,7 @@ abstract class DbConnectionsFacade
             DbConnectionConfigInterface::class
         );
         ServiceContainer::getInstance()->bind(
-            ServiceContainer::DB_CONNECTION_CONFIG . $adapterName,
+            ServiceContainer::DB_CONNECTION_CONFIG_CLASS . $adapterName,
             function () use ($connectionConfigClass) {
                 return $connectionConfigClass;
             },
@@ -73,11 +77,14 @@ abstract class DbConnectionsFacade
     ): void {
         ServiceContainer::getInstance()->bind(
             ServiceContainer::DB_CONNECTION . $connectionName,
-            static function () use ($connectionConfig, $adapterName) {
+            static function (
+                ContainerInterface $container,
+                array $args = []
+            ) use ($connectionConfig, $adapterName) {
                 if ($connectionConfig instanceof \Closure) {
                     $connectionConfig = $connectionConfig();
                 }
-                return ServiceContainer::getInstance()->make(
+                return $container->make(
                     ServiceContainer::DB_ADAPTER . $adapterName,
                     [
                         $connectionConfig,
@@ -119,7 +126,7 @@ abstract class DbConnectionsFacade
             : $connectionInfo['adapter'];
 
         return ServiceContainer::getInstance()->make(
-            DbConnectionConfigInterface::class,
+            ServiceContainer::DB_CONNECTION_CONFIG_FACTORY,
             [
                 $adapterName,
                 $connectionInfo,
@@ -146,7 +153,7 @@ abstract class DbConnectionsFacade
     public static function getConnection(string $connectionName): DbAdapterInterface
     {
         return ServiceContainer::getInstance()
-            ->make(DbAdapterInterface::class, [$connectionName]);
+            ->make(ServiceContainer::DB_CONNECTION . $connectionName);
     }
 
     public static function startProfilingForConnection(DbAdapterInterface $connection): void

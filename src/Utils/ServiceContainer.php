@@ -36,7 +36,8 @@ use Psr\Container\ContainerInterface;
 class ServiceContainer implements ServiceContainerInterface
 {
     public const DB_ADAPTER = 'peskyorm.db_adapter.';
-    public const DB_CONNECTION_CONFIG = 'peskyorm.db_config.';
+    public const DB_CONNECTION_CONFIG_CLASS = 'peskyorm.db_config.';
+    public const DB_CONNECTION_CONFIG_FACTORY = 'peskyorm.db_config_factory';
     public const DB_CONNECTION = 'peskyorm.db_connection.';
     public const TABLE_DESCRIBER = 'peskyorm.table_describer.';
 
@@ -89,7 +90,7 @@ class ServiceContainer implements ServiceContainerInterface
         $container
             // DB connection config creator
             ->bind(
-                DbConnectionConfigInterface::class,
+                static::DB_CONNECTION_CONFIG_FACTORY,
                 static function (
                     ContainerInterface $container,
                     array $args = []
@@ -97,23 +98,14 @@ class ServiceContainer implements ServiceContainerInterface
                     [$dbEngineName, $configs] = $args;
                     $name = $args[2] ?? null;
                     /** @var DbConnectionConfigInterface $configClass */
-                    $configClass = $container->make(static::DB_CONNECTION_CONFIG . $dbEngineName);
+                    $configClass = $container->make(
+                        static::DB_CONNECTION_CONFIG_CLASS . $dbEngineName
+                    );
                     return $configClass::fromArray($configs, $name);
                 },
                 false
             )
             // DB connection getter
-            ->bind(
-                DbAdapterInterface::class,
-                static function (
-                    ContainerInterface $container,
-                    array $args = []
-                ): DbAdapterInterface {
-                    return $container->make(static::DB_CONNECTION . $args[0] ?? 'default');
-                },
-                false
-            )
-            // DB table describer creator
             ->bind(
                 TableDescriberInterface::class,
                 static function (
@@ -121,7 +113,7 @@ class ServiceContainer implements ServiceContainerInterface
                     array $args = []
                 ): TableDescriberInterface {
                     /** @var DbAdapterInterface $adapter */
-                    $adapter = $args[0];
+                    $adapter = $args[0] ?? $container->make(static::DB_CONNECTION . 'default');
                     return $container->make(
                         static::TABLE_DESCRIBER . $adapter->getName(),
                         [$adapter]
