@@ -31,6 +31,7 @@ use PeskyORM\TableDescription\TableDescribers\MysqlTableDescriber;
 use PeskyORM\TableDescription\TableDescribers\PostgresTableDescriber;
 use PeskyORM\TableDescription\TableDescribers\TableDescriberInterface;
 use PeskyORM\TableDescription\TableDescriptionFacade;
+use Psr\Container\ContainerInterface;
 
 class ServiceContainer implements ServiceContainerInterface
 {
@@ -90,10 +91,11 @@ class ServiceContainer implements ServiceContainerInterface
             ->bind(
                 DbConnectionConfigInterface::class,
                 static function (
-                    string $dbEngineName,
-                    array $configs,
-                    ?string $name = null
-                ) use ($container): DbConnectionConfigInterface {
+                    ContainerInterface $container,
+                    array $args = []
+                ): DbConnectionConfigInterface {
+                    [$dbEngineName, $configs] = $args;
+                    $name = $args[2] ?? null;
                     /** @var DbConnectionConfigInterface $configClass */
                     $configClass = $container->make(static::DB_CONNECTION_CONFIG . $dbEngineName);
                     return $configClass::fromArray($configs, $name);
@@ -104,9 +106,10 @@ class ServiceContainer implements ServiceContainerInterface
             ->bind(
                 DbAdapterInterface::class,
                 static function (
-                    string $connectionName = 'default'
-                ) use ($container): DbAdapterInterface {
-                    return $container->make(static::DB_CONNECTION . $connectionName);
+                    ContainerInterface $container,
+                    array $args = []
+                ): DbAdapterInterface {
+                    return $container->make(static::DB_CONNECTION . $args[0] ?? 'default');
                 },
                 false
             )
@@ -114,8 +117,11 @@ class ServiceContainer implements ServiceContainerInterface
             ->bind(
                 TableDescriberInterface::class,
                 static function (
-                    DbAdapterInterface $adapter
-                ) use ($container): TableDescriberInterface {
+                    ContainerInterface $container,
+                    array $args = []
+                ): TableDescriberInterface {
+                    /** @var DbAdapterInterface $adapter */
+                    $adapter = $args[0];
                     return $container->make(
                         static::TABLE_DESCRIBER . $adapter->getName(),
                         [$adapter]
@@ -243,7 +249,7 @@ class ServiceContainer implements ServiceContainerInterface
         }
 
         if ($concrete instanceof \Closure) {
-            $object = call_user_func_array($concrete, $parameters);
+            $object = $concrete($this, $parameters);
             if ($isSingleton) {
                 $this->instances[$abstract] = $object;
             }
