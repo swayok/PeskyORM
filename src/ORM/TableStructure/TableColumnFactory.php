@@ -41,7 +41,7 @@ class TableColumnFactory implements TableColumnFactoryInterface
         ColumnDescriptionDataType::TIMESTAMP_WITH_TZ => TimestampWithTimezoneColumn::class,
         ColumnDescriptionDataType::DATE => DateColumn::class,
         ColumnDescriptionDataType::TIME => TimeColumn::class,
-        ColumnDescriptionDataType::TIME_TZ => TimeWithTimezoneColumn::class,
+        ColumnDescriptionDataType::TIME_WITH_TZ => TimeWithTimezoneColumn::class,
         ColumnDescriptionDataType::BLOB => BlobColumn::class,
     ];
 
@@ -53,7 +53,7 @@ class TableColumnFactory implements TableColumnFactoryInterface
     ];
 
     protected array $timezoneTypes = [
-        ColumnDescriptionDataType::TIME_TZ,
+        ColumnDescriptionDataType::TIME_WITH_TZ,
         ColumnDescriptionDataType::TIMESTAMP_WITH_TZ,
     ];
 

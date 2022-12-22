@@ -45,7 +45,7 @@ class PostgresTableDescriber implements TableDescriberInterface
         'timestamp' => ColumnDescriptionDataType::TIMESTAMP,
         'timestamptz' => ColumnDescriptionDataType::TIMESTAMP_WITH_TZ,
         'interval' => ColumnDescriptionDataType::STRING,
-        'timetz' => ColumnDescriptionDataType::TIME_TZ,
+        'timetz' => ColumnDescriptionDataType::TIME_WITH_TZ,
     ];
 
     public function __construct(

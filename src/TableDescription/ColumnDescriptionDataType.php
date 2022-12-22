@@ -17,6 +17,6 @@ abstract class ColumnDescriptionDataType
     public const TIMESTAMP_WITH_TZ = 'timestamp_tz';
     public const DATE = 'date';
     public const TIME = 'time';
-    public const TIME_TZ = 'time_tz';
+    public const TIME_WITH_TZ = 'time_tz';
     public const BLOB = 'blob';
 }

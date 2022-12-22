@@ -28,7 +28,7 @@ class ClassBuilder
     public const TEMPLATE_RECORD = 'record';
 
     protected array $timezoneTypes = [
-        ColumnDescriptionDataType::TIME_TZ,
+        ColumnDescriptionDataType::TIME_WITH_TZ,
         ColumnDescriptionDataType::TIMESTAMP_WITH_TZ,
     ];
 
@@ -196,7 +196,7 @@ class ClassBuilder
             ColumnDescriptionDataType::TIMESTAMP_WITH_TZ,
             ColumnDescriptionDataType::DATE,
             ColumnDescriptionDataType::TIME,
-            ColumnDescriptionDataType::TIME_TZ,
+            ColumnDescriptionDataType::TIME_WITH_TZ,
         ];
         foreach ($this->tableDescription->getColumns() as $columnDescription) {
             if (in_array($columnDescription->getOrmType(), $types, true)) {
