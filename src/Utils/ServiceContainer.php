@@ -36,10 +36,10 @@ use Psr\Container\ContainerInterface;
 class ServiceContainer implements ServiceContainerInterface
 {
     public const DB_ADAPTER = 'peskyorm.db_adapter.';
-    public const DB_CONNECTION_CONFIG_CLASS = 'peskyorm.db_config.';
+    public const DB_CONNECTION_CONFIG_CLASS = 'peskyorm.db_config_class.';
     public const DB_CONNECTION_CONFIG_FACTORY = 'peskyorm.db_config_factory';
     public const DB_CONNECTION = 'peskyorm.db_connection.';
-    public const TABLE_DESCRIBER = 'peskyorm.table_describer.';
+    public const TABLE_DESCRIBER_CLASS = 'peskyorm.table_describer_class.';
 
     public const MYSQL = 'mysql';
     public const POSTGRES = 'pgsql';
@@ -81,11 +81,11 @@ class ServiceContainer implements ServiceContainerInterface
         // MySQL
         DbConnectionsFacade::registerAdapter(static::MYSQL, Mysql::class);
         DbConnectionsFacade::registerConnectionConfigClass(static::MYSQL, MysqlConfig::class);
-        TableDescriptionFacade::registerDescriber(static::MYSQL, MysqlTableDescriber::class);
+        TableDescriptionFacade::registerDescriberClass(static::MYSQL, MysqlTableDescriber::class);
         // PostgreSQL
         DbConnectionsFacade::registerAdapter(static::POSTGRES, Postgres::class);
         DbConnectionsFacade::registerConnectionConfigClass(static::POSTGRES, PostgresConfig::class);
-        TableDescriptionFacade::registerDescriber(static::POSTGRES, PostgresTableDescriber::class);
+        TableDescriptionFacade::registerDescriberClass(static::POSTGRES, PostgresTableDescriber::class);
         // Common
         $container
             // DB connection config creator
@@ -114,10 +114,9 @@ class ServiceContainer implements ServiceContainerInterface
                 ): TableDescriberInterface {
                     /** @var DbAdapterInterface $adapter */
                     $adapter = $args[0] ?? $container->make(static::DB_CONNECTION . 'default');
-                    return $container->make(
-                        static::TABLE_DESCRIBER . $adapter->getName(),
-                        [$adapter]
-                    );
+                    /** @var TableDescriberInterface $class */
+                    $class = $container->make(static::TABLE_DESCRIBER_CLASS . $adapter->getName());
+                    return new $class($adapter);
                 },
                 false
             )

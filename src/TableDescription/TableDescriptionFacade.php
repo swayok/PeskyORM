@@ -11,7 +11,7 @@ use PeskyORM\Utils\ServiceContainer;
 
 abstract class TableDescriptionFacade
 {
-    public static function registerDescriber(
+    public static function registerDescriberClass(
         string $dbAdapterName,
         string $describerClass
     ): void {
@@ -21,8 +21,10 @@ abstract class TableDescriptionFacade
             TableDescriberInterface::class
         );
         ServiceContainer::getInstance()->bind(
-            ServiceContainer::TABLE_DESCRIBER . $dbAdapterName,
-            $describerClass,
+            ServiceContainer::TABLE_DESCRIBER_CLASS . $dbAdapterName,
+            function () use ($describerClass) {
+                return $describerClass;
+            },
             false
         );
     }

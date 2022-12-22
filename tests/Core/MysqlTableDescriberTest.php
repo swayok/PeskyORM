@@ -43,7 +43,7 @@ class MysqlTableDescriberTest extends PostgresTableDescriberTest
             new PostgresConfig('test', 'test', 'test'),
             'pgsql'
         );
-        TableDescriptionFacade::registerDescriber(
+        TableDescriptionFacade::registerDescriberClass(
             $otherAdapter->getName(),
             PostgresTableDescriber::class
         );

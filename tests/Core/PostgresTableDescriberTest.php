@@ -34,8 +34,8 @@ class PostgresTableDescriberTest extends BaseTestCase
     {
         $this->expectException(ServiceContainerException::class);
         $this->expectExceptionMessage(
-            'Concrete class [peskyorm.table_describer.other]'
-            . ' for abstract [peskyorm.table_describer.other] does not exist'
+            'Concrete class [peskyorm.table_describer_class.other]'
+            . ' for abstract [peskyorm.table_describer_class.other] does not exist'
         );
         $adapter = new OtherAdapterTesting2(
             new MysqlConfig('test', 'test', 'test'),
@@ -62,7 +62,7 @@ class PostgresTableDescriberTest extends BaseTestCase
             new PostgresConfig('test', 'test', 'test'),
             'other'
         );
-        TableDescriptionFacade::registerDescriber(
+        TableDescriptionFacade::registerDescriberClass(
             $otherAdapter->getName(),
             MysqlTableDescriber::class
         );
