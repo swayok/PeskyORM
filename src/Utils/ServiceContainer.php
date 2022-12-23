@@ -61,9 +61,13 @@ class ServiceContainer implements ServiceContainerInterface
 
     /**
      * Use this method to replace service container by your own.
-     * You can make an adapter/proxy class that implements ServiceContainerInterface
-     * to use any service container from any framework.
-     * Use $container = null to use this class instead of replaced one or reset container state
+     * You can make an adapter/proxy class that implements ServiceContainerInterface.
+     * Note that service containers with dependency injection functionality might not be
+     * compatible because they tend to ignore arguments passed to make() and instead try to
+     * instantiate every single class used in constructor arguments. This breaks everything.
+     * If you cannot disable dependency injection - then just use this container and don't
+     * waste you time trying to make adapter between containers.
+     * Use $container = null to use this class instead of replaced one or reset container state.
      */
     public static function replaceContainer(?ServiceContainerInterface $container): void
     {
@@ -92,7 +96,7 @@ class ServiceContainer implements ServiceContainerInterface
             ->bind(
                 static::DB_CONNECTION_CONFIG_FACTORY,
                 static function (
-                    ContainerInterface $container,
+                    ServiceContainerInterface $container,
                     array $args = []
                 ): DbConnectionConfigInterface {
                     [$dbEngineName, $configs] = $args;
@@ -109,7 +113,7 @@ class ServiceContainer implements ServiceContainerInterface
             ->bind(
                 TableDescriberInterface::class,
                 static function (
-                    ContainerInterface $container,
+                    ServiceContainerInterface $container,
                     array $args = []
                 ): TableDescriberInterface {
                     /** @var DbAdapterInterface $adapter */
