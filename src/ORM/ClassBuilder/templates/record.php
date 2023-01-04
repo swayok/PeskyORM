@@ -35,7 +35,7 @@ use <?php echo $includeClass ?>;
  */
 class <?php echo $className ?> extends <?php echo $parentClass . "\n" ?>
 {
-    protected function __construct()
+    public function __construct()
     {
         parent::__construct(<?php echo $tableClassName ?>::getInstance());
     }

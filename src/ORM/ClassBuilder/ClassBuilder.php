@@ -195,7 +195,10 @@ class ClassBuilder
     {
         $ret = [];
         foreach ($this->tableDescription->getColumns() as $columnDescription) {
-            $ret[] = 'set' . StringUtils::toPascalCase($columnDescription->getName());
+            $column = $this->columnFactory->createFromDescription($columnDescription);
+            if (!$column->isReadonly() && !$column->isAutoUpdatingValues()) {
+                $ret[] = 'set' . StringUtils::toPascalCase($columnDescription->getName());
+            }
         }
         return $ret;
     }
@@ -364,7 +367,7 @@ class ClassBuilder
             return $default ? 'true' : 'false';
         }
         // number
-        return $default;
+        return (string)$default;
     }
 
 }

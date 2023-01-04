@@ -53,7 +53,7 @@ use PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdmin;
  */
 class BuilderTesting2Admin extends TestingAdmin
 {
-    protected function __construct()
+    public function __construct()
     {
         parent::__construct(BuilderTesting2AdminsTable::getInstance());
     }

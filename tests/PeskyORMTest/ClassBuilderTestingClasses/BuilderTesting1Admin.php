@@ -53,7 +53,7 @@ use PeskyORM\ORM\Record\Record;
  */
 class BuilderTesting1Admin extends Record
 {
-    protected function __construct()
+    public function __construct()
     {
         parent::__construct(BuilderTesting1AdminsTable::getInstance());
     }

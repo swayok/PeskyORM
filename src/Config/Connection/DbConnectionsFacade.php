@@ -8,7 +8,7 @@ use PeskyORM\Adapter\DbAdapterInterface;
 use PeskyORM\Profiling\TraceablePDO;
 use PeskyORM\Utils\ArgumentValidators;
 use PeskyORM\Utils\ServiceContainer;
-use Psr\Container\ContainerInterface;
+use PeskyORM\Utils\ServiceContainerInterface;
 
 abstract class DbConnectionsFacade
 {
@@ -31,7 +31,10 @@ abstract class DbConnectionsFacade
         $reflector = new \ReflectionClass($adapterClass);
         ServiceContainer::getInstance()->bind(
             ServiceContainer::DB_ADAPTER . $adapterName,
-            function (ContainerInterface $container, array $args = []) use ($reflector) {
+            function (
+                ServiceContainerInterface $container,
+                array $args = []
+            ) use ($reflector) {
                 return $reflector->newInstanceArgs($args);
             },
             false
@@ -78,8 +81,7 @@ abstract class DbConnectionsFacade
         ServiceContainer::getInstance()->bind(
             ServiceContainer::DB_CONNECTION . $connectionName,
             static function (
-                ContainerInterface $container,
-                array $args = []
+                ServiceContainerInterface $container,
             ) use ($connectionConfig, $adapterName) {
                 if ($connectionConfig instanceof \Closure) {
                     $connectionConfig = $connectionConfig();
