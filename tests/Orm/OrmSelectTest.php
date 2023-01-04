@@ -95,7 +95,7 @@ class OrmSelectTest extends BaseTestCase
         static::assertEquals($expectedIds, $data);
         $data = $dbSelect->fetchAssoc('id', 'login');
         static::assertEquals($expectedAssoc, $data);
-        $sum = $dbSelect->fetchValue(DbExpr::create('SUM(`id`)'));
+        $sum = $dbSelect->fetchValue(new DbExpr('SUM(`id`)'));
         static::assertEquals(array_sum($expectedIds), $sum);
 
         // via static
@@ -174,7 +174,7 @@ class OrmSelectTest extends BaseTestCase
         $this->expectException(\UnexpectedValueException::class);
         $this->expectExceptionMessage("SELECT: Column with name [asdasdqdasd] not found in PeskyORM\Tests\PeskyORMTest\TestingAdmins\TestingAdminsTableStructure");
         static::getNewSelect()
-            ->columns(['sum' => DbExpr::create('SUM(`Admins`.`asdasdqdasd`)')])
+            ->columns(['sum' => new DbExpr('SUM(`Admins`.`asdasdqdasd`)')])
             ->getQuery();
     }
 
@@ -299,21 +299,28 @@ class OrmSelectTest extends BaseTestCase
             )
         );
         static::assertEquals(
-            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", (SUM("id")) FROM "admins" AS "tbl_Admins_0"',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", SUM("id") FROM "admins" AS "tbl_Admins_0"',
             rtrim(
-                static::getNewSelect()->columns(['id', DbExpr::create('SUM(`id`)')])->getQuery()
+                static::getNewSelect()->columns(['id', new DbExpr('SUM(`id`)')])->getQuery()
             )
         );
         static::assertEquals(
-            'SELECT "tbl_Admins_0"."id" AS "col_Admins__not_id_0", (SUM("id")) AS "col_Admins__sum_1" FROM "admins" AS "tbl_Admins_0"',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__not_id_0", SUM("id") AS "col_Admins__sum_1" FROM "admins" AS "tbl_Admins_0"',
             rtrim(
-                static::getNewSelect()->columns(['not_id' => 'id', 'sum' => DbExpr::create('SUM(`id`)')])->getQuery()
+                static::getNewSelect()->columns(['not_id' => 'id', 'sum' => new DbExpr('SUM(`id`)')])->getQuery()
             )
         );
         static::assertEquals(
-            'SELECT ' . $colsInSelect . ', (SUM("id")) AS "col_Admins__sum_' . $colsCountInSelect . '" FROM "admins" AS "tbl_Admins_0"',
+            'SELECT ' . $colsInSelect . ', SUM("id") AS "col_Admins__sum_' . $colsCountInSelect . '" FROM "admins" AS "tbl_Admins_0"',
             rtrim(
-                static::getNewSelect()->columns(['*', 'sum' => DbExpr::create('SUM(`id`)')])->getQuery()
+                static::getNewSelect()->columns(['*', 'sum' => new DbExpr('SUM(`id`)')])->getQuery()
+            )
+        );
+
+        static::assertEquals(
+            'SELECT ' . $colsInSelect . ', SUM("id") AS "sum" FROM "admins" AS "tbl_Admins_0"',
+            rtrim(
+                static::getNewSelect()->columns(['*', new DbExpr('SUM(`id`) AS `sum`')])->getQuery()
             )
         );
     }
@@ -634,8 +641,8 @@ class OrmSelectTest extends BaseTestCase
             'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0" FROM "admins" AS "tbl_Admins_0" WHERE (SUM("id") > \'1\') HAVING (SUM("id") > \'2\')',
             static::getNewSelect()
                 ->columns('id')
-                ->where([DbExpr::create('SUM(`id`) > ``1``')])
-                ->having([DbExpr::create('SUM(`id`) > ``2``')])
+                ->where([new DbExpr('SUM(`id`) > ``1``')])
+                ->having([new DbExpr('SUM(`id`) > ``2``')])
                 ->getQuery()
         );
         // test relations usage
@@ -824,7 +831,7 @@ class OrmSelectTest extends BaseTestCase
             self::getNewSelect(),
             'validateColumnInfo',
             [
-                'name' => DbExpr::create('`Parent`.`id` + `Parent`.`qqq`'),
+                'name' => new DbExpr('`Parent`.`id` + `Parent`.`qqq`'),
                 'join_name' => null,
                 'alias' => null,
                 'type_cast' => null,
@@ -857,7 +864,7 @@ class OrmSelectTest extends BaseTestCase
         // no exceptions should be thrown
         $select = self::getNewSelect();
         $info = [
-            'name' => DbExpr::create('`there is no possibility to validate this =(` + Sum(`Parent`.`id` + `Parent`.`parent_id`)'),
+            'name' => new DbExpr('`there is no possibility to validate this =(` + Sum(`Parent`.`id` + `Parent`.`parent_id`)'),
             'join_name' => null,
             'alias' => null,
             'type_cast' => null,

@@ -206,8 +206,7 @@ class OrmSelect extends SelectQueryBuilderAbstract implements OrmSelectQueryBuil
     protected function normalizeJoinDataForRecord(
         NormalJoinConfigInterface $joinConfig,
         array $data
-    ): array
-    {
+    ): array {
         $data = parent::normalizeJoinDataForRecord($joinConfig, $data);
         if ($joinConfig instanceof OrmJoinConfigInterface) {
             $pkName = $joinConfig->getForeignTable()->getPkColumnName();
@@ -288,7 +287,7 @@ class OrmSelect extends SelectQueryBuilderAbstract implements OrmSelectQueryBuil
             } else {
                 // we have no access to TableStructureOld for this join
                 return [
-                    $this->analyzeColumnName('*', null, $joinName, 'SELECT')
+                    $this->analyzeColumnName('*', null, $joinName, 'SELECT'),
                 ];
             }
         }
@@ -464,8 +463,8 @@ class OrmSelect extends SelectQueryBuilderAbstract implements OrmSelectQueryBuil
     }
 
     /**
-     * @param array $conditions
-     * @param string $subject
+     * @param array       $conditions
+     * @param string      $subject
      * @param null|string $joinName - string: used when assembling conditions for join
      * @return string
      * @throws \UnexpectedValueException
@@ -549,7 +548,7 @@ class OrmSelect extends SelectQueryBuilderAbstract implements OrmSelectQueryBuil
     protected function makeColumnNameForCondition(array $columnInfo, string $subject = 'WHERE'): string
     {
         $this->validateColumnInfoForCondition($columnInfo, $subject);
-        return parent::makeColumnNameForCondition($columnInfo);
+        return parent::makeColumnNameForCondition($columnInfo, $subject);
     }
 
     /**
@@ -564,7 +563,7 @@ class OrmSelect extends SelectQueryBuilderAbstract implements OrmSelectQueryBuil
     }
 
     /**
-     * @param array $columnInfo
+     * @param array  $columnInfo
      * @param string $subject - used in exceptions, can be 'SELECT', 'ORDER BY', 'GROUP BY', 'WHERE' or 'HAVING'
      * @throws \UnexpectedValueException
      */

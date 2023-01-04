@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\Select;
 
+use JetBrains\PhpStorm\ArrayShape;
 use PeskyORM\DbExpr;
 use PeskyORM\Join\CrossJoinConfigInterface;
 use PeskyORM\Join\JoinConfigInterface;
@@ -318,8 +319,8 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
      * Make a simplified query without LIMIT, OFFSET and ORDER BY
      * Note: DISTINCT keyword is not applied!
      * @param string $expression - something like "COUNT(*)" or "1" to be selected by the query
-     * @param bool $ignoreLeftJoins
-     * @param bool $ignoreLimitAndOffset
+     * @param bool   $ignoreLeftJoins
+     * @param bool   $ignoreLimitAndOffset
      * @return string
      */
     protected function getSimplifiedQuery(
@@ -685,50 +686,64 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
      *    'alias' => null,
      *    'join_name' => null,
      *    'type_cast' => null,
+     *    'json_selector' => null
      *  ]
      *  1.2 '*' => [
      *    'name' => '*',
      *    'alias' => null,
      *    'join_name' => null,
      *    'type_cast' => null,
+     *    'json_selector' => null
      *  ]
      *  2.1. 'TableAlias.column2 as alias1' => [
      *    'name' => 'column2',
      *    'alias' => 'alias1',
      *    'join_name' => null, //< $this->getTableAlias() === 'TableAlias' - no join here
      *    'type_cast' => null,
+     *    'json_selector' => null
      *  ]
      *  2.2. 'TableAlias.* as alias1' => [
      *    'name' => 'column2',
      *    'alias' => null,
      *    'join_name' => null, //< $this->getTableAlias() === 'TableAlias' - no join here
      *    'type_cast' => null,
+     *    'json_selector' => null
      *  ]
      *  3.1. 'JoinName.column3' => [
      *    'name' => 'column3',
      *    'alias' => null,
      *    'join_name' => 'JoinName',
      *    'type_cast' => null,
+     *    'json_selector' => null
      *  ]
      *  3.2. 'JoinName.column3' => [
      *    'name' => 'column3',
      *    'alias' => null,
      *    'join_name' => 'JoinName',
      *    'type_cast' => null,
+     *    'json_selector' => null
      *  ]
      *  4. 'JoinName.column4::varchar' => [
      *    'name' => 'column4',
      *    'alias' => null,
      *    'join_name' => 'JoinName',
      *    'type_cast' => 'varchar',
+     *    'json_selector' => null
      *  ]
      * @param string|DbExpr $columnName
-     * @param string|null $columnAlias
-     * @param string|null $joinName
-     * @param string $errorsPrefix - prefix for error messages
+     * @param string|null   $columnAlias
+     * @param string|null   $joinName
+     * @param string        $errorsPrefix - prefix for error messages
      * @return array - contains keys: 'name', 'alias', 'join_name', 'type_cast'. All keys are strings or nulls (except 'name')
      * @throws \InvalidArgumentException
      */
+    #[ArrayShape([
+        'name' => "string",
+        'alias' => "string|null",
+        'join_name' => "string|null",
+        'type_cast' => "string|null",
+        'json_selector' => "string|null",
+    ])]
     protected function analyzeColumnName(
         DbExpr|string $columnName,
         ?string $columnAlias = null,
@@ -767,10 +782,11 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
         }
         if ($isDbExpr) {
             $ret = [
-                'name' => $columnName,
+                'name' => $columnName->setWrapInBrackets(false),
                 'alias' => $columnAlias,
                 'join_name' => $joinName,
                 'type_cast' => null,
+                'json_selector' => null,
             ];
             /** @noinspection UselessUnsetInspection */
             unset($columnName, $joinName, $columnAlias); //< to prevent faulty usage
@@ -828,7 +844,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
 
     /**
      * @param array $columnInfo - return of $this->analyzeColumnName($columnName)
-     * @param bool $itIsWithQuery - true: building a query for WITH
+     * @param bool  $itIsWithQuery - true: building a query for WITH
      * @return string - something like: "JoinAlias"."column_name"::typecast as "ColumnAlias"
      * @throws \InvalidArgumentException
      */
@@ -885,12 +901,15 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
     }
 
     /**
-     * @param array $columnInfo - return of $this->analyzeColumnName($columnName)
+     * @param array  $columnInfo - return of $this->analyzeColumnName($columnName)
      * @param string $subject - may be used for exception messages in child classes
      * @return string `TableAlias`.`column_name`::typecast
      */
     protected function makeColumnNameForCondition(array $columnInfo, string $subject = 'WHERE'): string
     {
+        if ($columnInfo['name'] instanceof DbExpr) {
+            return $this->quoteDbExpr($columnInfo['name']);
+        }
         $tableAlias = $columnInfo['join_name'] ?: $this->getTableAlias();
         $columnName = $this->quoteDbEntityName($this->getShortTableAlias($tableAlias)) . '.'
             . $this->quoteDbEntityName($columnInfo['json_selector'] ?? $columnInfo['name']);
@@ -978,10 +997,10 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
     }
 
     /**
-     * @param array $columns
+     * @param array       $columns
      * @param null|string $joinName
-     * @param bool $allowSubJoins - true: allow colums like ['Join1' => ['Join2.*']]
-     * @param string $subject - prefix used for error messages
+     * @param bool        $allowSubJoins - true: allow colums like ['Join1' => ['Join2.*']]
+     * @param string      $subject - prefix used for error messages
      * @return array
      * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
@@ -1005,7 +1024,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
         }
         $normalizedColumns = [];
         /**
-         * @var string|int $columnAlias
+         * @var string|int   $columnAlias
          * @var string|array $columnName
          */
         foreach ($columns as $columnAlias => $columnName) {
@@ -1077,8 +1096,8 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
     /**
      * Normalize '*' column name
      * @param null|string $joinName
-     * @param null|array $excludeColumns - list of columns to exclude from wildcard (handled only by OrmSelect)
-     * @param bool $includeHeavyColumns - used in OrmSelect
+     * @param null|array  $excludeColumns - list of columns to exclude from wildcard (handled only by OrmSelect)
+     * @param bool        $includeHeavyColumns - used in OrmSelect
      * @return array - returns list of $this->analyzeColumnName() results
      */
     protected function normalizeWildcardColumn(
@@ -1091,10 +1110,10 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
 
     /**
      * Decide what to do if join name mentioned in columns list
-     * @param string $joinName
+     * @param string       $joinName
      * @param string|array $columns - string === '*' only
-     * @param string|null $parentJoinName
-     * @param bool $appendColumnsToExisting - true: $columns will be appended | false: $columns will replace existing ones
+     * @param string|null  $parentJoinName
+     * @param bool         $appendColumnsToExisting - true: $columns will be appended | false: $columns will replace existing ones
      * @throws \UnexpectedValueException
      */
     protected function resolveColumnsToBeSelectedForJoin(
@@ -1109,8 +1128,8 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
     }
 
     /**
-     * @param array $conditions
-     * @param string $subject - can be 'WHERE', 'HAVING' or ''
+     * @param array       $conditions
+     * @param string      $subject - can be 'WHERE', 'HAVING' or ''
      * @param null|string $joinName - string: used when assembling conditions for join
      * @return string
      */
@@ -1136,8 +1155,8 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
 
     /**
      * @param string|DbExpr $columnName
-     * @param string|null $joinName
-     * @param string $subject - 'WHERE', 'HAVING', etc. - the part of a query we are qouting the column for
+     * @param string|null   $joinName
+     * @param string        $subject - 'WHERE', 'HAVING', etc. - the part of a query we are qouting the column for
      * @return string
      */
     protected function columnQuoterForConditions(DbExpr|string $columnName, ?string $joinName, string $subject): string
@@ -1491,7 +1510,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
 
     /**
      * @param string $alias
-     * @param bool $mayBeShort - true: alias may be received from $this->getShortJoinAlias()
+     * @param bool   $mayBeShort - true: alias may be received from $this->getShortJoinAlias()
      * @return bool
      */
     protected function hasWithQuery(string $alias, bool $mayBeShort = false): bool
@@ -1501,7 +1520,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
 
     /**
      * @param string $joinName
-     * @param bool $mayBeShort - true: alias may be received from $this->getShortJoinAlias()
+     * @param bool   $mayBeShort - true: alias may be received from $this->getShortJoinAlias()
      * @return bool
      */
     protected function hasJoin(string $joinName, bool $mayBeShort = false): bool
