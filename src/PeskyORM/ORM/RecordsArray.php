@@ -485,7 +485,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
                 // primery key is not from db
                 $record->updateValue($pkColumnName, $data[$pkColumnName], true);
                 unset($data[$pkColumnName]);
-                $record->updateValues($data, false);
+                $record->updateValues($data, false, false);
             } else {
                 $record->fromData($data, $isFromDb);
             }
@@ -629,7 +629,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
                 }
                 $dbRecord
                     ->reset()
-                    ->fromData($data, $isFromDb);
+                    ->fromData($data, $isFromDb, false);
                 $this->currentDbRecordIndex = $index;
             }
             return $dbRecord;

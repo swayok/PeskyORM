@@ -462,7 +462,7 @@ class OrmSelect extends AbstractSelect
     protected function makeColumnNameForCondition(array $columnInfo, string $subject = 'WHERE'): string
     {
         $this->validateColumnInfoForCondition($columnInfo, $subject);
-        return parent::makeColumnNameForCondition($columnInfo);
+        return parent::makeColumnNameForCondition($columnInfo, $subject);
     }
     
     /**

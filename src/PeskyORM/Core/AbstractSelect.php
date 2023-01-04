@@ -932,10 +932,11 @@ abstract class AbstractSelect
         }
         if ($isDbExpr) {
             $ret = [
-                'name' => $columnName,
+                'name' => $columnName->setWrapInBrackets(false),
                 'alias' => $columnAlias,
                 'join_name' => $joinName,
                 'type_cast' => null,
+                'json_selector' => null
             ];
             /** @noinspection UselessUnsetInspection */
             unset($columnName, $joinName, $columnAlias); //< to prevent faulty usage
@@ -1063,6 +1064,9 @@ abstract class AbstractSelect
      */
     protected function makeColumnNameForCondition(array $columnInfo, string $subject = 'WHERE'): string
     {
+        if ($columnInfo['name'] instanceof DbExpr) {
+            return $this->quoteDbExpr($columnInfo['name']);
+        }
         $tableAlias = $columnInfo['join_name'] ?: $this->getTableAlias();
         $columnName = $this->quoteDbEntityName($this->getShortJoinAlias($tableAlias)) . '.'
             . $this->quoteDbEntityName($columnInfo['json_selector'] ?: $columnInfo['name']);
