@@ -37,8 +37,6 @@ use PeskyORM\ORM\Record\Record;
  * @method $this setLogin           (mixed $value, bool $isFromDb = false)
  * @method $this setPassword        (mixed $value, bool $isFromDb = false)
  * @method $this setParentId        (mixed $value, bool $isFromDb = false)
- * @method $this setCreatedAt       (mixed $value, bool $isFromDb = false)
- * @method $this setUpdatedAt       (mixed $value, bool $isFromDb = false)
  * @method $this setRememberToken   (mixed $value, bool $isFromDb = false)
  * @method $this setIsSuperadmin    (mixed $value, bool $isFromDb = false)
  * @method $this setLanguage        (mixed $value, bool $isFromDb = false)

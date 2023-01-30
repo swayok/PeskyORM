@@ -782,7 +782,7 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
         }
         if ($isDbExpr) {
             $ret = [
-                'name' => $columnName->setWrapInBrackets(false),
+                'name' => $columnName->configureBracketsForColumn(),
                 'alias' => $columnAlias,
                 'join_name' => $joinName,
                 'type_cast' => null,
@@ -1541,7 +1541,9 @@ abstract class SelectQueryBuilderAbstract implements SelectQueryBuilderInterface
     protected function getJoin(string $joinName): NormalJoinConfigInterface|CrossJoinConfigInterface
     {
         if (!$this->hasJoin($joinName, true)) {
-            throw new \UnexpectedValueException("Join config with name [{$joinName}] not found");
+            throw new \UnexpectedValueException(
+                "Join config with name [{$joinName}] not found"
+            );
         }
 
         if (isset($this->joins[$joinName])) {

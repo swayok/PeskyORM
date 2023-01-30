@@ -20,7 +20,7 @@ class DbExpr
 {
     
     protected string $expression = '';
-    protected bool $wrapInBrackets = true;
+    protected ?bool $wrapInBrackets = null;
     protected bool $allowValidation = true;
     
     public static function create(string $expression, ?bool $wrapInBrackets = null): DbExpr
@@ -35,13 +35,7 @@ class DbExpr
     public function __construct(string $expression, ?bool $wrapInBrackets = null)
     {
         $this->expression = $expression;
-        if ($wrapInBrackets === null) {
-            $wrapInBrackets = !preg_match(
-                '%^\s*(SELECT|INSERT|WITH|UPDATE|DELETE|DROP|ALTER|ORDER|GROUP|HAVING|LIMIT|OFFSET|WHERE|CREATE)\s%i',
-                $expression
-            );
-        }
-        $this->setWrapInBrackets($wrapInBrackets);
+        $this->wrapInBrackets = $wrapInBrackets;
     }
     
     public function setWrapInBrackets(bool $wrapInBrackets): DbExpr
@@ -49,10 +43,35 @@ class DbExpr
         $this->wrapInBrackets = $wrapInBrackets;
         return $this;
     }
+
+    public function configureBracketsForColumn(): static
+    {
+        if ($this->wrapInBrackets === null) {
+            // Wrap in brackets only if expression is "SELECT ..."
+            $this->wrapInBrackets = preg_match('%^\s*SELECT\s%i', $this->expression) > 0;
+        }
+        return $this;
+    }
     
     public function get(): string
     {
-        return $this->wrapInBrackets ? "({$this->expression})" : $this->expression;
+        return $this->shouldWrapInBrackets() ? "({$this->expression})": $this->expression;
+    }
+
+    protected function shouldWrapInBrackets(): bool
+    {
+        if ($this->wrapInBrackets === null) {
+            if (preg_match(
+                '%^\s*(SELECT|INSERT|WITH|UPDATE|DELETE|DROP|ALTER|ORDER|GROUP|HAVING|LIMIT|OFFSET|WHERE|CREATE)\s%i',
+                $this->expression
+            )) {
+                // It is expected to be a DB query or part of it
+                // so wrapping here is not required by default
+                return false;
+            }
+            return true;
+        }
+        return $this->wrapInBrackets;
     }
     
     /**

@@ -325,6 +325,42 @@ class OrmSelectTest extends BaseTestCase
         );
     }
 
+    public function testColumnAsDbExpr(): void
+    {
+//        $dbSelect = static::getNewSelect()->columns([
+//            'alias1' => DbExpr::create('`id` || ``000``'),
+//            DbExpr::create('`id` || ``111`` AS `alias2`')
+//        ]);
+//        static::assertEquals(
+//            'SELECT "id" || \'000\' AS "col_Admins__alias1_0",'
+//            . ' "id" || \'111\' AS "alias2" FROM "admins" AS "tbl_Admins_0"',
+//            rtrim($dbSelect->getQuery())
+//        );
+
+        $dbSelect = static::getNewSelect()->columns([
+            'alias1' => DbExpr::create(
+                'SELECT `id` FROM `admins` AS `a2` WHERE `a2`.`id` = `Admins`.`parent_id`'
+            )->noValidate(),
+        ]);
+        static::assertEquals(
+            'SELECT (SELECT "id" FROM "admins" AS "a2" WHERE "a2"."id" = "tbl_Admins_0"."parent_id")'
+            . ' AS "col_Admins__alias1_0" FROM "admins" AS "tbl_Admins_0"',
+            rtrim($dbSelect->getQuery())
+        );
+
+        $dbSelect = static::getNewSelect()->columns([
+            'alias1' => DbExpr::create(
+                'SELECT COUNT(`id`) FROM `admins` WHERE `parent_id` = `Admins`.`id`',
+                true
+            ),
+        ]);
+        static::assertEquals(
+            'SELECT (SELECT COUNT("id") FROM "admins" WHERE "parent_id" = "tbl_Admins_0"."id")'
+            . ' AS "col_Admins__alias1_0" FROM "admins" AS "tbl_Admins_0"',
+            rtrim($dbSelect->getQuery())
+        );
+    }
+
     public function testHasManyRelationException1(): void
     {
         $this->expectException(\UnexpectedValueException::class);

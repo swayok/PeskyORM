@@ -486,7 +486,7 @@ class PostgresAdapterHelpersTest extends BaseTestCase
             $adapter->quoteDbExpr(
                 DbExpr::create(
                     'SELECT `tbl_TestTable_0`.`col1` AS `col_TestTable__col1_0`,'
-                    . ' (`col2` as `col22`)'
+                    . ' `col2` as `col22`'
                     . ' FROM `test_table` AS `tbl_TestTable_0`',
                     false
                 )

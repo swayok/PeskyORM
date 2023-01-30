@@ -1589,7 +1589,7 @@ class RecordTest extends BaseTestCase
         static::assertStringNotContainsString('COUNT(', TestingAdminsTable::getLastQuery(false));
         TestingAdminsTable::selectValue(DbExpr::create('1'));
         $prevSqlQuery = TestingAdminsTable::getLastQuery(false);
-        static::assertStringContainsString('SELECT (1) FROM', $prevSqlQuery);
+        static::assertStringContainsString('SELECT 1 FROM', $prevSqlQuery);
         static::assertEquals(
             [$recordsAdded[3]['id'], $recordsAdded[7]['id']],
             $rec->getRelatedRecord('Children', false)->getValuesForColumn('id')
