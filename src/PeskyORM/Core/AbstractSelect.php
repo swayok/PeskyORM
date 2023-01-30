@@ -932,7 +932,7 @@ abstract class AbstractSelect
         }
         if ($isDbExpr) {
             $ret = [
-                'name' => $columnName->unwrapBracketsIfPossible(),
+                'name' => $columnName->configureBracketsForColumn(),
                 'alias' => $columnAlias,
                 'join_name' => $joinName,
                 'type_cast' => null,
