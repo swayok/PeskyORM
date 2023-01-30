@@ -81,9 +81,7 @@ class DbExpr
      */
     public function get()
     {
-        $wrapInBrackets = $this->wrapInBrackets;
-        
-        return $wrapInBrackets ? "({$this->expression})" : $this->expression;
+        return $this->wrapInBrackets ? "({$this->expression})" : $this->expression;
     }
     
     /**
