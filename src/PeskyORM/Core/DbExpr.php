@@ -17,11 +17,11 @@ namespace PeskyORM\Core;
 class DbExpr
 {
     
-    /**
-     * @var string
-     */
     protected $expression = '';
-    protected $wrapInBrackets = true;
+    /**
+     * @var bool|null
+     */
+    protected $wrapInBrackets = null;
     protected $allowValidation = true;
     
     /**
@@ -42,22 +42,37 @@ class DbExpr
     public function __construct($expression, $wrapInBrackets = null)
     {
         $this->expression = $expression;
-        if ($wrapInBrackets === null) {
-            $wrapInBrackets = !preg_match(
+        if (
+            $wrapInBrackets === null
+            && preg_match(
                 '%^\s*(SELECT|INSERT|WITH|UPDATE|DELETE|DROP|ALTER|ORDER|GROUP|HAVING|LIMIT|OFFSET|WHERE|CREATE)\s%i',
-                $expression
-            );
+                $this->expression
+            )
+        ) {
+            $wrapInBrackets = true;
+            // do not set $wrapInBrackets=false (see unwrapBracketsIfPossible())
         }
         $this->setWrapInBrackets($wrapInBrackets);
     }
     
     /**
-     * @param bool $wrapInBrackets
+     * @param bool|null $wrapInBrackets
      * @return $this
      */
     public function setWrapInBrackets($wrapInBrackets)
     {
-        $this->wrapInBrackets = (bool)$wrapInBrackets;
+        $this->wrapInBrackets = $wrapInBrackets;
+        return $this;
+    }
+    
+    /**
+     * @return $this
+     */
+    public function unwrapBracketsIfPossible()
+    {
+        if ($this->wrapInBrackets === null) {
+            $this->wrapInBrackets = false;
+        }
         return $this;
     }
     
@@ -66,7 +81,9 @@ class DbExpr
      */
     public function get()
     {
-        return $this->wrapInBrackets ? "({$this->expression})" : $this->expression;
+        $wrapInBrackets = $this->wrapInBrackets;
+        
+        return $wrapInBrackets ? "({$this->expression})" : $this->expression;
     }
     
     /**
