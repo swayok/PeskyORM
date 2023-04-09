@@ -74,7 +74,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
             foreach ($records as $index => $record) {
                 if (is_array($record)) {
                     $this->records[$index] = $record;
-                } elseif ($record instanceof $recordClass) {
+                } else if ($record instanceof $recordClass) {
                     /** @var Record $record */
                     if ($this->isDbRecordDataValidationDisabled()) {
                         $record->enableTrustModeForDbData();
@@ -102,11 +102,15 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
      * Inject data from HAS MANY relation into records
      * @param string $relationName
      * @param array $columnsToSelect - see \PeskyORM\Core\AbstractSelect::columns()
+     * @param array $orderBy - see \PeskyORM\Core\AbstractSelect::orderBy()
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function injectHasManyRelationData($relationName, array $columnsToSelect = ['*'])
-    {
+    public function injectHasManyRelationData(
+        $relationName,
+        array $columnsToSelect = ['*'],
+        array $orderBy = []
+    ) {
         $relation = $this->table->getTableStructure()
             ->getRelation($relationName);
         if ($relation->getType() !== $relation::HAS_MANY) {
@@ -115,7 +119,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
             );
         }
         if (!in_array($relationName, $this->hasManyRelationsInjected, true)) {
-            $this->injectHasManyRelationDataIntoRecords($relation, $columnsToSelect);
+            $this->injectHasManyRelationDataIntoRecords($relation, $columnsToSelect, $orderBy);
         }
         return $this;
     }
@@ -123,18 +127,28 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     /**
      * @param Relation $relation
      * @param array $columnsToSelect
+     * @param array $orderBy
      */
-    protected function injectHasManyRelationDataIntoRecords(Relation $relation, array $columnsToSelect = ['*'])
-    {
+    protected function injectHasManyRelationDataIntoRecords(
+        Relation $relation,
+        array $columnsToSelect = ['*'],
+        array $orderBy = []
+    ) {
         $relationName = $relation->getName();
         $localColumnName = $relation->getLocalColumnName();
         $ids = $this->getValuesForColumn($localColumnName, null, function ($value) {
             return !empty($value);
         });
         if (count($ids)) {
+            $conditions = [
+                $relation->getForeignColumnName() => $ids,
+            ];
+            if (!empty($orderBy)) {
+                $conditions['ORDER'] = $orderBy;
+            }
             $relatedRecordsGrouped = Set::combine(
                 $relation->getForeignTable()
-                    ->select($columnsToSelect, [$relation->getForeignColumnName() => $ids])
+                    ->select($columnsToSelect, $conditions)
                     ->toArrays(),
                 '/@',
                 '/',
@@ -325,7 +339,7 @@ class RecordsArray implements \ArrayAccess, \Iterator, \Countable
     {
         if ($closureOrColumnsListOrMethodName) {
             return $this->getDataFromEachObject($closureOrColumnsListOrMethodName, $argumentsForMethod, $enableReadOnlyMode);
-        } elseif ($this->isRecordsContainObjects) {
+        } else if ($this->isRecordsContainObjects) {
             /** @var array|RecordInterface $data */
             foreach ($this->records as $index => $data) {
                 if (!is_array($data)) {

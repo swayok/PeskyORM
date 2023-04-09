@@ -83,16 +83,19 @@ class RecordsSet extends RecordsArray
     /**
      * @param Relation $relation
      * @param array $columnsToSelect
-     *
+     * @param array $orderBy
      */
-    protected function injectHasManyRelationDataIntoRecords(Relation $relation, array $columnsToSelect = ['*'])
-    {
+    protected function injectHasManyRelationDataIntoRecords(
+        Relation $relation,
+        array $columnsToSelect = ['*'],
+        array $orderBy = []
+    ) {
         $this->hasManyRelationsToInject[$relation->getName()] = [
             'relation' => $relation,
             'columns' => $columnsToSelect,
         ];
         if (is_array($this->records)) {
-            parent::injectHasManyRelationDataIntoRecords($relation, $columnsToSelect);
+            parent::injectHasManyRelationDataIntoRecords($relation, $columnsToSelect, $orderBy);
         }
     }
     
