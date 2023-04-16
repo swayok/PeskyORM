@@ -93,6 +93,7 @@ class RecordsSet extends RecordsArray
         $this->hasManyRelationsToInject[$relation->getName()] = [
             'relation' => $relation,
             'columns' => $columnsToSelect,
+            'order' => $orderBy,
         ];
         if (is_array($this->records)) {
             parent::injectHasManyRelationDataIntoRecords($relation, $columnsToSelect, $orderBy);
@@ -257,7 +258,7 @@ class RecordsSet extends RecordsArray
         $this->recordsCount = count($this->records);
         $this->hasManyRelationsInjected = [];
         foreach ($this->hasManyRelationsToInject as $injectionConfig) {
-            parent::injectHasManyRelationDataIntoRecords($injectionConfig['relation'], $injectionConfig['columns']);
+            parent::injectHasManyRelationDataIntoRecords($injectionConfig['relation'], $injectionConfig['columns'], $injectionConfig['order']);
         }
         return $this;
     }
