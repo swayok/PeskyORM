@@ -1387,7 +1387,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     protected function saveToDb(array $columnsToSave = [])
     {
-        if ($this->isSavingAllowed()) {
+        if (!$this->isSavingAllowed()) {
             throw new \BadMethodCallException('Record saving was forbidden.');
         } elseif ($this->isReadOnly()) {
             throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
