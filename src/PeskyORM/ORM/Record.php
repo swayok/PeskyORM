@@ -2548,13 +2548,13 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
     
     public function allowSaving()
     {
-        $this->forbidSaving = true;
+        $this->forbidSaving = false;
         return $this;
     }
     
     public function isSavingAllowed(): bool
     {
-        return !$this->forbidSaving();
+        return !$this->forbidSaving;
     }
     
     /**
