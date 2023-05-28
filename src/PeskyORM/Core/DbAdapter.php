@@ -429,7 +429,9 @@ abstract class DbAdapter implements DbAdapterInterface
         $this->guardTableNameArg($table);
         $this->guardDataArg($data);
         $this->guardConditionsArg($conditions);
-        [$tableName, $tableAlias] = preg_split('%\s+AS\s+%i', $table, 2);
+        $parts = preg_split('%\s+AS\s+%i', $table, 2);
+        $tableName = $parts[0];
+        $tableAlias = isset($parts[1]) ? $parts[1] : '';
         if (empty($tableAlias) || trim($tableAlias) === '') {
             $tableAlias = '';
         } else {
@@ -476,7 +478,9 @@ abstract class DbAdapter implements DbAdapterInterface
         $this->guardTableNameArg($table);
         $this->guardConditionsArg($conditions);
         $this->guardReturningArg($returning);
-        [$tableName, $tableAlias] = preg_split('%\s+AS\s+%i', $table, 2);
+        $parts = preg_split('%\s+AS\s+%i', $table, 2);
+        $tableName = $parts[0];
+        $tableAlias = isset($parts[1]) ? $parts[1] : '';
         if (empty($tableAlias) || trim($tableAlias) === '') {
             $tableAlias = '';
         } else {
