@@ -3,14 +3,13 @@
 
 namespace PeskyORM\DbObjectField;
 
-use Swayok\Utils\Utils;
 use Swayok\Utils\ValidateValue;
 
 class JsonField extends TextField {
 
     protected function doBasicValueValidationAndConvertion($value) {
         if (is_array($value)) {
-            $value = Utils::jsonEncodeCyrillic($value);
+            $value = json_encode($value, JSON_UNESCAPED_UNICODE);
         }
         return parent::doBasicValueValidationAndConvertion($value);
     }

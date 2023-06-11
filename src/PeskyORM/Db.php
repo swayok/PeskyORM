@@ -487,7 +487,7 @@ class Db {
      * @return mixed
      */
     public function serializeArray($array) {
-        return Utils::jsonEncodeCyrillic($array);
+        return json_encode($array, JSON_UNESCAPED_UNICODE);
     }
 
     /**

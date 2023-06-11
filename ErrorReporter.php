@@ -3,7 +3,6 @@
 namespace ErrorReporter;
 
 use Swayok\Utils\File;
-use Swayok\Utils\Utils;
 
 function fix_objects_for_dump(&$data, $printObjectClassOnly = false) {
     try {
@@ -387,18 +386,18 @@ function error_handler($code, $message, $file, $line, $context = null, $trace = 
             } else {
                 // display error page
                 if (
-                    (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') //< ajax
+                    (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') //< ajax
                     || $isMobile
                 ) {
                     // request via ajax
-                    echo Utils::jsonEncodeCyrillic(array(
+                    echo json_encode(array(
                         'success' => false,
                         'auth' => false,
                         'message' => translate($httpCode . '.page_title') . '<br>' . translate($httpCode . '.page_content'),
                         'errors' => array(
                             '_code' => 'server_error'
                         )
-                    ));
+                    ), JSON_UNESCAPED_UNICODE);
                 } else {
                     if (ob_get_level() > 0) {
                         ob_end_clean();
