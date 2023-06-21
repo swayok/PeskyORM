@@ -61,6 +61,18 @@ abstract class TableStructure implements TableStructureInterface
     protected array $realColumnsWhichValuesCanBeSavedToDb = [];
 
     /**
+     * DB connection name with read and write permission.
+     */
+    protected string $writableConnection = 'default';
+
+    /**
+     * DB connection name with reading permission only (writing forbidden).
+     * You can provide readonly connection to access DB replica (slave) for better performance
+     * and still be able to write to main DB (master) through $this->writableConnection.
+     */
+    protected ?string $readonlyConnection = null;
+
+    /**
      * Contains all aliases for columns.
      * @see TableColumnInterface::getValueFormatersNames()
      * Structure: [
@@ -83,7 +95,7 @@ abstract class TableStructure implements TableStructureInterface
     }
 
     /**
-     * Load columns and relations configs
+     * Load columns and relations configs.
      */
     protected function loadColumnsAndRelations(): void
     {
@@ -104,21 +116,21 @@ abstract class TableStructure implements TableStructureInterface
     abstract protected function registerColumns(): void;
 
     /**
-     * Register relations that are not loaded from private methods
+     * Register relations that are not loaded from private methods.
      * Use $this->addRelation() to add relation.
      * @see self::addRelation()
      */
     abstract protected function registerRelations(): void;
 
     /**
-     * Analyze configs to collect some useful data
+     * Analyze configs to collect some useful data.
      */
     protected function analyze(): void
     {
     }
 
     /**
-     * Validate consistency of table structure
+     * Validate consistency of table structure.
      * @throws TableStructureConfigException
      */
     protected function validate(): void
@@ -132,11 +144,30 @@ abstract class TableStructure implements TableStructureInterface
         }
     }
 
+    /**
+     * Get DB connection name for reading or writing.
+     */
     protected function getConnectionName(bool $writable): string
     {
-        return 'default';
+        if ($writable) {
+            return $this->writableConnection;
+        }
+        return $this->readonlyConnection ?? $this->writableConnection;
     }
 
+    /**
+     * Set DB connection name for writable connection and, optionally, for readonly connection.
+     */
+    public function setConnectionName(string $writable, ?string $readonly = null): static
+    {
+        $this->writableConnection = $writable;
+        $this->readonlyConnection = $readonly;
+        return $this;
+    }
+
+    /**
+     * Get DB connection for reading or writing.
+     */
     public function getConnection(bool $writable = false): DbAdapterInterface
     {
         return DbConnectionsFacade::getConnection(
