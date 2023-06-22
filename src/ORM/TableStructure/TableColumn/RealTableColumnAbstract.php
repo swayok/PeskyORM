@@ -432,7 +432,7 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
             // Warning: if value in $currentValueContainer was already from DB
             // it should not change its status
             if ($isFromDb) {
-                // Maybe value has changed its satatus to 'received from db'
+                // Maybe value has changed its status to 'received from db'
                 $currentValueContainer->setIsFromDb(true);
             }
             return $currentValueContainer;
@@ -538,7 +538,7 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
 
     /**
      * Check if default value should be used instead of $normalizedValue.
-     * Ususally default value should be used when $normalizedValue === null
+     * Usually default value should be used when $normalizedValue === null
      * and Column configured with default value.
      * Also, it is reasonable to not use default value if $isFromDb === true
      * and when Record exists in DB to avoid unxepected overrides.
@@ -585,7 +585,7 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
             return $valueContainer->getValue();
         }
 
-        if ( $this->canUseDefaultValue($valueContainer)) {
+        if ($this->canUseDefaultValue($valueContainer)) {
             return $this->normalizeValidatedValue(
                 $this->getValidDefaultValue(),
                 false
@@ -617,5 +617,4 @@ abstract class RealTableColumnAbstract extends TableColumnAbstract
         }
         return false;
     }
-
 }

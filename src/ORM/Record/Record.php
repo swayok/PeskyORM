@@ -50,7 +50,7 @@ class Record implements RecordInterface
 
     protected bool $isReadOnly = false;
 
-    protected bool $forbidSaving = false;
+    protected bool $isSavingAllowed = false;
 
     protected array $readOnlyData = [];
 
@@ -1976,7 +1976,7 @@ class Record implements RecordInterface
      * Proxy to hasValue() or isRelatedRecordCanBeRead();
      * NOTE: same as isset() when calling isset($record[$columnName]) and also used by empty($record[$columnName])
      * @param string $key - column name or relation name
-     * @return boolean - true on success or false on failure.
+     * @return bool - true on success or false on failure.
      * @throws \InvalidArgumentException
      * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
@@ -2205,6 +2205,24 @@ class Record implements RecordInterface
      */
     public function serialize(): string
     {
+        return json_encode($this->__serialize(), JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * @throws \InvalidArgumentException
+     * @noinspection PhpParameterNameChangedDuringInheritanceInspection
+     */
+    public function unserialize(string $serialized): void
+    {
+        $data = json_decode($serialized, true, 512, JSON_THROW_ON_ERROR);
+        if (!is_array($data)) {
+            throw new \InvalidArgumentException('$serialized argument must be a json-encoded array');
+        }
+        $this->__unserialize($data);
+    }
+
+    public function __serialize(): array
+    {
         $data = [
             'props' => [
                 'existsInDb' => $this->existsInDb,
@@ -2215,19 +2233,11 @@ class Record implements RecordInterface
         foreach ($this->values as $name => $value) {
             $data['values'][$name] = $value->toArray();
         }
-        return json_encode($data, JSON_THROW_ON_ERROR);
+        return $data;
     }
 
-    /**
-     * @throws \InvalidArgumentException
-     * @noinspection PhpParameterNameChangedDuringInheritanceInspection
-     */
-    public function unserialize(string $serialized): void
+    public function __unserialize(array $data): void
     {
-        $data = json_decode($serialized, true);
-        if (!is_array($data)) {
-            throw new \InvalidArgumentException('$serialized argument must be a json-encoded array');
-        }
         $this->reset();
         /** @var TableInterface $tableClass */
         $tableClass = $data['table_class'];
@@ -2276,19 +2286,19 @@ class Record implements RecordInterface
 
     public function forbidSaving(): static
     {
-        $this->forbidSaving = true;
+        $this->isSavingAllowed = false;
         return $this;
     }
 
     public function allowSaving(): static
     {
-        $this->forbidSaving = true;
+        $this->isSavingAllowed = true;
         return $this;
     }
 
     public function isSavingAllowed(): bool
     {
-        return !$this->forbidSaving();
+        return $this->isSavingAllowed;
     }
 
     /**

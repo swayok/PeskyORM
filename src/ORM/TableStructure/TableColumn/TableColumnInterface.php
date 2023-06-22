@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PeskyORM\ORM\TableStructure\TableColumn;
 
+use PeskyORM\Exception\InvalidDataException;
 use PeskyORM\Exception\TableColumnConfigException;
 use PeskyORM\ORM\Record\RecordInterface;
 use PeskyORM\ORM\Record\RecordValueContainerInterface;
@@ -160,6 +161,10 @@ interface TableColumnInterface
         RecordInterface $record
     ): RecordValueContainerInterface;
 
+    /**
+     * @throws InvalidDataException
+     * @throws TableColumnConfigException
+     */
     public function setValue(
         RecordValueContainerInterface $currentValueContainer,
         mixed $newValue,
