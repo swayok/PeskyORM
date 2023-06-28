@@ -493,5 +493,4 @@ class Table implements TableInterface, TableStructureInterface
         );
         return $rows;
     }
-
 }

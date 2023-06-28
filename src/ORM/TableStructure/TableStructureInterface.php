@@ -29,11 +29,11 @@ interface TableStructureInterface
      * @link https://www.postgresql.org/docs/current/ddl-schemas.html
      */
     public function getSchema(): ?string;
-    
+
     public function getTableName(): string;
-    
+
     public function hasColumn(string $columnNameOrAlias): bool;
-    
+
     public function getColumn(string $columnNameOrAlias): TableColumnInterface;
 
     #[ArrayShape([
@@ -84,13 +84,13 @@ interface TableStructureInterface
     public function getColumnsWhichValuesCanBeSavedToDb(): array;
 
     public function getPkColumnName(): ?string;
-    
+
     public function getPkColumn(): ?TableColumnInterface;
-    
+
     public function hasRelation(string $relationName): bool;
-    
+
     public function getRelation(string $relationName): RelationInterface;
-    
+
     /**
      * @return RelationInterface[] - ['relation_name' => RelationInterface]
      */
