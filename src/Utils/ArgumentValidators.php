@@ -226,6 +226,34 @@ abstract class ArgumentValidators
         }
     }
 
+    public static function assertClosure(
+        string $argName,
+        mixed $value
+    ): void {
+        if (!($value instanceof \Closure)) {
+            throw new \InvalidArgumentException(
+                "{$argName} argument value must be a Closure."
+                . (!is_string($value) ? ' ' . static::getValueInfoForException($value) : '')
+            );
+        }
+    }
+
+    public static function assertNotEmptyStringOrClosure(
+        string $argName,
+        mixed $value,
+        bool $trim
+    ): void {
+        if (
+            !($value instanceof \Closure)
+            && (!is_string($value) || ($trim ? trim($value) : $value) === '')
+        ) {
+            throw new \InvalidArgumentException(
+                "{$argName} argument value must be a not-empty string or Closure."
+                . (!is_string($value) ? ' ' . static::getValueInfoForException($value) : '')
+            );
+        }
+    }
+
     private static function isValidDbEntityName(string $value, ?DbAdapterInterface $adapter): bool
     {
         return $adapter
@@ -250,6 +278,4 @@ abstract class ArgumentValidators
         }
         return $message . '.';
     }
-
-
 }

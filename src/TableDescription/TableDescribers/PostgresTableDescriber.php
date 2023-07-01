@@ -55,7 +55,10 @@ class PostgresTableDescriber implements TableDescriberInterface
 
     public function getTableDescription(string $tableName, ?string $schema = null): TableDescriptionInterface
     {
-        $description = new TableDescription($tableName, $schema ?? $this->adapter->getDefaultTableSchema());
+        $description = new TableDescription(
+            $tableName,
+            $schema ?? $this->adapter->getDefaultTableSchema()
+        );
         $query = $this->getSqlQuery($description);
         /** @var array $columns */
         $columns = $this->adapter->query(DbExpr::create($query), PdoUtils::FETCH_ALL);
@@ -65,7 +68,9 @@ class PostgresTableDescriber implements TableDescriberInterface
                 $columnInfo['type'],
                 $this->convertDbTypeToOrmType($columnInfo['type'])
             );
-            $limitAndPrecision = $this->extractLimitAndPrecisionForColumnDescription($columnInfo['type_description']);
+            $limitAndPrecision = $this->extractLimitAndPrecisionForColumnDescription(
+                $columnInfo['type_description']
+            );
             $columnDescription
                 ->setLimitAndPrecision($limitAndPrecision['limit'], $limitAndPrecision['precision'])
                 ->setIsNullable(!$columnInfo['notnull'])
@@ -80,6 +85,10 @@ class PostgresTableDescriber implements TableDescriberInterface
 
     protected function getSqlQuery(TableDescriptionInterface $description): string
     {
+        $version = $this->getPostgresVersion();
+        $pgAttrdefAdSrc = $version >= 12
+            ? 'pg_get_expr(`d`.`adbin`, `d`.`adrelid`)'
+            : '`d`.`adsrc`';
         return "
             SELECT
                 `f`.`attname` AS `name`,
@@ -89,7 +98,9 @@ class PostgresTableDescriber implements TableDescriberInterface
                 COALESCE(
                     (
                         SELECT true FROM `pg_constraint` as `pk`
-                        WHERE `pk`.`conrelid` = `c`.`oid` AND `f`.`attnum` = ANY (`pk`.`conkey`) AND `pk`.`contype` = ``p``
+                        WHERE `pk`.`conrelid` = `c`.`oid`
+                            AND `f`.`attnum` = ANY (`pk`.`conkey`)
+                            AND `pk`.`contype` = ``p``
                         LIMIT 1
                     ),
                     FALSE
@@ -97,7 +108,9 @@ class PostgresTableDescriber implements TableDescriberInterface
                 COALESCE(
                     (
                         SELECT true FROM `pg_constraint` as `uk`
-                        WHERE `uk`.`conrelid` = `c`.`oid` AND `f`.`attnum` = ANY (`uk`.`conkey`) AND `uk`.`contype` = ``u``
+                        WHERE `uk`.`conrelid` = `c`.`oid`
+                            AND `f`.`attnum` = ANY (`uk`.`conkey`)
+                            AND `uk`.`contype` = ``u``
                         LIMIT 1
                     ),
                     FALSE
@@ -105,15 +118,17 @@ class PostgresTableDescriber implements TableDescriberInterface
                 COALESCE(
                     (
                         SELECT true FROM `pg_constraint` as `fk`
-                        WHERE `fk`.`conrelid` = `c`.`oid` AND `f`.`attnum` = ANY (`fk`.`conkey`) AND `fk`.`contype` = ``f``
+                        WHERE `fk`.`conrelid` = `c`.`oid`
+                            AND `f`.`attnum` = ANY (`fk`.`conkey`)
+                            AND `fk`.`contype` = ``f``
                         LIMIT 1
                     ),
                     FALSE
                 ) as `foreignkey`,
                 CASE
-                    WHEN `f`.`atthasdef` = true THEN `d`.`adsrc`
+                    WHEN `f`.`atthasdef` = true THEN {$pgAttrdefAdSrc}
                 END AS `default`
-            FROM pg_attribute f
+            FROM pg_attribute `f`
                 JOIN `pg_class` `c` ON `c`.`oid` = `f`.`attrelid`
                 JOIN `pg_type` `t` ON `t`.`oid` = `f`.`atttypid`
                 LEFT JOIN `pg_attrdef` `d` ON `d`.adrelid = `c`.`oid` AND `d`.`adnum` = `f`.`attnum`
@@ -140,19 +155,23 @@ class PostgresTableDescriber implements TableDescriberInterface
             return null;
         }
 
-        if (preg_match(
-            "%^'((?:[^']|'')*?)'(?:::(bpchar|character varying|char|jsonb?|xml|macaddr|varchar|inet|cidr|text|uuid))?$%",
-            $default,
-            $matches
-        )) {
+        if (
+            preg_match(
+                "%^'((?:[^']|'')*?)'(?:::(bpchar|character varying|char|jsonb?|xml|macaddr|varchar|inet|cidr|text|uuid))?$%",
+                $default,
+                $matches
+            )
+        ) {
             return str_replace("''", "'", $matches[1]);
         }
 
-        if (preg_match(
-            "%^'(\d+(?:\.\d*)?)'(?:::(numeric|decimal|(?:small|medium|big)?int(?:eger)?[248]?))?$%",
-            $default,
-            $matches
-        )) {
+        if (
+            preg_match(
+                "%^'(\d+(?:\.\d*)?)'(?:::(numeric|decimal|(?:small|medium|big)?int(?:eger)?[248]?))?$%",
+                $default,
+                $matches
+            )
+        ) {
             return (float)$matches[1];
         }
 
@@ -179,8 +198,9 @@ class PostgresTableDescriber implements TableDescriberInterface
         'limit' => "null|int",
         'precision' => "null|int",
     ])]
-    protected function extractLimitAndPrecisionForColumnDescription(string $typeDescription): array
-    {
+    protected function extractLimitAndPrecisionForColumnDescription(
+        string $typeDescription
+    ): array {
         if (preg_match('%\((\d+)(?:,(\d+))?\)$%', $typeDescription, $matches)) {
             return [
                 'limit' => (int)$matches[1],
@@ -192,5 +212,14 @@ class PostgresTableDescriber implements TableDescriberInterface
             'limit' => null,
             'precision' => null,
         ];
+    }
+
+    protected function getPostgresVersion(): int
+    {
+        $version = $this->adapter->query('SELECT version()', PdoUtils::FETCH_VALUE);
+        if (preg_match('%PostgreSQL (\d+)\.%i', $version, $matches)) {
+            return (int)$matches[1];
+        }
+        return 0;
     }
 }

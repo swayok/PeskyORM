@@ -74,7 +74,7 @@ interface DbAdapterInterface
 
     /**
      * @param string|DbExpr $query
-     * @param string $fetchData - what to return: one of \PeskyORM\Core\Utils::FETCH_*
+     * @param string $fetchData - what to return: one of \PeskyORM\Utils\PdoUtils::FETCH_*
      * @return mixed
      * @see \PeskyORM\Utils\PdoUtils::getDataFromStatement()
      */
@@ -401,5 +401,4 @@ interface DbAdapterInterface
      * Note: throw exception if adapter does not support this feature
      */
     public static function getExpressionToSetDefaultValueForAColumn(): DbExpr;
-
 }
