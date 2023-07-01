@@ -9,6 +9,7 @@ use PeskyORM\ORM\Table\TableInterface;
 use PeskyORM\ORM\TableStructure\RelationInterface;
 use PeskyORM\ORM\TableStructure\TableColumn\RealTableColumnAbstract;
 use PeskyORM\ORM\TableStructure\TableColumn\TableColumnInterface;
+use PeskyORM\ORM\TableStructure\TableStructureInterface;
 
 interface RecordInterface extends \ArrayAccess, \Serializable
 {
@@ -19,6 +20,10 @@ interface RecordInterface extends \ArrayAccess, \Serializable
 
     public function getTable(): TableInterface;
 
+    public function getTableStructure(): TableStructureInterface;
+
+    public function hasColumn(string $name): bool;
+
     public function getPrimaryKeyColumnName(): string;
 
     /**
@@ -28,8 +33,10 @@ interface RecordInterface extends \ArrayAccess, \Serializable
 
     /**
      * Get original or formatted value for a column.
+     *
      * @param string|TableColumnInterface $column
-     * @param null|string                 $format - change value format
+     * @param null|string $format - change value format
+     *
      * @see TableColumnInterface::getValue()
      * @see RealTableColumnAbstract::getFormattedValue()
      */
@@ -40,8 +47,12 @@ interface RecordInterface extends \ArrayAccess, \Serializable
 
     /**
      * Check if there is a value for a column
+     *
      * @param string|TableColumnInterface $column
-     * @param bool                        $trueIfThereIsDefaultValue - true: returns true if there is no value set but column has default value
+     * @param bool $trueIfThereIsDefaultValue
+     *  - true: returns true if there is no value set but column has default value
+     *  - false: returns false event if column has default value
+     *
      * @see TableColumnInterface::hasValue()
      */
     public function hasValue(
@@ -77,14 +88,19 @@ interface RecordInterface extends \ArrayAccess, \Serializable
 
     /**
      * Check if current Record exists in DB
-     * @param bool $useDbQuery - false: use only primary key value to check existence | true: use db query
+     *
+     * @param bool $useDbQuery
+     *  - false: use only primary key value to check existence
+     *  - true: use db query
      */
     public function existsInDb(bool $useDbQuery = false): bool;
 
     /**
      * Get existing related object(s) or read them
+     *
      * @param string $relationName
-     * @param bool   $loadIfNotSet - true: read relation data if it is not set
+     * @param bool $loadIfNotSet
+     *  - true: read relation data if it is not set
      */
     public function getRelatedRecord(
         string $relationName,
@@ -94,6 +110,7 @@ interface RecordInterface extends \ArrayAccess, \Serializable
     /**
      * Read related object(s).
      * If there are already loaded object(s) - they will be overwritten.
+     *
      * @param string $relationName
      */
     public function readRelatedRecord(string $relationName): static;
@@ -104,10 +121,13 @@ interface RecordInterface extends \ArrayAccess, \Serializable
     public function hasRelatedRecord(string $relationName): bool;
 
     /**
-     * @param string|RelationInterface                         $relationName
+     * @param string|RelationInterface $relationName
      * @param array|RecordInterface|RecordsCollectionInterface $relatedRecord
-     * @param bool|null                                        $isFromDb - true: marks values as received from DB | null: autodetect
-     * @param bool                                             $haltOnUnknownColumnNames - exception will be thrown is there are unknown column names in $data
+     * @param bool|null $isFromDb
+     *  - true: marks values as received from DB
+     *  - false: marks values as new/updated
+     *  - null: autodetect
+     * @param bool $haltOnUnknownColumnNames - exception will be thrown is there are unknown column names in $data
      */
     public function updateRelatedRecord(
         string|RelationInterface $relationName,
@@ -124,9 +144,12 @@ interface RecordInterface extends \ArrayAccess, \Serializable
     /**
      * Fill record values from passed $data.
      * Note: all existing record values will be removed
+     *
      * @param array $data
-     * @param bool  $isFromDb - true: marks values as loaded from DB
-     * @param bool  $haltOnUnknownColumnNames - exception will be thrown if there are unknown column names in $data
+     * @param bool $isFromDb
+     *  - true: marks values as loaded from DB
+     *  - false: marks values as new/updated
+     * @param bool $haltOnUnknownColumnNames - exception will be thrown if there are unknown column names in $data
      */
     public function fromData(
         array $data,
@@ -136,7 +159,7 @@ interface RecordInterface extends \ArrayAccess, \Serializable
 
     /**
      * Fill record values from passed $data.
-     * All values are marked as loaded from DB and any unknows column names will raise exception
+     * All values are marked as loaded from DB and any unknown column names will raise exception
      */
     public function fromDbData(array $data): static;
 
@@ -176,9 +199,12 @@ interface RecordInterface extends \ArrayAccess, \Serializable
     /**
      * Update several values
      * Note: it does not save this values to DB, only stores them locally
+     *
      * @param array $data
-     * @param bool  $isFromDb - true: marks values as loaded from DB
-     * @param bool  $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
+     * @param bool $isFromDb
+     *  - true: marks values as loaded from DB
+     *  - false: marks values as new/updated
+     * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
      */
     public function updateValues(
         array $data,
@@ -210,12 +236,13 @@ interface RecordInterface extends \ArrayAccess, \Serializable
     /**
      * Save values changed since begin() to DB
      * Note: throws exception if used without begin()
+     *
      * @param array $relationsToSave
-     * @param bool  $deleteNotListedRelatedRecords - works only for HAS MANY relations
-     *      - true: delete related records that exist in db if their pk value is not listed in current set of records
-     *      - false: ignore related records that exist in db but their pk value is not listed in current set of records
-     *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
-     *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
+     * @param bool $deleteNotListedRelatedRecords - works only for HAS MANY relations
+     *  - true: delete related records that exist in db if their pk value is not listed in current set of records
+     *  - false: ignore related records that exist in db but their pk value is not listed in current set of records
+     *  Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
+     *  If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      */
     public function commit(
         array $relationsToSave = [],
@@ -225,12 +252,13 @@ interface RecordInterface extends \ArrayAccess, \Serializable
     /**
      * Save all values and requested relations to Db
      * Note: throws exception if used after begin() but before commit() or rollback()
+     *
      * @param array $relationsToSave
-     * @param bool  $deleteNotListedRelatedRecords - works only for HAS MANY relations
-     *      - true: delete related records that exist in db if their pk value is not listed in current set of records
-     *      - false: ignore related records that exist in db but their pk value is not listed in current set of records
-     *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
-     *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
+     * @param bool $deleteNotListedRelatedRecords - works only for HAS MANY relations
+     *  - true: delete related records that exist in db if their pk value is not listed in current set of records
+     *  - false: ignore related records that exist in db but their pk value is not listed in current set of records
+     *  Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
+     *  If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      */
     public function save(
         array $relationsToSave = [],
@@ -239,12 +267,13 @@ interface RecordInterface extends \ArrayAccess, \Serializable
 
     /**
      * Save requested relations to DB
+     *
      * @param array $relationsToSave
-     * @param bool  $deleteNotListedRelatedRecords - works only for HAS MANY relations
-     *      - true: delete related records that exist in db if their pk value is not listed in current set of records
-     *      - false: ignore related records that exist in db but their pk value is not listed in current set of records
-     *      Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
-     *      If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
+     * @param bool $deleteNotListedRelatedRecords - works only for HAS MANY relations
+     *  - true: delete related records that exist in db if their pk value is not listed in current set of records
+     *  - false: ignore related records that exist in db but their pk value is not listed in current set of records
+     *  Example: there are 3 records in DB: 1, 2, 3. You're trying to save records 2 and 3 (record 1 is absent).
+     *  If $deleteNotListedRelatedRecords === true then record 1 will be deleted; else - it will remain untouched
      */
     public function saveRelations(
         array $relationsToSave = [],
@@ -254,8 +283,13 @@ interface RecordInterface extends \ArrayAccess, \Serializable
     /**
      * Delete current Record from DB
      * Note: this Record must exist in DB
-     * @param bool $resetAllValuesAfterDelete - true: will reset Record (default) | false: only primary key value will be reset
-     * @param bool $deleteFiles - true: delete all attached files | false: do not delete attached files
+     *
+     * @param bool $resetAllValuesAfterDelete
+     *  - true: will reset Record (default)
+     *  - false: only primary key value will be reset
+     * @param bool $deleteFiles
+     *  - true: delete all attached files
+     *  - false: do not delete attached files
      */
     public function delete(
         bool $resetAllValuesAfterDelete = true,
@@ -274,10 +308,13 @@ interface RecordInterface extends \ArrayAccess, \Serializable
 
     /**
      * Get required values as array
+     *
      * @param array $columnsNames - empty: return all columns
      * @param array $relatedRecordsNames - empty: do not add any relations
-     * @param bool  $loadRelatedRecordsIfNotSet - true: read required missing related objects from DB
-     * @param bool  $withFilesInfo - true: add info about files attached to a record (url, path, file_name, full_file_name, ext)
+     * @param bool $loadRelatedRecordsIfNotSet
+     *  - true: read required missing related objects from DB
+     * @param bool $withFilesInfo
+     *  - true: add info about files attached to a record (url, path, file_name, full_file_name, ext)
      */
     public function toArray(
         array $columnsNames = [],
@@ -288,9 +325,11 @@ interface RecordInterface extends \ArrayAccess, \Serializable
 
     /**
      * Get required values as array but exclude file columns
+     *
      * @param array $columnsNames - empty: return all columns
      * @param array $relatedRecordsNames - empty: do not add any relations
-     * @param bool  $loadRelatedRecordsIfNotSet - true: read required missing related objects from DB
+     * @param bool $loadRelatedRecordsIfNotSet
+     *  - true: read required missing related objects from DB
      */
     public function toArrayWithoutFiles(
         array $columnsNames = [],
@@ -301,9 +340,13 @@ interface RecordInterface extends \ArrayAccess, \Serializable
     /**
      * Collect default values for the columns
      * Note: if there is no default value for a column - null will be returned
-     * @param array $columns - empty: return values for all columns
-     * @param bool  $ignoreReadonlyAndVirtualAndAutoupdatingColumns - true: if column does not exist in DB - its value will not be returned
-     * @param bool  $nullifyDbExprValues - true: if default value is DbExpr - replace it by null
+     *
+     * @param array $columns
+     *  - empty: return values for all columns
+     * @param bool $ignoreReadonlyAndVirtualAndAutoupdatingColumns
+     *  - true: if column does not exist in DB - its value will not be returned
+     * @param bool $nullifyDbExprValues
+     *  - true: if default value is DbExpr - replace it by null
      */
     public function getDefaults(
         array $columns = [],

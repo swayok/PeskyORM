@@ -10,6 +10,7 @@ use PeskyORM\Config\Connection\DbConnectionConfigInterface;
 use PeskyORM\DbExpr;
 use PeskyORM\Exception\DbAdapterDoesNotSupportFeature;
 use PeskyORM\ORM\Record\RecordInterface;
+use PeskyORM\Profiling\TraceablePDO;
 use PeskyORM\Select\SelectQueryBuilderInterface;
 use PeskyORM\Utils\ServiceContainer;
 
@@ -27,10 +28,10 @@ interface DbAdapterInterface
     public function getName(): string;
 
     /**
-     * Connect to DB once
-     * @return PDO or PDO wrapper
+     * Connect to DB once.
+     * @return PDO|TraceablePDO or PDO wrapper.
      */
-    public function getConnection(): PDO;
+    public function getConnection(): PDO|TraceablePDO;
 
     /**
      * Check if connection to DB established
@@ -41,7 +42,7 @@ interface DbAdapterInterface
 
     /**
      * Set/Remove a wrapper around PDO connection. Wrapper called on each DB connection.
-     * Usuallay used to profile and monitor queries
+     * Usually used to profile and monitor queries
      */
     public function setConnectionWrapper(?\Closure $wrapper): void;
 
@@ -88,8 +89,8 @@ interface DbAdapterInterface
      * @param string $channel
      * @param \Closure $handler - payload handler:
      *      function(string $payload): boolean { return true; } - if it returns false: listener will stop
-     * @param int $sleepIfNoNotificationMs - miliseconds to sleep if there were no notifications last time
-     * @param int $sleepAfterNotificationMs - miliseconds to sleep after notification consumed
+     * @param int $sleepIfNoNotificationMs - milliseconds to sleep if there were no notifications last time
+     * @param int $sleepAfterNotificationMs - milliseconds to sleep after notification consumed
      * @throws DbAdapterDoesNotSupportFeature when functionality is not supported by adapter
      */
     public function listen(
@@ -123,7 +124,7 @@ interface DbAdapterInterface
      * @param string $table - it is allowed to be like: 'table AS Alias'
      * @param array $data - key-value array where key = table column and value = value of associated column
      * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
-     *          Data type is one of \PDO::PARAM_* contants or null.
+     *          Data type is one of \PDO::PARAM_* constants or null.
      *          If value is null or column not present - value quoter will autodetect column type (see quoteValue())
      * @param bool|array $returning - return some data back after $data inserted to $table
      *          - true: return values for all columns of inserted table row
@@ -145,7 +146,7 @@ interface DbAdapterInterface
      * @param array $columns - list of columns to insert data to
      * @param array $rows - key-value array where key = table column and value = value of associated column
      * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
-     *          Data type is one of \PDO::PARAM_* contants or null.
+     *          Data type is one of \PDO::PARAM_* constants or null.
      *          If value is null or column not present - value quoter will autodetect column type (see quoteValue())
      * @param bool|array $returning - return some data back after $data inserted to $table
      *          - true: return values for all columns of inserted table row
@@ -168,7 +169,7 @@ interface DbAdapterInterface
      * @param array $data - ['column_name' => value, ...]
      * @param array|DbExpr $conditions - WHERE conditions
      * @param array $dataTypes - key-value array where key = table column and value = data type for associated column
-     *          Data type is one of \PDO::PARAM_* contants or null.
+     *          Data type is one of \PDO::PARAM_* constants or null.
      *          If value is null or column not present - value quoter will autodetect column type (see quoteValue())
      * @param bool|array $returning - return some data back after $data inserted to $table
      *          - true: return values for all columns of inserted table row
@@ -236,7 +237,7 @@ interface DbAdapterInterface
      *      index 0: base entity name ('table.col_name' or 'col_name');
      *      indexes 1, 3, 5, ...: selection operator (->, ->>, #>, #>>);
      *      indexes 2, 4, 6, ...: json key name or other selector ('json_key1', 'json_key2')
-     * @return string - quoted entity name and json selecor
+     * @return string - quoted entity name and json selector
      */
     public function quoteJsonSelectorExpression(array $sequence): string;
 
@@ -257,7 +258,8 @@ interface DbAdapterInterface
     /**
      * Quote passed value
      * @param string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderInterface|null $value
-     * @param int|null $valueDataType - one of \PDO::PARAM_* or null for autodetection (detects bool, null, string only)
+     * @param int|null $valueDataType - one of \PDO::PARAM_* or null
+     * for auto-detection (detects bool, null, string only)
      */
     public function quoteValue(
         string|int|float|bool|array|DbExpr|RecordInterface|SelectQueryBuilderInterface|null $value,
