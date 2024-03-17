@@ -1387,14 +1387,17 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      */
     protected function saveToDb(array $columnsToSave = [])
     {
+        $isUpdate = $this->existsInDb();
         if (!$this->isSavingAllowed()) {
+            $this->onSaveFailure(!$isUpdate);
             throw new \BadMethodCallException('Record saving was forbidden.');
         } elseif ($this->isReadOnly()) {
+            $this->onSaveFailure(!$isUpdate);
             throw new \BadMethodCallException('Record is in read only mode. Updates not allowed.');
         } elseif ($this->isTrustDbDataMode()) {
+            $this->onSaveFailure(!$isUpdate);
             throw new \BadMethodCallException('Saving is not alowed when trusted mode for DB data is enabled');
         }
-        $isUpdate = $this->existsInDb();
         if (empty($columnsToSave)) {
             // nothing to save
             $this->runColumnSavingExtenders($columnsToSave, [], [], $isUpdate);
@@ -1402,12 +1405,14 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         }
         $diff = array_diff($columnsToSave, array_keys(static::getColumns()));
         if (count($diff)) {
+            $this->onSaveFailure(!$isUpdate);
             throw new \InvalidArgumentException(
                 '$columnsToSave argument contains unknown columns: ' . implode(', ', $diff)
             );
         }
         $diff = array_diff($columnsToSave, $this->getColumnsNamesWithUpdatableValues());
         if (count($diff)) {
+            $this->onSaveFailure(!$isUpdate);
             throw new \InvalidArgumentException(
                 '$columnsToSave argument contains columns that cannot be saved to DB: ' . implode(', ', $diff)
             );
@@ -1417,14 +1422,17 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
         if (!empty($data)) {
             $errors = $this->validateNewData($data, $columnsToSave, $isUpdate);
             if (!empty($errors)) {
+                $this->onSaveFailure(!$isUpdate);
                 throw new InvalidDataException($errors);
             }
             $errors = $this->beforeSave($columnsToSave, $data, $isUpdate);
             if (!empty($errors)) {
+                $this->onSaveFailure(!$isUpdate);
                 throw new InvalidDataException($errors);
             }
             
             if (!$this->performDataSave($isUpdate, $data)) {
+                $this->onSaveFailure(!$isUpdate);
                 return;
             }
         }
@@ -1435,6 +1443,7 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
             $this->afterSave(!$isUpdate, $columnsToSave);
         } catch (\Exception $exc) {
             static::getTable()::rollBackTransactionIfExists();
+            $this->onSaveFailure(!$isUpdate);
             throw $exc;
         }
     }
@@ -1582,6 +1591,16 @@ abstract class Record implements RecordInterface, \ArrayAccess, \Iterator, \Seri
      * @param array $updatedColumns - list of updated columns
      */
     protected function afterSave(bool $isCreated, array $updatedColumns = [])
+    {
+    }
+    
+    /**
+     * Called when save() or commit() failed.
+     *
+     * @param bool $isCreation - true: was trying to create record; false: was trying to update record.
+     * @return void
+     */
+    protected function onSaveFailure(bool $isCreation)
     {
     }
     
