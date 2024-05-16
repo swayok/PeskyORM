@@ -1,6 +1,7 @@
 <?php
+
 declare(strict_types=1);
-echo '<?php';
+
 /**
  * @var string $namespace
  * @var string $parentClass
@@ -10,13 +11,17 @@ echo '<?php';
  * @var array $columns
  * @var array $includes
  */
+
+echo '<?php';
+// @codingStandardsIgnoreStart
 ?>
+
 
 declare(strict_types=1);
 
 namespace <?php echo $namespace ?>;
 
-<?php foreach ($includes as $includeClass): ?>
+<?php foreach ($includes as $includeClass) : ?>
 use <?php echo $includeClass ?>;
 <?php endforeach; ?>
 
@@ -26,7 +31,7 @@ class <?php echo $className ?> extends <?php echo $parentClass . "\n" ?>
     {
         return '<?php echo $tableName ?>';
     }
-<?php if (!empty($tableSchema)): ?>
+<?php if (!empty($tableSchema)) : ?>
 
     public function getSchema(): string
     {
@@ -36,10 +41,10 @@ class <?php echo $className ?> extends <?php echo $parentClass . "\n" ?>
 
     protected function registerColumns(): void
     {
-<?php foreach ($columns as $columnInfo): ?>
+<?php foreach ($columns as $columnInfo) : ?>
         $this->addColumn(
             (new <?php echo $columnInfo['class'] ?>('<?php echo $columnInfo['name'] ?>'))
-<?php foreach ($columnInfo['addons'] as $addon):?>
+<?php foreach ($columnInfo['addons'] as $addon) : ?>
                 -><?php echo $addon['name']; ?>(<?php echo implode(', ', $addon['arguments'] ?? []); ?>)
 <?php endforeach; ?>
         );

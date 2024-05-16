@@ -1,6 +1,7 @@
 <?php
+
 declare(strict_types=1);
-echo '<?php';
+
 /**
  * @var string $namespace
  * @var string $parentClass
@@ -10,27 +11,29 @@ echo '<?php';
  * @var array $properties
  * @var array $setters
  */
+echo '<?php';
 ?>
+
 
 declare(strict_types=1);
 
 namespace <?php echo $namespace ?>;
 
-<?php foreach ($includes as $includeClass): ?>
+<?php foreach ($includes as $includeClass) : ?>
 use <?php echo $includeClass ?>;
 <?php endforeach; ?>
 
 /**
 <?php
-    foreach ($properties as $name => $type) {
-        $type = str_pad($type, 18, ' ', STR_PAD_RIGHT);
-        echo " * @property {$type} \${$name}\n";
-    }
-    echo " *\n";
-    foreach ($setters as $name) {
-        $name = str_pad($name, 18, ' ', STR_PAD_RIGHT);
-        echo " * @method \$this {$name} (mixed \$value, bool \$isFromDb = false)\n";
-    }
+foreach ($properties as $name => $type) {
+    $type = str_pad($type, 18, ' ', STR_PAD_RIGHT);
+    echo " * @property {$type} \${$name}\n";
+}
+echo " *\n";
+foreach ($setters as $name) {
+    $name = str_pad($name, 18, ' ', STR_PAD_RIGHT);
+    echo " * @method \$this {$name} (mixed \$value, bool \$isFromDb = false)\n";
+}
 ?>
  */
 class <?php echo $className ?> extends <?php echo $parentClass . "\n" ?>

@@ -153,5 +153,4 @@ abstract class JsonObjectColumnTemplate extends RealTableColumnAbstract
             }
         }
     }
-
 }

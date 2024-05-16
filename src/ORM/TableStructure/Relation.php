@@ -219,7 +219,11 @@ class Relation implements RelationInterface
      */
     public function setDisplayColumnName(\Closure|string $displayColumnName): static
     {
-        ArgumentValidators::assertNotEmptyString('$displayColumnName', $displayColumnName, true);
+        ArgumentValidators::assertNotEmptyStringOrClosure(
+            '$displayColumnName',
+            $displayColumnName,
+            true
+        );
         $this->displayColumnName = $displayColumnName;
         return $this;
     }
@@ -262,5 +266,4 @@ class Relation implements RelationInterface
         );
         return $ormJoin;
     }
-
 }

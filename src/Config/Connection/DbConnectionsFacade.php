@@ -12,10 +12,14 @@ use PeskyORM\Utils\ServiceContainerInterface;
 
 abstract class DbConnectionsFacade
 {
+    protected static array $registeredConnetionNames = [];
+
     /**
      * Register DB adapter
+     *
      * @param string $adapterName
      * @param string $adapterClass - class must implement DbAdapterInterface
+     *
      * @throws \InvalidArgumentException
      * @see DbAdapterInterface
      */
@@ -43,8 +47,10 @@ abstract class DbConnectionsFacade
 
     /**
      * Register connection config class for DB adapter
+     *
      * @param string $adapterName
      * @param string $connectionConfigClass - class must implement DbConnectionConfigInterface
+     *
      * @throws \InvalidArgumentException
      * @see DbConnectionConfigInterface
      */
@@ -78,11 +84,10 @@ abstract class DbConnectionsFacade
         string $adapterName,
         DbConnectionConfigInterface|\Closure $connectionConfig,
     ): void {
+        static::$registeredConnetionNames[] = $connectionName;
         ServiceContainer::getInstance()->bind(
             ServiceContainer::DB_CONNECTION . $connectionName,
-            static function (
-                ServiceContainerInterface $container,
-            ) use ($connectionConfig, $adapterName) {
+            static function (ServiceContainerInterface $container) use ($connectionConfig, $adapterName) {
                 if ($connectionConfig instanceof \Closure) {
                     $connectionConfig = $connectionConfig();
                 }
@@ -96,6 +101,14 @@ abstract class DbConnectionsFacade
             },
             true
         );
+    }
+
+    /**
+     * Get names of registered connections
+     */
+    public static function getRegisteredConnectionsNames(): array
+    {
+        return array_unique(static::$registeredConnetionNames);
     }
 
     /**
@@ -139,6 +152,7 @@ abstract class DbConnectionsFacade
 
     /**
      * Add alternative name for existing connection
+     *
      * @param string $connectionName
      * @param string $alternativeName
      */

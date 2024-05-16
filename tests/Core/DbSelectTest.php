@@ -154,7 +154,7 @@ class DbSelectTest extends BaseTestCase
         static::assertEquals($expectedIds, $data);
         $data = $dbSelect->fetchAssoc('id', 'login');
         static::assertEquals($expectedAssoc, $data);
-        $sum = $dbSelect->fetchValue(DbExpr::create('SUM(`id`)'));
+        $sum = $dbSelect->fetchValue(new DbExpr('SUM(`id`)'));
         static::assertEquals(array_sum($expectedIds), $sum);
         
         // via static
@@ -397,7 +397,7 @@ class DbSelectTest extends BaseTestCase
             ],
             $this->callObjectMethod($dbSelect, 'analyzeColumnName', 'Other.id::int')
         );
-        $dbExpr = DbExpr::create('Other.id::int');
+        $dbExpr = new DbExpr('Other.id::int');
         $columnInfo = $this->callObjectMethod($dbSelect, 'analyzeColumnName', $dbExpr);
         static::assertEquals(
             [
@@ -405,6 +405,7 @@ class DbSelectTest extends BaseTestCase
                 'alias' => null,
                 'join_name' => null,
                 'type_cast' => null,
+                'json_selector' => null
             ],
             $columnInfo
         );
@@ -417,6 +418,7 @@ class DbSelectTest extends BaseTestCase
                 'alias' => 'dbexpr',
                 'join_name' => null,
                 'type_cast' => null,
+                'json_selector' => null
             ],
             $columnInfo
         );
@@ -518,21 +520,21 @@ class DbSelectTest extends BaseTestCase
             )
         );
         static::assertEquals(
-            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", (SUM("id")) FROM "admins" AS "tbl_Admins_0"',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__id_0", SUM("id") FROM "admins" AS "tbl_Admins_0"',
             rtrim(
-                static::getNewSelect()->columns(['id', DbExpr::create('SUM(`id`)')])->getQuery()
+                static::getNewSelect()->columns(['id', new DbExpr('SUM(`id`)')])->getQuery()
             )
         );
         static::assertEquals(
-            'SELECT "tbl_Admins_0"."id" AS "col_Admins__not_id_0", (SUM("id")) AS "col_Admins__sum_1" FROM "admins" AS "tbl_Admins_0"',
+            'SELECT "tbl_Admins_0"."id" AS "col_Admins__not_id_0", SUM("id") AS "col_Admins__sum_1" FROM "admins" AS "tbl_Admins_0"',
             rtrim(
-                static::getNewSelect()->columns(['not_id' => 'id', 'sum' => DbExpr::create('SUM(`id`)')])->getQuery()
+                static::getNewSelect()->columns(['not_id' => 'id', 'sum' => new DbExpr('SUM(`id`)')])->getQuery()
             )
         );
         static::assertEquals(
-            'SELECT "tbl_Admins_0".*, (SUM("id")) AS "col_Admins__sum_1" FROM "admins" AS "tbl_Admins_0"',
+            'SELECT "tbl_Admins_0".*, SUM("id") AS "col_Admins__sum_1" FROM "admins" AS "tbl_Admins_0"',
             rtrim(
-                static::getNewSelect()->columns(['*', 'sum' => DbExpr::create('SUM(`id`)')])->getQuery()
+                static::getNewSelect()->columns(['*', 'sum' => new DbExpr('SUM(`id`)')])->getQuery()
             )
         );
         // test column alias shortening
@@ -549,6 +551,13 @@ class DbSelectTest extends BaseTestCase
             $expectedData[] = ['VeryLongColumnAliasSoItMustBeShortenedButWeNeedMoreThen60Caracters' => $data['id']];
         }
         static::assertEquals($expectedData, $dbSelect->fetchMany());
+        // test DbExpr with column alias inside
+        static::assertEquals(
+            'SELECT "tbl_Admins_0".*, SUM("id") AS "sum" FROM "admins" AS "tbl_Admins_0"',
+            rtrim(
+                static::getNewSelect()->columns(['*', new DbExpr('SUM(`id`) AS `sum`')])->getQuery()
+            )
+        );
     }
     
     public function testInvalidOrderBy1(): void
@@ -659,7 +668,7 @@ class DbSelectTest extends BaseTestCase
         // DbExpr
         static::assertEquals(
             'SELECT "tbl_Admins_0".* FROM "admins" AS "tbl_Admins_0" ORDER BY RANDOM()',
-            static::getNewSelect()->orderBy(DbExpr::create('RANDOM()'), '')->getQuery()
+            static::getNewSelect()->orderBy(new DbExpr('RANDOM()'), '')->getQuery()
         );
     }
     
@@ -729,7 +738,7 @@ class DbSelectTest extends BaseTestCase
         );
         static::assertEquals(
             'SELECT "tbl_Admins_3".* FROM "admins" AS "tbl_Admins_3" GROUP BY RANDOM()',
-            $dbSelect->groupBy([DbExpr::create('RANDOM()')], false)->getQuery()
+            $dbSelect->groupBy([new DbExpr('RANDOM()')], false)->getQuery()
         );
     }
     
@@ -911,8 +920,8 @@ class DbSelectTest extends BaseTestCase
         );
         static::assertEquals(
             'SELECT "tbl_Admins_3".* FROM "admins" AS "tbl_Admins_3" WHERE (SUM("id") > \'1\') HAVING (SUM("id") > \'2\')',
-            $dbSelect->where([DbExpr::create('SUM(`id`) > ``1``')])
-                ->having([DbExpr::create('SUM(`id`) > ``2``')])
+            $dbSelect->where([new DbExpr('SUM(`id`) > ``1``')])
+                ->having([new DbExpr('SUM(`id`) > ``2``')])
                 ->getQuery()
         );
         // conditions assembling tests are in Utils::assembleWhereConditionsFromArray()
@@ -1018,9 +1027,9 @@ class DbSelectTest extends BaseTestCase
             'Test',
             JoinConfig::JOIN_INNER,
             'Admins',
-            DbExpr::create('`Admins`.`id`'),
+            new DbExpr('`Admins`.`id`'),
             'settings',
-            DbExpr::create('`Test`.`id`'),
+            new DbExpr('`Test`.`id`'),
         );
         $joinConfig->setForeignColumnsToSelect(['key', 'value']);
         static::assertEquals(

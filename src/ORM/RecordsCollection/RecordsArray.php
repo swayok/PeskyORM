@@ -35,10 +35,10 @@ class RecordsArray implements RecordsCollectionInterface
     protected array $hasManyRelationsInjected = [];
 
     /**
-     * @param TableInterface $table
+     * @param TableInterface          $table
      * @param array|RecordInterface[] $records
-     * @param bool|null $isFromDb - true: records are from db | null - autodetect
-     * @param bool $disableDbRecordDataValidation
+     * @param bool|null               $isFromDb - true: records are from db | null - autodetect
+     * @param bool                    $disableDbRecordDataValidation
      * @throws \InvalidArgumentException
      */
     public function __construct(
@@ -413,12 +413,12 @@ class RecordsArray implements RecordsCollectionInterface
             }
             if (!$isFromDb && !empty($data[$pkColumnName])) {
                 // primary key value is set but $isFromDb === false. This usually means that all data except
-                // primery key is not from db
+                // primary key is not from db
                 $record->updateValue($pkColumnName, $data[$pkColumnName], true);
                 unset($data[$pkColumnName]);
-                $record->updateValues($data, false);
+                $record->updateValues($data, false, false);
             } else {
-                $record->fromData($data, $isFromDb);
+                $record->fromData($data, $isFromDb, false);
             }
             $this->dbRecords[$recordIndex] = $record;
         }
@@ -443,7 +443,7 @@ class RecordsArray implements RecordsCollectionInterface
         }
         return $dataIsRecord
             ? $record
-            : $record->fromData($data, $this->isRecordsFromDb());
+            : $record->fromData($data, $this->isRecordsFromDb(), false);
     }
 
     /**
@@ -549,7 +549,7 @@ class RecordsArray implements RecordsCollectionInterface
                 }
                 $dbRecord
                     ->reset()
-                    ->fromData($data, $isFromDb);
+                    ->fromData($data, $isFromDb, false);
                 $this->currentDbRecordIndex = $index;
             }
             return $dbRecord;

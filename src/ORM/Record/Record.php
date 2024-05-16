@@ -50,7 +50,7 @@ class Record implements RecordInterface
 
     protected bool $isReadOnly = false;
 
-    protected bool $forbidSaving = false;
+    protected bool $isSavingAllowed = false;
 
     protected array $readOnlyData = [];
 
@@ -69,8 +69,8 @@ class Record implements RecordInterface
     /**
      * Create new record and load values from DB using $pkValue
      * Warning: if $columns argument value is empty - even heavy valued columns
-     * will be selected (see \PeskyORM\ORM\TableStructureOld\TableColumn\TableColumn::valueIsHeavy()). To select all columns
-     * excluding heavy ones use ['*'] as value for $columns argument
+     * will be selected (see \PeskyORM\ORM\TableStructureOld\TableColumn\TableColumn::valueIsHeavy()).
+     * To select all columns excluding heavy ones use ['*'] as value for $columns argument
      */
     public static function read(
         mixed $pkValue,
@@ -84,8 +84,8 @@ class Record implements RecordInterface
     /**
      * Create new record and find values in DB using $conditionsAndOptions
      * Warning: if $columns argument value is empty - even heavy valued columns
-     * will be selected (see \PeskyORM\ORM\TableStructureOld\TableColumn\TableColumn::valueIsHeavy()). To select all columns
-     * excluding heavy ones use ['*'] as value for $columns argument
+     * will be selected (see \PeskyORM\ORM\TableStructureOld\TableColumn\TableColumn::valueIsHeavy()).
+     * To select all columns excluding heavy ones use ['*'] as value for $columns argument
      */
     public static function find(
         array $conditionsAndOptions,
@@ -115,7 +115,7 @@ class Record implements RecordInterface
         return $this->table;
     }
 
-    public function getTableStructure(): TableStructureInterface
+    final public function getTableStructure(): TableStructureInterface
     {
         return $this->table->getTableStructure();
     }
@@ -169,7 +169,7 @@ class Record implements RecordInterface
         return $this->getTableStructure()->getColumnAndFormat($name);
     }
 
-    protected function hasColumn(string $name): bool
+    public function hasColumn(string $name): bool
     {
         return $this->getTableStructure()->hasColumn($name);
     }
@@ -227,7 +227,8 @@ class Record implements RecordInterface
     {
         if ($this->isCollectingUpdates) {
             throw new \BadMethodCallException(
-                'Attempt to reset record while changes collecting was not finished. You need to use commit() or rollback() first'
+                'Attempt to reset record while changes collecting was not finished.'
+                . ' You need to use commit() or rollback() first'
             );
         }
         $this->values = [];
@@ -522,7 +523,7 @@ class Record implements RecordInterface
             if ($this->existsInDbReally === null) {
                 $this->existsInDb = $this->existsInDbReally = (
                     $this->hasValue($this->getPrimaryKeyColumn(), false)
-                    && $this->_existsInDbViaQuery()
+                    && $this->existsInDbViaQuery()
                 );
             }
             return (bool)$this->existsInDbReally;
@@ -531,7 +532,7 @@ class Record implements RecordInterface
         if ($this->existsInDb === null) {
             $this->existsInDb = (
                 $this->hasValue($this->getPrimaryKeyColumn(), false)
-                && (!$useDbQuery || $this->_existsInDbViaQuery())
+                && (!$useDbQuery || $this->existsInDbViaQuery())
             );
         }
         return (bool)$this->existsInDb;
@@ -540,7 +541,7 @@ class Record implements RecordInterface
     /**
      * Check if current Record exists in DB using DB query
      */
-    protected function _existsInDbViaQuery(): bool
+    protected function existsInDbViaQuery(): bool
     {
         return $this->getTable()
             ->hasMatchingRecord([
@@ -749,8 +750,11 @@ class Record implements RecordInterface
         return isset($this->relatedRecords[$relationName]);
     }
 
-    public function fromData(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true): static
-    {
+    public function fromData(
+        array $data,
+        bool $isFromDb = false,
+        bool $haltOnUnknownColumnNames = true
+    ): static {
         $this->reset();
         $this->updateValues($data, $isFromDb, $haltOnUnknownColumnNames);
         return $this;
@@ -764,23 +768,30 @@ class Record implements RecordInterface
     /**
      * @deprecated
      */
-    public function fromPrimaryKey($pkValue, array $columns = [], array $readRelatedRecords = []): static
-    {
+    public function fromPrimaryKey(
+        $pkValue,
+        array $columns = [],
+        array $readRelatedRecords = []
+    ): static {
         return $this->fetchByPrimaryKey($pkValue, $columns, $readRelatedRecords);
     }
 
     /**
      * Fill record values with data fetched from DB by primary key value ($pkValue)
      * Warning: if $columns argument value is empty - even heavy valued columns
-     * will be selected (see \PeskyORM\ORM\TableStructureOld\TableColumn\TableColumn::valueIsHeavy()). To select all columns
-     * excluding heavy ones use ['*'] as value for $columns argument
+     * will be selected (see \PeskyORM\ORM\TableStructureOld\TableColumn\TableColumn::valueIsHeavy()).
+     * To select all columns excluding heavy ones use ['*'] as value for $columns argument
      */
     public function fetchByPrimaryKey(
         int|float|string $pkValue,
         array $columns = [],
         array $readRelatedRecords = []
     ): static {
-        return $this->fetch([$this->getPrimaryKeyColumnName() => $pkValue], $columns, $readRelatedRecords);
+        return $this->fetch(
+            [$this->getPrimaryKeyColumnName() => $pkValue],
+            $columns,
+            $readRelatedRecords
+        );
     }
 
     /**
@@ -794,8 +805,8 @@ class Record implements RecordInterface
     /**
      * Fill record values with data fetched from DB by $conditionsAndOptions
      * Warning: if $columns argument value is empty - even heavy valued columns
-     * will be selected (see \PeskyORM\ORM\TableStructureOld\TableColumn\TableColumn::valueIsHeavy()). To select all columns
-     * excluding heavy ones use ['*'] as value for $columns argument
+     * will be selected (see \PeskyORM\ORM\TableStructureOld\TableColumn\TableColumn::valueIsHeavy()).
+     * To select all columns excluding heavy ones use ['*'] as value for $columns argument
      * Note: relations can be loaded via 'CONTAIN' key in $conditionsAndOptions
      * @throws \InvalidArgumentException
      */
@@ -827,7 +838,8 @@ class Record implements RecordInterface
         } catch (\Throwable $exception) {
             if (stripos($exception->getMessage(), 'Array to string conversion') !== false) {
                 throw new \InvalidArgumentException(
-                    '$columns argument contains invalid list of columns. Each value can only be a string or DbExpr object. $columns = '
+                    '$columns argument contains invalid list of columns.'
+                    . ' Each value can only be a string or DbExpr object. $columns = '
                     . json_encode($columns, JSON_UNESCAPED_UNICODE)
                 );
             }
@@ -835,7 +847,10 @@ class Record implements RecordInterface
             throw $exception;
         }
         $record = $this->getTable()
-            ->selectOne(array_merge($columnsToSelectFromMainTable, $columnsFromRelations), $conditionsAndOptions);
+            ->selectOne(
+                array_merge($columnsToSelectFromMainTable, $columnsFromRelations),
+                $conditionsAndOptions
+            );
         if (empty($record)) {
             $this->reset();
         } else {
@@ -862,8 +877,8 @@ class Record implements RecordInterface
      * Reload data for current record.
      * Note: record must exist in DB
      * Warning: if $columns argument value is empty - even heavy valued columns
-     * will be selected (see \PeskyORM\ORM\TableStructureOld\TableColumn\TableColumn::valueIsHeavy()). To select all columns
-     * excluding heavy ones use ['*'] as value for $columns argument
+     * will be selected (see \PeskyORM\ORM\TableStructureOld\TableColumn\TableColumn::valueIsHeavy()).
+     * To select all columns excluding heavy ones use ['*'] as value for $columns argument
      * @throws RecordNotFoundException
      */
     public function reload(array $columns = [], array $readRelatedRecords = []): static
@@ -898,8 +913,11 @@ class Record implements RecordInterface
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      */
-    public function updateValues(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true): static
-    {
+    public function updateValues(
+        array $data,
+        bool $isFromDb = false,
+        bool $haltOnUnknownColumnNames = true
+    ): static {
         if (!$isFromDb) {
             $this->assertNotReadOnlyMode();
         }
@@ -954,13 +972,18 @@ class Record implements RecordInterface
     /**
      * Update several values
      * Note: it does not save this values to DB, only stores them locally
+     *
      * @param array $data
      * @param bool $isFromDb - true: marks values as loaded from DB
      * @param bool $haltOnUnknownColumnNames - exception will be thrown is there is unknown column names in $data
+     *
      * @return static
      */
-    public function merge(array $data, bool $isFromDb = false, bool $haltOnUnknownColumnNames = true): static
-    {
+    public function merge(
+        array $data,
+        bool $isFromDb = false,
+        bool $haltOnUnknownColumnNames = true
+    ): static {
         return $this->updateValues($data, $isFromDb, $haltOnUnknownColumnNames);
     }
 
@@ -1077,6 +1100,7 @@ class Record implements RecordInterface
 
     /**
      * @param TableColumnInterface[] $columnsToSave - key = name, value = TableColumnInterface
+     *
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
      * @throws InvalidDataException
@@ -1298,6 +1322,7 @@ class Record implements RecordInterface
      * Warning: $data is not modifiable here! Use $this->collectValuesForSave() if you need to modify it.
      * Returns array with errors or empty array when there are no errors
      * @noinspection PhpUnusedParameterInspection
+     *
      * @param TableColumnInterface[] $columnsToSave
      */
     protected function beforeSave(array $columnsToSave, array $data, bool $isUpdate): array
@@ -1307,6 +1332,7 @@ class Record implements RecordInterface
 
     /**
      * Called after successful save() and commit() even if nothing was really saved to database
+     *
      * @param bool $isCreated - true: new record was created; false: old record was updated
      * @param TableColumnInterface[] $updatedColumns - list of updated columns
      */
@@ -1345,7 +1371,8 @@ class Record implements RecordInterface
             } catch (\Throwable $exception) {
                 if (stripos($exception->getMessage(), 'Array to string conversion') !== false) {
                     throw new \InvalidArgumentException(
-                        '$relationsToSave argument contains invalid list of columns. Each value can only be a string. $relationsToSave = '
+                        '$relationsToSave argument contains invalid list of columns.'
+                        . ' Each value can only be a string. $relationsToSave = '
                         . json_encode($relationsToSave, JSON_UNESCAPED_UNICODE)
                     );
                 }
@@ -1491,6 +1518,7 @@ class Record implements RecordInterface
 
     /**
      * Get required values as array
+     *
      * @param array $columnsNames
      *  - empty array: return known values for all columns (unknown = not set or not fetched from DB)
      *  - array: contains index-string, key-string, key-\Closure, key-array pairs:
@@ -1508,10 +1536,12 @@ class Record implements RecordInterface
      *              function ($value, Record $record) { return $value; }
      *          \Closure may return \PeskyORM\ORM\RecordsCollection\KeyValuePair object to alter key in resulting array:
      *              function ($value, Record $record) { return KeyValuePair::create('some_other_key', $value); }
-     *      - key-\Closure (value adding): key is not a column name and value is a \Closure that generates value for this key.
+     *      - key-\Closure (value adding): key is not a column name and value
+     *          is a \Closure that generates value for this key.
      *          \Closure receives 1 argument: Record $record ($this):
      *              function (Record $record) { return $record->column_name; }
-     *          \Closure may return \PeskyORM\ORM\RecordsCollection\KeyValuePair object to alter key in resulting array (not recommended!):
+     *          \Closure may return \PeskyORM\ORM\RecordsCollection\KeyValuePair object
+     *              to alter key in resulting array (not recommended!):
      *              function (Record $record) { return KeyValuePair::create('some_other_key', $record->column_name); }
      *      - key-array (relation data): key is a relation name and value is an array containing column names
      *          of the related record using same rules as here.
@@ -1524,7 +1554,9 @@ class Record implements RecordInterface
      *      - key-array: key is relation name and value is array containing column names of
      *          the related record to return using same rules as for $columnsNames.
      * @param bool $loadRelatedRecordsIfNotSet - true: read all missing related objects from DB
-     * @param bool $withFilesInfo - true: add info about files attached to a record (url, path, file_name, full_file_name, ext)
+     * @param bool $withFilesInfo
+     *  - true: add info about files attached to a record (url, path, file_name, full_file_name, ext)
+     *
      * @throws \InvalidArgumentException
      */
     public function toArray(
@@ -1534,7 +1566,14 @@ class Record implements RecordInterface
         bool $withFilesInfo = true
     ): array {
         // normalize column names
-        if (empty($columnsNames) || (count($columnsNames) === 1 && isset($columnsNames[0]) && $columnsNames[0] === '*')) {
+        if (
+            empty($columnsNames)
+            || (
+                count($columnsNames) === 1
+                && isset($columnsNames[0])
+                && $columnsNames[0] === '*'
+            )
+        ) {
             $columnsNames = array_keys($this->getNotPrivateColumns());
         } elseif (in_array('*', $columnsNames, true)) {
             $excludeDuplicatesFromWildcard = [];
@@ -1657,8 +1696,13 @@ class Record implements RecordInterface
                         ? $relatedRecord->toArray($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet)
                         : $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
                 } elseif ($relatedRecord->hasAnyNonDefaultValues()) {
-                    // return related record only if there are any non-default value (column that do not exist in db are ignored)
-                    $data[$relatedRecordName] = $relatedRecord->toArrayWithoutFiles($relatedRecordColumns, [], $loadRelatedRecordsIfNotSet);
+                    // return related record only if there are any non-default value
+                    // (column that do not exist in db are ignored)
+                    $data[$relatedRecordName] = $relatedRecord->toArrayWithoutFiles(
+                        $relatedRecordColumns,
+                        [],
+                        $loadRelatedRecordsIfNotSet
+                    );
                 }
             } else {
                 /** @var RecordsCollectionInterface $relatedRecord */
@@ -1703,12 +1747,21 @@ class Record implements RecordInterface
 
     /**
      * Get column value if it is set or null in any other cases
+     *
      * @param string $columnName
-     * @param string|null $columnAlias - it is a reference because it can be altered by KeyValuePair returend from $valueModifier \Closure
-     * @param null|\Closure $valueModifier - \Closure to modify value = function ($value, Record $record) { return $value; }
-     * @param bool $returnNullForFiles - false: return file information for file column | true: return null for file column
-     * @param bool $isset - true: value is set | false: value is not set
-     * @param bool $skipPrivateValueCheck - true: return real value even if column is private (TableColumn::isValuePrivate())
+     * @param string|null $columnAlias - it is a reference because it can be altered
+     *  by KeyValuePair returned from $valueModifier \Closure
+     * @param null|\Closure $valueModifier - \Closure to modify value:
+     *  function ($value, Record $record) { return $value; }
+     * @param bool $returnNullForFiles
+     *  - true: return null for file column
+     *  - false: return file information for file column
+     * @param bool $isset
+     *  - true: value is set
+     *  - false: value is not set
+     * @param bool $skipPrivateValueCheck
+     *  - true: return real value even if column is private (TableColumn::isValuePrivate())
+     *
      * @return mixed
      */
     protected function getColumnValueForToArray(
@@ -1721,7 +1774,13 @@ class Record implements RecordInterface
     ): mixed {
         $isset = false;
         if ($valueModifier && !$this->hasColumn($columnName)) {
-            return $this->modifyValueForToArray(null, $columnAlias, null, $valueModifier, $isset);
+            return $this->modifyValueForToArray(
+                null,
+                $columnAlias,
+                null,
+                $valueModifier,
+                $isset
+            );
         }
         $columnAndFormat = $this->getColumnAndFormat($columnName);
         $column = $columnAndFormat['column'];
@@ -1754,7 +1813,12 @@ class Record implements RecordInterface
                     );
                 }
 
-                return $this->modifyValueForToArray($columnName, $columnAlias, null, $valueModifier);
+                return $this->modifyValueForToArray(
+                    $columnName,
+                    $columnAlias,
+                    null,
+                    $valueModifier
+                );
             }
         }
         if ($column->isFile()) {
@@ -1779,8 +1843,10 @@ class Record implements RecordInterface
                 );
             }
         } else {
-            $isset = true; //< there is always a value when record does not exist in DB
-            // if default value not provided directly it is considered to be null when record does not exist is DB
+            // there is always a value when record does not exist in DB
+            $isset = true;
+            // if default value not provided directly it is considered to be null
+            // when record does not exist is DB
             if ($this->hasValue($column, true)) {
                 $val = $this->getValue($column, $format);
                 return $this->modifyValueForToArray(
@@ -1795,7 +1861,8 @@ class Record implements RecordInterface
     }
 
     /**
-     * @param string|null $columnName - when null: calls $valueModifier with only $this argument
+     * @param string|null $columnName
+     *  - null: calls $valueModifier with only $this argument
      * @param string|null $columnAlias - may be modified by KeyValuePair returned from $valueModifier
      * @param mixed $value
      * @param \Closure|null $valueModifier - \Closure that modifies the value. 2 variants:
@@ -1803,6 +1870,7 @@ class Record implements RecordInterface
      *      - if $columnName is empty: function (Record $record) { return $record->column };
      *      Both versions may return KeyValuePair object (not recommended if $columnName is empty)
      * @param bool|null $hasValue
+     *
      * @return mixed
      */
     protected function modifyValueForToArray(
@@ -1830,13 +1898,24 @@ class Record implements RecordInterface
 
     /**
      * Get nested value if it is set or null in any other cases
-     * @param array $parts - parts of nested path ('Relation.Subrelation.column' => ['Relation', 'Subrelation', 'column']
-     * @param string|null $columnAlias - it is a reference because it can be altered by KeyValuePair returend from $valueModifier \Closure
-     * @param null|\Closure $valueModifier - \Closure to modify value = function ($value, Record $record) { return $value; }
-     * @param bool $loadRelatedRecordsIfNotSet - true: read required missing related objects from DB
-     * @param bool $returnNullForFiles - false: return file information for file column | true: return null for file column
-     * @param bool|null $isset - true: value is set | false: value is not set
-     * @param bool $skipPrivateValueCheck - true: return real value even if column is private (TableColumn::isValuePrivate())
+     *
+     * @param array $parts - parts of nested path
+     *  ('Relation.SubRelation.column' => ['Relation', 'SubRelation', 'column'])
+     * @param string|null $columnAlias - it is a reference because it can be altered
+     *  by KeyValuePair returend from $valueModifier \Closure
+     * @param null|\Closure $valueModifier - \Closure to modify value:
+     *  function ($value, Record $record) { return $value; }
+     * @param bool $loadRelatedRecordsIfNotSet
+     *  - true: read required missing related objects from DB
+     * @param bool $returnNullForFiles
+     *  - true: return null for file column
+     *  - false: return file information for file column
+     * @param bool|null $isset
+     *  - true: value is set
+     *  - false: value is not set
+     * @param bool $skipPrivateValueCheck
+     *  - true: return real value even if column is private (TableColumn::isValuePrivate())
+     *
      * @return mixed
      * @throws \InvalidArgumentException
      */
@@ -1900,6 +1979,7 @@ class Record implements RecordInterface
      * Collect default values for the columns
      * Note: if there is no default value for a column - null will be returned
      * Note: this method is not used by ORM
+     *
      * @param array $columns - empty: return default values for all columns
      * @param bool $ignoreReadonlyAndVirtualAndAutoupdatingColumns -
      *      When true: value will not be returned for columns that
@@ -1908,6 +1988,7 @@ class Record implements RecordInterface
      *      - autoupdatable ($column->isAutoUpdatingValues())
      * @param bool $nullifyDbExprValues
      *      When true: if default value is DbExpr - it will be replaced by null
+     *
      * @return array
      */
     public function getDefaults(
@@ -1946,8 +2027,10 @@ class Record implements RecordInterface
     /**
      * Proxy to hasValue() or isRelatedRecordCanBeRead();
      * NOTE: same as isset() when calling isset($record[$columnName]) and also used by empty($record[$columnName])
+     *
      * @param string $key - column name or relation name
-     * @return boolean - true on success or false on failure.
+     *
+     * @return bool - true on success or false on failure.
      * @throws \InvalidArgumentException
      * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      */
@@ -1981,6 +2064,7 @@ class Record implements RecordInterface
 
     /**
      * @param string $key - column name or column name with format (ex: created_at_as_date) or relation name
+     *
      * @return mixed
      * @throws \InvalidArgumentException
      * @noinspection PhpParameterNameChangedDuringInheritanceInspection
@@ -2013,6 +2097,7 @@ class Record implements RecordInterface
     /**
      * @param string $key - column name or relation name
      * @param mixed $value
+     *
      * @noinspection PhpParameterNameChangedDuringInheritanceInspection
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -2045,6 +2130,7 @@ class Record implements RecordInterface
 
     /**
      * @param string $key
+     *
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
      * @noinspection PhpParameterNameChangedDuringInheritanceInspection
@@ -2064,6 +2150,7 @@ class Record implements RecordInterface
 
     /**
      * @param string $name - column name or column name with format (ex: created_at_as_date) or relation name
+     *
      * @return mixed
      */
     public function __get(string $name)
@@ -2074,6 +2161,7 @@ class Record implements RecordInterface
     /**
      * @param string $name - 'setColumnName' or 'setRelationName'
      * @param mixed $value
+     *
      * @return void
      */
     public function __set(string $name, mixed $value): void
@@ -2083,6 +2171,7 @@ class Record implements RecordInterface
 
     /**
      * @param string $name - column name or relation name, can contain formatter name (column_as_formatter)
+     *
      * @return bool
      */
     public function __isset(string $name): bool
@@ -2100,8 +2189,10 @@ class Record implements RecordInterface
 
     /**
      * Supports only methods starting with 'set' and ending with column name or relation name
+     *
      * @param string $name - something like 'setColumnName' or 'setRelationName'
      * @param array $arguments - 1 required, 2 accepted. 1st - value, 2nd - $isFromDb
+     *
      * @return static
      * @throws \BadMethodCallException
      * @throws \InvalidArgumentException
@@ -2111,19 +2202,22 @@ class Record implements RecordInterface
         $isValidName = (bool)preg_match('%^set([A-Z][a-zA-Z0-9]*)$%', $name, $nameParts);
         if (!$isValidName) {
             throw new \BadMethodCallException(
-                "Magic method '{$name}(\$value, \$isFromDb = false)' is forbidden. You can magically call only methods starting with 'set', for example: setId(1)"
+                "Magic method '{$name}(\$value, \$isFromDb = false)' is forbidden."
+                . ' You can magically call only methods starting with \'set\', for example: setId(1)'
             );
         }
 
         if (count($arguments) > 2) {
             throw new \InvalidArgumentException(
-                "Magic method '{$name}(\$value, \$isFromDb = false)' accepts only 2 arguments, but " . count($arguments) . ' arguments passed'
+                "Magic method '{$name}(\$value, \$isFromDb = false)' accepts only 2 arguments, but "
+                . count($arguments) . ' arguments passed'
             );
         }
 
         if (array_key_exists(1, $arguments) && !is_bool($arguments[1])) {
             throw new \InvalidArgumentException(
-                "2nd argument for magic method '{$name}(\$value, \$isFromDb = false)' must be a boolean and reflects if value received from DB"
+                "2nd argument for magic method '{$name}(\$value, \$isFromDb = false)'"
+                . ' must be a boolean and reflects if value received from DB'
             );
         }
 
@@ -2173,6 +2267,24 @@ class Record implements RecordInterface
      */
     public function serialize(): string
     {
+        return json_encode($this->__serialize(), JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * @throws \InvalidArgumentException
+     * @noinspection PhpParameterNameChangedDuringInheritanceInspection
+     */
+    public function unserialize(string $serialized): void
+    {
+        $data = json_decode($serialized, true, 512, JSON_THROW_ON_ERROR);
+        if (!is_array($data)) {
+            throw new \InvalidArgumentException('$serialized argument must be a json-encoded array');
+        }
+        $this->__unserialize($data);
+    }
+
+    public function __serialize(): array
+    {
         $data = [
             'props' => [
                 'existsInDb' => $this->existsInDb,
@@ -2183,19 +2295,11 @@ class Record implements RecordInterface
         foreach ($this->values as $name => $value) {
             $data['values'][$name] = $value->toArray();
         }
-        return json_encode($data, JSON_THROW_ON_ERROR);
+        return $data;
     }
 
-    /**
-     * @throws \InvalidArgumentException
-     * @noinspection PhpParameterNameChangedDuringInheritanceInspection
-     */
-    public function unserialize(string $serialized): void
+    public function __unserialize(array $data): void
     {
-        $data = json_decode($serialized, true);
-        if (!is_array($data)) {
-            throw new \InvalidArgumentException('$serialized argument must be a json-encoded array');
-        }
         $this->reset();
         /** @var TableInterface $tableClass */
         $tableClass = $data['table_class'];
@@ -2244,19 +2348,19 @@ class Record implements RecordInterface
 
     public function forbidSaving(): static
     {
-        $this->forbidSaving = true;
+        $this->isSavingAllowed = false;
         return $this;
     }
 
     public function allowSaving(): static
     {
-        $this->forbidSaving = true;
+        $this->isSavingAllowed = true;
         return $this;
     }
 
     public function isSavingAllowed(): bool
     {
-        return !$this->forbidSaving();
+        return $this->isSavingAllowed;
     }
 
     /**
@@ -2282,6 +2386,4 @@ class Record implements RecordInterface
         }
         return $data;
     }
-
-
 }

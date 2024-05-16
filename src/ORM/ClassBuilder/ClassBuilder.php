@@ -27,6 +27,10 @@ class ClassBuilder
     public const TEMPLATE_TABLE_STRUCTURE = 'table_structure';
     public const TEMPLATE_RECORD = 'record';
 
+    public const CLASS_SUFFIX_RECORD = '';
+    public const CLASS_SUFFIX_TABLE = 'Table';
+    public const CLASS_SUFFIX_TABLE_STRUCTURE = 'TableStructure';
+
     protected array $timezoneTypes = [
         ColumnDescriptionDataType::TIME_WITH_TZ,
         ColumnDescriptionDataType::TIMESTAMP_WITH_TZ,
@@ -164,14 +168,21 @@ class ClassBuilder
 
     public function getClassName(string $type): string
     {
-        $tableName = $this->tableDescription->getTableName();
+        return static::makeClassName(
+            $this->tableDescription->getTableName(),
+            $type
+        );
+    }
+
+    public static function makeClassName(string $tableName, string $type): string
+    {
         return match ($type) {
             static::TEMPLATE_TABLE =>
-                StringUtils::toPascalCase($tableName) . 'Table',
+                StringUtils::toPascalCase($tableName) . static::CLASS_SUFFIX_TABLE,
             static::TEMPLATE_TABLE_STRUCTURE =>
-                StringUtils::toPascalCase($tableName) . 'TableStructure',
+                StringUtils::toPascalCase($tableName) . static::CLASS_SUFFIX_TABLE_STRUCTURE,
             static::TEMPLATE_RECORD =>
-            StringUtils::toSingularPascalCase($tableName),
+                StringUtils::toSingularPascalCase($tableName) . static::CLASS_SUFFIX_RECORD,
             default =>
             throw new \InvalidArgumentException('Unknown template type: ' . $type),
         };
@@ -369,5 +380,4 @@ class ClassBuilder
         // number
         return (string)$default;
     }
-
 }

@@ -1,6 +1,7 @@
 <?php
+
 declare(strict_types=1);
-echo '<?php';
+
 /**
  * @var string $namespace
  * @var string $parentClass
@@ -10,13 +11,15 @@ echo '<?php';
  * @var string $tableAlias
  * @var array $includes
  */
+echo '<?php';
 ?>
+
 
 declare(strict_types=1);
 
 namespace <?php echo $namespace ?>;
 
-<?php foreach ($includes as $includeClass): ?>
+<?php foreach ($includes as $includeClass) : ?>
 use <?php echo $includeClass ?>;
 <?php endforeach; ?>
 
