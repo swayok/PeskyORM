@@ -312,7 +312,7 @@ class Postgres extends DbAdapter
                     FALSE
                 ) as `foreignkey`,
                 CASE
-                    WHEN `f`.`atthasdef` = true THEN `d`.`adsrc`
+                    WHEN `f`.`atthasdef` = true THEN pg_get_expr(`d`.`adbin`, `d`.`adrelid`)
                 END AS `default`
             FROM pg_attribute f
                 JOIN `pg_class` `c` ON `c`.`oid` = `f`.`attrelid`
