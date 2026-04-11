@@ -252,7 +252,11 @@ abstract class AbstractSelect
      */
     public function fetchOne(): array
     {
-        return $this->_fetch(Utils::FETCH_FIRST);
+        $limitBackup = $this->limit;
+        $this->limit(1);
+        $data = $this->_fetch(Utils::FETCH_FIRST);
+        $this->limit($limitBackup);
+        return $data;
     }
     
     /**
